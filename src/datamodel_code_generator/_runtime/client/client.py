@@ -48,7 +48,7 @@ from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .logical import LogicalCallContext
 from .media import normalized
-from .multipart import MultipartSource, is_multipart, new_boundary
+from .multipart import encode_parts, is_multipart
 from .native import (
     async_decoded_bytes,
     async_response_bytes,
@@ -130,7 +130,7 @@ if TYPE_CHECKING:
     from .body_sources import BodyBindings, BodySource
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
     from .multipart import AsyncBodyInput, BodyInput
-    from .operations import OperationPlan, ParameterSpec, ServerPlan
+    from .operations import OperationPlan, ServerPlan
     from .options import ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
@@ -367,14 +367,6 @@ def exploded_object(plan: ParameterPlan) -> bool:
     return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
-def encode_parameter_value(operation: OperationPlan[object], spec: ParameterSpec, code: Callable[[], R]) -> R:
-    """Return what coding an argument gives, raising a codec's refusal as the argument's encoding error."""
-    try:
-        return code()
-    except request_errors(spec.codec) as error:
-        raise request_decode_error(operation, (spec.plan.location, spec.plan.name), error) from None
-
-
 def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
     """Return the path parameter that makes its segment a dot segment, which URL normalization would remove.
 
@@ -604,13 +596,18 @@ def _close_failed(failures: list[OSError], call: Call, error: BaseException | No
 def _framing(
     request: httpx2.Request, attempt: SyncContent | AsyncContent | EncodedAttempt | None
 ) -> list[tuple[str, str]]:
-    """Return a request's headers without the framing HTTPX2 writes, with the Content-Length of a measured stream."""
-    headers = [
-        (name, value)
-        for name, value in request_fields(request)
-        if name.lower() not in {"host", "content-length", "transfer-encoding"}
-    ]
-    if not isinstance(attempt, EncodedAttempt | None) and (length := attempt.content_length) is not None:
+    """Return a request's headers without the framing HTTPX2 writes, with the Content-Length of a measured stream.
+
+    A stream that names its media type, as a multipart body's attempt names its boundary, sends it as Content-Type.
+    """
+    media_type = length = None
+    if not isinstance(attempt, EncodedAttempt | None):
+        media_type, length = attempt.content_type, attempt.content_length
+    framed = {"host", "content-length", "transfer-encoding", *(() if media_type is None else ("content-type",))}
+    headers = [(name, value) for name, value in request_fields(request) if name.lower() not in framed]
+    if media_type is not None:
+        headers.append(("Content-Type", media_type))
+    if length is not None:
         headers.append(("Content-Length", str(length)))
     return headers
 
@@ -1173,8 +1170,7 @@ class Core(Generic[AdapterT, HandleT]):
             target = f"{base}?{query}" if query else base
         media_type = None
         if is_multipart(body):
-            body = MultipartSource(body, boundary := new_boundary())
-            media_type = f"multipart/form-data; boundary={boundary}"
+            body, media_type = encode_parts(body)
         fixed = self._shared.fixed
         call = () if options is None else options.headers
         if self._settings.headers or call:
@@ -1897,6 +1893,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
             source=partial(decoded_bytes, response, info, call.operation_id),
             raw_source=partial(response_bytes, response),
+            native=response,
             close=release,
             events=call.events if stream else None,
             call=call,
@@ -2585,6 +2582,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             lambda error: self._classified(error, call, DeliveryState.RESPONSE_STARTED),
             source=partial(async_decoded_bytes, response, info, call.operation_id),
             raw_source=partial(async_response_bytes, response),
+            native=response,
             close=release,
             events=call.events if stream else None,
             call=call,

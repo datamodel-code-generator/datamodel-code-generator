@@ -95,15 +95,15 @@ settled operations
 errors that keep a checkpoint
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  long server delay ! PollWaitLimitError carries a checkpoint=False
+  long server delay ! PollWaitLimitError
   long server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   resumed polls at once = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  status after a huge server delay ! PollWaitLimitError carries a checkpoint=False
-  wait after a huge server delay ! PollWaitLimitError carries a checkpoint=False
+  status after a huge server delay ! PollWaitLimitError
+  wait after a huge server delay ! PollWaitLimitError
   huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   checkpoint after a huge server delay saved {"bound": ["j1", "queued"], "cancel": [], "expires_at": null, "phase": "pending", "seed": ["j1"]}
   > GET https://api.example.com/jobs/j1
@@ -114,7 +114,7 @@ errors that keep a checkpoint
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   first poll = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
-  poll limit ! SessionLimitError carries a checkpoint=False
+  poll limit ! SessionLimitError
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   resumed at the same limit polls afresh = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
@@ -271,7 +271,7 @@ async resume
   resumed fetch = Report(rows=4)
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
-  async long server delay ! PollWaitLimitError carries a checkpoint=False
+  async long server delay ! PollWaitLimitError
 async remote cancellation
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

@@ -47,19 +47,15 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
         elapsed=0.25,
         content_type="application/json",
     )
-    resume = protocols.ResumeState(helper=secret, state={"cursor": secret})
     data = {"secret": secret}
     snapshot = protocols.PollSnapshot(state=secret, terminal=True, data=data, response=info)
     selector = protocols.BodySelector(pointer=f"/{secret}")
     cases = (
         ("ProtocolDataError", {"condition": "missing", "location": selector}),
         ("ProtocolStateError", {"state": "receiving", "action": "receive"}),
-        ("SessionLimitError", {"kind": "pages", "limit": 3, "progress": {"pages": 3, "items": 30}, "resume_state": resume}),
-        (
-            "StreamResumeExhaustedError",
-            {"kind": "reconnects", "limit": 5, "progress": {"reconnects": 5}, "resume_state": resume},
-        ),
-        ("ResumeStateError", {"condition": "fingerprint"}),
+        ("SessionLimitError", {"kind": "pages", "limit": 3, "progress": {"pages": 3, "items": 30}}),
+        ("StreamResumeExhaustedError", {"kind": "reconnects", "limit": 5, "progress": {"reconnects": 5}}),
+        ("ResumeStateError", {"condition": "expired"}),
         (
             "PaginationCycleError",
             {
@@ -82,16 +78,13 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
                 "location": protocols.BodyTarget(pointer=f"/{secret}"),
             },
         ),
-        ("StreamInterruptedError", {"condition": "transport", "sequence": 3, "resume_state": resume}),
-        ("IncompleteFrameError", {"buffered_bytes": 12, "sequence": 3, "resume_state": resume}),
+        ("StreamInterruptedError", {"condition": "transport", "sequence": 3}),
+        ("IncompleteFrameError", {"buffered_bytes": 12, "sequence": 3}),
         ("StreamRemoteError", {"event_type": secret, "data": data, "sequence": 9}),
         ("ConcurrentReceiveError", {}),
         ("WebSocketClosedError", {"code": 4001, "reason": secret, "clean": False}),
         ("WebSocketHandshakeError", {"condition": "negotiation", "delivery_state": errors.DeliveryState.RESPONSE_STARTED}),
-        (
-            "DeliveryUnknownError",
-            {"delivery_state": errors.DeliveryState.MAYBE_SENT, "resume_state": resume, "message_id": secret},
-        ),
+        ("DeliveryUnknownError", {"delivery_state": errors.DeliveryState.MAYBE_SENT, "message_id": secret}),
     )
     cause = RuntimeError(secret)
     cleanup = RuntimeError(f"{secret}-cleanup")
@@ -135,22 +128,17 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
                 f"    location hint={hints['location'] == protocols.Selector | protocols.RequestTarget | None} "
                 f"identity={error.location is fields.get('location')}"
             )
-        if "resume_state" in hints:
-            lines.append(
-                f"    resume hint={hints['resume_state'] == protocols.ResumeState | None} "
-                f"identity={error.resume_state is resume}"
-            )
-    _progress(errors, protocols, resume, lines)
+    _progress(errors, protocols, lines)
     _payloads(errors, protocols, snapshot, data, lines)
     _defaults(errors, snapshot, lines)
     _choices(errors, lines)
     _rejections(errors, protocols, responses, operation, lines)
 
 
-def _progress(errors: ModuleType, protocols: ModuleType, resume: object, lines: list[str]) -> None:
+def _progress(errors: ModuleType, protocols: ModuleType, lines: list[str]) -> None:
     """Copy progress into a read-only mapping of the declared keys."""
     source = {"pages": 1, "items": 0, "polls": 2}
-    error = errors.SessionLimitError(kind="items", limit=0, progress=source, resume_state=resume)
+    error = errors.SessionLimitError(kind="items", limit=0, progress=source)
     source["pages"] = 9
     hints = get_type_hints(errors.SessionLimitError.__init__)
     lines.append(
@@ -199,7 +187,7 @@ def _defaults(errors: ModuleType, snapshot: object, lines: list[str]) -> None:
         ("state", lambda: errors.ProtocolStateError(state="finished", action="wait")),
         ("session limit", lambda: errors.SessionLimitError(kind="pages", limit=0, progress={})),
         ("resume exhausted", lambda: errors.StreamResumeExhaustedError(kind="reconnects", limit=16, progress={})),
-        ("resume", lambda: errors.ResumeStateError(condition="malformed")),
+        ("resume", lambda: errors.ResumeStateError(condition="expired")),
         ("cycle", lambda: errors.PaginationCycleError(page_index=0, first_seen_page_index=0)),
         ("polling", lambda: errors.PollingStateError()),
         ("wait", lambda: errors.PollWaitLimitError(kind="deadline", required_wait=0, limit=0)),
@@ -221,7 +209,6 @@ def _defaults(errors: ModuleType, snapshot: object, lines: list[str]) -> None:
             error.cause,
             error.secondary_errors,
             getattr(error, "location", "-"),
-            getattr(error, "resume_state", "-"),
             error.attempt_count,
             error.request_id,
         )
@@ -239,12 +226,7 @@ def _choices(errors: ModuleType, lines: list[str]) -> None:
             {"limit": 1, "progress": {}},
         ),
         ("StreamResumeExhaustedError", "kind", ("reconnects",), {"limit": 1, "progress": {}}),
-        (
-            "ResumeStateError",
-            "condition",
-            ("version", "fingerprint", "expired", "malformed"),
-            {},
-        ),
+        ("ResumeStateError", "condition", ("expired",), {}),
         ("PollingStateError", "condition", ("type", "value"), {}),
         ("PollWaitLimitError", "kind", ("wait", "deadline"), {"required_wait": 1, "limit": 0}),
         (
@@ -294,11 +276,8 @@ def _rejections(
         ("progress bool", lambda: errors.SessionLimitError(kind="pages", limit=1, progress={"pages": True})),
         ("progress list", lambda: errors.SessionLimitError(kind="pages", limit=1, progress=[("pages", 1)])),
         ("progress None", lambda: errors.SessionLimitError(kind="pages", limit=1, progress=None)),
-        ("resume state bytes", lambda: errors.SessionLimitError(
-            kind="pages", limit=1, progress={}, resume_state=secret.encode()
-        )),
         ("exhausted kind pages", lambda: errors.StreamResumeExhaustedError(kind="pages", limit=1, progress={})),
-        ("resume condition unknown", lambda: errors.ResumeStateError(condition="stale")),
+        ("resume condition unknown", lambda: errors.ResumeStateError(condition="malformed")),
         ("resume missing condition", lambda: errors.ResumeStateError()),
         ("cycle fixed condition", lambda: errors.PaginationCycleError(
             condition="inconsistent", page_index=1, first_seen_page_index=0
@@ -306,9 +285,6 @@ def _rejections(
         ("cycle negative", lambda: errors.PaginationCycleError(page_index=-1, first_seen_page_index=0)),
         ("cycle cursor field", lambda: errors.PaginationCycleError(
             page_index=1, first_seen_page_index=0, continuation=secret
-        )),
-        ("cycle resume field", lambda: errors.PaginationCycleError(
-            page_index=1, first_seen_page_index=0, resume_state=secret
         )),
         ("polling condition missing", lambda: errors.PollingStateError(condition="missing")),
         ("wait kind unknown", lambda: errors.PollWaitLimitError(kind="interval", required_wait=1, limit=0)),

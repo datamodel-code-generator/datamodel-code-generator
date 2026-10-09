@@ -1,4 +1,4 @@
-"""Per-call native inputs and temporary multipart composition."""
+"""Per-call native inputs, and the parts of multipart bodies with streamed file parts."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING, cast
 from .bodies import BinarySource, is_async_binary_input, is_binary_input, is_file_input
 from .errors import DecodeError
 from .logical import in_thread
-from .multipart import AsyncMultipartAttempt, MultipartAttempt, MultipartSource, is_file_part, is_multipart
+from .multipart import FormParts, MultipartAttempt, PartFile, is_file_part, is_multipart
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterator
 
     from .bodies import AsyncContent, EncodedAttempt, SyncContent
 
@@ -81,14 +81,17 @@ def capture_body(body: object) -> BodyBindings | None:
 
 
 class BodySource:
-    """A call's native inputs with optional multipart framing and compression."""
+    """A call's native input, or the parts of a multipart body with streamed file parts, and any coding.
 
-    __slots__ = ("_aencode", "_bindings", "_encode", "_multipart", "_pieces")
+    Each attempt of a multipart body is encoded under the boundary its media type names.
+    """
 
-    def __init__(self, pieces: list[bytes | BinarySource], bindings: BodyBindings, *, multipart: bool) -> None:
+    __slots__ = ("_aencode", "_bindings", "_encode", "_parts", "_pieces")
+
+    def __init__(self, pieces: list[bytes | BinarySource], bindings: BodyBindings, parts: FormParts | None) -> None:
         self._pieces = pieces
         self._bindings = bindings
-        self._multipart = multipart
+        self._parts = parts
         self._encode: Callable[[SyncContent], SyncContent] | None = None
         self._aencode: Callable[[AsyncContent], AsyncContent] | None = None
 
@@ -106,18 +109,27 @@ class BodySource:
 
     def open(self) -> SyncContent:
         """Prepare one synchronous native stream."""
-        pieces: list[bytes | SyncContent] = [
-            piece if isinstance(piece, bytes) else piece.open() for piece in self._pieces
-        ]
-        attempt = MultipartAttempt(pieces) if self._multipart else cast("SyncContent", pieces[0])
+        if (parts := self._parts) is None:
+            attempt: SyncContent = cast("BinarySource", self._pieces[0]).open()
+        else:
+            attempt = MultipartAttempt(
+                parts.entries,
+                [piece if isinstance(piece, bytes) else PartFile(piece.open()) for piece in self._pieces],
+                parts.media_type,
+            )
         return self._encode(attempt) if self._encode is not None else attempt
 
     async def aopen(self) -> AsyncContent:
         """Prepare one asynchronous native stream."""
-        pieces: list[bytes | AsyncContent] = [
-            piece if isinstance(piece, bytes) else await piece.aopen() for piece in self._pieces
-        ]
-        attempt = AsyncMultipartAttempt(pieces) if self._multipart else cast("AsyncContent", pieces[0])
+        if (parts := self._parts) is None:
+            attempt: AsyncContent = await cast("BinarySource", self._pieces[0]).aopen()
+        else:
+            attempt = MultipartAttempt(
+                parts.entries,
+                [piece if isinstance(piece, bytes) else PartFile(await piece.aopen()) for piece in self._pieces],
+                parts.media_type,
+                threaded=any(not isinstance(piece, bytes) and piece.owned for piece in self._pieces),
+            )
         return self._aencode(attempt) if self._aencode is not None else attempt
 
     def close(self) -> list[OSError]:
@@ -130,14 +142,12 @@ class BodySource:
 
 
 def bind_body(content: object, *, entry: BodyBindings | None = None, asynchronous: bool = False) -> BodySource:
-    """Bind the encoded layout without buffering native streams."""
+    """Bind a native input, or each file input of a multipart body's parts, without buffering native streams."""
     bindings = BodyBindings() if entry is None else entry
-    inputs: Iterable[object]
-    if isinstance(content, MultipartSource):
-        inputs = content.ainputs() if asynchronous else content.inputs()
-    else:
-        inputs = (content,)
-    pieces = [
-        piece if isinstance(piece, bytes) else bindings.bind(piece, asynchronous=asynchronous) for piece in inputs
+    if not isinstance(content, FormParts):
+        return BodySource([bindings.bind(content, asynchronous=asynchronous)], bindings, None)
+    pieces: list[bytes | BinarySource] = [
+        piece if type(piece) is bytes else bindings.bind(piece, asynchronous=asynchronous)
+        for _, _, piece, _, _ in content.entries
     ]
-    return BodySource(pieces, bindings, multipart=isinstance(content, MultipartSource))
+    return BodySource(pieces, bindings, content)

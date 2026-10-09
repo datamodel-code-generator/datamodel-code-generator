@@ -33,8 +33,6 @@ _POLL: Final = (
 )
 _STREAM: Final = (
     ("idle_timeout", True, True, False),
-    ("max_line_bytes", False, False, False),
-    ("max_event_bytes", False, False, False),
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
@@ -148,8 +146,6 @@ class StreamOptions:
     """Stream limits; reconnection stays off unless enabled, and only max_reconnects takes 0."""
 
     idle_timeout: float | Unset | None = UNSET
-    max_line_bytes: int | Unset = UNSET
-    max_event_bytes: int | Unset = UNSET
     reconnect: bool | Unset = UNSET
     max_reconnects: int | Unset | None = UNSET
     max_reconnect_wait: float | Unset | None = UNSET

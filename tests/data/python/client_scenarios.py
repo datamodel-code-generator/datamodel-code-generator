@@ -86,7 +86,7 @@ from tests.data.python.client_runtime import (
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
-from tests.data.python.client_stream_resume import stream_checkpoint_bodies, stream_resume
+from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_unions import split_unions, unions
@@ -905,7 +905,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "stream-resume": ("stream-resume", ("pydantic_v2.BaseModel",), stream_resume),
-    "stream-checkpoint-bodies": ("stream-resume", ("msgspec.Struct",), stream_checkpoint_bodies),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),

@@ -34,7 +34,7 @@ from .records import (
     Selector,
 )
 from .references import OperationRef
-from .resume import ResumeState, ResumeStateError
+from .resume import ResumeStateError
 from .sources import UploadProgress
 
 __all__ = (
@@ -87,12 +87,6 @@ MAX_RAW_PREFIX: Final = 65536
 def _location(value: object) -> None:
     if value is not None and not isinstance(value, _LOCATIONS):
         msg = "location must be a selector, a request target, or None"
-        raise ValueError(msg)
-
-
-def _resume_state(value: object) -> None:
-    if value is not None and not isinstance(value, ResumeState):
-        msg = "resume_state must be a ResumeState or None"
         raise ValueError(msg)
 
 
@@ -239,7 +233,6 @@ class SessionLimitError(ProtocolError):
         kind: _SessionLimitKind,
         limit: int,
         progress: ProtocolProgress,
-        resume_state: ResumeState | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -249,11 +242,10 @@ class SessionLimitError(ProtocolError):
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep the exhausted cap, a read-only copy of the progress, and any exportable resume state."""
+        """Keep the exhausted cap and a read-only copy of the progress."""
         error_choice(kind, _SESSION_LIMIT_KINDS, "kind")
         error_count(limit, "limit")
         copied = _progress(progress)
-        _resume_state(resume_state)
         super().__init__(
             helper_id=helper_id,
             operation=operation,
@@ -267,7 +259,6 @@ class SessionLimitError(ProtocolError):
         self.kind = kind
         self.limit = limit
         self.progress = copied
-        self.resume_state = resume_state
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("kind", self.kind), ("limit", self.limit))
@@ -282,7 +273,6 @@ class StreamResumeExhaustedError(SessionLimitError):
         kind: Literal["reconnects"],
         limit: int,
         progress: ProtocolProgress,
-        resume_state: ResumeState | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -292,13 +282,12 @@ class StreamResumeExhaustedError(SessionLimitError):
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep the exhausted reconnection budget with the stream's progress and resume state."""
+        """Keep the exhausted reconnection budget with the stream's progress."""
         error_choice(kind, ("reconnects",), "kind")
         super().__init__(
             kind=kind,
             limit=limit,
             progress=progress,
-            resume_state=resume_state,
             helper_id=helper_id,
             operation=operation,
             operation_id=operation_id,
@@ -555,7 +544,6 @@ class StreamInterruptedError(ProtocolError):
         *,
         condition: Literal["eof", "transport"],
         sequence: int,
-        resume_state: ResumeState | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -565,10 +553,9 @@ class StreamInterruptedError(ProtocolError):
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep how the stream stopped, the last sequence delivered, and any exportable resume state."""
+        """Keep how the stream stopped and the last sequence delivered."""
         error_choice(condition, ("eof", "transport"), "condition")
         error_count(sequence, "sequence")
-        _resume_state(resume_state)
         super().__init__(
             helper_id=helper_id,
             operation=operation,
@@ -581,21 +568,19 @@ class StreamInterruptedError(ProtocolError):
         )
         self.condition = condition
         self.sequence = sequence
-        self.resume_state = resume_state
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("condition", self.condition), ("sequence", self.sequence))
 
 
 class IncompleteFrameError(StreamInterruptedError):
-    """An incomplete frame or missing final newline at EOF; its condition is always eof."""
+    """An NDJSON body whose last line has no line end at EOF; its condition is always eof."""
 
     def __init__(  # noqa: PLR0913
         self,
         *,
         buffered_bytes: int,
         sequence: int,
-        resume_state: ResumeState | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
         operation_id: str | None = None,
@@ -610,7 +595,6 @@ class IncompleteFrameError(StreamInterruptedError):
         super().__init__(
             condition="eof",
             sequence=sequence,
-            resume_state=resume_state,
             helper_id=helper_id,
             operation=operation,
             operation_id=operation_id,
@@ -870,7 +854,6 @@ class DeliveryUnknownError(ProtocolError):
         self,
         *,
         delivery_state: DeliveryState,
-        resume_state: ResumeState | None = None,
         message_id: str | None = None,
         helper_id: str | None = None,
         operation: OperationRef | None = None,
@@ -881,11 +864,10 @@ class DeliveryUnknownError(ProtocolError):
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
-        """Keep how far the message may have got, any exportable resume state, and its declared message ID."""
+        """Keep how far the message may have got and its declared message ID."""
         if delivery_state not in _UNKNOWN_DELIVERIES:
             msg = "delivery_state must be MAYBE_SENT or RESPONSE_STARTED"
             raise ValueError(msg)
-        _resume_state(resume_state)
         error_string(message_id, "message_id", optional=True)
         super().__init__(
             helper_id=helper_id,
@@ -898,7 +880,6 @@ class DeliveryUnknownError(ProtocolError):
             cause=cause,
             secondary_errors=secondary_errors,
         )
-        self.resume_state = resume_state
         self.message_id = message_id
 
     def _details(self) -> tuple[tuple[str, object], ...]:

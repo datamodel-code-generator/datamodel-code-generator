@@ -8,12 +8,17 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan, file_part, value_part
+from ._runtime.client.multipart import PartPlan
+from ._runtime.client.multipart_responses import (
+    PartsReader,
+    file_part,
+    parts_branch,
+    value_part,
+)
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
     ParameterSpec,
-    PartsReader,
     RequestBody,
     ResponseDecoder,
     ServerPlan,
@@ -21,7 +26,6 @@ from ._runtime.client.operations import (
     binary_branch,
     empty_branch,
     model_branch,
-    parts_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.pets import (
@@ -242,7 +246,7 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse]] = OperationPlan(
                 parts=(
                     PartPlan('note', codec=model_bindings.codec_21),
                     PartPlan('labels', repeated=True, codec=model_bindings.codec_22),
-                    PartPlan('file', file=True, required=True),
+                    PartPlan('file'),
                 ),
             ),
         ),

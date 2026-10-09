@@ -24,7 +24,7 @@
     [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: application/xml, content-length: 4] b'<a/>'
   raw bytes labeled = b'ok'
   > POST https://raw.example.com/items
-    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, x-raw: 1, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
+    [host: raw.example.com, content-length: 0, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, x-raw: 1] b''
   raw parts with their media type repeated = b'ok'
   reserved header ! ConfigurationError: ConfigurationError(reason='reserved', field_path='headers.Host') [field_path=('headers', 'Host'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] reserved
   header name that is no token ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Bad Name') [field_path=('headers', 'Bad Name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value

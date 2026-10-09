@@ -62,7 +62,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import OperationSpec
     from datamodel_code_generator._client.sockets import SocketSpec
-    from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
@@ -173,7 +172,6 @@ class ClientTarget:
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
-        fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
         dependencies = (
             WEBSOCKETS if sockets else HTTPX2,
@@ -322,35 +320,6 @@ class _HelperDigests:
             "operations": [],
             "schemas": [event.schema for event in events],
             "type_uses": [self.contract(event.use) for event in events],
-        })
-
-    def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
-        """Return the digest of a stream helper's contract closure: its signature, settings, operations, and schemas.
-
-        Each event and error use contributes its type and contract, so a changed schema changes the digest, and a helper
-        reopening its stream with another operation adds that operation.
-        """
-        operation, helper = spec.operation, spec.helper
-        body = operation.body
-        signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-            "body": None
-            if body is None
-            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "events": [(key, self.type(use)) for key, use in spec.events],
-            "errors": [(key, self.type(use)) for key, use in spec.errors],
-            "settings": settings,
-        }
-        return _digest({
-            "kind": helper.kind,
-            "signatures": [signature],
-            "operations": [
-                self.request.documents.operation(item.contract.id)
-                for item in (operation, *(() if spec.reopen is None or spec.own else (spec.reopen,)))
-            ],
-            "schemas": list(spec.schemas),
-            "type_uses": [self.contract(use) for use in spec.uses],
         })
 
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
