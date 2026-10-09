@@ -19,7 +19,7 @@
     end
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  error event error {'message': 'boom'}
+  error event error_event {'message': 'boom'}
 # streams pydantic_v2.dataclass
   > GET https://api.example.com/events accept=text/event-stream
   messages
@@ -41,7 +41,7 @@
     end
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  error event error {'message': 'boom'}
+  error event error_event {'message': 'boom'}
 # streams dataclasses.dataclass
   > GET https://api.example.com/events accept=text/event-stream
   messages
@@ -63,7 +63,7 @@
     end
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  error event error {'message': 'boom'}
+  error event error_event {'message': 'boom'}
 # streams typing.TypedDict
   > GET https://api.example.com/events accept=text/event-stream
   messages
@@ -85,7 +85,7 @@
     end
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  error event error {'message': 'boom'}
+  error event error_event {'message': 'boom'}
 # streams msgspec.Struct
   > GET https://api.example.com/events accept=text/event-stream
   messages
@@ -107,4 +107,4 @@
     end
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  error event error {'message': 'boom'}
+  error event error_event {'message': 'boom'}

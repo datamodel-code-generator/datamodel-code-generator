@@ -650,6 +650,12 @@ components:
           scopes:
             read: Read access
             write: Write access
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/authorize
+          tokenUrl: https://auth.example.com/token
+          refreshUrl: https://auth.example.com/refresh
+          scopes:
+            read: Read access
     openid:
       type: openIdConnect
       openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration

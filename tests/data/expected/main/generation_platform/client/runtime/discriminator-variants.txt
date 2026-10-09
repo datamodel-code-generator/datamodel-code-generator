@@ -7,7 +7,7 @@
   inherited pet d = {'pet': {'kind': 'd'}, 'pets_by_name': {'b': {'kind': 'c', 'mane': False}}}
   > GET https://api.example.com/child
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', call_id='<call>', reason='invalid_value') [operation_id='getChild', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
+  inherited pet of an unknown tag ! DecodeError: DecodeError(status_code=200, operation_id='getChild', reason='invalid_value') [operation_id='getChild', body_bytes=b'{"pet":{"kind":"Lion"},"pets_by_name":{}}', truncated=False, cause=KeyError('Lion')] invalid_value
   > GET https://api.example.com/holder
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   held Fish = {'pet': {'kind': 'Fish', 'fins': 2}}

@@ -296,6 +296,16 @@ def test_client_typing_compression(tmp_path: Path) -> None:
     )
 
 
+def test_client_typing_auth(tmp_path: Path) -> None:
+    """Check constructor credentials of each scheme kind, OAuth providers, and native Auth settings."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "auth", ("auth",)),
+        EXPECTED / "pydantic_v2-BaseModel-auth.txt",
+    )
+
+
 @pytest.mark.parametrize("case", ["media", "pets"])
 def test_client_typing_media_ranges(case: str, tmp_path: Path) -> None:
     """Keep exact response overloads narrow while accepting concrete types within success ranges."""

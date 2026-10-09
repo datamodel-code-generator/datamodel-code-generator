@@ -192,7 +192,7 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
         lines.append(
             f"  saved integer limit {type(error).__name__} cause={type(error.cause).__name__} "
             f"body={error.body_bytes == body} info={error.info is received.info} "
-            f"operation={error.operation_id!r} call={bool(error.call_id) and error.call_id == received.info.call_id}"
+            f"operation={error.operation_id!r}"
         )
     else:
         lines.append("  saved integer limit decoded")
@@ -305,7 +305,7 @@ def _status(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
                 record(lines, f"streaming {label} status", response.raise_for_status)
                 record(lines, f"streaming {label} read", response.read)
         except errors.APIConnectionError as error:
-            lines.append(f"  streaming {label} acquisition {type(error).__name__} {error.delivery_state.value}")
+            lines.append(f"  streaming {label} acquisition {type(error).__name__}")
     exchange.respond(_streamed(404, (b"miss", b"ing"), "text/plain"))
     with streaming.get_pet(pet_id=pet) as response:
         next(response.iter_raw_bytes())
@@ -474,7 +474,7 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
         lines.append(
             f"  async saved integer limit {type(error).__name__} cause={type(error.cause).__name__} "
             f"body={error.body_bytes == body} info={error.info is received.info} "
-            f"operation={error.operation_id!r} call={bool(error.call_id) and error.call_id == received.info.call_id}"
+            f"operation={error.operation_id!r}"
         )
     else:
         lines.append("  async saved integer limit decoded")
@@ -535,7 +535,7 @@ async def _async_streaming(
             ) as response:
                 await arecord(lines, f"async streaming {label} status", response.raise_for_status)
         except errors.APIConnectionError as error:
-            lines.append(f"  async streaming {label} acquisition {type(error).__name__} {error.delivery_state.value}")
+            lines.append(f"  async streaming {label} acquisition {type(error).__name__}")
     exchange.respond(_streamed(404, (b"miss", b"ing"), "text/plain"))
     async with streaming.get_pet(pet_id=pet) as response:
         await anext(response.iter_raw_bytes())
