@@ -13,7 +13,7 @@ import models
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.streams import AsyncEventStream, UnknownEvent, aopen_events
-from ..options import UNSET, RequestOptions, SessionOptions
+from ..options import UNSET, RequestOptions
 from . import StreamOptions, _plans
 
 
@@ -85,7 +85,6 @@ class AsyncEventsMessagesSse:
         last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Message]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
@@ -94,7 +93,6 @@ class AsyncEventsMessagesSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -112,7 +110,6 @@ class AsyncEventsTypedSse:
         last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Created | models.Deleted | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
@@ -121,7 +118,6 @@ class AsyncEventsTypedSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -139,7 +135,6 @@ class AsyncEventsTaggedSse:
         last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Created | models.Deleted]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return await aopen_events(
@@ -148,7 +143,6 @@ class AsyncEventsTaggedSse:
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -166,7 +160,6 @@ class AsyncFeedAllSse:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Message]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return await aopen_events(
@@ -177,5 +170,4 @@ class AsyncFeedAllSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )

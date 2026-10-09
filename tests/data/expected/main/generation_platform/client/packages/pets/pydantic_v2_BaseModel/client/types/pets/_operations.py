@@ -18,13 +18,13 @@ from ..._runtime.client.codecs import (
 )
 from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...bodies import MultipartData
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
 ListPetsResponse: TypeAlias = models.FieldPetsGetResponse | models.Error
 
 
-_LIST_PETS_HEADERS: Final[ResponseHeaders[models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader, Unset]] = ResponseHeaders(
+_LIST_PETS_HEADERS: Final[ResponseHeaders[models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader, UNSET]] = ResponseHeaders(
     'listPets',
     frozenset({'200', 'default'}),
     (
@@ -73,7 +73,7 @@ def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> models.FieldPetsGetResponse200XNextHeader | Unset: ...
+) -> models.FieldPetsGetResponse200XNextHeader | UNSET: ...
 @overload
 def decode_list_pets_header(
     info: ResponseInfo,
@@ -86,7 +86,7 @@ def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next', 'X-Rate'],
-) -> models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader | Unset:
+) -> models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader | UNSET:
     """Decode one declared response header of list_pets from a response's metadata."""
     return _LIST_PETS_HEADERS.decode(info, name)
 
@@ -103,7 +103,7 @@ DeletePetsByPetIdResponse: TypeAlias = None
 HeadPetResponse: TypeAlias = None
 
 
-_HEAD_PET_HEADERS: Final[ResponseHeaders[models.FieldPetsPetIdHeadResponse200ETagHeader, Unset]] = ResponseHeaders(
+_HEAD_PET_HEADERS: Final[ResponseHeaders[models.FieldPetsPetIdHeadResponse200ETagHeader, UNSET]] = ResponseHeaders(
     'headPet',
     frozenset({'200'}),
     (
@@ -132,7 +132,7 @@ def decode_head_pet_header(
     info: ResponseInfo,
     *,
     name: Literal['ETag'],
-) -> models.FieldPetsPetIdHeadResponse200ETagHeader | Unset:
+) -> models.FieldPetsPetIdHeadResponse200ETagHeader | UNSET:
     """Decode one declared response header of head_pet from a response's metadata."""
     return _HEAD_PET_HEADERS.decode(info, name)
 

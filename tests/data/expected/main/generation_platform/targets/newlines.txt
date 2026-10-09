@@ -1,5 +1,6 @@
 # newlines
 generate
+  returned None
 tree
   models.py
   server/README.md
@@ -22,10 +23,25 @@ written like a text file server/services.py: True
 written like a text file server/README.md: True
 written like a text file server/py.typed: True
 written like a text file server/_runtime/server/__init__.py: True
-check
-  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+render
+  unchanged models.py
+  unchanged server/__init__.py
+  unchanged server/application.py
+  unchanged server/routers/__init__.py
+  unchanged server/routers/pets.py
+  unchanged server/routers/store.py
+  unchanged server/routers/untagged.py
+  unchanged server/_generated/__init__.py
+  unchanged server/_generated/contract.py
+  unchanged server/_generated/openapi.py
+  unchanged server/services.py
+  unchanged server/README.md
+  unchanged server/py.typed
+  5 runtime modules ['unchanged']
+  DocumentationAnnotationWarning: example/server: /x-limit: The served document leaves out x-limit, which has no JSON form
 rewrite with '\r\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/server/__init__.py']
 generate
+  returned None
 tree
   models.py
   server/README.md
@@ -50,6 +66,7 @@ written like a text file server/py.typed: True
 written like a text file server/_runtime/server/__init__.py: True
 rewrite with '\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/server/__init__.py']
 generate
+  returned None
 tree
   models.py
   server/README.md

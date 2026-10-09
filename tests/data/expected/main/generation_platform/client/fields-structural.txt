@@ -9,7 +9,6 @@ render dataclasses.dataclass
   write client/responses.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/default/__init__.py
   write client/resources/default/_sync.py
@@ -34,7 +33,6 @@ render typing.TypedDict
   write client/responses.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/default/__init__.py
   write client/resources/default/_sync.py

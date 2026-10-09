@@ -106,8 +106,8 @@ class Patch:
 def server_expiry(value: str, now: float) -> datetime | None:
     """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
 
-    A leap second is the second after the one before it, as in an HTTP date, and `now` is the receipt wall time that
-    places an HTTP date's two-digit year. The zone `Z` and fractions of any length are spelled as Python 3.10 parses
+    An RFC 3339 leap second is the second after the one before it, and `now` is the receipt wall time that places an
+    RFC 850 date's two-digit year. The zone `Z` and fractions of any length are spelled as Python 3.10 parses
     them, fractions past microseconds cut.
     """
     try:

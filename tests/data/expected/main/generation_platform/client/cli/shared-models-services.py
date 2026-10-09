@@ -23,11 +23,17 @@ class PetsService(Protocol):
         *,
         limit: int | None,
         cursor: str | None,
-    ) -> models.Pets | HTTPResult[models.Pets] | Response: ...
+    ) -> models.Pets | HTTPResult[models.Pets] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
         self,
         *,
         body: models.NewPet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """

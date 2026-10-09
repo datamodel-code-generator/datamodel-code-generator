@@ -2,29 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Final, Literal, TypeAlias, TypeGuard, get_args
+from typing import Final, Literal, TypeGuard
 
 from typing_extensions import TypeIs
 
 from .responses import HeadersView, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
-AuthReason: TypeAlias = Literal[
-    "provider_failed",
-    "invalid_expiry",
-    "oauth_error",
-    "timeout",
-    "reauthorization_required",
-]
-OAuthErrorCode: TypeAlias = Literal[
-    "invalid_request",
-    "invalid_client",
-    "invalid_grant",
-    "unauthorized_client",
-    "unsupported_grant_type",
-    "invalid_scope",
-]
-
-OAUTH_ERROR_CODES: Final[tuple[str, ...]] = get_args(OAuthErrorCode)
 _SERVER_ERROR: Final = 500
 _MESSAGE_PREFIX: Final = 500
 
@@ -265,33 +248,6 @@ _STATUS_ERRORS: Final[dict[int, type[APIStatusError]]] = {
 def status_error(status: int) -> type[APIStatusError]:
     """Return the exception class of a final status that the operation does not declare as a success."""
     return InternalServerError if status >= _SERVER_ERROR else _STATUS_ERRORS.get(status, APIStatusError)
-
-
-class AuthError(SDKError):
-    """Credential acquisition or a token exchange failed; the error itself keeps no credential material.
-
-    A `provider_failed` error's cause is the application's own exception from its credential callable or callback. An
-    OAuth rejection keeps the token endpoint's status and its standard error code.
-    """
-
-    reason: AuthReason
-
-    def __init__(
-        self,
-        *,
-        reason: AuthReason,
-        status_code: int | None = None,
-        oauth_error: OAuthErrorCode | None = None,
-        operation_id: str | None = None,
-        cause: BaseException | None = None,
-    ) -> None:
-        """Keep why credentials failed, never the provider's descriptions or secrets."""
-        super().__init__(reason=reason, operation_id=operation_id, cause=cause)
-        self.status_code = status_code
-        self.oauth_error: OAuthErrorCode | None = oauth_error
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("status_code", self.status_code), ("oauth_error", self.oauth_error))
 
 
 class DecodeError(SDKError):

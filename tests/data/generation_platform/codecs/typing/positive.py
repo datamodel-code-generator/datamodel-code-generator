@@ -5,11 +5,10 @@ from __future__ import annotations
 from typing_extensions import assert_type
 
 from datamodel_code_generator._runtime.model_codecs.media import JSONValue, json_bytes, json_value
+from datamodel_code_generator._runtime.model_codecs.parameter_reads import RawParameter, decode_parameter
 from datamodel_code_generator._runtime.model_codecs.parameters import (
     ParameterLocation,
     ParameterPlan,
-    RawParameter,
-    decode_parameter,
     pairs,
     querystring,
 )

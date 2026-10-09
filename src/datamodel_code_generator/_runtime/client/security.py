@@ -2,21 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from functools import lru_cache
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Mapping
+    from collections.abc import Callable, Mapping
 
     import httpx2
 
+    from .client import AsyncSend, Send
     from .urls import Origin
-
-    Send: TypeAlias = Callable[[httpx2.Request], httpx2.Response]
-    AsyncSend: TypeAlias = Callable[[httpx2.Request], Awaitable[httpx2.Response]]
-
-CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -31,9 +26,11 @@ class SecurityScheme:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class UnavailableSecurityScheme:
-    """A declared name whose unsupported or unresolved scheme cannot supply credentials."""
+    """A declared name whose unsupported or unresolved scheme cannot supply credentials, at no position."""
 
     name: str
+    location: None = field(default=None, init=False, repr=False)
+    wire_name: str = field(default="", init=False, repr=False)
 
 
 SecuritySchemeEntry: TypeAlias = SecurityScheme | UnavailableSecurityScheme
@@ -92,42 +89,3 @@ class Credentials:
     ) -> httpx2.Auth:
         """Return the HTTPX2 Auth that places a call's credentials on its requests."""
         raise NotImplementedError
-
-
-def positional(placements: tuple[Placement, ...]) -> bool:
-    """Return whether a placement sends a credential elsewhere than in Authorization, which HTTPX2 keeps in origin."""
-    return any(scheme.location != "header" or scheme.wire_name.lower() != "authorization" for scheme, _ in placements)
-
-
-@lru_cache(maxsize=32)
-def secret_names(schemes: tuple[SecuritySchemeEntry, ...]) -> tuple[frozenset[str], frozenset[str]]:
-    """Return the lowercase header names and the query names that carry credentials in a package's requests.
-
-    They are the credential and cookie headers and the positions of the package's declared security schemes, however
-    a request came to fill them.
-    """
-    declared = [scheme for scheme in schemes if isinstance(scheme, SecurityScheme)]
-    return (
-        CREDENTIAL_HEADERS.union(scheme.wire_name.lower() for scheme in declared if scheme.location == "header"),
-        frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
-    )
-
-
-@lru_cache(maxsize=32)
-def protected_positions(
-    schemes: tuple[SecuritySchemeEntry, ...],
-) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
-    """Return the lowercase header names, query names, and cookie names of a package's declared security schemes.
-
-    The Authorization header is left out, since HTTPX2 drops it from a redirect to another origin itself.
-    """
-    declared = [scheme for scheme in schemes if isinstance(scheme, SecurityScheme)]
-    return (
-        frozenset(
-            name
-            for scheme in declared
-            if scheme.location == "header" and (name := scheme.wire_name.lower()) != "authorization"
-        ),
-        frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
-        frozenset(scheme.wire_name for scheme in declared if scheme.location == "cookie"),
-    )

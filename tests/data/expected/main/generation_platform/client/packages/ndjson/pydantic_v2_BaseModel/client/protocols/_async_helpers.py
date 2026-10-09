@@ -13,7 +13,7 @@ import models
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.streams import AsyncEventStream, UnknownEvent, aopen_events
-from ..options import UNSET, RequestOptions, SessionOptions
+from ..options import UNSET, RequestOptions
 from . import StreamOptions, _plans
 
 
@@ -84,7 +84,6 @@ class AsyncRecordsAllNdjson:
         topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
@@ -93,7 +92,6 @@ class AsyncRecordsAllNdjson:
             (topic,),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -110,7 +108,6 @@ class AsyncRecordsLenientNdjson:
         topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
@@ -119,7 +116,6 @@ class AsyncRecordsLenientNdjson:
             (topic,),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -136,7 +132,6 @@ class AsyncRecordsTaggedNdjson:
         topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Created | models.Deleted | UnknownEvent]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return await aopen_events(
@@ -145,7 +140,6 @@ class AsyncRecordsTaggedNdjson:
             (topic,),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -163,7 +157,6 @@ class AsyncSearchAllNdjson:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncEventStream[models.Record]:
         """Open the NDJSON stream of POST /search, returning once its response is a declared success."""
         return await aopen_events(
@@ -174,5 +167,4 @@ class AsyncSearchAllNdjson:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )

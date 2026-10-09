@@ -82,6 +82,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "reference-errors",
         "setting-errors",
         "empty",
+        "empty-security",
         "querystring",
         "references",
         "evolution",

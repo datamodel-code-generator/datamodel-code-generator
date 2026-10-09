@@ -1,4 +1,4 @@
-# pets-protocols pydantic_v2.BaseModel
+# auth pydantic_v2.BaseModel
   family AuthError bases=('SDKError',)
   signature AuthError keyword-only=True required=('reason',)
   hints AuthError ('reason', 'status_code', 'oauth_error', 'operation_id', 'cause', 'return')

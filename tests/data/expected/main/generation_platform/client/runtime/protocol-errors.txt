@@ -2,8 +2,6 @@
   APIConnectionError: APIConnectionError < SDKError
   APIStatusError: APIStatusError < SDKError
   APITimeoutError: APITimeoutError < APIConnectionError < SDKError
-  AuthError: AuthError < SDKError
-  AuthReason: typing.Literal['provider_failed', 'invalid_expiry', 'oauth_error', 'timeout', 'reauthorization_required']
   AuthenticationError: AuthenticationError < APIStatusError < SDKError
   BadRequestError: BadRequestError < APIStatusError < SDKError
   ConfigurationError: ConfigurationError < SDKError

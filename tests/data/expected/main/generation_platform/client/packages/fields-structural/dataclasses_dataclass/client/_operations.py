@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan
+from ._runtime.client.multipart import MultipartForm, PartPlan
 from ._runtime.client.operations import (
     BodyFields,
     BodyMedia,
@@ -296,11 +296,13 @@ OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
             BodyMedia(
                 media_type='multipart/form-data',
                 kind='multipart',
-                parts=(
-                    PartPlan('photo'),
-                    PartPlan('caption', codec=model_bindings.codec_16),
+                form=MultipartForm(
+                    parts=(
+                        PartPlan('photo'),
+                        PartPlan('caption', codec=model_bindings.codec_16),
+                    ),
+                    additional=PartPlan(''),
                 ),
-                additional_part=PartPlan(''),
             ),
         ),
         default='multipart/form-data',

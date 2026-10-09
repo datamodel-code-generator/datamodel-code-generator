@@ -19,8 +19,8 @@ from urllib.parse import quote_plus, urlencode
 import httpx2
 from typing_extensions import TypeIs
 
-from .auth import SchemeAuth, TokenSource
-from .errors import OAUTH_ERROR_CODES, AuthError, ConfigurationError, OAuthErrorCode, SDKError
+from .auth import OAUTH_ERROR_CODES, AuthError, OAuthErrorCode, SchemeAuth, TokenSource
+from .errors import ConfigurationError, SDKError
 from .security import SecurityScheme
 from .timing import SYSTEM_CLOCK, Clock, checked_instance
 from .urls import URLValidationError, canonical_origin
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractAsyncContextManager
 
     from .auth import Secret
-    from .security import AsyncSend, Send
+    from .client import AsyncSend, Send
 
 __all__ = ("ClientCredentials", "RefreshToken", "TokenSet")
 
