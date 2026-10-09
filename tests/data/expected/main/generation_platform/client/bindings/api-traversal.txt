@@ -1,5 +1,3 @@
 # api-traversal
 render pydantic_v2.BaseModel default
-  diagnostic APIGenerationError
-  diagnostic E_METADATA_REQUIRED target /paths/~1root/post: The security of POST /root requires the unavailable scheme 'bearer'
-  diagnostic E_METADATA_REQUIRED target /paths/~1/get: The security of GET / requires the unavailable scheme 'bearer'
+  diagnostic Error: /paths/~1root/post: The security of POST /root requires the unavailable scheme 'bearer'; /paths/~1/get: The security of GET / requires the unavailable scheme 'bearer'

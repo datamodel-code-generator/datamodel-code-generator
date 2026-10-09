@@ -1,22 +1,3 @@
 # protocols-upload-errors
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols['errors.profile'].profile: protocols['errors.profile'].profile must be 'offset'
-  E_CONFIG_VALUE config protocols['errors.missing'].create: protocols['errors.missing'] needs 'create'
-  E_CONFIG_VALUE config protocols['errors.missing'].probe: protocols['errors.missing'] needs 'probe'
-  E_CONFIG_VALUE config protocols['errors.missing'].append: protocols['errors.missing'] needs 'append'
-  E_CONFIG_VALUE config protocols['errors.missing'].max_chunk_bytes: protocols['errors.missing'] needs 'max_chunk_bytes'
-  E_CONFIG_VALUE config protocols['errors.missing'].partial_commit: protocols['errors.missing'] needs 'partial_commit'
-  E_CONFIG_VALUE config protocols['errors.missing'].completion: protocols['errors.missing'] needs 'completion'
-  E_CONFIG_UNKNOWN config protocols['errors.values'].create.extra: protocols['errors.values'].create has no key 'extra'
-  E_CONFIG_VALUE config protocols['errors.values'].create.size.in: protocols['errors.values'].create.size.in must be 'path', 'query', 'header', 'cookie', 'querystring' or 'body'
-  E_CONFIG_VALUE config protocols['errors.values'].probe.remote_offset: protocols['errors.values'].probe needs 'remote_offset'
-  E_CONFIG_VALUE config protocols['errors.values'].append.offset: protocols['errors.values'].append needs 'offset'
-  E_CONFIG_VALUE config protocols['errors.values'].append.checksum.algorithm: protocols['errors.values'].append.checksum.algorithm must be 'md5', 'sha1', 'sha256' or 'sha512'
-  E_CONFIG_VALUE config protocols['errors.values'].append.checksum.encoding: protocols['errors.values'].append.checksum.encoding must be 'base64' or 'hex'
-  E_CONFIG_VALUE config protocols['errors.values'].append.checksum.algorithm_prefix: protocols['errors.values'].append.checksum.algorithm_prefix must be a boolean
-  E_CONFIG_VALUE config protocols['errors.values'].max_chunk_bytes: protocols['errors.values'].max_chunk_bytes must be a positive integer
-  E_CONFIG_VALUE config protocols['errors.values'].partial_commit: protocols['errors.values'].partial_commit must be 'allowed' or 'forbidden'
-  E_CONFIG_VALUE config protocols['errors.values'].completion.kind: protocols['errors.values'].completion.kind must be 'length' or 'operation'
-  E_CONFIG_VALUE config protocols['errors.completion'].completion.result_schema: protocols['errors.completion'].completion needs 'result_schema'
-  E_CONFIG_VALUE config protocols['errors.completion'].abort.operation: protocols['errors.completion'].abort needs 'operation'
+  Error: --client-protocols['errors.profile'].profile must be 'offset'; --client-protocols['errors.missing'] needs 'create'; --client-protocols['errors.missing'] needs 'probe'; --client-protocols['errors.missing'] needs 'append'; --client-protocols['errors.missing'] needs 'max_chunk_bytes'; --client-protocols['errors.missing'] needs 'partial_commit'; --client-protocols['errors.missing'] needs 'completion'; --client-protocols['errors.values'].create has no key 'extra'; --client-protocols['errors.values'].create.size.in must be 'path', 'query', 'header', 'cookie', 'querystring' or 'body'; --client-protocols['errors.values'].probe needs 'remote_offset'; --client-protocols['errors.values'].append needs 'offset'; --client-protocols['errors.values'].append.checksum.algorithm must be 'md5', 'sha1', 'sha256' or 'sha512'; --client-protocols['errors.values'].append.checksum.encoding must be 'base64' or 'hex'; --client-protocols['errors.values'].append.checksum.algorithm_prefix must be a boolean; --client-protocols['errors.values'].max_chunk_bytes must be a positive integer; --client-protocols['errors.values'].partial_commit must be 'allowed' or 'forbidden'; --client-protocols['errors.values'].completion.kind must be 'length' or 'operation'; --client-protocols['errors.completion'].completion needs 'result_schema'; --client-protocols['errors.completion'].abort needs 'operation'
