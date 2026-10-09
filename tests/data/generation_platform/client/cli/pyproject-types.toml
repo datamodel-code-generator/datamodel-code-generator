@@ -1,0 +1,44 @@
+[tool.datamodel-codegen]
+input = "options.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets/get"]
+resource = 1
+name = true
+request_media_type = []
+response_media_type = {}
+description = 5
+body_arguments = []
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets/get".parameter_names]
+"query:cursor" = "next_page"
+"query:limit" = []
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets/get".runtime]
+request_id_header = {}
+retry_after_ms_header = 1
+should_retry_header = true
+retry_safety = []
+auth_challenge_less_401 = "no"
+accepted_content_encodings = "gzip"
+success_statuses = [[]]
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets/post"]
+body_arguments = {}
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets/post".body_field_names."application/json"]
+name = "pet_name"
+tag = {}
+
+[tool.datamodel-codegen.client-operations."/paths/~1pets/post".runtime.idempotency]
+header_name = []

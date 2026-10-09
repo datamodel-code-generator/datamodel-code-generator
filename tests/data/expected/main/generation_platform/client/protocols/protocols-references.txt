@@ -2,15 +2,15 @@
 render pydantic_v2.BaseModel
   APIGenerationError
   E_OPERATION_REF config protocols['users.unknown'].operation /paths/~1people/get: protocols['users.unknown'].operation '/paths/~1people/get' selects no root path operation that --openapi-include-paths keeps
-  E_OPERATION_REF config protocols['users.external'].operation /paths/~1users/get: protocols['users.external'].operation '/paths/~1users/get' in '../helpers-external.yaml' selects no root path operation that --openapi-include-paths keeps
+  E_OPERATION_REF config protocols['users.external'].operation /paths/~1users/get: protocols['users.external'].operation '/paths/~1users/get' in '../helpers-external.yaml' (<root>/pydantic_v2_BaseModel/helpers-external.yaml) selects no root path operation that --openapi-include-paths keeps
   E_OPERATION_REF config protocols['users.created'].operation /webhooks/userCreated/post: protocols['users.created'].operation '/webhooks/userCreated/post' selects no root path operation that --openapi-include-paths keeps
   E_OPERATION_REF config protocols['audit.all'].operation /paths/~1admin~1audit/get: protocols['audit.all'].operation '/paths/~1admin~1audit/get' selects no root path operation that --openapi-include-paths keeps
-  E_CONFIG_VALUE config protocols['users.schema'].item_schema: protocols['users.schema'].item_schema names a document outside the accepted input
+  E_CONFIG_VALUE config protocols['users.schema'].item_schema: protocols['users.schema'].item_schema names a schema in '../other.yaml' (<root>/pydantic_v2_BaseModel/other.yaml) outside the accepted input
   E_CONFIG_VALUE config protocols['users.query'].bindings[0].target /paths/~1users/get: protocols['users.query'].bindings[0].target: GET /users has no query parameter 'limit'
   E_CONFIG_VALUE config protocols['users.header'].bindings[0].target /paths/~1users/get: protocols['users.header'].bindings[0].target: GET /users has no header parameter 'X-Snapshot'
   E_CONFIG_VALUE config protocols['users.body'].continuation.write /paths/~1users/get: protocols['users.body'].continuation.write: GET /users has no request body
   E_CONFIG_VALUE config protocols['jobs.run'].bindings[0].target /paths/~1jobs~1{jobId}/get: protocols['jobs.run'].bindings[0].target: GET /jobs/{jobId} has no path parameter 'id'
   E_OPERATION_REF config protocols['jobs.run'].result.operation /paths/~1jobs~1{jobId}~1output/get: protocols['jobs.run'].result.operation '/paths/~1jobs~1{jobId}~1output/get' selects no root path operation that --openapi-include-paths keeps
-  E_CONFIG_VALUE config protocols['users.parsed'].item_schema: protocols['users.parsed'].item_schema names a document outside the accepted input
+  E_CONFIG_VALUE config protocols['users.parsed'].item_schema: protocols['users.parsed'].item_schema names a schema in 'helpers-external.yaml' (<root>/pydantic_v2_BaseModel/protocols/helpers-external.yaml) outside the accepted input
   E_CONFIG_VALUE config protocols['users.bracket'].operation.document: protocols['users.bracket'].operation.document 'http://[' is not a document name
   E_CONFIG_VALUE config protocols['users.null'].item_schema.document: protocols['users.null'].item_schema.document 'helpers\x00.yaml' is not a document name

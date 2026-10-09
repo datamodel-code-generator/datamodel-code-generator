@@ -122,8 +122,11 @@ def _error_message(item: Diagnostic, option_prefix: str | None) -> str:
             prefix = None if option_prefix is None else f"{option_prefix}-"
         field = name.split(".", 1)[0].split("[", 1)[0]
         option = name if prefix is None else f"--{prefix}{field.replace('_', '-')}{name[len(field) :]}"
+        holder, _, member = name.rpartition(".")
         if path in message:
             message = message.replace(path, option, 1)
+        elif holder and member.isidentifier() and holder in message:
+            message = message.replace(holder, option.removesuffix(f".{member}"), 1)
         else:
             location = option
     return message if location is None else f"{location}: {message}"

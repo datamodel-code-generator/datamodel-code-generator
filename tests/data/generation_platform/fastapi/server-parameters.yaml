@@ -71,7 +71,7 @@ paths:
       parameters:
         - {name: level, in: path, required: true, schema: {type: integer, enum: [1, 2]}}
         - {name: mode, in: query, schema: {type: integer, enum: [1, 2]}}
-        - {name: ratio, in: query, schema: {type: number, enum: [0.5, 1.5]}}
+        - {name: ratio, in: query, schema: {type: number, enum: [0.5, 1.5, 2.2]}}
         - {name: X-Flag, in: header, schema: {type: boolean, const: true}}
         - {name: kind, in: query, schema: {type: string, enum: [a, b]}}
         - {name: tier, in: query, schema: {anyOf: [{type: integer, enum: [1, 2]}, {type: "null"}]}}
