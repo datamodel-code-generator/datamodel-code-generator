@@ -43,7 +43,6 @@ from websockets.uri import parse_uri
 
 from ..client.errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, ProtocolSizeError
 from ..client.responses import HeadersView
-from ..client.timing import real_end, wait_left
 from .errors import (
     MAX_RAW_PREFIX,
     HandshakeCondition,
@@ -63,7 +62,7 @@ if TYPE_CHECKING:
     from websockets.datastructures import HeadersLike
     from websockets.http11 import Response
 
-    from ..client.timing import Deadline
+    from ..client.timing import Budget
     from .websocket_types import ResolvedWebSocketTransportOptions, ResolvedWSOptions, WebSocketOpenRequest
 
 __all__ = ("AsyncNativeConnection", "AsyncNativeConnector", "NativeConnection", "NativeConnector")
@@ -249,9 +248,9 @@ def _closed(error: ConnectionClosed, parsed: BaseException | None, limit: int) -
     )
 
 
-def _left(deadline: Deadline | None, end: float | None) -> float | None:
+def _left(deadline: Budget | None) -> float | None:
     """Return the time a wait has left: until its deadline's clock expires it, or real time reaches the wait's end."""
-    return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
+    return None if deadline is None else deadline.remaining()
 
 
 def _wait(left: float | None) -> float | None:
@@ -322,7 +321,7 @@ class NativeConnector(_Connector):
         self,
         request: WebSocketOpenRequest,
         *,
-        deadline: Deadline | None,  # noqa: ARG002
+        deadline: Budget | None,  # noqa: ARG002
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> NativeConnection:
@@ -350,7 +349,7 @@ class AsyncNativeConnector(_Connector):
         self,
         request: WebSocketOpenRequest,
         *,
-        deadline: Deadline | None,  # noqa: ARG002
+        deadline: Budget | None,  # noqa: ARG002
         options: ResolvedWSOptions,
         transport: ResolvedWebSocketTransportOptions,
     ) -> AsyncNativeConnection:
@@ -399,7 +398,7 @@ class NativeConnection:
     def _closed(self, error: ConnectionClosed) -> Exception:
         return _closed(error, self._connection.protocol.parser_exc, self._limit)
 
-    def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
+    def send(self, data: bytes, *, text: bool, deadline: Budget | None) -> None:
         """Send one whole message, refusing it when its deadline passed before writing."""
         if deadline is not None and deadline.remaining() <= 0:
             raise TimeoutError
@@ -408,7 +407,7 @@ class NativeConnection:
         except ConnectionClosed as error:
             raise _undelivered(error, self._closed(error)) from None
 
-    def receive(self, *, deadline: Deadline | None) -> WSFrame:
+    def receive(self, *, deadline: Budget | None) -> WSFrame:
         """Return the next whole message, raising TimeoutError when the deadline passes first."""
         try:
             data = self._connection.recv(None if deadline is None else deadline.remaining())
@@ -416,7 +415,7 @@ class NativeConnection:
             raise self._closed(error) from None
         return _frame(data)
 
-    def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
+    def ping(self, payload: bytes, *, deadline: Budget | None) -> float:
         """Send a ping and return the seconds until its pong, raising TimeoutError when the deadline passes first.
 
         An empty payload becomes four random bytes, so pings sent at once never share one.
@@ -428,8 +427,7 @@ class NativeConnection:
             raise self._closed(error) from None
         except ConcurrencyError:
             raise _pinging() from None
-        end = None if deadline is None else real_end(deadline.remaining())
-        if not pong.wait(_wait(_left(deadline, end))):
+        if not pong.wait(_wait(_left(deadline))):
             raise TimeoutError
         if (protocol := connection.protocol).state is State.CLOSED:
             raise self._closed(protocol.close_exc)
@@ -466,7 +464,7 @@ class AsyncNativeConnection:
     def _closed(self, error: ConnectionClosed) -> Exception:
         return _closed(error, self._connection.protocol.parser_exc, self._limit)
 
-    async def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
+    async def send(self, data: bytes, *, text: bool, deadline: Budget | None) -> None:
         """Send one message; the client bounds the await by the deadline itself."""
         del deadline
         try:
@@ -474,7 +472,7 @@ class AsyncNativeConnection:
         except ConnectionClosed as error:
             raise _undelivered(error, self._closed(error)) from None
 
-    async def receive(self, *, deadline: Deadline | None) -> WSFrame:
+    async def receive(self, *, deadline: Budget | None) -> WSFrame:
         """Return the next whole message; the client bounds the await by the deadline itself."""
         try:
             with anyio.fail_after(None if deadline is None else max(0.0, deadline.remaining())):
@@ -483,7 +481,7 @@ class AsyncNativeConnection:
             raise self._closed(error) from None
         return _frame(data)
 
-    async def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
+    async def ping(self, payload: bytes, *, deadline: Budget | None) -> float:
         """Send a ping and return the seconds until its pong; the client bounds the await by the deadline itself.
 
         An empty payload becomes four random bytes, so pings sent at once never share one.

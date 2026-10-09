@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, 
 
 from typing_extensions import Self, TypeVar
 
-from ..client.bodies import AsyncBodyFactory, BodyFactory
 from ..client.errors import APIConnectionError, APIStatusError, ConfigurationError, DeliveryState, is_transport
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
@@ -50,14 +49,13 @@ from .sources import UploadProgress
 from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import Callable
     from datetime import datetime
     from types import TracebackType
 
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
-    from ..client.timing import Deadline
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
     from .pagination import PageBinding
@@ -195,7 +193,6 @@ class _Limits:
     max_parts: int | None = 10000
     max_uncertain_probes: int = 3
     total_timeout: float | None = None
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -248,7 +245,6 @@ def _limits(
         max_parts=layered(kinds, "max_parts", _DEFAULTS.max_parts),
         max_uncertain_probes=layered(kinds, "max_uncertain_probes", _DEFAULTS.max_uncertain_probes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         options=request,
         clock=core.clock,
     )
@@ -296,13 +292,13 @@ class _Content:
                 return view.nbytes
         return max(file.seek(0, SEEK_END) - self.base, 0)
 
-    def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes | memoryview:
-        """Return up to `length` bytes from an offset of the content, fewer only at its end, in one buffer."""
+    def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes:
+        """Return up to `length` bytes from an offset of the content, fewer only at its end, as the bytes sent."""
         if (file := self.file) is None:
             with memoryview(cast("bytes", self.source)) as view, view.cast("B") as flat:
                 return flat[start : start + length].tobytes()
         file.seek(self.base + start)
-        buffer = memoryview(bytearray(length))
+        parts: list[bytes] = []
         got = 0
         while got < length:
             data = cast("object", file.read(min(length - got, _READ)))
@@ -310,9 +306,9 @@ class _Content:
                 raise _invalid(plan, ("source",), "wrong_capability")
             if not data:
                 break
-            buffer[got : got + len(data)] = data
+            parts.append(data)
             got += len(data)
-        return buffer[:got]
+        return b"".join(parts)
 
 
 def _content(plan: UploadPlan[T, C], source: object) -> _Content:
@@ -351,69 +347,6 @@ def _layout(plan: UploadPlan[T, C], limits: _Limits, size: int, chunk: int) -> i
     if (limit := limits.max_parts) is not None and -(-size // chunk) > limit:
         raise _invalid(plan, ("upload_options", "max_parts"))
     return chunk
-
-
-class _Slices:
-    """One attempt of an append's body: the unconfirmed part of a chunk's buffer, sent in read-buffer slices."""
-
-    __slots__ = ("_view",)
-
-    def __init__(self, view: memoryview) -> None:
-        self._view = view
-
-    @property
-    def content_length(self) -> int:
-        """Return the number of body bytes."""
-        return len(self._view)
-
-    @property
-    def content_type(self) -> None:
-        """Name no media type; the operation's request media names it."""
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        """Yield the body in slices of at most one read buffer."""
-        view = self._view
-        for start in range(0, len(view), _READ):
-            yield bytes(view[start : start + _READ])
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        """Yield the body in slices of at most one read buffer."""
-        for data in self.iter_bytes():
-            yield data
-
-    def close(self) -> None:
-        """Hold nothing to release."""
-
-    async def aclose(self) -> None:
-        """Hold nothing to release."""
-
-
-class _Factory:
-    """Build a new attempt of the same unconfirmed bytes for each send of an append."""
-
-    __slots__ = ("_view",)
-
-    def __init__(self, view: memoryview) -> None:
-        self._view = view
-
-    def __call__(self, context: object, /) -> _Slices:
-        """Return a new attempt of the bytes."""
-        del context
-        return _Slices(self._view)
-
-
-class _AsyncFactory:
-    """Build a new asyncio attempt of the same unconfirmed bytes for each send of an append."""
-
-    __slots__ = ("_view",)
-
-    def __init__(self, view: memoryview) -> None:
-        self._view = view
-
-    async def __call__(self, context: object, /) -> _Slices:
-        """Return a new attempt of the bytes."""
-        del context
-        return _Slices(self._view)
 
 
 class _Upload(Generic[T]):
@@ -669,7 +602,7 @@ class _Upload(Generic[T]):
             return False
         raise self._offset_error(end, remote, info)
 
-    def _buffer(self) -> tuple[memoryview, int]:
+    def _buffer(self) -> tuple[bytes, int]:
         """Read the unconfirmed bytes of the chunk holding the confirmed offset, and return them with the chunk's end.
 
         The last chunk is read with one byte more, to find content past its end. Content whose size is not the upload's
@@ -680,7 +613,7 @@ class _Upload(Generic[T]):
         content = self._content
         data = content.read(self._plan, start, end - start + (end == size))
         if len(data) == end - start:
-            return memoryview(data), end
+            return data, end
         with self._guard:
             self._changed = True
         plan = self._plan
@@ -692,11 +625,9 @@ class _Upload(Generic[T]):
             parent_session_id=self._session.session_id,
         )
 
-    def _append_request(
-        self, payload: object, data: memoryview
-    ) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+    def _append_request(self, payload: bytes) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         plan = self._plan
-        arguments = plan.appended.request((*self._bound[1], *_written(plan, self._confirmed, data)))[0]
+        arguments = plan.appended.request((*self._bound[1], *_written(plan, self._confirmed, payload)))[0]
         return lambda: (arguments, payload, None)
 
     def _probe_request(self) -> tuple[tuple[object, ...], object, None]:
@@ -824,7 +755,6 @@ def _session(limits: _Limits) -> OperationSession:
 
     return OperationSession(
         total_timeout=limits.total_timeout,
-        deadline=limits.deadline,
         clock=limits.clock,
     )
 
@@ -884,13 +814,12 @@ class UploadHandle(_Upload[T]):
         start = self._confirmed
         buffer, end = self._buffer()
         while self._confirmed < end:
-            unconfirmed = buffer[self._confirmed - start :]
-            payload = BodyFactory(_Factory(unconfirmed), content_length=len(unconfirmed))
+            payload = buffer[self._confirmed - start :]
             self._sending(end)
             try:
                 self._core.execute_page(
                     self._plan.appended.call,
-                    self._append_request(payload, unconfirmed),
+                    self._append_request(payload),
                     _ignored,
                     body=payload,
                     media_type=None,
@@ -1050,13 +979,12 @@ class AsyncUploadHandle(_Upload[T]):
         start = self._confirmed
         buffer, end = self._buffer()
         while self._confirmed < end:
-            unconfirmed = buffer[self._confirmed - start :]
-            payload = AsyncBodyFactory(_AsyncFactory(unconfirmed), content_length=len(unconfirmed))
+            payload = buffer[self._confirmed - start :]
             self._sending(end)
             try:
                 await self._core.execute_page(
                     self._plan.appended.call,
-                    self._append_request(payload, unconfirmed),
+                    self._append_request(payload),
                     _ignored,
                     body=payload,
                     media_type=None,

@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
-    from ..client.timing import Clock, Deadline
+    from ..client.timing import Clock
     from ..client.urls import Origin
     from .client import AsyncClientCore, ClientCore
     from .references import OperationRef
@@ -382,7 +382,6 @@ class _Limits:
     max_pages: int | None = None
     max_items: int | None = None
     total_timeout: float | None = None
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -433,7 +432,6 @@ def _limits(
         max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
         max_items=layered(kinds, "max_items", _DEFAULTS.max_items),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         options=request,
         clock=core.clock,
     )
@@ -724,7 +722,6 @@ class _Walk(Generic[T, P]):
 
             session = self.session = OperationSession(
                 total_timeout=limits.total_timeout,
-                deadline=limits.deadline,
                 clock=limits.clock,
             )
         return session

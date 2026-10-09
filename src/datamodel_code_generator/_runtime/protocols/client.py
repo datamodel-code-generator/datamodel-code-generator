@@ -33,7 +33,6 @@ from ..client.errors import (
     APIConnectionError,
     ConfigurationError,
     DeliveryState,
-    is_phase_timeout,
     too_large,
 )
 from ..client.logical import LogicalCallContext
@@ -43,7 +42,7 @@ from ..client.options import HeaderPatch, IdempotencyKey, QueryPatch, RequestOpt
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
 from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
-from ..client.timing import ResolvedTimeoutOptions, on_clock
+from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, request_origin, strip_query
 from ..model_codecs.unset import UNSET, Unset
 from .client_options import ClientOptions
@@ -57,7 +56,7 @@ if TYPE_CHECKING:
     from ..client.responses import ResponseInfo
     from ..client.retry import RetryDelay
     from ..client.security import SecuritySchemeEntry
-    from ..client.timing import Deadline
+    from ..client.timing import Budget
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
     from .options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
@@ -187,13 +186,13 @@ class _SessionCall(Call):
         settings: Settings,
         operation: OperationPlan[object],
         session: OperationSession,
-        bound: Deadline | None = None,
+        bound: Budget | None = None,
     ) -> None:
         """Bind the call to its session, ending it no later than the session or a helper's own bound does."""
         super().__init__(settings, operation)
         self.session = session
         self.url = ""
-        for limit in (session.deadline, None if bound is None else on_clock(bound, settings.clock)):
+        for limit in (session.deadline, bound):
             if limit is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
                 self.deadline = limit
 
@@ -335,23 +334,12 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         settings = self._call_settings(options, None)
         return settings.headers, settings.query
 
-    def reconnects_after(
-        self, error: APIConnectionError, options: RequestOptions | None, operation_id: str | None
-    ) -> bool:
-        """Return whether a transport failure reading a stream's body is one an automatic reconnection may follow.
-
-        It is a read-phase failure the shared retry classification retries. A read timeout qualifies only when the
-        call's own read timeout set its cap, not the stream's idle limit, which wins a tie.
-        """
-        if error.phase != "read" or not isinstance(
+    @staticmethod
+    def reconnects_after(error: APIConnectionError) -> bool:
+        """Allow reconnection after native read failures."""
+        return error.phase == "read" and isinstance(
             error.cause, (httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError)
-        ):
-            return False
-        if not is_phase_timeout(error):
-            return True
-        settings = self._call_settings(options, operation_id)
-        read, idle = settings.stream_read_timeout, settings.stream_idle_timeout
-        return read is not None and (idle is None or read < idle)
+        )
 
     def waiting(
         self, options: RequestOptions | None, session: OperationSession, operation_id: str | None
@@ -450,7 +438,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
                         tuple(sorted(capabilities.allowed_origins)),
                         tuple(sorted(capabilities.managed_headers)),
                         tuple(sorted(capabilities.managed_query)),
-                        capabilities.requires_body_digest,
                     )
                     for capabilities in (signer.capabilities for signer in bound.signers)
                 ),
@@ -694,18 +681,18 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
-            call.check("decode")
+
             data, wire, content = _page(decoder, info, received, call)
             result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
-            call.check("decode")
+
             return Response(data=data, info=info), result
 
         try:
             completed, result = self._run(call, body, prepare, receive)
-            call.check("decode")
+
             if events is not None:
                 events.finish(completed)
-            call.check("decode")
+
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if failed is not None:
@@ -737,8 +724,8 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
-            call.check("decode")
-            built = (
+
+            return (
                 not_modified(info, call.redirects_followed > 0)
                 if info.status_code == _NOT_MODIFIED
                 else modified(
@@ -747,15 +734,13 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
                     call.redirects_followed > 0,
                 )
             )
-            call.check("decode")
-            return built
 
         try:
             completed, result = self._run(call, UNSET, lambda: (request, UNSET), receive)
-            call.check("decode")
+
             if events is not None:
                 events.finish(completed)
-            call.check("decode")
+
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if events is not None:
@@ -805,12 +790,12 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
 
         try:
             result = self._run(call, UNSET, prepare, receive, opener)
-            call.check("send")
+
             if result.info.status_code != _SWITCHING:
                 refused(result)
             if events is not None:
                 events.finish(UNSET, handed_off=True)
-            call.check("send")
+
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
@@ -861,18 +846,18 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
-            call.check("decode")
+
             data, wire, content = _page(decoder, info, received, call)
             result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
-            call.check("decode")
+
             return Response(data=data, info=info), result
 
         try:
-            completed, result = await call.bounded(lambda: self._run(call, body, prepare, receive))
-            call.check("decode")
+            completed, result = await self._run(call, body, prepare, receive)
+
             if events is not None:
                 await events.afinish(completed)
-            call.check("decode")
+
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if failed is not None:
@@ -904,8 +889,8 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
-            call.check("decode")
-            built = (
+
+            return (
                 not_modified(info, call.redirects_followed > 0)
                 if info.status_code == _NOT_MODIFIED
                 else modified(
@@ -914,15 +899,13 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
                     call.redirects_followed > 0,
                 )
             )
-            call.check("decode")
-            return built
 
         try:
-            completed, result = await call.bounded(lambda: self._run(call, UNSET, lambda: (request, UNSET), receive))
-            call.check("decode")
+            completed, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
+
             if events is not None:
                 await events.afinish(completed)
-            call.check("decode")
+
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)
             if events is not None:
@@ -966,15 +949,13 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
             return await self._raw_response(response, info, call, stream=True)
 
         try:
-            result = await call.bounded(
-                lambda: self._run(call, UNSET, prepare, receive, opener), cleanup=AsyncRawResponse.aclose
-            )
-            call.check("send")
+            result = await self._run(call, UNSET, prepare, receive, opener)
+
             if result.info.status_code != _SWITCHING:
                 await arefused(result)
             if events is not None:
                 await events.afinish(UNSET, handed_off=True)
-            call.check("send")
+
             call.handoff()
         except BaseException as error:  # ruff: ignore[blind-except]
             failure = call.stopped(error)

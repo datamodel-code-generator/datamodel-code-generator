@@ -120,7 +120,6 @@ __all__ = [
 _OPTION_NAMES: Final = (
     "ClientOptions",
     "Clock",
-    "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
     "QueryPatch",
@@ -545,21 +544,7 @@ def _protocols(capabilities: Capabilities) -> str:
     return "".join(text)
 
 
-_BODY_NAMES: Final = (
-    "AsyncBinaryBody",
-    "AsyncBodyAttempt",
-    "AsyncBodyAttemptFactory",
-    "AsyncBodyFactory",
-    "AsyncFileBody",
-    "AsyncStreamBody",
-    "BodyAttempt",
-    "BodyAttemptContext",
-    "BodyAttemptFactory",
-    "BodyFactory",
-    "FileBody",
-    "StreamBody",
-    "SyncBinaryBody",
-)
+_BODY_NAMES: Final = ("AsyncBinaryBody", "SyncBinaryBody")
 _MULTIPART_NAMES: Final = (
     "AsyncBodyInput",
     "AsyncMultipartBody",
@@ -1295,7 +1280,7 @@ class _Resources(_Typing):
     ) -> tuple[list[_Variant], tuple[_Argument, ...]]:
         """Return the body signatures of an operation and the body keywords of its implementation.
 
-        A binary body takes the bytes, file, stream, and factory inputs of the client's mode. A body declared in a
+        A binary body takes the bytes, file, path, and iterable inputs of the client's mode. A body declared in a
         media range such as image/* takes the concrete media type a call sends within it as any string, and a body
         without declared media takes nothing.
         """
@@ -3225,7 +3210,7 @@ def {signature} -> RequestOptions:
     def runtime_documentation(self, capabilities: Capabilities) -> str:
         """Render public runtime settings and their resource and delivery obligations."""
         oauth = capabilities.oauth
-        clock = "`OAuthProviderOptions(clock=...)` does so for a provider, and " if oauth else ""
+        clock = "A provider uses `OAuthProviderOptions(clock=...)` for its own time sources." if oauth else ""
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
@@ -3236,29 +3221,30 @@ Import `Client` and `AsyncClient` from `{self.config.package}` and the records b
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
-`deadline=None` clear their own limits.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
+removes the optional budget across attempts.
+The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
 |---|---|
-| connect / read / write / pool timeout | 5 / 30 / 30 / 5 seconds |
-| total timeout | 60 seconds from logical-call entry |
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
 | retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
 | retry statuses | 408, 429, 500, 502, 503, 504 |
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
-Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
-across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
-phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
-Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
-`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
-{clock}`Deadline.after(seconds, clock=...)` creates a deadline
-on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
+Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
+retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
+cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
+Native cancellation remains the original exception.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call.
+{clock}
 
 ## Retry decisions and delays
 
@@ -3277,8 +3263,8 @@ an options value cannot invent that declaration, and explicit None disables an i
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
 including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
 still raise. Stream acquisition can retry; body reads never retry after handle handoff.
-After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
-phase cap still applies. Close an abandoned stream to release its response and limiter permit.
+After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
+set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
 
 ## Idempotency and replayable input
 
@@ -3290,16 +3276,18 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 
 
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
-`FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and
-their final position is not restored. `FileBody.from_path(path)` and its async counterpart reopen per attempt and
-check initial device/inode/size/mtime; unchanged stat data is not proof of identical content. Reads use bounded chunks.
-One-shot `StreamBody`/`AsyncStreamBody` input is never buffered or spooled implicitly and cannot replay after use.
-
-`BodyFactory`/`AsyncBodyFactory` must return a fresh SDK-owned attempt with identical payload for every invocation.
-The SDK closes every returned attempt. Freshness is the factory's general obligation; detection uses a call-owned
-ledger and an immediate cross-call guard, not indefinite object history. Fingerprint/length/stat checks detect some
-changes without buffering the entire payload. Multipart can replay only when every part can replay. Borrowed
-resources remain caller-owned; close explicitly created async file adapters to release their worker.
+A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
+`bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
+`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, text-mode or closed files and
+paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending.
+Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
+The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
+async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
+all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
+read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
+loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+call running in a thread before it closes the file.
 
 ## Redirects and transport construction
 
@@ -3352,14 +3340,10 @@ Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration
 retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
 acquisition remains allowed. These callbacks start no builtin token exchange.
 
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names. They receive
-final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing, before attempt
-hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the
-reason `signing_failed` preserves callback failures without transport retry. No effective auth means no provider,
-signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
-seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
-without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is never
-implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
+They receive final per-hop method/URL/raw query/headers after credential and body framing, before attempt hooks and
+sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop. `AuthError` with the reason
+`signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
@@ -3400,10 +3384,9 @@ No operation of this package declares request compression, so every request is s
 bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
 when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
-Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
 multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
-uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
-accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
+uncompressed; a one-shot body stays one-shot. A redirect that drops the body also drops Content-Encoding.
 
 Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
 followed URLs stay uncompressed. Token requests are never compressed.
@@ -3648,8 +3631,8 @@ event type and no event ID, and a declared error record raises `StreamRemoteErro
 ## {self.stream_label} streams
 
 An {self.stream_label} helper's `open` is one session holding one logical call. The call's total timeout bounds only
-acquiring the response, which must be a declared success of the helper's media type; afterward the stream's idle
-timeout, the call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's
+acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
 options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
 from:
 
@@ -3659,7 +3642,7 @@ from:
 
 | Limit | Effective default |
 |---|---|
-| idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
+| idle timeout | the native read timeout; None removes it |
 | line size | 256 KiB |
 | event data size | 1 MiB |
 | session total timeout | None |
@@ -3695,7 +3678,7 @@ the operation's `APIStatusError`. Each limit comes from the call's options, then
 | Limit | Effective default |
 |---|---|
 | open timeout | 5 seconds, also capped by the connect, read, and write timeouts and the deadline; None removes it |
-| idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
+| idle timeout | the native read timeout; None removes it |
 | message size | 1 MiB, decompressed |
 | received frames buffered before reading pauses | 16 |
 | send timeout | 30 seconds, waiting for earlier sends included; None removes it |

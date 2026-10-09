@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 from unittest.mock import patch
 
@@ -129,6 +130,20 @@ class _AsyncClosing(_Closing):
         del context
         await self.close()
         return self.material
+
+
+class _ElapsedSecret(AsyncSecret):
+    """A public secret callback completing after the provider's clock budget."""
+
+    def __init__(self, material: object, now: list[float], elapsed: float) -> None:
+        super().__init__(material)
+        self.now = now
+        self.elapsed = elapsed
+
+    async def get(self, context: object) -> object:
+        material = await super().get(context)
+        self.now[0] += self.elapsed
+        return material
 
 
 def _insecure_context(*, keep_certificates: bool = False) -> ssl.SSLContext:
@@ -360,8 +375,12 @@ def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: lis
             lines.append(f"    later get = {_outcome(lambda answered=answered: answered.get(_context(auth)))}")
     exchange.respond(json_reply(200, b"[" * 60000))
     with provider() as nested:
-        lines.append(f"  deeply nested success with exhausted parser = {_exhausted_parser(lambda: nested.get(_context(auth)))}")
-    slow = auth.OAuthProviderOptions(refresh_timeout=1.0, transport=options.TransportOptions(ssl_context=_contexts()[1]))
+        lines.append(
+            f"  deeply nested success with exhausted parser = {_exhausted_parser(lambda: nested.get(_context(auth)))}"
+        )
+    slow = auth.OAuthProviderOptions(
+        refresh_timeout=1.0, transport=options.TransportOptions(ssl_context=_contexts()[1])
+    )
     exchange.respond(delayed(1.5, json_reply(200, _ISSUED)))
     with auth.ClientCredentialsProvider(token_url, client_id="c", client_secret=secret, options=slow) as expiring:
         lines.append(f"  session expires while reading = {_outcome(lambda: expiring.get(_context(auth)))}")
@@ -506,10 +525,6 @@ def _single_flight(auth: ModuleType, lines: list[str]) -> None:
         script.entered.wait(LIMIT)
         second = Caller(lambda: shared.get(_context(auth)), _outcome)
         second.start()
-        options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-        frozen = options.Clock(monotonic=lambda: 1000.0)
-        bounded = _context(auth, deadline=options.Deadline.after(0, clock=frozen))
-        lines.append(f"  caller whose deadline ends while waiting = {_outcome(lambda: shared.get(bounded))}")
         gate.set()
         for caller in (first, second):
             caller.join(LIMIT)
@@ -575,10 +590,6 @@ def _faults(auth: ModuleType, errors: ModuleType, lines: list[str]) -> None:
         except KeyboardInterrupt:
             lines.append("  interrupted send = KeyboardInterrupt")
         lines.append(f"    later get = {_outcome(lambda: shared.get(_context(auth)))}")
-    options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-    with provider() as shared:
-        passed = _context(auth, deadline=options.Deadline.after(0))
-        lines.append(f"  caller deadline already passed = {_outcome(lambda: shared.get(passed))}")
     script = Script(_reply(_ISSUED))
     native = script.client()
     shared = auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, http_client=native)
@@ -668,12 +679,26 @@ async def _async_faults(auth: ModuleType, lines: list[str]) -> None:
     ):
         async with provider(Script(*replies), client_secret, total) as shared:
             lines.append(f"  {label} = {await _aoutcome(lambda shared=shared: shared.get(_context(auth)))}")
-    options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-    async with provider(Script()) as shared:
-        passed = _context(auth, deadline=options.Deadline.after(0))
-        lines.append(f"  async caller deadline already passed = {await _aoutcome(lambda: shared.get(passed))}")
     async with provider(Script(Response(200, granted), hold=asyncio.Event()), total=0.1) as shared:
         lines.append(f"  async session expires while sending = {await _aoutcome(lambda: shared.get(_context(auth)))}")
+    source = Path(__file__).parents[1] / "generation_platform/client/timeout-boundaries.json"
+    vector = json.loads(source.read_text())
+    options = importlib.import_module(auth.__package__ + ".options")
+    now = [0.0]
+    script = Script()
+    async with auth.AsyncClientCredentialsProvider(
+        _TOKEN,
+        client_id="c",
+        client_secret=_ElapsedSecret(auth.ApiKeyCredential("s"), now, vector["secret_elapsed"]),
+        options=auth.OAuthProviderOptions(
+            refresh_timeout=vector["secret_timeout"], clock=options.Clock(monotonic=lambda: now[0])
+        ),
+        http_client=script.async_client(),
+    ) as shared:
+        lines.append(
+            f"  async secret completed past the clock budget = {await _aoutcome(lambda: shared.get(_context(auth)))}"
+        )
+        lines.append(f"    token requests sent = {script.sends}")
     closing = _AsyncClosing(auth)
     racing = Script(Response(200, granted))
     shared = provider(racing, closing)
@@ -748,7 +773,9 @@ async def _async_renewal(package: str, auth: ModuleType, lines: list[str]) -> No
         start = now
         await shared.get(_context(auth))
         now = start + 95
-        lines.append(f"  async failed renewal before the token expires = {await _aoutcome(lambda: shared.get(_context(auth)))}")
+        lines.append(
+            f"  async failed renewal before the token expires = {await _aoutcome(lambda: shared.get(_context(auth)))}"
+        )
         now = start + 101
         expired = await _aoutcome(lambda: shared.get(_context(auth)))
         lines.append(f"    once the token expired = {expired} sends={script.sends}")

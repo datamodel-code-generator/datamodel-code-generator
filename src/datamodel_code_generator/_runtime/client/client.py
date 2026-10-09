@@ -19,24 +19,14 @@ from functools import partial
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_plus, urlsplit
 
-import anyio
 import httpx2
 from typing_extensions import Self, TypeIs
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
 from ..model_codecs.unset import UNSET, Unset
-from .bodies import (
-    AsyncBodyFactory,
-    AsyncFileBody,
-    AsyncStreamBody,
-    BodyAttemptContext,
-    BodyFactory,
-    EncodedAttempt,
-    FileBody,
-    StreamBody,
-)
-from .body_sources import RequestCoding, bind_async_body, bind_body, capture_async_body, capture_body
+from .bodies import EncodedAttempt, is_file_input
+from .body_sources import RequestCoding, bind_body, capture_body
 from .coding import ContentDecoder
 from .errors import (
     APIConnectionError,
@@ -51,7 +41,6 @@ from .errors import (
     add_secondary,
     is_hook_failure,
     is_http_error,
-    is_phase_timeout,
     is_transport,
     kept_primary,
     redirect_refused,
@@ -61,7 +50,7 @@ from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .logical import LogicalCallContext
 from .media import normalized
-from .multipart import MultipartSource, is_multipart, new_boundary, quiet_close
+from .multipart import MultipartSource, is_multipart, new_boundary
 from .native import (
     async_response_bytes,
     native_async_client,
@@ -75,6 +64,7 @@ from .native import (
 )
 from .operations import ResponseDecoder, request_errors
 from .options import (
+    DEFAULT_TIMEOUT,
     DEFAULT_TRANSPORT,
     ClientOptions,
     HeaderPatch,
@@ -112,8 +102,6 @@ from .urls import URLValidationError, absolute_target, canonical_origin, request
 if TYPE_CHECKING:
     from collections.abc import (
         AsyncGenerator,
-        AsyncIterable,
-        AsyncIterator,
         Awaitable,
         Callable,
         Generator,
@@ -139,8 +127,8 @@ if TYPE_CHECKING:
         BoundCredential,
         HopCredentials,
     )
-    from .bodies import AsyncBodyAttempt, BodyAttempt
-    from .body_sources import AsyncBodyBindings, AsyncBodySource, BodyBindings, BodySource
+    from .bodies import AsyncContent, SyncContent
+    from .body_sources import BodyBindings, BodySource
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ParameterSpec, ServerPlan
@@ -161,7 +149,6 @@ _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
-_BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
 _NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
@@ -211,24 +198,8 @@ def _layered(
         idempotency_key=settings.idempotency_key if isinstance(layer.idempotency_key, Unset) else layer.idempotency_key,
         auth=settings.auth if isinstance(layer.auth, Unset) else layer.auth,
         timeout=_timeouts(settings.timeout, layer.timeout),
-        stream_read_timeout=(
-            None
-            if layer.timeout is None
-            else layer.timeout.read
-            if isinstance(layer.timeout, TimeoutOptions) and not isinstance(layer.timeout.read, Unset)
-            else settings.stream_read_timeout
-        ),
         total_timeout=settings.total_timeout if isinstance(layer.total_timeout, Unset) else layer.total_timeout,
-        deadline=settings.deadline if isinstance(layer.deadline, Unset) else layer.deadline,
         limiter=settings.limiter if isinstance(layer.limiter, Unset) else layer.limiter,
-        stream_idle_timeout=(
-            settings.stream_idle_timeout if isinstance(layer.stream_idle_timeout, Unset) else layer.stream_idle_timeout
-        ),
-        stream_total_timeout=(
-            settings.stream_total_timeout
-            if isinstance(layer.stream_total_timeout, Unset)
-            else layer.stream_total_timeout
-        ),
         compression=layer.compression if isinstance(layer, ClientOptions) else settings.compression,
         clock=settings.clock,
     )
@@ -248,8 +219,17 @@ def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | N
     )
 
 
-def _client_settings(options: object) -> Settings:
-    settings = Settings(None, _DEFAULT_SERVER, None, MAX_ERROR_BODY_BYTES, None)
+def _client_settings(options: object, http_client: object) -> Settings:
+    phases = DEFAULT_TIMEOUT
+    if isinstance(http_client, (httpx2.Client, httpx2.AsyncClient)):
+        timeout = http_client.timeout
+        phases = ResolvedTimeoutOptions(
+            connect=timeout.connect,
+            read=timeout.read,
+            write=timeout.write,
+            pool=timeout.pool,
+        )
+    settings = Settings(None, _DEFAULT_SERVER, None, MAX_ERROR_BODY_BYTES, None, timeout=phases)
     match options:
         case None:
             return settings
@@ -531,15 +511,6 @@ def request_body(request: httpx2.Request) -> EncodedAttempt | None:
     return cast("EncodedAttempt | None", request.extensions.get(_BODY))
 
 
-def _context(call: Call) -> BodyAttemptContext:
-    return BodyAttemptContext(
-        call_id=call.call_id,
-        attempt_index=call.attempt_index,
-        hop_index=call.hop_index,
-        remaining_timeout=call.remaining(),
-    )
-
-
 def _checked_raw(method: object, url: object) -> tuple[str, str]:
     """Normalize the raw method and validate its native URL before sending."""
     if not isinstance(method, str) or not _TOKEN.fullmatch(method):
@@ -614,26 +585,29 @@ def _compressed(
     return build_request(method=request.method, url=str(request.url), headers=headers, body=body), coding
 
 
-def _abandoned(
-    call: Call,
-    owned: tuple[BodySource | None, BodyBindings | None],
-    failure: BaseException,
-) -> None:
-    """Release a failed call's body source and captured input."""
-    for resource in owned:
-        if resource is not None:
-            call.retry_blocked |= not _discarded(resource.close, failure)
+def _close_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+    """Close the files a call opened from paths; a close failure stays beside an error already propagating."""
+    if owner is not None:
+        _close_failed(owner.close(), call, error)
 
 
-async def _aabandoned(
-    call: Call,
-    owned: tuple[AsyncBodySource | None, AsyncBodyBindings | None],
-    failure: BaseException,
-) -> None:
-    """Release a failed asyncio call's body source and captured input."""
-    for resource in owned:
-        if resource is not None:
-            await call.cleanup(resource.aclose, error=failure)
+async def _aclose_body(owner: BodySource | BodyBindings | None, call: Call, error: BaseException | None = None) -> None:
+    """Close the files an asyncio call opened from paths, in a thread, as the synchronous call reports them."""
+    if owner is not None:
+        _close_failed(await owner.aclose(), call, error)
+
+
+def _close_failed(failures: list[OSError], call: Call, error: BaseException | None) -> None:
+    if not failures:
+        return
+    if error is not None:
+        add_secondary(error, *failures)
+        return
+    failure = SDKError(
+        reason="cleanup_failed", operation_id=call.operation_id, call_id=call.call_id, cause=failures.pop(0)
+    )
+    add_secondary(failure, *failures)
+    raise failure
 
 
 def strip_credentials(
@@ -693,14 +667,14 @@ def _parameter_names(operation: OperationPlan[object], location: str) -> Iterato
 
 @contextmanager
 def _auth_work(call: Call) -> Generator[None, None, None]:
-    call.check("auth")
+
     events = call.events
     started = call.monotonic() if events is not None else 0.0
     try:
         if events is not None:
             events.emit(events.event("auth_start", sent=events.sent))
         yield
-        call.check("auth")
+
     except BaseException as error:  # noqa: BLE001
         failure = call.failure(error)
         if events is not None:
@@ -712,14 +686,14 @@ def _auth_work(call: Call) -> Generator[None, None, None]:
 
 @asynccontextmanager
 async def _aauth_work(call: Call) -> AsyncGenerator[None, None]:
-    call.check("auth")
+
     events = call.events
     started = call.monotonic() if events is not None else 0.0
     try:
         if events is not None:
             await events.aemit(events.event("auth_start", sent=events.sent))
         yield
-        call.check("auth")
+
     except BaseException as error:  # noqa: BLE001
         failure = call.failure(error)
         if events is not None:
@@ -903,7 +877,11 @@ class Call(LogicalCallContext):
         replayable: bool,
     ) -> RetryDelay | None:
         """Apply the ordered pure gates and retain one absolute delay before response disposal."""
-        self.check("send")
+        if error is None:
+            self.check("send")
+        elif (expired := self.expired("send", cause=error.cause)) is not None:
+            expired.phase = error.phase
+            raise expired
         if self.retry_blocked:
             self.stop_reason = "callback_failure"
             return None
@@ -1142,11 +1120,6 @@ class Core(Generic[AdapterT, HandleT]):
                 response_started=delivery is DeliveryState.RESPONSE_STARTED,
             )
         )
-        if is_phase_timeout(failure) and (
-            expired := call.capped_failure(failure)
-            or call.expired("stream" if call.streaming else "send", cause=failure.cause)
-        ):
-            return expired
         return call.snapshot_error(failure)
 
     @staticmethod
@@ -1154,14 +1127,12 @@ class Core(Generic[AdapterT, HandleT]):
         response: httpx2.Response, request_id_header: str | None, call: LogicalCallContext
     ) -> ResponseInfo:
         call.delivery_state = DeliveryState.RESPONSE_STARTED
-        info = _info(response.status_code, HeadersView(response.headers.multi_items()), request_id_header, call)
-        call.check("send")
-        return info
+        return _info(response.status_code, HeadersView(response.headers.multi_items()), request_id_header, call)
 
     def _raw_prepared(
         self, method: object, url: object, body: object, options: RequestOptions | None
     ) -> tuple[httpx2.Request, object]:
-        """Return a raw call's request to any URL, with the client's fixed headers and a factory's media type.
+        """Return a raw call's request to any URL, with the client's fixed headers.
 
         Bytes are the request's attempt; any other body is returned beside it, to build its own attempt.
         """
@@ -1171,7 +1142,7 @@ class Core(Generic[AdapterT, HandleT]):
             call = () if options is None else options.query
             query = _query(self._settings.query, [pair for pair in explicit.split("&") if pair], call)
             target = f"{base}?{query}" if query else base
-        media_type = body.content_type if isinstance(body, (BodyFactory, AsyncBodyFactory)) else None
+        media_type = None
         if is_multipart(body):
             body = MultipartSource(body, boundary := new_boundary())
             media_type = f"multipart/form-data; boundary={boundary}"
@@ -1391,30 +1362,6 @@ def _transport(options: ClientOptions | None, http_client: object) -> ResolvedTr
     return resolved
 
 
-def _released(close: Callable[[], None], operation_id: str | None, call_id: str) -> None:
-    try:
-        close()
-    except Exception as failure:  # noqa: BLE001
-        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
-
-
-async def _areleased(close: Callable[[], Awaitable[None]], operation_id: str | None, call_id: str) -> None:
-    try:
-        await close()
-    except Exception as failure:  # noqa: BLE001
-        raise SDKError(reason="cleanup_failed", operation_id=operation_id, call_id=call_id, cause=failure) from None
-
-
-def _discarded(close: Callable[[], object], error: BaseException) -> bool:
-    """Run a close while an error propagates, keeping its failure beside that error."""
-    if (failure := quiet_close(close)) is None:
-        return True
-    if not isinstance(failure, Exception) and isinstance(error, Exception):
-        raise failure
-    add_secondary(error, failure)
-    return False
-
-
 @contextmanager
 def _streamed(opened: Callable[[], RawResponse]) -> Generator[RawResponse, None, None]:
     """Send on entering the block and yield the streaming response, which leaving the block closes."""
@@ -1484,7 +1431,6 @@ async def _arelease_permit(permit: AsyncPermit) -> None:
 
 def _acquire(limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str, events: CallEvents | None) -> Permit:
     """Acquire a mode-correct permit, leaving all post-acquisition work to its owner."""
-    call.check("limiter")
     if not _is_limiter(limiter):
         raise ConfigurationError(field_path=("limiter",), reason="async_limiter")
     if events is not None:
@@ -1503,7 +1449,6 @@ async def _aacquire(
     limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str, events: CallEvents | None
 ) -> AsyncPermit:
     """Acquire an async permit in the caller's task, which a stop of the call interrupts."""
-    call.check("limiter")
     if not _is_async_limiter(limiter):
         raise ConfigurationError(field_path=("limiter",), reason="sync_limiter")
     if events is not None:
@@ -1516,26 +1461,6 @@ async def _aacquire(
     if not _is_async_permit(permit):
         raise SDKError(reason="limiter_failed", cause=TypeError("Expected an asynchronous Permit"))
     return permit
-
-
-def _read_chunks(chunks: Iterable[bytes], call: LogicalCallContext) -> Iterator[bytes]:
-    source = iter(chunks)
-    while True:
-        call.check("send")
-        try:
-            chunk = next(source)
-        except StopIteration:
-            call.check("send")
-            break
-        call.check("send")
-        yield chunk
-
-
-async def _read_async_chunks(chunks: AsyncIterable[bytes], call: LogicalCallContext) -> AsyncIterator[bytes]:
-    async for chunk in chunks:
-        call.check("send")
-        yield chunk
-    call.check("send")
 
 
 class ClientCore(Core["httpx2.Client", "RawResponse"]):
@@ -1564,7 +1489,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         http_client: httpx2.Client | Unset | None = UNSET,
     ) -> Self:
         """Borrow a mode-correct native client, or create and own one from transport settings."""
-        settings = _client_settings(options)
+        settings = _client_settings(options, http_client)
         if settings.auth is not None:
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
@@ -1615,19 +1540,17 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> Response[T]:
             received = self._read(response, info, decoder, call)
-            call.check("decode")
-            completed = decode_response(decoder, info, received, call.settings, call.operation_id)
-            call.check("decode")
-            return completed
+
+            return decode_response(decoder, info, received, call.settings, call.operation_id)
 
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
             result = self._run(call, body, prepare, receive)
-            call.check("decode")
+
             if events is not None:
                 events.finish(result)
-            call.check("decode")
+
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if events is not None:
@@ -1682,14 +1605,14 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             if fields:
                 body = operation.bound(body, fields, media_type)
             result = self._run(call, body, prepare, receive)
-            call.check("send")
+
             if _auth_failed(call) or _call is not None:
                 result.raise_for_status()
             if _call is not None:
                 decoder.streamed(result.info)
             if events is not None:
                 events.finish(UNSET, handed_off=stream)
-            call.check("send")
+
             if stream:
                 call.handoff()
         except BaseException as error:  # noqa: BLE001
@@ -1754,12 +1677,12 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
 
         try:
             result = self._run(call, body, prepare, receive)
-            call.check("send")
+
             if _auth_failed(call):
                 result.raise_for_status()
             if events is not None:
                 events.finish(UNSET, handed_off=stream)
-            call.check("send")
+
             if stream:
                 call.handoff()
         except BaseException as error:  # noqa: BLE001
@@ -1791,47 +1714,43 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], T],
         opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release.
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
 
         A WebSocket handshake sends through its own adapter instead of the client's.
         """
         entry: BodyBindings | None = None
         source: BodySource | None = None
         try:
-            entry = (
-                capture_body(body)
-                if body is not UNSET and (isinstance(body, (FileBody, StreamBody)) or is_multipart(body))
-                else None
-            )
-            call.check("encode")
+            entry = capture_body(body) if body is not UNSET and (is_file_input(body) or is_multipart(body)) else None
+
             call.bind()
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
                 events.emit(events.starting(call.settings))
-            call.check("encode")
+
             request, deferred = prepare()
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
-            call.check("encode")
+
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
-                source, entry = source if coding is None else coding.source(source), None
-            call.check("encode")
+                if coding is not None:
+                    source = coding.source(source)
+
             result = self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            _abandoned(call, (source, entry), failure)
+            _close_body(source or entry, call, failure)
             raise failure from None
-        if source is not None:
-            try:
-                _released(source.close, call.operation_id, call.call_id)
-            except BaseException as error:
-                if isinstance(result, RawResponse):
-                    result.discard(error)
-                raise
+        try:
+            _close_body(source or entry, call)
+        except SDKError as error:
+            if isinstance(result, RawResponse):
+                result.discard(error)
+            raise
         return result
 
     def _exchange(
@@ -1872,7 +1791,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 if redirected is not None:
                     closing, response = response, None
                     self._close_response(closing, call)
-                    call.check("send")
+
                     if events is not None:
                         events.emit(events.event("redirect", sent=True, status=info.status_code))
                         events.prepare(str(redirected.url), None)
@@ -2015,26 +1934,23 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         with _auth_work(call):
             values: list[AcquiredCredential] = []
             for index, binding in enumerate(bound.credentials):
-                call.check("auth")
                 context = _credential_context(binding, call)
                 value = get_credential(binding, context, delivery)
-                call.check("auth")
+
                 if (
                     (pending := auth.pending) is not None
                     and pending[0] == index
                     and rejected_version(value, pending[1])
                 ):
                     values.append(refresh_credential(binding, context, delivery, call.settings.clock))
-                    call.check("auth")
+
                 else:
                     values.append(accept_credential(value, binding, context, delivery, call.settings.clock))
             auth.credentials = HopCredentials(tuple(values))
             auth.pending = None
 
     @staticmethod
-    def _authenticated_request(
-        request: httpx2.Request, attempt: BodyAttempt | None, source: BodySource | None, call: Call
-    ) -> httpx2.Request:
+    def _authenticated_request(request: httpx2.Request, call: Call) -> httpx2.Request:
         from .auth import SigningInput  # noqa: PLC0415
         from .auth_policy import BoundAuth, apply_signature, place_credentials, sign_request  # noqa: PLC0415
         from .urls import origin_text, signing_query  # noqa: PLC0415
@@ -2047,26 +1963,19 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             request = place_credentials(request, bound, auth.credentials)
         if not bound.signers:
             return request
-        digest = None
-        if bound.requires_body_digest and attempt is not None:
-            from .body_sources import digest_body  # noqa: PLC0415
-
-            digest = digest_body(attempt, source, check=partial(call.check, "auth"))
         assert call.current_origin is not None
         for signer in bound.signers:
-            call.check("auth")
             signing = SigningInput(
                 method=request.method,
                 url=str(request.url),
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
                 headers=HeadersView(request_fields(request)),
-                body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
             fields = sign_request(signer.signer, signing, delivery_state(call))
-            call.check("auth")
+
             request = apply_signature(request, fields, signer.capabilities)
         return request
 
@@ -2088,7 +1997,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         except Exception as error:
             if is_hook_failure(error):
                 raise
-            call.check("auth")
+
             call.retry_blocked = True
             auth.secondary_errors = (*auth.secondary_errors, error)
             call.stop_reason = call.stop_reason or "callback_failure"
@@ -2096,7 +2005,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    def _send(  # noqa: PLR0912, PLR0915
+    def _send(
         self,
         request: httpx2.Request,
         source: BodySource | None,
@@ -2104,18 +2013,17 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response] | None = None,
     ) -> httpx2.Response:
         """Send one native request and hand its response and permit to the call together."""
-        attempt: BodyAttempt | None = request_body(request)
+        attempt: SyncContent | None = request_body(request)
         permit: Permit | None = None
-        response: httpx2.Response | None = None
         try:
             call.next_send()
-            call.check("encode")
-            self._authorize(source, call)
+
+            self._authorize(call)
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
                     permit = _acquire(limiter, call, str(request.url), call.events)
-                    call.check("limiter")
+
                     if call.events is not None:
                         call.events.emit(call.events.event("limiter_acquired"))
                 if permit is None or not _reauthorizing(call):
@@ -2126,11 +2034,11 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 releasing, permit = permit, None
                 _release_permit(releasing)
                 self._authenticate(call)
-            call.check("encode")
+
             if source is not None and call.body_enabled:
-                attempt = source.open(_context(call))
-            call.check("encode")
-            outgoing = self._outgoing(request, attempt, source, call)
+                attempt = source.open()
+
+            outgoing = self._outgoing(request, attempt, call)
             if call.events is not None and call.hop_index == 0:
                 call.events.emit(call.events.attempting())
             _usable_credentials(call)
@@ -2152,18 +2060,11 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None
             call.delivery_state = DeliveryState.RESPONSE_STARTED
-            if attempt is not None:
-                released_attempt, attempt = attempt, None
-                _released(released_attempt.close, call.operation_id, call.call_id)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call, call.delivery_state)
             closes: list[Callable[[], None]] = []
-            if response is not None:
-                closes.append(response.close)
-            if attempt is not None:
-                closes.append(attempt.close)
             if permit is not None:
                 closes.append(partial(_release_permit, permit))
             self._release_resources(call, tuple(closes), failure)
@@ -2197,19 +2098,13 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         )
         self._release_resources(call, closes, error)
 
-    def _authorize(self, source: BodySource | None, call: Call) -> None:
-        """Take the call's credentials before any permit, first refusing a body a signer cannot digest."""
-        if (auth := call.auth) is None:
+    def _authorize(self, call: Call) -> None:
+        """Take the call's credentials before any permit."""
+        if call.auth is None:
             return
-        if source is not None and call.body_enabled and auth.bound.requires_body_digest:
-            from .body_sources import require_digest_source  # noqa: PLC0415
-
-            require_digest_source(source)
         self._authenticate(call)
 
-    def _outgoing(
-        self, request: httpx2.Request, attempt: BodyAttempt | None, source: BodySource | None, call: Call
-    ) -> httpx2.Request:
+    def _outgoing(self, request: httpx2.Request, attempt: SyncContent | None, call: Call) -> httpx2.Request:
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
@@ -2226,11 +2121,11 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             request.method,
             request.url,
             headers=wire_fields(headers),
-            content=None if attempt is None else _read_chunks(attempt.iter_bytes(), call),
+            content=None if attempt is None else attempt.iter_bytes(),
             extensions={"timeout": native_timeout(call.timeout())},
         )
         if call.auth is not None:
-            outgoing = self._authenticated_request(outgoing, attempt, source, call)
+            outgoing = self._authenticated_request(outgoing, call)
         return outgoing
 
     @staticmethod
@@ -2244,7 +2139,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         chunks = ContentDecoder(info, call.operation_id).decoded(response_bytes(response))
         try:
             for chunk in chunks:
-                call.check("send")
                 if not received.add(chunk):
                     break
         except ProtocolError as error:
@@ -2291,7 +2185,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         http_client: httpx2.AsyncClient | Unset | None = UNSET,
     ) -> Self:
         """Borrow a mode-correct native client, or create and own one from transport settings."""
-        settings = _client_settings(options)
+        settings = _client_settings(options, http_client)
         if settings.auth is not None:
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
@@ -2342,19 +2236,17 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> Response[T]:
             received = await self._read(response, info, decoder, call)
-            call.check("decode")
-            completed = decode_response(decoder, info, received, call.settings, call.operation_id)
-            call.check("decode")
-            return completed
+
+            return decode_response(decoder, info, received, call.settings, call.operation_id)
 
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = await call.bounded(lambda: self._run(call, body, prepare, receive))
-            call.check("decode")
+            result = await self._run(call, body, prepare, receive)
+
             if events is not None:
                 await events.afinish(result)
-            call.check("decode")
+
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
             if events is not None:
@@ -2408,17 +2300,15 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = await call.bounded(
-                lambda: self._run(call, body, prepare, receive), cleanup=AsyncRawResponse.aclose
-            )
-            call.check("send")
+            result = await self._run(call, body, prepare, receive)
+
             if _auth_failed(call) or _call is not None:
                 await result.raise_for_status()
             if _call is not None:
                 decoder.streamed(result.info)
             if events is not None:
                 await events.afinish(UNSET, handed_off=stream)
-            call.check("send")
+
             if stream:
                 call.handoff()
         except BaseException as error:  # noqa: BLE001
@@ -2482,15 +2372,13 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             return self._raw_prepared(method, url, body, options)
 
         try:
-            result = await call.bounded(
-                lambda: self._run(call, body, prepare, receive), cleanup=AsyncRawResponse.aclose
-            )
-            call.check("send")
+            result = await self._run(call, body, prepare, receive)
+
             if _auth_failed(call):
                 await result.raise_for_status()
             if events is not None:
                 await events.afinish(UNSET, handed_off=stream)
-            call.check("send")
+
             if stream:
                 call.handoff()
         except BaseException as error:  # noqa: BLE001
@@ -2522,53 +2410,49 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
         opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release.
+        """Own entry capture, the single encode, every hop, and closing the files opened from paths.
 
         A WebSocket handshake sends through its own adapter instead of the client's.
         """
-        entry: AsyncBodyBindings | None = None
-        source: AsyncBodySource | None = None
+        entry: BodyBindings | None = None
+        source: BodySource | None = None
         try:
-            entry = (
-                await capture_async_body(body, cleanup=call.cleanup)
-                if body is not UNSET and (isinstance(body, (AsyncFileBody, AsyncStreamBody)) or is_multipart(body))
-                else None
-            )
-            call.check("encode")
+            entry = capture_body(body) if body is not UNSET and (is_file_input(body) or is_multipart(body)) else None
+
             call.bind()
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
                 await events.aemit(events.starting(call.settings))
-            call.check("encode")
+
             request, deferred = prepare()
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
-            call.check("encode")
+
             if not isinstance(deferred, Unset):
-                source = await bind_async_body(deferred, entry=entry, cleanup=call.cleanup)
-                source, entry = source if coding is None else coding.async_source(source), None
-            call.check("encode")
+                source = bind_body(deferred, entry=entry, asynchronous=True)
+                if coding is not None:
+                    source = coding.source(source)
+
             result = await self._exchange(request, source, call, receive, opener)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            await _aabandoned(call, (source, entry), failure)
+            await call.cleanup(partial(_aclose_body, source or entry, call, failure), error=failure)
             raise failure from None
-        if source is not None:
-            try:
-                await _areleased(source.aclose, call.operation_id, call.call_id)
-            except BaseException as error:
-                if isinstance(result, AsyncRawResponse):
-                    await result.discard(error)
-                raise
+        try:
+            await _aclose_body(source or entry, call)
+        except BaseException as error:
+            if isinstance(result, AsyncRawResponse):
+                await result.discard(error)
+            raise
         return result
 
     async def _exchange(
         self,
         original: httpx2.Request,
-        source: AsyncBodySource | None,
+        source: BodySource | None,
         call: Call,
         receive: Callable[[httpx2.Response, ResponseInfo], Awaitable[T]],
         opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
@@ -2603,7 +2487,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 if redirected is not None:
                     closing, response = response, None
                     await self._close_response(closing, call)
-                    call.check("send")
+
                     if events is not None:
                         await events.aemit(events.event("redirect", sent=True, status=info.status_code))
                         events.prepare(str(redirected.url), None)
@@ -2632,7 +2516,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request = original
             visited = call.restart(original)
 
-    async def _status_plan(self, info: ResponseInfo, source: AsyncBodySource | None, call: Call) -> RetryDelay | None:
+    async def _status_plan(self, info: ResponseInfo, source: BodySource | None, call: Call) -> RetryDelay | None:
         """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
         if call.handshake and info.status_code != _SWITCHING:
             return call.retry(
@@ -2748,17 +2632,16 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         async with _aauth_work(call):
             values: list[AcquiredCredential] = []
             for index, binding in enumerate(bound.credentials):
-                call.check("auth")
                 context = _credential_context(binding, call)
                 value = await aget_credential(binding, context, delivery)
-                call.check("auth")
+
                 if (
                     (pending := auth.pending) is not None
                     and pending[0] == index
                     and rejected_version(value, pending[1])
                 ):
                     values.append(await arefresh_credential(binding, context, delivery, call.settings.clock))
-                    call.check("auth")
+
                 else:
                     values.append(accept_credential(value, binding, context, delivery, call.settings.clock))
             auth.credentials = AsyncHopCredentials(tuple(values))
@@ -2767,8 +2650,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
     @staticmethod
     async def _authenticated_request(
         request: httpx2.Request,
-        attempt: AsyncBodyAttempt | None,
-        source: AsyncBodySource | None,
         call: Call,
     ) -> httpx2.Request:
         from .auth import SigningInput  # noqa: PLC0415
@@ -2783,26 +2664,19 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request = place_credentials(request, bound, auth.credentials)
         if not bound.signers:
             return request
-        digest = None
-        if bound.requires_body_digest and attempt is not None:
-            from .body_sources import adigest_body  # noqa: PLC0415
-
-            digest = await adigest_body(attempt, source, check=partial(call.check, "auth"))
         assert call.current_origin is not None
         for signer in bound.signers:
-            call.check("auth")
             signing = SigningInput(
                 method=request.method,
                 url=str(request.url),
                 origin=origin_text(call.current_origin),
                 query=signing_query(str(request.url)),
                 headers=HeadersView(request_fields(request)),
-                body_digest=digest,
                 attempt_index=call.attempt_index,
                 hop_index=call.hop_index,
             )
             fields = await asign_request(signer.signer, signing, delivery_state(call))
-            call.check("auth")
+
             request = apply_signature(request, fields, signer.capabilities)
         return request
 
@@ -2824,7 +2698,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         except Exception as error:
             if is_hook_failure(error):
                 raise
-            call.check("auth")
+
             call.retry_blocked = True
             auth.secondary_errors = (*auth.secondary_errors, error)
             call.stop_reason = call.stop_reason or "callback_failure"
@@ -2832,26 +2706,25 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    async def _send(  # noqa: PLR0912, PLR0915
+    async def _send(
         self,
         request: httpx2.Request,
-        source: AsyncBodySource | None,
+        source: BodySource | None,
         call: Call,
         opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]] | None = None,
     ) -> httpx2.Response:
         """Send one native request and hand its response and permit to the call together."""
-        attempt: AsyncBodyAttempt | None = request_body(request)
+        attempt: AsyncContent | None = request_body(request)
         permit: AsyncPermit | None = None
-        response: httpx2.Response | None = None
         try:
             call.next_send()
-            call.check("encode")
-            await self._authorize(source, call)
+
+            await self._authorize(call)
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
                     permit = await _aacquire(limiter, call, str(request.url), call.events)
-                    call.check("limiter")
+
                     if call.events is not None:
                         await call.events.aemit(call.events.event("limiter_acquired"))
                 if permit is None or not _reauthorizing(call):
@@ -2862,11 +2735,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 releasing, permit = permit, None
                 await call.cleanup(partial(_arelease_permit, releasing))
                 await self._authenticate(call)
-            call.check("encode")
+
             if source is not None and call.body_enabled:
-                attempt = await source.aopen(_context(call))
-            call.check("encode")
-            outgoing = await self._outgoing(request, attempt, source, call)
+                attempt = await source.aopen()
+
+            outgoing = await self._outgoing(request, attempt, call)
             if call.events is not None and call.hop_index == 0:
                 await call.events.aemit(call.events.attempting())
             _usable_credentials(call)
@@ -2888,18 +2761,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 call.delivery_state = native_failure.delivery_state
                 raise native_failure from None
             call.delivery_state = DeliveryState.RESPONSE_STARTED
-            if attempt is not None:
-                released_attempt, attempt = attempt, None
-                await _areleased(released_attempt.aclose, call.operation_id, call.call_id)
             call.permit, permit = permit, None
             return response  # noqa: TRY300
         except BaseException as error:  # noqa: BLE001
             failure = self._failure(error, call, call.delivery_state)
             closes: list[Callable[[], Awaitable[None]]] = []
-            if response is not None:
-                closes.append(response.aclose)
-            if attempt is not None:
-                closes.append(attempt.aclose)
             if permit is not None:
                 closes.append(partial(_arelease_permit, permit))
             await self._release_resources(call, tuple(closes), failure)
@@ -2935,19 +2801,13 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         )
         await self._release_resources(call, closes, error)
 
-    async def _authorize(self, source: AsyncBodySource | None, call: Call) -> None:
-        """Take the call's credentials before any permit, first refusing a body a signer cannot digest."""
-        if (auth := call.auth) is None:
+    async def _authorize(self, call: Call) -> None:
+        """Take the call's credentials before any permit."""
+        if call.auth is None:
             return
-        if source is not None and call.body_enabled and auth.bound.requires_body_digest:
-            from .body_sources import require_digest_source  # noqa: PLC0415
-
-            require_digest_source(source)
         await self._authenticate(call)
 
-    async def _outgoing(
-        self, request: httpx2.Request, attempt: AsyncBodyAttempt | None, source: AsyncBodySource | None, call: Call
-    ) -> httpx2.Request:
+    async def _outgoing(self, request: httpx2.Request, attempt: AsyncContent | None, call: Call) -> httpx2.Request:
         """Finalize native framing and timeout before credential placement and signing."""
         headers = [
             (name, value)
@@ -2964,11 +2824,11 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             request.method,
             request.url,
             headers=wire_fields(headers),
-            content=None if attempt is None else _read_async_chunks(attempt.aiter_bytes(), call),
+            content=None if attempt is None else attempt.aiter_bytes(),
             extensions={"timeout": native_timeout(call.timeout())},
         )
         if call.auth is not None:
-            outgoing = await self._authenticated_request(outgoing, attempt, source, call)
+            outgoing = await self._authenticated_request(outgoing, call)
         return outgoing
 
     @staticmethod
@@ -2982,7 +2842,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         chunks = ContentDecoder(info, call.operation_id).adecoded(async_response_bytes(response))
         try:
             async for chunk in chunks:
-                call.check("send")
                 if not received.add(chunk):
                     break
         except ProtocolError as error:
@@ -2997,7 +2856,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         shared.closed = True
         if shared.created:
             try:
-                with anyio.CancelScope(shield=True):
-                    await shared.http_client.aclose()
+                await shared.http_client.aclose()
             except Exception as error:  # noqa: BLE001
                 raise SDKError(reason="close_failed", cause=error) from None

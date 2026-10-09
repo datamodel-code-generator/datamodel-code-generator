@@ -158,7 +158,7 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
   upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', call_id='<call>', reason='unexpected_media_type') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
-  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] unencodable
+  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
@@ -201,10 +201,10 @@
   transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='write') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
+  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
+  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
@@ -239,7 +239,7 @@
   options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
   options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
@@ -438,7 +438,7 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
   upload empty ! DecodeError: DecodeError(status_code=200, operation_id='uploadPhoto', call_id='<call>', reason='unexpected_media_type') [operation_id='uploadPhoto', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{}', truncated=False, media_type='application/json'] unexpected_media_type
-  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] unencodable
+  upload text ! DecodeError: DecodeError(operation_id='uploadPhoto', call_id='<call>', reason='unencodable', location='body') [operation_id='uploadPhoto', location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='uploadPhoto', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
@@ -481,10 +481,10 @@
   transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='write') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteError('failed')] api_connection_error
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
+  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='write', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='write', cause=WriteTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=30.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
+  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', call_id='<call>', reason='phase_timeout', delivery_state='MAYBE_SENT', phase='read', effective_timeout=5.0) [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] api_connection_error
@@ -519,7 +519,7 @@
   options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] out_of_range
   options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, deadline=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, timeout=UNSET, total_timeout=UNSET, retry=UNSET, redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False

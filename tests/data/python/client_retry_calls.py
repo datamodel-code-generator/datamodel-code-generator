@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 
 import httpx2
 
-from tests.data.python.client_body_replay import _Attempt, _Factory
 from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_runtime import Exchange, arecord, failing, injected, raw_response, record, run
 
@@ -248,11 +247,9 @@ def _close_interruptions(api: object, events: _Events, exchange: Exchange, lines
 
 
 def _resource_interruptions(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     for phase in ("send", "response", "ordinary response"):
         first, second = _Stop("first cleanup interruption"), _Stop("permit interruption")
         limiter = _SemaphoreLimiter(release_failure=second)
-        attempt = _Attempt(failure=first if phase == "send" else None)
         body = _Broken(read=False, close=first if phase == "response" else True)
         exchange, events = Exchange([]), _Events()
         exchange.respond(
@@ -262,9 +259,9 @@ def _resource_interruptions(package: ModuleType, options: ModuleType, lines: lis
         config = options.ClientOptions(limiter=limiter, retry=options.RetryOptions(initial_delay=0), hooks=(events,))
         with exchange.client() as native, package.Client(http_client=native, options=config) as api:
             try:
-                api.retry.post_idempotent(body=bodies.BodyFactory(_Factory((attempt,))))
+                api.retry.post_idempotent(body=b"request")
             except BaseException as error:  # noqa: BLE001
-                expected = second if phase == "ordinary response" else first
+                expected = first if phase == "response" else second
                 observed = (
                     type(error).__name__,
                     error is expected,
@@ -277,9 +274,8 @@ def _resource_interruptions(package: ModuleType, options: ModuleType, lines: lis
         record(
             lines,
             f"interrupted cleanup {phase}",
-            lambda observed=observed, attempt=attempt, body=body, limiter=limiter: (
+            lambda observed=observed, body=body, limiter=limiter: (
                 observed,
-                attempt.closes,
                 body.closes,
                 limiter.usage.releases,
                 limiter.usage.active,
@@ -304,7 +300,7 @@ def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None
         )
         with exchange.client() as native, package.Client(http_client=native, options=config) as api:
             try:
-                api.retry.post_idempotent(body=bodies.FileBody(file))
+                api.retry.post_idempotent(body=file)
             except BaseException as error:  # noqa: BLE001
                 observed = _error(error), error is failure, getattr(error, "cause", None) is failure, file.calls
             else:
@@ -390,11 +386,9 @@ async def _async_close_interruptions(api: object, events: _Events, exchange: Exc
 
 
 async def _async_resource_interruptions(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     for phase in ("send", "response", "ordinary response"):
         first, second = _Stop("first cleanup interruption"), _Stop("permit interruption")
         limiter = _AsyncSemaphoreLimiter(release_failure=second)
-        attempt = _Attempt(failure=first if phase == "send" else None)
         body = _Broken(read=False, close=first if phase == "response" else True)
         exchange, events = Exchange([]), _Events()
         exchange.respond(
@@ -404,9 +398,9 @@ async def _async_resource_interruptions(package: ModuleType, options: ModuleType
         config = options.ClientOptions(limiter=limiter, retry=options.RetryOptions(initial_delay=0), hooks=(events,))
         async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
             try:
-                await api.retry.post_idempotent(body=bodies.AsyncBodyFactory(_Factory((attempt,)).async_call))
+                await api.retry.post_idempotent(body=b"request")
             except BaseException as error:  # noqa: BLE001
-                expected = second if phase == "ordinary response" else first
+                expected = first if phase == "response" else second
                 observed = (
                     type(error).__name__,
                     error is expected,
@@ -419,9 +413,8 @@ async def _async_resource_interruptions(package: ModuleType, options: ModuleType
         record(
             lines,
             f"async interrupted cleanup {phase}",
-            lambda observed=observed, attempt=attempt, body=body, limiter=limiter: (
+            lambda observed=observed, body=body, limiter=limiter: (
                 observed,
-                attempt.closes,
                 body.closes,
                 limiter.usage.releases,
                 limiter.usage.active,
@@ -446,7 +439,7 @@ async def _async_presend(package: ModuleType, options: ModuleType, lines: list[s
         )
         async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
             try:
-                await api.retry.post_idempotent(body=bodies.AsyncFileBody(file))
+                await api.retry.post_idempotent(body=file)
             except BaseException as error:  # noqa: BLE001
                 observed = _error(error), error is failure, getattr(error, "cause", None) is failure, file.calls
             else:

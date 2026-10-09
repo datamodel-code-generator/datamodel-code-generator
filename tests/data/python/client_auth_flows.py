@@ -146,7 +146,7 @@ class _Signer:
         origins: tuple[str, ...] = (),
         managed: tuple[str, ...] = ("X-Sig",),
     ) -> None:
-        self.capabilities = auth.SignerCapabilities(origins, managed, ("sig",), False)
+        self.capabilities = auth.SignerCapabilities(origins, managed, ("sig",))
         self.result = auth.SignatureFields((("X-Sig", "signed"),), ()) if result is None else result
         self.failure = failure
         self.calls = 0
@@ -1241,7 +1241,7 @@ def _signatures(package: ModuleType, auth: ModuleType, options: ModuleType, line
 class _ManagingSigner(_Signer):
     def __init__(self, auth: ModuleType, headers: tuple[str, ...], query: tuple[str, ...]) -> None:
         super().__init__(auth)
-        self.capabilities = auth.SignerCapabilities((), headers, query, False)
+        self.capabilities = auth.SignerCapabilities((), headers, query)
 
 
 def auth_flows(package: ModuleType, lines: list[str]) -> None:

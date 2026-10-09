@@ -345,8 +345,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: delivery-key, content-length: 7] b'payload'
   server dropped post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError')
     unused=1
-  body fails mid-send = ('SDKError', 'body_factory_failed', 'DeliveryState.MAYBE_SENT', None, None, 1, 'OSError')
-    opened=[0] unused=1
+  body fails mid-send = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'unknown', 'unknown_delivery', 1, 'OSError')
+    opened=['consumed'] unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   held pool retry_on_pool_timeout=False = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout')
@@ -535,8 +535,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: delivery-key, content-length: 7] b'payload'
   async server dropped post_keyed = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'read', 'unknown_delivery', 1, 'RemoteProtocolError')
     unused=1
-  async body fails mid-send = ('SDKError', 'body_factory_failed', 'DeliveryState.MAYBE_SENT', None, None, 1, 'OSError')
-    opened=[0] unused=1
+  async body fails mid-send = ('APIConnectionError', None, 'DeliveryState.MAYBE_SENT', 'unknown', 'unknown_delivery', 1, 'OSError')
+    opened=['consumed'] unused=1
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   async held pool retry_on_pool_timeout=False = ('APITimeoutError', 'phase_timeout', 'DeliveryState.NOT_SENT', 'pool', 'transport_not_retryable', 1, 'PoolTimeout')

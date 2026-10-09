@@ -362,26 +362,11 @@ _STARTED: Final = (
 )
 
 
-class _Attempt:
-    """A body attempt that sends a first chunk, then fails as its source breaks while the request is on the wire."""
-
-    content_length = None
-    content_type = "application/octet-stream"
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        yield b"partial"
-        message = "body source failed mid-send"
-        raise OSError(message)
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        for chunk in self.iter_bytes():
-            yield chunk
-
-    def close(self) -> None:
-        pass
-
-    async def aclose(self) -> None:
-        pass
+def _broken() -> Iterator[bytes]:
+    """Send a first chunk, then fail as the source breaks while the request is on the wire."""
+    yield b"partial"
+    message = "body source failed mid-send"
+    raise OSError(message)
 
 
 def _delivered(result: object) -> tuple[object, ...]:
@@ -454,12 +439,11 @@ def _dropped(request: httpx2.Request) -> httpx2.Response:
 
 def _started(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Fail real TLS exchanges after their send started and observe that the server receives each request once."""
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     exchange, opened = Exchange(lines), []
 
-    def factory(context: Any) -> _Attempt:
-        opened.append(context.attempt_index)
-        return _Attempt()
+    def factory() -> Iterator[bytes]:
+        opened.append("consumed")
+        yield from _broken()
 
     config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))
     with exchange.client() as native, package.Client(http_client=native, options=config) as api:
@@ -473,7 +457,7 @@ def _started(package: ModuleType, options: ModuleType, lines: list[str]) -> None
         record(
             lines,
             "body fails mid-send",
-            lambda: _delivered(_failed(lambda: api.retry.post_keyed(body=bodies.BodyFactory(factory), options=key))),
+            lambda: _delivered(_failed(lambda: api.retry.post_keyed(body=factory(), options=key))),
         )
         lines.append(f"    opened={opened} unused={len(exchange.responders)}")
         exchange.responders.clear()
@@ -511,12 +495,12 @@ async def _afailed(call: Callable[[], Any]) -> object:
 
 
 async def _astarted(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     exchange, opened = Exchange(lines), []
 
-    async def factory(context: Any) -> _Attempt:  # noqa: RUF029
-        opened.append(context.attempt_index)
-        return _Attempt()
+    async def factory() -> AsyncIterator[bytes]:
+        opened.append("consumed")
+        for chunk in _broken():
+            yield chunk
 
     config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
@@ -527,7 +511,7 @@ async def _astarted(package: ModuleType, options: ModuleType, lines: list[str]) 
             exchange.responders.clear()
         exchange.respond(_response(200))
         key = options.RequestOptions(idempotency_key=options.IdempotencyKey("delivery-key"))
-        body = bodies.AsyncBodyFactory(factory)
+        body = factory()
         result = await _afailed(lambda: api.retry.post_keyed(body=body, options=key))
         lines.append(f"  async body fails mid-send = {_delivered(result)}")
         lines.append(f"    opened={opened} unused={len(exchange.responders)}")
@@ -550,7 +534,6 @@ async def _astarted(package: ModuleType, options: ModuleType, lines: list[str]) 
 
 
 def _bodies(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     exchange = Exchange(lines)
     with (
@@ -565,7 +548,7 @@ def _bodies(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             ("disabled before body", "post_idempotent", 0),
         ):
             exchange.respond(_response(503))
-            body = bodies.StreamBody(iter((b"one", b"two")))
+            body = iter((b"one", b"two"))
             request = options.RequestOptions(retry=options.RetryOptions(max_retries=maximum))
             record(
                 lines,

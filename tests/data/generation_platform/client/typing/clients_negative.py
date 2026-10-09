@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
@@ -20,7 +20,6 @@ from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permi
 from pets.options import (
     ClientOptions,
     Clock,
-    Deadline,
     IdempotencyKey,
     RedirectOptions,
     RequestOptions,
@@ -40,7 +39,13 @@ from pets_models import (
 )
 
 
-def misuse(client: Client, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter, body: NewPet, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
+def misuse(
+    client: Client,
+    trace: FieldPetsGetHeaderXTraceParameter,
+    pet: FieldPetsPetIdGetPathPetIdParameter,
+    body: NewPet,
+    photo: FieldPetsPetIdPhotoPutPathPetIdParameter,
+) -> None:
     client.pets.list_pets()  # error
     client.pets.list_pets(x_trace=trace, limit=None)  # error
     client.pets.create_pet(body=body, media_type="text/csv")  # error
@@ -75,21 +80,30 @@ async def misuse_raw_async(client: AsyncClient, pet: FieldPetsPetIdGetPathPetIdP
     del chunks
 
 
-async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
-    from pets.bodies import AsyncFileBody, BodyFactory, FileBody, StreamBody
+async def misuse_bodies(
+    client: Client, aclient: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter
+) -> None:
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b"a"
 
-    client.pets.photos.upload(pet_id=photo, body=AsyncFileBody(file))  # error
-    await aclient.pets.photos.upload(pet_id=photo, body=FileBody(file))  # error
-    StreamBody(["text"])  # error
-    FileBody(file, ownership="shared")  # error
-    BodyFactory(lambda: b"")  # error
+    client.pets.photos.upload(pet_id=photo, body=chunks())  # error
+    client.pets.photos.upload(pet_id=photo, body="file.bin")  # error
+    await aclient.pets.photos.upload(pet_id=photo, body=["text"])  # error
 
 
-def misuse_multipart(client: Client, file: BinaryIO, pet: FieldPetsPetIdFilesPostPathPetIdParameter, files: FieldPetsPetIdFilesGetPathPetIdParameter) -> None:
-    from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
+def misuse_multipart(
+    client: Client,
+    file: BinaryIO,
+    stream: AsyncIterator[bytes],
+    pet: FieldPetsPetIdFilesPostPathPetIdParameter,
+    files: FieldPetsPetIdFilesGetPathPetIdParameter,
+) -> None:
+    from pets.bodies import AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
     from pets.model_codecs import JSONValue
 
-    MultipartBody[str]((FilePart("f", AsyncFileBody(file)),))  # error
+    part = FilePart("f", stream)
+    MultipartBody[str]((part,))  # error
+    FilePart("f", "file.bin")  # error
     client.request_raw("POST", "https://example.com/forms", body=AsyncMultipartBody[JSONValue](()))  # error
     FieldPart[str]("a", 1)  # error
     parts: MultipartBody[str] = MultipartBody[int](())  # error
@@ -112,17 +126,13 @@ def misuse_hooks() -> None:
     RequestOptions(context={"tags": ["a"]})  # error
 
 
-def misuse_timing(deadline: Deadline, phase: TimeoutOptions, context: LimiterContext) -> None:
-    Deadline.after("soon")  # error
+def misuse_timing(phase: TimeoutOptions, context: LimiterContext) -> None:
     TimeoutOptions(connect="slow")  # error
     ClientOptions(timeout=30)  # error
     RequestOptions(total_timeout="soon")  # error
     RequestOptions(deadline=60)  # error
     RequestOptions(stream_idle_timeout="forever")  # error
     RequestOptions(stream_total_timeout="forever")  # error
-    deadline.at = 0  # error
-    deadline.clock = Clock()  # error
-    Deadline.after(1, clock="system")  # error
     Clock(monotonic=0.0)  # error
     RequestOptions(clock=Clock())  # error
     ClientOptions(clock=None)  # error
