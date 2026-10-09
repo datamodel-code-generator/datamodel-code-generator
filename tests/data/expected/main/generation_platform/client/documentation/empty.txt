@@ -168,8 +168,9 @@ Immutable bytes and JSON encoding results are retained once; JSON encoding memor
 A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
 `bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
 `bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
-entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, text-mode or closed files and
-paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending.
+entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
+files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
+async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
 The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
 async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
