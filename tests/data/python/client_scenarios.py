@@ -243,6 +243,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     )
     record(lines, "list missing", lambda: api.pets.list_pets(x_trace=options.UNSET))
     record(lines, "list invalid", lambda: api.pets.list_pets(x_trace=_trace(package, "line\nbreak")))
+    record(lines, "list lone surrogate", lambda: api.pets.list_pets(x_trace="x\ud800"))
     record(lines, "list options", lambda: api.pets.list_pets(x_trace=trace, options="fast"))
 
 

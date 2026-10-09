@@ -47,7 +47,7 @@ _STYLES: Final = {
 }
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _COOKIE_OCTETS: Final = re.compile(r"[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*")
-_HEADER_CONTROL: Final = re.compile(r"[\x00-\x08\x0A-\x1F\x7F]")
+_HEADER_CONTROL: Final = re.compile(r"[\x00-\x08\x0A-\x1F\x7F\ud800-\udfff]")
 _OWS: Final = " \t"
 
 
@@ -269,7 +269,8 @@ def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
 def _content(plan: ParameterPlan, value: JSONValue) -> str:
     match media_kind(plan.content_media_type or ""), value:
         case "json", _:
-            return json_bytes(value, ascii_only=plan.location == "header").decode()
+            text = json_bytes(value).decode()
+            return text if plan.location != "header" or text.isascii() else json_bytes(value, ascii_only=True).decode()
         case "text", str():
             return value
         case _:

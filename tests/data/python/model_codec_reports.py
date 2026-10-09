@@ -34,8 +34,8 @@ if TYPE_CHECKING:
 
 
 def failure(error: Exception) -> str:
-    """Name a codec failure by its class and value-free message."""
-    return f"{type(error).__name__} {error}"
+    """Name a codec failure by its class and value-free message, without the detail some Python versions append."""
+    return f"{type(error).__name__} {str(error).partition(': ')[0]}"
 
 
 def attempt(action: Callable[[], str]) -> str:
