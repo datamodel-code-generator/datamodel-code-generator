@@ -18,7 +18,10 @@ from .._runtime.server.responses import dispatch
 from ..services import FieldsService
 
 
-def _add_post_thing(router: APIRouter, wiring: Wiring) -> None:
+def _add_post_thing(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     fields: FieldsService = wiring.services['fields']
     post_thing_handler = checked(
         fields.post_thing,
@@ -51,7 +54,10 @@ def _add_post_thing(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_post_field(router: APIRouter, wiring: Wiring) -> None:
+def _add_post_field(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     fields: FieldsService = wiring.services['fields']
     post_field_handler = checked(
         fields.post_field,

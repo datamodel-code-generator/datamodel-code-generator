@@ -261,7 +261,8 @@ def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> JSONValue | UNSE
         case "header":
             return _decode_header_value(plan, raw.fragments)
         case _:
-            return _decode_cookie_value(plan, raw.fragments)
+            pass
+    return _decode_cookie_value(plan, raw.fragments)
 
 
 def split_query(raw: bytes | None) -> tuple[ParameterFragment, ...]:
@@ -292,4 +293,5 @@ def raw_parameter(plan: ParameterPlan, raw: RawParameters) -> RawParameter:
         case "header":
             return RawParameter(location="header", fragments=tuple(starmap(ParameterFragment, raw.headers)))
         case _:
-            return RawParameter(location="cookie", fragments=split_cookies(raw.headers))
+            pass
+    return RawParameter(location="cookie", fragments=split_cookies(raw.headers))

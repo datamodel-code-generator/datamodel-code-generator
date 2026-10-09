@@ -18,7 +18,10 @@ from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
-def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_values(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     untagged: UntaggedService = wiring.services['untagged']
     get_values_handler = checked(
         untagged.get_values,

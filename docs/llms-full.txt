@@ -11755,6 +11755,19 @@ The values a role receives can change while server generation is experimental, a
 builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
 compare an override with the current builtin template after an upgrade. The templates write every module, class,
 function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
+Each role receives these top-level values, where `imports` is the module's import block:
+
+| Role | Values |
+| --- | --- |
+| `application.jinja2` | `imports`, `exports`, `final`, `options`, `routes`, `info`, `build_router`, `build`, `services`, `settings`, `create_app`, `arguments`, `fastapi`, `error_handlers`, `serve_source_openapi` |
+| `contract.jinja2` | `imports`, `typed_dict`, `dependencies`, `plans`, `final`, `dataclass`, `parameter_adapter`, `body_adapter`, `operation_responses` |
+| `facade.jinja2` | `module`, `docstring`, `imports`, `exports` |
+| `openapi.jinja2` | `lines` |
+| `readme.jinja2` | `title`, `package`, `model_package`, `backend`, `operations`, `services`, `protocols`, `arguments`, `schemes`, `forms`, `raw_request` |
+| `router.jinja2` | `imports`, `docstring`, `routes`, `api_router`, `wiring`, `final`, `literal`, `templated`, `builder`, `group`, `build`, `services`, `settings` |
+| `security.jinja2` | `imports`, `schemes`, `exports` |
+| `services.jinja2` | `imports`, `typevar`, `abstract`, `protocol_type`, `protocols` |
+
 `router.jinja2` receives one `route` for each operation, with its local names (`adder`, `router`, `wiring`,
 `service`, `handler`), its `lookup` of the service method, its `principal` dependency or none, its `endpoint` with
 the endpoint's `parameters` (`name`, `annotation`, `default`), the service method `call` with its `arguments`, and
@@ -45090,7 +45103,10 @@ Choose how the server package lays out its routes (experimental).
     from .services import Service
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         service: Service = wiring.services['service']
         list_pets_handler = checked(
             service.list_pets,
@@ -45123,7 +45139,10 @@ Choose how the server package lays out its routes (experimental).
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         service: Service = wiring.services['service']
         create_pet_handler = checked(
             service.create_pet,
@@ -45156,7 +45175,10 @@ Choose how the server package lays out its routes (experimental).
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         service: Service = wiring.services['service']
         replace_pet_handler = checked(
             service.replace_pet,
@@ -46029,7 +46051,10 @@ without a file against the working directory, and against the pyproject.toml dir
     from ..services import PetsService
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         pets: PetsService = wiring.services['pets']
         list_pets_handler = checked(
             pets.list_pets,
@@ -46062,7 +46087,10 @@ without a file against the working directory, and against the pyproject.toml dir
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         pets: PetsService = wiring.services['pets']
         create_pet_handler = checked(
             pets.create_pet,
@@ -46095,7 +46123,10 @@ without a file against the working directory, and against the pyproject.toml dir
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
         pets: PetsService = wiring.services['pets']
         replace_pet_handler = checked(
             pets.replace_pet,

@@ -256,11 +256,14 @@
  from pydantic import AwareDatetime, Field
  from server import models
  
-@@ -95,108 +94,11 @@
+@@ -101,117 +100,11 @@
      )
  
  
--def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
+-def _add_list_my_pets(
+-    router: APIRouter,
+-    wiring: Wiring,
+-) -> None:
 -    pets: PetsService = wiring.services['pets']
 -    list_my_pets_handler = checked(
 -        pets.list_my_pets,
@@ -288,7 +291,10 @@
 -    )
 -
 -
--def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
+-def _add_get_pet(
+-    router: APIRouter,
+-    wiring: Wiring,
+-) -> None:
 -    pets: PetsService = wiring.services['pets']
 -    get_pet_handler = checked(
 -        pets.get_pet,
@@ -321,7 +327,10 @@
 -    )
 -
 -
--def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
+-def _add_delete_pet(
+-    router: APIRouter,
+-    wiring: Wiring,
+-) -> None:
 -    pets: PetsService = wiring.services['pets']
 -    delete_pet_handler = checked(
 -        pets.delete_pet,

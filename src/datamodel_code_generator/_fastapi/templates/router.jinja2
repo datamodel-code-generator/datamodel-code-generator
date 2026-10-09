@@ -12,7 +12,10 @@ def {{ builder.name }}(
 {%- for route in routes %}
 
 
-def {{ route.adder }}({{ route.router }}: {{ api_router }}, {{ route.wiring }}: {{ wiring }}) -> None:
+def {{ route.adder }}(
+    {{ route.router }}: {{ api_router }},
+    {{ route.wiring }}: {{ wiring }},
+) -> None:
     {{ route.service }}: {{ route.protocol }} = {{ route.wiring }}.services[{{ route.group }}]
     {{ route.handler }} = {{ route.lookup.function }}(
         {{ route.service }}.{{ route.lookup.method }},

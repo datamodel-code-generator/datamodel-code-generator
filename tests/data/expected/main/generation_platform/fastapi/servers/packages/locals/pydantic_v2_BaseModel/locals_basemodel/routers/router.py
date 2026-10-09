@@ -17,7 +17,10 @@ from .._runtime.server.responses import dispatch as dispatch_1
 from ..services import RouterService
 
 
-def _add_wiring(router_1: APIRouter, wiring_1: Wiring) -> None:
+def _add_wiring(
+    router_1: APIRouter,
+    wiring_1: Wiring,
+) -> None:
     router_2: RouterService = wiring_1.services['router']
     wiring_handler_1 = checked_1(
         router_2.wiring,

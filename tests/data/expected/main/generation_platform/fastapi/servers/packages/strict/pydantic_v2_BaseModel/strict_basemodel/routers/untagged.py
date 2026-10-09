@@ -18,7 +18,10 @@ from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
 
-def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
+def _add_get_values(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     untagged: UntaggedService = wiring.services['untagged']
     get_values_handler = checked(
         untagged.get_values,
@@ -69,7 +72,10 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
+def _add_post_form(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     untagged: UntaggedService = wiring.services['untagged']
     post_form_handler = checked(
         untagged.post_form,
@@ -100,7 +106,10 @@ def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_upload(router: APIRouter, wiring: Wiring) -> None:
+def _add_upload(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     untagged: UntaggedService = wiring.services['untagged']
     upload_handler = checked(
         untagged.upload,

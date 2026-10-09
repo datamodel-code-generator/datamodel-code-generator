@@ -71,7 +71,10 @@ show server/routers/pets.py
   | from typing import Final
   | 
   | 
-  | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+  | def _add_list_pets(
+  |     router: APIRouter,
+  |     wiring: Wiring,
+  | ) -> None:
   |     pets: PetsService = wiring.services['pets']
   |     list_pets_handler = checked(
   |         pets.list_pets,
