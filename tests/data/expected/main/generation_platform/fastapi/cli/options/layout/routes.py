@@ -17,7 +17,10 @@ from ._runtime.server.responses import dispatch
 from .services import Service
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service = wiring.services['service']
     list_pets_handler = checked(
         service.list_pets,
@@ -50,7 +53,10 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service = wiring.services['service']
     create_pet_handler = checked(
         service.create_pet,
@@ -83,7 +89,10 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
+def _add_replace_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service = wiring.services['service']
     replace_pet_handler = checked(
         service.replace_pet,

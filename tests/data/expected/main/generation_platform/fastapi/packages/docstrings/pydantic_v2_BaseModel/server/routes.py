@@ -16,7 +16,10 @@ from ._runtime.server.responses import dispatch
 from .services import Service
 
 
-def _add_list_notes(router: APIRouter, wiring: Wiring) -> None:
+def _add_list_notes(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service = wiring.services['service']
     list_notes_handler = checked(
         service.list_notes,
@@ -44,7 +47,10 @@ def _add_list_notes(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_create_note(router: APIRouter, wiring: Wiring) -> None:
+def _add_create_note(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service = wiring.services['service']
     create_note_handler = checked(
         service.create_note,
@@ -71,7 +77,10 @@ def _add_create_note(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-def _add_delete_note(router: APIRouter, wiring: Wiring) -> None:
+def _add_delete_note(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     service: Service = wiring.services['service']
     delete_note_handler = checked(
         service.delete_note,

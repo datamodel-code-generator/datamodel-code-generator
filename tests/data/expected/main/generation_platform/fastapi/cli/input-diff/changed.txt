@@ -153,7 +153,7 @@
          )
 --- server/routers/pets.py (baseline input)
 +++ server/routers/pets.py (current input)
-@@ -28,7 +28,7 @@
+@@ -31,7 +31,7 @@
  
      def list_pets(
          *,

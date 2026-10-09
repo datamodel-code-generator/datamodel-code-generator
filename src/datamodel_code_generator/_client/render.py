@@ -1023,7 +1023,8 @@ class _Resources(_Typing):
             case "binary":
                 return module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
             case _:
-                return "bytes"
+                pass
+        return "bytes"
 
     @cached_property
     def _follows(self) -> bool:

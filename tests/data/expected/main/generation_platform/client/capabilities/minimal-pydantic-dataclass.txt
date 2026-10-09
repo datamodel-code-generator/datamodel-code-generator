@@ -7,28 +7,28 @@ dependencies
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
-  client/client.py: 2047
+  client/client.py: 1801
   client/content.py: 102
   client/errors.py: 306
-  client/logical.py: 189
+  client/logical.py: 230
   client/media.py: 77
   client/native.py: 146
   client/operations.py: 839
-  client/options.py: 299
+  client/options.py: 300
   client/paths.py: 40
   client/positions.py: 79
-  client/raw.py: 836
+  client/raw.py: 710
   client/responses.py: 87
-  client/retry.py: 317
+  client/retry.py: 316
   client/timing.py: 144
   client/urls.py: 80
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 18
   model_codecs/media.py: 300
   model_codecs/native.py: 172
-  model_codecs/parameters.py: 307
+  model_codecs/parameters.py: 312
   model_codecs/unset.py: 11
-total 23 modules, 6404 lines
+total 23 modules, 6078 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py
