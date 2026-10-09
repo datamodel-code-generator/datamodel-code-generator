@@ -1018,7 +1018,7 @@ def write_generated_modules(output_dir: Path, modules: dict[tuple[str, ...], Any
     for module_path, result in modules.items():
         file_path = output_dir.joinpath(*module_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(_get_full_body(result), encoding="utf-8")
+        file_path.write_bytes(_get_full_body(result).encode("utf-8"))
 
 
 def assert_runtime_result_model(output_dir: Path) -> None:
