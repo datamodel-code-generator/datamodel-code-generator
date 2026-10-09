@@ -132,6 +132,7 @@ def native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
             proxy=transport.proxy,
             trust_env=transport.trust_env,
             http2=transport.http2,
+            timeout=httpx2.Timeout(600.0, connect=5.0),
             limits=httpx2.Limits(
                 max_connections=transport.max_connections,
                 max_keepalive_connections=transport.max_keepalive_connections,
@@ -150,6 +151,7 @@ def native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClie
             proxy=transport.proxy,
             trust_env=transport.trust_env,
             http2=transport.http2,
+            timeout=httpx2.Timeout(600.0, connect=5.0),
             limits=httpx2.Limits(
                 max_connections=transport.max_connections,
                 max_keepalive_connections=transport.max_keepalive_connections,

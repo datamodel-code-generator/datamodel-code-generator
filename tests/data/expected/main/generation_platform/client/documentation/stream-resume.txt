@@ -387,29 +387,30 @@ Import `Client` and `AsyncClient` from `client` and the records below from
 `RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
 `UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
 sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
-`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None` and
-`deadline=None` clear their own limits.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`
+removes the optional budget across attempts.
+The previous 60-second whole-call default is removed; set `ClientOptions(total_timeout=60)` to retain it.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
 |---|---|
-| connect / read / write / pool timeout | 5 / 30 / 30 / 5 seconds |
-| total timeout | 60 seconds from logical-call entry |
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
 | retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
 | retry statuses | 408, 429, 500, 502, 503, 504 |
 | maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| stream idle / stream total | 60 seconds / None |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
-Zero retries permits only the initial resource attempt. `Deadline.after(seconds)` shares an absolute monotonic expiry
-across calls; the earlier of that expiry and the relative total timeout wins. Each attempt receives its remaining
-phase timeout. Callbacks and cleanup are cooperative and may return after a deadline.
-Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
-`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
-`Deadline.after(seconds, clock=...)` creates a deadline
-on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
+Zero retries permits only the initial resource attempt. An optional `total_timeout` is checked before attempts and
+retry waits, and caps the native I/O phase timeouts. A fully received response remains available when decoding or
+cleanup finishes after that budget. Stream idle I/O uses the native read timeout.
+Native cancellation remains the original exception.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call.
+
 
 ## Retry decisions and delays
 
@@ -428,8 +429,8 @@ an options value cannot invent that declaration, and explicit None disables an i
 Status errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
 including retry exhaustion, rather than raising status errors. Transport, cancellation, and redirect-policy failures
 still raise. Stream acquisition can retry; body reads never retry after handle handoff.
-After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
-phase cap still applies. Close an abandoned stream to release its response and limiter permit.
+After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
+set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
 
 ## Idempotency and replayable input
 
@@ -551,8 +552,8 @@ Native task cancellation propagates unchanged, and user callbacks are not shield
 ## SSE or NDJSON streams
 
 An SSE or NDJSON helper's `open` is one session holding one logical call. The call's total timeout bounds only
-acquiring the response, which must be a declared success of the helper's media type; afterward the stream's idle
-timeout, the call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's
+acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
 options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
 from:
 
@@ -562,7 +563,7 @@ from:
 
 | Limit | Effective default |
 |---|---|
-| idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
+| idle timeout | the native read timeout; None removes it |
 | line size | 256 KiB |
 | event data size | 1 MiB |
 | session total timeout | None |

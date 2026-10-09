@@ -20,7 +20,6 @@ from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permi
 from pets.options import (
     ClientOptions,
     Clock,
-    Deadline,
     IdempotencyKey,
     RedirectOptions,
     RequestOptions,
@@ -40,7 +39,13 @@ from pets_models import (
 )
 
 
-def misuse(client: Client, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter, body: NewPet, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
+def misuse(
+    client: Client,
+    trace: FieldPetsGetHeaderXTraceParameter,
+    pet: FieldPetsPetIdGetPathPetIdParameter,
+    body: NewPet,
+    photo: FieldPetsPetIdPhotoPutPathPetIdParameter,
+) -> None:
     client.pets.list_pets()  # error
     client.pets.list_pets(x_trace=trace, limit=None)  # error
     client.pets.create_pet(body=body, media_type="text/csv")  # error
@@ -75,7 +80,9 @@ async def misuse_raw_async(client: AsyncClient, pet: FieldPetsPetIdGetPathPetIdP
     del chunks
 
 
-async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
+async def misuse_bodies(
+    client: Client, aclient: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter
+) -> None:
     from pets.bodies import AsyncFileBody, BodyFactory, FileBody, StreamBody
 
     client.pets.photos.upload(pet_id=photo, body=AsyncFileBody(file))  # error
@@ -85,7 +92,12 @@ async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO, ph
     BodyFactory(lambda: b"")  # error
 
 
-def misuse_multipart(client: Client, file: BinaryIO, pet: FieldPetsPetIdFilesPostPathPetIdParameter, files: FieldPetsPetIdFilesGetPathPetIdParameter) -> None:
+def misuse_multipart(
+    client: Client,
+    file: BinaryIO,
+    pet: FieldPetsPetIdFilesPostPathPetIdParameter,
+    files: FieldPetsPetIdFilesGetPathPetIdParameter,
+) -> None:
     from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
     from pets.model_codecs import JSONValue
 
@@ -112,17 +124,13 @@ def misuse_hooks() -> None:
     RequestOptions(context={"tags": ["a"]})  # error
 
 
-def misuse_timing(deadline: Deadline, phase: TimeoutOptions, context: LimiterContext) -> None:
-    Deadline.after("soon")  # error
+def misuse_timing(phase: TimeoutOptions, context: LimiterContext) -> None:
     TimeoutOptions(connect="slow")  # error
     ClientOptions(timeout=30)  # error
     RequestOptions(total_timeout="soon")  # error
     RequestOptions(deadline=60)  # error
     RequestOptions(stream_idle_timeout="forever")  # error
     RequestOptions(stream_total_timeout="forever")  # error
-    deadline.at = 0  # error
-    deadline.clock = Clock()  # error
-    Deadline.after(1, clock="system")  # error
     Clock(monotonic=0.0)  # error
     RequestOptions(clock=Clock())  # error
     ClientOptions(clock=None)  # error

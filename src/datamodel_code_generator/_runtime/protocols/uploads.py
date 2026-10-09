@@ -57,7 +57,6 @@ if TYPE_CHECKING:
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
-    from ..client.timing import Deadline
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
     from .pagination import PageBinding
@@ -195,7 +194,6 @@ class _Limits:
     max_parts: int | None = 10000
     max_uncertain_probes: int = 3
     total_timeout: float | None = None
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -248,7 +246,6 @@ def _limits(
         max_parts=layered(kinds, "max_parts", _DEFAULTS.max_parts),
         max_uncertain_probes=layered(kinds, "max_uncertain_probes", _DEFAULTS.max_uncertain_probes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         options=request,
         clock=core.clock,
     )
@@ -824,7 +821,6 @@ def _session(limits: _Limits) -> OperationSession:
 
     return OperationSession(
         total_timeout=limits.total_timeout,
-        deadline=limits.deadline,
         clock=limits.clock,
     )
 

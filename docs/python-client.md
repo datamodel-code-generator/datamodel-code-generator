@@ -371,7 +371,7 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | `PollOptions` | `max_polls` | `1000` | Positive integer or `None` |
 | | `interval` | The declared interval, `1` second by default | Positive duration |
 | | `max_wait` | `60` seconds | Positive duration or `None` |
-| `StreamOptions` | `idle_timeout` | The merged `stream_idle_timeout` | Positive duration or `None` |
+| `StreamOptions` | `idle_timeout` | The native read timeout | Positive duration or `None` |
 | | `max_line_bytes` | `262144` | Positive integer |
 | | `max_event_bytes` | `1048576` | Positive integer |
 | | `reconnect` | `False` | `bool` |
@@ -942,7 +942,6 @@ session's. Each limit comes from the call's options, then the helper's `Protocol
 | `PaginationOptions.max_page_bytes` | 8 MiB of decoded body per page | Not allowed |
 | `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise; also a next URL's bytes, within 8 KiB, and a page's Link values | Not allowed |
 | `SessionOptions.total_timeout` | No limit | Removes the limit |
-| `SessionOptions.deadline` | None | No deadline |
 
 A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally even
 exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page that
@@ -1187,10 +1186,10 @@ HTTP date, makes the wait longer, never shorter. The delay counts from the final
 inside it, so a retry's own delay is never added to the poll interval. A poll or a result fetch that fails with a
 response, such as a `503` after its retries, sets the next wait from that response the same way before its error is
 raised, and the next poll or fetch waits for it; the first result fetch is sent at once. `status` waits the same way.
-An interval longer than `PollOptions.max_wait`, or not shorter than the session's `total_timeout` or the time left
-before its `deadline`, could never be waited out, so `start` raises `ConfigurationError` with the
+An interval longer than `PollOptions.max_wait`, or not shorter than the session's `total_timeout`, could never be
+waited out, so `start` raises `ConfigurationError` with the
 `field_path` `("poll_options", "interval")` before sending the create request. A wait a server delay makes longer
-than `max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
+than `max_wait`, or not shorter than the remaining budget derived from the session and call `total_timeout`, raises
 `PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
 the handle stays as it was. Async waits propagate native task cancellation unchanged. Once the client is
 closed, every later `status` or `wait` that needs a poll or a result fetch raises `ConfigurationError` with the reason
@@ -1210,7 +1209,6 @@ earlier of its own and the session's. Each limit comes from the call's options, 
 | `PollOptions.interval` | The declared `interval.seconds`, 1 second by default | Not allowed |
 | `PollOptions.max_wait` | 60 seconds | Removes the limit |
 | `SessionOptions.total_timeout` | 600 seconds from `start` | Removes the limit |
-| `SessionOptions.deadline` | None | No deadline |
 
 A poll past a limit raises `SessionLimitError` with the kind `polls` and the progress so far, before sending, keeping
 a checkpoint of the handle as `resume_state`. The options of `start` apply to
@@ -1610,7 +1608,6 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 | `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
 | `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
 | `SessionOptions.total_timeout` | No limit | Removes the limit |
-| `SessionOptions.deadline` | None | No deadline |
 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
 `start` or `resume` for the whole life of the handle. A long upload stepped slowly may then need a larger timeout,
@@ -1760,21 +1757,18 @@ condition `transport` and the transport failure as its `cause`. `sequence` is th
 
 ### Stream limits and sessions
 
-`open` is one session holding one logical call. The call's total timeout bounds only acquiring the response; the
-stream then ends no later than the earlier of the call's `stream_total_timeout` from the handoff and the session's
-deadline, raising `APITimeoutError` with the reason `deadline_exceeded` and the phase `stream` at the next step, even
-for an event whose bytes it already read, and releasing the response. Its idle timeout counts only while a step waits
-for bytes, comments included, so a pause between steps never counts, and raises `APITimeoutError` with the reason
-`phase_timeout`. Each limit comes from the call's
-options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+`open` is one session holding one logical call. An optional total timeout bounds attempts while acquiring the
+response. Native read timeouts bound idle I/O while reading the stream, and a helper session's optional total timeout
+is checked before the next step. Decoding and cleanup preserve fully received results after a request budget expires.
+Each limit comes from the call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
+then the default below:
 
 | Limit | Default | None |
 |---|---|---|
-| `StreamOptions.idle_timeout` | The call's merged `stream_idle_timeout`, 60 seconds by default | No idle limit |
+| `StreamOptions.idle_timeout` | The native read timeout | No idle limit |
 | `StreamOptions.max_line_bytes` | 256 KiB per line | Not allowed |
 | `StreamOptions.max_event_bytes` | 1 MiB of data per event | Not allowed |
 | `SessionOptions.total_timeout` | None | No session deadline |
-| `SessionOptions.deadline` | None | No deadline |
 | `StreamOptions.reconnect` | False | Not allowed |
 | `StreamOptions.max_reconnects` | 5 reconnections, counted across resumes; 0 allows none | Removes the limit |
 | `StreamOptions.max_reconnect_wait` | 60 seconds | No wait limit |
@@ -2196,19 +2190,19 @@ never show messages, URLs, headers, or close reasons.
 ### WebSocket limits
 
 Each limit comes from the call's `ws_options`, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
-then the default below. The session's deadline and its idle, send, and pong timeouts run on the client's `Clock`; a wait
-ends once that clock reaches its end, or once as much real time passed as the clock had left when the wait began:
+then the default below. The session's optional total budget uses the client's `Clock`; native socket operations
+receive the remaining duration as their timeout:
 
 | Limit | Default | None |
 |---|---|---|
 | `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, and write timeouts and the deadline | No open limit |
-| `WSOptions.idle_timeout` | The call's merged `stream_idle_timeout`, 60 seconds by default | No idle limit |
+| `WSOptions.idle_timeout` | The native read timeout | No idle limit |
 | `WSOptions.max_message_bytes` | 1 MiB per message, after decompression | Not allowed |
 | `WSOptions.max_queue` | 16 frames: the high-water mark of received frames, above which reading pauses | Not allowed |
 | `WSOptions.send_timeout` | 30 seconds, waiting for earlier sends included | No send limit |
 | `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
 | `WSOptions.close_timeout` | 5 seconds | Not allowed |
-| `SessionOptions.total_timeout`, `deadline` | None | No session deadline |
+| `SessionOptions.total_timeout` | None | No session budget |
 
 A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after the connection closed with
 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason `phase_timeout` and the
@@ -2839,19 +2833,19 @@ fields, a missing required field, a field of another media type, or fields for a
 
 ```text
 a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields missing a required one ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='missing', field_path='media_type') [operation_id='createPet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': 60.0, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None attempts=0 request_id=None timed=True context={}
 update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', reason='without_body', field_path='media_type') [operation_id='updatePet', field_path=('media_type',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] without_body
 ```
@@ -2936,79 +2930,48 @@ Error: /paths/~1animals~1any/put/requestBody: The union of Cat and Dog needs a d
 
 ## Timeouts and cancellation
 
-The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, `Deadline`,
-`Clock`, and native task cancellation. These settings apply to typed operations and `request_raw`, including their response and
-streaming views. The following examples use a generated package named `pets` and take the service URL from their
-caller.
+The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, and `Clock`.
+These settings apply to typed operations and `request_raw`, including their response and streaming views.
 
 | Option | Effective default | Meaning |
 |---|---|---|
-| `timeout` | `TimeoutOptions(connect=5, read=30, write=30, pool=5)` | Native I/O phase limits, in seconds |
-| `total_timeout` | `60` | Relative budget from call entry through encoding, callbacks, sending, reading, and decoding |
-| `deadline` | `None` | An absolute monotonic deadline created by `Deadline.after(seconds)` |
-| `stream_idle_timeout` | `60` | Read inactivity limit after a streaming response is handed to the caller |
-| `stream_total_timeout` | `None` | Total stream lifetime after handoff |
+| `timeout` | Owned client: connect 5, read/write/pool 600 seconds; injected client: its native timeouts | Native I/O phase limits |
+| `total_timeout` | `None` | Optional budget across attempts and retry waits, starting at call entry |
 | `limiter` | `None` | An application-provided `Limiter` or `AsyncLimiter` |
-| `clock` | `Clock()`, the system clock | Client only: the time and jitter sources of every call, described in [Clocks and retry jitter](#clocks-and-retry-jitter) |
+| `clock` | `Clock()`, the system clock | Client only: time and jitter sources |
 
-Omitted fields remain `UNSET` until resolution. Each field inherits in this order: request, `with_options` view,
-client, generated default. `TimeoutOptions` merges each phase separately. For example, a client's
-`TimeoutOptions(connect=3, read=5)` and a view's `TimeoutOptions(write=7)` resolve to connect/read/write/pool limits
-of `3/5/7/5` seconds; a request that sets only `pool=2` changes them to `3/5/7/2`.
+Omitted fields remain `UNSET` until resolution. Each field inherits from the request, the nearest `with_options`
+view, and the client. An injected HTTP client's native timeouts supply the initial phase settings.
+`TimeoutOptions` merges each phase separately. `timeout=None` clears all four phase limits, while
+`TimeoutOptions(read=None)` clears only the read limit. `total_timeout=None` removes an inherited total budget.
+Durations must be finite and nonnegative; booleans are rejected. Invalid values raise `ConfigurationError` with the
+option's `field_path`. `total_timeout=0` is valid configuration; starting a call with it raises
+`APITimeoutError` before preparing or sending a request.
 
-`timeout=None` clears all four phase limits; `TimeoutOptions(read=None)` clears just the read limit. Neither clears
-the total budget. `total_timeout=None` clears the inherited relative limit, and `deadline=None` clears the inherited
-absolute deadline. With both present, the earlier deadline applies. `stream_idle_timeout=None` and
-`stream_total_timeout=None` clear only their respective stream limits. `limiter=None` removes the inherited
-limiter.
+### An optional budget across attempts
 
-Durations must be finite and nonnegative; booleans are rejected.
-Invalid timeout values raise `ConfigurationError` with the
-option's `field_path`, such as `("timeout", "read")`. `total_timeout=0` raises `APITimeoutError` with the reason
-`deadline_exceeded` before body factories, limiter acquisition, or sending; hooks still receive `call_start` and
-`call_end` with zero attempts.
-
-### A budget shared by every phase
-
-`Deadline.after(10)` fixes the expiry when it is created. Reusing that object across calls shares the same expiry;
-each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp on the
-deadline's clock, `Deadline.clock`, and `remaining()` returns the seconds left on that clock, never a negative number.
-Do not compare `at` with wall-clock timestamps.
+The experimental runtime no longer supplies the previous 60-second whole-call budget. Set
+`ClientOptions(total_timeout=60)` to retain that limit. Native phase timeouts bound each I/O wait; they do not
+limit the total duration of a call that keeps making progress.
 
 ```python
 from pets import Client
-from pets.options import Deadline, RequestOptions, TimeoutOptions
+from pets.options import RequestOptions, TimeoutOptions
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
-    deadline = Deadline.after(10)
-    options = RequestOptions(total_timeout=20, deadline=deadline, timeout=TimeoutOptions(read=3))
-    view = client.with_options(options)
-    response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
-    return response.read()
+    options = RequestOptions(total_timeout=10, timeout=TimeoutOptions(connect=2, read=3))
+    return client.request_raw("GET", url, options=options).read()
 ```
 
-This call has at most the remaining portion of the ten-second absolute budget. Its connect and read phases also
-have their own two- and three-second caps. A phase is clamped to the remaining total budget when that is smaller.
+Before an attempt or retry wait, the client checks the remaining budget. Each native I/O timeout is capped by that
+remaining duration. Native timeout failures retain their native phase and cause; a native failure that arrives once
+the budget has expired raises `deadline_exceeded` with that native phase and cause. An expired budget prevents another
+attempt; fully received responses remain available when decoding or cleanup finishes after expiry. A sequence of
+reads can take longer than the budget because native read timeouts apply to each I/O wait.
 
-`APITimeoutError`, a subclass of `APIConnectionError`, with the reason `phase_timeout` means the phase's own cap
-expired. It carries `phase`, `effective_timeout`, `delivery_state`, and the native timeout in `cause`. A cap supplied by
-the total deadline instead raises `APITimeoutError` with the reason `deadline_exceeded`; equal caps favor the deadline.
-That error carries `deadline_at`, the absolute monotonic deadline, `elapsed`, `delivery_state`, and the interrupted
-activity in `phase`. Logical deadlines never retry.
-Connect and pool timeouts can be candidates under the safety, replay, and budget rules below; pool timeouts are
-excluded unless `retry_on_pool_timeout=True` is explicit. A read or write timeout may have reached the server and is
-never resent.
-
-Synchronous total deadlines are cooperative: the client checks them around callbacks and encoding/decoding, and at
-SDK send and chunk boundaries. A blocking callback, DNS resolution, or native socket operation can return after the
-deadline; the client then raises `APITimeoutError` with the reason `deadline_exceeded` and starts no further network
-work. Native read caps are latched when acquisition or body reading begins, so a sequence of reads or HTTP/2 stream
-processing can overrun a total deadline. There is no background thread that forcibly interrupts a synchronous call.
-
-Async clients use HTTPX2's native backend and run calls in the caller's task. Native task cancellation propagates
-unchanged. Total deadlines are cooperative around preparation and user callbacks, and each attempt clamps its
-native phase timeouts to the remaining total deadline. An expired deadline never authorizes a later send.
+Connect and pool timeouts may qualify for a retry under the safety and replay rules below; pool timeouts require
+`retry_on_pool_timeout=True`. Read and write failures may have reached the server and are never resent.
 
 ### Native cancellation
 
@@ -3019,39 +2982,31 @@ scope. Synchronous preparation and callbacks remain cooperative.
 
 ### Streaming after handoff
 
-A streaming call uses its ordinary call deadline while acquiring the response. After the context manager yields
-the handle, `stream_idle_timeout` and `stream_total_timeout` apply. The completed acquisition's remaining time is
-not carried into the stream's deadline. A streaming request is sent with a read limit of `stream_idle_timeout`, or an
-explicit `TimeoutOptions(read=...)` when that is smaller, capped by the time the call had left, and every body read
-keeps it; the idle limit is also checked when each read returns.
+Streaming uses the native read timeout for idle I/O. An optional acquisition budget caps the request's native
+phase timeouts before sending; it does not add a separate stream lifetime timer.
 
 ```python
 from typing import BinaryIO
 
 from pets import Client
-from pets.options import RequestOptions
+from pets.options import RequestOptions, TimeoutOptions
 
 
 def download(client: Client, url: str, destination: BinaryIO) -> None:
-    options = RequestOptions(total_timeout=10, stream_idle_timeout=60, stream_total_timeout=300)
+    options = RequestOptions(timeout=TimeoutOptions(read=60))
     with client.with_streaming_response.request_raw("GET", url, options=options) as response:
         response.stream_to(destination)
 ```
 
-Here acquisition has ten seconds, which also caps how long one body read may stall, and the stream has five minutes
-after handoff.
-Idle expiry raises a read `APITimeoutError` with the reason `phase_timeout`; stream-total expiry raises
-`APITimeoutError` with the reason `deadline_exceeded` and `phase="stream"`. Sync and async streams check both limits at
-SDK chunk boundaries. Always leave the response's context manager, including when abandoning a download early.
+Always leave the response's context manager, including when abandoning a download early. A configured helper
+session may additionally stop before its next step when its total budget has expired.
 
 `stream_to(path)` writes the decoded body to a new temporary file beside the target and moves it there only once the
 body is complete. A handle whose body is already being read or is gone raises `ConfigurationError` with the reason
 `response_consumed` before any file work, and an existing target raises `FileExistsError` unless `overwrite=True`. A
 Failure while the body streams closes the response, removes its temporary file in `finally`, and leaves an
 existing target unchanged. Async file operations run one at a time in a thread, and a cancelled caller still waits for
-the running one, so file work finishes before the file is released, closed or rewound. Creating a file
-and writing streamed bytes count against the stream's total deadline, while idle timeout measures network waits.
-Saved buffered bytes remain usable after the call completes.
+the running one, so file work finishes before the file is released, closed or rewound. Saved buffered bytes remain usable after the call completes.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
@@ -3072,16 +3027,9 @@ and flows keep their own time through `OAuthProviderOptions(clock=...)`, since o
 A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
 as a UTC datetime. A helper's `resume` checks a token's expiry by its client's wall clock.
 
-A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
-default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it
-correctly. A call given a deadline made on another `Clock` object moves it onto its own clock by the time remaining at
-call entry. A deadline made on the client's own `Clock` object stays the same object, so
-the `deadline_at` of an `APITimeoutError` with the reason `deadline_exceeded` equals its `at`.
-
-The client still waits in real time. A retry sleep or a wait before a poll ends once its clock reaches the target or
-once as much real time has passed as the wait measured on its clock when it began, whichever comes first, so a frozen
-clock still waits as long as the policy chose. An I/O timeout or an asyncio deadline timer lasts the time left that was
-measured on the clock when it started. Closing a client and its cleanup limits use the system clock.
+A private request budget uses its client's monotonic source. Retry and polling waits pass the remaining duration
+to ordinary sleeps, and I/O timeouts use the duration measured before the operation. A frozen test clock therefore
+leaves waits in real time.
 
 A test clock that should skip a wait advances itself, for example from a hook when a retry is scheduled:
 

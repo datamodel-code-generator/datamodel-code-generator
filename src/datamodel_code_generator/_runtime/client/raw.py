@@ -10,7 +10,6 @@ import errno
 import os
 import threading
 from contextlib import aclosing
-from functools import partial
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
@@ -299,12 +298,12 @@ class _Raw(Generic[SourceT, HandleT]):
     def _budget(self, limit: int | None) -> _Budget:
         return _Budget(limit, self._info, self._operation_id)
 
-    def _check(self, started: float | None = None) -> None:
-        """Observe the active acquisition or stream deadline, and the idle limit of a read that began at `started`."""
+    def _check(self) -> None:
+        """Check an optional helper session before its next read."""
+        if self._call.session is None:
+            return
         try:
-            self._call.check("stream" if self._call.streaming else "send", DeliveryState.RESPONSE_STARTED)
-            if started is not None:
-                self._call.idle(started)
+            self._call.check("stream", DeliveryState.RESPONSE_STARTED)
         except SDKError as error:
             error.info = self._info
             raise
@@ -561,19 +560,9 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         self._end("buffered")
 
     def _chunks(self) -> Iterator[bytes]:
-        """Check both sides of every native read before yielding its bytes to the decoder."""
+        """Read bytes with native I/O timeouts."""
         self._check()
-        source = self._source()
-        while True:
-            self._check()
-            started = self._call.monotonic()
-            try:
-                chunk = next(source)
-            except StopIteration:
-                self._check()
-                return
-            self._check(started)
-            yield chunk
+        yield from self._source()
 
     def _recorded(self, parts: list[bytes], limit: int | None) -> Iterator[bytes]:
         """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
@@ -768,7 +757,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         download = _Download(worker)
         chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
         try:
-            created = await self._disk(partial(download.create, path, overwrite))
+            created = await download.create(path, overwrite)
             chunks = self._iterate(action="stream_to", decoded=True)
             async with aclosing(chunks):
                 async for chunk in chunks:
@@ -784,18 +773,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise
         finally:
             worker.close()
-
-    async def _disk(self, operation: Callable[[], Awaitable[T]]) -> T:
-        """Await disk work under the stream limits and deadline; buffered bodies need no deadline."""
-        if self._state == "buffered":
-            return await operation()
-        try:
-            return await self._call.bounded(
-                operation, phase="stream", delivery_state=DeliveryState.RESPONSE_STARTED, idle=False
-            )
-        except SDKError as error:
-            error.info = self._info
-            raise
 
     async def raise_for_status(self) -> None:
         """Return for a success; close and raise the typed failure of any other status from its error prefix.
@@ -874,11 +851,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         source = self._source()
         while True:
             try:
-                chunk = await self._call.bounded(
-                    source.__anext__,
-                    phase="stream" if self._call.streaming else "send",
-                    delivery_state=DeliveryState.RESPONSE_STARTED,
-                )
+                chunk = await anext(source)
             except StopAsyncIteration:
                 return
             yield chunk

@@ -147,7 +147,7 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
         with api.with_streaming_response.request_raw(
             "GET",
             "https://example.com/handoff",
-            options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
+            options=options.RequestOptions(total_timeout=1),
         ) as response:
             record(lines, "stream read past the acquisition deadline", response.read)
         for label, idle in (("default", options.UNSET), ("disabled", None)):
@@ -156,14 +156,13 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
             with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/read-cap",
-                options=options.RequestOptions(stream_idle_timeout=idle, total_timeout=None),
+                options=options.RequestOptions(timeout=options.TimeoutOptions(read=idle), total_timeout=None),
             ) as response:
                 lines.append(f"  stream read cap {label} {outcome(response.read)}")
             lines.append(f"  stream observed read cap {seen}")
         for label, settings in (
-            ("idle", options.RequestOptions(total_timeout=5, stream_idle_timeout=0.2)),
-            ("read", options.RequestOptions(timeout=options.TimeoutOptions(read=0.2), stream_idle_timeout=None)),
-            ("total", options.RequestOptions(stream_total_timeout=0.2, stream_idle_timeout=3)),
+            ("idle", options.RequestOptions(total_timeout=5, timeout=options.TimeoutOptions(read=0.2))),
+            ("read", options.RequestOptions(timeout=options.TimeoutOptions(read=0.2))),
         ):
             exchange.respond(_delayed(2))
             with api.with_streaming_response.request_raw(
@@ -249,7 +248,7 @@ def _http2(package: ModuleType, lines: list[str]) -> None:
             with api.with_streaming_response.request_raw(
                 "GET",
                 server.url,
-                options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
+                options=options.RequestOptions(total_timeout=1),
             ) as response:
                 record(lines, "HTTP2 stream read past the acquisition deadline", response.read)
         lines.append(f"  HTTP2 sync protocols {server.protocols!r} requests {server.requests}")
@@ -265,7 +264,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
         async with api.with_streaming_response.request_raw(
             "GET",
             "https://example.com/handoff",
-            options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
+            options=options.RequestOptions(total_timeout=1),
         ) as response:
             await arecord(lines, "async stream read past the acquisition deadline", response.read)
         for label, idle in (("default", options.UNSET), ("disabled", None)):
@@ -274,14 +273,13 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             async with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/read-cap",
-                options=options.RequestOptions(stream_idle_timeout=idle, total_timeout=None),
+                options=options.RequestOptions(timeout=options.TimeoutOptions(read=idle), total_timeout=None),
             ) as response:
                 lines.append(f"  async stream read cap {label} {await aoutcome(response.read)}")
             lines.append(f"  async stream observed read cap {seen}")
         for label, settings in (
-            ("idle", options.RequestOptions(total_timeout=5, stream_idle_timeout=0.2)),
-            ("read", options.RequestOptions(timeout=options.TimeoutOptions(read=0.2), stream_idle_timeout=None)),
-            ("total", options.RequestOptions(stream_total_timeout=0.2, stream_idle_timeout=3)),
+            ("idle", options.RequestOptions(total_timeout=5, timeout=options.TimeoutOptions(read=0.2))),
+            ("read", options.RequestOptions(timeout=options.TimeoutOptions(read=0.2))),
         ):
             exchange.respond(_delayed(2))
             async with api.with_streaming_response.request_raw(
@@ -421,7 +419,7 @@ async def _async_http2(package: ModuleType, lines: list[str]) -> None:
             async with api.with_streaming_response.request_raw(
                 "GET",
                 server.url,
-                options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
+                options=options.RequestOptions(total_timeout=1),
             ) as response:
                 await arecord(lines, "HTTP2 async stream read past the acquisition deadline", response.read)
         lines.append(f"  HTTP2 async protocols {server.protocols!r} requests {server.requests}")
