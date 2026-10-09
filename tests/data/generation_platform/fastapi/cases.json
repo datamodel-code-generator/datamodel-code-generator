@@ -304,6 +304,34 @@
   "security-errors": {
     "input": "security-errors.yaml"
   },
+  "references": {
+    "input": "references.yaml",
+    "files": [
+      "references-library.yaml"
+    ],
+    "config": {
+      "layout": "single"
+    }
+  },
+  "self-references": {
+    "input": "self-references.yaml",
+    "files": [
+      "references-library.yaml"
+    ],
+    "expected": "references",
+    "model": {
+      "input_filename": "references.yaml"
+    },
+    "config": {
+      "layout": "single"
+    }
+  },
+  "reference-errors": {
+    "input": "reference-errors.yaml"
+  },
+  "link-errors": {
+    "input": "link-errors.yaml"
+  },
   "info": {
     "input": "info.yaml",
     "config": {

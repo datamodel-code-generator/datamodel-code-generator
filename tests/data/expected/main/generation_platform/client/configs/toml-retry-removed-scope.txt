@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_UNKNOWN config operations[0].runtime.idempotency.scope: operations[0].runtime.idempotency has no key 'scope'

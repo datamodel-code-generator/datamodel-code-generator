@@ -46,7 +46,7 @@ from ..client.retry import RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions, on_clock
 from ..client.urls import absolute_target, request_origin, strip_query
 from ..model_codecs.unset import UNSET, Unset
-from .options import ClientOptions, ProtocolClientOptions
+from .client_options import ClientOptions
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Sequence
@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from ..client.timing import Deadline
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
-    from .options import ProtocolDefaults, ProtocolSecurityContext
+    from .options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
     from .references import OperationRef
 
 _NOT_MODIFIED = 304

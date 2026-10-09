@@ -358,6 +358,26 @@ def _problem(
     )
 
 
+def _unresolved(declaration: WireDeclaration) -> str | None:
+    """Return the reference of a declaration that reaches no object of the loaded documents."""
+    return next((item.reference for item in declaration.references if item.state != "resolved"), None)
+
+
+def unresolved_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, ...]:
+    """Return the problems of the operations' response links whose references reach no loaded link."""
+    return tuple(
+        _problem(
+            "F_LINK_INVALID",
+            f"The link {link.name!r} references {reference!r}, which reaches no loaded link",
+            link.use_site,
+        )
+        for operation in operations
+        for response in operation.responses
+        for link in response.children
+        if link.kind == "link" and (reference := _unresolved(link)) is not None
+    )
+
+
 def _label(operation: OperationContract) -> str:
     return f"{operation.method.upper()} {operation.path}"
 
@@ -435,7 +455,10 @@ class Planner:  # noqa: PLR0904
         for selector, value in values.items():
             reference = OperationRef(pointer=selector) if isinstance(selector, str) else selector
             if (operation := self.request.resolve(reference)) is None:
-                message = f"The {option} entry {reference.pointer!r} {self.request.unresolved}"
+                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+
+                named = named_document(reference.document, reference.document)
+                message = f"The {option} entry {reference.pointer!r}{named} {self.request.unresolved}"
                 self.problems.append(_problem("E_OPERATION_REF", message, option_path=option))
             elif (key := operation.id.use_site.pointer) in resolved:
                 message = f"The {option} setting names {key!r} twice"
@@ -559,6 +582,9 @@ class Planner:  # noqa: PLR0904
         if (declaration := self.scheme_declarations.get((operation.id.use_site.document, name))) is None:
             message = f"{_label(operation)} requires the undeclared security scheme {name!r}"
             self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
+        elif (reference := _unresolved(declaration)) is not None:
+            message = f"The security scheme {name!r} references {reference!r}, which reaches no loaded security scheme"
+            self.problems.append(_problem("F_SECURITY_INVALID", message, declaration.use_site))
         elif (scheme := _scheme(name, declaration)) is None:
             message = f"The apiKey security scheme {name!r} needs a name and a location of header, query, or cookie"
             self.problems.append(_problem("F_SECURITY_INVALID", message, declaration.use_site))

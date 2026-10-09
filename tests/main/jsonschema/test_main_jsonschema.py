@@ -4543,6 +4543,45 @@ def test_main_strict_types_with_constraints(output_file: Path) -> None:
     )
 
 
+@LEGACY_BLACK_SKIP
+def test_main_strict_types_time(output_file: Path) -> None:
+    """Test strict float keeps string time formats as time while numbers stay strict."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "strict_types_time.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="strict_types_time.py",
+        extra_args=["--strict-types", "str", "bytes", "int", "float", "bool"],
+    )
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("strict_float.py", ["--strict-types", "float"]),
+        ("non_negative.py", ["--use-non-positive-negative-number-constrained-types"]),
+        (
+            "field_constraints_non_negative.py",
+            ["--field-constraints", "--use-non-positive-negative-number-constrained-types"],
+        ),
+        ("decimal_multiple_of.py", ["--use-decimal-for-multiple-of"]),
+    ],
+)
+def test_main_string_time_number_constraints(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test string time formats drop number constraints like string dates while numbers keep them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "string_time_number_constraints.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"string_time_number_constraints/{expected_file}",
+        extra_args=extra_args,
+    )
+
+
 def test_main_selective_constraint_kwargs_pydantic_v2(output_file: Path) -> None:
     """Test primitive constraints are preserved without dumping the full schema object."""
     run_main_and_assert(
@@ -13804,6 +13843,63 @@ def test_main_jsonschema_serialization_aliases_with_use_serialization_alias_pyda
             "--output-model-type",
             "pydantic_v2.BaseModel",
             "--use-serialization-alias",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("field_names", "field_name_args"),
+    [
+        ("schema_names", []),
+        ("snake_case_field", ["--snake-case-field"]),
+        ("multiple_aliases", ["--aliases", '{"foo_bar": ["foo_bar", "fooBar"]}']),
+    ],
+    ids=["schema_names", "snake_case_field", "multiple_aliases"],
+)
+@pytest.mark.parametrize("alias_generator", ["to_camel", "to_pascal", "to_snake"])
+def test_main_jsonschema_use_serialization_alias_alias_generator(
+    output_file: Path, alias_generator: str, field_names: str, field_name_args: list[str]
+) -> None:
+    """Keep the schema name on output for a field the alias generator would rename."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"alias_generator_serialization_alias/{alias_generator}_{field_names}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            alias_generator,
+            "--use-serialization-alias",
+            *field_name_args,
+        ],
+    )
+    payload = (JSON_DATA_PATH / "alias_generator_serialization_alias" / f"{field_names}.json").read_text(
+        encoding="utf-8"
+    )
+    with _generated_model(output_file, "alias_generator_serialization_alias", "AliasGeneratorModel") as model:
+        assert_output(
+            model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2) + "\n",
+            EXPECTED_JSON_SCHEMA_PATH / "alias_generator_serialization_alias" / "round_trip.txt",
+        )
+
+
+def test_main_jsonschema_use_serialization_alias_alias_generator_template_data_dataclass(output_file: Path) -> None:
+    """Leave dataclass fields without a redundant alias when template data names a generator the template ignores."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_serialization_alias/template_data_dataclass.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-serialization-alias",
+            "--extra-template-data",
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_alias_generator.json"),
         ],
     )
 

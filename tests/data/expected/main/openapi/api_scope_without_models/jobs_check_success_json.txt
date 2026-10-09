@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "batch",
+  "jobs": [
+    {
+      "name": "models",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": true,
+        "content": "",
+        "differences": []
+      }
+    },
+    {
+      "name": "package",
+      "result": {
+        "version": 1,
+        "format": "json",
+        "kind": "check",
+        "success": true,
+        "content": "",
+        "differences": []
+      }
+    }
+  ]
+}

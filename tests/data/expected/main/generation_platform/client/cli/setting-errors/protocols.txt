@@ -1,0 +1,1 @@
+Error: --client-protocols['pets.all'] needs 'operation'; --client-protocols['pets.all'] needs 'items'; --client-protocols['pets.all'] needs 'item_schema'; --client-protocols['pets.all'] needs 'continuation'; --client-protocols['Bad'].kind must be 'pagination', 'polling', 'sse', 'ndjson', 'websocket', 'webhook', 'cache' or 'resumable_upload'

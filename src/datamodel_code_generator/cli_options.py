@@ -985,6 +985,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
                 option="--server-model-package", message="`--generate-server` requires `--server-model-package`."
             ),
         ),
+        conflicts=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--generate-server` can not be used with `--generate-client`."
+            ),
+        ),
     ),
     "--server-output": CLIOptionMeta(
         name="--server-output",
@@ -1110,6 +1115,112 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         requires=(
             CLIOptionRelation(
                 option="--generate-server", message="`--server-parameter-names` requires `--generate-server fastapi`."
+            ),
+        ),
+    ),
+    "--generate-client": CLIOptionMeta(
+        name="--generate-client",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(option="--client-output", message="`--generate-client` requires `--client-output`."),
+            CLIOptionRelation(option="--client-package", message="`--generate-client` requires `--client-package`."),
+            CLIOptionRelation(
+                option="--client-model-package", message="`--generate-client` requires `--client-model-package`."
+            ),
+        ),
+        conflicts=(
+            CLIOptionRelation(
+                option="--generate-server", message="`--generate-client` can not be used with `--generate-server`."
+            ),
+        ),
+    ),
+    "--client-output": CLIOptionMeta(
+        name="--client-output",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-output` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-package": CLIOptionMeta(
+        name="--client-package",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-package` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-model-package": CLIOptionMeta(
+        name="--client-model-package",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-model-package` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-signature-style": CLIOptionMeta(
+        name="--client-signature-style",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-signature-style` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-body-arguments": CLIOptionMeta(
+        name="--client-body-arguments",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-body-arguments` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-resource-names": CLIOptionMeta(
+        name="--client-resource-names",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-resource-names` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-operations": CLIOptionMeta(
+        name="--client-operations",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-operations` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-default-base-url": CLIOptionMeta(
+        name="--client-default-base-url",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-default-base-url` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-server-base-url": CLIOptionMeta(
+        name="--client-server-base-url",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-server-base-url` requires `--generate-client httpx2`."
+            ),
+        ),
+    ),
+    "--client-protocols": CLIOptionMeta(
+        name="--client-protocols",
+        category=OptionCategory.TARGET,
+        requires=(
+            CLIOptionRelation(
+                option="--generate-client", message="`--client-protocols` requires `--generate-client httpx2`."
             ),
         ),
     ),

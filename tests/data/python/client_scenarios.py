@@ -55,6 +55,7 @@ from tests.data.python.client_pagination_targets import (
     pagination_targets,
     path_arguments,
 )
+from tests.data.python.client_parameter_kinds import parameter_kinds
 from tests.data.python.client_polling import polling
 from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
@@ -375,7 +376,7 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
 def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
     runtime = Path(package.__file__).parent / "_runtime" / "protocols"
-    optional = ("client", "caches", "names", "options", "origins", "websocket_types")
+    optional = ("client", "client_options", "caches", "names", "options", "origins", "websocket_types")
     (options,) = _modules(package, "options")
     option_fields = {item.name for item in dataclass_fields(options.ClientOptions)}
     lines.extend((
@@ -880,6 +881,10 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "parameter-kinds": ("parameter-kinds", BACKENDS, parameter_kinds),
+    "parameter-kinds-decimal": ("parameter-kinds-decimal", BACKENDS, parameter_kinds),
+    "parameter-kinds-literal": ("parameter-kinds-literal", BACKENDS, parameter_kinds),
+    "parameter-kinds-strict": ("parameter-kinds-strict", BACKENDS, parameter_kinds),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
@@ -923,7 +928,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "socket-connector-outcomes": ("sockets", ("pydantic_v2.BaseModel",), socket_connector_outcomes),
     "protocol-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
-    "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
+    "cache-stores": ("caching-oauth", ("pydantic_v2.BaseModel",), cache_stores),
     "cache-backends": ("caching-backends", BACKENDS, cache_backends),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),

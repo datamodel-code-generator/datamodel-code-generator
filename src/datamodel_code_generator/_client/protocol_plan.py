@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator._api_manifest import document_identity, portable
+from datamodel_code_generator._api_manifest import document_identity, named_document, portable
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._client.plan import fact
 
@@ -53,7 +54,9 @@ def _undocumented(at: str, document: str | None) -> Diagnostic:
     return _problem("E_CONFIG_VALUE", "config", f"{at}.document", f"{at}.document {document!r} is not a document name")
 
 
-def plan_protocols(request: TargetRequest, source: Path | ProtocolConfiguration | None) -> Protocols | None:
+def plan_protocols(
+    request: TargetRequest, source: Path | ProtocolConfiguration | Mapping[str, object] | None, cwd: Path
+) -> Protocols | None:
     """Load the target's helpers and resolve their references, raising every problem with the target's identity.
 
     Every helper, enabled or not, needs each operation it names among the root path operations.
@@ -62,7 +65,7 @@ def plan_protocols(request: TargetRequest, source: Path | ProtocolConfiguration 
         return None
     from datamodel_code_generator._client.protocols import load_protocols  # noqa: PLC0415
 
-    helpers, base, problems = load_protocols(source, request.cwd)
+    helpers, base, problems = load_protocols(source, cwd)
     resolver = _Resolver(request, base)
     if not problems:
         for helper in helpers:
@@ -71,7 +74,9 @@ def plan_protocols(request: TargetRequest, source: Path | ProtocolConfiguration 
             for at, schema in helper.schemas:
                 problems.extend(resolver.schema(at, schema))
     if problems:
-        raise APIGenerationError(tuple(replace(item, target_id=request.target_id) for item in problems))
+        raise APIGenerationError(
+            tuple(replace(item, target_id=request.target_id) for item in problems), option_prefix=OPTION_PREFIX
+        )
     return Protocols(helpers=helpers, operations=resolver.operations, documents=resolver.documents)
 
 
@@ -102,7 +107,7 @@ class _Resolver:
             yield _undocumented(link.at, reference.document)
             return
         if (operation := self.request.resolve(OperationRef(pointer=reference.pointer, document=document))) is None:
-            named = "" if reference.document is None else f" in {reference.document!r}"
+            named = named_document(reference.document, document)
             message = f"{link.at} {reference.pointer!r}{named} {self.request.unresolved}"
             yield _problem("E_OPERATION_REF", "config", link.at, message, reference)
             return
@@ -120,7 +125,8 @@ class _Resolver:
             yield _undocumented(at, schema.document)
             return
         if (located := self.request.documents.pointer(document, self.base)) is None:
-            yield _problem("E_CONFIG_VALUE", "config", at, f"{at} names a document outside the accepted input")
+            message = f"{at} names a schema{named_document(schema.document, document)} outside the accepted input"
+            yield _problem("E_CONFIG_VALUE", "config", at, message)
             return
         self.documents[schema] = located
 

@@ -63,7 +63,7 @@ if TYPE_CHECKING:
             """Return the value of received JSON bytes."""
             ...
 
-        def convert(self, value: object) -> T_co:
+        def text(self, value: object) -> T_co:
             """Return the value of a parsed text value."""
             ...
 
@@ -981,7 +981,7 @@ def _decoded(codec: ValueCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> 
     try:
         if kind == "json" or _json_part(part):
             return codec.decode(part.value)
-        return codec.convert(_part_text(part, kind))
+        return codec.text(_part_text(part, kind))
     except codec.errors as error:
         if codec.malformed(error):
             raise PartSyntaxError(error) from None

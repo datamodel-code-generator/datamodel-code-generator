@@ -308,7 +308,7 @@
   header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header invalid = 'many'
+  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets

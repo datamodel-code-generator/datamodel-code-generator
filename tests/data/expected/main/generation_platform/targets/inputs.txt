@@ -60,8 +60,8 @@ render
   write target_manifest server/.dcg-target-manifest.json (target)
   11 runtime modules ['write']
 render
-  Error: The --server-operation-names entry '/paths/~1items/get' selects no root path operation
-  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1items/get' selects no root path operation
+  Error: The --server-operation-names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
+  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
 render
   Error: input: Target generation reads one root document, not a list
   E_INPUT_ROOT error input input: Target generation reads one root document, not a list
