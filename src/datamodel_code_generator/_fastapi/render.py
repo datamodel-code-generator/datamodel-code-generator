@@ -631,10 +631,10 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
     def body_type(self, module: Module, body: BodySpec) -> str:
         """Return the type the handler receives for a body, with None for an optional one."""
-        kinds = dict.fromkeys(self.media_type(module, media) for media in body.media)
-        if not (body.required or any(_nullable(_payload(media)) for media in body.media)):
-            kinds["None"] = None
-        return module.union(*kinds)
+        kinds = module.union(*(self.media_type(module, media) for media in body.media))
+        if body.required or any(_nullable(_payload(media)) for media in body.media):
+            return kinds
+        return module.optional(kinds)
 
     @staticmethod
     def media_type(module: Module, media: MediaSpec) -> str:
