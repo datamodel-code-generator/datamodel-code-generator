@@ -67,6 +67,13 @@ class PetsService(Protocol):
     ) -> None | HTTPResult[None] | Response: ...
 
     @abstractmethod
+    def literal_model(
+        self,
+        *,
+        modes: list[Literal['b']] | None,
+    ) -> None | HTTPResult[None] | Response: ...
+
+    @abstractmethod
     def get_pet(
         self,
         *,

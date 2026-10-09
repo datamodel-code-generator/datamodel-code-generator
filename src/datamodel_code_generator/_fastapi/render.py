@@ -149,11 +149,30 @@ def _constrained(value: TypeView) -> bool:
     return False
 
 
+def _plan_classes(plan: ServerPlan, written: set[str]) -> dict[str, str]:
+    """Name each operation's plan class by its PascalCase name, unique among the module's classes.
+
+    A name the model types write takes a `Model` suffix, then a number, as the model generator renames such a class.
+    """
+    taken = {spec.pascal for spec in plan.operations if spec.pascal not in written}
+    classes: dict[str, str] = {}
+    for spec in plan.operations:
+        name = spec.pascal
+        if name in written:
+            base, count = f"{name}Model", 0
+            name = base
+            while name in taken:
+                count += 1
+                name = f"{base}{count}"
+            taken.add(name)
+        classes[spec.key] = name
+    return classes
+
+
 def _chain(module: Module, members: Iterable[str]) -> Doc:
     """Return a union of support types as the model generator writes it, laid out member by member as an operator."""
     parts = tuple(dict.fromkeys(members))
-    text = module.union(*parts)
-    return Chain("|", parts) if text == " | ".join(parts) else text
+    return Chain("|", parts) if module.union("T", "U") == "T | U" else module.union(*parts)
 
 
 def _reads_inputs(spec: OperationSpec) -> bool:
@@ -318,10 +337,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.batch = batch
         self.wire = wire
         self.types = types
-        written = {name for module, name in types.fixed if module is not None}
-        self.classes = {
-            spec.key: f"{spec.pascal}Model" if spec.pascal in written else spec.pascal for spec in plan.operations
-        }
+        self.classes = _plan_classes(plan, {name for module, name in types.fixed if module is not None})
         taken: set[str] = set()
         self.scheme_names: dict[str, str] = {}
         for scheme in plan.schemes:

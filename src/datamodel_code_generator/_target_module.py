@@ -8,6 +8,7 @@ with the model generator's configured type class, so its union and collection op
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from datamodel_code_generator._openapi_codec_plan import artifact_module
@@ -49,6 +50,33 @@ _PART: Final = "\x01"
 _Identity: TypeAlias = tuple[str | None, str]
 
 
+@lru_cache(maxsize=16)
+def _renderings(
+    hint_type: type[DataType],
+) -> tuple[
+    dict[tuple[object, ...], tuple[list[str], tuple[Import, ...]]],
+    dict[tuple[object, ...], tuple[str, tuple[Import, ...]]],
+]:
+    """Return the renderings of each composite shape and each composite of a type class, which its composers share."""
+    del hint_type
+    return {}, {}
+
+
+@lru_cache(maxsize=16)
+def _written(hint_type: type[DataType]) -> tuple[Import, ...]:
+    """Return the names a type class writes as they are for its unions, optionals and containers."""
+    composer = TypeComposer(hint_type)
+    written = (
+        composer.compose(members=("T", "U"), preserve_union_member_order=True),
+        composer.compose(base="T", is_optional=True),
+        composer.compose(base="T", is_sequence=True),
+        *(composer.compose(base="T", **flags) for flags in _FLAGS),
+        composer.compose(base="T", key="K", is_dict=True),
+        composer.compose(base="T", key="K", is_mapping=True),
+    )
+    return tuple(item for _, found in written for item in found)
+
+
 class TypeComposer:
     """Compose spelled types with the model generator's configured type class, as its type hints compose them.
 
@@ -59,8 +87,7 @@ class TypeComposer:
     def __init__(self, hint_type: type[DataType]) -> None:
         """Keep the type class and the renderings of each composite shape."""
         self.hint_type = hint_type
-        self.templates: dict[tuple[object, ...], tuple[list[str], tuple[Import, ...]]] = {}
-        self.composed: dict[tuple[object, ...], tuple[str, tuple[Import, ...]]] = {}
+        self.templates, self.composed = _renderings(hint_type)
 
     def render(
         self,
@@ -146,19 +173,9 @@ class TypeNames:
             else address.model_package
         )
         assert batch.hint_type is not None
-        self.composer = composer = TypeComposer(batch.hint_type)
-        written = (
-            composer.compose(members=("T", "U"), preserve_union_member_order=True),
-            composer.compose(base="T", is_optional=True),
-            composer.compose(base="T", is_sequence=True),
-            *(composer.compose(base="T", **flags) for flags in _FLAGS),
-            composer.compose(base="T", key="K", is_dict=True),
-            composer.compose(base="T", key="K", is_mapping=True),
-        )
+        self.composer = TypeComposer(batch.hint_type)
         self.fixed = tuple(
-            dict.fromkeys(
-                self.identity(item) for item in (*batch.hint_imports, *(item for _, found in written for item in found))
-            )
+            dict.fromkeys(self.identity(item) for item in (*batch.hint_imports, *_written(batch.hint_type)))
         )
 
     def identity(self, import_: Import) -> _Identity:
