@@ -323,11 +323,32 @@ class AsyncDefaultResource:
             options=options,
         )).data
 
+    @overload
     async def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
+        size: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> PutLabelsResponse: ...
+    @overload
+    async def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: Unset = UNSET,
+        size: str | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> PutLabelsResponse: ...
+    async def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: _dcg_type_8 | Unset = UNSET,
+        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse:
@@ -336,6 +357,7 @@ class AsyncDefaultResource:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
+            fields=(size,),
             media_type=media_type,
             options=options,
         )).data
@@ -670,11 +692,32 @@ class AsyncDefaultWithResponse:
             options=options,
         )
 
+    @overload
     async def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
+        size: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[PutLabelsResponse]: ...
+    @overload
+    async def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: Unset = UNSET,
+        size: str | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[PutLabelsResponse]: ...
+    async def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: _dcg_type_8 | Unset = UNSET,
+        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]:
@@ -683,6 +726,7 @@ class AsyncDefaultWithResponse:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
+            fields=(size,),
             media_type=media_type,
             options=options,
         )
@@ -1017,11 +1061,32 @@ class AsyncDefaultWithRawResponse:
             options=options,
         )
 
+    @overload
     async def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
+        size: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse: ...
+    @overload
+    async def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: Unset = UNSET,
+        size: str | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse: ...
+    async def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: _dcg_type_8 | Unset = UNSET,
+        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1030,6 +1095,7 @@ class AsyncDefaultWithRawResponse:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
+            fields=(size,),
             media_type=media_type,
             options=options,
         )
@@ -1364,11 +1430,32 @@ class AsyncDefaultWithStreamingResponse:
             options=options,
         )
 
+    @overload
     def put_labels(
         self,
         *,
         pet_id: int,
         body: _dcg_type_8,
+        size: Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    @overload
+    def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: Unset = UNSET,
+        size: str | Unset = UNSET,
+        media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    def put_labels(
+        self,
+        *,
+        pet_id: int,
+        body: _dcg_type_8 | Unset = UNSET,
+        size: str | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1377,6 +1464,7 @@ class AsyncDefaultWithStreamingResponse:
             _operations.OPERATION_5,
             (pet_id,),
             body=body,
+            fields=(size,),
             media_type=media_type,
             options=options,
         )

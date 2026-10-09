@@ -57,3 +57,23 @@ def secret_names(schemes: tuple[SecuritySchemeEntry, ...]) -> tuple[frozenset[st
         CREDENTIAL_HEADERS.union(scheme.wire_name.lower() for scheme in declared if scheme.location == "header"),
         frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
     )
+
+
+@lru_cache(maxsize=32)
+def protected_positions(
+    schemes: tuple[SecuritySchemeEntry, ...],
+) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
+    """Return the lowercase header names, query names, and cookie names of a package's declared security schemes.
+
+    The Authorization header is left out, since HTTPX2 drops it from a redirect to another origin itself.
+    """
+    declared = [scheme for scheme in schemes if isinstance(scheme, SecurityScheme)]
+    return (
+        frozenset(
+            name
+            for scheme in declared
+            if scheme.location == "header" and (name := scheme.wire_name.lower()) != "authorization"
+        ),
+        frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
+        frozenset(scheme.wire_name for scheme in declared if scheme.location == "cookie"),
+    )

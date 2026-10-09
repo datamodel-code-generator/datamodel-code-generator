@@ -93,7 +93,6 @@ PLAN_2: Final[PollingPlan[None, GetJobResponse, CreateJobResponse]] = PollingPla
     state=BodySelector(pointer='/status'),
     pending=('queued', 'running'),
     succeeded=('done',),
-    fingerprint='33456c7cf83f59f3b8c853491b60c9510a64dec4c04384fa15b94a6c742b8f6e',
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='jobId'),
@@ -125,7 +124,6 @@ PLAN_3: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=4,
     partial_commit=True,
-    fingerprint='02b16a1d27b74e5e7e2f1182a0f67be93b3df0492c921d49737502ee301c03c6',
     size=ParameterTarget(location='header', name='Upload-Length'),
     probe_bindings=(
         PageBinding(

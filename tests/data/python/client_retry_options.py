@@ -42,7 +42,6 @@ def _invalid_numbers(options: ModuleType, lines: list[str]) -> None:
                 )
         for owner, name in (
             (options.RetryOptions, "max_retries"),
-            (options.RedirectOptions, "max_redirects"),
             (options.TransportOptions, "max_connections"),
             (options.TransportOptions, "max_keepalive_connections"),
             (options.TransportOptions, "keepalive_expiry"),
@@ -59,7 +58,6 @@ def _invalid_numbers(options: ModuleType, lines: list[str]) -> None:
     record(lines, "retry delay order", lambda: options.RetryOptions(initial_delay=2, max_delay=1))
     for owner, name in (
         (options.RetryOptions, "max_retries"),
-        (options.RedirectOptions, "max_redirects"),
         (options.TransportOptions, "max_connections"),
         (options.TransportOptions, "max_keepalive_connections"),
     ):
@@ -69,7 +67,6 @@ def _invalid_numbers(options: ModuleType, lines: list[str]) -> None:
 def _invalid_values(options: ModuleType, lines: list[str]) -> None:
     for owner, names in (
         (options.RetryOptions, ("respect_retry_after", "retry_on_pool_timeout")),
-        (options.RedirectOptions, ("enabled", "allow_303_to_get", "allow_https_downgrade")),
         (options.TransportOptions, ("verify", "trust_env", "http2")),
     ):
         for name in names:
@@ -115,8 +112,9 @@ def _invalid_values(options: ModuleType, lines: list[str]) -> None:
         for name, value in (
             ("retry", None),
             ("retry", True),
-            ("redirects", None),
-            ("redirects", {}),
+            ("follow_redirects", None),
+            ("follow_redirects", 1),
+            ("follow_redirects", "true"),
             ("idempotency_key", "key"),
         ):
             record(
@@ -127,35 +125,6 @@ def _invalid_values(options: ModuleType, lines: list[str]) -> None:
     for value in (None, False, {}):
         record(lines, f"client transport {value!r}", lambda value=value: options.ClientOptions(transport=value))
     record(lines, "request transport unavailable", lambda: options.RequestOptions(transport=options.TransportOptions()))
-
-
-def _origins(options: ModuleType, lines: list[str]) -> None:
-    for label, value in (
-        ("none", None),
-        ("string", "https://example.com"),
-        ("mapping", {}),
-        ("non-string", (1,)),
-        ("relative", ("example.com",)),
-        ("scheme", ("ftp://example.com",)),
-        ("missing host", ("https://:443",)),
-        ("userinfo", ("https://name:secret@example.com",)),
-        ("path", ("https://example.com/path",)),
-        ("root path", ("https://example.com/",)),
-        ("query", ("https://example.com?",)),
-        ("fragment", ("https://example.com#",)),
-        ("space", ("https://example.com ",)),
-        ("control", ("https://example.com\x00",)),
-        ("backslash", ("https://example.com\\host",)),
-        ("port zero", ("https://example.com:0",)),
-        ("port syntax", ("https://example.com:port",)),
-        ("port large", ("https://example.com:65536",)),
-        ("ipv6", ("https://[::1",)),
-    ):
-        record(lines, f"redirect origin {label}", lambda value=value: options.RedirectOptions(allowed_origins=value))
-    values = ["https://example.com", "http://example.com:80", "HTTPS://EXAMPLE.COM:443", "https://[::1]:443"]
-    configured = options.RedirectOptions(allowed_origins=values)
-    values.append("https://changed.example.com")
-    lines.append(f"  frozen origins={configured.allowed_origins!r} tuple={type(configured.allowed_origins) is tuple}")
 
 
 def _key_value(options: ModuleType, errors: ModuleType, lines: list[str], value: object) -> None:
@@ -209,7 +178,7 @@ def _keys(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
 
 
 def _records(options: ModuleType, lines: list[str]) -> None:
-    for owner in (options.RetryOptions, options.RedirectOptions):
+    for owner in (options.RetryOptions,):
         value = owner()
         omitted = tuple((item.name, getattr(value, item.name) is options.UNSET) for item in fields(value))
         lines.append(f"  omitted {owner.__name__}={omitted}")
@@ -240,13 +209,8 @@ def _records(options: ModuleType, lines: list[str]) -> None:
             respect_retry_after=False, retry_on_pool_timeout=True, retry_after_ms_header=None, should_retry_header=None
         ),
     )
-    record(
-        lines,
-        "redirect explicit values",
-        lambda: options.RedirectOptions(
-            enabled=False, max_redirects=0, allow_303_to_get=True, allowed_origins=(), allow_https_downgrade=True
-        ),
-    )
+    for value in (False, True):
+        record(lines, f"follow redirects {value}", lambda value=value: options.RequestOptions(follow_redirects=value))
     record(lines, "transport fixed defaults", options.TransportOptions)
     record(
         lines,
@@ -275,7 +239,7 @@ def _records(options: ModuleType, lines: list[str]) -> None:
         )
     for value, name, replacement in (
         (retry, "max_retries", 7),
-        (options.RedirectOptions(), "enabled", True),
+        (options.RequestOptions(), "follow_redirects", True),
         (configured, "verify", False),
         (options.IdempotencyKey("fixed"), "value", "changed"),
     ):
@@ -292,7 +256,6 @@ def _records(options: ModuleType, lines: list[str]) -> None:
         )
     for owner in (
         options.RetryOptions,
-        options.RedirectOptions,
         options.TransportOptions,
         options.IdempotencyKey,
         options.ClientOptions,
@@ -311,7 +274,7 @@ def _records(options: ModuleType, lines: list[str]) -> None:
     ))
     for owner in (options.ClientOptions, options.RequestOptions):
         value = owner()
-        omitted = tuple(getattr(value, name) is options.UNSET for name in ("retry", "redirects", "idempotency_key"))
+        omitted = tuple(getattr(value, name) is options.UNSET for name in ("retry", "follow_redirects", "idempotency_key"))
         lines.append(f"  option omitted {owner.__name__}={omitted}")
 
 
@@ -337,7 +300,7 @@ class Blocked:
 
 sys.meta_path.insert(0, Blocked())
 options = importlib.import_module(sys.argv[2] + ".options")
-owners = ("RetryOptions", "RedirectOptions", "TransportOptions", "IdempotencyKey", "ClientOptions", "RequestOptions")
+owners = ("RetryOptions", "TransportOptions", "IdempotencyKey", "ClientOptions", "RequestOptions")
 for name in owners:
     get_type_hints(getattr(options, name), include_extras=True)
 print("  optional-free public options=" + str(not any(name in sys.modules for name in blocked)))
@@ -429,10 +392,9 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     )
     client = options.ClientOptions(
         retry=options.RetryOptions(max_retries=0, initial_delay=0, max_delay=0, jitter="none"),
-        redirects=options.RedirectOptions(max_redirects=2),
     )
-    with exchange.client() as native, package.Client(http_client=native, options=client) as api:
-        view = api.with_options(options.RequestOptions(redirects=options.RedirectOptions(enabled=True)))
+    with exchange.client(max_redirects=2) as native, package.Client(http_client=native, options=client) as api:
+        view = api.with_options(options.RequestOptions(follow_redirects=True))
         record(
             lines,
             "redirects and a retry within the final fields",
@@ -452,22 +414,14 @@ def _merges(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
         raw_response(303, Location="https://other.example.com/accepted"),
         raw_response(200, b"inherited destination and method permission", "text/plain"),
     )
-    client = options.ClientOptions(
-        retry=options.RetryOptions(max_retries=0),
-        redirects=options.RedirectOptions(
-            max_redirects=1,
-            allow_303_to_get=True,
-            allowed_origins=("https://other.example.com",),
-        ),
-    )
+    client = options.ClientOptions(retry=options.RetryOptions(max_retries=0), follow_redirects=True)
     with exchange.client() as native, package.Client(http_client=native, options=client) as api:
-        view = api.with_options(options.RequestOptions(redirects=options.RedirectOptions(enabled=True)))
+        view = api.with_options(options.RequestOptions(follow_redirects=False))
         record(
             lines,
-            "redirect nested permissions",
+            "a view's redirect choice over the client's, and the call's over the view's",
             lambda: view.retry.post_unsafe(
-                body=b"removed after 303",
-                options=options.RequestOptions(redirects=options.RedirectOptions()),
+                body=b"removed after 303", options=options.RequestOptions(follow_redirects=True)
             ),
         )
     lines.append(f"  merged redirect permissions pending responses={len(exchange.responders)}")
@@ -740,7 +694,6 @@ def retry_options(package: ModuleType, lines: list[str]) -> None:
     errors = importlib.import_module(f"{package.__name__}.errors")
     _invalid_numbers(options, lines)
     _invalid_values(options, lines)
-    _origins(options, lines)
     _keys(options, errors, lines)
     _records(options, lines)
     _imports(package, lines)

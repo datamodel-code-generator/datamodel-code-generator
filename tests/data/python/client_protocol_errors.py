@@ -71,7 +71,7 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
             },
         ),
         ("PollingStateError", {"condition": "type", "location": selector}),
-        ("PollWaitLimitError", {"kind": "wait", "required_wait": 120, "limit": 60.5, "resume_state": resume}),
+        ("PollWaitLimitError", {"kind": "wait", "required_wait": 120, "limit": 60.5}),
         ("OperationFailedError", {"snapshot": snapshot}),
         ("OperationCancelledError", {"snapshot": snapshot}),
         (
