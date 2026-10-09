@@ -28,6 +28,9 @@ paths:
         - name: X-Page
           in: header
           schema: {type: integer}
+        - name: num
+          in: query
+          schema: {type: [integer, 'null']}
       responses:
         '200':
           description: One page of users.
@@ -38,6 +41,8 @@ paths:
               schema: {type: boolean}
             X-Name:
               schema: {type: string}
+            X-More:
+              schema: {type: [integer, 'null']}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/UserPage'}
@@ -95,6 +100,11 @@ components:
         more: {}
         count: {}
         maybe_total: {type: [integer, 'null']}
+        next_cursor: {type: string}
+        more_alias: {$ref: '#/components/schemas/MaybeInt'}
+        more_uri: {$ref: '#/components/schemas/StrictName'}
+    MaybeInt: {type: [integer, 'null']}
+    StrictName: {type: string, format: uri}
     SearchQuery:
       type: object
       required: [query]

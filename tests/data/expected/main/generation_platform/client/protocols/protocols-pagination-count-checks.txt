@@ -9,6 +9,10 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols['has_more.status'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.status' reads integer values, where only boolean values fit
   E_CONFIG_VALUE config protocols['has_more.absent'].continuation.has_more /paths/~1users/get: The has_more pointer '/nothing' of 'has_more.absent' names no property of the GET /users response
   E_CONFIG_VALUE config protocols['has_more.header'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.header' reads integer values, where only boolean values fit
+  E_CONFIG_VALUE config protocols['write.nullable_integer'].continuation.write /paths/~1users/get: The cursor of 'write.nullable_integer' reads string values, which the query parameter 'num' of GET /users does not accept
+  E_CONFIG_VALUE config protocols['has_more.nullable_alias'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.nullable_alias' reads integer or null values, where only boolean values fit
+  E_CONFIG_VALUE config protocols['has_more.uri'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.uri' reads string values, where only boolean values fit
+  E_CONFIG_VALUE config protocols['has_more.nullable_header'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.nullable_header' reads integer or null values, where only boolean values fit
   E_CONFIG_VALUE config protocols['total.boolean'].continuation.total /paths/~1users/get: The total of 'total.boolean' reads boolean values, where only integer values fit
   E_CONFIG_VALUE config protocols['total.null'].continuation.total /paths/~1users/get: The total of 'total.null' reads null values, where only integer values fit
   E_CONFIG_VALUE config protocols['total.string_header'].continuation.total /paths/~1users/get: The total of 'total.string_header' reads string values, where only integer values fit

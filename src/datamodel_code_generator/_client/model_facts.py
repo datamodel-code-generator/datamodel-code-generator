@@ -271,7 +271,10 @@ class ModelFacts:
         is an object.
         """
         value = value.base if isinstance(value, AnnotatedType) else value
-        named = _NAMED.get(_name(value.callable if isinstance(value, ConstructorType) else value) or "")
+        name = _name(value.callable if isinstance(value, ConstructorType) else value)
+        named = _NAMED.get(name or "")
+        if named is None and isinstance(value, ImportedType | ConstructorType) and name != "typing.Any":
+            named = "string"
         types: JSONTypes = None if named is None else frozenset({named})
         match value:
             case UnionType():
@@ -298,6 +301,8 @@ class ModelFacts:
                 types = frozenset({"object"})
             case GenericType():
                 types = frozenset({"object" if _name(value.base) in _MAPPINGS else "array"})
+            case NoneType():
+                types = _NULL
             case _:
                 pass
         return types
