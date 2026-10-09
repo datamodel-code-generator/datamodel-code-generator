@@ -36,6 +36,7 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "selected": {"input": "pets.yaml", "model": {"openapi_include_paths": ["/pets/{petId}"]}},
     "hooks": {"input": "served-hooks.yaml", "files": ["served-event.yaml", "served-library.yaml"]},
     "streams": {"input": "served-items.yaml", "files": ["served-items-library.yaml", "events/stamp.yaml"]},
+    "resources": {"input": "served-resources.yaml"},
     "legacy": {
         "input": "served-legacy.yaml",
         "files": ["served-event.yaml"],
@@ -199,6 +200,17 @@ def document_streams(packages: dict[str, Any]) -> list[str]:
 def document_legacy(packages: dict[str, Any]) -> list[str]:
     """Serve an OpenAPI 3.0 subset: discriminator subtypes kept, references into left-out paths bundled."""
     return [json.dumps(_connected(packages["legacy"].create_app).openapi(), indent=2)]
+
+
+@_scenario("resources")
+def document_resources(packages: dict[str, Any]) -> list[str]:
+    """Serve schema resources by `$id`, `$anchor`, and `$dynamicAnchor`, and references into paths under a prefix."""
+    resources = packages["resources"]
+    unset = _connected(resources.create_app, summary=None, contact=None, servers=None, openapi_tags=None).openapi()
+    return [
+        json.dumps(_connected(resources.create_app, prefix="/api").openapi(), indent=2),
+        f"unset {sorted(unset)} {sorted(unset['info'])}",
+    ]
 
 
 @_scenario("bodies")

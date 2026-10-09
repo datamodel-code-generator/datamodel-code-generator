@@ -20,11 +20,11 @@ from urllib.parse import unquote, urljoin, urlsplit
 from datamodel_code_generator._runtime.model_codecs.wire import escape_pointer_token, pointer_tokens
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Mapping
 
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, OperationContract
+    from datamodel_code_generator._target_contract import OperationContract
 
 JSON: TypeAlias = "bool | int | float | str | list[JSON] | dict[str, JSON] | None"
 Key: TypeAlias = "tuple[int, tuple[str, ...]]"
@@ -90,20 +90,26 @@ _NAME: Final = re.compile(r"[^A-Za-z0-9._-]")
 class SourceDocument:
     """Copy the selected operations' part of the loaded documents into one JSON document."""
 
-    def __init__(self, batch: GeneratedTypeContractBatch, lease: SourceLease) -> None:
-        """Index the loaded documents by the URI the parser loaded each from, and by their `$self`."""
-        self.uris = [document.uri for document in batch.documents]
-        self.documents = [lease.document(document.id) for document in batch.documents]
+    def __init__(self, lease: SourceLease) -> None:
+        """Index the loaded documents, and the schema resources and anchors they declare, by their URIs.
+
+        A document is a resource at the location it was read from and at its `$self`; from OpenAPI 3.1 on, a schema's
+        `$id` declares a resource, and `$anchor` and `$dynamicAnchor` a name in the resource around them.
+        """
+        held = lease.documents()
+        self.uris = [location for location, _ in held]
+        self.documents = [document for _, document in held]
+        root = self.documents[0]
+        version = re.match(r"(\d+)\.(\d+)", str(root.get("openapi", "")))
+        self.version = (int(version[1]), int(version[2])) if version else (3, 1)
         self.bases = [
             urljoin(uri, own) if isinstance(own := document.get("$self"), str) else uri
             for uri, document in zip(self.uris, self.documents, strict=True)
         ]
-        self.ids = {uri: index for index, uri in enumerate(self.uris)} | {
-            base: index for index, base in enumerate(self.bases)
-        }
-        root = self.documents[0]
-        version = re.match(r"(\d+)\.(\d+)", str(root.get("openapi", "")))
-        self.version = (int(version[1]), int(version[2])) if version else (3, 1)
+        self.resources: dict[str, tuple[int, tuple[str, ...]]] = {}
+        self.anchors: dict[tuple[str, str], tuple[int, tuple[str, ...]]] = {}
+        for index, document in enumerate(self.documents):
+            self.index(index, document, (self.uris[index], self.bases[index]))
         self.schemas = _mapping(_mapping(root.get("components")).get("schemas"))
         self.problems: dict[str, None] = {}
         self.wanted: dict[tuple[str, str], None] = {}
@@ -111,6 +117,64 @@ class SourceDocument:
         self.extra: dict[str, dict[str, JSON]] = {}
         self.stack: set[int] = set()
         self.selected: frozenset[str] = frozenset()
+
+    def index(self, document: int, value: dict[str, YamlValue], names: tuple[str, ...]) -> None:
+        """Record a document's resources and anchors, walking it once with the resource each node belongs to."""
+        pending: list[tuple[tuple[str, ...], YamlValue, tuple[str, ...]]] = [((), value, names)]
+        seen: set[int] = set()
+        for name in names:
+            self.resources.setdefault(name, (document, ()))
+        while pending:
+            at, node, around = pending.pop()
+            if not isinstance(node, dict | list) or id(node) in seen:
+                continue
+            seen.add(id(node))
+            if isinstance(node, list):
+                pending.extend(((*at, str(index)), child, around) for index, child in enumerate(node))
+                continue
+            if isinstance(own := node.get("$id"), str) and self.version >= (3, 1) and at:
+                around = (urljoin(around[0], own).partition("#")[0],)
+                self.resources.setdefault(around[0], (document, at))
+            for keyword in ("$anchor", "$dynamicAnchor"):
+                if isinstance(anchor := node.get(keyword), str):
+                    for name in around:
+                        self.anchors.setdefault((name, anchor), (document, at))
+            pending.extend(((*at, str(key)), child, around) for key, child in node.items())
+
+    def resolve(self, document: int, base: str, ref: str) -> tuple[int, tuple[str, ...], str] | None:
+        """Return the document, pointer tokens, and resource base of what a reference names, or None.
+
+        The reference resolves against its schema resource's base, then, as the parser does for compatibility, against
+        where its document was read: a pointer that names nothing in the resource is the document's.
+        """
+        for start in (base, self.uris[document]):
+            resource, _, fragment = urljoin(start, ref).partition("#")
+            fragment = unquote(fragment)
+            if (found := self.resources.get(resource)) is None:
+                continue
+            tokens = (*found[1], *pointer_tokens(fragment))
+            target = (
+                self.anchors.get((resource, fragment))
+                if fragment and not fragment.startswith("/")
+                else (found[0], tokens)
+                if self.exists(found[0], tokens)
+                else None
+            )
+            if target is not None:
+                return target[0], target[1], resource
+        return None
+
+    def exists(self, document: int, tokens: tuple[str, ...]) -> bool:
+        """Return whether a pointer names a node of a loaded document."""
+        value: YamlValue = self.documents[document]
+        for token in tokens:
+            if isinstance(value, list) and token.isdecimal() and int(token) < len(value):
+                value = value[int(token)]
+            elif isinstance(value, dict) and (token in value or (token.isdecimal() and int(token) in value)):
+                value = _member(value, token)
+            else:
+                return False
+        return True
 
     def text(self, operations: Iterable[OperationContract]) -> str:
         """Return the document of the operations as indented JSON text."""
@@ -147,9 +211,10 @@ class SourceDocument:
         copied: dict[tuple[str, str], JSON] = {}
         while todo := [
             (str(kind), str(name), value)
+            for wanted in (self.subtyped(),)
             for kind, items in source.items()
             for name, value in _mapping(items).items()
-            if (str(kind), str(name)) in self.subtyped() and (str(kind), str(name)) not in copied
+            if (str(kind), str(name)) in wanted and (str(kind), str(name)) not in copied
         ]:
             for kind, name, value in todo:
                 copied[kind, name] = self.copy(value, 0, base, ("components", kind, name), _ROLES.get(kind, "any"))
@@ -221,7 +286,7 @@ class SourceDocument:
             if not self.json(child, place) or (role == "schema" and name == "$id" and isinstance(child, str)):
                 continue
             if name == "$ref" and isinstance(child, str) and role in _KINDS:
-                copied[name] = self.reference(child, document, base, role)
+                copied[name] = self.reference(child, document, base, role, place)
             elif role == "schema":
                 copied[name] = self.schema_member(name, child, document, base, place)
             elif role == "callback":
@@ -258,9 +323,9 @@ class SourceDocument:
     def served(self, link: YamlValue, at: tuple[str, ...]) -> bool:
         """Return whether a link's operationRef names an operation the document keeps, reporting one it leaves out."""
         ref = _mapping(link).get("operationRef")
-        if not isinstance(ref, str) or not ref.startswith("#/paths/") or (tokens := _fragment(ref)) is None:
+        if not isinstance(ref, str) or not ref.startswith("#/paths/"):
             return True
-        if tokens[1:2] and tokens[1] in self.selected:
+        if pointer_tokens(unquote(ref[1:]))[1] in self.selected:
             return True
         self.problems[f"{_pointer(at)}: The served document leaves out the link, whose operation it leaves out"] = None
         return False
@@ -270,9 +335,11 @@ class SourceDocument:
         copied = self.mapping({key: item for key, item in value.items() if key != "mapping"}, document, base, at, "any")
         if isinstance(mapping := value.get("mapping"), dict):
             copied["mapping"] = {
-                str(key): self.reference(item, document, base, "schema")
+                str(key): self.reference(item, document, base, "schema", (*at, "mapping", str(key)))
                 if "/" in item or "#" in item
-                else self.reference(f"#/components/schemas/{item}", document, base, "schema").rpartition("/")[2]
+                else self.reference(
+                    f"#/components/schemas/{item}", document, self.uris[document], "schema", (*at, "mapping", str(key))
+                ).rpartition("/")[2]
                 for key, item in mapping.items()
                 if isinstance(item, str)
             }
@@ -301,17 +368,23 @@ class SourceDocument:
             since is None
             or self.version >= since
             or not isinstance(ref := value.get("$ref"), str)
-            or (target := self.locate(document, base, ref)) is None
-            or (tokens := _fragment(ref)) is None
+            or (resolved := self.resolve(document, base, ref)) is None
         ):
             return None
-        found = self.node(target, tokens)
-        return (target, self.bases[target], found) if isinstance(found, dict) and id(found) not in self.stack else None
+        found = self.node(resolved[0], resolved[1])
+        return (resolved[0], resolved[2], found) if isinstance(found, dict) and id(found) not in self.stack else None
 
-    def reference(self, ref: str, document: int, base: str, role: str) -> str:
-        """Return a reference rewritten into the served document, bundling what it names outside the kept part."""
-        if (target := self.locate(document, base, ref)) is None or (tokens := self.pointer(target, ref)) is None:
-            return ref  # pragma: no cover - The parser refuses a reference it cannot resolve before this runs.
+    def reference(self, ref: str, document: int, base: str, role: str, at: tuple[str, ...]) -> str:
+        """Return a reference rewritten into the served document, bundling what it names outside the kept part.
+
+        A reference that names nothing the generation loaded stays as it is, and is reported.
+        """
+        if (resolved := self.resolve(document, base, ref)) is None:
+            self.problems[
+                f"{_pointer(at)}: The served document keeps {ref}, which names nothing the generation loaded"
+            ] = None
+            return ref
+        target, tokens, resource = resolved
         local = "#" + "".join(f"/{escape_pointer_token(token)}" for token in tokens)
         if target == 0:
             if tokens[:1] == ("components",) and len(tokens) >= 3:  # ruff: ignore[magic-value-comparison] - components, kind, name.
@@ -339,42 +412,8 @@ class SourceDocument:
             unique = f"{name}_{count}"
         self.bundled[key] = bundled = f"#/components/{escape_pointer_token(kind)}/{escape_pointer_token(unique)}"
         items[unique] = None
-        items[unique] = self.copy(node, target, self.bases[target], tokens, role)
+        items[unique] = self.copy(node, target, resource, tokens, role)
         return bundled
-
-    def pointer(self, document: int, ref: str) -> tuple[str, ...] | None:
-        """Return the pointer tokens a reference's fragment names in its document: a JSON pointer or an `$anchor`."""
-        return (
-            tokens
-            if (tokens := _fragment(ref)) is not None
-            else next(self.anchored(document, unquote(ref.partition("#")[2])), None)
-        )
-
-    def anchored(self, document: int, name: str) -> Iterator[tuple[str, ...]]:
-        """Yield the pointer tokens of each schema whose `$anchor` is the name, in document order."""
-        pending: list[tuple[tuple[str, ...], YamlValue]] = [((), self.documents[document])]
-        seen: set[int] = set()
-        while pending:  # pragma: no branch - The parser refuses an anchor no schema declares.
-            at, value = pending.pop()
-            if not isinstance(value, dict | list) or id(value) in seen:
-                continue
-            seen.add(id(value))
-            if isinstance(value, list):
-                pending.extend(((*at, str(index)), child) for index, child in reversed(list(enumerate(value))))
-                continue
-            if value.get("$anchor") == name:
-                yield at
-            pending.extend(((*at, str(key)), child) for key, child in reversed(value.items()))
-
-    def locate(self, document: int, base: str, ref: str) -> int | None:
-        """Return the loaded document a reference names: against its base, then where its document was read."""
-        if ref.startswith("#"):
-            return document
-        target = ref.partition("#")[0]
-        return next(
-            (self.ids[uri] for uri in (urljoin(base, target), urljoin(self.uris[document], target)) if uri in self.ids),
-            None,
-        )
 
     def node(self, document: int, tokens: tuple[str, ...]) -> YamlValue:
         """Return the node a pointer names in a loaded document."""
@@ -382,13 +421,6 @@ class SourceDocument:
         for token in tokens:
             value = value[int(token)] if isinstance(value, list) else _member(_mapping(value), token)
         return value
-
-
-def _fragment(ref: str) -> tuple[str, ...] | None:
-    """Return the tokens of a reference's JSON pointer fragment, or None for a named anchor."""
-    if not (fragment := unquote(ref.partition("#")[2])):
-        return ()
-    return tuple(pointer_tokens(fragment)) if fragment.startswith("/") else None
 
 
 def _pointer(at: tuple[str, ...]) -> str:

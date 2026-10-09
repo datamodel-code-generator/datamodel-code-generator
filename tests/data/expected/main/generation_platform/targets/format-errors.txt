@@ -4,9 +4,12 @@ render
 render
   Error: application.py: The generated Python source is invalid: invalid syntax
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 render
   Error: application.py: The generated Python source is invalid: 'return' outside function
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 render
   Error: __init__.py: The generated Python source is invalid: invalid syntax; application.py: The generated Python source is invalid: invalid syntax; routers/__init__.py: The generated Python source is invalid: invalid syntax; routers/pets.py: The generated Python source is invalid: invalid syntax; routers/store.py: The generated Python source is invalid: invalid syntax; routers/untagged.py: The generated Python source is invalid: invalid syntax; _generated/__init__.py: The generated Python source is invalid: invalid syntax; _generated/contract.py: The generated Python source is invalid: invalid syntax; _generated/openapi.py: The generated Python source is invalid: invalid syntax; services.py: The generated Python source is invalid: invalid syntax
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded

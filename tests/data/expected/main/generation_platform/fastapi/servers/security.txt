@@ -136,8 +136,8 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 401 application/json {"detail":"Not authenticated"}
 < www-authenticate: Digest, APIKey
 app async
-openapi info {"title": "Renamed pets", "version": "2.0", "summary": null, "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Other team"}, "license": {"name": "MIT", "identifier": "MIT"}}
-openapi servers null
+openapi info {"title": "Renamed pets", "version": "2.0", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Other team"}, "license": {"name": "MIT", "identifier": "MIT"}}
+openapi servers [{"url": "https://pets.example.com/v2"}]
 openapi tags [{"name": "pets", "description": "Renamed."}]
 > GET /api/pets
   app /api/pets

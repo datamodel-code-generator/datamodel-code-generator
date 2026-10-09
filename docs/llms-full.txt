@@ -11676,15 +11676,18 @@ Components stay when something kept references them, and so do the `allOf` subty
 What a reference names in another loaded document, or in a path that is left out, joins the components of the
 kind the reference's position holds, under its own name or a numbered one when the name is taken; an OpenAPI 3.0
 path item, or a media type before 3.2, has no component kind and is copied in place. References are rewritten
-relative to the document, so a schema's `$id` is left out. A link whose `operationRef` names a path that is left
+relative to the document, so a schema's `$id` is left out; a reference resolves as the models resolve it,
+through `$id`, `$anchor`, and `$dynamicAnchor`. A reference that names nothing the generation loaded stays as it
+is, with a warning. A link whose `operationRef` names a path that is left
 out is left out, and so is a value without a JSON form: a YAML `!!binary` value, NaN or infinity, or a YAML alias
 that contains itself. Each of them is reported as a `DocumentationAnnotationWarning`.
 
 FastAPI's `/docs` and `/redoc` show the document, and behind a root path FastAPI adds that path as the first
-server, as it does for its own document. `create_app`'s `prefix` leads every path, and the description settings
-you pass to `create_app`, `title`, `version`, `summary`, `description`, `terms_of_service`, `contact`,
-`license_info`, `servers`, `openapi_tags`, and `openapi_external_docs`, replace the document's, as they do in
-FastAPI's own. The document is documentation only: the generated models are what the server validates with, and
+server, as it does for its own document. `create_app`'s `prefix` leads every path, and the references and link
+`operationRef`s into the paths follow them. The description settings you pass to `create_app`, `title`, `version`,
+`summary`, `description`, `terms_of_service`, `contact`, `license_info`, `servers`, `openapi_tags`, and
+`openapi_external_docs`, replace the document's, as they do in FastAPI's own; one you leave unset or empty keeps
+the document's. The document is documentation only: the generated models are what the server validates with, and
 routes added to the application later do not appear in it.
 
 `create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the

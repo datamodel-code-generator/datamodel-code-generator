@@ -63,7 +63,7 @@ class FastAPITarget:
         if problems := [item for item in wire.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         _check_links(plan, request)
-        source = SourceDocument(request.batch, request.lease)
+        source = SourceDocument(request.lease)
         document = source.text(spec.contract for spec in plan.operations)
         renderer = ServerRenderer(
             config=config,

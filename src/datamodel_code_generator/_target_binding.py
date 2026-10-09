@@ -3104,15 +3104,16 @@ def bind_operations(
 def _pristine(
     parser: TargetApiOpenAPIParser, documents: dict[str, dict[str, YamlValue]]
 ) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
-    """Return the documents as loaded, before the parser rebased the references of their embedded schema resources.
+    """Return every document the attempt loaded as it was read, by the location it was read from.
 
-    The parser walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it.
+    The walked documents come first, in contract order, then the others the models' references loaded. The parser
+    walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it.
     """
-    loaded = {
-        id(prepared): raw
-        for raw, prepared in parser._schema_resource_cache.values()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-    }
-    return tuple((uri, loaded.get(id(document), document)) for uri, document in documents.items())
+    cache = parser._schema_resource_cache  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    located = {id(prepared): (location, raw) for location, (raw, prepared) in cache.items()}
+    walked = [located.get(id(document), (uri, document)) for uri, document in documents.items()]
+    seen = {id(document) for _, document in walked}
+    return (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen))
 
 
 if TYPE_CHECKING:

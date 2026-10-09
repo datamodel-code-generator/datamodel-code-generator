@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -18,6 +18,7 @@ _INFO: Final = {
     "contact": "contact",
     "license_info": "license",
 }
+_PATHS: Final = "#/paths/"
 _ROOT: Final = {"servers": "servers", "openapi_tags": "tags", "openapi_external_docs": "externalDocs"}
 
 
@@ -30,8 +31,9 @@ def serve_openapi(
 ) -> None:
     """Make the application's document the one `load` returns, loaded on its first request and kept.
 
-    Its paths take the prefix the routes were included under, as in FastAPI's own document, and the FastAPI settings
-    in `metadata` that describe the application, such as `title` or `servers`, replace the document's. FastAPI's
+    Its paths take the prefix the routes were included under, as in FastAPI's own document, and so do the references
+    and link operationRefs that name a path. The FastAPI settings in `metadata` that describe the application, such as
+    `title` or `servers`, replace the document's when they are set, as FastAPI leaves unset ones out. FastAPI's
     documentation endpoints serve it as they serve FastAPI's own, the root path's server included. A document the
     application built before is dropped.
     """
@@ -41,12 +43,26 @@ def serve_openapi(
         if not app.openapi_schema:
             document = load()
             if prefix:
+                document = cast("dict[str, Any]", _prefixed(document, prefix))
                 document["paths"] = {f"{prefix}{path}": item for path, item in document.get("paths", {}).items()}
-            if info := {key: given[name] for name, key in _INFO.items() if name in given}:
+            if info := {key: given[name] for name, key in _INFO.items() if given.get(name)}:
                 document["info"] = {**document.get("info", {}), **info}
-            document.update({key: given[name] for name, key in _ROOT.items() if name in given})
+            document.update({key: given[name] for name, key in _ROOT.items() if given.get(name)})
             app.openapi_schema = document
         return app.openapi_schema
 
     app.openapi_schema = None
-    setattr(app, "openapi", openapi)  # noqa: B010 - FastAPI's documented way to replace the document.
+    setattr(app, "openapi", openapi)  # ruff: ignore[set-attr-with-constant] - FastAPI's documented way to replace the document.
+
+
+def _prefixed(value: object, prefix: str) -> object:
+    """Return a document value whose references and operationRefs into the document's paths name prefixed paths."""
+    if isinstance(value, list):
+        return [_prefixed(item, prefix) for item in cast("list[object]", value)]
+    if not isinstance(value, dict):
+        return value
+    prefixed = {key: _prefixed(item, prefix) for key, item in cast("dict[str, object]", value).items()}
+    for key in ("$ref", "operationRef"):
+        if isinstance(ref := prefixed.get(key), str) and ref.startswith(_PATHS):
+            prefixed[key] = _PATHS + prefix.replace("~", "~0").replace("/", "~1") + ref[len(_PATHS) :]
+    return prefixed

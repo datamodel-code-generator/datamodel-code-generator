@@ -1,0 +1,132 @@
+# document-resources
+SchemaResourceRefWarning: $ref '#/components/schemas/Tree' in served-resources.yaml is resolved against the document for compatibility, but JSON Schema resolves it against the enclosing $id, to '#/components/schemas/Owner/components/schemas/Tree'. Update the reference or the $id so that both name one schema.
+DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get/parameters/0/examples/gone/$ref: The served document keeps served-missing.yaml#/components/examples/Gone, which names nothing the generation loaded
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Resources",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/pets/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getPet",
+        "responses": {
+          "200": {
+            "description": "The pet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owners/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1api~1pets~1{id}/parameters/0"
+        }
+      ],
+      "get": {
+        "operationId": "getOwner",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "gone": {
+                "$ref": "served-missing.yaml#/components/examples/Gone"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The owner.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Owner"
+                }
+              }
+            },
+            "links": {
+              "pet": {
+                "operationRef": "#/paths/~1api~1pets~1{id}/get",
+                "parameters": {
+                  "id": "$response.body#/pet"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/Pet/$defs/Name"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Owner"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/Pet/$defs/Tag"
+          }
+        },
+        "$defs": {
+          "Name": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "Tag": {
+            "$anchor": "tag",
+            "type": "string"
+          }
+        }
+      },
+      "Owner": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "$ref": "#/components/schemas/Tree"
+          }
+        }
+      },
+      "Tree": {
+        "$dynamicAnchor": "node",
+        "type": "object",
+        "properties": {
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tree"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+unset ['components', 'info', 'openapi', 'paths'] ['title', 'version']

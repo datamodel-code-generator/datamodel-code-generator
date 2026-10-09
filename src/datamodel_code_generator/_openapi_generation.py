@@ -33,10 +33,15 @@ class SourceLease:
     def __init__(self) -> None:
         """Create an empty lease without retaining an input or parser."""
         self._raw: list[dict[str, YamlValue]] = []
+        self._locations: list[str] = []
 
-    def register(self, document: dict[str, YamlValue]) -> None:
-        """Borrow a loaded document; its registration order is its document identity."""
+    def register(self, document: dict[str, YamlValue], location: str = "") -> None:
+        """Borrow a loaded document and where it was read from; its registration order is its document identity.
+
+        The contract batch's documents come first; the others the models' references loaded follow them.
+        """
         self._raw.append(document)
+        self._locations.append(location)
 
     def exists(self, location: SourceLocation) -> bool:
         """Return whether a plain JSON pointer names a node of a held document, an integer YAML key included."""
@@ -48,13 +53,17 @@ class SourceLease:
             return False
         return True
 
-    def document(self, document: SourceDocumentId) -> dict[str, YamlValue]:
-        """Return a held document, for a target that copies it into documentation it serves; never modify it."""
-        return self._raw[document]
+    def documents(self) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
+        """Return every held document and where it was read from, for a target that copies them into documentation.
+
+        Never modify them.
+        """
+        return tuple(zip(self._locations, self._raw, strict=True))
 
     def close(self) -> None:
         """Release all borrowed mappings; repeated cleanup remains harmless."""
         self._raw.clear()
+        self._locations.clear()
 
 
 class TargetGenerationSession:
@@ -126,8 +135,8 @@ class TargetGenerationSession:
         batch = self.take_accepted_batch()
         bound = cast("BoundAttempt", self._candidate)
         lease = SourceLease()
-        for _, document in bound.documents:
-            lease.register(document)
+        for location, document in bound.documents:
+            lease.register(document, location)
         self.close()
         return ModelGenerationProduct(artifacts, allow_empty_api, batch, lease)
 
@@ -160,7 +169,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelArtifact,
-        SourceDocumentId,
         SourceLocation,
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
