@@ -38,26 +38,35 @@ _SCHEME_2: Final = SecurityScheme(
 )
 
 
+_SCHEME_3: Final = SecurityScheme(
+    name='metadata_key',
+    kind='api_key',
+    location='query',
+    wire_name='metadata_key',
+)
+
+
 ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
     _SCHEME_0,
     _SCHEME_1,
     _SCHEME_2,
+    _SCHEME_3,
 )
 
 
 OPERATION_0: Final = SecurityBinding(
-    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
     alternatives=((SecurityRequirement(scheme=_SCHEME_1, required_scopes=()),),),
 )
 
 
 OPERATION_1: Final = SecurityBinding(
-    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
     alternatives=((SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),),),
 )
 
 
 OPERATION_2: Final = SecurityBinding(
-    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_1, required_scopes=()),),),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_3, required_scopes=()),),),
 )
