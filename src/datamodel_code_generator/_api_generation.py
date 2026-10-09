@@ -545,9 +545,14 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
 
     The directory lies in the deepest existing directory of the output it stages for, so the journal renames each
     file within one filesystem, also into an output directory that is a mount point. A file that already holds its
-    bytes is left out, so an unchanged target stages nothing and writes nothing.
+    bytes is left out, so an unchanged target stages nothing and writes nothing. The journal reports a staged module
+    that a package directory shadows, so an unchanged one is reported here: a run warns whether or not it writes.
     """
-    if not (changed := [artifact for artifact in artifacts if artifact.action == "write"]):
+    from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
+
+    planned = tuple(artifacts)
+    warn_shadowed_modules(target.cwd / artifact.path for artifact in planned if artifact.action == "unchanged")
+    if not (changed := [artifact for artifact in planned if artifact.action == "write"]):
         return []
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagedFile,
