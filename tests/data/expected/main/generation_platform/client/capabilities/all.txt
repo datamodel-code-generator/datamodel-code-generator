@@ -51,23 +51,23 @@ copied runtime
   protocols/cache.py: 638
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
-  protocols/client.py: 1012
+  protocols/client.py: 990
   protocols/client_options.py: 34
-  protocols/errors.py: 1235
+  protocols/errors.py: 1232
   protocols/links.py: 75
   protocols/names.py: 29
-  protocols/options.py: 479
+  protocols/options.py: 475
   protocols/origins.py: 45
-  protocols/pagination.py: 1709
-  protocols/polling.py: 1379
+  protocols/pagination.py: 1565
+  protocols/polling.py: 1363
   protocols/public_keys.py: 142
-  protocols/records.py: 311
+  protocols/records.py: 251
   protocols/references.py: 16
   protocols/resume.py: 176
   protocols/signatures.py: 99
   protocols/sources.py: 43
   protocols/streams.py: 1795
-  protocols/uploads.py: 1428
+  protocols/uploads.py: 1412
   protocols/values.py: 158
   protocols/verification.py: 203
   protocols/webhook_events.py: 293
@@ -78,7 +78,7 @@ copied runtime
   protocols/websocket_native.py: 509
   protocols/websocket_types.py: 220
   protocols/writes.py: 288
-total 71 modules, 30037 lines
+total 71 modules, 29772 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

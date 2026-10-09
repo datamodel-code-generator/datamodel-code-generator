@@ -43,23 +43,23 @@ copied runtime
   model_codecs/wire.py: 144
   protocols/__init__.py: 4
   protocols/caches.py: 139
-  protocols/client.py: 1012
+  protocols/client.py: 990
   protocols/client_options.py: 34
-  protocols/errors.py: 1235
+  protocols/errors.py: 1232
   protocols/links.py: 75
   protocols/names.py: 29
-  protocols/options.py: 479
+  protocols/options.py: 475
   protocols/origins.py: 45
-  protocols/pagination.py: 1709
-  protocols/records.py: 311
+  protocols/pagination.py: 1565
+  protocols/records.py: 251
   protocols/references.py: 16
   protocols/resume.py: 176
   protocols/sources.py: 43
-  protocols/uploads.py: 1428
+  protocols/uploads.py: 1412
   protocols/values.py: 158
   protocols/websocket_types.py: 220
   protocols/writes.py: 288
-total 54 modules, 21907 lines
+total 54 modules, 21658 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

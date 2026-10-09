@@ -42,12 +42,12 @@ copied runtime
   model_codecs/unset.py: 26
   model_codecs/wire.py: 144
   protocols/__init__.py: 4
-  protocols/errors.py: 1235
-  protocols/records.py: 311
+  protocols/errors.py: 1232
+  protocols/records.py: 251
   protocols/references.py: 16
   protocols/resume.py: 176
   protocols/sources.py: 43
-total 43 modules, 16547 lines
+total 43 modules, 16484 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
