@@ -308,7 +308,6 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "CacheValidatorConflictError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
-    "HandshakeResponse",
     "IncompleteFrameError",
     "NonResumableSourceError",
     "OperationCancelledError",
@@ -330,7 +329,6 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "UploadSourceChangedError",
     "WebSocketClosedError",
     "WebSocketHandshakeError",
-    "WebSocketProxyError",
 )
 _ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
 _SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
@@ -367,11 +365,9 @@ _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
     "websocket": (
         "ConcurrentReceiveError",
         "DeliveryUnknownError",
-        "HandshakeResponse",
         "StreamDecodeError",
         "WebSocketClosedError",
         "WebSocketHandshakeError",
-        "WebSocketProxyError",
         *_SESSION_ERRORS,
     ),
 }
@@ -460,20 +456,8 @@ _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
         "cache_stores": ("AsyncMemoryCacheStore", "MemoryCacheStore"),
     },
     "websocket": {
-        "options": ("WSOptions", "WebSocketTransportOptions"),
-        "websocket_types": (
-            "AsyncWebSocketConnection",
-            "AsyncWebSocketConnector",
-            "Message",
-            "PingReceipt",
-            "ResolvedWSOptions",
-            "ResolvedWebSocketTransportOptions",
-            "WSFrame",
-            "WebSocketConnection",
-            "WebSocketConnector",
-            "WebSocketOpenRequest",
-        ),
-        "websocket": ("AsyncWebSocketSession", "WebSocketSession"),
+        "options": ("WSOptions",),
+        "websocket": ("AsyncWebSocketSession", "Message", "PingReceipt", "WebSocketSession"),
     },
     "webhooks": {
         "references": ("OperationRef",),
@@ -2980,16 +2964,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
 
     def socket_plan(self, module: Module, index: int, spec: SocketSpec) -> str:
-        """Return a WebSocket helper's plan: its identity, handshake call, connectors, messages, and subprotocols.
+        """Return a WebSocket helper's plan: its identity, handshake call, messages, and subprotocols.
 
         Only the settings that differ from the plan's defaults are written.
         """
-        runtime = "_runtime.protocols.websocket"
-        factories = "_runtime.protocols.websocket_connectors"
         helper = spec.helper
         tree = helper.tree
-        plan = module.local(runtime, "ChannelPlan")
-        connectors = (module.local(factories, "native_connector"), module.local(factories, "async_native_connector"))
+        plan = module.local("_runtime.protocols.websocket", "ChannelPlan")
         entries: list[tuple[str, Doc]] = [
             ("helper_id=", repr(helper.name)),
             (
@@ -3001,7 +2982,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ),
             ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
             ("fingerprint=", repr(self.fingerprints[helper.name])),
-            ("connectors=", _tuple(connectors)),
         ]
         for direction, use in (("send", spec.send), ("receive", spec.receive)):
             message = tree[direction]
@@ -3013,8 +2993,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 entries.append(("encoder=" if direction == "send" else "decoder=", self.codec(module, use)))
         if subprotocols := tree["subprotocols"]:
             entries.append(("subprotocols=", _tuple(map(repr, subprotocols))))
-        if tree["compression"]:
-            entries.append(("compression=", "True"))
         sent, received = self.message_types(module, spec)
         head = f"SOCKET_{index}: {module.name('typing', 'Final')}[{plan}[{sent}, {received}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)

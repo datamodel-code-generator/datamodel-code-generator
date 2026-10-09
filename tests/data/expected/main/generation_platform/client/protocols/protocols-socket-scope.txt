@@ -34,4 +34,4 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'pydantic>=2.13.5']
+  dependencies ['httpx2[ws]>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']

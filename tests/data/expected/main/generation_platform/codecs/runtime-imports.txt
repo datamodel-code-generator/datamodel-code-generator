@@ -47,7 +47,7 @@ protocols/client_options.py: ..client.options, ..client.timing, ..model_codecs.u
 protocols/errors.py: ..client.errors, ..client.responses, .records, .references, .resume, .sources, __future__, collections.abc, datetime, types, typing, typing_extensions
 protocols/links.py: __future__, collections.abc, re, string, typing
 protocols/names.py: .options, __future__, typing
-protocols/options.py: ..client.errors, ..client.timing, ..model_codecs.unset, .caches, .origins, .websocket_types, __future__, collections.abc, dataclasses, inspect, keyword, re, ssl, sys, types, typing, typing_extensions, urllib.parse
+protocols/options.py: ..client.errors, ..client.timing, ..model_codecs.unset, .caches, .origins, __future__, collections.abc, dataclasses, inspect, keyword, re, sys, types, typing, typing_extensions
 protocols/origins.py: ..client.urls, .records, __future__, dataclasses
 protocols/pagination.py: ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.paths, ..client.responses, ..client.timing, ..client.urls, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, .client, .errors, .links, .options, .records, .references, .resume, .values, .writes, __future__, collections.abc, dataclasses, decimal, enum, hashlib, re, threading, types, typing, typing_extensions, urllib.parse
 protocols/polling.py: ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.responses, ..client.retry, ..client.timing, ..model_codecs.media, ..model_codecs.unset, .client, .errors, .options, .pagination, .records, .references, .resume, .values, .writes, __future__, collections.abc, dataclasses, datetime, enum, threading, types, typing, typing_extensions
@@ -64,10 +64,7 @@ protocols/verification.py: .signatures, .webhook_events, .webhooks, __future__, 
 protocols/webhook_events.py: ..client.errors, ..client.operations, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, .errors, .records, .values, .webhooks, __future__, collections.abc, dataclasses, datetime, enum, json, typing, typing_extensions
 protocols/webhook_keys.py: ..client.errors, .records, __future__, re, typing
 protocols/webhooks.py: ..model_codecs.unset, .options, __future__, dataclasses, datetime, typing, typing_extensions
-protocols/websocket.py: ..client.errors, ..client.logical, ..client.native, ..client.operations, ..client.options, ..client.raw, ..client.responses, ..client.timing, ..model_codecs.errors, ..model_codecs.unset, .client, .errors, .options, .records, .references, .websocket_types, __future__, anyio, asyncio, collections.abc, dataclasses, enum, httpx2, threading, types, typing, typing_extensions
-protocols/websocket_connectors.py: .websocket_native, .websocket_types, __future__, typing
-protocols/websocket_native.py: ..client.errors, ..client.responses, ..client.timing, .errors, .options, .websocket_types, __future__, anyio, contextvars, dataclasses, functools, logging, socket, ssl, threading, typing, websockets.asyncio.client, websockets.client, websockets.datastructures, websockets.exceptions, websockets.http11, websockets.protocol, websockets.proxy, websockets.sync.client, websockets.uri
-protocols/websocket_types.py: ..client.responses, ..client.timing, __future__, dataclasses, ssl, typing, typing_extensions
+protocols/websocket.py: ..client.errors, ..client.logical, ..client.native, ..client.operations, ..client.options, ..client.raw, ..client.responses, ..client.timing, ..model_codecs.unset, .client, .errors, .options, .records, .references, __future__, anyio, asyncio, base64, collections.abc, dataclasses, enum, functools, httpx2, httpx2.websockets, os, threading, time, types, typing, typing_extensions, wsproto.connection, wsproto.events, wsproto.utilities
 protocols/writes.py: ..client.operations, ..client.paths, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, .records, .values, __future__, collections.abc, dataclasses, typing, typing_extensions
 server/__init__.py: -
 server/application.py: .security, __future__, collections.abc, dataclasses, fastapi, fastapi.params, inspect, types, typing, typing_extensions

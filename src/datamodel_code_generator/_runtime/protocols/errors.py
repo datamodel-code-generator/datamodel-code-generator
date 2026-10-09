@@ -13,8 +13,6 @@ from typing import Final, Generic, Literal, TypeAlias, get_args
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import (
-    MAX_STATUS,
-    MIN_STATUS,
     APIConnectionError,
     ConfigurationError,
     DeliveryState,
@@ -26,7 +24,7 @@ from ..client.errors import (
     error_string,
     error_time,
 )
-from ..client.responses import HeadersView, ResponseInfo
+from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
@@ -45,7 +43,6 @@ __all__ = (
     "CacheValidatorConflictError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
-    "HandshakeResponse",
     "IncompleteFrameError",
     "NonResumableSourceError",
     "OperationCancelledError",
@@ -67,7 +64,6 @@ __all__ = (
     "UploadSourceChangedError",
     "WebSocketClosedError",
     "WebSocketHandshakeError",
-    "WebSocketProxyError",
 )
 
 E_co = TypeVar("E_co", covariant=True, default=object)
@@ -76,9 +72,7 @@ P_co = TypeVar("P_co", covariant=True, default=object)
 _DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
 _SessionLimitKind: TypeAlias = Literal["pages", "items", "polls", "reconnects", "parts"]
 
-HandshakeCondition: TypeAlias = Literal[
-    "invalid_message", "invalid_header", "upgrade", "negotiation", "security", "size"
-]
+HandshakeCondition: TypeAlias = Literal["negotiation"]
 
 _DATA_CONDITIONS: Final = get_args(_DataCondition)
 _HANDSHAKE_CONDITIONS: Final = get_args(HandshakeCondition)
@@ -130,18 +124,6 @@ def _snapshot(value: object) -> None:
 def _raw_prefix(value: object, field: str = "raw_prefix") -> None:
     if not isinstance(value, bytes) or len(value) > MAX_RAW_PREFIX:
         msg = f"{field} must be at most 65536 bytes"
-        raise ValueError(msg)
-
-
-def _headers(value: object) -> None:
-    if not isinstance(value, HeadersView):
-        msg = "headers must be a HeadersView"
-        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
-
-
-def _status(value: object, field: str) -> None:
-    if not MIN_STATUS <= error_count(value, field) <= MAX_STATUS:
-        msg = f"{field} must be an HTTP status"
         raise ValueError(msg)
 
 
@@ -842,7 +824,7 @@ class WebSocketClosedError(ProtocolError):
 
 
 class WebSocketHandshakeError(APIConnectionError):
-    """A WebSocket handshake whose response broke the protocol, its negotiation, or a security limit; never retried."""
+    """A WebSocket handshake whose 101 selected no subprotocol the helper offered; never retried."""
 
     def __init__(  # noqa: PLR0913
         self,
@@ -879,96 +861,6 @@ class WebSocketHandshakeError(APIConnectionError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("condition", self.condition))
-
-
-class WebSocketProxyError(APIConnectionError):
-    """A proxy that refused or broke the tunnel to a WebSocket server; nothing reached the server and it is not retried.
-
-    Neither the proxy's credentials nor its response body are kept.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        proxy_status_code: int | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        retry_stop_reason: RetryStopReason | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the proxy's status; the phase is always connect and nothing was sent."""
-        if proxy_status_code is not None:
-            _status(proxy_status_code, "proxy_status_code")
-        _context(helper_id, operation)
-        super().__init__(
-            delivery_state=DeliveryState.NOT_SENT,
-            phase="connect",
-            retry_stop_reason=retry_stop_reason,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.proxy_status_code = proxy_status_code
-        self.helper_id = helper_id
-        self.operation = operation
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("proxy_status_code", self.proxy_status_code))
-
-
-class HandshakeResponse(ProtocolError):  # noqa: N818 - The protocol contract names this signal.
-    """A connector's signal that a handshake got an HTTP response other than 101, with at most 64 KiB of its body.
-
-    Only connectors raise it; the client turns it into the call's HTTP failure, redirect, or retry, so it never reaches
-    a caller. The headers and the body never appear in messages.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        status_code: int,
-        headers: HeadersView,
-        body_prefix: bytes,
-        truncated: bool,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-    ) -> None:
-        """Keep the status, the headers, and the body prefix."""
-        _status(status_code, "status_code")
-        _headers(headers)
-        _raw_prefix(body_prefix, "body_prefix")
-        _flag(truncated, "truncated")
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-        )
-        self.status_code = status_code
-        self.headers = headers
-        self.body_prefix = body_prefix
-        self.truncated = truncated
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("status_code", self.status_code))
 
 
 class DeliveryUnknownError(ProtocolError):
