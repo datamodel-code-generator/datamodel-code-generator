@@ -26,8 +26,8 @@ from .timing import SYSTEM_CLOCK, Clock, checked_instance
 from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
-    from asyncio import AbstractEventLoop, Lock
     from collections.abc import AsyncGenerator, Callable, Generator, Sequence
+    from contextlib import AbstractAsyncContextManager
 
     from .auth import Secret
     from .security import AsyncSend, Send
@@ -204,7 +204,9 @@ class _Provider(TokenSource):
         self._held: _Held | None = None
         self._callback: Callable[[TokenSet], object] | None = None
         self._lock = threading.Lock()
-        self._alocks: weakref.WeakKeyDictionary[AbstractEventLoop, Lock] = weakref.WeakKeyDictionary()
+        self._alocks: weakref.WeakKeyDictionary[object, AbstractAsyncContextManager[object]] = (
+            weakref.WeakKeyDictionary()
+        )
 
     def _form(self) -> list[tuple[str, str]]:
         raise NotImplementedError
