@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._target_contract import (
-    AnnotatedType,
     BuiltinType,
     ConstructorType,
     GeneratedEnumMember,
@@ -34,10 +33,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalModelSymbol,
-        FinalPythonType,
         GeneratedTypeContractBatch,
         ModelFieldFacts,
         SymbolId,
+        TypeView,
     )
 
 __all__ = ("ALIASES", "WRAPPERS", "ItemStep", "JSONTypes", "ModelFacts", "ModelField", "StepKind")
@@ -72,11 +71,6 @@ _NAMED: Final = MappingProxyType({
     "datetime.timedelta": "string",
     "uuid.UUID": "string",
     "decimal.Decimal": "number",
-    "pydantic.conint": "integer",
-    "pydantic.confloat": "number",
-    "pydantic.condecimal": "number",
-    "pydantic.constr": "string",
-    "pydantic.conbytes": "string",
     "pydantic.PositiveInt": "integer",
     "pydantic.NegativeInt": "integer",
     "pydantic.NonPositiveInt": "integer",
@@ -121,7 +115,7 @@ class ModelField:
 
     wire_name: str
     name: str
-    type: FinalPythonType
+    type: TypeView
     required: bool
     read_only: bool
     write_only: bool
@@ -172,7 +166,7 @@ class ModelFacts:
             if symbol.artifact is not None
         }
 
-    def symbol(self, value: FinalPythonType) -> FinalModelSymbol | None:
+    def symbol(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the model or root model a type names when its backend declares it, or None for any other type."""
         if not isinstance(value, GeneratedSymbolType):
             return None
@@ -209,15 +203,15 @@ class ModelFacts:
                 member=member,
             )
 
-    def root(self, symbol: SymbolId) -> FinalPythonType | None:
+    def root(self, symbol: SymbolId) -> TypeView | None:
         """Return the type an alias or root symbol stands for, or None when the batch binds none."""
         return next(
             (facts.type for member in self.members.get(symbol, ()) if (facts := member.model_facts) is not None), None
         )
 
     def argument(
-        self, value: FinalPythonType, kinds: frozenset[str] = WRAPPERS, seen: frozenset[SymbolId] = frozenset()
-    ) -> FinalPythonType:
+        self, value: TypeView, kinds: frozenset[str] = WRAPPERS, seen: frozenset[SymbolId] = frozenset()
+    ) -> TypeView:
         """Return the type an argument of a model type takes: each symbol of the kinds by the type it stands for."""
         match value:
             case GeneratedSymbolType() if (
@@ -227,14 +221,18 @@ class ModelFacts:
             ):
                 return self.argument(root, kinds, seen | {value.symbol})
             case GenericType():
-                return replace(value, arguments=tuple(self.argument(item, kinds, seen) for item in value.arguments))
+                return replace(
+                    value, arguments=tuple(self.argument(item, kinds, seen) for item in value.arguments), hint=None
+                )
             case UnionType():
-                return replace(value, members=tuple(self.argument(item, kinds, seen) for item in value.members))
+                return replace(
+                    value, members=tuple(self.argument(item, kinds, seen) for item in value.members), hint=None
+                )
             case _:
                 pass
         return value
 
-    def plain(self, value: FinalPythonType) -> FinalPythonType:
+    def plain(self, value: TypeView) -> TypeView:
         """Return the type an alias stands for, through aliases of aliases, or any other type itself."""
         while (
             isinstance(value, GeneratedSymbolType)
@@ -244,7 +242,7 @@ class ModelFacts:
             value = aliased
         return value
 
-    def unwrapped(self, value: FinalPythonType, steps: list[ItemStep]) -> FinalPythonType:
+    def unwrapped(self, value: TypeView, steps: list[ItemStep]) -> TypeView:
         """Return the type a root model or a union of one type and None stands for, adding each root step taken."""
         while True:
             value = self.plain(value)
@@ -260,7 +258,7 @@ class ModelFacts:
             else:
                 return value
 
-    def model(self, value: FinalPythonType) -> FinalModelSymbol | None:
+    def model(self, value: TypeView) -> FinalModelSymbol | None:
         """Return the object model a body stands for, alone or with null, or None when it is anything else.
 
         A root model whose root is such a model, as a Pydantic body of an object or null is, stands for that model.
@@ -276,14 +274,14 @@ class ModelFacts:
             value = self.plain(present[0])
         return symbol if (symbol := self.symbol(value)) is not None and symbol.kind == "model" else None
 
-    def json_types(self, value: FinalPythonType, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:
+    def json_types(self, value: TypeView, seen: frozenset[SymbolId] = frozenset()) -> JSONTypes:
         """Return the JSON types the values of a type are, or None when they can be any value.
 
         An enum's values give its types, an alias or root model those of the type it stands for, and an object model
         is an object.
         """
-        value = value.base if isinstance(value, AnnotatedType) else value
-        name = _name(value.callable if isinstance(value, ConstructorType) else value)
+        leaf = (value.callable if value.base is None else value.base) if isinstance(value, ConstructorType) else value
+        name = _name(leaf)
         named = _NAMED.get(name or "")
         if named is None and isinstance(value, ImportedType | ConstructorType) and name != "typing.Any":
             named = "string"
@@ -333,26 +331,26 @@ class ModelFacts:
             accepts_null = accepts_null or field.schema_null
         return present if present is None or not accepts_null else present | _NULL
 
-    def nullable(self, value: FinalPythonType) -> bool:
+    def nullable(self, value: TypeView) -> bool:
         """Return whether a type admits None, through its aliases."""
         value = self.plain(value)
         return isinstance(value, UnionType) and len(_present(value)) != len(value.members)
 
 
-def _name(value: FinalPythonType) -> str | None:
+def _name(value: TypeView) -> str | None:
     """Return the dotted name of a builtin or imported type, or None for any other type."""
     if isinstance(value, BuiltinType):
         return value.name
     return f"{value.import_.from_}.{value.import_.import_}" if isinstance(value, ImportedType) else None
 
 
-def _without_none(value: FinalPythonType) -> FinalPythonType:
+def _without_none(value: TypeView) -> TypeView:
     """Return a type without its None member, or the type itself when it is no union."""
     if not isinstance(value, UnionType):
         return value
     present = _present(value)
-    return present[0] if len(present) == 1 else replace(value, members=tuple(present))
+    return present[0] if len(present) == 1 else replace(value, members=tuple(present), hint=None)
 
 
-def _present(value: UnionType) -> list[FinalPythonType]:
+def _present(value: UnionType) -> list[TypeView]:
     return [member for member in value.members if not isinstance(member, NoneType)]

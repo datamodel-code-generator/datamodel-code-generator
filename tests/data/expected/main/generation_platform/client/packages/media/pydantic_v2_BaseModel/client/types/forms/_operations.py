@@ -7,21 +7,17 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import Address as _dcg_type_3
-from models import Draft as _dcg_type_4
-from models import FieldAttachmentsGetResponse as _dcg_type_2
-from models import FieldFormsPostResponse as _dcg_type_0
-from models import FieldProfilesGetResponse as _dcg_type_1
+import models
 
 from ...bodies import FormData, MultipartData
 
-SubmitFormResponse: TypeAlias = _dcg_type_0
+SubmitFormResponse: TypeAlias = models.FieldFormsPostResponse
 
 
 SubmitProfileResponse: TypeAlias = None
 
 
-ReadProfileResponse: TypeAlias = _dcg_type_1
+ReadProfileResponse: TypeAlias = models.FieldProfilesGetResponse
 
 
 SubmitAnythingResponse: TypeAlias = None
@@ -30,7 +26,7 @@ SubmitAnythingResponse: TypeAlias = None
 SubmitPartsResponse: TypeAlias = None
 
 
-ReadPartsResponse: TypeAlias = MultipartData[bytes] | _dcg_type_2
+ReadPartsResponse: TypeAlias = MultipartData[bytes] | models.FieldAttachmentsGetResponse
 
 
 SubmitPairsResponse: TypeAlias = FormData
@@ -39,7 +35,7 @@ SubmitPairsResponse: TypeAlias = FormData
 SubmitUploadResponse: TypeAlias = None
 
 
-ReadUploadResponse: TypeAlias = MultipartData[str | int | _dcg_type_3 | _dcg_type_4 | bytes] | MultipartData[str | bytes] | MultipartData[bytes]
+ReadUploadResponse: TypeAlias = MultipartData[str | int | models.Address | models.Draft | bytes] | MultipartData[str | bytes] | MultipartData[bytes]
 
 
 SubmitAvatarResponse: TypeAlias = None

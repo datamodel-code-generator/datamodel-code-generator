@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-import typing
-from typing import Final
+from typing import Any, Final
 
 import models
 
@@ -128,7 +127,7 @@ codec_36: Final[PydanticCodec[int]] = PydanticCodec(int)
 codec_37: Final[PydanticCodec[models.Address]] = PydanticCodec(models.Address)
 """Codec of /paths/~1covers/post request_body (request meta multipart/form-data)."""
 
-codec_38: Final[PydanticCodec[typing.Any]] = PydanticCodec(typing.Any)
+codec_38: Final[PydanticCodec[Any]] = PydanticCodec(Any)
 """Codec of /paths/~1covers/post request_body (request extra multipart/form-data)."""
 
 codec_39: Final[PydanticCodec[models.Bounds]] = PydanticCodec(models.Bounds)

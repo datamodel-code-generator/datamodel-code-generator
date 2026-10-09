@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final
 
-from models import Thing as _dcg_type_0
+import models
 
 from .. import _operations
 from .._runtime.protocols.pagination import CountPlan, PaginationPlan
@@ -17,12 +17,12 @@ from .._runtime.protocols.references import OperationRef
 from ..types.default import ListThingsResponse
 
 
-def _items_0(data: ListThingsResponse) -> Sequence[_dcg_type_0] | None:
+def _items_0(data: ListThingsResponse) -> Sequence[models.Thing] | None:
     """Return the items of one page of things.pages."""
     return data.data
 
 
-PLAN_0: Final[PaginationPlan[_dcg_type_0, ListThingsResponse]] = PaginationPlan(
+PLAN_0: Final[PaginationPlan[models.Thing, ListThingsResponse]] = PaginationPlan(
     helper_id='things.pages',
     operation=OperationRef(pointer='/paths/~1things/get'),
     call=_operations.OPERATION_0,

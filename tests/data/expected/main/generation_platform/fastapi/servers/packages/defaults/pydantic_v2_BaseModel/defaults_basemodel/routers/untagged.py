@@ -31,28 +31,13 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         size: Annotated[int, Field(ge=1), Query(alias='size')] = 10,
         bounded: Annotated[int, Field(ge=0), Query(alias='bounded')] = 2,
         page: Annotated[int, Query(alias='page')] = 1,
-        words: Annotated[list[Annotated[str, StringConstraints(min_length=1)]], Query(
-            alias='words',
-        )] = ['a'],
-        x_level: Annotated[int, Field(ge=0), Header(
-            alias='X-Level',
-            convert_underscores=False,
-        )] = 4,
-        color: Annotated[defaults_basemodel_models.Color, Query(
-            alias='color',
-        )] = defaults_basemodel_models.Color('red'),
-        tone: Annotated[defaults_basemodel_models.FieldValuesGetQueryToneParameter, Query(
-            alias='tone',
-        )] = defaults_basemodel_models.FieldValuesGetQueryToneParameter('blue'),
-        shade: Annotated[defaults_basemodel_models.Shade, Query(
-            alias='shade',
-        )] = defaults_basemodel_models.Shade('dark'),
-        colors: Annotated[list[defaults_basemodel_models.Color], Query(
-            alias='colors',
-        )] = [defaults_basemodel_models.Color('red')],
-        sized: Annotated[Annotated[int, Field(ge=1)] | None, Query(
-            alias='sized',
-        )] = None,
+        words: Annotated[list[Annotated[str, StringConstraints(min_length=1)]], Query(alias='words')] = ['a'],
+        x_level: Annotated[int, Field(ge=0), Header(alias='X-Level', convert_underscores=False)] = 4,
+        color: Annotated[defaults_basemodel_models.Color, Query(alias='color')] = defaults_basemodel_models.Color('red'),
+        tone: Annotated[defaults_basemodel_models.FieldValuesGetQueryToneParameter, Query(alias='tone')] = defaults_basemodel_models.FieldValuesGetQueryToneParameter('blue'),
+        shade: Annotated[defaults_basemodel_models.Shade, Query(alias='shade')] = defaults_basemodel_models.Shade('dark'),
+        colors: Annotated[list[defaults_basemodel_models.Color], Query(alias='colors')] = [defaults_basemodel_models.Color('red')],
+        sized: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='sized')] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
         return dispatch(
@@ -88,23 +73,13 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
         response_class=Response,
         operation_id='getValues',
         response_description='Done.',
-        responses={'204': {'description': 'Done.'}},
-        openapi_extra={
-            'parameters': [
-                {'name': 'tags', 'in': 'query'},
-                {'name': 'labels', 'in': 'query'},
-                {'name': 'rows', 'in': 'query'},
-                {'name': 'marks', 'in': 'query'},
-                {'name': 'notes', 'in': 'query'},
-                {'name': 'extras', 'in': 'query'},
-                {'name': 'X-Colors', 'in': 'header'},
-            ],
-        },
         dependencies=wiring.dependencies.get('get_values'),
     )
 
 
-LITERAL_ROUTES: Final = (('get_values', _add_get_values),)
+LITERAL_ROUTES: Final = (
+    ('get_values', _add_get_values),
+)
 TEMPLATED_ROUTES: Final = ()
 
 

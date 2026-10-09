@@ -24,13 +24,13 @@ from datamodel_code_generator._client.naming import (
     snake,
 )
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
-from datamodel_code_generator._codec_type_source import static_scalar
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BuiltinType,
+    ConstructorType,
     LiteralScalar,
     LiteralSequence,
     NoneType,
@@ -61,12 +61,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
         Direction,
-        FinalPythonType,
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
         SourceDocumentId,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
 
@@ -144,7 +144,7 @@ class ParameterSpec:
     required: bool
     use: TypeUseBinding | None
     plan: ParameterPlan
-    argument: FinalPythonType | None = None
+    argument: TypeView | None = None
     default: LiteralScalar | None = None
     converts: bool = False
 
@@ -195,7 +195,7 @@ class FieldArgument:
     python_name: str
     wire_name: str
     required: bool
-    type: FinalPythonType
+    type: TypeView
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -394,7 +394,7 @@ class Planner:
             reference = OperationRef(pointer=item.ref) if isinstance(item.ref, str) else item.ref
             option = f"operations[{index}].ref"
             if (operation := self.request.resolve(reference)) is None:
-                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
                 named = named_document(reference.document, reference.document)
                 message = f"The operation setting {reference.pointer!r}{named} {self.request.unresolved}"
@@ -1006,7 +1006,7 @@ class Planner:
         )
 
 
-def _default(use: TypeUseBinding | None, argument: FinalPythonType | None) -> LiteralScalar | None:
+def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralScalar | None:
     """Return the default the schema of a builtin scalar argument, or one or None, declares when it is of its type."""
     if argument is None or use is None:
         return None
@@ -1015,7 +1015,10 @@ def _default(use: TypeUseBinding | None, argument: FinalPythonType | None) -> Li
         if isinstance(argument, UnionType)
         else (argument,)
     )
-    if len(present) != 1 or not isinstance(scalar := static_scalar(present[0]), BuiltinType):
+    if len(present) != 1:
+        return None
+    scalar = present[0].base if isinstance(present[0], ConstructorType) else present[0]
+    if not isinstance(scalar, BuiltinType):
         return None
     literal = use.default
     return literal if literal is not None and literal.kind in _DEFAULTS.get(scalar.name, ()) else None

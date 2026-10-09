@@ -219,12 +219,12 @@ render pydantic_v2.BaseModel default
   codec_19 models.UnconstrainedUnionValue
   codec_20 models.MixedUntypedEnumValue
   codec_21 models.MixedUntypedEnumValue
-  codec_22 models.NullableTypeListValue | None
-  codec_23 models.NullableTypeListValue | None
-  codec_24 models.NullableAnyValue | None
-  codec_25 models.NullableAnyValue | None
-  codec_26 models.NullableOneValue | None
-  codec_27 models.NullableOneValue | None
+  codec_22 Optional[models.NullableTypeListValue]
+  codec_23 Optional[models.NullableTypeListValue]
+  codec_24 Optional[models.NullableAnyValue]
+  codec_25 Optional[models.NullableAnyValue]
+  codec_26 Optional[models.NullableOneValue]
+  codec_27 Optional[models.NullableOneValue]
   codec_28 models.ArrayStringUnionValue
   codec_29 models.ArrayStringUnionValue
   codec_30 models.ObjectStringUnionValue

@@ -23,7 +23,10 @@ def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
     )
 
     def get_inventory() -> object:
-        return dispatch(get_inventory_handler(), contract.GetInventory.RESPONSES)
+        return dispatch(
+            get_inventory_handler(),
+            contract.GetInventory.RESPONSES,
+        )
 
     router.add_api_route(
         "/store/inventory",

@@ -9,7 +9,7 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import UserQuery as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
@@ -61,7 +61,7 @@ class UsersResource:
         self,
         *,
         cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -105,7 +105,7 @@ class UsersWithResponse:
         self,
         *,
         cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -149,7 +149,7 @@ class UsersWithRawResponse:
         self,
         *,
         cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -193,7 +193,7 @@ class UsersWithStreamingResponse:
         self,
         *,
         cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,

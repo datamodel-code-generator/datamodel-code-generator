@@ -1,6 +1,4 @@
 # document-callbacks
-DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
-DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The served document leaves out servers, which has no JSON form
 {
   "openapi": "3.1.0",
   "info": {
@@ -15,7 +13,6 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
   "paths": {
     "/subscriptions": {
       "post": {
-        "summary": "Subscribe",
         "operationId": "subscribe",
         "requestBody": {
           "required": true,
@@ -49,8 +46,21 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                 "requestBody": {
                   "required": true,
                   "content": {
-                    "application/json": {},
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    },
                     "multipart/form-data": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "file": {
+                            "type": "string",
+                            "format": "binary"
+                          }
+                        }
+                      },
                       "encoding": {
                         "file": {
                           "contentType": "image/png"
@@ -64,6 +74,11 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                     "description": "Received."
                   }
                 },
+                "security": [
+                  {
+                    "signature": []
+                  }
+                ],
                 "callbacks": {
                   "onReceipt": {
                     "{$request.body#/receiptUrl}": {
@@ -72,7 +87,12 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                           "204": {
                             "description": "Acknowledged."
                           }
-                        }
+                        },
+                        "security": [
+                          {
+                            "1": []
+                          }
+                        ]
                       }
                     }
                   }
@@ -81,66 +101,69 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
             }
           },
           "onStatus": {
-            "{$request.query.hook}": {
-              "put": {
-                "parameters": [
-                  {
-                    "name": "X-Trace",
-                    "in": "header"
-                  }
-                ],
-                "requestBody": {
-                  "content": {
-                    "application/json": {}
-                  }
-                },
-                "responses": {
-                  "200": {
-                    "description": "Recorded."
-                  }
-                }
-              }
-            }
+            "$ref": "#/components/callbacks/Status"
           },
           "onLoop": {
-            "{$request.query.loop}": {
-              "post": {
-                "responses": {
-                  "204": {
-                    "description": "Again."
-                  }
-                }
-              }
-            }
+            "$ref": "#/components/callbacks/Loop"
           }
         }
       }
     },
     "/events": {
       "get": {
-        "summary": "List Events",
         "operationId": "listEvents",
+        "externalDocs": {
+          "url": "https://docs.example.com/events"
+        },
+        "servers": [
+          {
+            "url": "https://events.example.com",
+            "x-codes": {
+              "1": "one"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The events.",
-            "content": {
-              "application/json": {
+            "headers": {
+              "X-Map": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldEventsGetResponse"
+                  "type": "object"
+                },
+                "example": {
+                  "1": "one"
                 }
               }
             },
-            "headers": {
-              "X-Map": {}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "kind": "created"
+                  }
+                ]
+              }
             }
           },
           "500": {
             "description": "Failed.",
             "content": {
-              "application/xml": {},
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Event"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tree"
                 }
               }
             }
@@ -148,36 +171,13 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
         },
         "callbacks": {
           "onStatus": {
-            "{$request.query.hook}": {
-              "put": {
-                "parameters": [
-                  {
-                    "name": "X-Trace",
-                    "in": "header"
-                  }
-                ],
-                "requestBody": {
-                  "content": {
-                    "application/json": {}
-                  }
-                },
-                "responses": {
-                  "200": {
-                    "description": "Recorded."
-                  }
-                }
-              }
-            }
+            "$ref": "#/components/callbacks/Status"
           }
-        },
-        "externalDocs": {
-          "url": "https://docs.example.com/events"
         }
       }
     },
     "/secure": {
       "get": {
-        "summary": "Get Secure",
         "operationId": "getSecure",
         "security": [
           {
@@ -188,17 +188,8 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
           {
             "name": "token",
             "in": "cookie",
-            "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Token"
+              "type": "string"
             }
           }
         ],
@@ -222,7 +213,11 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
           "401": {
             "description": "Denied.",
             "headers": {
-              "www-authenticate": {}
+              "www-authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
           },
           "403": {
@@ -233,7 +228,14 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldSecureGetResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Event"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Status"
+                    }
+                  ]
                 }
               }
             }
@@ -243,18 +245,12 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
     },
     "/ping": {
       "get": {
-        "summary": "Ping",
         "operationId": "ping",
-        "responses": {
-          "200": {
-            "description": "Successful Response"
-          }
-        }
+        "responses": {}
       }
     },
     "/echo": {
       "get": {
-        "summary": "Echo",
         "operationId": "echo",
         "responses": {
           "200": {
@@ -262,7 +258,12 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldEventsGetResponse"
+                  "$ref": "#/paths/~1events/get/responses/200/content/application~1json/schema"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/N\u00e4me"
                 }
               }
             }
@@ -273,6 +274,97 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
   },
   "components": {
     "schemas": {
+      "Tree": {
+        "type": "object",
+        "properties": {
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tree"
+            }
+          }
+        }
+      },
+      "Subscription": {
+        "type": "object",
+        "required": [
+          "callbackUrl"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "callbackUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/Status/$defs/State"
+          }
+        },
+        "$defs": {
+          "State": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          }
+        }
+      },
+      "Cat": {
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "properties": {
+          "pet_type": {
+            "type": "string"
+          }
+        }
+      },
+      "Dog": {
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "properties": {
+          "pet_type": {
+            "type": "string"
+          }
+        }
+      },
+      "Bird": {
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "properties": {
+          "pet_type": {
+            "type": "string"
+          }
+        }
+      },
       "Animal": {
         "oneOf": [
           {
@@ -282,120 +374,69 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
             "$ref": "#/components/schemas/Dog"
           }
         ],
-        "title": "Animal",
         "discriminator": {
           "propertyName": "pet_type",
           "mapping": {
             "cat": "#/components/schemas/Cat",
-            "dog": "#/components/schemas/Dog"
+            "dog": "Dog",
+            "bird": "#/components/schemas/Bird"
           }
         }
       },
-      "Cat": {
-        "properties": {
-          "pet_type": {
-            "type": "string",
-            "const": "cat",
-            "title": "Pet Type"
-          }
-        },
-        "type": "object",
-        "required": [
-          "pet_type"
-        ],
-        "title": "Cat"
-      },
-      "Dog": {
-        "properties": {
-          "pet_type": {
-            "type": "string",
-            "const": "dog",
-            "title": "Pet Type"
-          }
-        },
-        "type": "object",
-        "required": [
-          "pet_type"
-        ],
-        "title": "Dog"
-      },
-      "Event": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "kind": {
-            "anyOf": [
+      "N\u00e4me": {
+        "type": "string"
+      }
+    },
+    "callbacks": {
+      "Status": {
+        "{$request.query.hook}": {
+          "put": {
+            "parameters": [
               {
-                "type": "string"
-              },
-              {
-                "type": "null"
+                "name": "X-Trace",
+                "in": "header",
+                "schema": {
+                  "type": "string"
+                }
               }
             ],
-            "title": "Kind"
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Status"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "Recorded."
+              }
+            },
+            "security": [
+              {
+                "unknown": []
+              }
+            ]
           }
-        },
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "Event"
+        }
       },
-      "FieldEventsGetResponse": {
-        "items": {
-          "$ref": "#/components/schemas/Event"
-        },
-        "type": "array",
-        "title": "FieldEventsGetResponse"
-      },
-      "FieldSecureGetResponse": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/Event"
-          },
-          {
-            "$ref": "#/components/schemas/Status"
+      "Loop": {
+        "{$request.query.loop}": {
+          "post": {
+            "responses": {
+              "204": {
+                "description": "Again."
+              }
+            },
+            "callbacks": {
+              "again": {
+                "$ref": "#/components/callbacks/Loop"
+              }
+            }
           }
-        ],
-        "title": "FieldSecureGetResponse"
-      },
-      "State": {
-        "type": "string",
-        "enum": [
-          "up",
-          "down"
-        ],
-        "title": "State"
-      },
-      "Status": {
-        "properties": {
-          "state": {
-            "$ref": "#/components/schemas/State"
-          }
-        },
-        "type": "object",
-        "required": [
-          "state"
-        ],
-        "title": "Status"
-      },
-      "Subscription": {
-        "properties": {
-          "callbackUrl": {
-            "type": "string",
-            "minLength": 1,
-            "format": "uri",
-            "title": "Callbackurl"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "callbackUrl"
-        ],
-        "title": "Subscription"
+        }
       }
     },
     "securitySchemes": {

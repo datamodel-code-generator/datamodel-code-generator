@@ -4,6 +4,7 @@ elsewhere/README.md
 elsewhere/__init__.py
 elsewhere/_generated/__init__.py
 elsewhere/_generated/contract.py
+elsewhere/_generated/openapi.py
 elsewhere/application.py
 elsewhere/py.typed
 elsewhere/routers/__init__.py

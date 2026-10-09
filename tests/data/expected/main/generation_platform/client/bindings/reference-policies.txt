@@ -34,12 +34,12 @@ render pydantic_v2.BaseModel kept
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
-  codec_4 models.NullableName | None
-  codec_5 models.NullableName | None
-  codec_6 pydantic.SerializeAsAny[models.Base]
-  codec_7 pydantic.SerializeAsAny[models.Base]
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
+  codec_4 Optional[models.NullableName]
+  codec_5 Optional[models.NullableName]
+  codec_6 SerializeAsAny[models.Base]
+  codec_7 SerializeAsAny[models.Base]
   codec_8 models.Child
   codec_9 models.Child
 render pydantic_v2.BaseModel collapsed
@@ -73,12 +73,12 @@ render pydantic_v2.BaseModel collapsed
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
-  codec_4 str | None
-  codec_5 str | None
-  codec_6 pydantic.SerializeAsAny[models.Base]
-  codec_7 pydantic.SerializeAsAny[models.Base]
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
+  codec_4 Optional[str]
+  codec_5 Optional[str]
+  codec_6 SerializeAsAny[models.Base]
+  codec_7 SerializeAsAny[models.Base]
   codec_8 models.Child
   codec_9 models.Child
 render pydantic_v2.dataclass kept
@@ -126,12 +126,12 @@ render pydantic_v2.dataclass kept
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
-  codec_6 pydantic.SerializeAsAny[models.Base]
-  codec_7 pydantic.SerializeAsAny[models.Base]
+  codec_6 SerializeAsAny[models.Base]
+  codec_7 SerializeAsAny[models.Base]
   codec_8 models.Child
   codec_9 models.Child
 render pydantic_v2.dataclass collapsed
@@ -174,12 +174,12 @@ render pydantic_v2.dataclass collapsed
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
-  codec_4 str | None
-  codec_5 str | None
-  codec_6 pydantic.SerializeAsAny[models.Base]
-  codec_7 pydantic.SerializeAsAny[models.Base]
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
+  codec_4 Optional[str]
+  codec_5 Optional[str]
+  codec_6 SerializeAsAny[models.Base]
+  codec_7 SerializeAsAny[models.Base]
   codec_8 models.Child
   codec_9 models.Child
 render dataclasses.dataclass kept
@@ -225,8 +225,8 @@ render dataclasses.dataclass kept
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base
@@ -276,10 +276,10 @@ render dataclasses.dataclass collapsed
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
-  codec_4 str | None
-  codec_5 str | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
+  codec_4 Optional[str]
+  codec_5 Optional[str]
   codec_6 models.Base
   codec_7 models.Base
   codec_8 models.Child
@@ -326,8 +326,8 @@ render typing.TypedDict kept
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base
@@ -372,10 +372,10 @@ render typing.TypedDict collapsed
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
-  codec_4 str | None
-  codec_5 str | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
+  codec_4 Optional[str]
+  codec_5 Optional[str]
   codec_6 models.Base
   codec_7 models.Base
   codec_8 models.Child
@@ -423,8 +423,8 @@ render msgspec.Struct kept
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
   codec_4 models.NullableName
   codec_5 models.NullableName
   codec_6 models.Base
@@ -466,10 +466,10 @@ render msgspec.Struct collapsed
   model_bindings.py
   codec_0 models.Holder
   codec_1 models.Holder
-  codec_2 models.NullableRecord | None
-  codec_3 models.NullableRecord | None
-  codec_4 str | None
-  codec_5 str | None
+  codec_2 Optional[models.NullableRecord]
+  codec_3 Optional[models.NullableRecord]
+  codec_4 Optional[str]
+  codec_5 Optional[str]
   codec_6 models.Base
   codec_7 models.Base
   codec_8 models.Child

@@ -11,6 +11,15 @@ class FastAPITemplates(TemplateOverlay):
     """The server roles a custom template directory overrides; a template that does not render names its file."""
 
     BUILTIN = Path(__file__).parent / "templates"
-    ROLES = frozenset({"application.jinja2", "router.jinja2", "services.jinja2", "readme.jinja2"})
+    ROLES = frozenset({
+        "application.jinja2",
+        "contract.jinja2",
+        "facade.jinja2",
+        "openapi.jinja2",
+        "readme.jinja2",
+        "router.jinja2",
+        "security.jinja2",
+        "services.jinja2",
+    })
     SUBDIR = "fastapi"
     INVALID = "F_TEMPLATE_INVALID"

@@ -9,7 +9,7 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldApiKeyCookieParametersGetQueryFilterParameter as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
@@ -228,7 +228,7 @@ class AsyncAuthResource:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieParametersResponse:
@@ -620,7 +620,7 @@ class AsyncAuthWithResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieParametersResponse]:
@@ -1012,7 +1012,7 @@ class AsyncAuthWithRawResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1404,7 +1404,7 @@ class AsyncAuthWithStreamingResponse:
         theme: str,
         page: int,
         x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | Unset = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

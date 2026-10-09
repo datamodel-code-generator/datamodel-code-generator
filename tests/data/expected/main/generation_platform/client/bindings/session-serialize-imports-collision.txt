@@ -21,7 +21,7 @@ render pydantic_v2.BaseModel schemas
   class Container(BaseModel):
       native: SerializeAsAny
   model_bindings.py
-  codec_0 pydantic.SerializeAsAny[models.Base]
+  codec_0 SerializeAsAny[models.Base]
   codec_1 models.Child
 render pydantic_v2.BaseModel paths
   models.py
@@ -45,7 +45,7 @@ render pydantic_v2.BaseModel paths
   class Container(BaseModel):
       native: SerializeAsAny
   model_bindings.py
-  codec_0 pydantic.SerializeAsAny[models.Base]
+  codec_0 SerializeAsAny[models.Base]
   codec_1 models.Child
 render pydantic_v2.BaseModel api
   models.py
@@ -69,7 +69,7 @@ render pydantic_v2.BaseModel api
   class Container(BaseModel):
       native: SerializeAsAny
   model_bindings.py
-  codec_0 pydantic.SerializeAsAny[models.Base]
+  codec_0 SerializeAsAny[models.Base]
   codec_1 models.Child
 render pydantic_v2.dataclass schemas
   models.py
@@ -99,7 +99,7 @@ render pydantic_v2.dataclass schemas
   class Container:
       native: SerializeAsAny
   model_bindings.py
-  codec_0 pydantic.SerializeAsAny[models.Base]
+  codec_0 SerializeAsAny[models.Base]
   codec_1 models.Child
 render pydantic_v2.dataclass paths
   models.py
@@ -129,7 +129,7 @@ render pydantic_v2.dataclass paths
   class Container:
       native: SerializeAsAny
   model_bindings.py
-  codec_0 pydantic.SerializeAsAny[models.Base]
+  codec_0 SerializeAsAny[models.Base]
   codec_1 models.Child
 render pydantic_v2.dataclass api
   models.py
@@ -159,7 +159,7 @@ render pydantic_v2.dataclass api
   class Container:
       native: SerializeAsAny
   model_bindings.py
-  codec_0 pydantic.SerializeAsAny[models.Base]
+  codec_0 SerializeAsAny[models.Base]
   codec_1 models.Child
 render dataclasses.dataclass schemas
   models.py

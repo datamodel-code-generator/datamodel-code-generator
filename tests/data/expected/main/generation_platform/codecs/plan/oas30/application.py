@@ -9,11 +9,15 @@ from typing import Any, Final
 from fastapi import APIRouter, FastAPI, params
 
 from ._generated.contract import OperationDependencies
+from ._generated.openapi import serve_source_openapi
 from ._runtime.server.application import build, error_handlers, validation_error_handler
 from .routers import untagged
 from .services import UntaggedService
 
-ROUTES: Final = (*untagged.LITERAL_ROUTES, *untagged.TEMPLATED_ROUTES)
+ROUTES: Final = (
+    *untagged.LITERAL_ROUTES,
+    *untagged.TEMPLATED_ROUTES,
+)
 INFO: Final[dict[str, Any]] = {'title': 'Legacy wire plan', 'version': '1'}
 
 
@@ -39,11 +43,13 @@ def create_app(
     untagged: UntaggedService,
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
+    source_openapi: bool = True,
     **fastapi_kwargs: Any,
 ) -> FastAPI:
     """Create the application with every operation, passing the other keyword arguments to FastAPI.
 
-    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
+    application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
     """
     fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
     app = FastAPI(**{**INFO, **fastapi_kwargs})
@@ -54,6 +60,8 @@ def create_app(
             prefix=prefix,
         )
     )
+    if source_openapi:
+        serve_source_openapi(app, prefix=prefix, metadata=fastapi_kwargs)
     return app
 
 
@@ -61,5 +69,6 @@ __all__ = [
     'OperationDependencies',
     'build_router',
     'create_app',
+    'serve_source_openapi',
     'validation_error_handler',
 ]

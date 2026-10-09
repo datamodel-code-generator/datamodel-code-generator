@@ -7,6 +7,7 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
   server/py.typed
   server/routers/__init__.py
@@ -14,7 +15,9 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  4 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+  DocumentationAnnotationWarning: server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 show models.py
   | # Example header
   | #
@@ -61,7 +64,7 @@ show server/routers/pets.py
   | from collections.abc import Sequence
   | from typing import Annotated, Final
   | 
-  | import example.models as example_models
+  | from example import models
   | from fastapi import APIRouter, Body, params
   | from fastapi.responses import Response
   | 
@@ -80,14 +83,17 @@ show server/routers/pets.py
   |     )
   | 
   |     def list_pets() -> object:
-  |         return dispatch(list_pets_handler(), contract.ListPets.RESPONSES)
+  |         return dispatch(
+  |             list_pets_handler(),
+  |             contract.ListPets.RESPONSES,
+  |         )
   | 
   |     router.add_api_route(
   |         '/pets',
   |         list_pets,
   |         methods=['GET'],
   |         status_code=200,
-  |         response_model=example_models.FieldPetsGetResponse,
+  |         response_model=models.FieldPetsGetResponse,
   |         response_model_by_alias=True,
   |         response_model_exclude_unset=True,
   |         operation_id='listPets',
@@ -106,11 +112,14 @@ show server/routers/pets.py
   | 
   |     def create_pet(
   |         *,
-  |         body: Annotated[example_models.Pet | None, Body(
-  |             media_type='application/json',
-  |         )] = None,
+  |         body: Annotated[models.Pet | None, Body(media_type='application/json')] = None,
   |     ) -> object:
-  |         return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+  |         return dispatch(
+  |             create_pet_handler(
+  |                 body=body,
+  |             ),
+  |             contract.CreatePet.RESPONSES,
+  |         )
   | 
   |     router.add_api_route(
   |         '/pets',
@@ -122,7 +131,6 @@ show server/routers/pets.py
   |         operation_id='createPet',
   |         tags=['pets', 'admin'],
   |         response_description='Created',
-  |         responses={'201': {'description': 'Created'}},
   |         dependencies=wiring.dependencies.get('create_pet'),
   |     )
   | 
@@ -166,6 +174,7 @@ show server/__init__.py
   |     OperationDependencies,
   |     build_router,
   |     create_app,
+  |     serve_source_openapi,
   |     validation_error_handler,
   | )
   | 
@@ -174,6 +183,7 @@ show server/__init__.py
   |     "OperationDependencies",
   |     "build_router",
   |     "create_app",
+  |     "serve_source_openapi",
   |     "validation_error_handler",
   | ]
 show server/_runtime/server/__init__.py

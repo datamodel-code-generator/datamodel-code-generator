@@ -60,12 +60,12 @@ _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE: Final = (
 )
 _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._api_generation",
-    "datamodel_code_generator._api_manifest",
     "datamodel_code_generator._api_types",
     "datamodel_code_generator._client",
     "datamodel_code_generator._fastapi",
     "datamodel_code_generator._target_cli",
     "datamodel_code_generator._target_config",
+    "datamodel_code_generator._target_documents",
     "datamodel_code_generator._target_format",
     "datamodel_code_generator._target_render",
     "datamodel_code_generator._target_selection",

@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final
 
-from models import User as _dcg_type_0
+import models
 
 from .. import _operations
 from .._runtime.protocols.pagination import CursorPlan, PageBinding, PaginationPlan
@@ -25,12 +25,12 @@ from ..types.searches import SearchResponse
 from ..types.users import ListUsersResponse
 
 
-def _items_0(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
+def _items_0(data: ListUsersResponse) -> Sequence[models.User] | None:
     """Return the items of one page of users.by_header."""
     return data.data
 
 
-PLAN_0: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.by_header',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
@@ -47,12 +47,12 @@ PLAN_0: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
 )
 
 
-def _items_1(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
+def _items_1(data: ListUsersResponse) -> Sequence[models.User] | None:
     """Return the items of one page of users.bound."""
     return data.data
 
 
-PLAN_1: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.bound',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
@@ -87,12 +87,12 @@ PLAN_1: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
 )
 
 
-def _items_2(data: SearchResponse) -> Sequence[_dcg_type_0] | None:
+def _items_2(data: SearchResponse) -> Sequence[models.User] | None:
     """Return the items of one page of searches.all."""
     return data.data
 
 
-PLAN_2: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
+PLAN_2: Final[PaginationPlan[models.User, SearchResponse]] = PaginationPlan(
     helper_id='searches.all',
     operation=OperationRef(pointer='/paths/~1searches/post'),
     call=_operations.OPERATION_2,
@@ -118,12 +118,12 @@ PLAN_2: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
 )
 
 
-def _items_3(data: ListFolderResponse) -> Sequence[_dcg_type_0] | None:
+def _items_3(data: ListFolderResponse) -> Sequence[models.User] | None:
     """Return the items of one page of folders.all."""
     return data.data
 
 
-PLAN_3: Final[PaginationPlan[_dcg_type_0, ListFolderResponse]] = PaginationPlan(
+PLAN_3: Final[PaginationPlan[models.User, ListFolderResponse]] = PaginationPlan(
     helper_id='folders.all',
     operation=OperationRef(pointer='/paths/~1folders~1{folder}/get'),
     call=_operations.OPERATION_1,

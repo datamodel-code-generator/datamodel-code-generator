@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final
 
-from models import Message as _dcg_type_0
+import models
 
 from .. import _operations
 from .._generated import model_bindings
@@ -146,7 +146,7 @@ PLAN_3: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
 )
 
 
-STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_0: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='events.live',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,

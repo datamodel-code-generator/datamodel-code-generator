@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._target_contract import (
@@ -28,13 +27,14 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._openapi_wire_plan import CodecReason, WirePlan
     from datamodel_code_generator._target_contract import (
-        FinalPythonType,
         GeneratedTypeContractBatch,
         SourceLocation,
         SymbolId,
         TypeUseId,
+        TypeView,
         UnionDiscriminator,
     )
+    from datamodel_code_generator._target_module import TypeNames
 
 CodecBackend: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"
@@ -95,7 +95,7 @@ _JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
 class Class:
     """An acquired model, enum or supported leaf type."""
 
-    type: FinalPythonType
+    type: TypeView
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,7 +154,7 @@ class CodecUse:
 
     use: TypeUseId
     kind: CodecKind
-    type: FinalPythonType
+    type: TypeView
     shape: Shape = None
 
 
@@ -173,7 +173,7 @@ class ClientCodecs:
         return any(item.use == use for item in self.uses)
 
 
-def _name(value: FinalPythonType) -> str | None:
+def _name(value: TypeView) -> str | None:
     name = None
     if isinstance(value, BuiltinType):
         name = value.name
@@ -207,18 +207,18 @@ class _Planner:
     ) -> None:
         self.diagnostics[CodecDiagnostic(code, source or self.source, message)] = None
 
-    def label(self, value: FinalPythonType) -> str:
+    def label(self, value: TypeView) -> str:
         if isinstance(value, GeneratedSymbolType):
             return self.symbols[value.symbol].name
         if isinstance(value, BoundType):
             return render_python_type_expr(value.binding.expression)
         return _name(value) or type(value).__name__
 
-    def unsupported(self, value: FinalPythonType, schema: SourceLocation | None) -> None:
+    def unsupported(self, value: TypeView, schema: SourceLocation | None) -> None:
         self.report(f"The {self.backend} converter has no conversion for the {self.label(value)} type", schema)
 
     def shape(  # ruff: ignore[too-many-return-statements, too-many-branches]
-        self, value: FinalPythonType, schema: SourceLocation | None, declared: UnionDiscriminator | None = None
+        self, value: TypeView, schema: SourceLocation | None, declared: UnionDiscriminator | None = None
     ) -> Shape:
         """Return a type's conversion; an alias passes the discriminator it declares to the union it stands for."""
         if isinstance(value, NoneType):
@@ -280,12 +280,10 @@ class _Planner:
         self.unsupported(value, schema)
         return None
 
-    def root(self, symbol: SymbolId) -> FinalPythonType:
+    def root(self, symbol: SymbolId) -> TypeView:
         return next(member.model_facts.type for member in self.members[symbol] if member.model_facts is not None)
 
-    def flattened(
-        self, members: tuple[FinalPythonType, ...], seen: frozenset[SymbolId] = frozenset()
-    ) -> Iterator[FinalPythonType]:
+    def flattened(self, members: tuple[TypeView, ...], seen: frozenset[SymbolId] = frozenset()) -> Iterator[TypeView]:
         for member in members:
             if (
                 isinstance(member, GeneratedSymbolType)
@@ -299,7 +297,7 @@ class _Planner:
             elif not isinstance(member, NoneType):
                 yield member
 
-    def kinds(self, value: FinalPythonType) -> tuple[JSONKind, ...]:
+    def kinds(self, value: TypeView) -> tuple[JSONKind, ...]:
         if isinstance(value, GeneratedSymbolType):
             if (symbol := self.symbols[value.symbol]).kind == "enum":
                 kinds = {item.kind for item in symbol.values if item is not None}
@@ -384,14 +382,19 @@ class _Planner:
         return tag, tuple(tags.items())
 
 
-def plan_client_codecs(
+def plan_client_codecs(  # ruff: ignore[too-many-arguments]
     batch: GeneratedTypeContractBatch,
     wire: WirePlan,
     backend: CodecBackend,
     uses: Collection[TypeUseId],
     facts: ModelFacts,
+    *,
+    names: TypeNames,
 ) -> ClientCodecs:
-    """Plan only selected directional uses, keeping the accepted batch's final model names and modules."""
+    """Plan only selected directional uses, keeping the accepted batch's final model names and modules.
+
+    A use whose type `names` cannot import in a generated module is reported instead.
+    """
     planner = _Planner(backend, facts)
     planned = []
     for use in batch.type_uses:
@@ -404,8 +407,11 @@ def plan_client_codecs(
                 code="BND_MODEL_SCOPE_REQUIRED" if use.state == "not_generated" else use.reason or "MC_BINDING_MISSING",
             )
             continue
-        if (reason := type_reason(use.type, facts.imports)) is not None:
-            planner.report("The use's final type has no expression a generated module can import", code=reason)
+        if names.unspellable(use.type):
+            planner.report(
+                "The use's final type has no expression a generated module can import",
+                code="BND_TYPE_EXPRESSION_UNSUPPORTED",
+            )
             continue
         kind = _KINDS[backend]
         shape = None

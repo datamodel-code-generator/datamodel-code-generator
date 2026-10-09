@@ -4,24 +4,39 @@
 from typing import Final
 from fastapi import FastAPI
 
-ROUTES: Final = (route_a, route_b)
-INFO: Final[AppOptions] = AppOptions(title="日本 {braces}")
+ROUTES: Final = (
+    *pets.LITERAL_ROUTES,
+    *pets.TEMPLATED_ROUTES,
+)
+INFO: Final[dict[str, Any]] = {'title': '日本 {braces}', 'version': '1.0'}
 
 
-def build_router(*, pets: Pets, authorize: Authorize):
+def build_router(
+    *,
+    pets: PetsService[PrincipalT],
+    authorize: Authorize[PrincipalT],
+    dependencies: Sequence[params.Depends] = (),
+    prefix: str = "",
+) -> APIRouter:
     """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
-        services={"pets": pets},
+        services={'pets': pets},
         authorize=authorize,
         dependencies=dependencies,
     )
 
 
-def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
+def create_app(
+    *,
+    pets: PetsService,
+    source_openapi: bool = True,
+    **fastapi_kwargs: Any,
+) -> FastAPI:
     """Create the application with every operation, passing the other keyword arguments to FastAPI.
 
-    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
+    application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
     """
     fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
     app = FastAPI(**{**INFO, **fastapi_kwargs})
@@ -29,15 +44,16 @@ def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
         build_router(
             pets=pets,
             authorize=authorize,
-            dependencies=dependencies,
         )
     )
+    if source_openapi:
+        serve_source_openapi(app, prefix=prefix, metadata=fastapi_kwargs)
     return app
 
 
 __all__ = [
-    "create_app",
-    "build_router",
+    'build_router',
+    'create_app',
 ]
 
 === application.jinja2 / empty
@@ -47,10 +63,12 @@ from typing import Final
 from fastapi import FastAPI
 
 ROUTES: Final = ()
-INFO: Final[AppOptions] = AppOptions()
+INFO: Final[dict[str, Any]] = {}
 
 
-def build_router(*, pets: Pets, authorize: Authorize):
+def build_router(
+    *,
+) -> APIRouter:
     """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
@@ -58,10 +76,13 @@ def build_router(*, pets: Pets, authorize: Authorize):
     )
 
 
-def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
+def create_app(
+    *,
+) -> FastAPI:
     """Create the application with every operation, passing the other keyword arguments to FastAPI.
 
-    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError.
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
+    application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
     """
     fastapi_kwargs["exception_handlers"] = error_handlers(fastapi_kwargs.get("exception_handlers"))
     app = FastAPI(**{**INFO, **fastapi_kwargs})
@@ -69,11 +90,141 @@ def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:
         build_router(
         )
     )
+    if source_openapi:
+        serve_source_openapi(app, prefix=prefix, metadata=fastapi_kwargs)
     return app
 
 
 __all__ = [
 ]
+
+=== contract.jinja2 / populated
+"""Operation plans of this package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+from typing import Final, TypedDict
+OperationDependencies = TypedDict(
+    'OperationDependencies',
+    {
+        'get_pet': Sequence[params.Depends],
+        'list_pets': Sequence[params.Depends],
+    },
+    total=False,
+)
+
+
+class GetPet:
+    """Plans of the get_pet operation."""
+
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of get_pet."""
+
+        pet_id: int
+        tags: list[str] | None
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(ParameterArgument(name='pet_id', plan=PathPlan(location='path', name='petId')),),
+        record=Parameters,
+        path=RawPath(template='/pets/{petId}', names=frozenset({'petId'})),
+    )
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='text/plain', kind='text'),),
+        required=False,
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'200': Declared(media_type='application/json', model=models.Pet)},
+        primary=200,
+        head=True,
+    )
+
+
+class ListPets:
+    """Plans of the list_pets operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='application/json', kind='json'),),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+    )
+
+
+class DeletePet:
+    """Plans of the delete_pet operation."""
+
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of delete_pet."""
+
+        pet_id: int
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(ParameterArgument(name='pet_id', plan=PathPlan(location='path', name='petId')),),
+        record=Parameters,
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+    )
+
+=== contract.jinja2 / empty
+"""Operation plans of this package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+from typing import TypedDict
+OperationDependencies = TypedDict('OperationDependencies', {}, total=False)
+
+=== facade.jinja2 / populated
+"""FastAPI server 日本 {braces}."""
+
+from .application import build_router, create_app
+
+__all__ = [
+    "build_router",
+    "create_app",
+]
+
+=== facade.jinja2 / empty
+"""Router groups of this package."""
+
+=== openapi.jinja2 / populated
+"""The source OpenAPI document of the selected operations, which the application serves; regenerate it."""
+
+from __future__ import annotations
+
+import json
+from typing import TYPE_CHECKING, Any
+
+from .._runtime.server.openapi import serve_openapi
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from fastapi import FastAPI
+
+_TEXT = (
+    '{\n'
+    '  "title": "日本 {braces} \\\\"\n'
+    '}'
+)
+
+
+def document() -> dict[str, Any]:
+    """Return a new copy of the source document."""
+    loaded: dict[str, Any] = json.loads(_TEXT)
+    return loaded
+
+
+def serve_source_openapi(
+    app: FastAPI, *, prefix: str = "", metadata: Mapping[str, Any] | None = None
+) -> None:
+    """Serve the source document instead of FastAPI's, read on its first request.
+
+    Its paths take `prefix`, and the FastAPI settings in `metadata`, such as `title`, replace its own.
+    """
+    serve_openapi(app, document, prefix=prefix, metadata=metadata)
 
 === readme.jinja2 / populated
 # API 日本 {braces}
@@ -152,9 +303,9 @@ The package never contacts a token endpoint.
 
 ## Served OpenAPI document
 
-The application serves FastAPI's own document, built from the routes and the models they declare.
-An optional parameter or request body is declared as `T | None = None`, so its schema there is `anyOf` of the type and `null`.
-Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
+`create_app` serves the part of the source document the selected operations use, which generation writes into `_generated/openapi.py`; the application reads it on the first request for it.
+`create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the models they declare, in which an optional parameter or request body is `anyOf` of its type and `null`.
+An application of your own that includes `build_router(...)` serves FastAPI's document unless it calls `serve_source_openapi(app)`, imported from `server`.
 
 ## Validation
 
@@ -234,9 +385,9 @@ app.include_router(build_router())
 
 ## Served OpenAPI document
 
-The application serves FastAPI's own document, built from the routes and the models they declare.
-An optional parameter or request body is declared as `T | None = None`, so its schema there is `anyOf` of the type and `null`.
-Each route adds what FastAPI cannot derive from it, taken from the source document when the package is generated: the declared responses, and the parameters, request bodies, and callbacks that adapters read, with their schemas' references resolved in place.
+`create_app` serves the part of the source document the selected operations use, which generation writes into `_generated/openapi.py`; the application reads it on the first request for it.
+`create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the models they declare, in which an optional parameter or request body is `anyOf` of its type and `null`.
+An application of your own that includes `build_router(...)` serves FastAPI's document unless it calls `serve_source_openapi(app)`, imported from `server`.
 
 ## Validation
 
@@ -267,49 +418,109 @@ Each generation prints the `uv add` command that adds the runtime dependencies o
 run it again when a new version of datamodel-code-generator changes them.
 
 === router.jinja2 / populated
-"""Routes 日本 {braces}"""
+"""Endpoints of 日本 {braces}; regenerate them instead of editing."""
 
 from fastapi import APIRouter
 
 
-def add_get(router: APIRouter, wiring: Wiring) -> None:
-    pets: PetsService[object] = wiring.services["pets"]
-    handle_get = checked(pets.get, "The pets.get method of GET /pets/{pet_id}", asynchronous=True)
+def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
+    pets: PetsService[object] = wiring.services['pets']
+    get_pet_handler = checked(
+        pets.get_pet,
+        'The pets.get_pet method of GET /pets/{petId} 日本',
+        asynchronous=True,
+    )
 
-    async def principal() -> str:
-        return "principal"
+    get_pet_authorize = wiring.authorizer()
 
-    async def get(*, pet_id: int) -> Pet:
-        return await handle_get(pet_id=pet_id)
+    async def get_pet_principal(
+        *,
+        api_key: Annotated[str | None, Security(security.api_key)],
+    ) -> object:
+        return await authenticate(
+            ((('api_key', ()),),),
+            {'api_key': api_key},
+            get_pet_authorize,
+            'APIKey',
+        )
 
-    router.add_api_route("/pets/{pet_id}", get, methods=["GET"])
+    async def get_pet(
+        *,
+        pet_id: Annotated[int, Path(alias='petId')],
+        limit: Annotated[int, Query(alias='limit')] = 20,
+        principal: Annotated[object, Depends(get_pet_principal)],
+    ) -> object:
+        return dispatch(
+            await get_pet_handler(
+                pet_id=pet_id,
+                limit=limit,
+            ),
+            contract.GetPet.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/pets/{petId}',
+        get_pet,
+        methods=['GET'],
+        status_code=200,
+        response_model=models.Pet,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='getPet',
+        summary='日本 {braces} \\ "quotes"',
+        dependencies=wiring.dependencies.get('get_pet'),
+    )
 
 
-def add_list(router: APIRouter, wiring: Wiring) -> None:
-    pets: PetsService[object] = wiring.services["pets"]
-    handle_get = checked(pets.get, "The pets.get method of GET /pets/{pet_id}", asynchronous=True)
+def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+    pets: PetsService = wiring.services['pets']
+    list_pets_handler = checked(
+        pets.list_pets,
+        'The pets.list_pets method of GET /pets',
+    )
 
-    async def get(*, pet_id: int) -> Pet:
-        return await handle_get(pet_id=pet_id)
+    def list_pets() -> object:
+        return dispatch(
+            list_pets_handler(),
+            contract.ListPets.RESPONSES,
+        )
 
-    router.add_api_route("/pets/{pet_id}", get, methods=["GET"])
+    router.add_api_route(
+        '/pets',
+        list_pets,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        dependencies=wiring.dependencies.get('list_pets'),
+    )
 
 
-LITERAL_ROUTES: Final = (add_list,)
-TEMPLATED_ROUTES: Final = (add_get,)
+LITERAL_ROUTES: Final = (
+    ('list_pets', _add_list_pets),
+)
+TEMPLATED_ROUTES: Final = (
+    ('get_pet', _add_get_pet),
+)
 
 
-def build_router(*, pets: Pets):
-    """Register pets on a new router, literal paths first."""
+def build_router(
+    *,
+    pets: PetsService[PrincipalT],
+    authorize: Authorize[PrincipalT],
+    dependencies: Sequence[params.Depends] = (),
+    prefix: str = "",
+) -> APIRouter:
+    """Register the pets operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-        services={"pets": pets},
+        services={'pets': pets},
         authorize=authorize,
         dependencies=dependencies,
     )
 
 === router.jinja2 / empty
-"""Routes 日本 {braces}"""
+"""Endpoints of 日本 {braces}; regenerate them instead of editing."""
 
 from fastapi import APIRouter
 
@@ -318,35 +529,71 @@ LITERAL_ROUTES: Final = ()
 TEMPLATED_ROUTES: Final = ()
 
 
-def build_router(*, pets: Pets):
-    """Register pets on a new router, literal paths first."""
+def build_router(
+    *,
+) -> APIRouter:
+    """Register every operation on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-        services={"pets": pets},
+        services={},
     )
+
+=== security.jinja2 / populated
+"""Security dependencies of this package, one for each scheme; override one with app.dependency_overrides."""
+
+from fastapi.security import APIKeyHeader
+
+
+api_key = APIKeyHeader(
+    name='X-Key',
+    description='日本 {braces}',
+    auto_error=False,
+)
+
+
+def custom() -> object:
+    """Return the custom 日本 credential, which no FastAPI security class reads; override this dependency."""
+    return None
+
+
+__all__ = [
+    'api_key',
+    'custom',
+]
 
 === services.jinja2 / populated
 """Service interfaces of this package's router groups; regenerate them instead of editing."""
 
 from __future__ import annotations
 
-from typing import Protocol, TypeVar
-from abc import abstractmethod
+from typing import Protocol
+from typing_extensions import TypeVar
 
 PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
 
 
-class Pets(Protocol[PrincipalT_contra]):
+class PetsService(Protocol[PrincipalT_contra]):
     """Pets 日本 {braces}"""
 
     @abstractmethod
-    async def get(self, *, pet_id: int) -> Pet: ...
+    async def get_pet(
+        self,
+        *,
+        pet_id: int,
+        principal: PrincipalT_contra | None,
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Show a pet 日本 {braces} \\ \"quotes\".
+        """
 
     @abstractmethod
-    async def list(self) -> list[Pet]: ...
+    def list_pets(
+        self,
+    ) -> None | HTTPResult[None] | Response:
+        """Handle GET /pets."""
 
 
-class Other(Protocol):
+class OtherService(Protocol):
     """Other"""
 
 === services.jinja2 / empty
@@ -354,20 +601,4 @@ class Other(Protocol):
 
 from __future__ import annotations
 
-from typing import Protocol, TypeVar
-from abc import abstractmethod
-
-=== services.jinja2 / no_typevar
-"""Service interfaces of this package's router groups; regenerate them instead of editing."""
-
-from __future__ import annotations
-
-from typing import Protocol, TypeVar
-from abc import abstractmethod
-
-
-class Other(Protocol):
-    """Other"""
-
-    @abstractmethod
-    def get(self) -> str: ...
+from typing import Protocol

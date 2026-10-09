@@ -7,26 +7,7 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias
 
-from models import FieldApiKeyPostResponse as _dcg_type_2
-from models import FieldApiKeyPostResponse200XIdempotencyHeader as _dcg_type_3
-from models import FieldBearerPostResponse as _dcg_type_4
-from models import FieldBearerPostResponse200XIdempotencyHeader as _dcg_type_5
-from models import FieldCookiePostResponse as _dcg_type_10
-from models import FieldCookiePostResponse200XIdempotencyHeader as _dcg_type_11
-from models import FieldDirectionPostResponse as _dcg_type_16
-from models import FieldDirectionPostResponse200XIdempotencyHeader as _dcg_type_17
-from models import FieldIgnoredPostResponse as _dcg_type_14
-from models import FieldIgnoredPostResponse200XIdempotencyHeader as _dcg_type_15
-from models import FieldOauthPostResponse as _dcg_type_6
-from models import FieldOauthPostResponse200XIdempotencyHeader as _dcg_type_7
-from models import FieldOpenidPostResponse as _dcg_type_8
-from models import FieldOpenidPostResponse200XIdempotencyHeader as _dcg_type_9
-from models import FieldParameterPostResponse as _dcg_type_0
-from models import FieldParameterPostResponse200XIdempotencyHeader as _dcg_type_1
-from models import FieldQueryPostResponse as _dcg_type_12
-from models import FieldQueryPostResponse200XIdempotencyHeader as _dcg_type_13
-from models import FieldUnusedPostResponse as _dcg_type_18
-from models import FieldUnusedPostResponse200XIdempotencyHeader as _dcg_type_19
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
@@ -34,10 +15,10 @@ from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...options import Unset
 from ...responses import ResponseInfo
 
-ParameterResponse: TypeAlias = _dcg_type_0
+ParameterResponse: TypeAlias = models.FieldParameterPostResponse
 
 
-_PARAMETER_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders(
+_PARAMETER_HEADERS: Final[ResponseHeaders[models.FieldParameterPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'parameter',
     frozenset({'200'}),
     (
@@ -66,15 +47,15 @@ def decode_parameter_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_1 | Unset:
+) -> models.FieldParameterPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of parameter from a response's metadata."""
     return _PARAMETER_HEADERS.decode(info, name)
 
 
-ApiKeyResponse: TypeAlias = _dcg_type_2
+ApiKeyResponse: TypeAlias = models.FieldApiKeyPostResponse
 
 
-_API_KEY_HEADERS: Final[ResponseHeaders[_dcg_type_3, Unset]] = ResponseHeaders(
+_API_KEY_HEADERS: Final[ResponseHeaders[models.FieldApiKeyPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'api_key',
     frozenset({'200'}),
     (
@@ -103,15 +84,15 @@ def decode_api_key_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_3 | Unset:
+) -> models.FieldApiKeyPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of api_key from a response's metadata."""
     return _API_KEY_HEADERS.decode(info, name)
 
 
-BearerResponse: TypeAlias = _dcg_type_4
+BearerResponse: TypeAlias = models.FieldBearerPostResponse
 
 
-_BEARER_HEADERS: Final[ResponseHeaders[_dcg_type_5, Unset]] = ResponseHeaders(
+_BEARER_HEADERS: Final[ResponseHeaders[models.FieldBearerPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'bearer',
     frozenset({'200'}),
     (
@@ -140,15 +121,15 @@ def decode_bearer_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_5 | Unset:
+) -> models.FieldBearerPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of bearer from a response's metadata."""
     return _BEARER_HEADERS.decode(info, name)
 
 
-OauthResponse: TypeAlias = _dcg_type_6
+OauthResponse: TypeAlias = models.FieldOauthPostResponse
 
 
-_OAUTH_HEADERS: Final[ResponseHeaders[_dcg_type_7, Unset]] = ResponseHeaders(
+_OAUTH_HEADERS: Final[ResponseHeaders[models.FieldOauthPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'oauth',
     frozenset({'200'}),
     (
@@ -177,15 +158,15 @@ def decode_oauth_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_7 | Unset:
+) -> models.FieldOauthPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of oauth from a response's metadata."""
     return _OAUTH_HEADERS.decode(info, name)
 
 
-OpenidResponse: TypeAlias = _dcg_type_8
+OpenidResponse: TypeAlias = models.FieldOpenidPostResponse
 
 
-_OPENID_HEADERS: Final[ResponseHeaders[_dcg_type_9, Unset]] = ResponseHeaders(
+_OPENID_HEADERS: Final[ResponseHeaders[models.FieldOpenidPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'openid',
     frozenset({'200'}),
     (
@@ -214,15 +195,15 @@ def decode_openid_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_9 | Unset:
+) -> models.FieldOpenidPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of openid from a response's metadata."""
     return _OPENID_HEADERS.decode(info, name)
 
 
-CookieResponse: TypeAlias = _dcg_type_10
+CookieResponse: TypeAlias = models.FieldCookiePostResponse
 
 
-_COOKIE_HEADERS: Final[ResponseHeaders[_dcg_type_11, Unset]] = ResponseHeaders(
+_COOKIE_HEADERS: Final[ResponseHeaders[models.FieldCookiePostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'cookie',
     frozenset({'200'}),
     (
@@ -251,15 +232,15 @@ def decode_cookie_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_11 | Unset:
+) -> models.FieldCookiePostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of cookie from a response's metadata."""
     return _COOKIE_HEADERS.decode(info, name)
 
 
-QueryResponse: TypeAlias = _dcg_type_12
+QueryResponse: TypeAlias = models.FieldQueryPostResponse
 
 
-_QUERY_HEADERS: Final[ResponseHeaders[_dcg_type_13, Unset]] = ResponseHeaders(
+_QUERY_HEADERS: Final[ResponseHeaders[models.FieldQueryPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'query',
     frozenset({'200'}),
     (
@@ -288,15 +269,15 @@ def decode_query_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_13 | Unset:
+) -> models.FieldQueryPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of query from a response's metadata."""
     return _QUERY_HEADERS.decode(info, name)
 
 
-IgnoredResponse: TypeAlias = _dcg_type_14
+IgnoredResponse: TypeAlias = models.FieldIgnoredPostResponse
 
 
-_IGNORED_HEADERS: Final[ResponseHeaders[_dcg_type_15, Unset]] = ResponseHeaders(
+_IGNORED_HEADERS: Final[ResponseHeaders[models.FieldIgnoredPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'ignored',
     frozenset({'200'}),
     (
@@ -325,15 +306,15 @@ def decode_ignored_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_15 | Unset:
+) -> models.FieldIgnoredPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of ignored from a response's metadata."""
     return _IGNORED_HEADERS.decode(info, name)
 
 
-DirectionResponse: TypeAlias = _dcg_type_16
+DirectionResponse: TypeAlias = models.FieldDirectionPostResponse
 
 
-_DIRECTION_HEADERS: Final[ResponseHeaders[_dcg_type_17, Unset]] = ResponseHeaders(
+_DIRECTION_HEADERS: Final[ResponseHeaders[models.FieldDirectionPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'direction',
     frozenset({'200'}),
     (
@@ -362,15 +343,15 @@ def decode_direction_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_17 | Unset:
+) -> models.FieldDirectionPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of direction from a response's metadata."""
     return _DIRECTION_HEADERS.decode(info, name)
 
 
-UnusedResponse: TypeAlias = _dcg_type_18
+UnusedResponse: TypeAlias = models.FieldUnusedPostResponse
 
 
-_UNUSED_HEADERS: Final[ResponseHeaders[_dcg_type_19, Unset]] = ResponseHeaders(
+_UNUSED_HEADERS: Final[ResponseHeaders[models.FieldUnusedPostResponse200XIdempotencyHeader, Unset]] = ResponseHeaders(
     'unused',
     frozenset({'200'}),
     (
@@ -399,6 +380,6 @@ def decode_unused_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> _dcg_type_19 | Unset:
+) -> models.FieldUnusedPostResponse200XIdempotencyHeader | Unset:
     """Decode one declared response header of unused from a response's metadata."""
     return _UNUSED_HEADERS.decode(info, name)

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias
 
-from models import Draft as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
@@ -17,13 +17,13 @@ from ...model_codecs import JSONValue
 from ...options import Unset
 from ...responses import ResponseInfo
 
-StoreDocumentResponse: TypeAlias = JSONValue | str | None | _dcg_type_0
+StoreDocumentResponse: TypeAlias = JSONValue | str | None | models.Draft
 
 
-ReadDocumentResponse: TypeAlias = _dcg_type_0
+ReadDocumentResponse: TypeAlias = models.Draft
 
 
-_READ_DOCUMENT_HEADERS: Final[ResponseHeaders[_dcg_type_0, Unset]] = ResponseHeaders(
+_READ_DOCUMENT_HEADERS: Final[ResponseHeaders[models.Draft, Unset]] = ResponseHeaders(
     'readDocument',
     frozenset({'200'}),
     (
@@ -59,7 +59,7 @@ def decode_read_document_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Draft'],
-) -> _dcg_type_0 | Unset:
+) -> models.Draft | Unset:
     """Decode one declared response header of read_document from a response's metadata."""
     return _READ_DOCUMENT_HEADERS.decode(info, name)
 

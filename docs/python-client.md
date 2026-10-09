@@ -709,7 +709,7 @@ body as keywords, never field arguments, then `pagination_options`, `options`, a
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_0, ListUsersResponse]:
+    ) -> Page[models.User, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
             self._core,
@@ -1041,7 +1041,7 @@ takes the `create` operation's parameters and its body as keywords, never field 
     def start(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.JobRequest,
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
@@ -1217,7 +1217,7 @@ helpers without `remote_cancel` have no such method:
 <!-- fmt: off -->
 
 ```python
-class JobsTrackedHandle(LroHandle[_dcg_type_1, GetJobResponse]):
+class JobsTrackedHandle(LroHandle[models.Report, GetJobResponse]):
     """A handle of the jobs.tracked polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
 
     __slots__ = ()
@@ -1623,7 +1623,7 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+    ) -> EventStream[models.Message]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -1786,12 +1786,12 @@ one is awaited once and returns the stream:
         state: JSONValue,
         *,
         criteria: dict[str, str] | Unset = UNSET,
-        body: _dcg_type_0,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_1]:
+    ) -> EventStream[models.Tick]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
             self._core,
@@ -1940,7 +1940,7 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+    ) -> EventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -2035,7 +2035,7 @@ with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which lea
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> WebSocketSession[_dcg_type_0, _dcg_type_1]:
+    ) -> WebSocketSession[models.ClientMessage, models.ServerMessage]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
@@ -2409,7 +2409,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
         pet_id: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
-    ) -> _dcg_type_2: ...
+    ) -> models.Pet: ...
     @overload
     def get_pet(
         self,
@@ -2417,7 +2417,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
         pet_id: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_2: ...
+    ) -> models.Pet: ...
     @overload
     def get_pet(
         self,
@@ -2425,7 +2425,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
         pet_id: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_3: ...
+    ) -> models.FieldPetsPetIdGetResponse: ...
     def get_pet(
         self,
         *,
@@ -2454,11 +2454,14 @@ Every overload and the implementation take `**kwargs` typed by a TypedDict of th
 
 ```python
     @overload
-    def get_pet(self, **kwargs: Unpack[Operation2Arguments]) -> _dcg_type_0: ...
+    def get_pet(self, **kwargs: Unpack[Operation2Arguments]) -> models.Pet: ...
     @overload
-    def get_pet(self, **kwargs: Unpack[Operation2Arguments1]) -> _dcg_type_0: ...
+    def get_pet(self, **kwargs: Unpack[Operation2Arguments1]) -> models.Pet: ...
     @overload
-    def get_pet(self, **kwargs: Unpack[Operation2Arguments2]) -> _dcg_type_1: ...
+    def get_pet(
+        self,
+        **kwargs: Unpack[Operation2Arguments2],
+    ) -> models.FieldPetsPetIdGetResponse: ...
     def get_pet(self, **kwargs: Unpack[Operation2Arguments3]) -> GetPetResponse:
         """Show one pet."""
         KEYWORDS_2.check(kwargs)
@@ -2687,7 +2690,7 @@ overload for each field, which that overload requires, and one that takes nothin
         self,
         *,
         pet_id: int,
-        body: _dcg_type_5,
+        body: models.PetPatch,
         name: Unset = UNSET,
         tag: Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -2730,7 +2733,7 @@ overload for each field, which that overload requires, and one that takes nothin
         self,
         *,
         pet_id: int,
-        body: _dcg_type_5 | Unset = UNSET,
+        body: models.PetPatch | Unset = UNSET,
         name: str | Unset = UNSET,
         tag: str | None | Unset = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -3424,7 +3427,8 @@ semantics, and the SDK's bounded retries resend from the original request.
 Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`
 take one keyword argument per security scheme an operation requires, named after the scheme in snake case; a package
 whose operations require none takes no credentials. A scheme whose argument would be empty, `options`, `http_client`,
-or another scheme's fails generation with `E_RESERVED_NAME`.
+`self`, or another scheme's, or whose OAuth provider classes would take another scheme's PascalCase prefix, fails
+generation with `E_RESERVED_NAME`.
 
 These examples assume a generated API with a `bearer` scheme, a `header_key` API key scheme, and an `oauth` OAuth 2
 scheme with client credentials and authorization code flows, and an `auth` resource containing `bearer` and
@@ -3590,7 +3594,8 @@ client's HTTP client runs its event hooks on these token requests and responses,
 and tokens. Used as an `httpx2.Auth` elsewhere, a provider needs its own `http_client`. The token URL must be HTTPS, or
 HTTP to a loopback host. A rejection, an unexpected status, or a response that is not a JSON object with a Bearer
 `access_token` raises `AuthError` with the reason `oauth_error`, a rejection keeping its `status_code` and standard
-`oauth_error` code, and an `expires_in` that is not a positive number the reason `invalid_expiry`. A transport failure
+`oauth_error` code, and an `expires_in` that is not a positive number, or a refreshed one past the last date Python can
+hold, the reason `invalid_expiry`. A transport failure
 raises `AuthError` with the reason `oauth_error`, or `timeout`, and the native exception as its cause, which can hold
 the token request and its client authentication. A provider's `clock=Clock(...)` times its token expiry.
 
@@ -3631,7 +3636,7 @@ def verify(
     *,
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0]:
+) -> VerifiedWebhook[models.Message]:
     """Verify a delivery and decode its event.
 
     Deliveries outside the timestamp window are rejected. Verification retains no
