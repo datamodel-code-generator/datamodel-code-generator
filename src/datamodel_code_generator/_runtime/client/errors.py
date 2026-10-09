@@ -74,11 +74,11 @@ class SDKError(Exception):
 
 
 def add_secondary(error: BaseException, *failures: BaseException) -> None:
-    """Name cleanup failures in notes of the error that is already propagating, never in its place."""
+    """Name secondary failures in the notes of the error that is already propagating, never in its place."""
     for failure in failures:
         if error is failure:
             continue
-        note = f"Secondary cleanup failure: {type(failure).__name__}"
+        note = f"Secondary failure: {type(failure).__name__}"
         if _is_notes(notes := error.__dict__.get("__notes__")):
             notes.append(note)
         else:
@@ -139,6 +139,10 @@ class ConfigurationError(SDKError):
 
 class APIConnectionError(SDKError):
     """The HTTP transport failed before a complete response: the original failure is the cause."""
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        cause = self.cause
+        return (*super()._details(), ("cause", None if cause is None else type(cause).__name__))
 
 
 class APITimeoutError(APIConnectionError):

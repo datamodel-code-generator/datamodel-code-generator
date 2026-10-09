@@ -50,9 +50,9 @@
   error SDKError() reason=None attempts=1 elapsed=2 request=None
   with response SDKError() safe=True
   error APITimeoutError(reason='phase_timeout') reason=phase_timeout attempts=0 elapsed=0.0 request=None
-  with response APITimeoutError(reason='phase_timeout') safe=True
+  with response APITimeoutError(reason='phase_timeout', cause='RuntimeError') safe=True
   error APITimeoutError(reason='deadline_exceeded') reason=deadline_exceeded attempts=0 elapsed=0.0 request=None
-  with response APITimeoutError(reason='deadline_exceeded') safe=True
+  with response APITimeoutError(reason='deadline_exceeded', cause='RuntimeError') safe=True
   response measurements attempts=3 elapsed=0.5
   hierarchy timeout=True
   hints TimeoutOptions ('connect', 'read', 'write', 'pool', 'return')
@@ -79,11 +79,11 @@
   > GET https://example.com/cleared
     [host: example.com, accept-encoding: gzip, deflate] b''
   nested timeout clear = b'cleared'
-  refused attempts ! APIConnectionError: APIConnectionError() [cause=ConnectError('refused')]
+  refused attempts ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
   attempts=2 phases share the remaining time=True within the deadline=True shrinking=True
   clock monotonic type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.monotonic') [field_path=('clock', 'monotonic')] invalid_type
   clock time type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.time') [field_path=('clock', 'time')] invalid_type
   clock random type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.random') [field_path=('clock', 'random')] invalid_type
   hashing ignores sources clock=True
-  budget on the client clock ! APIConnectionError: APIConnectionError() [cause=ConnectError('refused')]
+  budget on the client clock ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
   native phases [{'connect': 5.0, 'read': 5.0, 'write': 5.0, 'pool': 5.0}]

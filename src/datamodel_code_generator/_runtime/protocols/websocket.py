@@ -468,7 +468,7 @@ class _Sockets(Generic[SendT, RecvT]):
 
     @staticmethod
     def _close_code(error: BaseException) -> int:
-        """Return the code a failure closes the connection with."""
+        """Return the code a failure closes the connection with: going away for a closed client or a timed out wait."""
         if isinstance(error, DecodeError) and error.direction == "response":
             return _PROTOCOL_ERROR
         if is_client_closed(error) or is_phase_timeout(error):

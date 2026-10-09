@@ -1,7 +1,7 @@
 # pets pydantic_v2.BaseModel
   > GET https://example.com/handoff
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout') [cause=ReadTimeout('The read operation timed out')] phase_timeout
+  stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] phase_timeout
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   stream read cap default APIConnectionError notes []
@@ -18,10 +18,10 @@
   stream read APITimeoutError notes []
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 200 ! APITimeoutError: APITimeoutError(reason='deadline_exceeded') [cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  buffered acquisition 200 ! APITimeoutError: APITimeoutError(reason='deadline_exceeded', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] deadline_exceeded
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 503 ! APITimeoutError: APITimeoutError(reason='deadline_exceeded') [cause=ReadTimeout('The read operation timed out')] deadline_exceeded
+  buffered acquisition 503 ! APITimeoutError: APITimeoutError(reason='deadline_exceeded', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] deadline_exceeded
   > GET https://example.com/saved
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/release
@@ -30,7 +30,7 @@
   stream permit release count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream permit failure primary=True DecodeError notes ['Secondary cleanup failure: SDKError']
+  stream permit failure primary=True DecodeError notes ['Secondary failure: SDKError']
   stream permit release count 1
   buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption
@@ -47,13 +47,13 @@
   stream interruption close original True released 1
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''
-  stream close interruption over a read failure True ['Secondary cleanup failure: APIConnectionError'] released 1
+  stream close interruption over a read failure True ['Secondary failure: APIConnectionError'] released 1
   HTTP2 sync warm connection b'ready'
-  HTTP2 stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout') [cause=ReadTimeout('The read operation timed out')] phase_timeout
+  HTTP2 stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('The read operation timed out')] phase_timeout
   HTTP2 sync protocols ['h2'] requests 2
   > GET https://example.com/handoff
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout') [cause=ReadTimeout('')] phase_timeout
+  async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('')] phase_timeout
   > GET https://example.com/read-cap
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream read cap default APIConnectionError notes []
@@ -70,7 +70,7 @@
   async stream read APITimeoutError notes []
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async buffered acquisition ! APITimeoutError: APITimeoutError(reason='deadline_exceeded') [cause=ReadTimeout('')] deadline_exceeded
+  async buffered acquisition ! APITimeoutError: APITimeoutError(reason='deadline_exceeded', cause='ReadTimeout') [cause=ReadTimeout('')] deadline_exceeded
   > GET https://example.com/native-cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream native cancellation propagated
@@ -94,7 +94,7 @@
   async stream permit release count 1
   > GET https://example.com/release
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream permit failure primary=True DecodeError notes ['Secondary cleanup failure: SDKError']
+  async stream permit failure primary=True DecodeError notes ['Secondary failure: SDKError']
   async stream permit release count 1
   async buffered survives close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
   > GET https://example.com/interruption
@@ -111,11 +111,11 @@
   async stream interruption aclose original True released 1
   > GET https://example.com/interruption
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async stream close interruption over a read failure True ['Secondary cleanup failure: APIConnectionError'] released 1
+  async stream close interruption over a read failure True ['Secondary failure: APIConnectionError'] released 1
   > GET https://example.com/cleanup-cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream cleanup cancellation _Stop original True
   async stream cancelled cleanup released 0
   HTTP2 async warm connection b'ready'
-  HTTP2 async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout') [cause=ReadTimeout('')] phase_timeout
+  HTTP2 async stream read past the acquisition deadline ! APITimeoutError: APITimeoutError(reason='phase_timeout', cause='ReadTimeout') [cause=ReadTimeout('')] phase_timeout
   HTTP2 async protocols ['h2'] requests 2

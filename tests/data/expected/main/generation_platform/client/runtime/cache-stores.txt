@@ -140,7 +140,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -150,7 +150,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
   lookup failure ! SDKError: SDKError(reason='store_failed') [cause=OSError('disk')] store_failed
     get key=32
@@ -359,7 +359,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  async refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  async refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -369,7 +369,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  async refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary cleanup failure: SDKError'
+  async refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
     event call_start status=None
     event attempt_start status=None

@@ -194,7 +194,7 @@ failures that settle nothing
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
-  poll that fails to connect ! APIConnectionError: APIConnectionError(operation_id='getJob') [operation_id='getJob', cause=ConnectError('failed')]
+  poll that fails to connect ! APIConnectionError: APIConnectionError(operation_id='getJob', cause='ConnectError') [operation_id='getJob', cause=ConnectError('failed')]
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   poll again = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)

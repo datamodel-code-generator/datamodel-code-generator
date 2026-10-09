@@ -69,15 +69,15 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  status and release failure: NotFoundError notes ['Secondary cleanup failure: SDKError']
+  status and release failure: NotFoundError notes ['Secondary failure: SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  body read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  body read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  body read and release failure: APIConnectionError notes ['Secondary cleanup failure: SDKError']
+  body read and release failure: APIConnectionError notes ['Secondary failure: SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -87,7 +87,7 @@
     entered=2 granted=2 released=2 release_calls=2 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  sent read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('failed')]
+  sent read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('failed')]
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -101,7 +101,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   stream close release failure ! SDKError: SDKError(operation_id='getPet', reason='cleanup_failed') [operation_id='getPet', cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  payload failure after grant ! APIConnectionError: APIConnectionError(operation_id='uploadPhoto') [operation_id='uploadPhoto', cause=RuntimeError('Upload payload failed')]
+  payload failure after grant ! APIConnectionError: APIConnectionError(operation_id='uploadPhoto', cause='RuntimeError') [operation_id='uploadPhoto', cause=RuntimeError('Upload payload failed')]
   failed payload [1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   native acquire interruption=KeyboardInterrupt identity=True
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
@@ -109,7 +109,7 @@
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  limited stream read failure ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  limited stream read failure ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   failed stream released entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   hook call_start: SDKError notes []
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[0]
@@ -139,7 +139,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   stream handoff hook call_end: SDKError notes []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1
-  hook and release failure: SDKError notes ['Secondary cleanup failure: SDKError']
+  hook and release failure: SDKError notes ['Secondary failure: SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   async limiter in sync client ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='async_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',)] async_limiter
   async limiter in sync view ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='async_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',)] async_limiter
@@ -219,15 +219,15 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async status and release failure: NotFoundError notes ['Secondary cleanup failure: SDKError']
+  async status and release failure: NotFoundError notes ['Secondary failure: SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async body read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async body read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async body read and release failure: APIConnectionError notes ['Secondary cleanup failure: SDKError']
+  async body read and release failure: APIConnectionError notes ['Secondary failure: SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -237,7 +237,7 @@
     entered=2 granted=2 released=2 release_calls=2 active=0 peak=1 queued=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async sent read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('failed')]
+  async sent read failure never resent ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('failed')]
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 queued=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -251,13 +251,13 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async stream close release failure ! SDKError: SDKError(operation_id='getPet', reason='cleanup_failed') [operation_id='getPet', cause=SDKError()] cleanup_failed
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
-  async payload failure after grant ! APIConnectionError: APIConnectionError(operation_id='uploadPhoto') [operation_id='uploadPhoto', cause=RuntimeError('Upload payload failed')]
+  async payload failure after grant ! APIConnectionError: APIConnectionError(operation_id='uploadPhoto', cause='RuntimeError') [operation_id='uploadPhoto', cause=RuntimeError('Upload payload failed')]
   async failed payload [1] entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   native async acquire interruption=CancelledError
     entered=1 granted=0 released=0 release_calls=0 active=0 peak=0
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async limited stream read failure ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async limited stream read failure ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   async failed stream released entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   async hook call_start: SDKError notes []
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[0]
@@ -287,7 +287,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async stream handoff hook call_end: SDKError notes []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 response_headers:1 attempt_end:1 call_end:1
-  async hook and release failure: SDKError notes ['Secondary cleanup failure: SDKError']
+  async hook and release failure: SDKError notes ['Secondary failure: SDKError']
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   sync limiter in async client ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='sync_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',)] sync_limiter
   sync limiter in async view ! ConfigurationError: ConfigurationError(operation_id='getPet', reason='sync_limiter', field_path='limiter') [operation_id='getPet', field_path=('limiter',)] sync_limiter

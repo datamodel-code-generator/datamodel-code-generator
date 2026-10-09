@@ -197,35 +197,35 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('failed')]
+  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ConnectTimeout('failed')] phase_timeout
+  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='ConnectTimeout') [operation_id='getPet', cause=ConnectTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=PoolTimeout('failed')] phase_timeout
+  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='PoolTimeout') [operation_id='getPet', cause=PoolTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=WriteError('failed')]
+  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='WriteError') [operation_id='getPet', cause=WriteError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=WriteTimeout('failed')] phase_timeout
+  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='WriteTimeout') [operation_id='getPet', cause=WriteTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ReadTimeout('failed')] phase_timeout
+  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='ReadTimeout') [operation_id='getPet', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('failed')]
+  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('failed')]
+  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RemoteProtocolError') [operation_id='getPet', cause=RemoteProtocolError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > DELETE https://override.example.com/root/pets/3
     [host: override.example.com, accept-encoding: gzip, deflate] b''
   base_url = None
@@ -272,10 +272,10 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('Server disconnected without sending a response.')]
+  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RemoteProtocolError') [operation_id='getPet', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large
@@ -489,35 +489,35 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('failed')]
+  transport ConnectError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ConnectTimeout('failed')] phase_timeout
+  transport ConnectTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='ConnectTimeout') [operation_id='getPet', cause=ConnectTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=PoolTimeout('failed')] phase_timeout
+  transport PoolTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='PoolTimeout') [operation_id='getPet', cause=PoolTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=WriteError('failed')]
+  transport WriteError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='WriteError') [operation_id='getPet', cause=WriteError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=WriteTimeout('failed')] phase_timeout
+  transport WriteTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='WriteTimeout') [operation_id='getPet', cause=WriteTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout') [operation_id='getPet', cause=ReadTimeout('failed')] phase_timeout
+  transport ReadTimeout ! APITimeoutError: APITimeoutError(operation_id='getPet', reason='phase_timeout', cause='ReadTimeout') [operation_id='getPet', cause=ReadTimeout('failed')] phase_timeout
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('failed')]
+  transport ReadError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('failed')]
+  transport RemoteProtocolError ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RemoteProtocolError') [operation_id='getPet', cause=RemoteProtocolError('failed')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  transport broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > DELETE https://override.example.com/root/pets/3
     [host: override.example.com, accept-encoding: gzip, deflate] b''
   base_url = None
@@ -564,10 +564,10 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=RemoteProtocolError('Server disconnected without sending a response.')]
+  async connect ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='RemoteProtocolError') [operation_id='getPet', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')]
+  async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large

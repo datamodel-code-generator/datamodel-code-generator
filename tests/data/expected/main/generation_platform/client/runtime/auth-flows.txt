@@ -110,11 +110,11 @@
     callbacks=['get', 'invalidate', 'get']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  invalidate fails while recovering = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError',), 1, 8)
+  invalidate fails while recovering = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError',), 1, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  invalidate fails locally = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError',), 1, 8)
+  invalidate fails locally = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError',), 1, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
@@ -130,13 +130,13 @@
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError', 'Secondary cleanup failure: AuthError'), 1, 8)
+  raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError', 'Secondary failure: AuthError'), 1, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  streamed invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError', 'Secondary cleanup failure: AuthError'), 1, 8)
+  streamed invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError', 'Secondary failure: AuthError'), 1, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
-  request_raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError', 'Secondary cleanup failure: AuthError'), 1, 8)
+  request_raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError', 'Secondary failure: AuthError'), 1, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   hook fails on the invalidation span = ('SDKError', 'hook_failed', 'RuntimeError', (), 1, 0)
@@ -194,11 +194,11 @@
     callbacks=['get', 'invalidate', 'get']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async invalidate fails while recovering = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError',), 1, 8)
+  async invalidate fails while recovering = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError',), 1, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async invalidate fails locally = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError',), 1, 8)
+  async invalidate fails locally = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError',), 1, 8)
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
@@ -214,13 +214,13 @@
     callbacks=['get', 'invalidate']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError', 'Secondary cleanup failure: AuthError'), 1, 8)
+  async raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError', 'Secondary failure: AuthError'), 1, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async streamed invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError', 'Secondary cleanup failure: AuthError'), 1, 8)
+  async streamed invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError', 'Secondary failure: AuthError'), 1, 8)
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
-  async request_raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary cleanup failure: AuthError', 'Secondary cleanup failure: AuthError'), 1, 8)
+  async request_raw invalidate failure = ('AuthenticationError', None, 'NoneType', ('Secondary failure: AuthError', 'Secondary failure: AuthError'), 1, 8)
   > GET https://api.example.com/empty
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   async anonymous without opt-in = ('returned', 200)
@@ -257,11 +257,11 @@
     limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'attempt_end', 'call_end']
   async every token expires while waiting for a permit = ('AuthError', 'token_expired', 'NoneType', (), 0, 0)
     limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_end', 'call_end']
-  provider and auth_end hook fail = ('AuthError', 'provider_failed', 'ValueError', ('Secondary cleanup failure: SDKError',), 0, 0)
+  provider and auth_end hook fail = ('AuthError', 'provider_failed', 'ValueError', ('Secondary failure: SDKError',), 0, 0)
     callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   auth_start hook fails = ('SDKError', 'hook_failed', 'RuntimeError', (), 0, 0)
     callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  async provider and auth_end hook fail = ('AuthError', 'provider_failed', 'ValueError', ('Secondary cleanup failure: SDKError',), 0, 0)
+  async provider and auth_end hook fail = ('AuthError', 'provider_failed', 'ValueError', ('Secondary failure: SDKError',), 0, 0)
     callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   async auth_start hook fails = ('SDKError', 'hook_failed', 'RuntimeError', (), 0, 0)
     callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']

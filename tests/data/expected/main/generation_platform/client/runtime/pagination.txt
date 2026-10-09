@@ -236,7 +236,7 @@ data.0.id
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/loose?cursor=t1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cursor its parameter refuses ['1'] ! APIConnectionError: APIConnectionError(operation_id='listLoose') [operation_id='listLoose', cause=RemoteProtocolError('Server disconnected without sending a response.')]
+  cursor its parameter refuses ['1'] ! APIConnectionError: APIConnectionError(operation_id='listLoose', cause='RemoteProtocolError') [operation_id='listLoose', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   > GET https://api.example.com/labels
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/labels?after=n1

@@ -174,7 +174,7 @@
     counts=(1, None) unused=0
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
-  async one-shot POST307 ! APIConnectionError: APIConnectionError(operation_id='postUnsafe') [operation_id='postUnsafe', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  async one-shot POST307 ! APIConnectionError: APIConnectionError(operation_id='postUnsafe', cause='StreamConsumed') [operation_id='postUnsafe', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 13] b'seekable body'

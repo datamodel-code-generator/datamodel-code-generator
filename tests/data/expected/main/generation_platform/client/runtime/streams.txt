@@ -190,7 +190,7 @@ text
   read phase timeout
     1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='phase_timeout') [operation_id='streamEvents', cause=ReadTimeout('read timed out')] phase_timeout
+    ! APITimeoutError: APITimeoutError(operation_id='streamEvents', reason='phase_timeout', cause='ReadTimeout') [operation_id='streamEvents', cause=ReadTimeout('read timed out')] phase_timeout
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   another media type ! DecodeError: DecodeError(status_code=200, operation_id='streamEvents', reason='unexpected_media_type') [operation_id='streamEvents', body_bytes=b'', truncated=False, media_type='application/json'] unexpected_media_type

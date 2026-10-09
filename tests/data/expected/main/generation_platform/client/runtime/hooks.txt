@@ -45,7 +45,7 @@
     a: transport_failure attempt=2 sent=True status=None outcome=None phase=connect path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
     a: attempt_end attempt=2 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     a: call_end attempt=2 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('refused')]
+  get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('refused')]
     a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
   > GET https://api.example.com/v1/pets/3
@@ -57,7 +57,7 @@
     c: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     b: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     c: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  hook failing to start: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=b failed on call_start notes=['Secondary cleanup failure: RuntimeError']
+  hook failing to start: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=b failed on call_start notes=['Secondary failure: RuntimeError']
     b: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     c: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     b: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
@@ -66,7 +66,7 @@
     c: attempt_end attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     b: call_end attempt=0 sent=False status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     c: call_end attempt=0 sent=False status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  hook failing before sending: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=b failed on attempt_start notes=['Secondary cleanup failure: RuntimeError']
+  hook failing before sending: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=b failed on attempt_start notes=['Secondary failure: RuntimeError']
     b: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     c: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     b: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
@@ -79,7 +79,7 @@
     c: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     b: call_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     c: call_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  hooks failing on headers and every end: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=b failed on response_headers notes=['Secondary cleanup failure: RuntimeError', 'Secondary cleanup failure: RuntimeError', 'Secondary cleanup failure: RuntimeError', 'Secondary cleanup failure: RuntimeError', 'Secondary cleanup failure: RuntimeError']
+  hooks failing on headers and every end: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=b failed on response_headers notes=['Secondary failure: RuntimeError', 'Secondary failure: RuntimeError', 'Secondary failure: RuntimeError', 'Secondary failure: RuntimeError', 'Secondary failure: RuntimeError']
     d: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     d: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
   > GET https://api.example.com/v1/pets/3
@@ -95,7 +95,7 @@
     l: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
     l: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     l: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  success whose every end fails: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=l failed on attempt_end notes=['Secondary cleanup failure: RuntimeError']
+  success whose every end fails: SDKError(operation_id='getPet', reason='hook_failed') reason=hook_failed cause=l failed on attempt_end notes=['Secondary failure: RuntimeError']
     e: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     e: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
     e: attempt_end attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
@@ -207,7 +207,7 @@
     n: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     n: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     n: stream_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  stream failing whose end fails too ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')] note='Secondary cleanup failure: RuntimeError'
+  stream failing whose end fails too ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')] note='Secondary failure: RuntimeError'
     n: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     n: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
   > GET https://api.example.com/v1/pets/3
@@ -216,7 +216,7 @@
     n: attempt_end attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     n: call_end attempt=0 sent=True status=404 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     n: stream_end attempt=0 sent=True status=404 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  stream of an error whose end fails: NotFoundError notes ['Secondary cleanup failure: RuntimeError']
+  stream of an error whose end fails: NotFoundError notes ['Secondary failure: RuntimeError']
     a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     a: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
   raw list of a trace its codec refuses ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=PydanticSerializationError(Unable to serialize unknown type: <class 'object'>)] unencodable
@@ -242,7 +242,7 @@
     a: transport_failure attempt=2 sent=True status=None outcome=None phase=connect path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
     a: attempt_end attempt=2 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
     a: call_end attempt=2 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
-  raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('refused')]
+  raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('refused')]
   hooks that are no sequence ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='hooks') [field_path=('hooks',)] invalid_type
   hook without on_event ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='hooks') [field_path=('hooks',)] invalid_type
   context that is no mapping ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='context') [field_path=('context',)] invalid_type
@@ -290,7 +290,7 @@
     m: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=False context={}
     m: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
     m: call_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
-  async hook failing on headers and every end ! SDKError: SDKError(operation_id='getPet', reason='hook_failed') [operation_id='getPet', cause=RuntimeError('m failed on response_headers')] hook_failed note='Secondary cleanup failure: RuntimeError' note='Secondary cleanup failure: RuntimeError'
+  async hook failing on headers and every end ! SDKError: SDKError(operation_id='getPet', reason='hook_failed') [operation_id='getPet', cause=RuntimeError('m failed on response_headers')] hook_failed note='Secondary failure: RuntimeError' note='Secondary failure: RuntimeError'
     g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     g: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None attempts=0 request_id=None timed=True context={}
@@ -333,7 +333,7 @@
     h: attempt_end attempt=2 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=True context={}
     g: call_end attempt=2 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=True context={}
     h: call_end attempt=2 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=3 request_id=None timed=True context={}
-  async raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ConnectError('refused')]
+  async raw get of a refused connection ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ConnectError') [operation_id='getPet', cause=ConnectError('refused')]
     g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={}
@@ -360,7 +360,7 @@
     j: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=False context={}
     j: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
     j: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
-  async success ending in every end failing: SDKError(operation_id='getPet', reason='hook_failed') ['Secondary cleanup failure: RuntimeError']
+  async success ending in every end failing: SDKError(operation_id='getPet', reason='hook_failed') ['Secondary failure: RuntimeError']
     k: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     k: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={}
   > GET https://api.example.com/v1/pets/3
@@ -416,7 +416,7 @@
     o: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
     o: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
     o: stream_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
-  async stream failing whose end fails too ! APIConnectionError: APIConnectionError(operation_id='getPet') [operation_id='getPet', cause=ReadError('connection reset')] note='Secondary cleanup failure: RuntimeError'
+  async stream failing whose end fails too ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')] note='Secondary failure: RuntimeError'
     o: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     o: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={}
   > GET https://api.example.com/v1/pets/3
@@ -425,7 +425,7 @@
     o: attempt_end attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
     o: call_end attempt=0 sent=True status=404 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
     o: stream_end attempt=0 sent=True status=404 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com attempts=1 request_id=None timed=True context={}
-  async stream of an error whose end fails: NotFoundError notes ['Secondary cleanup failure: RuntimeError']
+  async stream of an error whose end fails: NotFoundError notes ['Secondary failure: RuntimeError']
     g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None attempts=0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'total_timeout': None}
     g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com attempts=0 request_id=None timed=False context={}

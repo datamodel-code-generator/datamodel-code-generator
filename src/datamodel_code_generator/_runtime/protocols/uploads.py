@@ -277,13 +277,6 @@ class _Content:
         self.base = base
         self.size = size
 
-    def measured(self) -> int:
-        """Return the size the content has now."""
-        if (file := self.file) is None:
-            with memoryview(cast("bytes", self.source)) as view:
-                return view.nbytes
-        return max(file.seek(0, SEEK_END) - self.base, 0)
-
     def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes:
         """Return up to `length` bytes from an offset of the content, fewer only at its end, as the bytes sent."""
         if (file := self.file) is None:
