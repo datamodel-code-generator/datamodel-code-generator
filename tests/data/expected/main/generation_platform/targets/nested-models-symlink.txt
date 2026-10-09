@@ -18,6 +18,5 @@ render
   new server/py.typed
   5 runtime modules ['new']
   DocumentationAnnotationWarning: example/server: /x-limit: The served document leaves out x-limit, which has no JSON form
-  DocumentationAnnotationWarning: example/server: /paths/~1store~1orders/get/responses/200/content/application~1json/schema/$ref: The served document keeps common.yaml#/Order, which names nothing the generation loaded
 chmod server 0755
 leftovers []
