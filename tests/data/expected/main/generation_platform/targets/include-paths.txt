@@ -46,6 +46,12 @@ show models.py
   |     root: list[Pet]
 check
   Error: The --server-operation-names entry '/paths/~1store~1orders/get' selects no root path operation that --openapi-include-paths keeps
+check
+  --- server/_generated/contract.py
+  --- server/routers/pets.py
+  --- server/services.py
+  --- server/README.md
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 generate
 tree
   models.py

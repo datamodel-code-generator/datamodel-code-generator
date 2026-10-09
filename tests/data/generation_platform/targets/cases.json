@@ -39,6 +39,7 @@
       {"generate": {}},
       {"show": "models.py"},
       {"check": {"exit": "ERROR", "config": {"server_operation_names": {"/paths/~1store~1orders/get": "orders"}}}},
+      {"check": {"exit": "DIFF", "config": {"server_operation_names": {"/paths/~1pets/get": "pets"}}}},
       {"generate": {"config": {"server_operation_names": {"/paths/~1pets/get": "pets"}}}},
       {"check": {"config": {"server_operation_names": {"spec/api.yaml#/paths/~1pets/get": "pets"}}}},
       {"check": {"config": {"server_operation_names": {"{root}/spec/api.yaml#/paths/~1pets/get": "pets"}}}},
