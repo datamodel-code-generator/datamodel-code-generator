@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "check",
+  "success": false,
+  "content": "EXTRA: server/routers/store.py (no longer generated)\n",
+  "differences": [
+    {
+      "kind": "extra",
+      "path": "server/routers/store.py",
+      "message": "EXTRA: server/routers/store.py (no longer generated)",
+      "diff": null
+    }
+  ]
+}

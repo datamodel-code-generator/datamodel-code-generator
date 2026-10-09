@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass, replace
 from enum import Enum
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from urllib.parse import quote, unquote, urldefrag, urljoin
 
+from datamodel_code_generator._codec_type_source import LeafStep, LexicalKinds
 from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
@@ -97,18 +99,12 @@ _NULL: Final = frozenset({"null"})
 _ARRAY: Final = frozenset({"array"})
 _OBJECT: Final = frozenset({"object"})
 _STRING: Final = frozenset({"string"})
-_INTEGER_NUMBER: Final = frozenset({"integer", "number"})
+_ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _SCALAR_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
     bool: "bool",
     int: "int",
     float: "float",
     str: "str",
-}
-_LEXICAL_KINDS: Final[dict[str, LexicalKind]] = {
-    "string": "string",
-    "integer": "integer",
-    "number": "number",
-    "boolean": "boolean",
 }
 
 
@@ -134,12 +130,13 @@ class SchemaResource:
 
 @dataclass(frozen=True, slots=True)
 class WirePlan:
-    """Keep bundled normalized schema resources, per-use schema IDs, and parameter plans."""
+    """Keep bundled normalized schema resources, per-use schema IDs, parameter plans, and bound lexical kinds."""
 
     resources: tuple[SchemaResource, ...]
     schema_ids: tuple[tuple[TypeUseId, str], ...]
     parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
+    kinds: LexicalKinds
     documents: tuple[tuple[SourceDocumentId, str], ...] = ()
     version: str = ""
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
@@ -236,6 +233,7 @@ class _WirePlanner:
     ) -> None:
         self.batch = batch
         self.lease = lease
+        self.kinds = LexicalKinds(batch)
         self.logical = _logical(batch, pointers)
         self.retrieval = {document.uri: document.id for document in batch.documents}
         self.bases = {document.id: document.uri for document in batch.documents}
@@ -423,10 +421,9 @@ class _WirePlanner:
     def resolved(self, location: SourceLocation) -> tuple[Mapping[str, YamlValue], SourceLocation]:
         seen: set[SourceLocation] = set()
         while True:
-            try:
+            value: YamlValue = None
+            with suppress(BindingCaptureError):
                 value = self.lease.borrow(location)
-            except BindingCaptureError:
-                return {}, location
             if not isinstance(value, dict):
                 return {}, location
             if not isinstance(reference := value.get("$ref"), str) or location in seen:
@@ -468,8 +465,8 @@ def plan_wire(  # noqa: PLR0913
 ) -> WirePlan:
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
-    The document pointers of the target manifest, such as `/inputs/documents/<index>`, name the bundled resources,
-    so schema references match the manifest. The uses of URL-encoded bodies named in `forms`
+    The document pointers of the target, such as `/inputs/documents/<index>`, name the bundled resources,
+    so schema references match them. The uses of URL-encoded bodies named in `forms`
     get their member plans, and each member their encoding names the plan of a query parameter; the form-data uses
     named in `styles` get the query parameter plan of each member their encodings give a style.
     """
@@ -503,6 +500,7 @@ def plan_wire(  # noqa: PLR0913
         schema_ids,
         parameters,
         tuple(planner.diagnostics),
+        planner.kinds,
         tuple(sorted(planner.logical.items())),
         planner.version,
         headers,
@@ -878,13 +876,16 @@ def _json_kind(value: object) -> str:
             return "object"
 
 
-def _kind(planner: _WirePlanner, location: SourceLocation) -> LexicalKind:
-    kinds = (_kinds(planner, location) or frozenset()) - _NULL
-    if kinds == _INTEGER_NUMBER:
-        return "number"
-    if len(kinds) != 1 or (kind := _LEXICAL_KINDS.get(next(iter(kinds)))) is None:
+def _kind(
+    planner: _WirePlanner, source: SourceLocation, *leaves: tuple[SourceLocation, tuple[LeafStep, ...]]
+) -> LexicalKind:
+    """Return the kind of a text leaf by the final type bound for it, at one of its places.
+
+    A leaf bound to no type, to a model or a container, or to values of several kinds no text reaches, is refused.
+    """
+    if (kind := planner.kinds.at(*leaves)) is None:
         raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=location, message="A parameter value needs one unambiguous scalar kind"
+            code="MC_PARAMETER_ENCODING", source=source, message="A parameter value needs one unambiguous scalar kind"
         )
     return kind
 
@@ -892,16 +893,17 @@ def _kind(planner: _WirePlanner, location: SourceLocation) -> LexicalKind:
 def _shape(
     planner: _WirePlanner, location: SourceLocation, *, form: bool, skip: frozenset[str] = frozenset()
 ) -> tuple[ValueShape, LexicalKind, tuple[FieldPlan, ...], FieldPlan | None]:
+    source = location
     value, location = planner.resolved(location)
     kinds = (_kinds(planner, location) or frozenset()) - _NULL
     if kinds == _ARRAY and not form:
-        return "array", _kind(planner, _at(location, "items")), (), None
+        return "array", _kind(planner, _at(location, "items"), (source, _ITEMS), (location, _ITEMS)), (), None
     if kinds != _OBJECT:
         if form:
             raise _PlanError(
                 code="MC_PARAMETER_ENCODING", source=location, message="A URL-encoded value must be an object"
             )
-        return "scalar", _kind(planner, location), (), None
+        return "scalar", _kind(planner, location, (source, ()), (location, ())), (), None
     if "patternProperties" in value:
         raise _PlanError(
             code="MC_PARAMETER_ENCODING",
@@ -910,7 +912,7 @@ def _shape(
         )
     properties = value.get("properties")
     fields = tuple(
-        _field(planner, _at(location, "properties", name), name, form=form)
+        _field(planner, _at(location, "properties", name), name, source, location, form=form)
         for name in (properties if isinstance(properties, dict) else {})
         if name not in skip
     )
@@ -918,24 +920,33 @@ def _shape(
         "object",
         "string",
         fields,
-        _additional(planner, value.get("additionalProperties", True), location, form=form),
+        _additional(planner, value.get("additionalProperties", True), source, location, form=form),
     )
 
 
-def _additional(planner: _WirePlanner, schema: YamlValue, location: SourceLocation, *, form: bool) -> FieldPlan | None:
-    match schema:
-        case False:
-            return None
-        case True:
-            return FieldPlan("", "string")
-        case dict() if not schema:
-            return FieldPlan("", "string")
-        case _:
-            return _field(planner, _at(location, "additionalProperties"), "", form=form)
+def _additional(
+    planner: _WirePlanner, schema: YamlValue, source: SourceLocation, location: SourceLocation, *, form: bool
+) -> FieldPlan | None:
+    if schema is False:
+        return None
+    if schema is True or schema == {}:
+        return FieldPlan("", "string")
+    return _field(planner, _at(location, "additionalProperties"), "", source, location, form=form)
 
 
-def _field(planner: _WirePlanner, location: SourceLocation, name: str, *, form: bool) -> FieldPlan:
-    if form and (_kinds(planner, location) or frozenset()) - _NULL == _ARRAY:
-        _, resolved = planner.resolved(location)
-        return FieldPlan(name, _kind(planner, _at(resolved, "items")), repeated=True)
-    return FieldPlan(name, _kind(planner, location))
+def _field(
+    planner: _WirePlanner, location: SourceLocation, name: str, *owners: SourceLocation, form: bool
+) -> FieldPlan:
+    """Return a member's plan: its kind by the type bound at its schema, or as a value of a mapping bound at an owner.
+
+    An array member of a form repeats, in its items' kind.
+    """
+    _, resolved = planner.resolved(location)
+    steps: tuple[LeafStep, ...] = ()
+    source = location
+    if repeated := form and (_kinds(planner, location) or frozenset()) - _NULL == _ARRAY:
+        steps, source = _ITEMS, _at(resolved, "items")
+    kind = _kind(
+        planner, source, (location, steps), (resolved, steps), *((owner, ("values", *steps)) for owner in owners)
+    )
+    return FieldPlan(name, kind, repeated=repeated)

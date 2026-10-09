@@ -38,7 +38,7 @@ _DIRECTIONS: Final = ("send", "receive")
 class SocketSpec:
     """A WebSocket helper ready to render: its handshake operation, the use of each JSON message, and its schemas.
 
-    A direction whose messages are UTF-8 text or bytes has no use. `schemas` holds the manifest reference of every
+    A direction whose messages are UTF-8 text or bytes has no use. `schemas` holds the source reference of every
     schema the helper codes, sent before received.
     """
 

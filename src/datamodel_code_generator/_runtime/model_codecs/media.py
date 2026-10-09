@@ -11,7 +11,7 @@ from json.encoder import encode_basestring, encode_basestring_ascii
 from typing import Final, Literal, NoReturn, cast, overload
 from urllib.parse import quote, unquote_to_bytes
 
-from typing_extensions import TypeAliasType
+from typing_extensions import Self, TypeAliasType
 
 from .errors import CodecResourceLimitError, ParameterEncodingError, WireIssue, WireValidationError
 from .wire import JSONScalar as WireScalar
@@ -34,6 +34,7 @@ _INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
 _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
+_SCALARS: Final = frozenset({bool, int, float, str, type(None)})
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,15 +56,38 @@ def json_value(content: str | bytes) -> JSONValue:
     return cast("JSONValue", json.loads(content))
 
 
-def plain(value: object) -> JSONValue:
-    """Turn parsed form and header containers into builtins a native backend accepts."""
-    if isinstance(value, Decimal):
-        return float(value)
+class Unparsed(str):  # ruff: ignore[subclass-builtin] - Validating backends receive it as ordinary text.
+    """Text of a declared integer, number, or boolean that is not its canonical JSON literal."""
+
+    __slots__ = ("kind",)
+    kind: LexicalKind
+
+    def __new__(cls, text: str, kind: LexicalKind) -> Self:
+        """Keep the text with the kind it was declared as."""
+        unparsed = super().__new__(cls, text)
+        unparsed.kind = kind
+        return unparsed
+
+
+def plain(value: object, *, strict: bool = False) -> JSONValue:
+    """Turn parsed form and header containers into builtins a native backend accepts.
+
+    Text that is not its kind's JSON literal stays text for a backend that validates it, and is refused when strict.
+    """
+    if type(value) in _SCALARS:
+        return cast("JSONValue", value)
     if isinstance(value, Mapping):
-        return {cast("str", key): plain(item) for key, item in cast("Mapping[object, object]", value).items()}
+        return {
+            cast("str", key): plain(item, strict=strict) for key, item in cast("Mapping[object, object]", value).items()
+        }
     if isinstance(value, (list, tuple)):
-        return [plain(item) for item in cast("list[object] | tuple[object, ...]", value)]
-    return cast("JSONValue", value)
+        return [plain(item, strict=strict) for item in cast("list[object] | tuple[object, ...]", value)]
+    if not isinstance(value, Unparsed):
+        return cast("JSONValue", value)
+    if strict:
+        msg = f"Invalid {value.kind} literal: {str(value)!r}"
+        raise ValueError(msg)
+    return str(value)
 
 
 def issue(*, code: str, message: str) -> WireValidationError:
@@ -284,21 +308,18 @@ def _integer_text(value: int) -> str:
         raise CodecResourceLimitError(msg) from None
 
 
-def typed(text: str, kind: LexicalKind) -> WireScalar:
-    """Read one canonical lexical form back into its declared JSON scalar kind."""
+def typed(text: str, kind: LexicalKind) -> JSONScalar:
+    """Decode a canonical JSON literal of the declared kind, leaving any other text to the model."""
     if kind == "string":
         return text
-    if kind == "boolean" and text in {"true", "false"}:
-        return text == "true"
-    if kind != "boolean" and _INTEGER.fullmatch(text):
+    if kind == "boolean":
+        return text == "true" if text in {"true", "false"} else Unparsed(text, kind)
+    if _INTEGER.fullmatch(text):
         try:
             return int(text)
         except ValueError:
-            msg = "An integer exceeds the interpreter's decimal conversion limit"
-            raise CodecResourceLimitError(msg) from None
-    if kind == "number" and _NUMBER.fullmatch(text):
-        return Decimal(text)
-    raise issue(code="parameter.lexical", message=f"The value is not a canonical {kind}")
+            return Unparsed(text, kind)
+    return float(text) if kind == "number" and _NUMBER.fullmatch(text) else Unparsed(text, kind)
 
 
 def percent_decode(raw: bytes, *, plus: bool) -> str:
@@ -361,21 +382,22 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
 
 
 def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> WireValue:
-    """Read ordered URL-encoded pairs into a flat object, rejecting duplicate scalars."""
+    """Split URL-encoded text for native model conversion, collecting declared repeated fields."""
     declared = {field.name: field for field in fields}
-    result: dict[str, WireJSON] = {}
+    result: dict[str, JSONValue] = {}
     for raw_name, raw_value in split_form(raw):
         name = percent_decode(raw_name, plus=True)
-        if (field := declared.get(name, additional)) is None:
-            raise issue(code="form.undeclared", message="A URL-encoded form member is not declared")
-        value = typed(percent_decode(raw_value, plus=True), field.kind)
+        field = declared.get(name, additional)
+        value = typed(percent_decode(raw_value, plus=True), "string" if field is None else field.kind)
         match result.get(name):
             case list() as values:
                 values.append(value)
-            case None if field.repeated:
+            case None if field is not None and field.repeated:
                 result[name] = [value]
             case None:
                 result[name] = value
+            case _ if name not in declared:
+                result[name] = value
             case _:
                 raise issue(code="form.duplicate", message="A URL-encoded form repeats a single-valued member")
-    return freeze_wire(result)
+    return result

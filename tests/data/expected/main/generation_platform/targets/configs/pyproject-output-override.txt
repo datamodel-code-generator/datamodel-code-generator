@@ -1,6 +1,5 @@
 Add the runtime dependencies of example.server to your project:
   uv add "fastapi>=0.141.1" "pydantic>=2.13.5"
-elsewhere/.dcg-target-manifest.json
 elsewhere/README.md
 elsewhere/__init__.py
 elsewhere/_generated/__init__.py

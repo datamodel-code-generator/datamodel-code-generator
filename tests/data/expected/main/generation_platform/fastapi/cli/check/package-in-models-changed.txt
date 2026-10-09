@@ -1,0 +1,17 @@
+--- models/pets.py
++++ models/pets.py (expected)
+@@ -8,4 +8,3 @@
+ 
+ class Pet(BaseModel):
+     name: str | None = None
+-# changed
+--- models/server/services.py
++++ models/server/services.py (expected)
+@@ -25,4 +25,3 @@
+         | HTTPResult[models.FieldOrdersGetResponse]
+         | Response
+     ): ...
+-# changed
+EXTRA: models/extra.py (no longer generated)
+EXTRA: models/server/extensions.py (no longer generated)
+MISSING: models/server/py.typed (file does not exist but should be generated)

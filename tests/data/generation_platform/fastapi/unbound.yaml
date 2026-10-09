@@ -8,7 +8,6 @@ paths:
         - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
         - {name: at, in: query, schema: {type: string, format: date-time}}
         - {name: tags, in: query, schema: {type: array, items: {type: string}}}
-        - {name: X-Label, in: header, schema: {allOf: [{type: string}, {minLength: 1}]}}
       responses:
         "200":
           description: The value.

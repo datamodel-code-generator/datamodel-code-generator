@@ -28,6 +28,10 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "unbound",
         "parameters",
         "strict",
+        "kinds",
+        "kinds-annotated",
+        "kinds-decimal",
+        "kinds-literal",
         "bodies",
         "results",
         "security",
@@ -40,6 +44,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "variants-reuse",
         "forms",
         "responses",
+        "nested-models",
+        "stale",
     ],
 )
 def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -78,6 +78,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
+    PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
@@ -798,7 +799,7 @@ class DataModelField(_PydanticBaseDataModelField):
         if (union_mode := data.pop("union_mode", None)) and self.data_type.is_union and "discriminator" not in data:
             data["union_mode"] = union_mode.value
 
-        self._update_alias_for_alias_generator(data)
+        pinned_alias = self._update_alias_for_alias_generator(data)
         has_alias = "alias" in data
         alias = data.get("alias")
 
@@ -817,7 +818,11 @@ class DataModelField(_PydanticBaseDataModelField):
             # Format as AliasChoices(...) - use _RawRepr to prevent double-quoting
             aliases_repr = ", ".join(repr(a) for a in unique_validation_aliases)
             data["validation_alias"] = _RawRepr(f"AliasChoices({aliases_repr})")
-            if self.use_serialization_alias and serialization_alias is not None and serialization_alias != self.name:
+            if (
+                self.use_serialization_alias
+                and serialization_alias is not None
+                and (serialization_alias != self.name or self._alias_generator_renames(serialization_alias))
+            ):
                 data["serialization_alias"] = serialization_alias
 
         if self.serialization_alias is not None and (self.serialization_alias != self.name or has_alias):
@@ -826,8 +831,11 @@ class DataModelField(_PydanticBaseDataModelField):
         if self.use_serialization_alias and "alias" in data:
             serialization_alias = self.serialization_alias if self.serialization_alias is not None else data["alias"]
             data.pop("alias")
-            if serialization_alias != self.name:
+            if serialization_alias != self.name or self._alias_generator_renames(serialization_alias):
                 data["serialization_alias"] = serialization_alias
+
+        if pinned_alias is not None and "alias" not in data:
+            data["alias"] = pinned_alias
 
         # **extra is not supported in pydantic 2.0
         extra_field_keys = tuple(
@@ -846,20 +854,33 @@ class DataModelField(_PydanticBaseDataModelField):
             for key in extra_field_keys:
                 data.pop(key)
 
-    def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> None:
+    def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> str | None:
+        """Keep only an alias the parent's generator does not reproduce and return the generated alias to pin.
+
+        A target predating the 2.8 generator algorithms pins that alias on the fields of a BaseModel, the only model
+        that renders or inherits the generator: never a RootModel, enum, union or type alias.
+        """
         if self.name is None or self.is_pydantic_extra_field:
-            return
+            return None
         if (generator_name := self._alias_generator_name_from_parent()) is None:
-            return
+            return None
+        pinned_alias: str | None = None
+        if (
+            not model_target_supports(parent := self.parent, PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM)
+            and isinstance(parent, BaseModel)
+            and not parent.IS_ROOT_MODEL
+        ):
+            pinned_alias = _generate_alias(generator_name, self.name)
         alias = data.get("alias")
         if alias is None and self._automatic_alias_disabled_for_alias_generator():
-            return
+            return pinned_alias
         if (wire_name := alias if alias is not None else self.original_name) is None:
-            return
-        if _generate_alias(generator_name, self.name) == wire_name:
+            return pinned_alias
+        if (_generate_alias(generator_name, self.name) if pinned_alias is None else pinned_alias) == wire_name:
             data.pop("alias", None)
-            return
+            return pinned_alias
         data["alias"] = wire_name
+        return pinned_alias
 
     def _alias_generator_name_from_parent(self) -> str | None:
         if self.parent is None:
@@ -868,6 +889,12 @@ class DataModelField(_PydanticBaseDataModelField):
         if alias_generator is None:
             alias_generator = self.parent.extra_template_data.get(_ALIAS_GENERATOR_INTERNAL_KEY)
         return _alias_generator_name(alias_generator)
+
+    def _alias_generator_renames(self, name: str) -> bool:
+        """Return whether the parent's alias generator serializes a field of this name under another one."""
+        return (generator_name := self._alias_generator_name_from_parent()) is not None and (
+            _generate_alias(generator_name, name) != name
+        )
 
     def _automatic_alias_disabled_for_alias_generator(self) -> bool:
         if self.parent is None:

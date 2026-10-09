@@ -1,4 +1,0 @@
-# publication-check
-generate
-  OSError: batch output destination changed during publication: <root>/models.py
-tree
