@@ -6,21 +6,13 @@ service PublicService: get_public
 service PublicService without its methods: TypeError
 service UntaggedService: get_custom, get_maybe, get_session, put_pet
 service UntaggedService without its methods: TypeError
-build no-authorize: AuthConfigurationError: An authorize callback is required because the selected operations use security
-build missing-method: HandlerConfigurationError: The untagged service needs a callable put_pet method
-build sync-in-async: HandlerConfigurationError: The untagged.get_maybe method is synchronous, but its operation awaits it
-build async-in-sync: HandlerConfigurationError: The untagged.put_pet method is asynchronous, but its operation calls it synchronously
-build keywords: HandlerConfigurationError: The untagged.put_pet method does not accept exactly the keywords principal, pet_id
-build prefix 'api': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
-build prefix '/api/': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
-build prefix '/api?x=1': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
-build prefix '/{api}': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
-build prefix 7: HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
-build dependencies-object: HandlerConfigurationError: dependencies must be a sequence of Depends(...) values
-build dependencies-text: HandlerConfigurationError: dependencies must be a sequence of Depends(...) values
-build operation-dependencies-unknown: HandlerConfigurationError: operation_dependencies names no operation of this router: /paths/~1nope/get
-build operation-dependencies-list: HandlerConfigurationError: operation_dependencies must map operation keys to sequences of dependencies
-build operation-dependencies-items: HandlerConfigurationError: operation_dependencies['/paths/~1pets/get'] must be a sequence of Depends(...) values
+build no-authorize: TypeError: An authorize callback is required because the selected operations use security
+build missing-method: AttributeError: 'object' object has no attribute 'get_maybe'
+build sync-in-async: TypeError: The untagged.get_maybe method of GET /maybe is a plain method, but the operation's handler mode needs a coroutine function
+build async-in-sync: TypeError: The untagged.put_pet method of PUT /pets/{petId} is a coroutine function, but the operation's handler mode needs a plain method
+build operation-dependencies-unknown: ValueError: operation_dependencies names no operation of this router: /paths/~1pets/get
+build operation-dependencies-none: TypeError: operation_dependencies['list_pets'] must be a sequence of Depends(...) values
+build operation-dependencies-items: TypeError: operation_dependencies['list_pets'] must be a sequence of Depends(...) values
 build group public: ok
 build group pets: ok
 build options-unique-id: ok
@@ -67,7 +59,7 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=UNSET)
+  get_maybe(principal=None, query_principal=None)
 < 204 - b''
 > GET /maybe?principal=x
   global /maybe
@@ -77,11 +69,11 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=UNSET)
+  get_maybe(principal=None, query_principal=None)
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=UNSET)
+  get_maybe(principal=None, query_principal=None)
 < 204 - b''
 > PUT /pets/1
   global /pets/1
@@ -158,9 +150,33 @@ openapi tags [{"name": "pets", "description": "Renamed."}]
   app /api/public
 < 418 application/json {"detail":"I'm a teapot"}
 app awaitables
-> GET /pets
-  authorize [(('api_key', ()),)]
-    credentials ['api_key=abc']
-< HandlerConfigurationError: The handler returned an awaitable; an asynchronous handler needs handler_mode='async'
 > GET /public
-< HandlerConfigurationError: The handler returned an awaitable; an asynchronous handler needs handler_mode='async'
+< raised TypeError: The method returned an awaitable for a response without a body; nothing awaited it
+> PUT /pets/1
+  authorize [(('oauth', ('write:pets', 'read:pets')),)]
+    credentials ['oauth=Bearer tok']
+< raised TypeError: The method returned an awaitable for a response without a body; nothing awaited it
+app authorize-lambda
+> GET /pets
+  awaited authorize ['api_key']
+  list_pets(principal='awaited-user')
+< 200 application/json ["rex"]
+> GET /pets
+  awaited authorize ['api_key']
+< 403 application/json {"detail":"Forbidden"}
+app authorize-wrapped
+> GET /pets
+  awaited authorize ['api_key']
+  list_pets(principal='awaited-user')
+< 200 application/json ["rex"]
+> GET /pets
+  awaited authorize ['api_key']
+< 403 application/json {"detail":"Forbidden"}
+app authorize-partial
+> GET /pets
+  awaited authorize ['api_key']
+  list_pets(principal='awaited-user')
+< 200 application/json ["rex"]
+> GET /pets
+  awaited authorize ['api_key']
+< 403 application/json {"detail":"Forbidden"}

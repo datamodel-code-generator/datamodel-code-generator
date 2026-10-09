@@ -1,4 +1,4 @@
-native-gap: native app routes=4 removed codec-sidecar edits=['binding'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required","input":{"name":"Mimi","status":"new","nick-name":"Mi"}}]}
-envelope-gap: native app routes=4 removed codec-sidecar edits=['binding'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required","input":{"name":"Mimi","status":"new","nick-name":"Mi"}}]}
-patch-target: native app routes=4 removed codec-sidecar edits=['patch'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required","input":{"name":"Mimi","status":"new"}}]}
+native-gap: native app routes=4 removed codec-sidecar edits=['binding'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required"}]}
+envelope-gap: native app routes=4 removed codec-sidecar edits=['binding'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required"}]}
+patch-target: native app routes=4 removed codec-sidecar edits=['patch'] HTTP 422 {"detail":[{"type":"missing","loc":["body","id"],"msg":"Field required"}]}
 native-gap-convert: native app routes=4 removed codec-sidecar edits=['binding'] ValidationError missing@['id']

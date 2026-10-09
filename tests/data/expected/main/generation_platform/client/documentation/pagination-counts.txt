@@ -77,6 +77,7 @@ A request body is given as `body=`, unless an operation's `body_arguments` is `b
 ## Operations
 
 - `users.list_users`: `GET /users`, no request body
+- `users.create_user`: `POST /users`, `body=` only (`application/json`)
 - `searches.search`: `POST /searches`, `body=` only (`application/json`)
 - `finds.find`: `GET /finds`, no request body
 
@@ -94,6 +95,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
   {
     "operation": "users.list_users",
     "method": "GET",
+    "path": "/users",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "users.create_user",
+    "method": "POST",
     "path": "/users",
     "retry_safety": "method_default",
     "idempotency": null,
