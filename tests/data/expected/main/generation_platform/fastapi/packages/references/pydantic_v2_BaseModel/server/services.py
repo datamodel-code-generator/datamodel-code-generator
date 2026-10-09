@@ -12,7 +12,6 @@ import models
 from fastapi.responses import Response
 from typing_extensions import TypeVar
 
-from ._runtime.model_codecs.unset import Unset
 from ._runtime.server.responses import HTTPResult
 
 PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
@@ -26,9 +25,9 @@ class Service(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-        limit: int | Unset,
-        page: int | Unset,
-        x_trace: str | Unset,
+        limit: int | None,
+        page: int | None,
+        x_trace: str | None,
     ) -> models.PetsResponse | HTTPResult[models.PetsResponse] | Response: ...
 
     @abstractmethod
@@ -36,7 +35,7 @@ class Service(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-        x_trace: str | Unset,
+        x_trace: str | None,
         body: models.Pet,
     ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
 
@@ -45,7 +44,7 @@ class Service(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-        limit: int | Unset,
+        limit: int | None,
     ) -> (
         models.FieldOwnersGetResponse
         | HTTPResult[models.FieldOwnersGetResponse]

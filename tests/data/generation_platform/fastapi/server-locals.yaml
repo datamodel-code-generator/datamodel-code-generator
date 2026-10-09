@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info: {title: Server locals, version: "1.0"}
+security:
+  - api_key: []
+paths:
+  /router:
+    get:
+      operationId: router
+      tags: [wiring]
+      parameters:
+        - {name: wiring, in: query, schema: {type: string}}
+        - {name: router_handler, in: query, schema: {type: string}}
+        - {name: router_principal, in: query, schema: {type: string}}
+        - {name: router_authorize, in: query, schema: {type: string}}
+        - {name: api_key, in: query, schema: {type: string}}
+        - {name: parameters, in: cookie, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /wiring:
+    get:
+      operationId: wiring
+      tags: [router]
+      security: []
+      parameters:
+        - {name: router, in: query, schema: {type: string}}
+        - {name: contract, in: query, schema: {type: string}}
+        - {name: dispatch, in: query, schema: {type: string}}
+        - {name: checked, in: query, schema: {type: string}}
+        - {name: wiring_handler, in: cookie, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /security:
+    get:
+      operationId: authenticate
+      tags: [security]
+      parameters:
+        - {name: security, in: query, schema: {type: string}}
+        - {name: authenticate_handler, in: query, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+components:
+  securitySchemes:
+    api_key: {type: apiKey, in: header, name: X-API-Key}
