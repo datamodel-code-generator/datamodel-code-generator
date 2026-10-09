@@ -509,18 +509,16 @@ caller owned. Native task cancellation propagates unchanged, and user callbacks 
 ## Pagination sessions
 
 A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
-total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
-another kind's options, fail construction. The session types are imported from:
-
-- `client.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
-- `client.options`: `SessionOptions`
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's
+`pagination_options`, then the client's `helper_defaults` for the helper, then the default below. Defaults naming a
+helper the package lacks, or another kind's options, fail construction. The session types are imported from
+`client.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`.
 
 | Limit | Effective default |
 |---|---|
 | pages per session | None (no limit) |
 | items per session | None (no limit); 0 ends a pager at once |
-| session total timeout | None (no limit) |
+| session total timeout (`total_timeout`) | None (no limit) |
 
 A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
 binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises

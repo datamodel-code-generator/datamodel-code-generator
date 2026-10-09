@@ -192,9 +192,9 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits.
+A cache helper's `fetch` answers from a fresh entry of the store the client's `cache_stores` lends it, or of a memory
+store the client creates, or sends the request, revalidating a stale entry. See the runtime reference for their limits
+and keys.
 
 ```json
 [
@@ -419,10 +419,10 @@ caller owned. Native task cancellation propagates unchanged, and user callbacks 
 
 ## Cache helpers
 
-A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
-`MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch` with
-`ConfigurationError` before sending. The client never creates or closes a store. The types are imported from
+A cache helper keeps entries in the store the client's `cache_stores` lends it under its name, a `MemoryCacheStore` or
+`AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the client's mode. Without
+one, the client's root creates a memory store of 128 entries for the helper at its first fetch, which the root's views
+share and no other client does. The client never closes a store. The types are imported from
 `client.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
 
@@ -433,13 +433,17 @@ stores.
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
-credentials the client places, and selected by the request headers its `Vary` names and those the client's, views', or
-call's headers name or a declared parameter fills. A request carrying credentials needs
-`ProtocolSecurityContext.credential_partition`, a helper declared authenticated, and the client's own credentials or
-Auth, not a view's or a call's Auth; anything else raises `ConfigurationError`. A response whose `Vary` names a
-credential header is never stored, and one partition is one permission set: credentials the client cannot see, such as
-a client certificate, need a partition of their own.
+time. An entry is keyed by the method, the Accept header, and the identity the request is sent as: before the lookup,
+the call's Auth, which is its own, its credentials', or else the HTTP client's, places credentials on a copy of the
+request without sending it, and the key takes the URL with any query credentials, the values of the credential headers,
+and every header the Auth added or changed. A callable credential is therefore called, and a token may be requested,
+for the lookup as well as for the send. A response is stored only when the request it answered was sent as the same
+identity, so a rotated or one-time credential, a timestamped signature, or a renewed token is never stored and never
+answers another identity. An entry is selected by the request headers its `Vary` names and those the client's, views',
+or call's headers name or a declared parameter fills. A request carrying credentials needs a helper declared
+authenticated and an anonymous one a helper declared anonymous; anything else raises `ConfigurationError` with the
+reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
+transport, are not in the key: give such a client a store of its own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
 and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only

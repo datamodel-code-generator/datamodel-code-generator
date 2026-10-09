@@ -15,7 +15,7 @@ from .._runtime.protocols.uploads import (
     aresume_upload,
     astart_upload,
 )
-from ..options import UNSET, RequestOptions, SessionOptions
+from ..options import UNSET, RequestOptions
 from ..types.files import CompleteFileResponse
 from . import UploadOptions, UploadSource, _plans
 
@@ -71,7 +71,6 @@ class AsyncFilesUploadResumableUpload:
         x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return await astart_upload(
@@ -81,7 +80,6 @@ class AsyncFilesUploadResumableUpload:
             (tus_resumable, x_name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     async def resume(
@@ -91,7 +89,6 @@ class AsyncFilesUploadResumableUpload:
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return await aresume_upload(
@@ -101,7 +98,6 @@ class AsyncFilesUploadResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -120,7 +116,6 @@ class AsyncFilesFinishResumableUpload:
         x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[CompleteFileResponse]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return await astart_upload(
@@ -130,7 +125,6 @@ class AsyncFilesFinishResumableUpload:
             (tus_resumable, x_name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     async def resume(
@@ -140,7 +134,6 @@ class AsyncFilesFinishResumableUpload:
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[CompleteFileResponse]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return await aresume_upload(
@@ -150,7 +143,6 @@ class AsyncFilesFinishResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -170,7 +162,6 @@ class AsyncFilesPutResumableUpload:
         x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return await astart_upload(
@@ -180,7 +171,6 @@ class AsyncFilesPutResumableUpload:
             (upload_length, tus_resumable, x_name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     async def resume(
@@ -190,7 +180,6 @@ class AsyncFilesPutResumableUpload:
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return await aresume_upload(
@@ -200,5 +189,4 @@ class AsyncFilesPutResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )

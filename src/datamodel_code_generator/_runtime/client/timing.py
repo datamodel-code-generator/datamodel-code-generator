@@ -1,4 +1,4 @@
-"""Budget, cancellation, and session-limit values and the option checks shared by options and protocol helpers."""
+"""Budget, cancellation, and clock values and the option checks shared by options and protocol helpers."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotati
 from dataclasses import dataclass, field
 from typing import Final, final
 
-from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
 
@@ -112,18 +111,3 @@ class ResolvedTimeoutOptions:
     read: float | None
     write: float | None
     pool: float | None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SessionOptions:
-    """Limits of a session spanning several requests: UNSET keeps the session's default and None removes that limit.
-
-    The total timeout is counted from the start of the session.
-    """
-
-    total_timeout: float | UNSET | None = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse booleans, negative or nonfinite durations."""
-        if (timeout := self.total_timeout) is not None and timeout is not UNSET:
-            object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))

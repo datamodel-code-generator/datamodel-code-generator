@@ -335,17 +335,14 @@ caller owned. Native task cancellation propagates unchanged, and user callbacks 
 An NDJSON helper's `open` is one session holding one logical call. The call's total timeout bounds only
 acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
 idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
-options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
-from:
-
-- `client.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
-  `UnknownEvent`
-- `client.options`: `SessionOptions`
+`stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
+imported from `client.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+`UnknownEvent`.
 
 | Limit | Effective default |
 |---|---|
 | idle timeout | the native read timeout; None removes it |
-| session total timeout | None |
+| session total timeout (`total_timeout`) | None |
 
 The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
 UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`

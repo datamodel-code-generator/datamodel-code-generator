@@ -39,13 +39,20 @@ VIEW_KEYWORDS: Final = (
     "follow_redirects",
     "auth",
 )
-CLIENT_KEYWORDS: Final = (*VIEW_KEYWORDS, "compression", "clock", "http_client", "protocols")
+CLIENT_KEYWORDS: Final = (
+    *VIEW_KEYWORDS,
+    "compression",
+    "clock",
+    "http_client",
+    "helper_defaults",
+    "cache_stores",
+    "allowed_origins",
+)
 HELPER_ARGUMENTS: Final = frozenset({
     "cache_options",
     "items",
     "pagination_options",
     "poll_options",
-    "session_options",
     "source",
     "state",
     "stream_options",

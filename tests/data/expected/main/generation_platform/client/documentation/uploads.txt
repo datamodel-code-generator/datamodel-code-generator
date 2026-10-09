@@ -352,17 +352,15 @@ caller owned. Native task cancellation propagates unchanged, and user callbacks 
 
 An upload helper's `start` and the handle it returns are one session, and so are `resume` and its handle. The create
 call, every probe, append, and the completion are logical calls of their own, with their own retries, total timeout,
-and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
-
-- `client.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
-  `AsyncUploadHandle`
-- `client.options`: `SessionOptions`
+and idempotency key; the session bounds all of them. Each limit comes from the call's `upload_options`, then the
+client's `helper_defaults` for the helper, then the default below. The session types are imported from
+`client.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
+`AsyncUploadHandle`.
 
 | Limit | Effective default |
 |---|---|
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
-| session total timeout | None (no limit) |
+| session total timeout (`total_timeout`) | None (no limit) |
 
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
 to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and

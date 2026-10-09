@@ -847,7 +847,6 @@ class _Shared(Generic[AdapterT]):
         coding = cast("httpx2.Client | httpx2.AsyncClient", http_client).headers.get("accept-encoding")
         self.fixed: tuple[tuple[str, str], ...] = () if coding is None else (("Accept-Encoding", coding),)
         self.protocols: object = None
-        self.root_auth: NativeAuth | UNSET | None = UNSET
         self.credentials: Credentials | None = None
         self.sockets: set[Callable[[], None]] = set()
 
@@ -1129,7 +1128,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         else:
             raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
         shared = _Shared(defaults, native, created=http_client is None)
-        shared.protocols, shared.root_auth, shared.credentials = protocols, settings.auth, checked
+        shared.protocols, shared.credentials = protocols, checked
         return cls(shared, settings)
 
     def execute(  # noqa: PLR0913
@@ -1591,7 +1590,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         else:
             raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
         shared = _Shared(defaults, native, created=http_client is None)
-        shared.protocols, shared.root_auth, shared.credentials = protocols, settings.auth, checked
+        shared.protocols, shared.credentials = protocols, checked
         return cls(shared, settings)
 
     async def execute(  # noqa: PLR0913

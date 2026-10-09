@@ -3,8 +3,6 @@
   page with pagination options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='pagination_options') [field_path=('pagination_options',)] invalid_value
   iterate with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
   page with request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  iterate with session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',)] invalid_value
-  page with session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',)] invalid_value
   iterate with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
   page with fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
   next page of options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
@@ -50,10 +48,10 @@
   explicit session clock first = '1'
   explicit session clock after former timeout ! APITimeoutError: APITimeoutError(operation_id='listUsers', reason='deadline_exceeded') [operation_id='listUsers'] deadline_exceeded
     progress {'pages': 1, 'items': 1}
-  client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.everyone') [field_path=('protocols', 'defaults', 'users.everyone')] unknown_field
-  async client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.everyone') [field_path=('protocols', 'defaults', 'users.everyone')] unknown_field
-  client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.all.options') [field_path=('protocols', 'defaults', 'users.all', 'options')] invalid_value
-  async client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.all.options') [field_path=('protocols', 'defaults', 'users.all', 'options')] invalid_value
+  client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.everyone') [field_path=('helper_defaults', 'users.everyone')] unknown_field
+  async client with defaults of an unknown helper ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='helper_defaults.users.everyone') [field_path=('helper_defaults', 'users.everyone')] unknown_field
+  client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] invalid_value
+  async client with defaults of an options of another kind ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.users.all') [field_path=('helper_defaults', 'users.all')] invalid_value
   client with no defaults = None
   client with empty defaults = None
   > GET https://api.example.com/users

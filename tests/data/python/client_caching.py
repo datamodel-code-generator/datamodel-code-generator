@@ -1,4 +1,4 @@
-"""Fetch through generated cache helpers: freshness, revalidation, Vary, credentials, and stores."""
+"""Fetch through generated cache helpers: freshness, revalidation, Vary, credential identities, and stores."""
 
 from __future__ import annotations
 
@@ -167,8 +167,7 @@ class Caching:
 
     def stores(self, **stores: object) -> dict[str, Any]:
         """Return client keywords lending the stores by helper name, with dots spelled as double underscores."""
-        named = {name.replace("__", "."): store for name, store in stores.items()}
-        return {"protocols": self.options.ProtocolClientOptions(cache_stores=named)}
+        return {"cache_stores": {name.replace("__", "."): store for name, store in stores.items()}}
 
     def headers(self, **values: str) -> object:
         """Return request options adding headers, with underscores spelled as hyphens."""
@@ -206,7 +205,7 @@ class _ChallengeAuth(httpx2.Auth):
 
 
 def _challenged(cache: Caching, lines: list[str]) -> None:
-    """Store and revalidate an entry an injected client's challenge Auth answered after a 401, without a redirect."""
+    """Store nothing an injected client's challenge Auth answered after a 401: it was sent as another identity."""
     exchange = Exchange(lines)
     challenge = raw_response(401, **{"www-authenticate": 'Challenge realm="api"'})
     store = cache.protocols.MemoryCacheStore()
@@ -215,11 +214,10 @@ def _challenged(cache: Caching, lines: list[str]) -> None:
         cache.package.Client(http_client=native, **cache.stores(users__profile=store)) as api,
     ):
         helper, thirty = api.protocols.users.profile, cache.user_id(30)
-        exchange.respond(
-            challenge, user(30, etag='"h"', **{"cache-control": "max-age=0"}), challenge, not_modified(etag='"h"')
-        )
-        fetched(lines, "stored after an auth challenge", lambda: helper.fetch(user_id=thirty))
-        fetched(lines, "304 after an auth challenge", lambda: helper.fetch(user_id=thirty))
+        stale = {"cache-control": "max-age=0"}
+        exchange.respond(challenge, user(30, etag='"h"', **stale), challenge, user(30, etag='"h"', **stale))
+        fetched(lines, "unstored after an auth challenge", lambda: helper.fetch(user_id=thirty))
+        fetched(lines, "sent again after an auth challenge", lambda: helper.fetch(user_id=thirty))
 
 
 class _Clock:
@@ -578,6 +576,7 @@ def cache_stores(package: ModuleType, lines: list[str]) -> None:
         _settings(cache, native, exchange, lines)
         _recorded(cache, native, exchange, lines)
         _credentials(cache, native, exchange, lines)
+        _rounds(cache, native, exchange, lines)
     run(lambda: _async_stores(cache, lines))
 
 
@@ -600,7 +599,7 @@ def _stamp(**fields: object) -> dict[str, object]:
 
 def _records(cache: Caching, lines: list[str]) -> None:
     """Construct cache records, options, and exceptions, refusing invalid fields."""
-    protocols, errors, options = cache.protocols, cache.errors, cache.options
+    protocols, errors = cache.protocols, cache.errors
     responses = importlib.import_module(f"{cache.package.__name__}.responses")
     headers = responses.HeadersView((("etag", '"a"'),))
 
@@ -640,9 +639,7 @@ def _records(cache: Caching, lines: list[str]) -> None:
     record(lines, "options", lambda: protocols.CacheOptions(max_entry_bytes=1, max_ttl=0.5))
     record(lines, "options zero bytes", lambda: protocols.CacheOptions(max_entry_bytes=0))
     record(lines, "options boolean ttl", lambda: protocols.CacheOptions(max_ttl=True))
-    record(lines, "defaults", lambda: protocols.ProtocolDefaults(options=protocols.CacheOptions(max_ttl=1)))
-    record(lines, "stores list", lambda: options.ProtocolClientOptions(cache_stores=[]))
-    record(lines, "stores name", lambda: options.ProtocolClientOptions(cache_stores={"no name": 1}))
+    record(lines, "stores name", lambda: cache.package.Client(cache_stores={"no name": protocols.MemoryCacheStore()}))
     record(lines, "protocol error", lambda: errors.ProtocolDataError(reason="inconsistent"))
 
 
@@ -709,9 +706,31 @@ def _runtime(package: ModuleType, name: str) -> ModuleType:
     return importlib.import_module(f"{package.__name__}._runtime.{name}")
 
 
+class _DictStore:
+    """A custom store over a plain dict, keyed by the bytes a fetch gives it."""
+
+    def __init__(self) -> None:
+        self.entries: dict[bytes, Any] = {}
+
+    def __len__(self) -> int:
+        return len(self.entries)
+
+    def get(self, key: bytes) -> Any:
+        """Return the entry of a key, or None."""
+        return self.entries.get(key)
+
+    def set(self, key: bytes, entry: Any) -> None:
+        """Replace the entry of a key."""
+        self.entries[key] = entry
+
+    def delete(self, key: bytes) -> None:
+        """Remove the entry of a key, if any."""
+        self.entries.pop(key, None)
+
+
 def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Refuse stores and defaults the package or the client's mode cannot use, and fetches without a store."""
-    package, protocols, options = cache.package, cache.protocols, cache.options
+    """Refuse stores and defaults the package or the client's mode cannot use, and keep a default store per client."""
+    package, protocols = cache.package, cache.protocols
     for label, client, settings in (
         ("unknown helper store", package.Client, {"users.unknown": protocols.MemoryCacheStore()}),
         ("pagination-free name", package.Client, {"users": protocols.MemoryCacheStore()}),
@@ -719,32 +738,34 @@ def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         ("asynchronous store", package.Client, {"users.profile": protocols.AsyncMemoryCacheStore()}),
         ("synchronous store", package.AsyncClient, {"users.profile": protocols.MemoryCacheStore()}),
     ):
-        protocol = options.ProtocolClientOptions(cache_stores=settings)
-        record(
-            lines,
-            label,
-            lambda client=client, protocol=protocol: client(protocols=protocol),
-        )
-    for label, defaults in (
-        ("session defaults", protocols.ProtocolDefaults(session=options.SessionOptions(total_timeout=1))),
-        (
-            "pagination defaults",
-            protocols.ProtocolDefaults(options=_runtime(package, "protocols.options").PaginationOptions(max_pages=1)),
-        ),
-    ):
-        protocol = options.ProtocolClientOptions(defaults={"users.profile": defaults})
-        record(lines, label, lambda protocol=protocol: package.Client(protocols=protocol))
-    three = cache.user_id(3)
-    with package.Client(http_client=native) as bare:
+        record(lines, label, lambda client=client, settings=settings: client(cache_stores=settings))
+    pagination = _runtime(package, "protocols.options").PaginationOptions(max_pages=1)
+    record(lines, "pagination defaults", lambda: package.Client(helper_defaults={"users.profile": pagination}))
+    three, fresh = cache.user_id(3), {"cache-control": "max-age=60"}
+    exchange.respond(user(3, "own", **fresh), user(3, "other", **fresh))
+    with package.Client(http_client=native) as bare, package.Client(http_client=native) as other:
         helper = bare.protocols.users.profile
-        fetched(lines, "no store", lambda: helper.fetch(user_id=three))
+        fetched(lines, "default store miss", lambda: helper.fetch(user_id=three))
+        fetched(lines, "default store hit", lambda: helper.fetch(user_id=three))
+        fetched(
+            lines,
+            "default store of the root in a view",
+            lambda: bare.with_options(max_retries=0).protocols.users.profile.fetch(user_id=three),
+        )
+        fetched(lines, "another client's default store", lambda: other.protocols.users.profile.fetch(user_id=three))
+    plain = _DictStore()
+    exchange.respond(user(3, "plain", **fresh))
+    with package.Client(http_client=native, cache_stores={"users.profile": plain}) as lent:
+        helper = lent.protocols.users.profile
+        fetched(lines, "dict store miss", lambda: helper.fetch(user_id=three))
+        fetched(lines, "dict store hit", lambda: helper.fetch(user_id=three))
+        lines.append(f"  dict store keys={[(type(key).__name__, len(key)) for key in plain.entries]}")
     recording = Recording(protocols.MemoryCacheStore(), lines)
-    capped = options.ProtocolClientOptions(
+    client = package.Client(
+        http_client=native,
         cache_stores={"users.profile": recording},
-        defaults={"users.profile": protocols.ProtocolDefaults(options=protocols.CacheOptions(max_entry_bytes=5))},
-        security=None,
+        helper_defaults={"users.profile": protocols.CacheOptions(max_entry_bytes=5)},
     )
-    client = package.Client(http_client=native, protocols=capped)
     helper = client.protocols.users.profile
     exchange.respond(user(3, **{"cache-control": "max-age=60"}), user(3, **{"cache-control": "max-age=60"}))
     fetched(lines, "default entry limit", lambda: helper.fetch(user_id=three))
@@ -831,34 +852,41 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         fetched(lines, "hit without a request", lambda: helper.fetch(user_id=cache.user_id(23)))
 
 
-def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Key entries by credential partition and auth, refusing authenticated use without a partition or a match."""
+def _unavailable() -> str:
+    """Fail as a credential callable whose secret store is down."""
+    msg = "vault down"
+    raise RuntimeError(msg)
+
+
+def _token(value: str) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder of an OAuth token response."""
+    return json_response(200, {"access_token": value, "token_type": "Bearer", "expires_in": 3600})
+
+
+def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:  # noqa: PLR0914 - One store across the credential cases.
+    """Key entries by the identity each request is sent as, so that no entry answers another credential."""
     package, protocols, options = cache.package, cache.protocols, cache.options
     store = protocols.MemoryCacheStore()
-    token = {"bearer": "token"}
 
-    def client(partition: str | None, credentials: dict[str, object] = token, **stores: object) -> Any:
-        security = None if partition is None else protocols.ProtocolSecurityContext(credential_partition=partition)
-        protocol = options.ProtocolClientOptions(
-            security=security, cache_stores=stores or {"secure.profile": store, "users.profile": store}
-        )
-        return package.Client(http_client=native, protocols=protocol, **credentials)
+    def client(credentials: dict[str, object] | None = None, **stores: object) -> Any:
+        lent = stores or {"secure.profile": store, "users.profile": store}
+        given = {"bearer": "token"} if credentials is None else credentials
+        return package.Client(http_client=native, cache_stores=lent, **given)
 
     secure_user = argument(package, "getSecureUser", "path", "userId", 1)
-    with client(None) as anonymous:
-        fetched(lines, "no partition", lambda: anonymous.protocols.secure.profile.fetch(user_id=secure_user))
-    with client("tenant-a", {}) as unauthenticated:
+    with client({}) as unauthenticated:
         fetched(lines, "no credentials", lambda: unauthenticated.protocols.secure.profile.fetch(user_id=secure_user))
+    with client({"bearer": _unavailable}) as broken:
+        fetched(lines, "failing credential", lambda: broken.protocols.secure.profile.fetch(user_id=secure_user))
     exchange.respond(
         user(1, etag='"t"', **{"cache-control": "max-age=60"}),
         user(1, "other"),
         user(1, "anonymous", **{"cache-control": "max-age=60"}),
-        user(1, "b"),
     )
-    with client("tenant-a") as first, client("tenant-a") as same, client("tenant-b") as other:
-        fetched(lines, "tenant a stored", lambda: first.protocols.secure.profile.fetch(user_id=secure_user))
-        fetched(lines, "tenant a shared", lambda: same.protocols.secure.profile.fetch(user_id=secure_user))
-        fetched(lines, "tenant b isolated", lambda: other.protocols.secure.profile.fetch(user_id=secure_user))
+    with client() as first, client() as same, client({"bearer": "other"}) as other:
+        fetched(lines, "token stored", lambda: first.protocols.secure.profile.fetch(user_id=secure_user))
+        fetched(lines, "same token shared", lambda: same.protocols.secure.profile.fetch(user_id=secure_user))
+        fetched(lines, "other token isolated", lambda: other.protocols.secure.profile.fetch(user_id=secure_user))
         public = cache.user_id(1)
         fetched(lines, "anonymous helper", lambda: first.protocols.users.profile.fetch(user_id=public))
         bearer = cache.headers(Authorization="Bearer x")
@@ -867,33 +895,45 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
             "anonymous helper with a credential",
             lambda: first.protocols.users.profile.fetch(user_id=public, options=bearer),
         )
-        fetched(lines, "anonymous helper same tenant", lambda: same.protocols.users.profile.fetch(user_id=public))
-        fetched(lines, "anonymous helper other tenant", lambda: other.protocols.users.profile.fetch(user_id=public))
+        fetched(lines, "anonymous helper of another token", lambda: other.protocols.users.profile.fetch(user_id=public))
     alice, bob = ({"bearer": name} for name in ("alice", "bob"))
     two = argument(package, "getSecureUser", "path", "userId", 2)
     varying = {"cache-control": "max-age=60", "vary": "Authorization"}
-    exchange.respond(user(2, "alice", **varying), user(2, "bob", **varying), user(2, "alice again", **varying))
-    with client("tenant-a", alice) as first, client("tenant-a", bob) as second:
+    exchange.respond(user(2, "alice", **varying), user(2, "bob", **varying), user(2, "carol", **varying))
+    with client(alice) as first, client(bob) as second:
         fetched(lines, "alice varying on authorization", lambda: first.protocols.secure.profile.fetch(user_id=two))
-        fetched(lines, "bob in the same partition", lambda: second.protocols.secure.profile.fetch(user_id=two))
+        fetched(lines, "bob through the same store", lambda: second.protocols.secure.profile.fetch(user_id=two))
         fetched(lines, "alice again", lambda: first.protocols.secure.profile.fetch(user_id=two))
-        other_auth = options.RequestOptions(auth=_Bearer("bob"))
+        fetched(lines, "bob again", lambda: second.protocols.secure.profile.fetch(user_id=two))
         view = first.with_options(auth=_Bearer("bob"))
-        fetched(lines, "view with other auth", lambda: view.protocols.secure.profile.fetch(user_id=two))
-        fetched(
-            lines,
-            "call with other auth",
-            lambda: first.protocols.secure.profile.fetch(user_id=two, options=other_auth),
-        )
+        fetched(lines, "view sending bob's authorization", lambda: view.protocols.secure.profile.fetch(user_id=two))
+        carol = options.RequestOptions(auth=_Bearer("carol"))
+        for label in ("call with carol's auth", "call with carol's auth again"):
+            fetched(lines, label, lambda: first.protocols.secure.profile.fetch(user_id=two, options=carol))
         public = cache.user_id(1)
         anonymous_view = first.with_options(auth=None)
         fetched(lines, "anonymous view", lambda: anonymous_view.protocols.users.profile.fetch(user_id=public))
     fresh = {"cache-control": "max-age=60"}
+    three = argument(package, "getSecureUser", "path", "userId", 3)
+    current = ["a"]
+    exchange.respond(user(3, "a", **fresh), user(3, "b", **fresh))
+    with client({"bearer": lambda: current[0]}) as keyed:
+        helper = keyed.protocols.secure.profile
+        for key in ("a", "b", "a", "b"):
+            current[0] = key
+            fetched(lines, f"callable key {key}", lambda: helper.fetch(user_id=three))
+    issued = (f"rotated-{index}" for index in range(4))
+    rotations = Recording(protocols.MemoryCacheStore(), lines)
+    exchange.respond(user(3, "first", **fresh), user(3, "second", **fresh))
+    with client({"bearer": lambda: next(issued)}, **{"secure.profile": rotations}) as rotating:
+        helper = rotating.protocols.secure.profile
+        fetched(lines, "rotated between lookup and send", lambda: helper.fetch(user_id=three))
+        fetched(lines, "rotated again", lambda: helper.fetch(user_id=three))
     four, five = (argument(package, "getSecureUser", "path", "userId", value) for value in (4, 5))
     exchange.respond(
         user(4, "u", **fresh), user(4, "service", **fresh), user(5, "service", **fresh), user(5, "u", **fresh)
     )
-    with client("tenant-a") as service:
+    with client() as service:
         helper = service.protocols.secure.profile
         delegated = service.with_options(default_headers={"X-On-Behalf-Of": "user-u"}).protocols.secure.profile
         fetched(lines, "on behalf of u", lambda: delegated.fetch(user_id=four))
@@ -905,22 +945,72 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         forged = service.with_options(default_headers={"Authorization": "Bearer mallory"}).protocols.secure.profile
         fetched(lines, "view patching the bound authorization", lambda: forged.fetch(user_id=four))
     exchange.respond(user(44, "alice", **fresh), user(44, "bob", **fresh))
-    with client("tenant-a", {}, **{"carts.current": store}) as shopper:
+    with client({}, **{"carts.current": store}) as shopper:
         carts = shopper.protocols.carts.current
         for label, cart in (("alice cart", "alice"), ("bob cart", "bob"), ("alice cart again", "alice")):
             fetched(lines, label, lambda cart=cart: carts.fetch(cart=cache.cart(cart)))
-    failing = Recording(protocols.MemoryCacheStore(), lines)
+    granted_store = Recording(protocols.MemoryCacheStore(), lines)
     oauth = importlib.import_module(f"{package.__name__}.auth").OauthClientCredentials(
         client_id="c", client_secret="secret", audience="api"
     )
-    with client("tenant-a", {"bearer": oauth}, **{"secure.profile": failing}) as granted:
-        failing.faults["get"] = OSError("down")
-        fetched(lines, "granted", lambda: granted.protocols.secure.profile.fetch(user_id=secure_user))
+    rejected = raw_response(401, **{"www-authenticate": 'Bearer error="invalid_token"'})
+    exchange.respond(_token("t1"), rejected, _token("t2"), user(1, "renewed", **fresh), user(1, "next", **fresh))
+    with client({"bearer": oauth}, **{"secure.profile": granted_store}) as granted:
+        helper = granted.protocols.secure.profile
+        fetched(lines, "renewed token unstored", lambda: helper.fetch(user_id=secure_user))
+        fetched(lines, "next round stored", lambda: helper.fetch(user_id=secure_user))
+        fetched(lines, "next round fresh", lambda: helper.fetch(user_id=secure_user))
+        granted_store.faults["get"] = OSError("down")
+        fetched(lines, "granted", lambda: helper.fetch(user_id=secure_user))
+
+
+class _SessionAfterChallenge(httpx2.Auth):
+    """An Auth that adds nothing at first and answers a 401 with a session header of its user."""
+
+    def __init__(self, user: str) -> None:
+        self.user = user
+
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        """Send the request again with the session header when the server challenges it."""
+        if (yield request).status_code == 401:
+            request.headers["X-Session"] = self.user
+            yield request
+
+
+def _hooked(request: httpx2.Request) -> None:
+    """Add a header to every request the HTTP client sends, after any Auth."""
+    request.headers["X-Hooked"] = "yes"
+
+
+def _rounds(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Store nothing a later Auth round or a request hook sent as another identity than the lookup's."""
+    package, options = cache.package, cache.options
+    challenge = raw_response(401, **{"www-authenticate": 'Challenge realm="api"'})
+    private = {"cache-control": "private, max-age=60"}
+    six = cache.user_id(6)
+    exchange.respond(challenge, user(6, "alice session", **private), user(6, "anonymous", **private))
+    store = cache.protocols.MemoryCacheStore()
+    with package.Client(http_client=native, cache_stores={"users.profile": store}, bearer="token") as api:
+        session = api.with_options(auth=_SessionAfterChallenge("alice")).protocols.users.profile
+        fetched(lines, "session added after a challenge", lambda: session.fetch(user_id=six))
+        fetched(lines, "anonymous after the session", lambda: api.protocols.users.profile.fetch(user_id=six))
+        secure = argument(package, "getSecureUser", "path", "userId", 8)
+        answered = options.RequestOptions(auth=_ChallengeAuth())
+        exchange.respond(challenge, user(8, "answered", **private), challenge, user(8, "answered again", **private))
+        for label in ("challenge-first auth", "challenge-first auth again"):
+            fetched(lines, label, lambda: api.protocols.secure.profile.fetch(user_id=secure, options=answered))
+    exchange.respond(user(7, "hooked", **private), user(7, "hooked again", **private))
+    with (
+        exchange.client(event_hooks={"request": [_hooked]}) as hooked,
+        package.Client(http_client=hooked, cache_stores={"users.profile": cache.protocols.MemoryCacheStore()}) as api,
+    ):
+        for label in ("header a request hook adds", "header a request hook adds again"):
+            fetched(lines, label, lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(7)))
 
 
 async def _async_stores(cache: Caching, lines: list[str]) -> None:
     """Map an asynchronous store's failures and results as the synchronous ones are mapped."""
-    package, protocols, options = cache.package, cache.protocols, cache.options
+    package, protocols = cache.package, cache.protocols
     exchange = Exchange(lines)
     store = AsyncRecording(protocols.MemoryCacheStore(), lines)
     settings = cache.stores(users__profile=store)
@@ -955,14 +1045,10 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         await afetched(lines, "async delete result", lambda: helper.fetch(user_id=twenty))
     fresh = {"cache-control": "max-age=60"}
     secure_user = argument(package, "getSecureUser", "path", "userId", 1)
-    partitioned = options.ProtocolClientOptions(
-        security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
-        cache_stores={"secure.profile": protocols.AsyncMemoryCacheStore()},
-    )
     exchange.respond(user(1, "service", **fresh), user(1, "u", **fresh))
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, protocols=partitioned, bearer="token") as service,
+        package.AsyncClient(http_client=native, bearer="token") as service,
     ):
         delegated = service.with_options(default_headers={"X-On-Behalf-Of": "user-u"}).protocols.secure.profile
         await afetched(lines, "async service", lambda: service.protocols.secure.profile.fetch(user_id=secure_user))
@@ -973,13 +1059,17 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
     oauth = importlib.import_module(f"{package.__name__}.auth").OauthClientCredentials(
         client_id="c", client_secret="secret"
     )
-    protocol = options.ProtocolClientOptions(
-        security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
-        cache_stores={"secure.profile": failing},
-    )
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, protocols=protocol, bearer=oauth) as granted,
+        package.AsyncClient(http_client=native, bearer=_unavailable) as broken,
+    ):
+        await afetched(
+            lines, "async failing credential", lambda: broken.protocols.secure.profile.fetch(user_id=secure_user)
+        )
+    exchange.respond(_token("t1"))
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(http_client=native, cache_stores={"secure.profile": failing}, bearer=oauth) as granted,
     ):
         await afetched(lines, "async granted", lambda: granted.protocols.secure.profile.fetch(user_id=secure_user))
 

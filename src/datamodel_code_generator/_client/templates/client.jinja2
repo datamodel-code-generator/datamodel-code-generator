@@ -78,6 +78,9 @@ class {{ name }}({{ name }}View):
 {%- endfor %}
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
+{%- if helper_settings %}
+        from {{ helper_settings }} import HelperSettings
+{% endif %}
         self._core = {{ create }}
 
 {{ lifecycle }}

@@ -20,7 +20,7 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import ConfigurationError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SYSTEM_CLOCK, SessionOptions
+from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError
@@ -389,7 +389,6 @@ def _limits(
     plan: PaginationPlan[T, P],
     pagination_options: object,
     options: object,
-    session_options: object,
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
@@ -400,7 +399,6 @@ def _limits(
     for name, value, kind in (
         ("pagination_options", pagination_options, PaginationOptions),
         ("options", options, RequestOptions),
-        ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
@@ -414,13 +412,11 @@ def _limits(
         for name in request.extra_query or ():
             if name in plan.queries:
                 raise _invalid(plan, ("options", "extra_query", name))
-    defaults = core.protocol_defaults(plan.helper_id)
-    kinds = (pagination_options, UNSET if defaults is None else defaults.options)
-    sessions = (session_options, UNSET if defaults is None else defaults.session)
+    kinds = (pagination_options, core.helper_defaults(plan.helper_id))
     return _Limits(
         max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
         max_items=layered(kinds, "max_items", _DEFAULTS.max_items),
-        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
     )
@@ -1341,10 +1337,9 @@ def first_page(  # noqa: PLR0913
     media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> Page[T, P]:
     """Fetch the first page of a helper in a session of its own."""
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     walk = _Walk(plan, _Request(arguments, body, media_type), limits, core)
     if (session := walk.ready()) is None:
         raise walk.limit(0, "items")
@@ -1360,10 +1355,9 @@ async def afirst_page(  # noqa: PLR0913
     media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> Page[T, P]:
     """Fetch the first page of a helper with asyncio, in a session of its own."""
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     walk = _Walk(plan, _Request(arguments, body, media_type), limits, core)
     if (session := walk.ready()) is None:
         raise walk.limit(0, "items")
@@ -1379,10 +1373,9 @@ def iterate_pages(  # noqa: PLR0913
     media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> Pager[T, P]:
     """Return a pager over a helper's items, checking its options now; it sends nothing until it is iterated."""
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     return Pager(core, _Walk(plan, _Request(arguments, body, media_type), limits, core))
 
 
@@ -1395,27 +1388,25 @@ def aiterate_pages(  # noqa: PLR0913
     media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncPager[T, P]:
     """Return an asyncio pager over a helper's items, checking its options now; it sends nothing until iterated."""
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     return AsyncPager(core, _Walk(plan, _Request(arguments, body, media_type), limits, core))
 
 
-def following_page(  # noqa: PLR0913
+def following_page(
     core: ClientCore,
     plan: PaginationPlan[T, P],
     page: object,
     *,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> Page[T, P] | None:
     """Fetch the page after a page this helper fetched, in a session of its own, or return None after the last one.
 
     The pages before it count toward the item and page limits, and a continuation they returned is a cycle.
     """
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     link = _page_link(plan, page)
     walk = _Walk(plan, link.request, limits, core, link)
     if (session := walk.ready()) is None:
@@ -1423,20 +1414,19 @@ def following_page(  # noqa: PLR0913
     return walk.record(*_fetch(core, walk, session))
 
 
-async def afollowing_page(  # noqa: PLR0913
+async def afollowing_page(
     core: AsyncClientCore,
     plan: PaginationPlan[T, P],
     page: object,
     *,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> Page[T, P] | None:
     """Fetch the page after a page this helper fetched with asyncio, or return None after the last one.
 
     The pages before it count toward the item and page limits, and a continuation they returned is a cycle.
     """
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     link = _page_link(plan, page)
     walk = _Walk(plan, link.request, limits, core, link)
     if (session := walk.ready()) is None:
@@ -1454,13 +1444,12 @@ def resume_pages(  # noqa: PLR0913
     media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> Pager[T, P]:
     """Return a pager continuing after a server continuation in a session of its own, checking its form now.
 
     It sends nothing until iterated. The caller supplies the operation arguments and any request body again.
     """
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     return Pager(core, _restored(core, plan, state, _Request(arguments, body, media_type), limits))
 
 
@@ -1474,11 +1463,10 @@ def aresume_pages(  # noqa: PLR0913
     media_type: str | None = None,
     pagination_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncPager[T, P]:
     """Return an asyncio pager continuing after a server continuation in a session of its own, checking its form now.
 
     It sends nothing until iterated. The caller supplies the operation arguments and any request body again.
     """
-    limits = _limits(core, plan, pagination_options, options, session_options)
+    limits = _limits(core, plan, pagination_options, options)
     return AsyncPager(core, _restored(core, plan, state, _Request(arguments, body, media_type), limits))

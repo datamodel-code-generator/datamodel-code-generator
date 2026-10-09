@@ -20,7 +20,7 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import ConfigurationError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SYSTEM_CLOCK, SessionOptions
+from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError
 from .options import PollOptions, layered
@@ -215,7 +215,6 @@ def _limits(
     plan: PollingPlan[T, P, C],
     poll_options: object,
     options: object,
-    session_options: object,
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
@@ -227,7 +226,6 @@ def _limits(
     for name, value, kind in (
         ("poll_options", poll_options, PollOptions),
         ("options", options, RequestOptions),
-        ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
@@ -241,14 +239,12 @@ def _limits(
         for name in request.extra_query or ():
             if name in plan.queries:
                 raise _invalid(plan, ("options", "extra_query", name))
-    defaults = core.protocol_defaults(plan.helper_id)
-    kinds = (poll_options, UNSET if defaults is None else defaults.options)
-    sessions = (session_options, UNSET if defaults is None else defaults.session)
+    kinds = (poll_options, core.helper_defaults(plan.helper_id))
     limits = _Limits(
         interval=layered(kinds, "interval", plan.interval),
         max_polls=layered(kinds, "max_polls", _DEFAULTS.max_polls),
         max_wait=layered(kinds, "max_wait", _DEFAULTS.max_wait),
-        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
     )
@@ -1064,7 +1060,6 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> LroHandle[T, P]:
     """Create a helper's operation and return a handle of the base class."""
 
@@ -1080,7 +1075,6 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> H:
     """Create a helper's operation and return a handle of the helper's own class."""
 
@@ -1095,13 +1089,12 @@ def start_operation(  # noqa: PLR0913
     media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> LroHandle[Any, Any]:
     """Create a helper's operation in a session of its own and return the handle that polls it.
 
     A helper that declares a remote cancellation passes its own handle class.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     created = handle(core, plan, limits, _session(limits))
     created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
@@ -1117,7 +1110,6 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AsyncLroHandle[T, P]:
     """Create a helper's operation with asyncio and return a handle of the base class."""
 
@@ -1133,7 +1125,6 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AH:
     """Create a helper's operation with asyncio and return a handle of the helper's own class."""
 
@@ -1148,13 +1139,12 @@ async def astart_operation(  # noqa: PLR0913
     media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncLroHandle[Any, Any]:
     """Create a helper's operation with asyncio in a session of its own and return the handle that polls it.
 
     A helper that declares a remote cancellation passes its own handle class.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     created = handle(core, plan, limits, _session(limits))
     await created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
@@ -1168,7 +1158,6 @@ def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> LroHandle[T, P]:
     """Return a handle of the base class continuing a helper's checkpoint."""
 
@@ -1182,7 +1171,6 @@ def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     handle: type[H],
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> H:
     """Return a handle of the helper's own class continuing a helper's checkpoint."""
 
@@ -1195,13 +1183,12 @@ def resume_operation(  # noqa: PLR0913
     handle: type[LroHandle[Any, Any]] = LroHandle,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> LroHandle[Any, Any]:
     """Return a handle continuing a helper's checkpoint in a session of its own, checking the checkpoint now.
 
     It sends nothing, and never creates the operation again; `status` or `wait` sends its first poll.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     return _restored(plan, state, limits, lambda session: handle(core, plan, limits, session))
 
 
@@ -1213,7 +1200,6 @@ def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AsyncLroHandle[T, P]:
     """Return an asyncio handle of the base class continuing a helper's checkpoint."""
 
@@ -1227,7 +1213,6 @@ def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     handle: type[AH],
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AH:
     """Return an asyncio handle of the helper's own class continuing a helper's checkpoint."""
 
@@ -1240,12 +1225,11 @@ def aresume_operation(  # noqa: PLR0913
     handle: type[AsyncLroHandle[Any, Any]] = AsyncLroHandle,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncLroHandle[Any, Any]:
     """Return an asyncio handle continuing a helper's checkpoint in a session of its own, checking it now.
 
     It is not awaited and sends nothing, and never creates the operation again; `status` or `wait` sends its first
     poll.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     return _restored(plan, state, limits, lambda session: handle(core, plan, limits, session))

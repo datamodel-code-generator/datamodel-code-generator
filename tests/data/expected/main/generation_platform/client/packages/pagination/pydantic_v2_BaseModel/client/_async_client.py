@@ -25,7 +25,7 @@ from .options import Clock, RequestOptions, RetryOptions, ServerSelection
 from .responses import AsyncRawResponse
 
 if TYPE_CHECKING:
-    from ._runtime.protocols.options import ProtocolClientOptions
+    from ._runtime.protocols.options import HelperOptions
     from .protocols._async_helpers import AsyncProtocolHelpers
     from .resources.archive._async import AsyncArchiveResource
     from .resources.labels._async import AsyncLabelsResource
@@ -185,9 +185,11 @@ class AsyncClient(AsyncClientView):
         auth: httpx2.Auth | UNSET | None = UNSET,
         clock: Clock | None = None,
         http_client: httpx2.AsyncClient | None = None,
-        protocols: ProtocolClientOptions | None = None,
+        helper_defaults: Mapping[str, HelperOptions] | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
+        from ._runtime.protocols.options import HelperSettings
+
         self._core = AsyncClientCore.create(
             _DEFAULTS,
             base_url=base_url,
@@ -202,7 +204,7 @@ class AsyncClient(AsyncClientView):
             auth=auth,
             clock=clock,
             http_client=http_client,
-            protocols=protocols,
+            protocols=HelperSettings(defaults=helper_defaults),
             credentials=SchemeCredentials({"oauth": oauth}),
         )
 

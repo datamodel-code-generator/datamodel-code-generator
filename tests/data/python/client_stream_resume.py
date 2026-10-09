@@ -168,8 +168,11 @@ def _clock_options(resumes: _Resumes) -> dict[str, Any]:
     }
 
 
-def _clock_replies(resumes: _Resumes) -> Any:
-    """Queue an open, explicit resume, and automatic reconnect, whose six-second retry exceeds jittered backoff."""
+def _clock_replies(resumes: _Resumes) -> tuple[Any, Any]:
+    """Queue an open, explicit resume, and automatic reconnect, whose six-second retry exceeds jittered backoff.
+
+    Return the stream options of the open and of the reconnecting resume, both in a long session.
+    """
     headers = (*_TRACKED[:2], ("X-Stream-Expires", "2000-01-01T00:00:00Z"))
     resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', headers=headers)
     resumes.reply(
@@ -178,21 +181,24 @@ def _clock_replies(resumes: _Resumes) -> Any:
         headers=headers,
     )
     resumes.reply(b'event: created\nid: 3\ndata: {"id": "3"}\n\nevent: done\ndata: {}\n\n', headers=headers)
-    return resumes.harness.options.SessionOptions(total_timeout=10000.0)
+    protocols = resumes.harness.protocols
+    return protocols.StreamOptions(total_timeout=10000.0), protocols.StreamOptions(
+        reconnect=True, total_timeout=10000.0
+    )
 
 
 def _clocked(package: ModuleType, lines: list[str]) -> None:
     """Checkpoint, resume, and reconnect on an injected stepped clock without real waits."""
     resumes = _Resumes(package, lines)
     lines.append("stepped client clock")
-    session = _clock_replies(resumes)
+    opened, reconnecting = _clock_replies(resumes)
     with resumes.client(_clock_options(resumes)) as api:
         helper = api.protocols.events.tracked
-        stream = helper.open(session_options=session)
+        stream = helper.open(stream_options=opened)
         lines.append(f"  {_event(next(stream))}")
         state = stream.checkpoint()
         stream.close()
-        resumed = helper.resume(state, stream_options=resumes.reconnect, session_options=session)
+        resumed = helper.resume(state, stream_options=reconnecting)
         _drained(lines, "resumed and reconnected", resumed)
         _saved(lines, "clock checkpoint", resumed.checkpoint())
         lines.append(f"  clock progress {dict(resumed.progress)}")
@@ -207,14 +213,14 @@ async def _aclocked(package: ModuleType, lines: list[str]) -> None:
     """Resume and reconnect with asyncio on the same stepped-clock schedule."""
     resumes = _Resumes(package, lines)
     lines.append("async stepped client clock")
-    session = _clock_replies(resumes)
+    opened, reconnecting = _clock_replies(resumes)
     async with resumes.async_client(_clock_options(resumes)) as api:
         helper = api.protocols.events.tracked
-        stream = await helper.open(session_options=session)
+        stream = await helper.open(stream_options=opened)
         lines.append(f"  {_event(await anext(stream))}")
         state = stream.checkpoint()
         await stream.aclose()
-        resumed = await helper.resume(state, stream_options=resumes.reconnect, session_options=session)
+        resumed = await helper.resume(state, stream_options=reconnecting)
         await _adrained(lines, "resumed and reconnected", resumed)
         _saved(lines, "clock checkpoint", resumed.checkpoint())
         lines.append(f"  clock progress {dict(resumed.progress)}")
@@ -459,10 +465,9 @@ def _waits(resumes: _Resumes, api: Any) -> None:
     cut = harness.interrupted()
     resumes.reply(b'retry: 70000\nid: 1\ndata: {"text": "a"}\n\n', cut)
     _drained(lines, "reconnection time over the allowed wait", helper.open(stream_options=resumes.reconnect))
-    patient = harness.protocols.StreamOptions(reconnect=True, max_reconnect_wait=None)
-    short = harness.options.SessionOptions(total_timeout=30.0)
+    patient = harness.protocols.StreamOptions(reconnect=True, max_reconnect_wait=None, total_timeout=30.0)
     resumes.reply(b'retry: 70000\nid: 1\ndata: {"text": "a"}\n\n', cut)
-    _drained(lines, "reconnection time past the deadline", helper.open(stream_options=patient, session_options=short))
+    _drained(lines, "reconnection time past the deadline", helper.open(stream_options=patient))
     options = harness.options
     slow = options.RequestOptions(retry=options.RetryOptions(initial_delay=10.0, max_delay=10.0))
     hasty = harness.protocols.StreamOptions(reconnect=True, max_reconnect_wait=5.0)
@@ -712,10 +717,9 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
         resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
         never = harness.protocols.StreamOptions(reconnect=True, max_reconnects=0)
         await _adrained(lines, "async no reconnection allowed", await helper.open(stream_options=never))
-        patient = harness.protocols.StreamOptions(reconnect=True, max_reconnect_wait=None)
-        short = harness.options.SessionOptions(total_timeout=30.0)
+        patient = harness.protocols.StreamOptions(reconnect=True, max_reconnect_wait=None, total_timeout=30.0)
         resumes.reply(b'retry: 70000\nid: 1\ndata: {"text": "a"}\n\n', cut)
-        stream = await helper.open(stream_options=patient, session_options=short)
+        stream = await helper.open(stream_options=patient)
         await _adrained(lines, "async past the deadline", stream)
         resumes.reply(b'id: 5 \ndata: {"text": "a"}\n\n', cut)
         stream = await helper.open(stream_options=resumes.reconnect)

@@ -1,48 +1,51 @@
-"""Helper limits, origins, the security context, and client protocol settings; UNSET takes the merged default."""
+"""Helper limits and the helper settings of a client; UNSET takes the merged default."""
 
 from __future__ import annotations
 
-import re
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from inspect import iscoroutinefunction
-from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
-from typing import Final, cast
+from typing import TYPE_CHECKING, Final, TypeAlias, cast
 
-from typing_extensions import TypeIs, TypeVar
+from typing_extensions import TypeVar
 
-from ..client.errors import ConfigurationError, is_sequence
-from ..client.timing import SessionOptions
+from ..client.errors import ConfigurationError
 from ..model_codecs.unset import UNSET
-from .caches import AsyncCacheStore, CacheStore  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
-from .origins import Origin
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
+    from .origins import Origin
 
 V = TypeVar("V")
 
-_CONTROL: Final = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+_SESSION: Final = ("total_timeout", True, True, True)
 _PAGINATION: Final = (
     ("max_pages", False, True, False),
     ("max_items", False, True, True),
+    _SESSION,
 )
 _POLL: Final = (
     ("max_polls", False, True, False),
     ("interval", True, False, False),
     ("max_wait", True, True, False),
+    _SESSION,
 )
 _STREAM: Final = (
     ("idle_timeout", True, True, False),
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
+    _SESSION,
 )
-_UPLOAD: Final = (("chunk_bytes", False, False, False),)
+_UPLOAD: Final = (("chunk_bytes", False, False, False), _SESSION)
 _WS: Final = (
     ("open_timeout", True, True, False),
     ("idle_timeout", True, True, False),
     ("max_message_bytes", False, False, False),
     ("ping_interval", True, True, False),
     ("pong_timeout", True, True, False),
+    _SESSION,
 )
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
 _CACHE_METHODS: Final = ("get", "set", "delete")
@@ -95,33 +98,16 @@ def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
         raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 
-def _partition(value: object) -> None:
-    if not isinstance(value, str) or not value or _CONTROL.search(value):
-        raise ConfigurationError(field_path=("credential_partition",), reason="invalid_value")
-
-
-def _origins(value: object) -> tuple[Origin, ...]:
-    if is_sequence(value):
-        origins = tuple(item for item in value if isinstance(item, Origin))
-        if len(origins) == len(value) == len(set(origins)):
-            return origins
-    raise ConfigurationError(field_path=("allowed_origins",), reason="invalid_value")
-
-
-def _is_helper_name(value: object) -> TypeIs[str]:
-    return isinstance(value, str) and all(part.isidentifier() and not iskeyword(part) for part in value.split("."))
-
-
-def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
-    return isinstance(value, Mapping)
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PaginationOptions:
-    """Pagination limits; only max_pages and max_items take None, and only max_items takes 0."""
+    """Pagination limits; max_pages, max_items, and total_timeout take None, and max_items and total_timeout take 0.
+
+    `total_timeout` bounds the whole session in seconds, counted from its start.
+    """
 
     max_pages: int | UNSET | None = UNSET
     max_items: int | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""
@@ -130,11 +116,15 @@ class PaginationOptions:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PollOptions:
-    """Polling limits; only max_polls and max_wait take None, and durations are finite positive seconds."""
+    """Polling limits; max_polls, max_wait, and total_timeout take None, and durations are finite positive seconds.
+
+    `total_timeout`, which also takes 0, bounds the whole session in seconds, counted from its start.
+    """
 
     max_polls: int | UNSET | None = UNSET
     interval: float | UNSET = UNSET
     max_wait: float | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, zero, and nonfinite durations."""
@@ -143,12 +133,16 @@ class PollOptions:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StreamOptions:
-    """Stream limits; reconnection stays off unless enabled, and only max_reconnects takes 0."""
+    """Stream limits; reconnection stays off unless enabled, and only max_reconnects and total_timeout take 0.
+
+    `total_timeout` bounds the whole session, reconnections included, in seconds counted from its start.
+    """
 
     idle_timeout: float | UNSET | None = UNSET
     reconnect: bool | UNSET = UNSET
     max_reconnects: int | UNSET | None = UNSET
     max_reconnect_wait: float | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans as limits, a nonboolean reconnect switch, and every forbidden None or zero."""
@@ -158,9 +152,13 @@ class StreamOptions:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class UploadOptions:
-    """Upload limits: the positive size of the chunk one append holds in memory."""
+    """Upload limits: the positive size of the chunk one append holds in memory, and the session's total timeout.
+
+    `total_timeout` bounds the whole session in seconds, counted from its start; None removes it.
+    """
 
     chunk_bytes: int | UNSET = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""
@@ -171,7 +169,8 @@ class UploadOptions:
 class WSOptions:
     """WebSocket limits; durations are finite positive seconds, None removes a limit where it is allowed.
 
-    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout.
+    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout. `total_timeout`, which
+    also takes 0, bounds the whole session in seconds, counted from its start.
     """
 
     open_timeout: float | UNSET | None = UNSET
@@ -179,6 +178,7 @@ class WSOptions:
     max_message_bytes: int | UNSET = UNSET
     ping_interval: float | UNSET | None = UNSET
     pong_timeout: float | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans as limits, and forbidden None or zero."""
@@ -197,92 +197,7 @@ class CacheOptions:
         check_limits(self, _CACHE)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ProtocolSecurityContext:
-    """The nonsecret credential partition of helper state and the origins permitted beyond the same origin."""
-
-    credential_partition: str = field(repr=False)
-    allowed_origins: tuple[Origin, ...] = ()
-
-    def __post_init__(self) -> None:
-        """Require a nonempty partition without control characters and copy the origins into a tuple."""
-        _partition(self.credential_partition)
-        object.__setattr__(self, "allowed_origins", _origins(self.allowed_origins))
-
-
-def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
-    if not _is_mapping(value):
-        raise ConfigurationError(field_path=("defaults",), reason="invalid_value")
-    defaults: dict[str, ProtocolDefaults] = {}
-    for name, item in value.items():
-        if not _is_helper_name(name):
-            raise ConfigurationError(field_path=("defaults",), reason="invalid_value")
-        if not isinstance(item, ProtocolDefaults):
-            raise ConfigurationError(field_path=("defaults", name), reason="invalid_value")
-        defaults[name] = item
-    return MappingProxyType(defaults)
-
-
-def _stores(value: object, field: str) -> Mapping[str, object]:
-    if not _is_mapping(value):
-        raise ConfigurationError(field_path=(field,), reason="invalid_value")
-    stores: dict[str, object] = {}
-    for name, store in value.items():
-        if not _is_helper_name(name):
-            raise ConfigurationError(field_path=(field,), reason="invalid_value")
-        stores[name] = store
-    return MappingProxyType(stores)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ProtocolDefaults:
-    """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
-
-    session: SessionOptions | UNSET = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | UNSET = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse values other than session options and one kind's options."""
-        _instance(self.session, (SessionOptions,), "session")
-        _instance(
-            self.options,
-            (
-                PaginationOptions,
-                PollOptions,
-                StreamOptions,
-                CacheOptions,
-                WSOptions,
-                UploadOptions,
-            ),
-            "options",
-        )
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ProtocolClientOptions:
-    """Protocol helper settings of one client: its security context, helper defaults, and stores.
-
-    None as the security context means anonymous use. The defaults and the borrowed cache stores are keyed by
-    dotted helper names; each mapping is copied into a read-only one that keeps each value's identity.
-    """
-
-    security: ProtocolSecurityContext | UNSET | None = UNSET
-    defaults: Mapping[str, ProtocolDefaults] | UNSET = UNSET
-    cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | UNSET = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse another security value, helper names that are not dotted identifiers, and other default values."""
-        _instance(self.security, (ProtocolSecurityContext, type(None)), "security")
-        if self.defaults is not UNSET:
-            object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
-        if self.cache_stores is not UNSET:
-            object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
-
-    def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
-        """Check the helper names and stores against the package's helpers before the native client is created."""
-        check_helpers(self, helpers, asynchronous=asynchronous)
-
-
+HelperOptions: TypeAlias = PaginationOptions | PollOptions | StreamOptions | UploadOptions | CacheOptions | WSOptions
 _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "pagination": PaginationOptions,
     "polling": PollOptions,
@@ -294,46 +209,43 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
 })
 
 
-def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tuple[str, str], ...]) -> None:
-    """Refuse helper defaults for a helper the package lacks, or whose options belong to another kind.
+class HelperSettings:
+    """The helper settings of one client root, which its views share: helper defaults, lent stores, and origins.
 
-    A cache helper runs no session, so its defaults take no session options.
+    The defaults and the lent cache stores are keyed by helper name, and duplicate origins are dropped. `created`
+    holds, under the empty name, the one memory store the root creates for the cache helpers no store is lent to.
     """
-    kinds = dict(helpers)
-    for name, item in defaults.items():
-        if (kind := kinds.get(name)) is None:
-            raise ConfigurationError(field_path=("protocols", "defaults", name), reason="unknown_field")
-        if item.options is not UNSET and not isinstance(item.options, _KIND_OPTIONS[kind]):
-            raise ConfigurationError(field_path=("protocols", "defaults", name, "options"), reason="invalid_value")
-        if kind == "cache" and item.session is not UNSET:
-            raise ConfigurationError(field_path=("protocols", "defaults", name, "session"), reason="invalid_value")
 
+    __slots__ = ("allowed_origins", "cache_stores", "created", "defaults")
 
-def checked_stores(
-    stores: Mapping[str, object],
-    helpers: tuple[tuple[str, str], ...],
-    *,
-    asynchronous: bool,
-) -> None:
-    """Refuse a cache store under a name that is no cache helper, or one the client cannot call.
+    def __init__(
+        self,
+        *,
+        defaults: Mapping[str, HelperOptions] | None = None,
+        cache_stores: Mapping[str, object] | None = None,
+        allowed_origins: Sequence[Origin] | None = None,
+    ) -> None:
+        """Copy the mappings and the origins, so that later changes to the caller's leave the client's alone."""
+        self.defaults: Mapping[str, HelperOptions] = MappingProxyType(dict(defaults or {}))
+        self.cache_stores: Mapping[str, object] = MappingProxyType(dict(cache_stores or {}))
+        self.allowed_origins: tuple[Origin, ...] = tuple(dict.fromkeys(allowed_origins or ()))
+        self.created: dict[str, object] = {}
 
-    A store must have every method of the cache store contract, coroutine functions for an asyncio client and plain
-    functions for a synchronous one.
-    """
-    kinds = dict(helpers)
-    for name, store in stores.items():
-        if kinds.get(name) != "cache":
-            raise ConfigurationError(field_path=("protocols", "cache_stores", name), reason="unknown_field")
-        methods = [getattr(store, method, None) for method in _CACHE_METHODS]
-        if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
-            raise ConfigurationError(field_path=("protocols", "cache_stores", name), reason="wrong_capability")
+    def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
+        """Refuse defaults or stores for a helper the package lacks, another kind's options, and an unusable store.
 
-
-def check_helpers(
-    protocols: ProtocolClientOptions, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool
-) -> None:
-    """Check helper names and stores before creating the native client."""
-    if (defaults := protocols.defaults) is not UNSET and defaults:
-        checked_defaults(defaults, helpers)
-    if (stores := protocols.cache_stores) is not UNSET and stores:
-        checked_stores(stores, helpers, asynchronous=asynchronous)
+        A store must have every method of the cache store contract, coroutine functions for an asyncio client and plain
+        functions for a synchronous one.
+        """
+        kinds = dict(helpers)
+        for name, options in self.defaults.items():
+            if (kind := kinds.get(name)) is None:
+                raise ConfigurationError(field_path=("helper_defaults", name), reason="unknown_field")
+            if not isinstance(options, _KIND_OPTIONS[kind]):
+                raise ConfigurationError(field_path=("helper_defaults", name), reason="invalid_value")
+        for name, store in self.cache_stores.items():
+            if kinds.get(name) != "cache":
+                raise ConfigurationError(field_path=("cache_stores", name), reason="unknown_field")
+            methods = [getattr(store, method, None) for method in _CACHE_METHODS]
+            if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
+                raise ConfigurationError(field_path=("cache_stores", name), reason="wrong_capability")

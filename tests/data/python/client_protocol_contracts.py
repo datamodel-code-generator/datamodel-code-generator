@@ -31,10 +31,10 @@ loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if 
 print('client imports load protocols=' + repr(loaded))
 errors = importlib.import_module(sys.argv[2] + '.errors')
 options = importlib.import_module(sys.argv[2] + '.options')
-print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors), 'ProtocolClientOptions' in dir(options))))
+print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors))))
 print('dir loads nothing=' + repr(sys.argv[2] + '._runtime.protocols.options' not in sys.modules and sys.argv[2] + '._runtime.protocols.errors' not in sys.modules))
 print('protocol errors loaded on use=' + repr(errors.SessionLimitError.__module__ == sys.argv[2] + '._runtime.protocols.errors'))
-print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors), 'ProtocolClientOptions' in vars(options))))
+print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors))))
 module = importlib.import_module(sys.argv[2] + '.protocols')
 optional = ('httpx2', 'httpcore2', 'cryptography', 'asyncio', 'pydantic', 'msgspec', 'anyio')
 print('optional imports=' + repr([name for name in optional if name in sys.modules]))
@@ -46,7 +46,7 @@ print('pagination types=' + repr(tuple(getattr(module, name) is getattr(paginati
 print('pagination optional imports=' + repr([name for name in optional if name in sys.modules]))
 print('client protocols=' + repr(hasattr(importlib.import_module(sys.argv[2]).Client, 'protocols')))
 runtime = importlib.import_module(sys.argv[2] + '._runtime.protocols.options')
-print('option identities=' + repr((options.ProtocolClientOptions is runtime.ProtocolClientOptions, module.ProtocolDefaults is runtime.ProtocolDefaults)))
+print('option identities=' + repr((module.PaginationOptions is runtime.PaginationOptions, module.StreamOptions is runtime.StreamOptions)))
 print('construction threads unchanged=' + repr(threading.active_count() == before))
 """
 _CLIENT_PROBE: Final = """
@@ -70,7 +70,6 @@ _RECORDS: Final = (
     "PaginationOptions",
     "PollOptions",
     "StreamOptions",
-    "ProtocolSecurityContext",
 )
 _COUNTS: Final = (
     ("None", None),
@@ -98,13 +97,16 @@ _DURATIONS: Final = (
 _OPTION_FIELDS: Final = (
     ("PaginationOptions", "max_pages", _COUNTS),
     ("PaginationOptions", "max_items", _COUNTS),
+    ("PaginationOptions", "total_timeout", _DURATIONS),
     ("PollOptions", "max_polls", _COUNTS),
     ("PollOptions", "interval", _DURATIONS),
     ("PollOptions", "max_wait", _DURATIONS),
+    ("PollOptions", "total_timeout", _DURATIONS),
     ("StreamOptions", "idle_timeout", _DURATIONS),
     ("StreamOptions", "reconnect", (("True", True), ("False", False), ("None", None), ("1", 1), ("'yes'", "yes"))),
     ("StreamOptions", "max_reconnects", _COUNTS),
     ("StreamOptions", "max_reconnect_wait", _DURATIONS),
+    ("StreamOptions", "total_timeout", _DURATIONS),
 )
 
 
@@ -115,13 +117,12 @@ def protocol_contracts(package: ModuleType, lines: list[str]) -> None:
     )
     records = importlib.import_module(f"{package.__name__}._runtime.protocols.records")
     _imports(package, lines)
-    _shapes(protocols, options, lines)
+    _shapes(protocols, lines)
     _selectors(protocols, lines)
     _origins(protocols, lines)
     _canonical_values(protocols, records, lines)
     _snapshots(protocols, responses, lines)
     _option_matrix(protocols, options, lines)
-    _security(protocols, lines)
     _client_options(package, protocols, options, lines)
 
 
@@ -141,10 +142,10 @@ def _imports(package: ModuleType, lines: list[str]) -> None:
         lines.extend(f"  {line}" for line in completed.stdout.splitlines())
 
 
-def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
+def _shapes(protocols: ModuleType, lines: list[str]) -> None:
     """Expose declared fields, keyword-only constructors, resolvable hints, and immutable records."""
-    for name in (*_RECORDS, "ProtocolDefaults", "ProtocolClientOptions"):
-        record_type = getattr(protocols, name, None) or getattr(options, name)
+    for name in _RECORDS:
+        record_type = getattr(protocols, name)
         parameters = inspect.signature(record_type).parameters.values()
         lines.extend((
             f"  {name} fields={tuple(item.name for item in fields(record_type))}",
@@ -192,9 +193,6 @@ def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> Non
         ("body target positional", lambda: protocols.BodyTarget("/next")),
         ("origin positional", lambda: protocols.Origin("https", "api.example.com", 443)),
         ("options positional", lambda: protocols.PaginationOptions(10)),
-        ("security positional", lambda: protocols.ProtocolSecurityContext("tenant")),
-        ("defaults positional", lambda: protocols.ProtocolDefaults(options.SessionOptions())),
-        ("client options positional", lambda: options.ProtocolClientOptions(None)),
     ):
         record(lines, label, create)
     record(lines, "equal selectors", lambda: selector == protocols.BodySelector(pointer="/next"))
@@ -437,113 +435,36 @@ def _option_matrix(protocols: ModuleType, options: ModuleType, lines: list[str])
         record(lines, label, create)
 
 
-def _security(protocols: ModuleType, lines: list[str]) -> None:
-    """Hide the partition from the representation and copy origin sequences into tuples."""
-    origin = protocols.Origin(scheme="https", host="files.example.com", port=443)
-    origins = [origin]
-    context = protocols.ProtocolSecurityContext(credential_partition="tenant-secret", allowed_origins=origins)
-    origins.clear()
-    lines.extend((
-        f"  security repr={context!r} secret={'secret' in repr(context)}",
-        f"  security origins={type(context.allowed_origins).__name__} identity={context.allowed_origins[0] is origin}",
-    ))
-    record(
-        lines,
-        "security default origins",
-        lambda: protocols.ProtocolSecurityContext(credential_partition="anonymous").allowed_origins,
-    )
-    record(lines, "security frozen", lambda: setattr(context, "credential_partition", "other"))
-    for label, arguments in (
-        ("missing partition", {}),
-        ("empty partition", {"credential_partition": ""}),
-        ("newline partition", {"credential_partition": "tenant\n"}),
-        ("delete partition", {"credential_partition": "tenant\x7f"}),
-        ("C1 partition", {"credential_partition": "tenant\x85"}),
-        ("partition None", {"credential_partition": None}),
-        ("partition bytes", {"credential_partition": b"tenant"}),
-        ("unicode partition", {"credential_partition": "ténant space"}),
-        ("origin string", {"credential_partition": "tenant", "allowed_origins": ("https://files.example.com",)}),
-        ("origins string", {"credential_partition": "tenant", "allowed_origins": "https://files.example.com"}),
-        ("origins generator", {"credential_partition": "tenant", "allowed_origins": iter((origin,))}),
-        ("origins None", {"credential_partition": "tenant", "allowed_origins": None}),
-        ("duplicate origins", {"credential_partition": "tenant", "allowed_origins": (origin, origin)}),
-    ):
-        record(lines, f"security {label}", lambda arguments=arguments: protocols.ProtocolSecurityContext(**arguments))
+_HELPER_KEYWORDS: Final = ("helper_defaults", "cache_stores", "allowed_origins")
 
 
 def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Accept protocol settings only on client options, freezing helper defaults without copying their values."""
-    session = options.SessionOptions(total_timeout=3)
-    pagination = protocols.PaginationOptions(max_items=0)
-    defaults = protocols.ProtocolDefaults(session=session, options=pagination)
+    """Take helper defaults only as a client keyword, checking them against the package's helpers at construction."""
+    pagination = protocols.PaginationOptions(max_items=0, total_timeout=3)
+    source = {"pages.all": pagination, "jobs.run": protocols.PollOptions(interval=2)}
+    parameters = inspect.signature(package.Client).parameters
+    parameter = parameters["helper_defaults"]
     lines.append(
-        f"  defaults identity={defaults.session is session}/{defaults.options is pagination} "
-        f"omitted={protocols.ProtocolDefaults()!r}"
+        f"  client helper_defaults keyword={parameter.kind.name} default={parameter.default!r} "
+        f"helper keywords={[name for name in _HELPER_KEYWORDS if name in parameters]} "
+        f"view keyword={'helper_defaults' in inspect.signature(package.ClientView.with_options).parameters} "
+        f"request field={'helper_defaults' in {item.name for item in fields(options.RequestOptions)}}"
     )
-    for label, arguments in (
-        ("poll", {"options": protocols.PollOptions(interval=2)}),
-        ("stream", {"options": protocols.StreamOptions(reconnect=True)}),
-        ("session None", {"session": None}),
-        ("session request options", {"session": options.RequestOptions()}),
-        ("webhook options", {"options": protocols.WebhookOptions()}),
-        ("options None", {"options": None}),
-        ("options mapping", {"options": {"max_items": 0}}),
+    for label, defaults in (
+        ("helper defaults", source),
+        ("empty helper defaults", {}),
+        ("stream defaults", {"events.watch": protocols.StreamOptions(idle_timeout=None, total_timeout=0)}),
+        ("defaults of a helper it lacks", {"users.all": pagination}),
+        ("defaults of another kind", {"pages.all": protocols.PollOptions()}),
+        ("webhook options", {"jobs.run": protocols.WebhookOptions()}),
+        ("defaults value None", {"pages.all": None}),
+        ("defaults value mapping", {"pages.all": {"max_items": 0}}),
     ):
-        record(lines, f"defaults {label}", lambda arguments=arguments: protocols.ProtocolDefaults(**arguments))
-    source = {"users.all": defaults, "jobs": protocols.ProtocolDefaults()}
-    security = protocols.ProtocolSecurityContext(credential_partition="tenant-secret")
-    configured = options.ProtocolClientOptions(security=security, defaults=source)
-    source.clear()
-    lines.extend((
-        f"  protocol options repr={configured!r}",
-        f"  protocol options copy={type(configured.defaults).__name__} keys={tuple(configured.defaults)} "
-        f"identity={configured.defaults['users.all'] is defaults}/{configured.security is security}",
-    ))
-    record(lines, "protocol options frozen defaults", lambda: configured.defaults.__setitem__("x", defaults))
-    record(lines, "protocol options omitted", lambda: options.ProtocolClientOptions())
-    record(lines, "protocol options anonymous", lambda: options.ProtocolClientOptions(security=None, defaults={}))
-    for name in ("users", "users.all", "_private.x1", "v2.users.list_all", "match.case", "élèves"):
-        record(
-            lines,
-            f"helper name {name!r}",
-            lambda name=name: tuple(options.ProtocolClientOptions(defaults={name: defaults}).defaults),
-        )
-    for name in (
-        "",
-        "users.",
-        ".users",
-        "users..all",
-        "class",
-        "users.class",
-        "1users",
-        "users-all",
-        "users all",
-        3,
-        None,
-    ):
-        record(
-            lines, f"helper name {name!r}", lambda name=name: options.ProtocolClientOptions(defaults={name: defaults})
-        )
-    for label, arguments in (
-        ("security string", {"security": "anonymous"}),
-        ("security options", {"security": pagination}),
-        ("defaults list", {"defaults": [("users", defaults)]}),
-        ("defaults None", {"defaults": None}),
-        ("defaults value", {"defaults": {"users": pagination}}),
-        ("defaults value None", {"defaults": {"users": None}}),
-    ):
-        record(
-            lines, f"protocol options {label}", lambda arguments=arguments: options.ProtocolClientOptions(**arguments)
-        )
-    parameter = inspect.signature(package.Client).parameters["protocols"]
-    lines.append(
-        f"  client protocols keyword={parameter.kind.name} default={parameter.default!r} "
-        f"defaults in options={hasattr(options, 'ProtocolDefaults')} "
-        f"request field={'protocols' in {item.name for item in fields(options.RequestOptions)}}"
-    )
+        record(lines, f"client {label}", lambda defaults=defaults: package.Client(helper_defaults=defaults).close())
     for label, create in (
-        ("request protocols", lambda: options.RequestOptions(protocols=configured)),
-        ("request protocols None", lambda: options.RequestOptions(protocols=None)),
+        ("client protocols", lambda: package.Client(protocols=None)),
+        ("view helper defaults", lambda: package.Client().with_options(helper_defaults=source)),
+        ("request helper defaults", lambda: options.RequestOptions(helper_defaults=source)),
     ):
         record(lines, label, create)
     for label, module in (
@@ -554,21 +475,19 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
         record(
             lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")]
         )
-    record(lines, "client with defaults of helpers it lacks", lambda: package.Client(protocols=configured))
-    secured = options.ProtocolClientOptions(security=security)
-    _calls(package, secured, lines)
-    run(lambda: _async_calls(package, secured, lines))
+    _calls(package, source, lines)
+    run(lambda: _async_calls(package, source, lines))
 
 
 def _trace(package: ModuleType) -> object:
     return argument(package, "listPets", "header", "X-Trace", "t")
 
 
-def _calls(package: ModuleType, protocols: Any, lines: list[str]) -> None:
-    """Send ordinary calls unchanged through a client configured with protocol settings."""
+def _calls(package: ModuleType, defaults: Any, lines: list[str]) -> None:
+    """Send ordinary calls unchanged through a client configured with helper defaults."""
     exchange = Exchange(lines)
     trace = _trace(package)
-    with exchange.client() as native, package.Client(http_client=native, protocols=protocols) as api:
+    with exchange.client() as native, package.Client(http_client=native, helper_defaults=defaults) as api:
         exchange.respond(json_response(200, [{"id": 1, "name": "cat"}], **{"X-Rate": "1"}))
         record(lines, "configured client list", lambda: api.pets.list_pets(x_trace=trace))
         view = api.with_options(total_timeout=2)
@@ -576,20 +495,19 @@ def _calls(package: ModuleType, protocols: Any, lines: list[str]) -> None:
         record(lines, "configured view list", lambda: view.pets.list_pets(x_trace=trace))
     with (
         exchange.client() as native,
-        package.Client(http_client=native, protocols=None) as api,
+        package.Client(http_client=native, helper_defaults=None) as api,
     ):
         exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
-        record(lines, "anonymous protocols list", lambda: api.pets.list_pets(x_trace=trace))
-    record(lines, "client wrong protocols", lambda: package.Client(protocols="x"))
+        record(lines, "default helper settings list", lambda: api.pets.list_pets(x_trace=trace))
 
 
-async def _async_calls(package: ModuleType, protocols: Any, lines: list[str]) -> None:
-    """Send an asynchronous call through a client configured with protocol settings."""
+async def _async_calls(package: ModuleType, defaults: Any, lines: list[str]) -> None:
+    """Send an asynchronous call through a client configured with helper defaults."""
     exchange = Exchange(lines)
     trace = _trace(package)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, protocols=protocols) as api,
+        package.AsyncClient(http_client=native, helper_defaults=defaults) as api,
     ):
         exchange.respond(json_response(200, [{"id": 2, "name": "dog"}], **{"X-Rate": "1"}))
         await arecord(lines, "async configured client list", lambda: api.pets.list_pets(x_trace=trace))

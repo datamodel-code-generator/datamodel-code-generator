@@ -268,12 +268,12 @@ causes; callers may read those attributes explicitly.
 
 Generated packages also expose the shared contracts of the pagination, polling, stream, WebSocket, cache, upload, and
 webhook helpers they declare, and copy only the runtime modules those helpers, the declared security schemes, and the
-model backend need. Records, options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions`
-and `SessionOptions` come from `pkg.options` when a pagination, polling, stream, WebSocket, cache, or upload helper is
-declared. The client's `protocols=` keyword is available only in those packages. Helper execution loads when `client.protocols`
+model backend need. Records, options, cache stores, and resume state come from `pkg.protocols`. The client's
+`helper_defaults=` keyword is available only in packages that declare a pagination, polling, stream, WebSocket, cache, or
+upload helper; see [client helper settings](#client-helper-settings). Helper execution loads when `client.protocols`
 is first used; ordinary operations share the same native HTTP client. Exceptions come from `pkg.errors`, each with the
-helper that raises it. These imports need no HTTP library and start no threads. A client that uses no protocol settings
-loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
+helper that raises it. These imports need no HTTP library and start no threads. A client that uses no helper settings
+loads none of these definitions: `pkg.errors` loads them the first time one of its names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
 
 ### Selectors, targets, and origins
@@ -352,46 +352,31 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
 | `WSOptions` | `open_timeout`, `idle_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
 | | `max_message_bytes` | `1048576` | Positive integer |
+| Every type but `CacheOptions` | `total_timeout` | `600` seconds for polling, no limit otherwise | Nonnegative duration or `None`: the helper session's budget from its start |
 
 
-`ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
-nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
-partition must be nonempty and free of control characters, and it is excluded from the representation. A list of
-origins is copied into a tuple; an origin listed twice raises `ConfigurationError`.
+### Client helper settings
 
-### Client protocol settings
-
-Protocol settings belong to the client only; `RequestOptions` has no `protocols` field. `ProtocolDefaults` comes from
-`pkg.protocols`.
+Helper settings belong to the root client only: neither `with_options` nor `RequestOptions` takes them, and views share
+the root's. A root takes `helper_defaults` when the package declares a helper, `cache_stores` when it declares a cache
+helper, and `allowed_origins` when it declares a pagination helper that follows a server's next URL or `Link` header.
 
 ```python
 from pkg import Client
-from pkg.options import ProtocolClientOptions, SessionOptions
-from pkg.protocols import PaginationOptions, ProtocolDefaults, ProtocolSecurityContext
+from pkg.protocols import PaginationOptions
 
-protocols = ProtocolClientOptions(
-    security=ProtocolSecurityContext(credential_partition="tenant-a"),
-    defaults={
-        "users.all": ProtocolDefaults(
-            session=SessionOptions(total_timeout=300),
-            options=PaginationOptions(max_pages=10),
-        ),
-    },
-)
-client = Client(protocols=protocols)
+client = Client(helper_defaults={"users.all": PaginationOptions(max_pages=10, total_timeout=300)})
 ```
 
 | Setting | Type | Meaning |
 |---|---|---|
-| `Client(protocols=...)` | `ProtocolClientOptions \| None`, default `None` | `None` uses every protocol default. Its defaults and stores are checked against the package's helpers when the client is created |
-| `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
-| `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
-| `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions`, default `UNSET` | Kind-specific options of that helper |
-| `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
+| `helper_defaults` | `Mapping[str, HelperOptions] \| None`, default `None` | The options of each helper, by helper name: `PaginationOptions`, `PollOptions`, `StreamOptions`, `CacheOptions`, `WSOptions`, or `UploadOptions`, of the helper's kind. The mapping is copied |
+| `cache_stores` | `Mapping[str, CacheStore] \| None` (`AsyncCacheStore` on `AsyncClient`), default `None` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied and keeps each store's identity; the client borrows the stores and never closes them |
+| `allowed_origins` | `Sequence[Origin] \| None`, default `None` | The origins beyond the server's that a next-URL or Link pagination helper may follow a URL to; an origin listed twice counts once |
 
-Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ConfigurationError`. Explicit
-call options take precedence over these defaults, which take precedence over the effective defaults above.
+The client checks these settings when it is constructed: a name that is no helper of the package raises
+`ConfigurationError` with `unknown_field`, and options of another kind, or no options record, with `invalid_value`.
+Explicit call options take precedence over these defaults, which take precedence over the effective defaults above.
 
 ### Protocol exceptions
 
@@ -642,7 +627,7 @@ is `{kind: eof}`, `{kind: sentinel, value}`, or `{kind: event_type, value}` (SSE
 `[transport_interruption]`), and optionally `expires_at`; a selector cursor also takes `missing` (`inherit` or
 `error`) and `"null"` (`clear` or `error`). A disabled `resume` takes no other key.
 
-Helpers reserve the arguments `session_options`, `pagination_options`, `poll_options`, `stream_options`,
+Helpers reserve the arguments `pagination_options`, `poll_options`, `stream_options`,
 `ws_options`, `cache_options`, `upload_options`, `source`, `items`, and `state`. When
 an enabled helper's operation, or its `create` operation for polling and uploads, has a parameter or field argument
 with one of these names, generation fails instead of renaming it; name the argument with
@@ -652,8 +637,8 @@ with one of these names, generation fails instead of renaming it; name the argum
 <!-- fmt: off -->
 
 ```text
---client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
---client-protocols['jobs.run']: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
+--client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with the operation's parameter_names or body_field_names in --client-operations
+--client-protocols['jobs.run']: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with the operation's parameter_names or body_field_names in --client-operations
 ```
 
 <!-- fmt: on -->
@@ -694,7 +679,7 @@ An enabled pagination helper, whatever its continuation, is generated at `client
 `AsyncClient` alike; the property exists only when the package has a helper. `page` fetches the first
 page, `next_page` the page after one the helper returned, and `iterate` returns a pager, which sends nothing until it is
 iterated; `resume` returns a pager continuing a pager's checkpoint. A helper takes the operation's parameters and its
-body as keywords, never field arguments, then `pagination_options`, `options`, and `session_options`:
+body as keywords, never field arguments, then `pagination_options` and `options`:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.helper -->
 <!-- fmt: off -->
@@ -708,7 +693,6 @@ body as keywords, never field arguments, then `pagination_options`, `options`, a
         x_snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.User, ListUsersResponse]:
         """Fetch the first page of GET /users."""
         return first_page(
@@ -717,7 +701,6 @@ body as keywords, never field arguments, then `pagination_options`, `options`, a
             (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -838,7 +821,7 @@ RFC 3986 resolves a reference. A reference with characters outside RFC 3986, or 
 IPv6 host, raises `ProtocolDataError` with `malformed`, and one with a fragment, user information, even empty, a scheme
 other than `http` or `https`, or an invalid port raises it with `value`. The resolved URL excludes the query fields the
 client's authentication places itself. The URL must name the origin of the server the operation is sent to, its scheme,
-host, and port, or an origin `ProtocolSecurityContext.allowed_origins` lists; any other origin raises
+host, and port, or an origin the client's `allowed_origins` lists; any other origin raises
 `ProtocolDataError` with `value` before anything is sent to it, and so does a `next_page` whose options select a server
 whose origin the URL no longer shares or is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
 `Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none of the headers or query fields the
@@ -872,14 +855,14 @@ with `source: input` is not supported yet.
 
 A pager, and each `page` or `next_page` call, is one session. Every page is its own call, with its own retries, total
 timeout, and idempotency key, and the session bounds all of them: a page's deadline is the earlier of its own and the
-session's. Each limit comes from the call's options, then the helper's `ProtocolDefaults` in
-`ProtocolClientOptions.defaults`, then the default below:
+session's. Each limit comes from the call's options, then the helper's options in the client's
+`helper_defaults`, then the default below:
 
 | Limit | Default | None |
 |---|---|---|
 | `PaginationOptions.max_pages` | No limit | Removes the limit |
 | `PaginationOptions.max_items` | No limit; 0 ends a pager at once without sending | Removes the limit |
-| `SessionOptions.total_timeout` | No limit | Removes the limit |
+| `PaginationOptions.total_timeout` | No limit | Removes the limit |
 
 A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally even
 exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page that
@@ -943,7 +926,7 @@ whatever error the server answers for a page past the end.
 An offset or page number must be a nonnegative integer and a next URL a string, or `resume` raises
 `ConfigurationError(field_path=("state",), reason="invalid_value")`, as it does for a value that is not JSON. A next URL
 is checked as a server's: it must be absolute, without a fragment or user information, and name the origin of the
-server or one `ProtocolSecurityContext.allowed_origins` lists, or `resume` raises `ProtocolDataError` before anything
+server or one the client's `allowed_origins` lists, or `resume` raises `ProtocolDataError` before anything
 is sent. The query fields the client's authentication places itself are removed from it at once, so the pager's
 `checkpoint()` and its requests are without them, and a request to an allowed origin other than the server's carries
 credentials only as a server's next URL would. A cursor written to a path
@@ -1032,7 +1015,7 @@ through a union or a map are not supported yet:
 
 An enabled polling helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike. Its `start`
 takes the `create` operation's parameters and its body as keywords, never field arguments, then `poll_options`,
-`options`, and `session_options`, sends the create request, and returns a handle; the asyncio `start` is awaited:
+and `options`, sends the create request, and returns a handle; the asyncio `start` is awaited:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.helper -->
 <!-- fmt: off -->
@@ -1045,7 +1028,6 @@ takes the `create` operation's parameters and its body as keywords, never field 
         media_type: Literal['application/json'] | None = None,
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> LroHandle[GetReportResponse, GetJobResponse]:
         """Create the operation of POST /jobs and return the handle that polls it."""
         return start_operation(
@@ -1056,7 +1038,6 @@ takes the `create` operation's parameters and its body as keywords, never field 
             media_type=media_type,
             poll_options=poll_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1130,15 +1111,15 @@ closed, every later `status` or `wait` that needs a poll or a result fetch raise
 
 `start` and its handle are one session. The create call, every poll, and the result fetch are calls of their own, with
 their own retries, total timeout, and idempotency key, and the session bounds all of them: a call's deadline is the
-earlier of its own and the session's. Each limit comes from the call's options, then the helper's `ProtocolDefaults` in
-`ProtocolClientOptions.defaults`, then the default below:
+earlier of its own and the session's. Each limit comes from the call's options, then the helper's options in the client's
+`helper_defaults`, then the default below:
 
 | Limit | Default | None |
 |---|---|---|
 | `PollOptions.max_polls` | 1000 polls | Removes the limit |
 | `PollOptions.interval` | The declared `interval.seconds`, 1 second by default | Not allowed |
 | `PollOptions.max_wait` | 60 seconds | Removes the limit |
-| `SessionOptions.total_timeout` | 600 seconds from `start` | Removes the limit |
+| `PollOptions.total_timeout` | 600 seconds from `start` | Removes the limit |
 
 A poll past a limit raises `SessionLimitError` with the reason `polls` and the progress so far, before sending; the
 handle's `checkpoint()` continues the operation. The options of `start` apply to
@@ -1153,7 +1134,7 @@ sending, as it does for options of another type.
 `status` or `wait`, it returns the handle as the last poll that settled left it, never waiting for a step. A settled
 operation, one that failed, was cancelled, or holds its result, including one that completed at once, has nothing left
 to continue: its `checkpoint()` raises `ConfigurationError`. The helper's
-`resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on `AsyncClient`, and
+`resume(state, *, poll_options=None, options=None)` is not awaited, even on `AsyncClient`, and
 returns the handle type `start` returns, in a session of its own, without sending: it never creates the operation
 again. A pending handle's `status` or `wait` sends its first poll at once; a handle whose result fetch is due fetches it
 once in `wait`, and its `status` raises `ConfigurationError`, since it holds no poll. A checkpoint does not keep a
@@ -1375,7 +1356,7 @@ binding, and pointers that read through a union or a map are not supported yet:
 An enabled `resumable_upload` helper of the `offset` profile is generated at `client.protocols.<name>` on `Client`
 and `AsyncClient` alike. Its `start` takes the upload source, then the `create` operation's parameters and its body as
 keywords, never field arguments, without the parameter the helper writes the content's size to, then
-`upload_options`, `options`, and `session_options`; `resume` takes the source and a checkpoint. Both are coroutines on
+`upload_options` and `options`; `resume` takes the source and a checkpoint. Both are coroutines on
 `AsyncClient`:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.uploads.helper -->
@@ -1390,7 +1371,6 @@ keywords, never field arguments, without the parameter the helper writes the con
         x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
@@ -1400,7 +1380,6 @@ keywords, never field arguments, without the parameter the helper writes the con
             (tus_resumable, x_name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -1410,7 +1389,6 @@ keywords, never field arguments, without the parameter the helper writes the con
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
@@ -1420,7 +1398,6 @@ keywords, never field arguments, without the parameter the helper writes the con
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1530,17 +1507,17 @@ refuses.
 
 `start` and its handle are one session, and so are `resume` and its handle. The create call, every probe, every append,
 and the completion are calls of their own, with their own retries, total timeout, and idempotency key, and the session
-bounds all of them. Each limit comes from the call's options, then the helper's `ProtocolDefaults` in
-`ProtocolClientOptions.defaults`, then the default below:
+bounds all of them. Each limit comes from the call's options, then the helper's options in the client's
+`helper_defaults`, then the default below:
 
 | Limit | Default | None |
 |---|---|---|
 | `UploadOptions.chunk_bytes` | 8 MiB, at most the helper's `max_chunk_bytes` | Not allowed |
-| `SessionOptions.total_timeout` | No limit | Removes the limit |
+| `UploadOptions.total_timeout` | No limit | Removes the limit |
 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
 `start` or `resume` for the whole life of the handle. A long upload stepped slowly may then need a larger timeout,
-`SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new session. The options must
+`UploadOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new session. The options must
 not fix an idempotency key, and their extra headers and query must not name a header or a query parameter the helper
 writes, the size included; `start` and `resume` raise `ConfigurationError` before reading or
 sending, as they do for options of another type.
@@ -1608,7 +1585,7 @@ bindings that read the previous response or the helper's input are not supported
 
 An enabled `sse` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one method,
 `open`. It takes the operation's parameters and its body as keywords, never field arguments, then `stream_options`,
-`options`, and `session_options`, sends the operation in a session of its own, and returns an `EventStream[T]`, or with
+and `options`, sends the operation in a session of its own, and returns an `EventStream[T]`, or with
 one `await` an `AsyncEventStream[T]`, once the response is a declared success of the helper's media type:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.helper -->
@@ -1622,7 +1599,6 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
         last_event_id: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Message]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
@@ -1631,7 +1607,6 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
             (topic, last_event_id),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1693,13 +1668,13 @@ while the body is read raises `StreamInterruptedError` with the reason `transpor
 `open` is one session holding one logical call. An optional total timeout bounds attempts while acquiring the
 response. Native read timeouts bound idle I/O while reading the stream, and a helper session's optional total timeout
 is checked before the next step. Decoding and cleanup preserve fully received results after a request budget expires.
-Each limit comes from the call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
-then the default below:
+Each limit comes from the call's options, then the helper's options in the client's `helper_defaults`, then the
+default below:
 
 | Limit | Default | None |
 |---|---|---|
 | `StreamOptions.idle_timeout` | The native read timeout | No idle limit |
-| `SessionOptions.total_timeout` | None | No session deadline |
+| `StreamOptions.total_timeout` | None | No session deadline |
 | `StreamOptions.reconnect` | False | Not allowed |
 | `StreamOptions.max_reconnects` | 5 reconnections, counted across resumes; 0 allows none | Removes the limit |
 | `StreamOptions.max_reconnect_wait` | 60 seconds | No wait limit |
@@ -1790,7 +1765,6 @@ one is awaited once and returns the stream:
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Tick]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
@@ -1802,7 +1776,6 @@ one is awaited once and returns the stream:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -1939,7 +1912,6 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
         topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Record]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
@@ -1948,7 +1920,6 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
             (topic,),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -2019,7 +1990,7 @@ and resumption checks are those of SSE helpers, and an NDJSON cursor is always a
 An enabled `websocket` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one
 method, `connect`. Its channel is a GET operation, whose handshake request the helper sends: the operation gives the
 URL, the parameters, the servers, and the security. `connect` takes the operation's parameters as keywords, then
-`ws_options`, `options`, and `session_options`. On `Client` it returns a `WebSocketSession[S, R]` once the server
+`ws_options` and `options`. On `Client` it returns a `WebSocketSession[S, R]` once the server
 accepted the handshake; `with` or `close()` closes it. On `AsyncClient` it returns an async context manager: `async
 with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which leaving the block closes:
 
@@ -2034,7 +2005,6 @@ with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which lea
         since: int | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> WebSocketSession[models.ClientMessage, models.ServerMessage]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
@@ -2043,7 +2013,6 @@ with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which lea
             (room, since),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 ```
 
@@ -2139,8 +2108,8 @@ Representations never show messages, URLs, headers, or close reasons.
 
 ### WebSocket limits
 
-Each limit comes from the call's `ws_options`, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
-then the default below. The session's optional total budget uses the client's `Clock`; native waits receive the
+Each limit comes from the call's `ws_options`, then the helper's options in the client's `helper_defaults`, then the
+default below. The session's optional total budget uses the client's `Clock`; native waits receive the
 remaining duration as their timeout:
 
 | Limit | Default | None |
@@ -2149,7 +2118,7 @@ remaining duration as their timeout:
 | `WSOptions.idle_timeout` | The native read timeout | No idle limit |
 | `WSOptions.max_message_bytes` | 1 MiB per message, HTTPX2's `max_message_size_bytes` | Not allowed |
 | `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each, HTTPX2's keepalive settings; `pong_timeout` also bounds `ping()` | No keepalive pings |
-| `SessionOptions.total_timeout` | None | No session budget |
+| `WSOptions.total_timeout` | None | No session budget |
 
 A message over `max_message_bytes` raises `ProtocolDataError` with the reason `too_large` after HTTPX2 closed the
 connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason
@@ -2181,7 +2150,7 @@ The operation must be a GET without a request body, and each JSON message's sche
 --client-protocols['subprotocols.token'].subprotocols[0] must be a subprotocol token
 --client-protocols['subprotocols.token'].subprotocols[1] must be a subprotocol token
 --client-protocols['subprotocols.repeated'].subprotocols[1] repeats a subprotocol
---client-protocols['message.type'].compression must be a boolean
+--client-protocols['message.type'] has no key 'compression'
 --client-protocols['message.type'].send must be a message definition
 --client-protocols['message.type'].receive has no key 'extra'
 ```
@@ -2191,10 +2160,10 @@ The operation must be a GET without a request body, and each JSON message's sche
 
 ## Cache helpers
 
-An enabled `cache` helper fetches one GET operation through a private cache that you lend it: it answers from a fresh
+An enabled `cache` helper fetches one GET operation through a private cache: it answers from a fresh
 stored response without sending, revalidates a stale one with its `ETag` or `Last-Modified` validator, and otherwise
-sends the request as an ordinary call. Nothing is cached for ordinary methods, and a client without a helper or a
-store keeps no cache state. The helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike:
+sends the request as an ordinary call. Nothing is cached for ordinary methods, and a client without a cache helper
+keeps no cache state. The helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.json -->
 <!-- fmt: off -->
@@ -2218,9 +2187,9 @@ store keeps no cache state. The helper is generated at `client.protocols.<name>`
 |---|---|
 | `operation` | The GET operation the helper fetches. It takes no request body, and each cacheable status is a declared 2xx success with one JSON body |
 | `validator` | `etag` revalidates with `If-None-Match` from `ETag`, `last_modified` with `If-Modified-Since` from `Last-Modified`, and `both` with `If-None-Match` when an `ETag` is stored and `If-Modified-Since` otherwise |
-| `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
+| `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true`, and any other call `false` |
 | `statuses` | The cacheable statuses, distinct, from 100 to 599 |
-| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) fails generation. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
+| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. The headers credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, and the declared security schemes' headers) are allowed as well, since the key covers them. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
 
 `fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`.
 With asyncio, `fetch` is a coroutine:
@@ -2251,11 +2220,13 @@ With asyncio, `fetch` is a coroutine:
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
 
-A helper needs the store `ProtocolClientOptions.cache_stores` lends it under its name, or `fetch` raises
-`ConfigurationError(reason='missing_adapter')` before sending. The client checks the stores when it is constructed: a
-name that is no cache helper of the package fails with `unknown_field`, and an object without the three store methods,
-or whose methods are coroutines for a `Client` or plain functions for an `AsyncClient`, with `wrong_capability`. The
-client borrows a store: it never creates, closes, or keeps one after a call.
+A helper keeps its entries in the store the client's `cache_stores` lends it under its name. A helper without one
+uses a `MemoryCacheStore` (`AsyncMemoryCacheStore` on `AsyncClient`) of 128 entries, which the root client creates at
+the first such fetch and shares with its views and its other cache helpers without a store; another client never
+shares it. The client checks the lent stores when it is constructed: a name that is no cache helper of the package
+fails with `unknown_field`, and an object without the three store methods, or whose methods are coroutines for a
+`Client` or plain functions for an `AsyncClient`, with `wrong_capability`. The client borrows a lent store: it never
+closes one.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.usage -->
 <!-- fmt: off -->
@@ -2264,7 +2235,7 @@ client borrows a store: it never creates, closes, or keeps one after a call.
 def cached_client() -> Client:
     """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
     store = MemoryCacheStore(max_entries=1000)
-    return Client(protocols=ProtocolClientOptions(cache_stores={"users.profile": store}))
+    return Client(cache_stores={"users.profile": store}, helper_defaults={"users.profile": CacheOptions(max_ttl=60)})
 ```
 
 <!-- fmt: on -->
@@ -2307,13 +2278,17 @@ Entries hold the body after content decoding and the headers without `Content-En
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
-credentials the client places, and selected by the request headers its `Vary` names and those the client's, views', or
-call's headers name or a declared parameter fills. A request carrying credentials needs
-`ProtocolSecurityContext.credential_partition`, a helper declared authenticated, and the client's own credentials or
-Auth, not a view's or a call's Auth; anything else raises `ConfigurationError`. A response whose `Vary` names a
-credential header is never stored, and one partition is one permission set: credentials the client cannot see, such as
-a client certificate, need a partition of their own.
+time. An entry is keyed by the method, the Accept header, and the identity the request is sent as: before the lookup,
+the call's Auth, which is its own, its credentials', or else the HTTP client's, places credentials on a copy of the
+request without sending it, and the key takes the URL with any query credentials, the values of the credential headers,
+and every header the Auth added or changed. A callable credential is therefore called, and a token may be requested,
+for the lookup as well as for the send. A response is stored only when the request it answered was sent as the same
+identity, so a rotated or one-time credential, a timestamped signature, or a renewed token is never stored and never
+answers another identity. An entry is selected by the request headers its `Vary` names and those the client's, views',
+or call's headers name or a declared parameter fills. A request carrying credentials needs a helper declared
+authenticated and an anonymous one a helper declared anonymous; anything else raises `ConfigurationError` with the
+reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
+transport, are not in the key: give such a client a store of its own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
 and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
@@ -2326,14 +2301,10 @@ Concurrent custom-store writes use last-completing replacement.
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 
 !!! warning "Credentials the cache cannot see"
-    The client places its credentials after the cache looks a request up, so a response whose `Vary` names a
-    credential header, such as `Authorization`, a cookie, or a declared scheme's header, is never stored. Within one
-    partition, all calls are taken to share one permission set: a credential callable or OAuth provider whose token or
-    identity changes from call to call needs a client per partition. A view's or a call's own `auth` therefore fails
-    an authenticated fetch with `ConfigurationError(field_path=('options', 'auth'),
-    reason='security_partition')`. Credentials the SDK never sees, such as a client certificate, or a borrowed HTTP
-    client's own headers, Auth, or authenticating transport, make a call look anonymous: give each such identity its
-    own `credential_partition`, or its own store.
+    The key covers the credentials a request carries when the call's Auth places them. Credentials the SDK never
+    sees, such as a client certificate, or a borrowed HTTP client's authenticating transport or event hooks, make
+    requests with different identities share keys: give each such identity a client of its own, or a store of its
+    own.
 
 ### Stores
 
@@ -2374,8 +2345,6 @@ declared anonymous cannot fetch an operation that requires credentials:
 --client-protocols['users.statuses'].statuses[0]: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
 --client-protocols['users.statuses'].statuses[1]: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
 --client-protocols['secure.anonymous'].authenticated: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
---client-protocols['secure.varying'].vary_allowlist[1]: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
---client-protocols['secure.varying'].vary_allowlist[2]: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
 ```
 
 <!-- fmt: on -->
@@ -2664,9 +2633,9 @@ identifier, and when a body field name names no field argument or its operation 
 --client-operations: The body field name of the application/json property 'id' of POST /pets names no field argument
 --client-operations: The body field name of the application/xml property 'tag' of POST /pets names no field argument
 --client-operations: The body field name of the application/json property 'absent' of POST /pets names no field argument
-/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'kind', 'tag'; name them with body_field_names
-/paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with body_field_names
-/paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with body_field_names
+/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'kind', 'tag'; name them with the operation's body_field_names in --client-operations
+/paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with the operation's body_field_names in --client-operations
+/paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with the operation's body_field_names in --client-operations
 --client-operations: The body field name of the text/plain property 'q' of POST /search names no field argument
 ```
 

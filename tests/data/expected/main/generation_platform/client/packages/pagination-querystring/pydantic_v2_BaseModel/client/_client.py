@@ -23,7 +23,7 @@ from .options import Clock, RequestOptions, RetryOptions, ServerSelection
 from .responses import RawResponse
 
 if TYPE_CHECKING:
-    from ._runtime.protocols.options import ProtocolClientOptions
+    from ._runtime.protocols.options import HelperOptions
     from .protocols._helpers import ProtocolHelpers
     from .resources.default._sync import DefaultResource
 
@@ -126,9 +126,11 @@ class Client(ClientView):
         auth: httpx2.Auth | UNSET | None = UNSET,
         clock: Clock | None = None,
         http_client: httpx2.Client | None = None,
-        protocols: ProtocolClientOptions | None = None,
+        helper_defaults: Mapping[str, HelperOptions] | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
+        from ._runtime.protocols.options import HelperSettings
+
         self._core = ClientCore.create(
             _DEFAULTS,
             base_url=base_url,
@@ -143,7 +145,7 @@ class Client(ClientView):
             auth=auth,
             clock=clock,
             http_client=http_client,
-            protocols=protocols,
+            protocols=HelperSettings(defaults=helper_defaults),
         )
 
     def close(self) -> None:

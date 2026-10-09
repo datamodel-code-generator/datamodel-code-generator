@@ -100,28 +100,6 @@ def __getattr__(name: str) -> object:
     raise AttributeError(msg)
 '''
 _OPTION_NAMES: Final = ("Clock", "RequestOptions", "RetryOptions", "ServerSelection")
-_PROTOCOL_OPTIONS: Final = """
-
-if TYPE_CHECKING:
-    from ._runtime.protocols.options import ProtocolClientOptions
-"""
-_PROTOCOL_OPTIONS_LOADER: Final = '''
-
-def __getattr__(name: str) -> object:
-    """Load the protocol helper settings only when their class is requested."""
-    if name == "ProtocolClientOptions":
-        from ._runtime.protocols.options import ProtocolClientOptions
-
-        globals()[name] = ProtocolClientOptions
-        return ProtocolClientOptions
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
-
-
-def __dir__() -> list[str]:
-    """List the module's names, including those loaded on first use."""
-    return sorted({*globals(), *__all__})
-'''
 
 
 def _paragraph(*sentences: str) -> str:
@@ -129,23 +107,17 @@ def _paragraph(*sentences: str) -> str:
     return fill(" ".join(sentences), 120)
 
 
-def _options(capabilities: Capabilities) -> str:
-    """Return the options module: the client and call settings, and the helper settings a helper declares."""
-    protocols = capabilities.protocols
-    names = (*_OPTION_NAMES, *(("SessionOptions",) if protocols else ()))
-    exported = sorted((*names, "UNSET", *(("ProtocolClientOptions",) if protocols else ())))
+def _options() -> str:
+    """Return the options module: the settings of a client, of its views, of each call, and of retries."""
     return "".join((
         '"""Settings of each call and of retries: None inherits, and UNSET marks a field whose None removes."""\n\n',
         "from __future__ import annotations\n\n",
-        "from typing import TYPE_CHECKING\n\n" if protocols else "",
         "from ._runtime.client.options import (\n",
-        *(f"    {name},\n" for name in sorted(names)),
+        *(f"    {name},\n" for name in sorted(_OPTION_NAMES)),
         ")\nfrom ._runtime.model_codecs.unset import UNSET\n",
-        _PROTOCOL_OPTIONS if protocols else "",
         "\n__all__ = [\n",
-        *(f'    "{name}",\n' for name in exported),
+        *(f'    "{name}",\n' for name in sorted((*_OPTION_NAMES, "UNSET"))),
         "]\n",
-        _PROTOCOL_OPTIONS_LOADER if protocols else "",
     ))
 
 
@@ -298,7 +270,6 @@ __all__ = ["AsyncRawResponse", "HeadersView", "RawResponse", "Response", "Respon
 '''
 _PROTOCOL_EXPORTS: Final[dict[str, dict[str, tuple[str, ...]]]] = {
     "protocols": {
-        "options": ("ProtocolDefaults", "ProtocolSecurityContext"),
         "origins": ("Origin",),
         "records": (
             "BodySelector",
@@ -996,20 +967,57 @@ class _Resources(_Typing):
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
     def _create(self, module: TargetModule, core: str, keywords: list[dict[str, str]]) -> str:
-        """Return the root's core creation with its settings keywords, and its credential arguments by scheme name."""
-        entries: list[tuple[str, Doc]] = [("", "_DEFAULTS"), *((f"{item['name']}=", item["name"]) for item in keywords)]
+        """Return the root's core creation with its settings keywords, and its credential arguments by scheme name.
+
+        The helper keywords are given to the core as the root's `HelperSettings`.
+        """
+        entries: list[tuple[str, Doc]] = [
+            ("", "_DEFAULTS"),
+            *((f"{item['name']}=", item["name"]) for item in keywords if item["name"] not in _HELPER_SETTINGS),
+        ]
+        if helpers := [
+            (f"{_HELPER_SETTINGS[item['name']]}=", item["name"])
+            for item in keywords
+            if item["name"] in _HELPER_SETTINGS
+        ]:
+            entries.append(("protocols=", _call("HelperSettings", helpers)))
         if credentials := self.plan.credentials:
             schemes = Group("{", tuple((f"{json.dumps(item.scheme.name)}: ", item.name) for item in credentials), "}")
             credentials_call = _call(module.local("_runtime.client.auth", "SchemeCredentials"), (("", schemes),))
             entries.append(("credentials=", credentials_call))
         return layout(_call(f"{core}.create", entries), 8, len("self._core = "), WIDTH)
 
+    @cached_property
+    def _follows(self) -> bool:
+        """Whether a pagination helper follows the URLs a server gives: a next-URL or Link continuation."""
+        return any(
+            spec.continuation["kind"] in {"next_url", "link"}
+            for spec in self.helpers
+            if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec)
+        )
+
+    def _settings(self, *, asynchronous: bool) -> tuple[tuple[str, str], ...]:
+        """Return the helper settings record and the types the helper keywords name, with the modules they come from.
+
+        The record comes first; the client module imports it where the root creates its core, and the types only for
+        type checking.
+        """
+        options = "._runtime.protocols.options"
+        names = [("HelperSettings", options), ("HelperOptions", options)]
+        if any(isinstance(spec, CacheSpec) for spec in self.helpers):
+            names.append((f"{'Async' if asynchronous else ''}CacheStore", "._runtime.protocols.caches"))
+        if self._follows:
+            names.append(("Origin", "._runtime.protocols.origins"))
+        return tuple(names)
+
     def _keywords(
         self, module: TargetModule, *, asynchronous: bool, protocols: bool
     ) -> tuple[list[dict[str, str]], ...]:
         """Return the settings keywords of a root's constructor and of `with_options`: name, annotation, default.
 
-        A root takes `compression` only when an operation declares gzip, and `protocols` only beside declared helpers.
+        A root takes `compression` only when an operation declares gzip, `helper_defaults` only beside declared
+        helpers, `cache_stores` only beside a cache helper, and `allowed_origins` only beside a helper following a
+        server's URLs.
         """
         unset = module.local("_runtime.model_codecs.unset", "UNSET")
         native = module.module("httpx2")
@@ -1037,7 +1045,15 @@ class _Resources(_Typing):
         if any("gzip" in spec.accepted_content_encodings for spec in self.plan.operations):
             root["compression"] = (f'{module.name("typing", "Literal")}["gzip"] | None', '"gzip"')
         if protocols:
-            root["protocols"] = ("ProtocolClientOptions | None", "None")
+            root["helper_defaults"] = (
+                f"{module.name('collections.abc', 'Mapping')}[str, HelperOptions] | None",
+                "None",
+            )
+        if any(isinstance(spec, CacheSpec) for spec in self.helpers):
+            store = f"{'Async' if asynchronous else ''}CacheStore"
+            root["cache_stores"] = (f"{module.name('collections.abc', 'Mapping')}[str, {store}] | None", "None")
+        if self._follows:
+            root["allowed_origins"] = (f"{module.name('collections.abc', 'Sequence')}[Origin] | None", "None")
         client = [
             {"name": name, "annotation": root[name][0], "default": root[name][1]}
             for name in CLIENT_KEYWORDS
@@ -1057,9 +1073,12 @@ class _Resources(_Typing):
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
         prefix = "Async" if asynchronous else ""
-        mode = _mode(asynchronous=asynchronous)
         roots = [
-            (resource, f"{prefix}{resource.pascal}Resource", f".resources.{resource.namespace}._{mode}")
+            (
+                resource,
+                f"{prefix}{resource.pascal}Resource",
+                f".resources.{resource.namespace}._{_mode(asynchronous=asynchronous)}",
+            )
             for resource in self.plan.roots
         ]
         names = {
@@ -1070,13 +1089,13 @@ class _Resources(_Typing):
             "_DEFAULTS",
         }
         protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams or self.sockets else None
-        if protocols is not None:
-            names.add("ProtocolClientOptions")
+        settings = self._settings(asynchronous=asynchronous) if protocols is not None else ()
+        names.update(name for name, _ in settings)
         module = TargetModule(self.types, {*names, *(name for _, name, _ in roots)}, level=1)
         lazy = [(name, path) for _, name, path in roots]
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
-            lazy.extend(((protocols, helpers_module), ("ProtocolClientOptions", "._runtime.protocols.options")))
+            lazy.extend(((protocols, helpers_module), *settings[1:]))
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         client_keywords, view_keywords = self._keywords(module, asynchronous=asynchronous, protocols=bool(protocols))
         values = {
@@ -1126,6 +1145,7 @@ class _Resources(_Typing):
             ],
             protocols=protocols,
             protocols_module=helpers_module,
+            helper_settings=settings[0][1] if settings else None,
             **values,
         )
 
@@ -1937,18 +1957,20 @@ continuation.
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
     ("options", "..options", "RequestOptions"),
-    ("session_options", "..options", "SessionOptions"),
 )
 _STREAM_OPTIONS: Final = (
     ("stream_options", ".", "StreamOptions"),
     ("options", "..options", "RequestOptions"),
-    ("session_options", "..options", "SessionOptions"),
 )
 _SOCKET_OPTIONS: Final = (
     ("ws_options", ".", "WSOptions"),
     ("options", "..options", "RequestOptions"),
-    ("session_options", "..options", "SessionOptions"),
 )
+_HELPER_SETTINGS: Final = {
+    "helper_defaults": "defaults",
+    "cache_stores": "cache_stores",
+    "allowed_origins": "allowed_origins",
+}
 _HELPER_KINDS: Final = {
     "pagination": "pagination helper",
     "polling": "polling helper",
@@ -3280,18 +3302,16 @@ followed URLs stay uncompressed. Token requests are never compressed.
 
 A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
 and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
-session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
-helper, then the default below. The session types are imported from:
-
-- `{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`
-- `{self.config.package}.options`: `SessionOptions`
+session bounds all of them. Each limit comes from the call's `poll_options`, then the client's `helper_defaults` for
+the helper, then the default below. The session types are imported from
+`{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`.
 
 | Limit | Effective default |
 |---|---|
 | polls per session | 1000; None removes it |
 | poll interval | the helper's declared interval, 1 second unless declared |
 | allowed wait before a poll | 60 seconds; None removes it |
-| session total timeout | 600 seconds; None removes it |
+| session total timeout (`total_timeout`) | 600 seconds; None removes it |
 
 `start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
 handle, a declared immediate status a handle that already holds the result, and any other success status raises
@@ -3343,17 +3363,15 @@ polls again; closing sends nothing.
 
 An upload helper's `start` and the handle it returns are one session, and so are `resume` and its handle. The create
 call, every probe, append, and the completion are logical calls of their own, with their own retries, total timeout,
-and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
-
-- `{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
-  `AsyncUploadHandle`
-- `{self.config.package}.options`: `SessionOptions`
+and idempotency key; the session bounds all of them. Each limit comes from the call's `upload_options`, then the
+client's `helper_defaults` for the helper, then the default below. The session types are imported from
+`{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
+`AsyncUploadHandle`.
 
 | Limit | Effective default |
 |---|---|
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
-| session total timeout | None (no limit) |
+| session total timeout (`total_timeout`) | None (no limit) |
 
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
 to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
@@ -3414,18 +3432,16 @@ options must not give extra headers or query names of a parameter the helper wri
 ## Pagination sessions
 
 A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
-total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
-another kind's options, fail construction. The session types are imported from:
-
-- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
-- `{self.config.package}.options`: `SessionOptions`
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's
+`pagination_options`, then the client's `helper_defaults` for the helper, then the default below. Defaults naming a
+helper the package lacks, or another kind's options, fail construction. The session types are imported from
+`{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`.
 
 | Limit | Effective default |
 |---|---|
 | pages per session | None (no limit) |
 | items per session | None (no limit); 0 ends a pager at once |
-| session total timeout | None (no limit) |
+| session total timeout (`total_timeout`) | None (no limit) |
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
@@ -3437,10 +3453,10 @@ another kind's options, fail construction. The session types are imported from:
         return f"""
 ## Cache helpers
 
-A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
-`MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch` with
-`ConfigurationError` before sending. The client never creates or closes a store. The types are imported from
+A cache helper keeps entries in the store the client's `cache_stores` lends it under its name, a `MemoryCacheStore` or
+`AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the client's mode. Without
+one, the client's root creates a memory store of 128 entries for the helper at its first fetch, which the root's views
+share and no other client does. The client never closes a store. The types are imported from
 `{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
 
@@ -3451,13 +3467,17 @@ stores.
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
-credentials the client places, and selected by the request headers its `Vary` names and those the client's, views', or
-call's headers name or a declared parameter fills. A request carrying credentials needs
-`ProtocolSecurityContext.credential_partition`, a helper declared authenticated, and the client's own credentials or
-Auth, not a view's or a call's Auth; anything else raises `ConfigurationError`. A response whose `Vary` names a
-credential header is never stored, and one partition is one permission set: credentials the client cannot see, such as
-a client certificate, need a partition of their own.
+time. An entry is keyed by the method, the Accept header, and the identity the request is sent as: before the lookup,
+the call's Auth, which is its own, its credentials', or else the HTTP client's, places credentials on a copy of the
+request without sending it, and the key takes the URL with any query credentials, the values of the credential headers,
+and every header the Auth added or changed. A callable credential is therefore called, and a token may be requested,
+for the lookup as well as for the send. A response is stored only when the request it answered was sent as the same
+identity, so a rotated or one-time credential, a timestamped signature, or a renewed token is never stored and never
+answers another identity. An entry is selected by the request headers its `Vary` names and those the client's, views',
+or call's headers name or a declared parameter fills. A request carrying credentials needs a helper declared
+authenticated and an anonymous one a helper declared anonymous; anything else raises `ConfigurationError` with the
+reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
+transport, are not in the key: give such a client a store of its own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
 and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
@@ -3479,8 +3499,8 @@ A next-URL or Link helper sends the first request as the caller gives it and eac
 gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
 call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
 the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
-and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
-else raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
+and name an HTTP or HTTPS URL at the server's origin or at one the client's `allowed_origins` lists; anything else
+raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
 headers or query fields the package's security schemes name, and the client's credentials are placed only at the
 server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
 once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
@@ -3515,17 +3535,14 @@ the last record. A record has the empty string as its event type and no event ID
 An {self.stream_label} helper's `open` is one session holding one logical call. The call's total timeout bounds only
 acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
 idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
-options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
-from:
-
-- `{self.config.package}.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
-  `UnknownEvent`
-- `{self.config.package}.options`: `SessionOptions`
+`stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
+imported from `{self.config.package}.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+`UnknownEvent`.
 
 | Limit | Effective default |
 |---|---|
 | idle timeout | the native read timeout; None removes it |
-| session total timeout | None |
+| session total timeout (`total_timeout`) | None |
 {_RECONNECT_LIMITS if resumed else ""}
 The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
 UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
@@ -3554,11 +3571,9 @@ A WebSocket helper's `connect` is one session. On `Client` it returns the sessio
 task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
 sent through the client's HTTP client with initial authentication and its event hooks, and with the HTTP client's
 transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
-raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
-for the helper, then the default below. The session types are imported from:
-
-- `{package}.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
-- `{package}.options`: `SessionOptions` and `ProtocolClientOptions`
+raises the operation's `APIStatusError`. Each limit comes from the call's `ws_options`, then the client's
+`helper_defaults` for the helper, then the default below. The session types are imported from `{package}.protocols`:
+`WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`.
 
 | Limit | Effective default |
 |---|---|
@@ -3566,7 +3581,7 @@ for the helper, then the default below. The session types are imported from:
 | idle timeout | the native read timeout; None removes it |
 | message size | 1 MiB |
 | ping interval and pong timeout | 20 seconds each; None removes them |
-| session total timeout | None |
+| session total timeout (`total_timeout`) | None |
 
 The connection belongs to the HTTP
 client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
@@ -3651,7 +3666,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
             self.file(PurePosixPath("_async_client.py"), "client", resources.client(asynchronous=True)),
-            self.file(PurePosixPath("options.py"), "options", _options(capabilities)),
+            self.file(PurePosixPath("options.py"), "options", _options()),
             self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             *(

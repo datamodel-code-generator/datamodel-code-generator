@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
-from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, SessionOptions, checked_count, seconds
+from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, checked_count, seconds
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
@@ -25,7 +25,6 @@ __all__ = (
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
-    "SessionOptions",
 )
 
 Pairs: TypeAlias = tuple[tuple[str, str | None], ...]

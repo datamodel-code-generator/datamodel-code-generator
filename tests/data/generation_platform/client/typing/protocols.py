@@ -8,13 +8,12 @@ from typing import Literal
 from pets import AsyncClient, Client
 from pets.errors import ConfigurationError, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from pets.model_codecs import JSONValue
-from pets.options import UNSET, ProtocolClientOptions, SessionOptions
+from pets.options import UNSET
 from pets.protocols import (
-    AsyncCacheStore,
+    AsyncMemoryCacheStore,
     BodySelector,
     BodyTarget,
     CacheOptions,
-    CacheStore,
     HeaderSelector,
     Origin,
     PaginationOptions,
@@ -22,9 +21,7 @@ from pets.protocols import (
     PollOptions,
     PollSnapshot,
     ProgressKey,
-    ProtocolDefaults,
     ProtocolProgress,
-    ProtocolSecurityContext,
     QuerystringTarget,
     RequestTarget,
     Selector,
@@ -67,30 +64,28 @@ def accepts_snapshot(snapshot: PollSnapshot[object]) -> None:
     assert_type(snapshot.data, object)
 
 
-def options(origin: Origin) -> Client:
-    """Expose each option field type and construct client-level protocol settings."""
-    pagination = PaginationOptions(max_pages=None, max_items=0)
+def options() -> Client:
+    """Expose each option field type and construct clients with helper defaults and lent stores."""
+    pagination = PaginationOptions(max_pages=None, max_items=0, total_timeout=30)
     assert_type(pagination.max_items, int | UNSET | None)
     assert_type(pagination.max_pages, int | UNSET | None)
-    polling = PollOptions(interval=0.5, max_wait=None)
+    assert_type(pagination.total_timeout, float | UNSET | None)
+    polling = PollOptions(interval=0.5, max_wait=None, total_timeout=None)
     assert_type(polling.interval, float | UNSET)
     assert_type(polling.max_wait, float | UNSET | None)
-    stream = StreamOptions(reconnect=True, max_reconnects=0, idle_timeout=UNSET)
+    stream = StreamOptions(reconnect=True, max_reconnects=0, idle_timeout=UNSET, total_timeout=0)
     assert_type(stream.reconnect, bool | UNSET)
     assert_type(stream.max_reconnect_wait, float | UNSET | None)
-    security = ProtocolSecurityContext(credential_partition="tenant", allowed_origins=(origin,))
-    assert_type(security.allowed_origins, tuple[Origin, ...])
-    defaults = ProtocolDefaults(session=SessionOptions(total_timeout=30), options=pagination)
-    assert_type(
-        defaults.options,
-        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | UNSET,
-    )
-    protocols = ProtocolClientOptions(security=security, defaults={"users.all": defaults, "jobs": ProtocolDefaults()})
-    assert_type(protocols.security, ProtocolSecurityContext | UNSET | None)
-    assert_type(protocols.defaults, Mapping[str, ProtocolDefaults] | UNSET)
-    assert_type(protocols.cache_stores, Mapping[str, CacheStore | AsyncCacheStore] | UNSET)
-    AsyncClient(protocols=None)
-    return Client(protocols=protocols)
+    assert_type(UploadOptions(total_timeout=30).total_timeout, float | UNSET | None)
+    assert_type(WSOptions(total_timeout=30).total_timeout, float | UNSET | None)
+    defaults: Mapping[str, PaginationOptions | PollOptions | StreamOptions | CacheOptions] = {
+        "pages.all": pagination,
+        "jobs.run": polling,
+        "events.watch": stream,
+        "jobs.cached": CacheOptions(max_ttl=60),
+    }
+    AsyncClient(helper_defaults=None, cache_stores={"jobs.cached": AsyncMemoryCacheStore()})
+    return Client(helper_defaults=defaults, cache_stores=None)
 
 
 def errors(snapshot: PollSnapshot[Pet]) -> None:

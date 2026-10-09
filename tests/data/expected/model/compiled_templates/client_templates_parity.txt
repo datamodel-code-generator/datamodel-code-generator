@@ -366,9 +366,9 @@ it settles and returns its result, each poll after the wait the last response re
 stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
 operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
 the runtime reference for their limits and checkpoints.
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits.
+A cache helper's `fetch` answers from a fresh entry of the store the client's `cache_stores` lends it, or of a memory
+store the client creates, or sends the request, revalidating a stale entry. See the runtime reference for their limits
+and keys.
 An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
 `run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
 holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
@@ -554,9 +554,9 @@ it settles and returns its result, each poll after the wait the last response re
 stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
 operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
 the runtime reference for their limits and checkpoints.
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits.
+A cache helper's `fetch` answers from a fresh entry of the store the client's `cache_stores` lends it, or of a memory
+store the client creates, or sends the request, revalidating a stale entry. See the runtime reference for their limits
+and keys.
 An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
 `run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
 holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
