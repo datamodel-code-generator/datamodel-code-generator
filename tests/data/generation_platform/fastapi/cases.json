@@ -332,7 +332,10 @@
     "input": "reference-errors.yaml"
   },
   "link-errors": {
-    "input": "link-errors.yaml"
+    "input": "link-errors.yaml",
+    "files": [
+      "link-errors-latin1.yaml"
+    ]
   },
   "info": {
     "input": "info.yaml",

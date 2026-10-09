@@ -67,7 +67,6 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
             {
                 "page_index": 4,
                 "first_seen_page_index": 1,
-                "resume_state": resume,
                 "location": protocols.HeaderSelector(name="X-Cursor"),
             },
         ),
@@ -320,8 +319,8 @@ def _rejections(
         ("cycle cursor field", lambda: errors.PaginationCycleError(
             page_index=1, first_seen_page_index=0, continuation=secret
         )),
-        ("cycle resume type", lambda: errors.PaginationCycleError(
-            page_index=1, first_seen_page_index=0, resume_state={}
+        ("cycle resume field", lambda: errors.PaginationCycleError(
+            page_index=1, first_seen_page_index=0, resume_state=secret
         )),
         ("polling condition missing", lambda: errors.PollingStateError(condition="missing")),
         ("wait kind unknown", lambda: errors.PollWaitLimitError(kind="interval", required_wait=1, limit=0)),

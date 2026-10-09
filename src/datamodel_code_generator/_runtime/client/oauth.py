@@ -35,14 +35,14 @@ from .errors import (
 from .native import async_response_bytes, native_async_client, native_client, native_error, response_bytes
 from .responses import HeadersView
 from .scopes import scope_tuple
-from .timing import absolute_deadline, finite_number, on_clock
+from .timing import Budget, finite_number
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
 
     from .auth import AsyncCredentialProvider, CredentialProvider
     from .options import ResolvedTransportOptions, TimeoutOptions, TransportOptions
-    from .timing import Clock, Deadline
+    from .timing import Clock
 
 ClientAuthMethod = Literal["none", "client_secret_basic", "client_secret_post"]
 Outcome = Literal["success", "rejected", "http_status", "malformed_response", "unsent", "lost"]
@@ -168,7 +168,7 @@ def http_client_options(transport: TransportOptions, http_client: object) -> Res
     return resolved
 
 
-def _secret_context(origin: str, deadline: Deadline) -> CredentialContext:
+def _secret_context(origin: str, deadline: Budget) -> CredentialContext:
     """Describe a client secret acquisition for a token endpoint itself, never for a resource caller."""
     return CredentialContext(
         scheme="oauth_client_secret",
@@ -242,14 +242,14 @@ def receipt(clock: Clock) -> tuple[datetime, float]:
 class Session:
     """One exchange's provider-owned budget: its absolute deadline, each phase's configured cap, and its clock."""
 
-    deadline: Deadline
+    deadline: Budget
     total: float
     phases: tuple[float, float, float, float]
     clock: Clock
 
     @classmethod
     def start(
-        cls, refresh_timeout: float, phase_timeout: TimeoutOptions, clock: Clock, limit: Deadline | None = None
+        cls, refresh_timeout: float, phase_timeout: TimeoutOptions, clock: Clock, limit: Budget | None = None
     ) -> Session:
         """Start the budget now on the provider's clock, ending by an explicit limit moved onto that clock."""
         phases = (
@@ -259,9 +259,8 @@ class Session:
             _phase(phase_timeout.pool),
         )
         now = clock.monotonic()
-        if limit is not None and (limit := on_clock(limit, clock)).at < now + refresh_timeout:
-            return cls(limit, refresh_timeout, phases, clock)
-        return cls(absolute_deadline(now + refresh_timeout, clock=clock), refresh_timeout, phases, clock)
+        duration = refresh_timeout if limit is None else min(refresh_timeout, limit.remaining())
+        return cls(Budget(now + duration, clock), refresh_timeout, phases, clock)
 
     def timeout(self) -> tuple[httpx2.Timeout, tuple[bool, ...]]:
         """Clamp phases to the remaining provider deadline before request construction."""
@@ -431,7 +430,7 @@ def expired(
     return Exchanged(outcome, delivery, status, cause=cause, timeout=session.total, timeout_kind="provider")
 
 
-def _read(chunks: Iterator[bytes], deadline: Deadline) -> bytes | None:
+def _read(chunks: Iterator[bytes], deadline: Budget) -> bytes | None:
     """Read at most the body limit, checking the session deadline at every chunk and once the body ends."""
     body = bytearray()
     for chunk in chunks:
@@ -440,7 +439,7 @@ def _read(chunks: Iterator[bytes], deadline: Deadline) -> bytes | None:
     return _ended(body, deadline)
 
 
-async def _aread(chunks: AsyncIterator[bytes], deadline: Deadline) -> bytes | None:
+async def _aread(chunks: AsyncIterator[bytes], deadline: Budget) -> bytes | None:
     """Read at most the body limit as the synchronous endpoint does, checking the session deadline the same way."""
     body = bytearray()
     async for chunk in chunks:
@@ -449,7 +448,7 @@ async def _aread(chunks: AsyncIterator[bytes], deadline: Deadline) -> bytes | No
     return _ended(body, deadline)
 
 
-def _taken(body: bytearray, chunk: bytes, deadline: Deadline) -> bool:
+def _taken(body: bytearray, chunk: bytes, deadline: Budget) -> bool:
     """Append a chunk received within the session, and return whether the body stays within its limit."""
     if deadline.remaining() <= 0:
         raise _SessionExpiredError
@@ -457,7 +456,7 @@ def _taken(body: bytearray, chunk: bytes, deadline: Deadline) -> bool:
     return len(body) <= _MAX_BODY
 
 
-def _ended(body: bytearray, deadline: Deadline) -> bytes:
+def _ended(body: bytearray, deadline: Budget) -> bytes:
     """Return a body that ended within the session."""
     if deadline.remaining() <= 0:
         raise _SessionExpiredError

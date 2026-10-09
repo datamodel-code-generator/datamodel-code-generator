@@ -490,11 +490,11 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     def load_document(self, document: str) -> dict[str, YamlValue] | None:
         """Load a document that only links or security schemes reference, as the walk loads every other document.
 
-        None is a document that the loader cannot read or may not fetch, or a name that no file can have.
+        None is a document that the loader cannot read, decode or fetch, or a name that no file can have.
         """
         try:
             raw = self._get_ref_body(document)
-        except (Error, OSError):
+        except (Error, OSError, UnicodeDecodeError):
             return None
         self._api_documents[document] = raw
         return raw

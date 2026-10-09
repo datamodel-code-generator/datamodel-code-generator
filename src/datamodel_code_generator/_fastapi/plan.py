@@ -369,6 +369,19 @@ def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnosti
     return _problem(code, message, declaration.use_site)
 
 
+def _link_operation_problem(link: WireDeclaration) -> str | None:
+    """Return why a link does not name its operation with exactly one string operationRef or operationId."""
+    named = [(key, value) for key, value in link.facts if key in {"operationRef", "operationId"}]
+    if not named:
+        return f"The link {link.name!r} names no operation with operationRef or operationId"
+    if len(named) > 1:
+        return f"The link {link.name!r} names its operation with both operationRef and operationId"
+    key, value = named[0]
+    if isinstance(value, LiteralScalar) and isinstance(value.value, str):
+        return None
+    return f"The link {link.name!r} has an {key} that is not a string"
+
+
 def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, ...]:
     """Return the problems of the operations' response links that reach no link naming an operation."""
     problems: list[Diagnostic] = []
@@ -376,8 +389,7 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
         for link in (child for response in operation.responses for child in response.children if child.kind == "link"):
             if (unresolved := _unresolved("F_LINK_INVALID", "link", link)) is not None:
                 problems.append(unresolved)
-            elif fact(link, "operationRef") is None and fact(link, "operationId") is None:
-                message = f"The link {link.name!r} names no operation with operationRef or operationId"
+            elif (message := _link_operation_problem(link)) is not None:
                 problems.append(_problem("F_LINK_INVALID", message, link.use_site))
     return tuple(problems)
 
