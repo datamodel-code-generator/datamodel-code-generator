@@ -12,12 +12,11 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from hashlib import sha256
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
-from uuid import uuid4
 
 import httpx2
 from typing_extensions import TypeVar
 
-from ..client.errors import ConfigurationError, add_secondary
+from ..client.errors import ConfigurationError, SDKError, add_secondary
 from ..client.media import normalized
 from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
@@ -26,7 +25,7 @@ from ..client.retry import http_timestamp
 from ..model_codecs.unset import UNSET, Unset
 from .caches import CacheEntry, CacheResult, CacheSource
 from .client import stored_value
-from .errors import CacheProtocolError, CacheStoreError, CacheValidatorConflictError
+from .errors import ProtocolDataError
 from .options import CacheOptions
 from .records import canonical_json
 
@@ -289,7 +288,7 @@ class _Fetch(Generic[T]):
         A usable entry refuses a validator header the caller gave other than once with the entry's value.
         """
         if entry is not None and not isinstance(entry, CacheEntry):
-            raise _store_error(self.plan, "get")
+            raise _store_error()
         self.entry, plan = entry, self.plan
         if entry is None or entry.schema_fingerprint != plan.fingerprint or entry.status_code not in plan.statuses:
             return None
@@ -298,9 +297,7 @@ class _Fetch(Generic[T]):
             return None
         for header, stored in _VALIDATORS:
             if (given := headers.get_all(header)) and given != (entry.headers.get(stored),):
-                raise CacheValidatorConflictError(
-                    header_name=header, helper_id=plan.helper_id, operation=plan.operation
-                )
+                raise _configuration(plan, (header,), "binding_mismatch")
         self.usable = entry
         return entry
 
@@ -334,7 +331,6 @@ class _Fetch(Generic[T]):
         return ResponseInfo(
             status_code=status,
             headers=headers,
-            call_id=str(uuid4()),
             elapsed=0.0,
             content_type=content,
             request_id=request_id,
@@ -372,7 +368,9 @@ class _Fetch(Generic[T]):
         """
         entry, plan = self.usable, self.plan
         if entry is None or redirected or not _validates(entry.headers, info.headers):
-            raise CacheProtocolError(helper_id=plan.helper_id, operation=plan.operation, info=info)
+            raise ProtocolDataError(
+                reason="inconsistent", helper_id=plan.helper_id, operation=plan.operation, info=info
+            )
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
         response = Response(data=stored_value(plan.call, merged, entry.body, self.settings), info=merged)
@@ -472,7 +470,7 @@ def _configuration(
     path: tuple[str, ...],
     condition: Literal["invalid_value", "binding_mismatch", "security_partition", "missing_adapter"],
 ) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
 
 
 def _invalid(plan: CachePlan[T], path: tuple[str, ...]) -> ConfigurationError:
@@ -490,12 +488,8 @@ def _requested(plan: CachePlan[T], values: tuple[str, ...]) -> _Directives:
     return _Directives("no-store" in directives, "no-cache" in directives, _delta(directives.get("max-age")))
 
 
-def _store_error(
-    plan: CachePlan[T],
-    action: Literal["get", "set", "delete"],
-    cause: Exception | None = None,
-) -> CacheStoreError:
-    return CacheStoreError(action=action, helper_id=plan.helper_id, operation=plan.operation, cause=cause)
+def _store_error(cause: Exception | None = None) -> SDKError:
+    return SDKError(reason="store_failed", cause=cause)
 
 
 def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_options: object, options: object) -> _Limits:
@@ -516,41 +510,29 @@ def _store(core: ClientCore | AsyncClientCore, plan: CachePlan[T]) -> Any:
     return store
 
 
-def _checked(
-    plan: CachePlan[T],
-    action: Literal["get", "set", "delete"],
-    valid: bool,  # noqa: FBT001
-) -> None:
+def _checked(valid: bool) -> None:  # noqa: FBT001
     if not valid:
-        raise _store_error(plan, action)
+        raise _store_error()
 
 
-def _run(
-    plan: CachePlan[T],
-    action: Literal["get", "set", "delete"],
-    run: Callable[[], object],
-) -> object:
-    """Run a store method, raising its failure as a cache store error that keeps the cause."""
+def _run(run: Callable[[], object]) -> object:
+    """Run a store method, raising its failure as a store failure that keeps the cause."""
     try:
         return run()
-    except CacheStoreError:
+    except SDKError:
         raise
     except Exception as error:  # noqa: BLE001
-        raise _store_error(plan, action, error) from None
+        raise _store_error(error) from None
 
 
-async def _arun(
-    plan: CachePlan[T],
-    action: Literal["get", "set", "delete"],
-    run: Callable[[], Awaitable[object]],
-) -> object:
-    """Await a store method, raising its failure as a cache store error that keeps the cause."""
+async def _arun(run: Callable[[], Awaitable[object]]) -> object:
+    """Await a store method, raising its failure as a store failure that keeps the cause."""
     try:
         return await run()
-    except CacheStoreError:
+    except SDKError:
         raise
     except Exception as error:  # noqa: BLE001
-        raise _store_error(plan, action, error) from None
+        raise _store_error(error) from None
 
 
 def fetch(
@@ -564,7 +546,7 @@ def fetch(
     """Answer a fetch from a fresh stored entry, or send it, revalidating a stale entry, and store what may be stored.
 
     A response that may not be stored removes the entry it supersedes. Store failures after the network answered
-    raise CacheStoreError; the request is never sent again for them.
+    raise SDKError with the reason store_failed; the request is never sent again for them.
     """
     limits = _limits(core, plan, cache_options, options)
     store: CacheStore = _store(core, plan)
@@ -572,27 +554,27 @@ def fetch(
     key = state.base_key
     found = None
     if not state.directives.no_store:
-        found = state.found(_run(plan, "get", lambda: store.get(key)))
+        found = state.found(_run(lambda: store.get(key)))
     if (hit := state.fresh(found)) is not None:
         return hit
     try:
         received = core.execute_cached(
             plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
         )
-    except CacheProtocolError as error:
+    except ProtocolDataError as error:
         if state.usable is not None:
             try:
-                _checked(plan, "delete", _run(plan, "delete", lambda: store.delete(key)) is None)
-            except CacheStoreError as failure:
+                _checked(_run(lambda: store.delete(key)) is None)
+            except SDKError as failure:
                 add_secondary(error, failure)
         raise
     if state.directives.no_store:
         return state.result(received)
     if (fields := state.stored(received)) is not None:
         entry = CacheEntry(**fields)
-        _checked(plan, "set", _run(plan, "set", lambda: store.set(key, entry)) is None)
+        _checked(_run(lambda: store.set(key, entry)) is None)
     elif state.entry is not None:
-        _checked(plan, "delete", _run(plan, "delete", lambda: store.delete(key)) is None)
+        _checked(_run(lambda: store.delete(key)) is None)
     return state.result(received)
 
 
@@ -611,25 +593,25 @@ async def afetch(
     key = state.base_key
     found = None
     if not state.directives.no_store:
-        found = state.found(await _arun(plan, "get", lambda: store.get(key)))
+        found = state.found(await _arun(lambda: store.get(key)))
     if (hit := state.fresh(found)) is not None:
         return hit
     try:
         received = await core.execute_cached(
             plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
         )
-    except CacheProtocolError as error:
+    except ProtocolDataError as error:
         if state.usable is not None:
             try:
-                _checked(plan, "delete", await _arun(plan, "delete", lambda: store.delete(key)) is None)
-            except CacheStoreError as failure:
+                _checked(await _arun(lambda: store.delete(key)) is None)
+            except SDKError as failure:
                 add_secondary(error, failure)
         raise
     if state.directives.no_store:
         return state.result(received)
     if (fields := state.stored(received)) is not None:
         entry = CacheEntry(**fields)
-        _checked(plan, "set", await _arun(plan, "set", lambda: store.set(key, entry)) is None)
+        _checked(await _arun(lambda: store.set(key, entry)) is None)
     elif state.entry is not None:
-        _checked(plan, "delete", await _arun(plan, "delete", lambda: store.delete(key)) is None)
+        _checked(await _arun(lambda: store.delete(key)) is None)
     return state.result(received)

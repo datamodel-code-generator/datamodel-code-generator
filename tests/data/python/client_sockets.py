@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any, Final
 import httpcore2
 import httpx2
 
-from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.client_runtime import argument, describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
@@ -147,8 +146,8 @@ class _Harness:
         self.package = package
         self.lines = lines
         self.server = server
-        self.options, self.protocols, self.errors, self.auth = (
-            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors", "auth")
+        self.options, self.protocols, self.errors = (
+            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors")
         )
         self.models = importlib.import_module(f"{package.__name__}_models")
 
@@ -212,7 +211,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
             _limits(harness, api)
             _closing_sessions(harness, api)
         _clocked(harness)
-        with harness.package.Client(options=harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))) as api:
+        with harness.package.Client(options=harness.client(), bearer=_Tokens()) as api:
             _sends(harness, api)
         _hooked(harness)
         _authenticated(harness)
@@ -249,9 +248,9 @@ def _conversation(harness: _Harness, api: Any) -> None:
 
 def _decode_failure(label: str, failure: Any) -> str:
     """Report a message failure's public prefix and whether its SDK traceback still holds a larger payload."""
-    prefix = len(failure.raw_prefix)
+    prefix = len(failure.body_bytes)
     return (
-        f"  {label} ! {_described(failure)} sequence={failure.sequence} prefix={prefix} "
+        f"  {label} ! {_described(failure)} location={failure.location} prefix={prefix} "
         f"truncated={failure.truncated} cause={type(failure.cause).__name__} "
         f"retained={retained_body(failure, prefix)}"
     )
@@ -341,7 +340,7 @@ def _decoding(harness: _Harness, api: Any) -> None:
         )
         try:
             session.receive()
-        except harness.errors.StreamDecodeError as failure:
+        except harness.errors.DecodeError as failure:
             lines.append(_decode_failure(label, failure))
         record(lines, "after the decode failure", session.receive)
         session.close()
@@ -498,25 +497,39 @@ def _closed_meanwhile(harness: _Harness, api: Any) -> None:
     harness.report(play)
 
 
-class _Ends:
-    """A hook reporting each event name and outcome of the calls it observes."""
+class _Seen:
+    """Native event hooks reporting each handshake request and response the HTTP client sends and receives."""
 
     def __init__(self, lines: list[str]) -> None:
         self.lines = lines
 
-    def on_event(self, event: Any) -> None:
-        self.lines.append(f"    hook {event.name} outcome={event.outcome} status={event.status}")
+    def request(self, request: httpx2.Request) -> None:
+        self.lines.append(f"    request hook {request.method} {request.url.path}")
+
+    def response(self, response: httpx2.Response) -> None:
+        self.lines.append(f"    response hook {response.status_code}")
+
+    def hooks(self) -> dict[str, list[Any]]:
+        """Return the hooks an HTTPX2 client runs."""
+        return {"request": [self.request], "response": [self.response]}
 
 
-class _AsyncEnds(_Ends):
-    async def on_event(self, event: Any) -> None:
-        super().on_event(event)
+class _AsyncSeen(_Seen):
+    async def request(self, request: httpx2.Request) -> None:  # ty: ignore[invalid-method-override]
+        _Seen.request(self, request)
+
+    async def response(self, response: httpx2.Response) -> None:  # ty: ignore[invalid-method-override]
+        _Seen.response(self, response)
 
 
 def _hooked(harness: _Harness) -> None:
-    """Report a session's handshake events and its end: normal, closed early, or failed."""
+    """Run the injected HTTP client's hooks for a handshake, then end its session normally, early, or failing."""
     lines, server = harness.lines, harness.server
-    with harness.package.Client(options=harness.client(hooks=(_Ends(lines),))) as api:
+    settings = harness.client(transport=harness.options.TransportOptions())
+    with (
+        httpx2.Client(verify=client_context(), event_hooks=_Seen(lines).hooks()) as native,
+        harness.package.Client(http_client=native, options=settings) as api,
+    ):
         chat = api.protocols.rooms.chat
         for label, play in (
             ("hooked normal end", Play(talk=_sending(code=1000))),
@@ -535,9 +548,13 @@ def _hooked(harness: _Harness) -> None:
 
 
 async def _async_hooked(harness: _Harness) -> None:
-    """Report an asyncio session's handshake events and its end, and a refused handshake's."""
+    """Run the injected asyncio HTTP client's hooks for an accepted handshake and a refused one."""
     lines, server = harness.lines, harness.server
-    async with harness.package.AsyncClient(options=harness.client(hooks=(_AsyncEnds(lines),))) as api:
+    settings = harness.client(transport=harness.options.TransportOptions())
+    async with (
+        httpx2.AsyncClient(verify=client_context(), event_hooks=_AsyncSeen(lines).hooks()) as native,
+        harness.package.AsyncClient(http_client=native, options=settings) as api,
+    ):
         chat = api.protocols.rooms.chat
         for label, play in (
             ("async hooked normal end", Play(talk=_sending(code=1000))),
@@ -550,52 +567,25 @@ async def _async_hooked(harness: _Harness) -> None:
 
 
 class _Tokens:
-    """A bearer provider that replaces its token once the server rejects the first."""
+    """A bearer credential callable that gives a new token each time it is called."""
 
-    def __init__(self, auth: ModuleType) -> None:
-        self.auth = auth
-        self.tokens = iter(("first", "second"))
-        self.current = self.next()
+    def __init__(self) -> None:
+        self.tokens = iter(("first", "second", "third"))
         self.calls: list[str] = []
 
-    def next(self) -> Any:
-        return self.auth.BearerCredential(self.auth.AccessToken(f"{next(self.tokens)}-material"), self.auth.TokenVersion())
-
-    def get(self, context: object) -> Any:
-        del context
+    def __call__(self) -> str:
         self.calls.append("get")
-        return self.current
-
-    def invalidate(self, version: object) -> None:
-        self.calls.append(f"invalidate current={version is self.current.version}")
-
-    def refresh(self, context: object) -> Any:
-        del context
-        self.calls.append("refresh")
-        self.current = self.next()
-        return self.current
-
-
-class _AsyncTokens(_Tokens):
-    async def get(self, context: object) -> Any:  # ty: ignore[invalid-method-override]
-        return super().get(context)
-
-    async def invalidate(self, version: object) -> None:  # ty: ignore[invalid-method-override]
-        super().invalidate(version)
-
-    async def refresh(self, context: object) -> Any:  # ty: ignore[invalid-method-override]
-        return super().refresh(context)
+        return f"{next(self.tokens)}-material"
 
 
 def _authenticated(harness: _Harness) -> None:
     """Authenticate each handshake, never refreshing a rejected token, and send a header parameter."""
     lines, server, options = harness.lines, harness.server, harness.options
     for label, retry in (("rejected token not refreshed", None), ("no refresh without retries", 0)):
-        tokens = _Tokens(harness.auth)
+        tokens = _Tokens()
         settings = {} if retry is None else {"retry": options.RetryOptions(max_retries=retry)}
-        client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": tokens}))
         plays = server.play(Play(refuse=(401, _INVALID, b"")))
-        with harness.package.Client(options=client_options) as api:
+        with harness.package.Client(options=harness.client(), bearer=tokens) as api:
             session = record(
                 lines,
                 label,
@@ -655,8 +645,7 @@ def _logged(harness: _Harness) -> None:
     root.setLevel(logging.DEBUG)
     try:
         (play,) = server.play(Play(talk=_replying))
-        client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))
-        with harness.package.Client(options=client_options) as api:
+        with harness.package.Client(options=harness.client(), bearer=_Tokens()) as api:
             session = api.protocols.secure.chat.connect()
             session.send(b"secret-payload")
             lines.append(f"  received with debug logging {_message(session.receive())}")
@@ -755,13 +744,6 @@ def _handshakes(harness: _Harness) -> None:
                         options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
                     ),
                 )
-        limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            ("refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            with harness.package.Client(options=harness.client(url, **settings)) as api:
-                record(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    refused permit cleanup {limiter.usage.report}")
     with harness.package.Client(options=harness.client(transport=harness.options.TransportOptions())) as api:
         record(lines, "untrusted certificate", lambda: api.protocols.feed.text.connect(options=once))
 
@@ -776,8 +758,7 @@ def _deadline_open(harness: _Harness, once: Any) -> None:
                 api.protocols.feed.text.connect(options=options)
             except harness.errors.APITimeoutError as error:
                 lines.append(
-                    f"  deadline during the open ! {type(error).__name__} reason={error.reason} phase={error.phase} "
-                    f"delivery_state={error.delivery_state} remaining={0 < (error.effective_timeout or 0) <= 1.0}"
+                    f"  deadline during the open ! {type(error).__name__} reason={error.reason}"
                 )
     finally:
         peer.stop()
@@ -840,19 +821,13 @@ async def _messages(session: Any) -> list[object]:
 
 
 async def _async_refused(harness: _Harness) -> None:
-    """Retry an asyncio handshake refused before sending, within its session budget and permit cleanup."""
+    """Retry an asyncio handshake refused before sending, within its session budget."""
     lines = harness.lines
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         url = f"https://127.0.0.1:{probe.getsockname()[1]}"
-        limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            ("async refused connection", {}, {}),
-            ("async refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            async with harness.package.AsyncClient(options=harness.client(url, **settings)) as api:
-                await aconnected(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    async refused permit cleanup {limiter.usage.report}")
+        async with harness.package.AsyncClient(options=harness.client(url)) as api:
+            await aconnected(lines, "async refused connection", api.protocols.feed.text.connect)
 
 
 async def _async_sockets(harness: _Harness) -> None:
@@ -920,7 +895,7 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
         try:
             async with chat.connect(room=harness.room()) as session:
                 await session.receive()
-        except harness.errors.StreamDecodeError as failure:
+        except harness.errors.DecodeError as failure:
             lines.append(_decode_failure(f"{label} left the block", failure))
         lines.append(f"    {label} after the block {session!r}")
         await harness.areport(play)

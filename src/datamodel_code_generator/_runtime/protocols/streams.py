@@ -18,7 +18,7 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from functools import partial
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
+from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, cast, final
 
 import httpx2
 from typing_extensions import Self, TypeVar
@@ -27,7 +27,7 @@ from ..client.errors import (
     APIConnectionError,
     ConfigurationError,
     DecodeError,
-    ProtocolError,
+    SDKError,
     is_phase_timeout,
     is_transport,
 )
@@ -38,18 +38,7 @@ from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET, Unset
-from .errors import (
-    MAX_RAW_PREFIX,
-    IncompleteFrameError,
-    ProtocolDataError,
-    ProtocolStateError,
-    ResumeStateError,
-    SessionLimitError,
-    StreamDecodeError,
-    StreamInterruptedError,
-    StreamRemoteError,
-    StreamResumeExhaustedError,
-)
+from .errors import HELPER_ERRORS, MAX_RAW_PREFIX, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from .options import StreamOptions, layered
 from .records import plain_copy
 from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
@@ -59,7 +48,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator
     from datetime import datetime
     from types import TracebackType
-    from typing import TypeAlias
 
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import InboundModelCodec, OperationPlan
@@ -68,7 +56,6 @@ if TYPE_CHECKING:
     from ..client.timing import Clock
     from ..model_codecs.media import JSONValue
     from .client import AsyncClientCore, ClientCore
-    from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
     from .records import BodySelector, HeaderSelector, ProtocolProgress, RequestTarget, Selector
     from .references import OperationRef
@@ -94,7 +81,8 @@ T = TypeVar("T")
 U = TypeVar("U")
 V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True, default=object)
-ProtocolErrorT = TypeVar("ProtocolErrorT", bound=ProtocolError)
+ErrorT = TypeVar("ErrorT", bound=SDKError)
+_DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
 
 _EVENT_STREAM: Final = "text/event-stream"
 _NO_TYPE: Final = ""
@@ -296,7 +284,7 @@ _DEFAULTS: Final = _Limits()
 def _invalid(
     plan: EventPlan[T], path: tuple[str, ...], condition: Literal["invalid_value", "missing_metadata"]
 ) -> ConfigurationError:
-    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id, operation=plan.operation)
+    return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
 
 
 def _limits(
@@ -413,7 +401,7 @@ def _data_error(
     plan: EventPlan[T], operation: OperationRef, info: ResponseInfo, condition: _DataCondition, location: Selector
 ) -> ProtocolDataError:
     return ProtocolDataError(
-        condition=condition, location=location, helper_id=plan.helper_id, operation=operation, info=info
+        reason=condition, location=location, helper_id=plan.helper_id, operation=operation, info=info
     )
 
 
@@ -534,7 +522,6 @@ def _reopen_request(
             field_path=("arguments", *unsaved),
             reason="wrong_capability",
             helper_id=plan.helper_id,
-            operation=resume.operation,
             operation_id=resume.call.operation_id,
         )
     if (given := position.given) is not None:
@@ -675,7 +662,7 @@ class _Events(Generic[T]):
 
         It holds the cursor of the last event delivered, the bindings' values, and the server's expiry, but never
         events, counts, the caller's arguments, the response, the session, or the call's options. A stream that ended,
-        failed, or closed checkpoints as it stood; one running a step refuses with ProtocolStateError, and so does one
+        failed, or closed checkpoints as it stood; one running a step refuses with ConfigurationError, and so does one
         that delivered no cursor yet.
         """
         action = "checkpoint"
@@ -733,12 +720,12 @@ class _Events(Generic[T]):
     def _last(self, lines: _Lines) -> _Frame | None:
         """Return the record of the bytes after the last line end, when the helper allows one, or None for none.
 
-        Bytes there that the helper does not allow raise IncompleteFrameError.
+        Bytes there that the helper does not allow interrupt the stream at its end.
         """
         if not (rest := lines.rest()):
             return None
         if self._plan.final_line != "allow_eof":
-            raise self._stamped(IncompleteFrameError(buffered_bytes=len(rest), sequence=self._delivered))
+            raise self._stamped(StreamInterruptedError(reason="eof", sequence=self._delivered))
         return self._record(rest)
 
     def _position(self) -> _Position:
@@ -749,7 +736,7 @@ class _Events(Generic[T]):
         """Take the cursor of an event about to be delivered: its event ID, or what the cursor reads from its data.
 
         A missing body cursor keeps the one before under `inherit` and a null one clears it under `clear`; otherwise
-        either refuses the event with StreamDecodeError. An unknown event whose data is not JSON gives no cursor.
+        either refuses the event with DecodeError. An unknown event whose data is not JSON gives no cursor.
         """
         if (read := resume.cursor) is None:
             if (cursor := frame.event_id) is not None:
@@ -773,13 +760,13 @@ class _Events(Generic[T]):
         reconnection: a transport one only after a read-phase failure the shared retry classification retries. One
         whose longest wait, the retry backoff's cap and at least the last reconnection time, is longer than allowed
         does not; the wait itself draws its jitter below that cap. A stream out of reconnects raises
-        StreamResumeExhaustedError.
+        SessionLimitError.
         """
         if not isinstance(failure, StreamInterruptedError) or (resume := self._resume) is None:
             return None
         limits, client = self._limits, self._client
         reason: Literal["transport_interruption", "incomplete_eof"] | None = "incomplete_eof"
-        if failure.condition == "transport":
+        if failure.reason == "transport":
             cause = failure.cause
             reason = "transport_interruption" if is_transport(cause) and self._retryable(cause) else None
         if not (limits.reconnect and self._cursored and reason in resume.reconnect_on):
@@ -812,12 +799,11 @@ class _Events(Generic[T]):
         """
         resume = cast("StreamResumePlan", self._resume)
         refused = ProtocolDataError(
-            condition="value",
+            reason="value",
             location=resume.cursor or resume.write,
             helper_id=self._plan.helper_id,
             operation=resume.operation,
             operation_id=resume.call.operation_id,
-            parent_session_id=self._session.session_id,
             cause=error,
         )
         refused.__context__ = failure
@@ -825,9 +811,7 @@ class _Events(Generic[T]):
 
     def _exhausted(self, limit: int, failure: StreamInterruptedError) -> SessionLimitError:
         """Return the error of a reconnection out of reconnects, keeping the interruption."""
-        return self._stamped(
-            StreamResumeExhaustedError(kind="reconnects", limit=limit, progress=self.progress, cause=failure)
-        )
+        return self._stamped(SessionLimitError(reason="reconnects", limit=limit, progress=self.progress, cause=failure))
 
     def _reopened(self, info: ResponseInfo) -> None:
         """Take a reopen's response: the reopen operation's identity and the bindings' values it gives."""
@@ -862,36 +846,28 @@ class _Events(Generic[T]):
         self._lock.release()
         return held
 
-    def _state_error(self, action: str, state: str) -> ProtocolStateError:
-        plan = self._plan
-        return ProtocolStateError(
-            state=state,
-            action=action,
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self._session.session_id,
-        )
+    def _state_error(self, action: str, state: str) -> ConfigurationError:
+        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self._plan.helper_id)
 
-    def _stamped(self, error: ProtocolErrorT) -> ProtocolErrorT:
-        """Give a failure of the stream the helper's context, the stream call's identity, and its measurements."""
+    def _stamped(self, error: ErrorT) -> ErrorT:
+        """Give a failure of the stream the helper's context, the stream call's operation, and its measurements."""
         info = self._info
-        error.helper_id = self._plan.helper_id
-        error.operation = self._operation
+        if isinstance(error, HELPER_ERRORS):
+            error.helper_id = self._plan.helper_id
+            error.operation = self._operation
         error.info = info
         error.operation_id = self._operation_id
-        error.call_id = info.call_id
-        error.parent_session_id = self._session.session_id
         error.attempt_count, error.elapsed = info.attempt_count, info.elapsed
         return error
 
     def _oversized(self, error: httpx2.SSEError) -> ProtocolDataError:
         """Return the failure of an event over HTTPX2's event size limit, which keeps the native error as its cause."""
-        return self._stamped(ProtocolDataError(condition="malformed", cause=error))
+        return self._stamped(ProtocolDataError(reason="too_large", cause=error))
 
     def _ended(self) -> _End:
         """Return the end of a response that ended the stream as declared, raising the failure of one that did not."""
         if self._plan.completion != "eof":
-            raise self._stamped(StreamInterruptedError(condition="eof", sequence=self._delivered))
+            raise self._stamped(StreamInterruptedError(reason="eof", sequence=self._delivered))
         return _ENDED
 
     def _broken(self, error: BaseException) -> BaseException:
@@ -900,13 +876,13 @@ class _Events(Generic[T]):
         A stream of a helper declaring resumption is also interrupted by a read timeout the call's own read timeout
         set, which it may reconnect after, but never by its idle limit.
         """
-        if isinstance(error, StreamDecodeError):
+        if isinstance(error, DecodeError):
             return error.with_traceback(None)
         if not is_transport(error) or (
             is_phase_timeout(error) and (self._resume is None or not self._retryable(error))
         ):
             return error
-        return self._stamped(StreamInterruptedError(condition="transport", sequence=self._delivered, cause=error))
+        return self._stamped(StreamInterruptedError(reason="transport", sequence=self._delivered, cause=error))
 
     def _retryable(self, error: APIConnectionError) -> bool:
         """Return whether a transport failure reading the body is one an automatic reconnection may follow."""
@@ -936,9 +912,7 @@ class _Events(Generic[T]):
             key = found
         if (error := self._errors.get(key)) is not None:
             data = self._decoded(error, frame)
-            raise self._stamped(
-                StreamRemoteError(event_type=frame.event_type or None, data=data, sequence=self._sequence)
-            )
+            raise self._stamped(ProtocolDataError(reason="error_event", data=data))
         if (decoder := plan.event) is None and (decoder := self._routes.get(key)) is None:
             if (unknown := plan.unknown) is None:
                 raise self._stamped(self._decode_error(frame.body, "value", location=selector))
@@ -958,7 +932,7 @@ class _Events(Generic[T]):
         )
 
     def _wire(self, frame: _Frame) -> JSONValue:
-        """Return an event's data parsed as JSON, raising StreamDecodeError for data that does not parse."""
+        """Return an event's data parsed as JSON, raising DecodeError for data that does not parse."""
         data = frame.body
         try:
             return json_value(data)
@@ -966,7 +940,7 @@ class _Events(Generic[T]):
             raise self._stamped(self._decode_error(data, "malformed", cause=error)) from None
 
     def _decoded(self, codec: InboundModelCodec[U], frame: _Frame) -> U:
-        """Return an event's data decoded by its codec, raising StreamDecodeError for data it refuses."""
+        """Return an event's data decoded by its codec, raising DecodeError for data it refuses."""
         try:
             return codec.decode(frame.body)
         except codec.errors as error:
@@ -980,15 +954,14 @@ class _Events(Generic[T]):
         *,
         location: BodySelector | None = None,
         cause: BaseException | None = None,
-    ) -> StreamDecodeError:
-        """Return the decode failure of an event, keeping at most 64 KiB of its raw data."""
+    ) -> DecodeError:
+        """Return the decode failure of an event, at its sequence and the pointer read, keeping at most 64 KiB of it."""
         limit = MAX_RAW_PREFIX
-        return StreamDecodeError(
-            sequence=self._sequence,
-            raw_prefix=data[:limit],
+        return DecodeError(
+            reason=condition,
+            location=("event", self._sequence, *(() if location is None else (location.pointer,))),
+            body_bytes=data[:limit],
             truncated=len(data) > limit,
-            condition=condition,
-            location=location,
             cause=cause,
         )
 
@@ -998,7 +971,7 @@ class EventStream(_Events[T]):
     """A synchronous SSE or NDJSON stream: iterate over its events, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one consumer at a time; after a failure
-    or `close()` every step raises ProtocolStateError, and after its end every step stops. A stream of a helper
+    or `close()` every step raises ConfigurationError, and after its end every step stops. A stream of a helper
     declaring resumption reopens itself within a step after an interruption when its call enables reconnection.
     """
 
@@ -1118,7 +1091,7 @@ class EventStream(_Events[T]):
         return self._ended() if frame is None else self._event(frame)
 
     def close(self) -> None:
-        """Release the response; later steps raise ProtocolStateError, and closing again does nothing."""
+        """Release the response; later steps raise ConfigurationError, and closing again does nothing."""
         if self._closing("close"):
             self._frames.close()
             self._chunks.close()
@@ -1140,7 +1113,7 @@ class AsyncEventStream(_Events[T]):
     """An asyncio SSE or NDJSON stream: iterate over its events with `async for`, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one task at a time; after a failure or
-    `aclose()` every step raises ProtocolStateError, and after its end every step stops. A stream of a helper declaring
+    `aclose()` every step raises ConfigurationError, and after its end every step stops. A stream of a helper declaring
     resumption reopens itself within a step after an interruption when its call enables reconnection.
     """
 
@@ -1265,7 +1238,7 @@ class AsyncEventStream(_Events[T]):
         return self._ended() if frame is None else self._event(frame)
 
     async def aclose(self) -> None:
-        """Release the response; later steps raise ProtocolStateError, and closing again does nothing."""
+        """Release the response; later steps raise ConfigurationError, and closing again does nothing."""
         if self._closing("aclose"):
             await self._frames.aclose()
             await self._chunks.aclose()
@@ -1388,9 +1361,9 @@ def _resumed(plan: EventPlan[T], resume: StreamResumePlan, position: _Position, 
 def _restored(plan: EventPlan[T], state: object, given: _Given, limits: _Limits) -> tuple[StreamResumePlan, _Position]:
     """Return where a checkpoint reopens the stream, without sending.
 
-    A checkpoint that is not JSON or does not fit the helper raises ConfigurationError, and one past the server's
-    expiry by the client's wall clock ResumeStateError. A reopen of the helper's own operation repeats the request the
-    caller gives again.
+    A checkpoint that is not JSON or does not fit the helper raises ConfigurationError, with the reason expired once
+    past the server's expiry by the client's wall clock. A reopen of the helper's own operation repeats the request
+    the caller gives again.
     """
     resume = cast("StreamResumePlan", plan.resume)
     try:
@@ -1398,7 +1371,7 @@ def _restored(plan: EventPlan[T], state: object, given: _Given, limits: _Limits)
     except (MalformedStateError, TypeError, ValueError):
         raise _invalid(plan, ("state",), "invalid_value") from None
     if (expires_at := position.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
-        raise ResumeStateError(condition="expired", helper_id=plan.helper_id, operation=plan.operation)
+        raise ConfigurationError(field_path=("state",), reason="expired", helper_id=plan.helper_id)
     return resume, position
 
 
@@ -1424,9 +1397,7 @@ def _restore(plan: EventPlan[T], resume: StreamResumePlan, state: JSONValue, giv
         for binding, value in zip(resume.bindings, saved, strict=True)
     )
     if (selector := _dotted(resume, bound, given)) is not None:
-        raise ProtocolDataError(
-            condition="value", location=selector, helper_id=plan.helper_id, operation=resume.operation
-        )
+        raise ProtocolDataError(reason="value", location=selector, helper_id=plan.helper_id, operation=resume.operation)
     return _Position(given=given, cursor=cursor, cursored=True, bound=bound, expires_at=expires_at)
 
 

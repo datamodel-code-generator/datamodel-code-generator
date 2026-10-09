@@ -14,6 +14,7 @@ import httpx2
 from typing_extensions import Self
 
 from ._generated import security
+from ._runtime.client.auth import SchemeCredentials, Secret, TokenSource
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
 from ._runtime.client.options import ClientOptions
@@ -145,11 +146,17 @@ class AsyncClient(AsyncClientView):
     def __init__(
         self,
         *,
+        oauth: Secret | TokenSource | None = None,
         options: ClientOptions | None = None,
         http_client: httpx2.AsyncClient | Unset | None = UNSET,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = AsyncClientCore.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = AsyncClientCore.create(
+            _DEFAULTS,
+            options=options,
+            http_client=http_client,
+            credentials=SchemeCredentials({"oauth": oauth}),
+        )
 
     async def aclose(self) -> None:
         """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""

@@ -142,6 +142,7 @@ operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`
 `datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
 options take mappings keyed by the same operation references:
 
+<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
 from pathlib import Path
 
@@ -158,9 +159,9 @@ generate(
     server_output=Path("server"),
     server_package="server",
     server_model_package="models",
-    server_primary_responses={"/paths/~1pets/post": {"status_code": 201}},
 )
 ```
+<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 It publishes the models and the package together and returns `None`, like model generation. Without an `output`, it
 returns every model and server file as `GeneratedModules`, under the paths their import paths imply, such as
@@ -169,31 +170,6 @@ update; see [Generating a Server or Client Package](using_as_module.md#generatin
 `load_pyproject_config()` reads the server keys of `pyproject.toml`, whose paths and operation documents resolve
 against its directory. Invalid settings, bindings, and template failures raise `datamodel_code_generator.Error` with
 the message the command line prints after `Error:`. The `uv add` notice is a command-line message only.
-
-The separate entry points of `datamodel_code_generator.fastapi` take the server settings as a `FastAPIConfig`:
-
-<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
-```python
-from pathlib import Path
-
-from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
-from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
-
-generate_fastapi(
-    Path("openapi.yaml"),
-    model_config=GenerateConfig(
-        output=Path("models.py"),
-        input_file_type=InputFileType.OpenAPI,
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        preset="standard-py312-20260909",
-    ),
-    config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
-)
-```
-<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
-
-`render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
 
 ## Server options
 
@@ -429,10 +405,10 @@ percent-encoding.
 
 An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
 spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
-`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. A query parameter, header,
-or cookie that an adapter reads answers `400` when the request repeats a single value, where FastAPI takes the last
-query value and the first header. Turning on `--strict-types int float bool` therefore narrows what those
-parameters accept. A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
+`--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
+FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the

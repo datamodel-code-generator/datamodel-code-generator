@@ -9,6 +9,7 @@ from abc import abstractmethod
 from typing import Protocol
 
 import pydantic
+import strict_basemodel_models
 from fastapi.responses import Response
 
 from ._runtime.server.responses import HTTPResult
@@ -37,4 +38,18 @@ class UntaggedService(Protocol):
         x_tag: pydantic.StrictStr | None,
         blob: bytes | None,
         visits: pydantic.StrictInt | None,
+    ) -> None | HTTPResult[None] | Response: ...
+
+    @abstractmethod
+    def post_form(
+        self,
+        *,
+        body: strict_basemodel_models.Form,
+    ) -> None | HTTPResult[None] | Response: ...
+
+    @abstractmethod
+    def upload(
+        self,
+        *,
+        body: strict_basemodel_models.FieldUploadsPostRequest,
     ) -> None | HTTPResult[None] | Response: ...

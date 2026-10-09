@@ -506,7 +506,7 @@ class Planner:  # noqa: PLR0904
         for selector, value in values.items():
             reference = OperationRef(pointer=selector) if isinstance(selector, str) else selector
             if (operation := self.request.resolve(reference)) is None:
-                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
                 named = named_document(reference.document, reference.document)
                 message = f"The {option} entry {reference.pointer!r}{named} {self.request.unresolved}"
@@ -696,7 +696,6 @@ class Planner:  # noqa: PLR0904
                     severity="error",
                     stage="binding",
                     message="The use has no generated native type",
-                    source_uri=self.request.documents.root_uri,
                     source_pointer=use.id.use_site.pointer,
                 )
             )
@@ -976,22 +975,34 @@ class Planner:  # noqa: PLR0904
         return replace(spec, form_fields=self.form_plans(use.type))
 
     def form_plans(self, value: TypeView | None) -> tuple[FieldPlan, ...]:
-        """Return the members a form adapter reads as text: each model field by wire name, repeated for a list."""
+        """Return the members a form adapter reads as text: each model field by wire name, as the field's type says."""
         members = self.members.get(value.symbol, ()) if isinstance(value, GeneratedSymbolType) else ()
         return tuple(
-            FieldPlan(member.wire_name, repeated=self.kind(facts.type) == "sequence")
+            self.form_field(member.wire_name, facts.type)
             for member in members
             if member.wire_name is not None and (facts := member.model_facts) is not None
         )
 
+    def form_field(self, name: str, value: TypeView) -> FieldPlan:
+        """Return a form member's plan: repeated for a list, in the kind the model's type gives its text or items."""
+        repeated = self.kind(value) == "sequence"
+        kind = self.wire.kinds.of(value, ("items",) if repeated else ()) or "string"
+        return FieldPlan(name, kind, repeated=repeated)
+
     def form_model(self, value: TypeView | None) -> bool:
-        """Return whether FastAPI reads a type as a form model: a BaseModel of scalar and repeated scalar fields."""
+        """Return whether FastAPI reads a type as a form model: a BaseModel of fields FastAPI reads from text.
+
+        A field FastAPI reads is a scalar or a list of scalars whose type accepts text, so neither a strict int, float,
+        or bool nor an enum or literal of non-string values.
+        """
         return (
             self.backend == DataModelType.PydanticV2BaseModel.value
             and isinstance(value, GeneratedSymbolType)
             and self.symbols[value.symbol].kind == "model"
             and all(
-                (facts := member.model_facts) is not None and self.kind(facts.type) is not None
+                (facts := member.model_facts) is not None
+                and self.kind(facts.type) is not None
+                and not (self.textless(facts.type) and self.form_field("", facts.type).kind != "string")
                 for member in self.members.get(value.symbol, ())
             )
         )

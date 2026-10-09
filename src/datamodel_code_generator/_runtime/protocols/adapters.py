@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 from typing_extensions import TypeVar
 
-from ..client.errors import ConfigurationError, DeliveryState
+from ..client.errors import ConfigurationError
 from .webhook_events import (
     EventPlan,
     Facts,
@@ -95,7 +95,7 @@ def _fenced(plan: AdapterPlan[T], signature: object) -> tuple[str | None, dateti
         return kept
     if type(signature) is CoroutineType:
         signature.close()
-    raise ConfigurationError(field_path=("verifier",), reason="invalid_result", delivery_state=DeliveryState.NOT_SENT)
+    raise ConfigurationError(field_path=("verifier",), reason="invalid_result")
 
 
 def _authenticate(  # ruff: ignore[too-many-arguments]

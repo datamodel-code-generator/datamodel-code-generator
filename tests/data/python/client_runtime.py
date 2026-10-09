@@ -28,20 +28,15 @@ _CALL_ID: Final = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[
 _ERROR_FIELDS: Final = (
     "operation_id",
     "field_path",
-    "condition",
     "location",
-    "delivery_state",
-    "phase",
     "status_code",
     "body",
     "body_bytes",
     "truncated",
     "media_type",
-    "kind",
-    "unit",
     "limit",
     "observed",
-    "coding",
+    "sequence",
     "cause",
 )
 
@@ -176,8 +171,9 @@ def describe(value: object) -> str:
                 for name in _ERROR_FIELDS
                 if getattr(value, name, None) not in (None, ())
             )
-            code = f" {value.reason_code}" if hasattr(value, "reason_code") else ""
-            return f"{type(value).__name__}: {value} [{details}]{code}"
+            code = f" {value.reason}" if getattr(value, "reason", None) is not None else ""
+            notes = "".join(f" note={note!r}" for note in getattr(value, "__notes__", ()))
+            return f"{type(value).__name__}: {value} [{details}]{code}{notes}"
         case _ if hasattr(value, "info") and hasattr(value, "data"):
             info = value.info
             headers = list(info.headers)
@@ -200,20 +196,20 @@ def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
 
 
 def outcome(call: Callable[[], object]) -> str:
-    """Report the class of a call's failure with the classes of its secondary errors, or its result."""
+    """Report the class of a call's failure with the notes naming its secondary errors, or its result."""
     try:
         result = call()
     except Exception as error:  # noqa: BLE001
-        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
+        return f"{type(error).__name__} notes {getattr(error, '__notes__', [])}"
     return f"returned {result!r}"
 
 
 async def aoutcome(call: Callable[[], Any]) -> str:
-    """Report the class of an async call's failure with the classes of its secondary errors, or its result."""
+    """Report the class of an async call's failure with the notes naming its secondary errors, or its result."""
     try:
         result = await call()
     except Exception as error:  # noqa: BLE001
-        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
+        return f"{type(error).__name__} notes {getattr(error, '__notes__', [])}"
     return f"returned {result!r}"
 
 

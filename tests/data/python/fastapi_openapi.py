@@ -23,7 +23,7 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "pets": {"input": "pets.yaml"},
     "items": {"input": "parameters.yaml"},
     "secured": {"input": "server-security.yaml"},
-    "bodies": {"input": "bodies.yaml", "config": {"body_modes": [["/paths/~1raw/post", "request"]]}},
+    "bodies": {"input": "bodies.yaml", "config": {"server_body_modes": {"/paths/~1raw/post": "request"}}},
     "calls": {"input": "callbacks.yaml"},
     "methods": {"input": "methods.yaml"},
     "names": {"input": "names.yaml"},

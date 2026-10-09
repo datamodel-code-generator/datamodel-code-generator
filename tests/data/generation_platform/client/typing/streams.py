@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
-from pets.errors import StreamRemoteError
+from pets.errors import ProtocolDataError
 from pets.options import RequestOptions, SessionOptions
 from pets.protocols import (
     AsyncEventStream,
@@ -52,16 +52,16 @@ def events(client: Client, query: FeedQuery) -> None:
     wider: StreamEvent[object] = next(stream)
     try:
         next(client.protocols.events.typed.open())
-    except StreamRemoteError as error:
+    except ProtocolDataError as error:
         remote(error)
     stream.close()
     del events, progress, wider
 
 
-def remote(error: StreamRemoteError) -> None:
-    """Read an error event's data as object, never Any, and its SSE type."""
+def remote(error: ProtocolDataError) -> None:
+    """Read an error event's data as object, never Any, and its reason."""
     assert_type(error.data, object)
-    assert_type(error.event_type, str | None)
+    assert_type(error.reason, str)
 
 
 async def async_events(client: AsyncClient) -> None:

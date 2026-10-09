@@ -54,7 +54,8 @@ if TYPE_CHECKING:
         ResponseSpec,
         ServerSpec,
     )
-    from datamodel_code_generator._client.runtime import Helper, Security
+    from datamodel_code_generator._client.runtime import Helper
+    from datamodel_code_generator._client.security import CredentialSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
@@ -97,27 +98,6 @@ def __getattr__(name: str) -> object:
         return getattr(_async_client, name)
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
-'''
-_HOOKS: Final = '''"""Hooks that observe each call's events, and the events they receive."""
-
-from ._runtime.client.hooks import (
-    AsyncHook,
-    AsyncLimiter,
-    AsyncPermit,
-    CallEvent,
-    CallOutcome,
-    EventName,
-    Hook,
-    Limiter,
-    LimiterContext,
-    Permit,
-    RetryReason,
-)
-
-__all__ = [
-    "AsyncHook", "AsyncLimiter", "AsyncPermit", "CallEvent", "CallOutcome", "EventName",
-    "Hook", "Limiter", "LimiterContext", "Permit", "RetryReason",
-]
 '''
 _OPTION_NAMES: Final = (
     "ClientOptions",
@@ -181,100 +161,68 @@ def _options(capabilities: Capabilities) -> str:
     ))
 
 
-_AUTH_NAMES: Final = (
-    "AsyncCredentialProvider",
-    "AsyncEnvironmentCredentialProvider",
-    "AsyncRequestSigner",
-    "AsyncStaticCredentialProvider",
-    "AuthConfig",
-    "CredentialContext",
-    "CredentialMaterial",
-    "CredentialProvider",
-    "CredentialProviderInput",
-    "EnvironmentCredentialProvider",
-    "RequestSigner",
-    "SignatureFields",
-    "SignerCapabilities",
-    "SigningInput",
-    "StaticCredentialProvider",
-    "TokenVersion",
-)
-_CREDENTIAL_NAMES: Final[dict[Security, tuple[str, ...]]] = {
-    "api_key": ("ApiKeyCredential",),
-    "basic": ("BasicCredential",),
-    "bearer": (
-        "AccessToken",
-        "AsyncRefreshableTokenProvider",
-        "AsyncStaticTokenProvider",
-        "BearerCredential",
-        "RefreshableTokenProvider",
-        "StaticTokenProvider",
-    ),
-    "client_credentials": ("ApiKeyCredential",),
-    "refresh_token": ("ApiKeyCredential",),
+_KIND_LABELS: Final = {"api_key": "API key", "basic": "HTTP Basic", "bearer": "bearer token"}
+_CREDENTIAL_EXAMPLES: Final = {
+    "api_key": ("key", "key: str"),
+    "basic": ("(username, password)", "username: str, password: str"),
+    "bearer": ("token", "token: str"),
 }
-_SIGNERS_ONLY: Final = "This API declares no security scheme, so an `AuthConfig` carries only signers."
-_SCHEME_NAME: Final = (
-    "Use the API's declared scheme name in place of `{}`, and pass the options to an operation requiring it."
+_CREDENTIALS: Final = (
+    "A value is a string, a `(username, password)` tuple for HTTP Basic, or a callable returning one, which is called "
+    "for each request; a bearer argument also takes an OAuth provider. A call sends the credentials of its operation's "
+    "first security alternative they all satisfy, at the positions its schemes declare, and only to its server's "
+    "origin. An anonymous alternative applies only when no other alternative is satisfied, so an optional operation "
+    "sends a credential given for a listed scheme; an operation declaring empty security and `request_raw` send none. "
+    "A required operation no credential satisfies raises `ConfigurationError` with the reason `missing_credentials` "
+    "before sending, unless the HTTP client has an Auth of its own. A callable's failure raises `AuthError` with the "
+    "reason `provider_failed`. Credentials beside an Auth of the client's options or of an injected HTTP client raise "
+    "`ConfigurationError` with the reason `conflicting_auth`."
 )
-_ENVIRONMENT: Final = (
-    '`EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called; its async '
-    "counterpart has the same explicit selection. Imports and constructors do not discover environment secrets."
+_NATIVE_AUTH: Final = (
+    "`auth` on `ClientOptions`, a view's, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the "
+    "credentials for its calls, and `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP "
+    "client's own Auth. Sign requests with an `httpx2.Auth` of your own, which reads the body natively. Credential "
+    "values do not appear in repr; a query credential is part of the request URL, which the `httpx2` "
+    "logger records at INFO level."
 )
-_UNAVAILABLE: Final = (
-    "Basic charset overrides, resource audience metadata, and generated OAuth factories are not available yet. "
-    "Providers are explicit."
+_OAUTH_REQUESTS: Final = (
+    "The call needing a token requests it inline under the provider's lock, which concurrent calls wait for, through "
+    "the client's HTTP client without its Auth and without redirects, or through the provider's own `http_client`. "
+    "A token is renewed once a tenth of its lifetime, at most thirty seconds, remains; a 401 with a Bearer "
+    "`invalid_token` challenge, or without a challenge on an operation declaring `auth_challenge_less_401`, renews it "
+    "once and sends a replayable request again. A rejected token request raises `AuthError` with the reason "
+    "`oauth_error`, and `invalid_grant` on a refresh the reason `reauthorization_required`. A `TokenSet` omits its "
+    "tokens from repr, and the SDK persists nothing."
 )
-_CLIENT_CREDENTIALS: Final = (
-    "`ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire a client's own token when a call first "
-    "needs it."
-)
-_REFRESH_TOKENS: Final = (
-    "`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a `TokenSet` current with its refresh token, and hand "
-    "each refreshed token set to `on_token_refreshed`."
-)
-_AUTH_EXAMPLES: Final[dict[Security, tuple[str, str, str]]] = {
-    "bearer": (
-        "AccessToken, AuthConfig, StaticTokenProvider",
-        "bearer_options(token: str)",
-        "StaticTokenProvider(AccessToken(token, scopes=None))",
-    ),
-    "api_key": (
-        "ApiKeyCredential, AuthConfig, StaticCredentialProvider",
-        "key_options(key: str)",
-        "StaticCredentialProvider(ApiKeyCredential(key))",
-    ),
-    "basic": (
-        "AuthConfig, BasicCredential, StaticCredentialProvider",
-        "basic_options(username: str, password: str)",
-        "StaticCredentialProvider(BasicCredential(username, password))",
-    ),
-}
-_OAUTH_NAMES: Final[dict[Security, tuple[str, ...]]] = {
-    "client_credentials": ("AsyncClientCredentialsProvider", "ClientCredentialsProvider"),
-    "refresh_token": ("AsyncRefreshTokenProvider", "RefreshTokenProvider"),
+_FLOW_CLASSES: Final = {
+    "client_credentials": ("ClientCredentials", "client credentials"),
+    "refresh_token": ("RefreshToken", "refresh token"),
 }
 
 
-def _auth(capabilities: Capabilities) -> str:
-    """Return the auth module: request signers, and the credentials and OAuth flows of the declared schemes."""
-    security = capabilities.security
-    names = sorted({*_AUTH_NAMES, *(name for kind in security for name in _CREDENTIAL_NAMES[kind])})
-    flows = sorted({
-        *(("OAuthProviderOptions", "TokenSet") if capabilities.oauth else ()),
-        *(name for kind in security for name in _OAUTH_NAMES.get(kind, ())),
-    })
-    grants = ("from ._runtime.client.grants import (\n", *(f"    {name},\n" for name in flows), ")\n")
+def _auth(credentials: tuple[CredentialSpec, ...]) -> str | None:
+    """Return the auth module: the OAuth providers, and one per declared flow whose token URL is declared, or None."""
+    if not any(credential.flows for credential in credentials):
+        return None
+    classes = [
+        (f"{pascal(credential.name)}{base}", base, label, credential.name, url)
+        for credential in credentials
+        for flow, url in credential.flows
+        if url is not None
+        for base, label in (_FLOW_CLASSES[flow],)
+    ]
+    exported = sorted({"ClientCredentials", "RefreshToken", "TokenSet", *(name for name, *_ in classes)})
     return "".join((
-        '"""Explicit credential providers, request signers, and OAuth flows for this package."""\n\n'
-        if flows
-        else '"""Explicit credential providers and request signers for this package."""\n\n',
-        "from ._runtime.client.auth import (\n",
-        *(f"    {name},\n" for name in names),
-        ")\n",
-        *(grants if flows else ()),
-        "\n__all__ = [\n",
-        *(f"    {name!r},\n" for name in sorted((*names, *flows))),
+        '"""The OAuth token providers of this package\'s declared flows."""\n\n',
+        "from ._runtime.client.oauth import ClientCredentials, RefreshToken, TokenSet\n",
+        *(
+            f"\n\nclass {name}({base}):\n"
+            f'    """The {label} provider of the `{argument}` credential, at its declared token URL by default."""\n\n'
+            f"    token_url = {url!r}\n"
+            for name, base, label, argument, url in classes
+        ),
+        "\n\n__all__ = [\n",
+        *(f"    {name!r},\n" for name in exported),
         "]\n",
     ))
 
@@ -290,125 +238,67 @@ _ERROR_NAMES: Final = (
     "ConfigurationError",
     "ConflictError",
     "DecodeError",
-    "DeliveryState",
     "InternalServerError",
-    "IOPhase",
     "NotFoundError",
     "PermissionDeniedError",
-    "ProtocolError",
-    "ProtocolSizeError",
-    "ProtocolStoreError",
     "RateLimitError",
-    "RetryStopReason",
     "SDKError",
     "UnprocessableEntityError",
-    "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
-    "CacheProtocolError",
-    "CacheStoreError",
-    "CacheValidatorConflictError",
-    "ConcurrentReceiveError",
-    "DeliveryUnknownError",
-    "IncompleteFrameError",
-    "NonResumableSourceError",
-    "OperationCancelledError",
-    "OperationFailedError",
-    "PaginationCycleError",
-    "PollWaitLimitError",
-    "PollingStateError",
     "ProtocolDataError",
-    "ProtocolStateError",
-    "ResumeStateError",
     "SessionLimitError",
-    "StreamDecodeError",
     "StreamInterruptedError",
-    "StreamRemoteError",
-    "StreamResumeExhaustedError",
-    "UploadDeliveryUnknownError",
-    "UploadExpiredError",
-    "UploadOffsetError",
-    "UploadSourceChangedError",
     "WebSocketClosedError",
-    "WebSocketHandshakeError",
 )
-_ERROR_CAPABILITIES: Final = {"WebhookVerificationError": "webhooks"}
-_SESSION_ERRORS: Final = ("ProtocolStateError", "SessionLimitError")
 _PROTOCOL_ERRORS: Final[dict[Helper, tuple[str, ...]]] = {
-    "pagination": ("PaginationCycleError", *_SESSION_ERRORS),
-    "polling": (
-        "OperationCancelledError",
-        "OperationFailedError",
-        "PollWaitLimitError",
-        "PollingStateError",
-        "ResumeStateError",
-        *_SESSION_ERRORS,
-    ),
-    "streams": (
-        "IncompleteFrameError",
-        "ResumeStateError",
-        "StreamDecodeError",
-        "StreamInterruptedError",
-        "StreamRemoteError",
-        "StreamResumeExhaustedError",
-        *_SESSION_ERRORS,
-    ),
-    "uploads": (
-        "DeliveryUnknownError",
-        "NonResumableSourceError",
-        "ResumeStateError",
-        "UploadDeliveryUnknownError",
-        "UploadExpiredError",
-        "UploadOffsetError",
-        "UploadSourceChangedError",
-        *_SESSION_ERRORS,
-    ),
-    "cache": ("CacheProtocolError", "CacheStoreError", "CacheValidatorConflictError"),
-    "websocket": (
-        "ConcurrentReceiveError",
-        "DeliveryUnknownError",
-        "StreamDecodeError",
-        "WebSocketClosedError",
-        "WebSocketHandshakeError",
-        *_SESSION_ERRORS,
-    ),
+    "pagination": ("ProtocolDataError", "SessionLimitError"),
+    "polling": ("ProtocolDataError", "SessionLimitError"),
+    "streams": ("ProtocolDataError", "SessionLimitError", "StreamInterruptedError"),
+    "uploads": ("ProtocolDataError",),
+    "cache": ("ProtocolDataError",),
+    "websocket": ("ProtocolDataError", "WebSocketClosedError"),
+    "webhooks": ("ProtocolDataError",),
 }
 
 
 def _errors(capabilities: Capabilities) -> str:
-    """Return the errors module: the client's errors and those of the declared OAuth flows and helpers.
-
-    `ProtocolDataError` is always there, since a malformed compressed response raises it.
-    """
-    declared = {*capabilities.helpers, *(("oauth",) if capabilities.oauth else ())}
-    errors = [name for name in _ERROR_NAMES if _ERROR_CAPABILITIES.get(name, "client") in {"client", *declared}]
+    """Return the errors module: the client's errors and those of the declared helpers, loaded on first use."""
     raised = {name for helper in capabilities.helpers for name in _PROTOCOL_ERRORS.get(helper, ())}
-    protocol = [name for name in _PROTOCOL_ERROR_NAMES if name == "ProtocolDataError" or name in raised]
-    return "".join((
+    protocol = [name for name in _PROTOCOL_ERROR_NAMES if name in raised]
+    parts = [
         '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n',
         "from __future__ import annotations\n\n",
-        "from typing import TYPE_CHECKING\n\n",
+        *(("from typing import TYPE_CHECKING\n\n",) if protocol else ()),
         "from ._runtime.client.errors import (\n",
-        *(f"    {name},\n" for name in errors),
-        ")\n\nif TYPE_CHECKING:\n    from ._runtime.protocols.errors import (\n",
-        *(f"        {name},\n" for name in protocol),
-        "    )\n\n__all__ = [\n",
-        *(f"    {name!r},\n" for name in sorted((*errors, *protocol))),
-        "]\n_PROTOCOL_ERRORS = frozenset({\n",
-        *(f"    {name!r},\n" for name in protocol),
-        "})\n\n\n",
-        "def __getattr__(name: str) -> object:\n",
-        '    """Load the protocol helper exceptions only when one of their classes is requested."""\n',
-        "    if name in _PROTOCOL_ERRORS:\n",
-        "        from ._runtime.protocols import errors\n\n",
-        "        value = globals()[name] = getattr(errors, name)\n",
-        "        return value\n",
-        '    msg = f"module {__name__!r} has no attribute {name!r}"\n',
-        "    raise AttributeError(msg)\n\n\n",
-        "def __dir__() -> list[str]:\n",
-        '    """List the module\'s names, including the protocol helper exceptions loaded on first use."""\n',
-        "    return sorted({*globals(), *__all__})\n",
-    ))
+        *(f"    {name},\n" for name in _ERROR_NAMES),
+        ")\n",
+    ]
+    if protocol:
+        parts.extend((
+            "\nif TYPE_CHECKING:\n    from ._runtime.protocols.errors import (\n",
+            *(f"        {name},\n" for name in protocol),
+            "    )\n",
+        ))
+    parts.extend(("\n__all__ = [\n", *(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *protocol))), "]\n"))
+    if protocol:
+        parts.extend((
+            "_PROTOCOL_ERRORS = frozenset({\n",
+            *(f"    {name!r},\n" for name in protocol),
+            "})\n\n\n",
+            "def __getattr__(name: str) -> object:\n",
+            '    """Load the protocol helper exceptions only when one of their classes is requested."""\n',
+            "    if name in _PROTOCOL_ERRORS:\n",
+            "        from ._runtime.protocols import errors\n\n",
+            "        value = globals()[name] = getattr(errors, name)\n",
+            "        return value\n",
+            '    msg = f"module {__name__!r} has no attribute {name!r}"\n',
+            "    raise AttributeError(msg)\n\n\n",
+            "def __dir__() -> list[str]:\n",
+            '    """List the module\'s names, including the protocol helper exceptions loaded on first use."""\n',
+            "    return sorted({*globals(), *__all__})\n",
+        ))
+    return "".join(parts)
 
 
 _RESPONSES: Final = '''"""Typed results of this package's calls, the metadata of their responses, and raw responses."""
@@ -1117,6 +1007,28 @@ class _Resources(_Typing):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
+    def _create(self, module: TargetModule, core: str) -> str:
+        """Return the root's core creation, passing the credential arguments by scheme name when there are any."""
+        if not (credentials := self.plan.credentials):
+            return f"{core}.create(_DEFAULTS, options=options, http_client=http_client)"
+        schemes = Group("{", tuple((f"{json.dumps(item.scheme.name)}: ", item.name) for item in credentials), "}")
+        entries = (
+            ("", "_DEFAULTS"),
+            ("options=", "options"),
+            ("http_client=", "http_client"),
+            ("credentials=", _call(module.local("_runtime.client.auth", "SchemeCredentials"), (("", schemes),))),
+        )
+        return layout(_call(f"{core}.create", entries), 8, len("self._core = "), WIDTH)
+
+    @staticmethod
+    def _credential_annotation(module: TargetModule, kind: str) -> str:
+        """Return the type of a credential argument of the scheme kind."""
+        runtime = "_runtime.client.auth"
+        if kind == "basic":
+            return module.local(runtime, "UserPassword")
+        secret = module.local(runtime, "Secret")
+        return f"{secret} | {module.local(runtime, 'TokenSource')}" if kind == "bearer" else secret
+
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
         prefix = "Async" if asynchronous else ""
@@ -1138,13 +1050,19 @@ class _Resources(_Typing):
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
+        core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         values = {
+            "credentials": [
+                {"name": item.name, "annotation": self._credential_annotation(module, item.scheme.kind)}
+                for item in self.plan.credentials
+            ],
+            "create": self._create(module, core),
             "defaults": self.defaults(module),
             "options": module.local("_runtime.client.options" if protocols else "options", "ClientOptions"),
             "http_client": f"{module.module('httpx2')}.{prefix}Client",
             "unset": module.local("_runtime.model_codecs.unset", "Unset"),
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
-            "core": module.local("_runtime.client.client", f"{prefix}ClientCore"),
+            "core": core,
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
@@ -1978,8 +1896,9 @@ repeats the items already delivered from it. A resumed pager counts pages and it
 starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
 continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
 `initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
-kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or
-`PaginationCycleError` resumes from its `checkpoint()`; the errors carry no continuation.
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or a
+`ProtocolDataError` with the reason `pagination_cycle` resumes from its `checkpoint()`; the errors carry no
+continuation.
 """
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
@@ -2022,24 +1941,23 @@ _RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None 
 _RESUMED: Final = """
 A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's
-expiry, never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that
-failed, ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing
-the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
+a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's expiry,
+never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that failed,
+ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing the
+cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
 reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
-caller. It refuses a state that is not JSON or does not fit with `ConfigurationError` and an expired one with
-`ResumeStateError` before sending, and a cursor written where a credential goes with `ConfigurationError` with the
-reason `wrong_capability`. No options, the client's, a view's, or the call's, may patch a header or query parameter a
-reopen writes or fix an idempotency key.
+caller. It refuses a state that is not JSON or does not fit with `ConfigurationError`, an expired one with the reason
+`expired`, before sending, and a cursor written where a credential goes with the reason `wrong_capability`. No options,
+the client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
 
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
 delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
-`StreamResumeExhaustedError`; a wait whose backoff cap or `retry` time is
-longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
-idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
-reopen are delivered again.
+`SessionLimitError` with the reason `reconnects`; a wait whose backoff cap or `retry` time is longer than allowed, or a
+wait longer than the session has left, raises the interruption instead. Decode, size, remote, idle, and deadline
+failures, the declared end, and closing never reconnect, and events the server sends again after a reopen are delivered
+again.
 """
 _CACHE: Final = "_runtime.protocols.cache"
 _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
@@ -3109,68 +3027,52 @@ class ClientRenderer:
             if spec.accepted_content_encodings
         }
 
-    def _credentials_runtime(self, capabilities: Capabilities) -> str:
-        """Show how to pass a credential of the first declared scheme kind, and name each declared kind's values."""
-        security = capabilities.security
-        package = self.config.package
-        sentences = [
-            text
-            for kind, text in (
-                ("bearer", "Async clients use `AsyncStaticTokenProvider` or another async provider."),
-                ("api_key", "API keys use `ApiKeyCredential`."),
-                ("basic", "Basic uses `BasicCredential` with UTF-8."),
+    def _credentials_runtime(self) -> str:
+        """Show how to pass the first credential, and name the credential arguments the clients take."""
+        credentials = self.plan.credentials
+        if not credentials:
+            return _paragraph(
+                "No operation of this API requires a security scheme, so its clients take no credentials.",
+                _NATIVE_AUTH,
             )
-            if kind in security
-        ]
-        if "bearer" in security:
-            sentences.append(
-                "OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery or token HTTP."
-            )
-        elif security:
-            sentences.insert(0, "Async clients use `AsyncStaticCredentialProvider` or another async provider.")
-        sentences.append(_ENVIRONMENT)
-        if (example := next((kind for kind in _AUTH_EXAMPLES if kind in security), None)) is None:
-            return "\n" + _paragraph(_SIGNERS_ONLY, *sentences)
-        imports, signature, provider = _AUTH_EXAMPLES[example]
-        return f"""
-```python
-from {package}.auth import {imports}
-from {package}.options import RequestOptions
+        first = credentials[0]
+        value, annotation = _CREDENTIAL_EXAMPLES[first.scheme.kind]
+        listed = ", ".join(
+            f"`{credential.name}` ({_KIND_LABELS[credential.scheme.kind]})" for credential in credentials
+        )
+        text = _paragraph(
+            "`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: "
+            f"{listed}.",
+            _CREDENTIALS,
+            _NATIVE_AUTH,
+        )
+        return f"""```python
+from {self.config.package} import Client
 
 
-def {signature} -> RequestOptions:
-    return RequestOptions(auth=AuthConfig({{"{example}": {provider}}}))
+def authenticated_client({annotation}) -> Client:
+    return Client({first.name}={value})
 ```
 
-{_paragraph(_SCHEME_NAME.format(example), *sentences)}"""
+{text}"""
 
-    @staticmethod
-    def _oauth_runtime(capabilities: Capabilities) -> str:
-        """Describe the token exchanges of the declared OAuth flows, or nothing without one."""
-        security = capabilities.security
-        if not capabilities.oauth:
-            return _paragraph(_UNAVAILABLE)
-        flows = [
-            text
-            for kind, text in (
-                ("client_credentials", _CLIENT_CREDENTIALS),
-                ("refresh_token", _REFRESH_TOKENS),
-            )
-            if kind in security
-        ]
-        return _paragraph(
-            "OAuth providers exchange tokens without redirects or retries, through a token transport of their own that "
-            "must verify TLS; a `TokenSet` omits its tokens from repr.",
-            *flows,
-            "The call needing a new token requests it inline under the provider's lock, which concurrent callers wait "
-            "for, and the SDK persists nothing.",
-            _UNAVAILABLE,
+    def _oauth_runtime(self) -> str:
+        """Describe the token requests of the declared OAuth flows, or nothing without one."""
+        flows = {flow for credential in self.plan.credentials for flow, _ in credential.flows}
+        if not flows:
+            return ""
+        return "\n\n" + _paragraph(
+            f"`{self.config.package}.auth` exports `ClientCredentials` and `RefreshToken`, and a subclass of "
+            "either for each declared flow whose token URL is declared, which `token_url=` overrides. They are bearer "
+            "credentials: `ClientCredentials(client_id=..., client_secret=..., scopes=..., audience=...)` requests a "
+            "client's own token, and `RefreshToken(token_set, client_id=..., on_token_refreshed=...)` renews a "
+            "`TokenSet` with its refresh token and hands each refreshed set to the callback.",
+            _OAUTH_REQUESTS,
         )
 
     def runtime_documentation(self, capabilities: Capabilities) -> str:
         """Render public runtime settings and their resource and delivery obligations."""
-        oauth = capabilities.oauth
-        clock = "A provider uses `OAuthProviderOptions(clock=...)` for its own time sources." if oauth else ""
+        clock = "An OAuth provider takes `clock=Clock(...)` for its own token expiry." if capabilities.oauth else ""
         return f"""# Runtime reference
 
 Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
@@ -3223,7 +3125,7 @@ Status errors retain the final available response. Buffered and streaming raw AP
 including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
 failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
-set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
+set an optional session total timeout. Close an abandoned stream to release its response.
 
 ## Idempotency and replayable input
 
@@ -3255,15 +3157,18 @@ call running in a thread before it closes the file.
 ## Redirects and transport construction
 
 Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
+Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
+attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
+as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
 `follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
-that carries a credential at a position a declared security scheme names other than `Authorization`, or a
-signature, is never redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in
-a header, query, or cookie never reaches another origin. Response content codings are removed by HTTPX2: the native
-client's `Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a
-body that does not decode raises `ProtocolDataError`. A streaming raw response's `iter_raw_bytes()` yields the body as
-it arrived; a buffered one keeps only its decoded body.
+that carries a credential at a position a declared security scheme names other than `Authorization` is never
+redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
+cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
+`Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
+does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
+yields the body as it arrived; a buffered one keeps only its decoded body.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
@@ -3280,60 +3185,26 @@ HTTP/2 is explicit and requires its dependency. Injected native clients retain t
 incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
 closes only the native client the SDK created. Request views share that root and have no close method.
 
-## Explicit authentication and signing
+## Authentication
 
-Import `AuthConfig`, credential values, providers, and signers from `{self.config.package}.auth`.
-`auth=UNSET` inherits, an `AuthConfig` replaces the inherited configuration as a whole, and `auth=None` disables it.
-Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
-alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
-That choice stays fixed through a call and its retries.
-{self._credentials_runtime(capabilities)}
-
-Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
-Provider contexts carry current origin/deadline/requirements, and audience is currently None.
-Providers retain their caller's lifetime. Views share the root's native HTTP client.
-Provider and signer callbacks consume the call deadline; synchronous callbacks are
-cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
-
-Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
-explicit `anonymous_schemes`; signer-only calls also need the opt-in. Raw destinations require explicit auth origins.
-Authentication and signer origin permissions are independent. Every attempt reconstructs credentials and signatures.
-Generic patches cannot change managed credential/signature names.
-
-Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
-the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
-Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
-retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
-acquisition remains allowed. These callbacks start no builtin token exchange.
-
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
-They receive the final method/URL/raw query/headers after credential and body framing, before attempt hooks and
-sending. Overlapping owners fail early; signatures are rebuilt per attempt. `AuthError` with the reason
-`signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
-
-Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
-request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
-their potentially sensitive messages.
-
-{self._oauth_runtime(capabilities)}
+{self._credentials_runtime()}{self._oauth_runtime()}
 
 ## Errors and cleanup
 
-Every exception derives from `SDKError`, which keeps a stable `reason`, the call's `attempt_count`, `elapsed`, and
-`request_id`, and how far the request got. `APIConnectionError` is an I/O failure and `APITimeoutError` a phase cap
-(`effective_timeout`) or the logical/stream deadline (`deadline_at`). A final status the operation does not declare as
-a success raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with
-`status_code`, `headers`, `request_id`, and `body` decoded with the operation's declared error schema, else the
-bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
-declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
-values.
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase timeout (`phase_timeout`) or the call's or stream's total timeout
+(`deadline_exceeded`). A final status the operation does not declare as a success raises `APIStatusError`, or its
+subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with `status_code`, `headers`, `request_id`, and `body`
+decoded with the operation's declared error schema, else the bounded raw bytes; its message gives the status and the
+start of the body. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
+declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
+key, header, or body values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Resource release
-runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
-and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
-Native task cancellation propagates unchanged, and user callbacks are not shielded.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""  # noqa: S608
+Resource release runs in finally; secondary failures are named in the notes of the primary failure. Root close refuses
+new calls from the root and its views, closes a created native client once, and leaves borrowed clients and providers
+caller owned. Native task cancellation propagates unchanged, and user callbacks are not shielded.
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._compression_runtime()}"""
 
     def _compression_runtime(self) -> str:
         """Describe request compression, or that no operation of the package accepts a request coding."""
@@ -3391,32 +3262,34 @@ handle, a declared immediate status a handle that already holds the result, and 
 `ConfigurationError` before the create request. Each poll waits until the interval after the last response, an
 error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
 after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
-shorter than what remains of the session, raises `PollWaitLimitError` without sending. A resumed handle polls at
-once, since a checkpoint keeps no server delay. A poll's state must equal a declared state value, JSON type included;
-any other value raises `PollingStateError`, and success is never inferred.
+shorter than what remains of the session, raises `SessionLimitError` with the reason `wait` or `deadline` and the
+server's delay as `required_wait` without sending. A resumed handle polls at once, since a checkpoint keeps no server
+delay. A poll's state must equal a declared state value, JSON type included; any other value raises
+`ProtocolDataError`, and success is never inferred.
 
 `wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
-cancelled operation raises `OperationFailedError` or `OperationCancelledError` with its last poll, on every later
-`wait` too. An error that settles nothing, such as a transport error, a deadline, a cancellation, or a limit, leaves
-the handle as it was: pending, so a later `status` or `wait` polls again without creating the operation again, or
-succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
-`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
-options must not fix an idempotency key or patch a header or query parameter the helper writes.
+cancelled operation raises `ProtocolDataError` with the reason `operation_failed` or `operation_cancelled`, its last
+poll's decoded data as `data` and its response as `info`, on every later `wait` too. An error that settles nothing, such
+as a transport error, a deadline, a cancellation, or a limit, leaves the handle as it was: pending, so a later `status`
+or `wait` polls again without creating the operation again, or succeeded with its result fetch still due, which a later
+`wait` retries alone. `status` and `wait` at once raise `ConfigurationError` with the reason `invalid_state`, and so
+does every step after `close()` or `aclose()`, which stops only local polling. A call's options must not fix an
+idempotency key or patch a header or query parameter the helper writes.
 
 `checkpoint()` returns plain JSON without sending, also after closing and while another thread or task polls: an object
 whose `phase` is `pending`, with the values the next poll (`bound`) and a remote cancel (`cancel`) write and those the
 create response gave the result fetch (`seed`), or `fetch`, with the values a due result fetch writes, and the server's
 `expires_at`, never polls, results, model objects, the session, or the call's options; a settled operation has nothing
-left to continue, and its `checkpoint()` raises `ProtocolStateError`. The helper's `resume` is never awaited and returns
+left to continue, and its `checkpoint()` raises `ConfigurationError`. The helper's `resume` is never awaited and returns
 a handle in a session of its own that sends nothing until `status` or `wait`: a pending one polls again at once, and one
 whose fetch is due fetches the result; polls, the session's timeout, and deadline start afresh. Before returning, it
-refuses a value that is not JSON or does not fit the helper with `ConfigurationError`, an expired one with
-`ResumeStateError`, and a dot segment the next poll or remote cancel would write to a path parameter with
-`ProtocolDataError`; any other saved value is checked and encoded when its request is built, as a server's is. After
-`PollWaitLimitError` or a `SessionLimitError`, the handle's `checkpoint()` continues the operation; the errors carry no
-checkpoint. A helper that declares `expires_at` reads the server's expiry, an RFC 3339 date-time with an offset or an
-HTTP date, from the accepted create response, and its checkpoints expire then; a create response without a valid one
-fails `start` with `ProtocolDataError`, though the remote operation was created.
+refuses a value that is not JSON or does not fit the helper with `ConfigurationError`, an expired one with the reason
+`expired`, and a dot segment the next poll or remote cancel would write to a path parameter with `ProtocolDataError`;
+any other saved value is checked and encoded when its request is built, as a server's is. After a `SessionLimitError`,
+the handle's `checkpoint()` continues the operation; the errors carry no checkpoint. A helper that declares `expires_at`
+reads the server's expiry, an RFC 3339 date-time with an offset or an HTTP date, from the accepted create response, and
+its checkpoints expire then; a create response without a valid one fails `start` with `ProtocolDataError`, though the
+remote operation was created.
 
 A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
@@ -3448,9 +3321,10 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
 to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
 creates the upload without reading it. Each append seeks to the confirmed offset and reads the rest of its chunk into
-one buffer; content shorter or longer than the upload's size raises `UploadSourceChangedError` and the handle sends
-nothing more. The content is not hashed: keep it unchanged while it is uploaded. A one-shot stream, iterator, or a
-reader that cannot seek raises `NonResumableSourceError`; send it as an ordinary upload. Sources are borrowed and never
+one buffer; content shorter or longer than the upload's size raises `ConfigurationError` with the reason
+`source_changed` and the handle sends nothing more. The content is not hashed: keep it unchanged while it is uploaded.
+A one-shot stream, iterator, or a reader that cannot seek raises `ConfigurationError` with the reason
+`wrong_capability`; send it as an ordinary upload. Sources are borrowed and never
 closed.
 
 `start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
@@ -3458,17 +3332,18 @@ confirmed offset, and `run` appends every remaining chunk and completes the uplo
 the declared completion operation, sent once and returning its response. An append whose outcome is unknown is never
 resent blindly: the server's offset is probed once instead, and an unchanged offset sends the range again, the chunk's
 end confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that
-regresses, passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and a probe that
-fails raises `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
+regresses, passes the content, or commits part of a chunk that may not be raises `ProtocolDataError`, and a probe that
+fails raises `APIConnectionError` with the reason `delivery_unknown`; so does a completion whose outcome is unknown,
+which is never sent again.
 
 `checkpoint()` returns plain JSON, sending nothing: the content's `size`, the `chunk` size, the `confirmed` offset, the
-values later calls write (`bound`), a completion of unknown outcome (`phase` and `delivery`), and the server's
-`expires_at`; a complete upload has no checkpoint, and errors carry none. `resume` checks it and the source's size,
-then probes the server's offset once; it never creates the upload again, and a completion of unknown outcome raises
-again. A value that is not JSON or does not fit the helper, or whose chunk size exceeds `chunk_bytes`, raises
-`ConfigurationError`, and a checkpoint past the server's declared expiry `UploadExpiredError`. `advance` and `run`
-at once raise `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local
-uploading. A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
+values later calls write (`bound`), a completion of unknown outcome (`phase`), and the server's `expires_at`; a complete
+upload has no checkpoint, and errors carry none. `resume` checks it and the source's size, then probes the server's
+offset once; it never creates the upload again, and a completion of unknown outcome raises again. A value that is not
+JSON or does not fit the helper, or whose chunk size exceeds `chunk_bytes`, raises `ConfigurationError`, with the reason
+`expired` for a checkpoint past the server's declared expiry. `advance` and `run` at once raise `ConfigurationError`
+with the reason `invalid_state`, and so does every step after `close()` or `aclose()`, which stops only local uploading.
+A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
     def pagination_runtime(self) -> str:
@@ -3487,8 +3362,9 @@ A page's items must be a JSON array; an empty array does not end the traversal. 
 binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
 `ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
 cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
-the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
-`SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
+the session ends it with `ProtocolDataError` with the reason `pagination_cycle` after the repeating page. A limit
+reached while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A
+call's options must not patch a
 header or a query parameter the helper writes."""
             if cursors
             else """\
@@ -3538,16 +3414,17 @@ stores.
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
-auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
-A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
-and the client's own auth, not a view's or a call's; anything else raises `ConfigurationError`. A response whose
-`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
-cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
-only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
-`CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
-`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
+credentials the client places, and selected by the request headers its `Vary` names and those a header patch or a
+declared parameter fills. A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper
+declared authenticated, and the client's own credentials or Auth, not a view's or a call's Auth; anything else raises
+`ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
+permission set: credentials the client cannot see, such as a client certificate, need a partition of their own.
+Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
+and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
+came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
+allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `SDKError` with the reason
+`store_failed` and never resend a request.
 The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
 Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
 Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
@@ -3566,10 +3443,11 @@ call's headers and header and cookie parameters but not its query. A relative UR
 the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
 and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
 else raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
-headers or query fields the package's security schemes name, and authenticates only at an origin
-`AuthConfig.allowed_origins` lists. A Link header's values must parse as RFC 8288 links and give the relation at most
+headers or query fields the package's security schemes name, and the client's credentials are placed only at the
+server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
 once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
-session, the first page's own included, ends it with `PaginationCycleError` after the repeating page.
+session, the first page's own included, ends it with `ProtocolDataError` with the reason `pagination_cycle` after the
+repeating page.
 """
 
     @cached_property
@@ -3584,10 +3462,10 @@ session, the first page's own included, ends it with `PaginationCycleError` afte
         lines = (
             """
 An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
-blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. Bytes after the last line end raise
-`IncompleteFrameError` unless the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record
-has the empty string as its event type and no event ID, and a declared error record raises `StreamRemoteError` with
-the event type None.
+blank line or one that is not UTF-8 or JSON raises `DecodeError`. Bytes after the last line end raise
+`StreamInterruptedError` with the reason `eof` unless the helper's `final_line` is `allow_eof`, which decodes them as
+the last record. A record has the empty string as its event type and no event ID, and a declared error record raises
+`ProtocolDataError` with the reason `error_event`.
 """
             if any(spec.helper.kind == "ndjson" for spec in self.streams)
             else ""
@@ -3613,15 +3491,16 @@ from:
 {_RECONNECT_LIMITS if resumed else ""}
 The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
 UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
-fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the native
-`SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator maps it to; data that does not
-decode raises `StreamDecodeError`, and a declared error event raises `StreamRemoteError`. The stream ends at its
-declared completion; an end before it raises `StreamInterruptedError`, and a broken connection
-`StreamInterruptedError` with its transport failure as the cause. A frame an SSE body ends in the middle of is
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the reason
+`too_large` and the native `SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator
+maps it to; data that does not decode raises `DecodeError`, and a declared error event raises `ProtocolDataError` with
+the reason `error_event` and the decoded event as `data`. The stream ends at its declared completion; an end before it
+raises `StreamInterruptedError` with the reason `eof`, and a broken connection one with the reason `transport` and its
+transport failure as the cause. A frame an SSE body ends in the middle of is
 discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
 never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
-active streams; each stream releases its own response and limiter permit.
+active streams; each stream releases its own response.
 {lines}{_RESUMED if resumed else ""}"""
 
     def socket_runtime(self) -> str:
@@ -3635,7 +3514,7 @@ active streams; each stream releases its own response and limiter permit.
 A WebSocket helper's `connect` is one session. On `Client` it returns the session, which `with` or `close()` closes; on
 `AsyncClient` it is used as `async with client.protocols.<name>.connect(...) as session:`, and the session runs in the
 task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
-sent through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's
+sent through the client's HTTP client with initial authentication and its event hooks, and with the HTTP client's
 transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
 raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
 for the helper, then the default below. The session types are imported from:
@@ -3651,19 +3530,20 @@ for the helper, then the default below. The session types are imported from:
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | session total timeout | None |
 
-The handshake's limiter permit belongs to the session until it closes or fails; the connection belongs to the HTTP
+The connection belongs to the HTTP
 client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
-and a second one raises `ConcurrentReceiveError`; HTTPX2 writes sends one at a time beside it. Cancelling an asyncio
-`receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON coded by the helper's schema,
-UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode raises `StreamDecodeError` and
-closes the connection with 1002, and one over the size limit raises `ProtocolSizeError` after HTTPX2 closed the
-connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` and closes with 1001.
-A closure by the server raises `WebSocketClosedError` with its code and reason, is answered with the same code, and
-ends iteration when it was normal. A send or ping on a connection that is already closing raises `WebSocketClosedError`
-without a code; a send that may have reached the server raises `DeliveryUnknownError`, closes the session, and is never
-sent again. Sessions never reconnect. Received handshake refusals are terminal, including redirects and 401s;
-credentials are never refreshed or invalidated by a refused upgrade. Only a transport failure proven `NOT_SENT` before
-handover may use the call's existing retry policy. Closing a session sends the code and reason given, 1000 by default.
+and a second one raises `ConfigurationError` with the reason `invalid_state`; HTTPX2 writes sends one at a time beside
+it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON
+coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode
+raises `DecodeError` and closes the connection with 1002, and one over the size limit raises `ProtocolDataError` with
+the reason `too_large` after HTTPX2 closed the connection with 1009. A receive that waits longer than the idle timeout
+raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
+reason, is answered with the same code, and ends iteration when it was normal. A send or ping on a connection that is
+already closing raises `WebSocketClosedError` without a code; a send that may have reached the server raises
+`APIConnectionError` with the reason `delivery_unknown`, closes the session, and is never sent again. Sessions never
+reconnect. Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or
+invalidated by a refused upgrade. Only a transport failure proven unsent before handover may use the call's existing
+retry policy. Closing a session sends the code and reason given, 1000 by default.
 """
 
     @staticmethod
@@ -3711,7 +3591,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         registry = _Registry(self.plan, self.accessors, self.role, types=self.types)
         webhooks = tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors, self.role))
         capabilities = Capabilities(
-            security=declared_security(self.plan, self.batch),
+            security=declared_security(self.plan),
             helpers=declared_helpers(
                 (
                     *(spec.helper.kind for spec in (*self.helpers, *self.streams, *self.sockets)),
@@ -3734,10 +3614,13 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
             self.file(PurePosixPath("_async_client.py"), "client", resources.client(asynchronous=True)),
             self.file(PurePosixPath("options.py"), "options", _options(capabilities)),
-            self.file(PurePosixPath("hooks.py"), "hooks", _HOOKS),
             self.file(PurePosixPath("errors.py"), "errors", _errors(capabilities)),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
-            self.file(PurePosixPath("auth.py"), "auth", _auth(capabilities)),
+            *(
+                (self.file(PurePosixPath("auth.py"), "auth", auth),)
+                if (auth := _auth(self.plan.credentials)) is not None
+                else ()
+            ),
             self.file(PurePosixPath("bodies.py"), "bodies", _bodies(capabilities)),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs()),
             self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _protocols(capabilities)),

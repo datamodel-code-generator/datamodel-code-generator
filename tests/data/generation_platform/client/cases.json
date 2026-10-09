@@ -2070,6 +2070,9 @@
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
   },
+  "credential-name-errors": {
+    "input": "credential-name-errors.yaml"
+  },
   "auth-context": {
     "input": "auth-context.yaml",
     "modules": [
@@ -5045,6 +5048,12 @@
     "cwd": true,
     "model": {
       "custom_template_dir": "templates/not-found"
+    }
+  },
+  "output-required": {
+    "input": "pets.yaml",
+    "model": {
+      "output": null
     }
   },
   "api-scope-required": {

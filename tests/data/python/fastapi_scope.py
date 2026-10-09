@@ -1,4 +1,4 @@
-"""Run the FastAPI entry points with unsupported settings in a fresh interpreter and list the modules they imported."""
+"""Run server generation with unsupported settings in a fresh interpreter and list the modules it imported."""
 
 from __future__ import annotations
 
@@ -18,10 +18,7 @@ TARGET = (
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._api_generation",
     "datamodel_code_generator._fastapi",
-    "datamodel_code_generator.fastapi",
     "datamodel_code_generator._client",
-    "datamodel_code_generator.client",
-    "datamodel_code_generator.api_types",
 )
 EMPTY = 'openapi: 3.1.0\ninfo: {title: Empty, version: "1.0"}\npaths: {}\n'
 PRIMITIVE = EMPTY + "components:\n  schemas:\n    Name: {type: string}\n"
@@ -37,35 +34,7 @@ def _write(root: Path) -> None:
         (root / f"{name}.yaml").write_text(text, encoding="utf-8")
 
 
-def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> str:
-    from datamodel_code_generator import DataModelType, Error, GenerateConfig, OpenAPIScope
-    from datamodel_code_generator.fastapi import (
-        FastAPIConfig,
-        generate_fastapi,
-        render_fastapi,
-    )
-
-    model = GenerateConfig(
-        output=root / "models.py",
-        input_file_type="openapi",
-        target_python_version="3.11",
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType(backend),
-        use_missing_sentinel=sentinel,
-        openapi_include_paths=INCLUDED.get(name),
-    )
-    config = FastAPIConfig(output=root / "server", package="server", model_package="models")
-    entry = render_fastapi if mode == "render" else generate_fastapi
-    try:
-        entry(root / f"{name}.yaml", model_config=model, config=config)
-    except Error as error:
-        return f"Error: {error}"
-    except Exception as error:  # noqa: BLE001
-        return type(error).__name__
-    return "ok"
-
-
-def _generate(root: Path, name: str, backend: str, *, output: bool) -> str:
+def _generate(root: Path, name: str, backend: str, *, output: bool, sentinel: bool = False) -> str:
     """Run generate() with the server options, writing to the model output or returning the files without one."""
     from datamodel_code_generator import Error, generate
 
@@ -77,6 +46,7 @@ def _generate(root: Path, name: str, backend: str, *, output: bool) -> str:
             output=root / "models.py" if output else None,
             output_model_type=backend,
             target_python_version="3.11",
+            use_missing_sentinel=sentinel,
             openapi_include_paths=INCLUDED.get(name),
             generate_server="fastapi",
             server_output=root / "server",
@@ -131,22 +101,15 @@ def main(root: Path) -> None:
     """
     _write(root)
     ordinary = _ordinary(root)
-    import datamodel_code_generator.fastapi  # noqa: F401, PLC0415
-
     inputs = {path.name for path in root.iterdir()}
     loaded = {name for name in WATCHED if name in sys.modules}
-    runs = [
-        f"{name} {mode}: {_api(root, name, mode, 'msgspec.Struct', sentinel=False)}"
-        for name in ("primitive", "empty", "unselected")
-        for mode in ("generate", "render")
-    ]
-    runs.extend(f"{name} check: {_cli(root, name, 'msgspec.Struct')}" for name in ("primitive", "empty", "unselected"))
+    runs = [f"{name} check: {_cli(root, name, 'msgspec.Struct')}" for name in ("primitive", "empty", "unselected")]
     runs.extend(
         f"{name} generate() {mode}: {_generate(root, name, 'msgspec.Struct', output=mode == 'output')}"
         for name in ("primitive", "empty", "unselected")
         for mode in ("output", "memory")
     )
-    runs.append(f"empty sentinel: {_api(root, 'empty', 'generate', 'msgspec.Struct', sentinel=True)}")
+    runs.append(f"empty sentinel: {_generate(root, 'empty', 'msgspec.Struct', output=True, sentinel=True)}")
     imported = [name for name in WATCHED if name in sys.modules and name not in loaded]
     runs.extend(
         f"{name} generate() memory: {_generate(root, name, 'pydantic_v2.BaseModel', output=False)}"

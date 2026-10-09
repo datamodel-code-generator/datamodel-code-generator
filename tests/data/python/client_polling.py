@@ -70,23 +70,23 @@ def _snapshot(snapshot: Any) -> str:
 
 
 def _outcome(value: object) -> str:
-    """Describe a step's result: a poll, a wait limit by its kind and thresholds, or anything else.
-
-    An error also tells whether it names the helper's session.
-    """
+    """Describe a step's result: a poll, a wait limit by its kind and thresholds, or anything else."""
     if hasattr(value, "terminal"):
         return _snapshot(value)
-    session = f" session={getattr(value, 'parent_session_id', None) is not None}"
-    if hasattr(value, "required_wait"):
+    if getattr(value, "required_wait", None) is not None:
         error: Any = value
-        if error.kind == "wait":
+        if error.reason == "wait":
             facts = f"required>limit={error.required_wait > error.limit} limit={error.limit}"
         else:
             facts = f"required>=limit={error.required_wait >= error.limit}"
-        return f"PollWaitLimitError kind={error.kind!r} {facts} {error.reason_code}{session}"
-    if hasattr(value, "snapshot"):
+        return f"SessionLimitError reason={error.reason!r} {facts}"
+    if getattr(value, "reason", None) in {"operation_failed", "operation_cancelled"}:
         failure: Any = value
-        return f"{type(failure).__name__}: {_snapshot(failure.snapshot)} {failure.reason_code}{session}"
+        data = failure.data
+        return (
+            f"{type(failure).__name__}: status={failure.info.status_code} data={type(data).__name__}:"
+            f"{getattr(data, 'id', None)} {failure.reason}"
+        )
     if hasattr(value, "response"):
         receipt: Any = value
         data = receipt.data
@@ -94,14 +94,14 @@ def _outcome(value: object) -> str:
             f"CancelReceipt(status={receipt.response.status_code}, "
             f"data={type(data).__name__}:{getattr(data, 'status', None)})"
         )
-    return describe(value) + (session if isinstance(value, BaseException) else "")
+    return describe(value)
 
 
 def measured(value: object) -> str:
     """Describe a step's result, giving a wait limit's exact required wait and limit."""
-    if hasattr(value, "required_wait"):
+    if getattr(value, "required_wait", None) is not None:
         error: Any = value
-        return f"PollWaitLimitError kind={error.kind!r} required_wait={error.required_wait} limit={error.limit}"
+        return f"SessionLimitError reason={error.reason!r} required_wait={error.required_wait} limit={error.limit}"
     return _outcome(value)
 
 

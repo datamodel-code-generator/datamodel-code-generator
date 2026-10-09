@@ -637,7 +637,7 @@ async def _late_download(
             try:
                 await response.stream_to(directory / "late.bin")
             except Exception as error:  # noqa: BLE001
-                late = f"{type(error).__name__} {error.reason} {error.phase} status {error.info.status_code}"
+                late = f"{type(error).__name__} {error.reason} status {error.info.status_code}"
         lines.append(f"  async download after its acquisition budget {late} {_files(directory)}")
 
 
