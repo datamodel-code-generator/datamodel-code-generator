@@ -4876,7 +4876,17 @@
       "protocols/uploads-oauth.json"
     ],
     "config": {
-      "protocols": "protocols/uploads-oauth.json"
+      "protocols": "protocols/uploads-oauth.json",
+      "operations": [
+        {
+          "ref": "/paths/~1files/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            }
+          }
+        }
+      ]
     },
     "backends": [
       "pydantic_v2.BaseModel"
@@ -5252,6 +5262,28 @@
         "client",
         "protocols",
         "_plans.py"
+      ]
+    ]
+  },
+  "type-spellings-bound": {
+    "input": "type-spellings-bound.yaml",
+    "model": {
+      "collapse_root_models": true,
+      "use_annotated": true,
+      "use_standard_collections": false,
+      "field_constraints": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
       ]
     ]
   }

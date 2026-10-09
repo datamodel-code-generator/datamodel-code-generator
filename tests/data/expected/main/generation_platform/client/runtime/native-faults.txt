@@ -187,3 +187,39 @@
   owned sync native closes=1
   owned async primary=CancelledError notes=1 count=1
   owned async native closes=1
+  sync owned default = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 5.0, 'read': 600.0, 'write': 600.0, 'pool': 600.0}]
+  async owned default = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 5.0, 'read': 600.0, 'write': 600.0, 'pool': 600.0}]
+  sync owned follows when asked = 'Response status=200 attempts=1'
+    phases=[{'connect': 5.0, 'read': 600.0, 'write': 600.0, 'pool': 600.0}, {'connect': 5.0, 'read': 600.0, 'write': 600.0, 'pool': 600.0}]
+  async owned follows when asked = 'Response status=200 attempts=1'
+    phases=[{'connect': 5.0, 'read': 600.0, 'write': 600.0, 'pool': 600.0}, {'connect': 5.0, 'read': 600.0, 'write': 600.0, 'pool': 600.0}]
+  sync owned timeout = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 2.5, 'read': 2.5, 'write': 2.5, 'pool': 2.5}]
+  async owned timeout = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 2.5, 'read': 2.5, 'write': 2.5, 'pool': 2.5}]
+  sync view lifts the limits = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': None, 'read': None, 'write': None, 'pool': None}]
+  async view lifts the limits = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': None, 'read': None, 'write': None, 'pool': None}]
+  sync call phases over the view = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 3, 'read': 1, 'write': 1, 'pool': 1}]
+  async call phases over the view = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 3, 'read': 1, 'write': 1, 'pool': 1}]
+  sync injected keeps its own = 'Response status=200 attempts=1'
+    phases=[{'connect': 2, 'read': 7, 'write': 7, 'pool': 7}, {'connect': 2, 'read': 7, 'write': 7, 'pool': 7}]
+  async injected keeps its own = 'Response status=200 attempts=1'
+    phases=[{'connect': 2, 'read': 7, 'write': 7, 'pool': 7}, {'connect': 2, 'read': 7, 'write': 7, 'pool': 7}]
+  sync injected given a timeout = 'Response status=200 attempts=1'
+    phases=[{'connect': 4.0, 'read': 4.0, 'write': 4.0, 'pool': 4.0}, {'connect': 4.0, 'read': 4.0, 'write': 4.0, 'pool': 4.0}]
+  async injected given a timeout = 'Response status=200 attempts=1'
+    phases=[{'connect': 4.0, 'read': 4.0, 'write': 4.0, 'pool': 4.0}, {'connect': 4.0, 'read': 4.0, 'write': 4.0, 'pool': 4.0}]
+  sync injected redirects declined = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 2, 'read': 7, 'write': 7, 'pool': 7}]
+  async injected redirects declined = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 2, 'read': 7, 'write': 7, 'pool': 7}]
+  sync injected view redirects declined = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 2, 'read': 7, 'write': 7, 'pool': 7}]
+  async injected view redirects declined = 'APIStatusError attempts=1 reason=unexpected_status status=302 cause=NoneType'
+    phases=[{'connect': 2, 'read': 7, 'write': 7, 'pool': 7}]

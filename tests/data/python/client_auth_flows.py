@@ -59,7 +59,7 @@ def _redirect(status: int, location: str) -> Callable[[httpx2.Request], httpx2.R
     return raw_response(status, b"", None, location=location)
 
 
-def _rows(options: ModuleType) -> tuple[tuple[str, dict[str, Any], dict[str, Any], str, int, str], ...]:
+def _rows() -> tuple[tuple[str, dict[str, Any], dict[str, Any], str, int, str], ...]:
     """Return the redirect rows: label, HTTP client settings, client arguments, operation, status, and Location.
 
     The HTTP client follows redirects unless a row says otherwise; a request carrying a key at a declared scheme
@@ -74,7 +74,7 @@ def _rows(options: ModuleType) -> tuple[tuple[str, dict[str, Any], dict[str, Any
         (
             "patched scheme header not redirected",
             follows,
-            {"options": options.ClientOptions(headers=(("X-API-Key", "patched-secret"),))},
+            {"default_headers": {"X-API-Key": "patched-secret"}},
             "anonymous",
             302,
             f"{_OTHER}/anonymous",
@@ -83,7 +83,7 @@ def _rows(options: ModuleType) -> tuple[tuple[str, dict[str, Any], dict[str, Any
         (
             "SDK choice cannot redirect a header key",
             follows,
-            {**key, "options": options.ClientOptions(follow_redirects=True)},
+            {**key, "follow_redirects": True},
             "api_key_header",
             307,
             f"{_OTHER}/api-key/header",
@@ -95,7 +95,7 @@ def _rows(options: ModuleType) -> tuple[tuple[str, dict[str, Any], dict[str, Any
         (
             "plain request the SDK redirects",
             {},
-            {"options": options.ClientOptions(follow_redirects=True)},
+            {"follow_redirects": True},
             "anonymous",
             307,
             f"{_OTHER}/anonymous",
@@ -109,9 +109,9 @@ def _returned(response: Any) -> tuple[object, ...]:
     return ("returned", info.status_code, info.headers.get("location"))
 
 
-def _redirects(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+def _redirects(package: ModuleType, lines: list[str]) -> None:
     """Send keyed, bearer, and plain calls to a redirect through a following HTTP client."""
-    for label, native, arguments, method, status, location in _rows(options):
+    for label, native, arguments, method, status, location in _rows():
         exchange = Exchange(lines)
         exchange.respond(_redirect(status, location), _OK)
         with exchange.client(**native) as http, package.Client(http_client=http, **arguments) as api:
@@ -127,9 +127,9 @@ def _redirects(package: ModuleType, options: ModuleType, lines: list[str]) -> No
         record(lines, "bearer rejected by another origin", api.auth.bearer)
 
 
-async def _aredirects(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _aredirects(package: ModuleType, lines: list[str]) -> None:
     """Send the redirect rows with asyncio."""
-    for label, native, arguments, method, status, location in _rows(options):
+    for label, native, arguments, method, status, location in _rows():
         exchange = Exchange(lines)
         exchange.respond(_redirect(status, location), _OK)
         async with exchange.async_client(**native) as http, package.AsyncClient(http_client=http, **arguments) as api:
@@ -151,10 +151,9 @@ def _signing(package: ModuleType, options: ModuleType, lines: list[str]) -> None
     """Sign bytes, file, and chunked bodies with a caller's Auth, again on every retry."""
     signer = _Signer()
     exchange = Exchange(lines)
-    signed = options.RequestOptions(auth=signer)
     with exchange.client() as http, package.Client(http_client=http, bearer="token-secret") as api:
         exchange.respond(_OK, _OK, _OK, raw_response(503, b"", None), _OK, _OK)
-        view = api.with_options(signed)
+        view = api.with_options(auth=signer)
         record(lines, "signed bytes", lambda: view.auth.signed_body(body=b"payload"))
         record(lines, "signed file", lambda: view.auth.signed_body(body=io.BytesIO(b"file-body")))
         record(lines, "signed chunks", lambda: view.auth.signed_body(body=_chunks()))
@@ -166,7 +165,7 @@ def _signing(package: ModuleType, options: ModuleType, lines: list[str]) -> None
     async def asigned() -> None:
         async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
             exchange.respond(_OK, _OK)
-            view = api.with_options(signed)
+            view = api.with_options(auth=signer)
             await arecord(lines, "async signed bytes", lambda: view.auth.signed_body(body=b"payload"))
             await arecord(lines, "async signed chunks", lambda: view.auth.signed_body(body=_achunks()))
 
@@ -178,7 +177,7 @@ def auth_flows(package: ModuleType, lines: list[str]) -> None:
     """Report what authenticated calls send across redirects, and what a caller's signing Auth signs."""
     options = importlib.import_module(f"{package.__name__}.options")
     lines.append("redirects")
-    _redirects(package, options, lines)
-    run(lambda: _aredirects(package, options, lines))
+    _redirects(package, lines)
+    run(lambda: _aredirects(package, lines))
     lines.append("signing")
     _signing(package, options, lines)

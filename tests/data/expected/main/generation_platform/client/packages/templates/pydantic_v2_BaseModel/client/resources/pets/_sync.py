@@ -15,7 +15,7 @@ from audit import AuditMixin
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody, SyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.pets import (
     AttachFilesResponse,
@@ -54,10 +54,10 @@ class PetsResource(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
@@ -174,7 +174,7 @@ class PetsResource(AuditMixin):
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -232,10 +232,10 @@ class PetsWithResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
@@ -344,7 +344,7 @@ class PetsWithResponse(AuditMixin):
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -402,10 +402,10 @@ class PetsWithRawResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -498,7 +498,7 @@ class PetsWithRawResponse(AuditMixin):
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -556,10 +556,10 @@ class PetsWithStreamingResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
         x_trace: str,
-        session: str | Unset = UNSET,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -644,7 +644,7 @@ class PetsWithStreamingResponse(AuditMixin):
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,

@@ -441,7 +441,7 @@ refused checkpoints and sources
   resume with a naive expiry ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with an expiry with a Z suffix instead of an offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with a path value of dots and an iterator for a source ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/id')] value
-a checkpoint resumed under another security partition, with that client's own credentials
+a checkpoint resumed by another client, with that client's own credentials
   > HEAD https://api.example.com/files/u36
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   resume = UploadHandle(phase='uploading', confirmed_bytes=8, total_bytes=10)
@@ -504,9 +504,9 @@ refused size
 refused options
   start with options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='upload_options') [field_path=('upload_options',)] invalid_value
   start with a fixed idempotency key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.idempotency_key') [field_path=('options', 'idempotency_key')] invalid_value
-  start with a patch of the written offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.upload-offset') [field_path=('options', 'headers', 'upload-offset')] invalid_value
-  start with a patch of the written size ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.Upload-Length') [field_path=('options', 'headers', 'Upload-Length')] invalid_value
-  start with a patch of the written query offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.offset') [field_path=('options', 'query', 'offset')] invalid_value
+  start with a patch of the written offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.upload-offset') [field_path=('options', 'extra_headers', 'upload-offset')] invalid_value
+  start with a patch of the written size ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.Upload-Length') [field_path=('options', 'extra_headers', 'Upload-Length')] invalid_value
+  start with a patch of the written query offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.offset') [field_path=('options', 'extra_query', 'offset')] invalid_value
   upload options with zero chunk bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='chunk_bytes') [field_path=('chunk_bytes',)] invalid_value
   upload options with a removed chunk count ! TypeError: UploadOptions.__init__() got an unexpected keyword argument 'max_parts' []
 defaults from the client

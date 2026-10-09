@@ -1093,6 +1093,37 @@
   "failures": [
     {
       "plan": {
+        "location": "header",
+        "name": "X-C",
+        "style": "simple",
+        "shape": "scalar"
+      },
+      "value": "x\ud800"
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-C",
+        "shape": "scalar",
+        "content_media_type": "application/json"
+      },
+      "value": {
+        "a": "\ud800"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "c",
+        "shape": "scalar",
+        "content_media_type": "application/json"
+      },
+      "value": {
+        "a": "\ud800"
+      }
+    },
+    {
+      "plan": {
         "location": "query",
         "name": "q",
         "style": "form",

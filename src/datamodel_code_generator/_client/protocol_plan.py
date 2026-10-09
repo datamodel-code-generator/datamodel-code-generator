@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import DiagnosticStage
     from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocols import Helper, Link, ProtocolConfiguration
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import OperationContract
 
 
@@ -167,7 +167,8 @@ def helper_problems(
             message = (
                 f"The {helper.kind} helper {helper.name!r} reserves the argument{'s' if len(taken) > 1 else ''} "
                 f"{', '.join(map(repr, taken))} of "
-                f"{_label(spec.contract)}; rename them with parameter_names or body_field_names"
+                f"{_label(spec.contract)}; rename them with the operation's parameter_names or body_field_names in "
+                "--client-operations"
             )
             entry = OperationRef(pointer=spec.contract.id.use_site.pointer)
             yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)

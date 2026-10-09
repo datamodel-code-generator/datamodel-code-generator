@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
@@ -13,10 +13,20 @@ from pydantic import TypeAdapter, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 
-from ..model_codecs.media import FieldPlan, charset, decode_form, decode_text, normalize_media_type, plain, typed
+from ..model_codecs.errors import MalformedError
+from ..model_codecs.media import (
+    FieldPlan,
+    charset,
+    decode_form,
+    decode_text,
+    media_kind,
+    normalize_media_type,
+    plain,
+    typed,
+)
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
-from ..model_codecs.unset import Unset
-from .errors import REQUEST_ERRORS, invalid, malformed_request, missing, model_records, unsupported_media, wire_records
+from ..model_codecs.unset import UNSET
+from .errors import invalid, malformed_request, media_invalid, missing, model_records, unsupported_media
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -115,17 +125,20 @@ class ParameterAdapter:
             location = (plan.location, plan.name)
             try:
                 wire = decode_parameter(plan, view)
-            except REQUEST_ERRORS as error:
-                records.extend(wire_records(error, location))
-                continue
-            if isinstance(wire, Unset):
+            except MalformedError as error:
+                raise malformed_request() from error
+            if wire is UNSET:
                 if plan.required:
                     records.append(missing(location))
                 else:
                     values[argument.name] = deepcopy(argument.default)
                 continue
             try:
-                values[argument.name] = _validated(argument.adapter, plain(wire))
+                values[argument.name] = (
+                    (argument.adapter or _ANY).validate_json(cast("str", wire))
+                    if plan.content_media_type is not None and media_kind(plan.content_media_type) == "json"
+                    else _validated(argument.adapter, plain(wire))
+                )
             except ValidationError as error:
                 records.extend(model_records(error, location))
         if records:
@@ -201,8 +214,8 @@ class BodyAdapter:
         media, media_type, received_type = selected
         try:
             return media_type, await _read(media, received_type, body, request)
-        except REQUEST_ERRORS as error:
-            raise RequestValidationError(wire_records(error, ("body",))) from error
+        except MalformedError as error:
+            raise malformed_request() from error
         except ValidationError as error:
             raise RequestValidationError(model_records(error, ("body",))) from error
 
@@ -227,7 +240,11 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
         case "json":
             return (adapter or _ANY).validate_json(body)
         case "text":
-            return _validated(adapter, decode_text(body, charset(media_type)))
+            try:
+                text = decode_text(body, charset(media_type))
+            except MalformedError as error:
+                raise RequestValidationError([media_invalid(("body",))]) from error
+            return _validated(adapter, text)
         case "form":
             return _validated(adapter, plain(decode_form(body, media.fields, _TEXT)))
         case "multipart":

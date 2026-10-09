@@ -17,3 +17,8 @@ paths:
       responses:
         '204':
           description: Searched.
+          headers:
+            X-Note:
+              content:
+                text/plain:
+                  schema: {type: string}

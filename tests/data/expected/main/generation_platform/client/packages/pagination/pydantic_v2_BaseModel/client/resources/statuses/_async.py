@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.statuses import ListStatusesResponse
 
@@ -41,7 +41,7 @@ class AsyncStatusesResource:
     async def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListStatusesResponse:
@@ -64,7 +64,7 @@ class AsyncStatusesWithResponse:
     async def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListStatusesResponse]:
@@ -87,7 +87,7 @@ class AsyncStatusesWithRawResponse:
     async def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -110,7 +110,7 @@ class AsyncStatusesWithStreamingResponse:
     def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

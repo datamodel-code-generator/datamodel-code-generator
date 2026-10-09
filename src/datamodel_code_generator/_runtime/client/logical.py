@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import partial
-from time import sleep
 from typing import TYPE_CHECKING, Final, TypeVar
 
 import anyio
@@ -143,15 +142,15 @@ class LogicalCallContext:
         return duration if remaining is None else min(duration, remaining)
 
     def sleep_until(self, not_before: float) -> None:
-        """Sleep once before the next attempt."""
+        """Sleep once before the next attempt, through the call's clock."""
         if duration := self._wait(not_before):
-            sleep(duration)
+            self.settings.clock.sleep(duration)
         self.check()
 
     async def asleep_until(self, not_before: float) -> None:
         """Await one retry wait with ordinary task cancellation."""
         if duration := self._wait(not_before):
-            await anyio.sleep(duration)
+            await self.settings.clock.asleep(duration)
         self.check()
 
     def timeout(self) -> ResolvedTimeoutOptions:

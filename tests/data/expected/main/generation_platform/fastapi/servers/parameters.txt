@@ -29,6 +29,11 @@ service UntaggedService without its methods: TypeError
 < 422 application/json [{"type": "int_parsing", "loc": ["query", "ids", 1]}, {"type": "extra_forbidden", "loc": ["query", "blob", "b"]}]
 > GET /search?blob=%7B
 < 422 application/json [{"type": "json_invalid", "loc": ["query", "blob"]}]
+> GET /search?blob=%7B%22a%22%3A1%2C%22a%22%3A2%7D
+  search(session='abc', code='AB', filter=None, ids=None, x_ids=[3], blob=Blob(a=2), note=None)
+< 204 - b''
+> GET /search?ids=1,%zz
+< 400 application/json {"detail":"Invalid request"}
 > GET /search?code=A&code=B
   search(session='abc', code='B', filter=None, ids=None, x_ids=[3], blob=None, note=None)
 < 204 - b''

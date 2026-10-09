@@ -153,10 +153,10 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
     """Exercise released candidates, saved raw responses, and cooperative wait termination."""
     options = importlib.import_module(f"{package.__name__}.options")
     exchange, events = Exchange([]), _Events()
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    retry = options.RetryOptions(initial_delay=0)
     with (
         exchange.client(event_hooks=events.hooks()) as native,
-        package.Client(http_client=native, options=config) as api,
+        package.Client(http_client=native, retry=retry) as api,
     ):
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"done", "text/plain"))
         record(lines, "typed status retry", lambda: _capture(api.retry.with_response.get_safe))
@@ -179,7 +179,7 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
         _report(lines, events, exchange)
         for label, retries in (("open", 0), ("partial", 2)):
             exchange.respond(*(raw_response(503, b"busy", "text/plain") for _ in range(retries + 1)))
-            request = options.RequestOptions(retry=options.RetryOptions(max_retries=retries))
+            request = options.RequestOptions(max_retries=retries)
             with api.retry.with_streaming_response.get_safe(options=request) as response:
                 if label == "partial":
                     chunks = response.iter_bytes()
@@ -199,7 +199,8 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
         _report(lines, events, exchange)
         _close_interruptions(api, events, exchange, lines)
     _presend(package, options, lines)
-    _key_inheritance(package, options, lines)
+    _sync_wait(package, options, lines)
+    _key_surfaces(package, options, lines)
     run(lambda: _async_calls(package, options, lines))
 
 
@@ -236,14 +237,13 @@ def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None
         file = _RewindFile(failure)
         exchange, events = Exchange([]), _Events(responded=None if stage == "before call" else file.arm)
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-        config = options.ClientOptions(
-            retry=options.RetryOptions(initial_delay=0), total_timeout=None if stage == "before call" else 0.5
-        )
+        retry = options.RetryOptions(initial_delay=0)
+        total = None if stage == "before call" else 0.5
         if stage == "before call":
             file.arm()
         with (
             exchange.client(event_hooks=events.hooks()) as native,
-            package.Client(http_client=native, options=config) as api,
+            package.Client(http_client=native, retry=retry, total_timeout=total) as api,
         ):
             try:
                 api.retry.post_idempotent(body=file)
@@ -258,10 +258,10 @@ def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None
 
 async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange, events = Exchange([]), _Events()
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    retry = options.RetryOptions(initial_delay=0)
     async with (
         exchange.async_client(event_hooks=events.async_hooks()) as native,
-        package.AsyncClient(http_client=native, options=config) as api,
+        package.AsyncClient(http_client=native, retry=retry) as api,
     ):
         for label, call in (
             ("typed", api.retry.with_response.get_safe),
@@ -279,7 +279,7 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
         _report(lines, events, exchange)
         for label, retries in (("open", 0), ("partial", 2)):
             exchange.respond(*(raw_response(503, b"busy", "text/plain") for _ in range(retries + 1)))
-            request = options.RequestOptions(retry=options.RetryOptions(max_retries=retries))
+            request = options.RequestOptions(max_retries=retries)
             async with api.retry.with_streaming_response.get_safe(options=request) as response:
                 if label == "partial":
                     chunks = response.iter_bytes()
@@ -303,7 +303,7 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
         await _async_close_interruptions(api, events, exchange, lines)
     await _async_wait(package, options, lines)
     await _async_presend(package, options, lines)
-    await _async_key_inheritance(package, options, lines)
+    await _async_key_surfaces(package, options, lines)
 
 
 async def _async_close_interruptions(api: object, events: _Events, exchange: Exchange, lines: list[str]) -> None:
@@ -339,14 +339,13 @@ async def _async_presend(package: ModuleType, options: ModuleType, lines: list[s
         file = _RewindFile(failure)
         exchange, events = Exchange([]), _Events(responded=None if stage == "before call" else file.arm)
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-        config = options.ClientOptions(
-            retry=options.RetryOptions(initial_delay=0), total_timeout=None if stage == "before call" else 0.5
-        )
+        retry = options.RetryOptions(initial_delay=0)
+        total = None if stage == "before call" else 0.5
         if stage == "before call":
             file.arm()
         async with (
             exchange.async_client(event_hooks=events.async_hooks()) as native,
-            package.AsyncClient(http_client=native, options=config) as api,
+            package.AsyncClient(http_client=native, retry=retry, total_timeout=total) as api,
         ):
             try:
                 await api.retry.post_idempotent(body=file)
@@ -359,22 +358,51 @@ async def _async_presend(package: ModuleType, options: ModuleType, lines: list[s
         file.close()
 
 
-async def _async_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Cancel the caller's task once its retryable response arrived, and observe the cancellation propagate.
+def _sync_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Interrupt the caller inside its synchronous retry wait, and observe the interruption propagate."""
+    durations: list[float] = []
 
-    The in-process response closes without suspending the task, so the cancellation reaches its retry wait.
-    """
-    ready = asyncio.Event()
-    events = _Events(responded=ready.set)
-    exchange = Exchange([])
-    config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"), total_timeout=60
-    )
+    def sleep(duration: float) -> None:
+        durations.append(duration)
+        message = "retry wait interrupted"
+        raise KeyboardInterrupt(message)
+
+    exchange, events = Exchange([]), _Events()
+    with (
+        exchange.client(event_hooks=events.hooks()) as native,
+        package.Client(
+            http_client=native,
+            retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"),
+            total_timeout=60,
+            clock=options.Clock(monotonic=lambda: 100.0, sleep=sleep),
+        ) as api,
+    ):
+        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+        record(lines, "sync wait interrupted", lambda: _capture(api.retry.get_safe))
+        lines.append(f"    wait durations={durations}")
+        _report(lines, events, exchange)
+
+
+async def _async_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Cancel the caller's task while it awaits its retry wait, and observe the cancellation propagate."""
+    waiting, durations = asyncio.Event(), []
+
+    async def asleep(duration: float) -> None:
+        durations.append(duration)
+        waiting.set()
+        await asyncio.Event().wait()
+
+    exchange, events = Exchange([]), _Events()
     async with (
         exchange.async_client(event_hooks=events.async_hooks()) as native,
-        package.AsyncClient(http_client=native, options=config) as api,
+        package.AsyncClient(
+            http_client=native,
+            retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"),
+            total_timeout=60,
+            clock=options.Clock(monotonic=lambda: 100.0, asleep=asleep),
+        ) as api,
     ):
-        exchange.respond(injected(raw_response(503, b"busy", "text/plain")), raw_response(200, b"unused", "text/plain"))
+        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
 
         async def observed() -> tuple[object, ...]:
             try:
@@ -386,9 +414,10 @@ async def _async_wait(package: ModuleType, options: ModuleType, lines: list[str]
             return ("returned",)
 
         task = asyncio.create_task(observed())
-        await ready.wait()
+        await waiting.wait()
         task.cancel("retry wait interrupted")
         await arecord(lines, "async wait native", lambda: task)
+        lines.append(f"    wait durations={durations}")
         _report(lines, events, exchange)
 
 
@@ -403,15 +432,19 @@ class _KeyReply:
         self.keys.append(key)
         return raw_response(status, ("absent" if key is None else key).encode(), "text/plain")(request)
 
+    def admitted(self, before: int, exchange: Exchange) -> tuple[object, ...]:
+        """Return the keys sent since a point, how many differ, and how many responses remain unused."""
+        keys = self.keys[before:]
+        return keys, len(set(keys)), len(exchange.responders)
 
-def _key_cases(options: ModuleType, key: object) -> Iterator[tuple[str, bool, str, object]]:
+
+def _key_cases(options: ModuleType) -> Iterator[tuple[str, bool, str, object]]:
     requests = (
         ("omitted", None),
         ("empty", options.RequestOptions()),
         ("UNSET", options.RequestOptions(idempotency_key=options.UNSET)),
         ("None", options.RequestOptions(idempotency_key=None)),
-        ("override", options.RequestOptions(idempotency_key=options.IdempotencyKey("call-key"))),
-        ("same object", options.RequestOptions(idempotency_key=key)),
+        ("caller", options.RequestOptions(idempotency_key="call-key")),
     )
     for declared in (True, False):
         surfaces = ("typed", "response", "buffered", "stream")
@@ -460,31 +493,24 @@ async def _async_key_call(api: object, surface: str, declared: bool, request: ob
         return await response.read()
 
 
-def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+def _key_surfaces(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange, reply = Exchange([]), _KeyReply()
-    client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
     with (
         exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
-        ) as api,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
-        view = api.with_options(options.RequestOptions(idempotency_key=view_key))
-        for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
-            for surface, declared, label, request in _key_cases(options, key):
-                before = len(reply.keys)
-                exchange.respond(lambda request: reply(request, status=503), reply)
-                record(
-                    lines,
-                    f"key {layer} {surface} declared={declared} {label}",
-                    lambda current=current, surface=surface, declared=declared, request=request: _key_call(
-                        current, surface, declared, request
-                    ),
-                )
-                record(lines, "key admission", lambda before=before: (reply.keys[before:], len(exchange.responders)))
-                exchange.responders.clear()
+        for surface, declared, label, request in _key_cases(options):
+            before = len(reply.keys)
+            exchange.respond(lambda request: reply(request, status=503), reply)
+            record(
+                lines,
+                f"key {surface} declared={declared} {label}",
+                lambda surface=surface, declared=declared, request=request: _key_call(api, surface, declared, request),
+            )
+            record(lines, "key admission", lambda before=before: reply.admitted(before, exchange))
+            exchange.responders.clear()
         barrier = threading.Barrier(4)
+        view = api.with_options()
         actions = (
             lambda: _key_call(api, "typed", True, None),
             lambda: _key_call(api, "stream", False, None),
@@ -499,51 +525,39 @@ def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str])
         before = len(reply.keys)
         exchange.respond(reply, reply, reply, reply)
         with ThreadPoolExecutor(max_workers=4) as executor:
-            record(lines, "concurrent inherited keys", lambda: tuple(executor.map(concurrent, actions)))
+            record(lines, "concurrent automatic keys", lambda: tuple(executor.map(concurrent, actions)))
+        keys = reply.keys[before:]
         record(
-            lines, "concurrent key admission", lambda: (sorted(reply.keys[before:], key=repr), len(exchange.responders))
+            lines,
+            "concurrent key admission",
+            lambda: (sorted(keys, key=repr), len(set(keys)), len(exchange.responders)),
         )
-        exchange.responders.clear()
-        for layer, current in (("client", api), ("view", view)):
-            exchange.respond(reply)
-            record(
-                lines,
-                f"key {layer} unchanged after mixed calls",
-                lambda current=current: current.retry.post_keyed(),
-            )
 
 
-async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _async_key_surfaces(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange, reply = Exchange([]), _KeyReply()
-    client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
-        ) as api,
+        package.AsyncClient(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
-        view = api.with_options(options.RequestOptions(idempotency_key=view_key))
-        for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
-            for surface, declared, label, request in _key_cases(options, key):
-                before = len(reply.keys)
-                exchange.respond(lambda request: reply(request, status=503), reply)
-                await arecord(
-                    lines,
-                    f"async key {layer} {surface} declared={declared} {label}",
-                    lambda current=current, surface=surface, declared=declared, request=request: _async_key_call(
-                        current, surface, declared, request
-                    ),
-                )
-                record(
-                    lines, "async key admission", lambda before=before: (reply.keys[before:], len(exchange.responders))
-                )
-                exchange.responders.clear()
+        for surface, declared, label, request in _key_cases(options):
+            before = len(reply.keys)
+            exchange.respond(lambda request: reply(request, status=503), reply)
+            await arecord(
+                lines,
+                f"async key {surface} declared={declared} {label}",
+                lambda surface=surface, declared=declared, request=request: _async_key_call(
+                    api, surface, declared, request
+                ),
+            )
+            record(lines, "async key admission", lambda before=before: reply.admitted(before, exchange))
+            exchange.responders.clear()
+        view = api.with_options()
         before = len(reply.keys)
         exchange.respond(reply, reply, reply, reply)
         await arecord(
             lines,
-            "async concurrent inherited keys",
+            "async concurrent automatic keys",
             lambda: asyncio.gather(
                 _acapture(lambda: _async_key_call(api, "typed", True, None)),
                 _acapture(lambda: _async_key_call(api, "stream", False, None)),
@@ -551,29 +565,19 @@ async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines
                 _acapture(lambda: _async_key_call(view, "request raw", False, None)),
             ),
         )
+        keys = reply.keys[before:]
         record(
             lines,
             "async concurrent key admission",
-            lambda: (sorted(reply.keys[before:], key=repr), len(exchange.responders)),
+            lambda: (sorted(keys, key=repr), len(set(keys)), len(exchange.responders)),
         )
-        exchange.responders.clear()
-        for layer, current in (("client", api), ("view", view)):
-            exchange.respond(reply)
-            await arecord(
-                lines,
-                f"async key {layer} unchanged after mixed calls",
-                lambda current=current: current.retry.post_keyed(),
-            )
 
     reply.keys.clear()
     exchange.responders.clear()
     exchange.respond(lambda request: reply(request, status=503), reply, reply)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0)),
-        ) as automatic,
+        package.AsyncClient(http_client=native, retry=options.RetryOptions(initial_delay=0)) as automatic,
     ):
         await arecord(lines, "async automatic key retained through retry", automatic.retry.post_keyed)
         await arecord(lines, "async automatic key fresh next call", automatic.retry.post_keyed)

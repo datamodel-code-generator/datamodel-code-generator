@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from urllib.parse import unquote_plus, urlsplit
 
 import httpx2
@@ -26,30 +26,29 @@ from ..client.client import (
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
-from ..client.errors import APIConnectionError, too_large
 from ..client.logical import Delivery, LogicalCallContext
-from ..client.native import request_fields
-from ..client.options import HeaderPatch, IdempotencyKey, QueryPatch, RequestOptions, Settings
+from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
 from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, request_origin, strip_query
-from ..model_codecs.unset import UNSET, Unset
-from .client_options import ClientOptions
+from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
+    from ..client.errors import APIConnectionError
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan, ParameterSpec, ResponseDecoder
+    from ..client.options import RequestOptions, Settings
     from ..client.responses import ResponseInfo
     from ..client.retry import RetryDelay
     from ..client.security import SecuritySchemeEntry
     from ..client.timing import Budget
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
-    from .options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
+    from .options import HelperSettings
 
 _NOT_MODIFIED = 304
 _SWITCHING = 101
@@ -91,14 +90,8 @@ def _page(
     decoder: ResponseDecoder[T],
     info: ResponseInfo,
     body: ReceivedBody,
-    call: Call,
 ) -> tuple[T, JSONValue, bytes]:
-    """Return a page's value, wire value, and body, or raise the error of a page or response over its size limit."""
-    settings = call.settings
-    if body.overflow:
-        limit = settings.max_response_bytes
-        assert limit is not None
-        raise too_large(info, limit, body.size)
+    """Return a page's value, wire value, and body, or raise the failure of a page that does not decode."""
     if (problem := body.problem) is not None and body.success:
         raise problem
     content = body.content
@@ -106,29 +99,70 @@ def _page(
     return data, wire, content
 
 
-def stored_value(operation: OperationPlan[T], info: ResponseInfo, body: bytes, settings: Settings) -> T:
-    """Decode a stored success body as a call's decoder decodes a received one, under the call's settings."""
-    received = ReceivedBody(settings.max_response_bytes, success=True)
+def stored_value(operation: OperationPlan[T], info: ResponseInfo, body: bytes) -> T:
+    """Decode a stored success body as a call's decoder decodes a received one."""
+    received = ReceivedBody(success=True)
     received.add(body)
-    return decode_response(operation.responses, info, received, settings, operation.operation_id).data
+    return decode_response(operation.responses, info, received, operation.operation_id).data
+
+
+@dataclass(frozen=True, slots=True)
+class CacheIdentity:
+    """Whom a cache fetch asks as: its URL with any query credentials, and the values of the headers that tell it.
+
+    The headers are the credential headers and every header added or changed on the way to the network, by lowercase
+    name in order, each with its values, none for a header the request lacks. `authenticated` tells whether the request
+    carries credentials, and `authorized` whether an Auth ran on it.
+    """
+
+    url: str
+    headers: tuple[tuple[str, tuple[str, ...]], ...]
+    authenticated: bool
+    authorized: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class CacheRequest:
     """What a cache fetch keys and sends, prepared once before its call.
 
-    `credentials` identifies the credentials the request carries, None for none; `foreign_auth` tells that a view or
-    the call replaced the client's own auth; `credential_headers` are the lowercase names of the headers credentials
-    travel in, which the auth may add after the cache looked the request up.
+    `call` places the request's credentials as its send does. `credential_headers` are the lowercase names of the
+    headers credentials travel in, and `credential_queries` the query fields of the package's security schemes.
     """
 
     settings: Settings
     request: httpx2.Request
-    url: str
-    credentials: object
-    partition: str | None
-    foreign_auth: bool
+    call: Call
     credential_headers: frozenset[str]
+    credential_queries: frozenset[str]
+
+    def identity(
+        self, sent: httpx2.Request, base: httpx2.Request | None = None, *, authorized: bool = False
+    ) -> CacheIdentity:
+        """Return the identity of a request as it is sent, against the one it was built from, by default this one."""
+        before, after = base or self.request, sent.headers
+        given = {name.lower() for name, _ in (*request_fields(before), *request_fields(sent))}
+        names = self.credential_headers.union(
+            name for name in given if before.headers.get_list(name) != after.get_list(name)
+        )
+        headers = tuple((name, tuple(after.get_list(name))) for name in sorted(names))
+        url = absolute_target(str(sent.url)).url
+        queries = self.credential_queries
+        authenticated = (
+            any(values for _, values in headers)
+            or sent.url != before.url
+            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
+        )
+        return CacheIdentity(url, headers, authenticated, authorized)
+
+    def unsent(self) -> httpx2.Request:
+        """Return a copy of the bodiless request, with the call's timeout, for an Auth to place credentials on."""
+        request = self.request
+        return httpx2.Request(
+            request.method,
+            request.url,
+            headers=wire_fields(request_fields(request)),
+            extensions={"timeout": native_timeout(self.call.timeout())},
+        )
 
 
 class _SessionCall(Call):
@@ -253,14 +287,38 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         """Bind a stream's child call to its helper session before native execution."""
         return _SessionCall(self._call_settings(options, operation.operation_id), operation, session)
 
-    def fixes_key(self, options: RequestOptions | None) -> bool:
-        """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
-        return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
+    def fixed_key(
+        self, options: RequestOptions | None, operations: Iterable[OperationPlan[object] | None]
+    ) -> tuple[str, ...] | None:
+        """Return where a call fixes an idempotency key of the operations, or None.
 
-    def patches(self, options: RequestOptions | None) -> tuple[tuple[HeaderPatch, ...], tuple[QueryPatch, ...]]:
-        """Return the header and query patches of a call's effective options: the client's, a view's, and its own."""
-        settings = self._call_settings(options, None)
-        return settings.headers, settings.query
+        It is the call's own key, or a header of a declared key's name that the call's extra headers or the client's
+        or a view's default headers send.
+        """
+        if options is not None and isinstance(options.idempotency_key, str):
+            return ("options", "idempotency_key")
+        names = {plan.idempotency.header_name.lower() for plan in operations if plan and plan.idempotency}
+        return self.named(options, lambda name, value: value is not None and name.lower() in names) if names else None
+
+    def named(
+        self, options: RequestOptions | None, matches: Callable[[str, str | None], bool], *, query: bool = False
+    ) -> tuple[str, ...] | None:
+        """Return the field path of the first header, or query name, of a call's layers that matches, or None.
+
+        The call's own extra ones come first, then the default ones the client and its views merged, except those the
+        call's own replace or remove.
+        """
+        call = None if options is None else options.extra_query if query else options.extra_headers
+        fold = str if query else str.lower
+        replaced: set[str] = set()
+        for name, value in () if call is None else call.items():
+            if matches(name, value):
+                return ("options", "extra_query" if query else "extra_headers", name)
+            replaced.add(fold(name))
+        for name, value in self._settings.query if query else self._settings.headers:
+            if fold(name) not in replaced and matches(name, value):
+                return ("default_query" if query else "default_headers", name)
+        return None
 
     @staticmethod
     def reconnects_after(error: APIConnectionError) -> bool:
@@ -297,37 +355,36 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         assert not isinstance(planned, str)
         return planned.backoff_cap, planned.delay
 
-    def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
-        """Return the defaults the client's protocol settings give one helper, or None."""
-        if (protocols := self.protocol_options()) is None or isinstance(defaults := protocols.defaults, Unset):
-            return None
-        return defaults.get(name)
+    def _helpers(self) -> HelperSettings:
+        """Return the helper settings of the client's root."""
+        return cast("HelperSettings", self._shared.protocols)
 
-    def protocol_options(self) -> ProtocolClientOptions | None:
-        """Return the client's protocol settings, or None."""
-        options = self._shared.options
-        if options is None or not isinstance(options, ClientOptions) or isinstance(options.protocols, Unset):
-            return None
-        return options.protocols
+    def helper_defaults(self, name: str) -> object:
+        """Return the options the client's `helper_defaults` give one helper, or None."""
+        return self._helpers().defaults.get(name)
 
-    def cache_store(self, name: str) -> object:
-        """Return the cache store the client's protocol settings lend a helper, or None without one."""
-        if (protocols := self.protocol_options()) is None or isinstance(stores := protocols.cache_stores, Unset):
-            return None
-        return stores.get(name)
+    def cache_store(self, name: str, create: Callable[[], object]) -> object:
+        """Return the store the client lends a cache helper, or else the one store its root creates with `create`.
+
+        The root creates it at the first fetch of a helper no store is lent to; its views and its other such helpers
+        share it, and another client never does.
+        """
+        helpers = self._helpers()
+        if (store := helpers.cache_stores.get(name)) is None and (store := helpers.created.get("")) is None:
+            store = helpers.created.setdefault("", create())
+        return store
 
     def cache_request(
         self, operation: OperationPlan[object], arguments: tuple[object, ...], options: RequestOptions | None
     ) -> CacheRequest:
-        """Return what a cache fetch keys and sends: its settings, its request before auth, and its credentials.
+        """Return what a cache fetch keys and sends: its settings, its request before auth, and its call.
 
-        A fetch on a closed client or past its deadline is refused first, as a call is. The URL is the request's own
-        as the client interprets it. The credentials are the scheme and kind of each credential the client places,
-        an empty record for a request an Auth of the call's options or the client's authenticates or that carries a
-        credential header, a cookie, or a security scheme's header or query field, and None for any other request.
+        A fetch on a closed client or past its deadline is refused first, as a call is, and so is a required operation
+        that no credentials authenticate.
         """
         settings = self._call_settings(options, operation.operation_id)
-        self._admitted(LogicalCallContext(settings, operation.operation_id))
+        call = Call(settings, operation)
+        self._admitted(call)
         request, _ = self._prepare(
             operation,
             arguments,
@@ -336,44 +393,16 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             media_type=None,
             options=options,
             accept=operation.responses.accept,
-            narrowed=False,
         )
-        partition = None if (security := self._security_context()) is None else security.credential_partition
-        url = absolute_target(str(request.url)).url
-        from ..client.security import secret_names  # ruff: ignore[import-outside-top-level] - Only a cache fetch needs the schemes.
-
-        names, queries = secret_names(self._shared.security_schemes)
-        explicit = settings.auth
-        placements = (
-            credentials.selected(operation.security) or ()
-            if isinstance(explicit, Unset)
-            and operation.security is not None
-            and (credentials := self._shared.credentials) is not None
-            else ()
-        )
-        credential: object = None
-        if placements:
-            credential = tuple((scheme.name, scheme.kind) for scheme, _ in placements)
-        elif (
-            isinstance(explicit, httpx2.Auth)
-            or any(name.lower() in names for name, _ in request_fields(request))
-            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
-        ):
-            credential = ()
-        foreign = credential is not None and explicit is not self._shared.root_auth
-        return CacheRequest(settings, request, url, credential, partition, foreign, names)
-
-    def _security_context(self) -> ProtocolSecurityContext | None:
-        """Return the client's protocol security context, or None without one."""
-        if (protocols := self.protocol_options()) is None or isinstance(security := protocols.security, Unset):
-            return None
-        return security
+        if operation.security is not None:
+            self._bind_auth(call)
+        headers, queries = self._secret_positions()
+        return CacheRequest(settings, request, call, headers, queries)
 
     def follow_origins(self, operation: OperationPlan[object], options: RequestOptions | None) -> frozenset[Origin]:
-        """Return the origins a helper may follow a server's URLs to: its server's and those its security allows."""
+        """Return the origins a helper may follow a server's URLs to: its server's and the `allowed_origins`."""
         origins = {request_origin(self._base(operation, self._call_settings(options, operation.operation_id)))}
-        if (context := self._security_context()) is not None:
-            origins.update((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)
+        origins.update((origin.scheme, origin.host, origin.port) for origin in self._helpers().allowed_origins)
         return frozenset(origins)
 
     def follow_query(self) -> frozenset[str]:
@@ -387,7 +416,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         return secret_names(self._shared.security_schemes)
 
     def credential_argument(
-        self, operation: OperationPlan[object], written: Sequence[JSONValue | Unset]
+        self, operation: OperationPlan[object], written: Sequence[JSONValue | UNSET]
     ) -> tuple[str, str] | None:
         """Return the location and name of the first written argument that carries credentials, or None.
 
@@ -400,7 +429,7 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             (
                 (spec.plan.location, spec.plan.name)
                 for spec, value in zip(operation.parameters, written, strict=True)
-                if not isinstance(value, Unset) and _secret(spec, value, headers, queries)
+                if value is not UNSET and _secret(spec, value, headers, queries)
             ),
             None,
         )
@@ -430,7 +459,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             media_type=media_type,
             options=options,
             accept=call.decoder.accept,
-            narrowed=False,
             url=url,
         )
         if read_request is not None:
@@ -490,7 +518,7 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
 
-            data, wire, content = _page(decoder, info, received, call)
+            data, wire, content = _page(decoder, info, received)
             url = str(response.url) if response.history else call.url
             result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
 
@@ -507,20 +535,42 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         else:
             return result
 
+    def cache_identity(self, prepared: CacheRequest) -> CacheIdentity:
+        """Return a cache fetch's identity: its request as the call's Auth gives it to be sent first, sending nothing.
+
+        The Auth is the call's own, its credentials', or else the HTTP client's. Its flow runs on a copy of the request
+        and is closed at its first request; the Auth's failure is the call's.
+        """
+        call, request = prepared.call, prepared.unsent()
+        client = self._shared.http_client
+        auth = call.native_auth(
+            self._shared.credentials, source=None, send=partial(client.send, auth=None, follow_redirects=False)
+        )
+        if (auth := client.auth if auth is UNSET else auth) is not None:
+            flow = auth.sync_auth_flow(request)
+            try:
+                request = next(flow)
+            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
+                failure = self._classified(error, call)
+                raise failure from failure.__cause__
+            finally:
+                flow.close()
+        return prepared.identity(request, authorized=auth is not None)
+
     def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         operation: OperationPlan[T],
         request: httpx2.Request,
         settings: Settings,
-        modified: Callable[[Response[T], bytes, bool], tuple[Response[T], R]],
-        not_modified: Callable[[ResponseInfo, bool], tuple[Response[T], R]],
+        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
         options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
     ) -> R:
         """Send a cache fetch's prepared request as one logical call, building what its response gives.
 
         A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
         operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
-        the response answered a redirect.
+        the response answered a redirect, and the request it answered as its Auth sent it.
         """
         call = Call(settings, operation)
         self._admitted(call)
@@ -529,13 +579,15 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
 
+            redirected = call.redirects_followed > 0
             return (
-                not_modified(info, call.redirects_followed > 0)
+                not_modified(info, redirected, response.request)
                 if info.status_code == _NOT_MODIFIED
                 else modified(
-                    decode_response(decoder, info, received, call.settings, call.operation_id),
+                    decode_response(decoder, info, received, call.operation_id),
                     received.content,
-                    call.redirects_followed > 0,
+                    redirected,
+                    response.request,
                 )
             )
 
@@ -582,7 +634,6 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
                 media_type=None,
                 options=options,
                 accept=None,
-                narrowed=False,
                 checked=check,
             )
             request.headers.update(upgrade)
@@ -647,7 +698,7 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
 
-            data, wire, content = _page(decoder, info, received, call)
+            data, wire, content = _page(decoder, info, received)
             url = str(response.url) if response.history else call.url
             result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
 
@@ -664,20 +715,38 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         else:
             return result
 
+    async def acache_identity(self, prepared: CacheRequest) -> CacheIdentity:
+        """Return a cache fetch's identity with asyncio, as the synchronous core does."""
+        call, request = prepared.call, prepared.unsent()
+        client = self._shared.http_client
+        auth = call.native_auth(
+            self._shared.credentials, source=None, async_send=partial(client.send, auth=None, follow_redirects=False)
+        )
+        if (auth := client.auth if auth is UNSET else auth) is not None:
+            flow = auth.async_auth_flow(request)
+            try:
+                request = await anext(flow)
+            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
+                failure = self._classified(error, call)
+                raise failure from failure.__cause__
+            finally:
+                await flow.aclose()
+        return prepared.identity(request, authorized=auth is not None)
+
     async def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         operation: OperationPlan[T],
         request: httpx2.Request,
         settings: Settings,
-        modified: Callable[[Response[T], bytes, bool], tuple[Response[T], R]],
-        not_modified: Callable[[ResponseInfo, bool], tuple[Response[T], R]],
+        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
         options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
     ) -> R:
         """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives.
 
         A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
         operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
-        the response answered a redirect.
+        the response answered a redirect, and the request it answered as its Auth sent it.
         """
         call = Call(settings, operation)
         self._admitted(call)
@@ -686,13 +755,15 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
 
+            redirected = call.redirects_followed > 0
             return (
-                not_modified(info, call.redirects_followed > 0)
+                not_modified(info, redirected, response.request)
                 if info.status_code == _NOT_MODIFIED
                 else modified(
-                    decode_response(decoder, info, received, call.settings, call.operation_id),
+                    decode_response(decoder, info, received, call.operation_id),
                     received.content,
-                    call.redirects_followed > 0,
+                    redirected,
+                    response.request,
                 )
             )
 
@@ -734,7 +805,6 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
                 media_type=None,
                 options=options,
                 accept=None,
-                narrowed=False,
                 checked=check,
             )
             request.headers.update(upgrade)

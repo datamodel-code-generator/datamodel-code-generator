@@ -13,6 +13,7 @@ paths:
         - {name: sized, in: query, schema: {type: string, format: binary, minLength: 1}}
         - {name: note, in: query, schema: {type: string}}
         - {name: packed, in: query, content: {application/octet-stream: {schema: {type: string, format: binary}}}}
+        - {name: shape, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Shape"}}
       requestBody:
         required: true
         content:
@@ -20,3 +21,10 @@ paths:
             schema: {type: string, format: binary}
       responses:
         "204": {description: Done.}
+components:
+  schemas:
+    Shape:
+      type: object
+      properties:
+        data: {type: string, format: binary}
+        name: {type: string}

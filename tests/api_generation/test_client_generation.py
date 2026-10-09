@@ -101,6 +101,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "type-spellings-legacy",
         "type-spellings-reuse",
         "type-spellings-cycle",
+        "type-spellings-bound",
         "helpers",
         "pagination",
         "pagination-counts",

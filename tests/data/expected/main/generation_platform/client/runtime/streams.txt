@@ -148,7 +148,6 @@ text
     end
   stream options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='stream_options') [field_path=('stream_options',)] invalid_value
   options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',)] invalid_value
   reconnecting ! ConfigurationError: ConfigurationError(reason='missing_metadata', field_path='stream_options.reconnect') [field_path=('stream_options', 'reconnect')] missing_metadata
   > GET https://api.example.com/events accept=text/event-stream
   < closed

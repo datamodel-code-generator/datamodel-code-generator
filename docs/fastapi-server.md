@@ -56,7 +56,10 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 <!-- END AUTO-GENERATED FASTAPI QUICK START -->
 
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
-`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. An optional
+`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. A method's
+docstring names its route, such as `Handle GET /pets/{petId}.`, or, with `--use-schema-description`, the
+operation's summary and description, formatted as model docstrings are, on one line with
+`--use-single-line-docstring`. An optional
 parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
 The routes declare such an input as FastAPI applications do, `T | None = None`, so FastAPI's own document shows
 its schema as `anyOf` of the type and `null`.
@@ -408,6 +411,11 @@ spellings than FastAPI does for a parameter it reads itself: integers and number
 `2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
 `--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
 FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A parameter with JSON `content` is parsed by its model's `TypeAdapter.validate_json`, as a JSON body is, so pydantic's
+JSON rules apply: a number is read as a float first, so a `Decimal` field gets the float's value
+(`0.1000000000000000000000000001` becomes `Decimal("0.1")`) and `NaN` and `Infinity` reach a `float` field; an object
+that repeats a member keeps the last value; and text that is not JSON, or JSON past pydantic's limits such as an
+integer of thousands of digits or deep nesting, answers `422` with `json_invalid`.
 A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
@@ -497,8 +505,10 @@ bodies that adapters read answer with the same three keys.
 ## Templates
 
 The server templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
-as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name,
-`application.jinja2`, `router.jinja2`, `services.jinja2`, and `readme.jinja2`. A role the directory does not hold,
+as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name:
+`facade.jinja2` (the package initializers), `application.jinja2`, `router.jinja2` (the routes module or each router
+module), `services.jinja2`, `contract.jinja2` (`_generated/contract.py`), `security.jinja2`, `openapi.jinja2`
+(`_generated/openapi.py`), and `readme.jinja2`. A role the directory does not hold,
 or a custom template directory without a `fastapi` directory, keeps its builtin template. The builtin templates are
 in the `_fastapi/templates` directory of the installed package; copy one to start from it. An override may include
 or import the other builtin templates.
@@ -537,9 +547,14 @@ datamodel-codegen \
 
 The values a role receives can change while server generation is experimental, and a value that an older copy of a
 builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
-compare an override with the current builtin template after an upgrade. `router.jinja2` receives one `route` for
-each operation: `adder`, `router`, `wiring`, `service`, `protocol`, `group`, `handler`, `lookup`, `principal`,
-`signature`, `body`, and `registration`.
+compare an override with the current builtin template after an upgrade. The templates write every module, class,
+function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
+`router.jinja2` receives one `route` for each operation, with its local names (`adder`, `router`, `wiring`,
+`service`, `handler`), its `lookup` of the service method, its `principal` dependency or none, its `endpoint` with
+the endpoint's `parameters` (`name`, `annotation`, `default`), the service method `call` with its `arguments`, and
+its `registration`, whose `keywords` hold the optional `add_api_route` arguments. A builtin template writes each
+parameter, argument, and route entry on its own line, and leaves the type annotations and plan values on one line for
+the formatter.
 
 A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same

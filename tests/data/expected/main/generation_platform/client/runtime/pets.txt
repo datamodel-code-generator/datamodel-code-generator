@@ -1,6 +1,6 @@
 # pets pydantic_v2.BaseModel
   helper modules copied=[]
-  helper options field=False
+  helper protocols keyword=False
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
@@ -24,6 +24,9 @@
   header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False, cause=1 validation error for FieldPetsGetResponse200XRateHeader
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  header repeated ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -98,16 +101,8 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
   list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
   list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
-  list options ! ConfigurationError: ConfigurationError(operation_id='listPets', reason='invalid_type', field_path='options') [operation_id='listPets', field_path=('options',)] invalid_type
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = Pet(id=2, name='dog', tag=None)
@@ -185,12 +180,6 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   range upload streaming = b'jpeg'
   response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=791] response_too_large
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  unlimited = 200
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
@@ -236,22 +225,10 @@
   server zone ! ConfigurationError: ConfigurationError(reason='undeclared', field_path='server.variables') [field_path=('server', 'variables')] undeclared
   server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
   options server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',)] conflicts_with_server
-  options server type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='server') [field_path=('server',)] invalid_type
-  options base_url type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='base_url') [field_path=('base_url',)] invalid_type
-  options base_url scheme ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url port ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), cause=ValueError("Port could not be cast to integer value as 'port'")] invalid_url
-  options base_url userinfo ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url query ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url fragment ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url port zero ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options max_response_bytes bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
-  options max_response_bytes negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
-  options max_error_body_bytes zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
-  options max_error_body_bytes large ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
+  options client server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',)] conflicts_with_server
   options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
   options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables')] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, timeout=UNSET, total_timeout=UNSET, retry=UNSET, follow_redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
@@ -261,7 +238,7 @@
   error bare SDKError() None APIConnectionError()
   lifecycle borrowed closed False
   client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type
-  client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',)] invalid_type
+  client unknown keyword TypeError notes []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
@@ -276,16 +253,6 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
   async borrowed closed False
   async borrowed second closed False
   async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type
@@ -304,7 +271,7 @@
   async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared
 # pets typing.TypedDict
   helper modules copied=[]
-  helper options field=False
+  helper protocols keyword=False
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = [{'id': 1, 'name': 'cat', 'tag': None}]
@@ -326,6 +293,9 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_header
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  header repeated ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   > GET https://api.example.com/v1/pets
@@ -390,16 +360,8 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
   list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
   list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
-  list options ! ConfigurationError: ConfigurationError(operation_id='listPets', reason='invalid_type', field_path='options') [operation_id='listPets', field_path=('options',)] invalid_type
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = {'id': 2, 'name': 'dog'}
@@ -477,12 +439,6 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   range upload streaming = b'jpeg'
   response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=791] response_too_large
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  unlimited = 200
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/pets/3
@@ -528,22 +484,10 @@
   server zone ! ConfigurationError: ConfigurationError(reason='undeclared', field_path='server.variables') [field_path=('server', 'variables')] undeclared
   server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
   options server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',)] conflicts_with_server
-  options server type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='server') [field_path=('server',)] invalid_type
-  options base_url type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='base_url') [field_path=('base_url',)] invalid_type
-  options base_url scheme ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url port ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',), cause=ValueError("Port could not be cast to integer value as 'port'")] invalid_url
-  options base_url userinfo ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url query ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url fragment ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options base_url port zero ! ConfigurationError: ConfigurationError(reason='invalid_url', field_path='base_url') [field_path=('base_url',)] invalid_url
-  options max_response_bytes bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
-  options max_response_bytes negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_response_bytes') [field_path=('max_response_bytes',)] out_of_range
-  options max_error_body_bytes zero ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
-  options max_error_body_bytes large ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_error_body_bytes') [field_path=('max_error_body_bytes',)] out_of_range
+  options client server and base_url ! ConfigurationError: ConfigurationError(reason='conflicts_with_server', field_path='base_url') [field_path=('base_url',)] conflicts_with_server
   options server index ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='server.index') [field_path=('server', 'index')] out_of_range
   options server variables ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='server.variables') [field_path=('server', 'variables')] invalid_value
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, max_stream_bytes=UNSET, timeout=UNSET, total_timeout=UNSET, retry=UNSET, follow_redirects=UNSET, idempotency_key=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
@@ -553,7 +497,7 @@
   error bare SDKError() None APIConnectionError()
   lifecycle borrowed closed False
   client http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type
-  client options ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',)] invalid_type
+  client unknown keyword TypeError notes []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async list = [{'id': 1, 'name': 'cat'}]
@@ -568,16 +512,6 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async broken ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='ReadError') [operation_id='getPet', cause=ReadError('connection reset')]
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async too large ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='response_too_large') [operation_id='listPets', body_bytes=b'', truncated=False, limit=10, observed=40] response_too_large
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async truncated ! InternalServerError: Error code: 500 - xxxx... [operation_id='listPets', status_code=500, body=b'xxxx', body_bytes=b'xxxx', truncated=True]
   async borrowed closed False
   async borrowed second closed False
   async http_client ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='http_client') [field_path=('http_client',)] invalid_type

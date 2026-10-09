@@ -34,7 +34,6 @@
   managed header ! ConfigurationError: ConfigurationError(operation_id='roomSocket', reason='managed', field_path='headers.Upgrade') [operation_id='roomSocket', field_path=('headers', 'Upgrade')] managed
   options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='ws_options') [field_path=('ws_options',)] invalid_value
   request options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  session options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='session_options') [field_path=('session_options',)] invalid_value
   not JSON ! DecodeError: DecodeError(status_code=101, operation_id='roomSocket', reason='malformed', location='message.1') [operation_id='roomSocket', location=('message', 1), body_bytes=b'{broken', truncated=False, cause=ValidationError] malformed location=('message', 1) prefix=7 truncated=False cause=ValidationError retained=False
   after the decode failure ! ConfigurationError: ConfigurationError(operation_id='roomSocket', reason='invalid_state', field_path='receive.failed') [operation_id='roomSocket', field_path=('receive', 'failed')] invalid_state
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''

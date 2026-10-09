@@ -12,7 +12,7 @@ import models
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.websocket import WebSocketSession, connect_socket
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from . import WSOptions, _plans
 
 
@@ -89,7 +89,7 @@ class RoomsChatWebsocket:
         self,
         *,
         room: str,
-        since: int | Unset = UNSET,
+        since: int | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -140,7 +140,7 @@ class SecureChatWebsocket:
     def connect(
         self,
         *,
-        x_trace: str | Unset = UNSET,
+        x_trace: str | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

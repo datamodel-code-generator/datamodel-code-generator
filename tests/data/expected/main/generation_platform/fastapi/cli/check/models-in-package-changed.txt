@@ -7,10 +7,10 @@
 -# changed
 --- server/services.py
 +++ server/services.py (expected)
-@@ -77,4 +77,3 @@
-         | HTTPResult[server_models.FieldStoreInventoryGetResponse]
-         | Response
-     ): ...
+@@ -83,4 +83,3 @@
+         """
+         Handle GET /store/inventory.
+         """
 -# changed
 EXTRA: server/extensions.py (no longer generated)
 MISSING: server/README.md (file does not exist but should be generated)

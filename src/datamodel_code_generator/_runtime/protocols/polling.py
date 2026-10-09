@@ -20,7 +20,7 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import ConfigurationError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SYSTEM_CLOCK, SessionOptions
+from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError, SessionLimitError
 from .options import PollOptions, layered
@@ -33,7 +33,7 @@ from .records import (
     plain_copy,
 )
 from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
-from .values import MISSING, Missing, RepeatedValueError, resolve, selected, server_expiry
+from .values import MISSING, RepeatedValueError, resolve, selected, server_expiry
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -215,40 +215,36 @@ def _limits(
     plan: PollingPlan[T, P, C],
     poll_options: object,
     options: object,
-    session_options: object,
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     The interval defaults to the helper's; one longer than the allowed wait, or not shorter than the session, could
-    never be waited out, so it is refused before anything is sent. Effective options fixing an idempotency key are
-    refused, since the create call and each poll need keys of their own, and so are header or query patches of a
-    parameter the helper writes.
+    never be waited out, so it is refused before anything is sent. A fixed idempotency key, the call's own or a header
+    of its name the call, the client, or a view sends, is refused, since the create call and each poll need keys of
+    their own, and so are the call's extra headers or query names of a parameter the helper writes.
     """
     for name, value, kind in (
         ("poll_options", poll_options, PollOptions),
         ("options", options, RequestOptions),
-        ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     request = options if isinstance(options, RequestOptions) else None
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"))
+    if (fixed := core.fixed_key(request, (plan.create, plan.poll, plan.fetch))) is not None:
+        raise _invalid(plan, fixed)
     if request is not None:
-        for name, _ in request.headers:
+        for name in request.extra_headers or ():
             if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "headers", name))
-        for name, _ in request.query:
+                raise _invalid(plan, ("options", "extra_headers", name))
+        for name in request.extra_query or ():
             if name in plan.queries:
-                raise _invalid(plan, ("options", "query", name))
-    defaults = core.protocol_defaults(plan.helper_id)
-    kinds = (poll_options, UNSET if defaults is None else defaults.options)
-    sessions = (session_options, UNSET if defaults is None else defaults.session)
+                raise _invalid(plan, ("options", "extra_query", name))
+    kinds = (poll_options, core.helper_defaults(plan.helper_id))
     limits = _Limits(
         interval=layered(kinds, "interval", plan.interval),
         max_polls=layered(kinds, "max_polls", _DEFAULTS.max_polls),
         max_wait=layered(kinds, "max_wait", _DEFAULTS.max_wait),
-        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
     )
@@ -258,7 +254,7 @@ def _limits(
     return limits
 
 
-def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
@@ -290,7 +286,7 @@ class _Step(Generic[T, P]):
     not_before: float
     snapshot: PollSnapshot[P] | None = None
     bound: tuple[JSONValue, ...] = ()
-    result: T | Missing = MISSING
+    result: T | MISSING = MISSING
     seed: tuple[JSONValue, ...] | None = None
     cancel: tuple[JSONValue, ...] = ()
     expires_at: datetime | None = None
@@ -347,7 +343,7 @@ class _Operation(Generic[T, P]):
         self._bound: tuple[JSONValue, ...] = ()
         self._seed: tuple[JSONValue, ...] = ()
         self._cancel: tuple[JSONValue, ...] = ()
-        self._result: T | Missing = MISSING
+        self._result: T | MISSING = MISSING
         self._expires_at: datetime | None = None
         self._not_before = 0.0
         self._polls = 0
@@ -375,7 +371,7 @@ class _Operation(Generic[T, P]):
         """
         with self._guard:
             if (pending := self._phase is _Phase.PENDING) or (
-                self._phase is _Phase.SUCCEEDED and isinstance(self._result, Missing)
+                self._phase is _Phase.SUCCEEDED and self._result is MISSING
             ):
                 return plain_copy({
                     "phase": "pending" if pending else "fetch",
@@ -470,7 +466,7 @@ class _Operation(Generic[T, P]):
 
     def _selected(
         self, read: Selector, wire: JSONValue, info: ResponseInfo, operation: OperationRef | None
-    ) -> JSONValue | Missing:
+    ) -> JSONValue | MISSING:
         """Return what a selector reads from a response, or MISSING, refusing a header selected once it repeats."""
         try:
             return selected(read, wire, info)
@@ -616,12 +612,12 @@ class _Operation(Generic[T, P]):
             cancels = self._values(cancel.targeted, cancel.bindings, wire, info, operation, self._cancel)
             return _Step(phase, self._after(info), snapshot, polled, cancel=cancels)
         bound: tuple[JSONValue, ...] = ()
-        result: T | Missing = MISSING
+        result: T | MISSING = MISSING
         if phase is _Phase.SUCCEEDED:
             bound, result = self._succeeded(data, wire, info)
         return _Step(phase, self._limits.clock.monotonic(), snapshot, bound, result)
 
-    def _succeeded(self, data: P, wire: JSONValue, info: ResponseInfo) -> tuple[tuple[JSONValue, ...], T | Missing]:
+    def _succeeded(self, data: P, wire: JSONValue, info: ResponseInfo) -> tuple[tuple[JSONValue, ...], T | MISSING]:
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
         plan = self._plan
         operation = plan.poll_operation
@@ -671,7 +667,7 @@ class _Operation(Generic[T, P]):
             raise self._state_error(action, _Phase.SUCCEEDED.value)
         return snapshot
 
-    def _outcome(self) -> T | Missing:
+    def _outcome(self) -> T | MISSING:
         """Return the settled operation's result, MISSING while its fetch is due; a failure or cancellation raises.
 
         The terminal poll's data and response stay on the error, which every later `wait` raises again without sending.
@@ -866,7 +862,7 @@ class LroHandle(_Operation[T, P]):
         try:
             while self._phase is _Phase.PENDING:
                 self._poll()
-            if not isinstance(result := self._outcome(), Missing):
+            if (result := self._outcome()) is not MISSING:
                 return result
             return self._fetch()
         finally:
@@ -1003,7 +999,7 @@ class AsyncLroHandle(_Operation[T, P]):
         try:
             while self._phase is _Phase.PENDING:
                 await self._poll()
-            if not isinstance(result := self._outcome(), Missing):
+            if (result := self._outcome()) is not MISSING:
                 return result
             return await self._fetch()
         finally:
@@ -1064,7 +1060,6 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> LroHandle[T, P]:
     """Create a helper's operation and return a handle of the base class."""
 
@@ -1080,7 +1075,6 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> H:
     """Create a helper's operation and return a handle of the helper's own class."""
 
@@ -1095,13 +1089,12 @@ def start_operation(  # noqa: PLR0913
     media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> LroHandle[Any, Any]:
     """Create a helper's operation in a session of its own and return the handle that polls it.
 
     A helper that declares a remote cancellation passes its own handle class.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     created = handle(core, plan, limits, _session(limits))
     created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
@@ -1117,7 +1110,6 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AsyncLroHandle[T, P]:
     """Create a helper's operation with asyncio and return a handle of the base class."""
 
@@ -1133,7 +1125,6 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AH:
     """Create a helper's operation with asyncio and return a handle of the helper's own class."""
 
@@ -1148,13 +1139,12 @@ async def astart_operation(  # noqa: PLR0913
     media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncLroHandle[Any, Any]:
     """Create a helper's operation with asyncio in a session of its own and return the handle that polls it.
 
     A helper that declares a remote cancellation passes its own handle class.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     created = handle(core, plan, limits, _session(limits))
     await created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
@@ -1168,7 +1158,6 @@ def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> LroHandle[T, P]:
     """Return a handle of the base class continuing a helper's checkpoint."""
 
@@ -1182,7 +1171,6 @@ def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     handle: type[H],
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> H:
     """Return a handle of the helper's own class continuing a helper's checkpoint."""
 
@@ -1195,13 +1183,12 @@ def resume_operation(  # noqa: PLR0913
     handle: type[LroHandle[Any, Any]] = LroHandle,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> LroHandle[Any, Any]:
     """Return a handle continuing a helper's checkpoint in a session of its own, checking the checkpoint now.
 
     It sends nothing, and never creates the operation again; `status` or `wait` sends its first poll.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     return _restored(plan, state, limits, lambda session: handle(core, plan, limits, session))
 
 
@@ -1213,7 +1200,6 @@ def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AsyncLroHandle[T, P]:
     """Return an asyncio handle of the base class continuing a helper's checkpoint."""
 
@@ -1227,7 +1213,6 @@ def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     handle: type[AH],
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AH:
     """Return an asyncio handle of the helper's own class continuing a helper's checkpoint."""
 
@@ -1240,12 +1225,11 @@ def aresume_operation(  # noqa: PLR0913
     handle: type[AsyncLroHandle[Any, Any]] = AsyncLroHandle,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncLroHandle[Any, Any]:
     """Return an asyncio handle continuing a helper's checkpoint in a session of its own, checking it now.
 
     It is not awaited and sends nothing, and never creates the operation again; `status` or `wait` sends its first
     poll.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     return _restored(plan, state, limits, lambda session: handle(core, plan, limits, session))

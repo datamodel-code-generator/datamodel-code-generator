@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.headers import (
     ApiKeyResponse,
@@ -52,7 +52,7 @@ class AsyncHeadersResource:
     async def parameter(
         self,
         *,
-        x_request_key: str | Unset = UNSET,
+        x_request_key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ParameterResponse:
@@ -165,7 +165,7 @@ class AsyncHeadersResource:
     async def direction(
         self,
         *,
-        x_retry_control: str | Unset = UNSET,
+        x_retry_control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> DirectionResponse:
@@ -202,7 +202,7 @@ class AsyncHeadersWithResponse:
     async def parameter(
         self,
         *,
-        x_request_key: str | Unset = UNSET,
+        x_request_key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ParameterResponse]:
@@ -315,7 +315,7 @@ class AsyncHeadersWithResponse:
     async def direction(
         self,
         *,
-        x_retry_control: str | Unset = UNSET,
+        x_retry_control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[DirectionResponse]:
@@ -352,7 +352,7 @@ class AsyncHeadersWithRawResponse:
     async def parameter(
         self,
         *,
-        x_request_key: str | Unset = UNSET,
+        x_request_key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -465,7 +465,7 @@ class AsyncHeadersWithRawResponse:
     async def direction(
         self,
         *,
-        x_retry_control: str | Unset = UNSET,
+        x_retry_control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -502,7 +502,7 @@ class AsyncHeadersWithStreamingResponse:
     def parameter(
         self,
         *,
-        x_request_key: str | Unset = UNSET,
+        x_request_key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -615,7 +615,7 @@ class AsyncHeadersWithStreamingResponse:
     def direction(
         self,
         *,
-        x_retry_control: str | Unset = UNSET,
+        x_retry_control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

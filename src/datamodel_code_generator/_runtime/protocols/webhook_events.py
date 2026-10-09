@@ -18,15 +18,10 @@ from ..client.errors import (
     ConfigurationError,
     is_sequence,
 )
-from ..model_codecs.errors import (
-    CodecResourceLimitError,
-    ParameterEncodingError,
-    WireValidationError,
-)
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError
 from .records import BodySelector
-from .values import Missing, resolve
+from .values import MISSING, resolve
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
@@ -65,11 +60,6 @@ _DEFAULTS: Final = ResolvedWebhookOptions(
     future_tolerance=30.0,
 )
 _OPTIONS: Final = tuple(item.name for item in fields(WebhookOptions))
-_DATA_ERRORS: Final = (
-    CodecResourceLimitError,
-    ParameterEncodingError,
-    WireValidationError,
-)
 
 
 class _Failed(Enum):
@@ -134,15 +124,12 @@ class MappedEventDecoder(Generic[T_co]):
         if isinstance(name, str) and (decoder := self._events.get(name)) is not None:
             return decoder.decode(raw_body, helper_id)
         condition: Literal["missing", "null", "type", "value"] = "type"
-        match name:
-            case str():
-                condition = "value"
-            case Missing():
-                condition = "missing"
-            case None:
-                condition = "null"
-            case _:
-                pass
+        if isinstance(name, str):
+            condition = "value"
+        elif name is MISSING:
+            condition = "missing"
+        elif name is None:
+            condition = "null"
         raise ProtocolDataError(reason=condition, location=self._location, helper_id=helper_id)
 
 
@@ -210,7 +197,7 @@ def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
         return _DEFAULTS
     if not isinstance(options, WebhookOptions):
         raise configuration_error(("options",), "invalid_value", helper_id)
-    given = {name: value for name in _OPTIONS if not isinstance(value := getattr(options, name), Unset)}
+    given = {name: value for name in _OPTIONS if (value := getattr(options, name)) is not UNSET}
     return replace(_DEFAULTS, **given)
 
 

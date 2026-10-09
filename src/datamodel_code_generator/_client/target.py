@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 from functools import partial
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from typing_extensions import TypeIs
 
@@ -46,9 +46,7 @@ from datamodel_code_generator._client.webhooks import (
     webhook_uses,
 )
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
-from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
 from datamodel_code_generator._target_contract import (
-    AnnotatedType,
     GeneratedEnumMember,
     GeneratedSymbolType,
     GenericType,
@@ -71,7 +69,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelFieldFacts,
@@ -132,7 +130,12 @@ class ClientTarget:
         batch = request.batch
         if parts := (*part_uses(plan), *stream_events, *messages):
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-        codecs = plan_client_codecs(batch, wire, backend, uses, facts)
+        types = TypeNames(
+            batch,
+            exact=bool(request.model_config.use_exact_imports),
+            overrides=request.model_config.import_overrides,
+        )
+        codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(map(_diagnostic, problems)))
@@ -164,11 +167,6 @@ class ClientTarget:
             ),
         ):
             raise APIGenerationError(refused, option_prefix=OPTION_PREFIX)
-        types = TypeNames(
-            batch,
-            exact=bool(request.model_config.use_exact_imports),
-            overrides=request.model_config.import_overrides,
-        )
         data = _HelperDigests(request, types, facts)
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
@@ -338,7 +336,6 @@ class _HelperDigests:
         The model options that only style annotations, such as the union operator, leave the spelling unchanged, so a
         regenerated package with the same contract keeps its fingerprints.
         """
-        value = value.base if isinstance(value, AnnotatedType) else value
         match value:
             case GenericType():
                 arguments = ", ".join(self.spelled(item) for item in value.arguments)
@@ -403,7 +400,7 @@ def _named(value: TypeView) -> tuple[SymbolId, ...]:
     nested: tuple[TypeView, ...] = (
         *getattr(value, "members", ()),
         *getattr(value, "arguments", ()),
-        *((value.base,) if isinstance(value, AnnotatedType | GenericType) else ()),
+        *((value.base,) if isinstance(value, GenericType) else ()),
         *(
             GeneratedSymbolType(item.symbol)
             for item in getattr(value, "values", ())
@@ -434,4 +431,4 @@ def _projection(value: object) -> JSONValue:
         return [_projection(item) for item in value]
     if _is_mapping(value):
         return {str(key): _projection(item) for key, item in value.items()}
-    return checked_scalar(value)
+    return cast("JSONValue", value)
