@@ -19,15 +19,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^[A-Z]+$"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "pattern": "^[A-Z]+$",
               "title": "Code"
             }
           },
@@ -36,15 +29,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "email"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "email",
               "title": "Mail"
             }
           },
@@ -53,31 +39,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
               "title": "Other"
-            }
-          },
-          {
-            "name": "none",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/FieldAdaptersGetQueryNoneParameter"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "None"
             }
           },
           {
@@ -95,15 +58,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "date-time",
               "title": "Stamp"
             }
           },
@@ -260,15 +216,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "number",
-                  "multipleOf": 0.5
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "number",
+              "multipleOf": 0.5,
               "title": "Ratio"
             }
           },
@@ -287,15 +236,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "date",
               "deprecated": true,
               "examples": [
                 "2024-01-01"
@@ -309,15 +251,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "format": "uuid",
               "title": "Ref"
             }
           },
@@ -326,15 +261,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Mode"
+              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter"
             }
           },
           {
@@ -342,14 +269,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
               "title": "Request"
             }
           },
@@ -358,14 +278,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
               "title": "Part"
             }
           },
@@ -374,14 +287,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
               "title": "2Fa"
             }
           },
@@ -390,14 +296,7 @@
             "in": "header",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
               "title": "X-Trace"
             }
           },
@@ -483,12 +382,6 @@
   },
   "components": {
     "schemas": {
-      "FieldAdaptersGetQueryNoneParameter": {
-        "enum": [
-          null
-        ],
-        "title": "FieldAdaptersGetQueryNoneParameter"
-      },
       "FieldItemsItemIdPartsPartGetQueryModeParameter": {
         "type": "string",
         "enum": [

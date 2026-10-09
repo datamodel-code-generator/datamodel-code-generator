@@ -81,5 +81,5 @@ render
   11 runtime modules ['unchanged']
 manifest identical to shorthand: True
 render
-  Error: The --server-operation-names entry '/paths/~1pets/get' selects no root path operation that --openapi-include-paths keeps
-  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1pets/get' selects no root path operation that --openapi-include-paths keeps
+  Error: The --server-operation-names entry '/paths/~1pets/get' in 'spec/other.yaml' selects no root path operation that --openapi-include-paths keeps
+  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1pets/get' in 'spec/other.yaml' selects no root path operation that --openapi-include-paths keeps

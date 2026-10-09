@@ -189,8 +189,10 @@ work for them as well. See [Target Generation Options](cli-reference/target-gene
 JSON, as for the model options that take JSON objects. A value on the command line takes precedence over the
 selected profile, which takes precedence over the base table, and a command-line table replaces the whole table of
 `pyproject.toml`. An operation's own entry takes precedence over the global setting, wherever each comes from. Paths
-in `pyproject.toml`, including the JSON files and the documents of operation references, are relative to its
-directory, and command-line paths are relative to the working directory.
+in `pyproject.toml`, including the JSON files, are relative to its directory, and command-line paths are relative to
+the working directory. The documents of operation references are relative to the JSON file that holds them, however
+the file is given, and to a symbolic link's directory when the file is given through one; without a file, to the
+`pyproject.toml` directory for its tables, and to the working directory for inline JSON on the command line.
 
 `--generate-server` requires `--server-output`, `--server-package`, and `--server-model-package`, and a `--server-*`
 option given on the command line requires `--generate-server`; both stop with `Error:` and exit code 2. Server keys

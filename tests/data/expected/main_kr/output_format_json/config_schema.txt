@@ -1,5 +1,20 @@
 {
   "$defs": {
+    "ClientOperationsConfig": {
+      "additionalProperties": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "description": "Client settings keyed by operation reference; the client target validates their members.",
+      "title": "ClientOperationsConfig",
+      "type": "object"
+    },
+    "ClientProtocolsConfig": {
+      "additionalProperties": true,
+      "description": "Client helper definitions keyed by helper name; the client target validates them.",
+      "title": "ClientProtocolsConfig",
+      "type": "object"
+    },
     "DefaultValuesConfig": {
       "additionalProperties": true,
       "description": "Default value override mapping.",
@@ -241,6 +256,39 @@
       "anyOf": [
         {
           "$ref": "#/$defs/StringOrStringListMappingConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "client-operations": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClientOperationsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "client-protocols": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClientProtocolsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "client-resource-names": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StringMappingConfig"
         },
         {
           "type": "null"
