@@ -405,10 +405,10 @@ percent-encoding.
 
 An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
 spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
-`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. A query parameter, header,
-or cookie that an adapter reads answers `400` when the request repeats a single value, where FastAPI takes the last
-query value and the first header. Turning on `--strict-types int float bool` therefore narrows what those
-parameters accept. A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
+`--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
+FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
@@ -439,12 +439,14 @@ operation as a separate alternative, since FastAPI cannot document a requirement
 ## Served OpenAPI document
 
 The application serves FastAPI's own document, built from the routes and the models they declare, so routes
-added later and other routers appear in it as usual. Each generated route adds what FastAPI cannot derive from it,
-taken from the source document at generation time: `responses=` documents every declared response, through its
-model when the body is JSON, and `openapi_extra` documents the parameters, request bodies, and callbacks that
-adapters read, with schema references resolved in place (a schema that refers to itself documents the inner
-reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
-own placeholder names.
+added later and other routers appear in it as usual. The generated models own every schema in it: FastAPI documents
+the models it validates parameters and bodies with, a route's response model, and the model of each declared JSON
+response. Each generated route adds the HTTP metadata FastAPI cannot derive from it, taken from the source document
+at generation time: `responses=` documents every declared response with its description, headers, media, and
+links, and `openapi_extra` documents the parameters, request bodies, and callbacks that adapters read, with their
+descriptions, styles, examples, and encodings. These annotations copy no source schema, so a parameter, header,
+or medium that only an adapter reads appears without one. Path placeholders that are not Python identifiers, or
+that repeat, appear under the route's own placeholder names.
 
 ## Production settings
 

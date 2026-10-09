@@ -6,7 +6,8 @@ from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar, cast
+from math import isfinite
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
@@ -53,7 +54,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalPythonType,
@@ -78,7 +79,6 @@ Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
-Schema: TypeAlias = "Mapping[str, WireValue]"
 
 RESERVED: Final = frozenset({"request", "principal", "body", "media_type"})
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
@@ -105,12 +105,8 @@ _STRICT_CONSTRUCTORS: Final = frozenset({"confloat", "conint"})
 _STRICT_BYTES: Final = ("pydantic", "StrictBytes")
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
-_LITERAL_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
-    bool: "bool",
-    int: "int",
-    float: "float",
-    str: "str",
-}
+_NULL: Final = LiteralScalar("none", None)
+_LITERAL_KINDS: Final = frozenset({"bool", "int", "float", "str"})
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
     "decimal_places",
@@ -652,8 +648,10 @@ class Planner:  # noqa: PLR0904
 
     def info(self) -> tuple[tuple[str, WireValue], ...]:
         """Return the FastAPI settings the root document's info, tags, and servers supply, in constructor order."""
-        root = self.request.lease.borrow(SourceLocation(self.request.batch.documents[0].id, "", "declaration"))
-        sources = {"root": root, "info": root.get("info") if isinstance(root, dict) else None}
+        root = {
+            key: found for key, value in self.request.batch.document_facts if (found := json_value(value)) is not None
+        }
+        sources = {"root": root, "info": root.get("info")}
         found: list[tuple[str, WireValue]] = []
         for container, key, option, kind in _INFO:
             match kind, _member(sources[container], key):
@@ -773,9 +771,9 @@ class Planner:  # noqa: PLR0904
                 factory = value
             value = plain
             default = _default(facts) if default is Default.ABSENT else default
-        schema = {} if use.schema is None else self.wire.schema(use.schema)[1]
-        literal = _literal(declared := schema.get("default"))
-        null = declared is None and "default" in schema
+        declared = None if use.schema is None else dict(use.keywords).get("default")
+        literal = _literal(declared)
+        null = declared == _NULL
         if null:
             default = Default.ABSENT
         if factory is not None and literal is None and default is Default.ABSENT:
@@ -898,9 +896,14 @@ class Planner:  # noqa: PLR0904
                 pass
         return isinstance(value, LiteralType)
 
-    def documentation(self, declaration: WireDeclaration, use: TypeUseBinding | None) -> Iterator[tuple[str, object]]:
+    @staticmethod
+    def documentation(declaration: WireDeclaration, use: TypeUseBinding | None) -> Iterator[tuple[str, object]]:
         """Yield a parameter's documentation keywords: its schema's title, description, deprecation, and examples."""
-        schema: Schema = {} if use is None or use.schema is None else self.wire.schema(use.schema)[1]
+        schema = {
+            key: found
+            for key, value in (() if use is None or use.schema is None else use.keywords)
+            if (found := json_value(value)) is not None
+        }
         if isinstance(title := schema.get("title"), str):
             yield "title", title
         if isinstance(description := fact(declaration, "description"), str) or isinstance(
@@ -909,7 +912,7 @@ class Planner:  # noqa: PLR0904
             yield "description", description
         if fact(declaration, "deprecated") is True or schema.get("deprecated") is True:
             yield "deprecated", True
-        if isinstance(examples := schema.get("examples"), tuple) and examples:
+        if isinstance(examples := schema.get("examples"), list) and examples:
             yield "examples", examples
 
     def body(self, operation: OperationContract, declaration: WireDeclaration) -> BodySpec:
@@ -973,22 +976,34 @@ class Planner:  # noqa: PLR0904
         return replace(spec, form_fields=self.form_plans(use.type))
 
     def form_plans(self, value: FinalPythonType | None) -> tuple[FieldPlan, ...]:
-        """Return the members a form adapter reads as text: each model field by wire name, repeated for a list."""
+        """Return the members a form adapter reads as text: each model field by wire name, as the field's type says."""
         members = self.members.get(value.symbol, ()) if isinstance(value, GeneratedSymbolType) else ()
         return tuple(
-            FieldPlan(member.wire_name, repeated=self.kind(facts.type) == "sequence")
+            self.form_field(member.wire_name, facts.type)
             for member in members
             if member.wire_name is not None and (facts := member.model_facts) is not None
         )
 
+    def form_field(self, name: str, value: FinalPythonType) -> FieldPlan:
+        """Return a form member's plan: repeated for a list, in the kind the model's type gives its text or items."""
+        repeated = self.kind(value) == "sequence"
+        kind = self.wire.kinds.of(value, ("items",) if repeated else ()) or "string"
+        return FieldPlan(name, kind, repeated=repeated)
+
     def form_model(self, value: FinalPythonType | None) -> bool:
-        """Return whether FastAPI reads a type as a form model: a BaseModel of scalar and repeated scalar fields."""
+        """Return whether FastAPI reads a type as a form model: a BaseModel of fields FastAPI reads from text.
+
+        A field FastAPI reads is a scalar or a list of scalars whose type accepts text, so neither a strict int, float,
+        or bool nor an enum or literal of non-string values.
+        """
         return (
             self.backend == DataModelType.PydanticV2BaseModel.value
             and isinstance(value, GeneratedSymbolType)
             and self.symbols[value.symbol].kind == "model"
             and all(
-                (facts := member.model_facts) is not None and self.kind(facts.type) is not None
+                (facts := member.model_facts) is not None
+                and self.kind(facts.type) is not None
+                and not (self.textless(facts.type) and self.form_field("", facts.type).kind != "string")
                 for member in self.members.get(value.symbol, ())
             )
         )
@@ -1163,13 +1178,42 @@ def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
     return None
 
 
-def _member(source: object, key: str) -> WireValue | None:
-    if not _is_mapping(source) or key not in source:
-        return None
+class NotJSONError(Exception):
+    """A documentation value that has no JSON form."""
+
+
+def json_literal(value: FrozenLiteral) -> JSONValue:
+    """Return a recorded literal as JSON, or raise `NotJSONError` when it has no JSON form."""
+    if isinstance(value, LiteralSequence):
+        return [json_literal(item) for item in value.items]
+    if isinstance(value, LiteralMapping) and (names := _names(value)) is not None:
+        return {name: json_literal(item) for name, (_, item) in zip(names, value.entries, strict=True)}
+    if isinstance(value, LiteralScalar) and is_json_scalar(scalar := value.value):
+        return scalar
+    raise NotJSONError
+
+
+def json_value(value: FrozenLiteral) -> JSONValue | None:
+    """Return a recorded literal as JSON, or None when it has no JSON form."""
     try:
-        return checked_wire(source[key])
-    except (TypeError, ValueError):
+        return json_literal(value)
+    except NotJSONError:
         return None
+
+
+def is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
+    """Return whether a value is a finite JSON scalar."""
+    return value is None or isinstance(value, (bool, int, str)) or (isinstance(value, float) and isfinite(value))
+
+
+def _names(value: LiteralMapping) -> list[str] | None:
+    names = [key.value for key, _ in value.entries if isinstance(key, LiteralScalar) and isinstance(key.value, str)]
+    return names if len(names) == len(value.entries) else None
+
+
+def _member(source: object, key: str) -> WireValue | None:
+    """Return a recorded JSON member of an info source as a wire value, or None when it has none."""
+    return checked_wire(source[key]) if _is_mapping(source) and key in source else None
 
 
 def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:
@@ -1245,13 +1289,12 @@ def _strict(value: FinalPythonType) -> bool:
     return False
 
 
-def _literal(value: WireValue) -> LiteralScalar | LiteralSequence | None:
-    """Return a JSON boolean, number, or string, or a list of them, as a literal."""
-    if isinstance(value, tuple):
-        items = tuple(item for element in value if isinstance(item := _literal(element), LiteralScalar))
-        return LiteralSequence("list", items) if len(items) == len(value) else None
-    kind = _LITERAL_KINDS.get(type(value))
-    return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
+def _literal(value: FrozenLiteral | None) -> LiteralScalar | LiteralSequence | None:
+    """Return a recorded JSON boolean, number, or string, or a list of them, as a literal."""
+    if isinstance(value, LiteralSequence):
+        items = tuple(item for element in value.items if isinstance(item := _literal(element), LiteralScalar))
+        return LiteralSequence("list", items) if len(items) == len(value.items) else None
+    return value if isinstance(value, LiteralScalar) and value.kind in _LITERAL_KINDS else None
 
 
 def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequence:

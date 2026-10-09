@@ -1,22 +1,20 @@
-"""Take the documentation FastAPI cannot derive from the routes out of the source document, at generation time.
+"""Take the documentation FastAPI cannot derive from the routes out of the recorded declarations, at generation time.
 
 Routes pass it to FastAPI as `responses=` and `openapi_extra`, so FastAPI's own document describes adapter
-parameters and bodies, every declared response, and callbacks. Schemas are copied with references resolved, because
-the document FastAPI serves has only the components of the models it validates with.
+parameters and bodies, every declared response, and callbacks. The generated models own every schema: FastAPI
+documents the ones it validates or sends a model with, and these annotations carry only the HTTP metadata the
+parser recorded, never a copy of a source schema.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from math import isfinite
 from typing import TYPE_CHECKING, Final, TypeAlias
-from urllib.parse import unquote, urldefrag, urljoin
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._fastapi.callbacks import CallbackIndex
-from datamodel_code_generator._runtime.model_codecs.wire import pointer_tokens
-from datamodel_code_generator._target_contract import LiteralMapping, LiteralScalar, LiteralSequence
+from datamodel_code_generator._fastapi.plan import NotJSONError, fact, is_json_scalar, json_literal, json_value
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -24,9 +22,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._fastapi.callbacks import CallbackNode
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
-    from datamodel_code_generator._target_contract import FrozenLiteral, TypeUseId, WireDeclaration
+    from datamodel_code_generator._target_contract import FrozenLiteral, WireDeclaration
 
 JSONObject: TypeAlias = "dict[str, JSONValue]"
 
@@ -46,27 +43,16 @@ _EXAMPLE_KEYS: Final = ("example", "examples")
 _ENCODING_KEYS: Final = ("contentType", "style", "explode", "allowReserved")
 _LINK_KEYS: Final = ("operationRef", "operationId", "parameters", "requestBody", "description", "server")
 _CALLBACK_KEYS: Final = ("tags", "summary", "description", "externalDocs", "operationId", "deprecated")
-_DATA_KEYWORDS: Final = frozenset({"const", "default", "enum", "example", "examples"})
 _RAW_NOTE: Final = "The server passes this body to its handler as the request, without validating it."
 
 
-class _NotJSONError(Exception):
-    """A documentation value that has no JSON form."""
-
-
 class Documentation:
-    """Build each operation's `openapi_extra` and `responses` from its declarations and the bundled schemas."""
+    """Build each operation's `openapi_extra` and `responses` from its recorded declarations."""
 
-    def __init__(self, plan: ServerPlan, request: TargetRequest, wires: tuple[WirePlan, ...]) -> None:
-        """Index the bundled schema resources and the schema identities of the wire plans' uses."""
+    def __init__(self, plan: ServerPlan, request: TargetRequest) -> None:
+        """Index the callback operations of the batch the plan was made from."""
         self.plan = plan
         self.request = request
-        self.resources: dict[str, list[WireValue]] = {}
-        self.ids: dict[TypeUseId, str] = {}
-        for wire in wires:
-            for resource in wire.resources:
-                self.resources.setdefault(resource.uri, []).append(resource.contents)
-            self.ids.update(wire.schema_ids)
         self.index = CallbackIndex(request.batch)
         self.problems: dict[str, None] = {}
 
@@ -74,7 +60,7 @@ class Documentation:
         """Return what the operation adds to FastAPI's operation object: adapter inputs, callbacks, and links."""
         contract = spec.contract
         extra: JSONObject = {}
-        declarations = {(_fact(item, "in"), item.name): item for item in contract.parameters}
+        declarations = {(fact(item, "in"), item.name): item for item in contract.parameters}
         slots: dict[str, list[str]] = {}
         for slot in spec.route.slots:
             slots.setdefault(slot.wire_name, []).append(slot.slot)
@@ -112,7 +98,7 @@ class Documentation:
     def own_servers(self, servers: FrozenLiteral) -> bool:
         """Return whether an operation's servers differ from the document's, which the application info serves."""
         root = dict(self.plan.info).get("servers")
-        return root is None or documentation(servers) != _plain(root)
+        return root is None or json_value(servers) != _plain(root)
 
     def parameter(self, declaration: WireDeclaration) -> JSONObject:
         """Return a parameter object: its facts, then its schema or content, then its examples."""
@@ -127,17 +113,13 @@ class Documentation:
         return header
 
     def payload(self, target: JSONObject, declaration: WireDeclaration) -> None:
-        """Add a declaration's schemas, examples, and media content to its object."""
-        uses: dict[str, TypeUseId] = {}
-        for use in declaration.schemas:
-            uses.setdefault(pointer_tokens(use.schema_site.pointer)[-1], use)
-        target.update((keyword, self.schema(use)) for keyword, use in uses.items())
+        """Add a declaration's examples and media content to its object; the models own its schemas."""
         target.update(self.facts(declaration, _EXAMPLE_KEYS))
         if media := [child for child in declaration.children if child.kind == "media"]:
             target["content"] = {str(child.name): self.media(child) for child in media}
 
     def media(self, declaration: WireDeclaration) -> JSONObject:
-        """Return a media type object: its schemas, examples, and effective encodings."""
+        """Return a media type object: its examples and effective encodings."""
         media: JSONObject = {}
         self.payload(media, declaration)
         if encodings := [child for child in declaration.children if child.kind == "encoding"]:
@@ -208,84 +190,9 @@ class Documentation:
     def put(self, target: JSONObject, key: str, value: FrozenLiteral, pointer: str) -> None:
         """Add one documentation value, or report the annotation the served document cannot keep."""
         try:
-            target[key] = _json(value)
-        except _NotJSONError:
+            target[key] = json_literal(value)
+        except NotJSONError:
             self.problems[f"{pointer}: The served document leaves out {key}, which has no JSON form"] = None
-
-    def schema(self, use: TypeUseId) -> JSONValue:
-        """Return the normalized schema of a type use with every reference resolved in place."""
-        uri, fragment = urldefrag(self.ids[use])
-        return self.resolved(self.value(uri, unquote(fragment)), uri, frozenset({self.ids[use]}))
-
-    def value(self, uri: str, pointer: str) -> WireValue:
-        """Return the normalized value at a pointer of a bundled resource."""
-        tokens = pointer_tokens(pointer)
-        return next(found for contents in self.resources[uri] if (found := _at(contents, tokens)) is not None)
-
-    def resolved(self, value: WireValue, uri: str, active: frozenset[str]) -> JSONValue:
-        """Copy a schema, replacing each reference by the schema it names; a reference to itself becomes `{}`."""
-        if isinstance(value, tuple):
-            return [self.resolved(item, uri, active) for item in value]
-        if not _is_wire_mapping(value):
-            return _plain(value)
-        schema: JSONObject = {}
-        reference = value.get("$ref")
-        if isinstance(reference, str):
-            target = urljoin(uri, reference)
-            if target in active:
-                return {}
-            base, fragment = urldefrag(target)
-            resolved = self.resolved(self.value(base, unquote(fragment)), base, active | {target})
-            schema.update(resolved if _is_object(resolved) else {})
-        for key, item in value.items():
-            if key == "$ref":
-                continue
-            schema[key] = _plain(item) if key in _DATA_KEYWORDS else self.resolved(item, uri, active)
-        return schema
-
-
-def _at(value: WireValue, tokens: list[str]) -> WireValue | None:
-    for token in tokens:
-        if _is_wire_mapping(value) and token in value:
-            value = value[token]
-        elif isinstance(value, tuple) and token.isdigit() and int(token) < len(value):
-            value = value[int(token)]
-        else:
-            return None
-    return value
-
-
-def _fact(declaration: WireDeclaration, name: str) -> object:
-    return next(
-        (value.value for key, value in declaration.facts if key == name and isinstance(value, LiteralScalar)), None
-    )
-
-
-def _json(value: FrozenLiteral) -> JSONValue:
-    if isinstance(value, LiteralSequence):
-        return [_json(item) for item in value.items]
-    if isinstance(value, LiteralMapping) and (names := _names(value)) is not None:
-        return {name: _json(item) for name, (_, item) in zip(names, value.entries, strict=True)}
-    if isinstance(value, LiteralScalar) and _is_json_scalar(scalar := value.value):
-        return scalar
-    raise _NotJSONError
-
-
-def _names(value: LiteralMapping) -> list[str] | None:
-    names = [key.value for key, _ in value.entries if isinstance(key, LiteralScalar) and isinstance(key.value, str)]
-    return names if len(names) == len(value.entries) else None
-
-
-def _is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
-    return value is None or isinstance(value, (bool, int, str)) or (isinstance(value, float) and isfinite(value))
-
-
-def documentation(value: FrozenLiteral) -> JSONValue | None:
-    """Return a documentation value as JSON, or None when it has no JSON form."""
-    try:
-        return _json(value)
-    except _NotJSONError:
-        return None
 
 
 def _plain(value: WireValue) -> JSONValue:
@@ -293,7 +200,7 @@ def _plain(value: WireValue) -> JSONValue:
         return {key: _plain(item) for key, item in value.items()}
     if isinstance(value, tuple):
         return [_plain(item) for item in value]
-    assert _is_json_scalar(value)
+    assert is_json_scalar(value)
     return value
 
 
