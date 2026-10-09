@@ -207,10 +207,13 @@ class GenericType:
 
 @dataclass(frozen=True, slots=True)
 class UnionDiscriminator:
-    """The discriminator a union's schema declares: its wire property, and the model each mapped value names."""
+    """The discriminator a union's schema declares: its wire property, and the source of the model each value names.
+
+    A source is the path of the schema a model is generated from, as `FinalModelSymbol.source` holds it.
+    """
 
     property_name: str
-    mapping: tuple[tuple[str, SymbolId], ...]
+    mapping: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -328,7 +331,11 @@ class ModelFieldFacts:
 
 @dataclass(frozen=True, slots=True)
 class FinalModelSymbol:
-    """Identify a real emitted declaration without retaining its generation graph."""
+    """Identify a real emitted declaration without retaining its generation graph.
+
+    `source` is the path of the schema the declaration is generated from, and `discriminator` the one the schema of a
+    union that reuse replaced with an equal union declares.
+    """
 
     id: SymbolId
     model: GraphObjectId
@@ -344,7 +351,8 @@ class FinalModelSymbol:
     nullable: bool
     facts: BackendModelFacts | None
     values: tuple[LiteralScalar | None, ...] = ()
-    schema_name: str = ""
+    source: str = ""
+    discriminator: UnionDiscriminator | None = None
 
 
 BindingReason: TypeAlias = Literal[
