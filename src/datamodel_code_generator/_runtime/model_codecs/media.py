@@ -150,10 +150,10 @@ def finite(value: object) -> None:
         case Decimal() if not value.is_finite():
             raise ParameterEncodingError(_NON_FINITE)
         case list() | tuple():
-            for item in value:
+            for item in cast("Iterable[object]", value):
                 finite(item)
         case Mapping():
-            for item in value.values():
+            for item in cast("Mapping[object, object]", value).values():
                 finite(item)
         case _:
             pass
