@@ -70,8 +70,8 @@
   invalid elapsed negative ! ValueError: elapsed must be a finite number in its permitted range []
   invalid elapsed infinity ! ValueError: elapsed must be a finite number in its permitted range []
   hints TimeoutOptions ('connect', 'read', 'write', 'pool', 'return')
-  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'clock', 'return')
-  hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'redirects', 'idempotency_key', 'auth', 'return')
+  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'clock', 'return')
+  hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'hooks', 'context', 'timeout', 'total_timeout', 'limiter', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'return')
   hints Clock ('monotonic', 'time', 'random', 'return')
   hints LimiterContext ('operation_id', 'origin', 'call_id', 'parent_session_id', 'remaining_timeout', 'return')
   hints SDKError ('reason', 'delivery_state', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'attempt_count', 'elapsed', 'completed_result', 'return')

@@ -47,11 +47,7 @@ _STREAM: Final = (
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
-_UPLOAD: Final = (
-    ("chunk_bytes", False, False, False),
-    ("max_parts", False, True, False),
-    ("max_uncertain_probes", False, False, True),
-)
+_UPLOAD: Final = (("chunk_bytes", False, False, False),)
 _WS: Final = (
     ("open_timeout", True, True, False),
     ("idle_timeout", True, True, False),
@@ -179,11 +175,9 @@ class StreamOptions:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class UploadOptions:
-    """Upload limits; only max_parts takes None, and only max_uncertain_probes takes 0."""
+    """Upload limits: the positive size of the chunk one append holds in memory."""
 
     chunk_bytes: int | Unset = UNSET
-    max_parts: int | Unset | None = UNSET
-    max_uncertain_probes: int | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""

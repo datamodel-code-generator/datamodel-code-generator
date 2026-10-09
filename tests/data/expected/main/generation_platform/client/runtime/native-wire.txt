@@ -98,10 +98,10 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   header events=1
   sync location 301/ipv6/False/True = 'RawResponse status=301 attempts=1'
   header events=1
-  sync location 301/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=301 cause=NoneType'
-  header events=1
-  sync location 301/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=301 cause=NoneType'
-  header events=1
+  sync location 301/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  sync location 301/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   sync location 301/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   sync location 301/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -138,10 +138,10 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   header events=1
   sync location 302/ipv6/False/True = 'RawResponse status=302 attempts=1'
   header events=1
-  sync location 302/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=NoneType'
-  header events=1
-  sync location 302/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=NoneType'
-  header events=1
+  sync location 302/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  sync location 302/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   sync location 302/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   sync location 302/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -178,10 +178,10 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   header events=1
   sync location 303/ipv6/False/True = 'RawResponse status=303 attempts=1'
   header events=1
-  sync location 303/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=303 cause=NoneType'
-  header events=1
-  sync location 303/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=303 cause=NoneType'
-  header events=1
+  sync location 303/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  sync location 303/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   sync location 303/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   sync location 303/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -218,10 +218,10 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   header events=1
   sync location 307/ipv6/False/True = 'RawResponse status=307 attempts=1'
   header events=1
-  sync location 307/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=307 cause=NoneType'
-  header events=1
-  sync location 307/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=307 cause=NoneType'
-  header events=1
+  sync location 307/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  sync location 307/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   sync location 307/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   sync location 307/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -258,10 +258,10 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   header events=1
   sync location 308/ipv6/False/True = 'RawResponse status=308 attempts=1'
   header events=1
-  sync location 308/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=308 cause=NoneType'
-  header events=1
-  sync location 308/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=308 cause=NoneType'
-  header events=1
+  sync location 308/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  sync location 308/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   sync location 308/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   sync location 308/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -292,9 +292,7 @@ sync size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=F
   sync h2 location borrowed = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   sync native borrowed closed=False
   sync native captured responses closed=[True, True, True]
-  sync borrowed client defaults leaked=False
-  sync configured native-invalid origin = 'ConfigurationError delivery=DeliveryState.NOT_SENT phase=None stop=None attempts=0 reason=invalid_value status=None cause=InvalidURL'
-  sync invalid configured origin arrivals=0
+  sync borrowed client defaults leaked=True
   sync malformed Location header-hook RuntimeError raw=False: APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError secondary=[] same=False
   header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
   sync malformed Location header-hook RuntimeError raw=True: APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError secondary=[] same=False
@@ -403,10 +401,10 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   header events=1
   async location 301/ipv6/False/True = 'AsyncRawResponse status=301 attempts=1'
   header events=1
-  async location 301/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=301 cause=NoneType'
-  header events=1
-  async location 301/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=301 cause=NoneType'
-  header events=1
+  async location 301/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  async location 301/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   async location 301/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   async location 301/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -443,10 +441,10 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   header events=1
   async location 302/ipv6/False/True = 'AsyncRawResponse status=302 attempts=1'
   header events=1
-  async location 302/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=NoneType'
-  header events=1
-  async location 302/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=302 cause=NoneType'
-  header events=1
+  async location 302/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  async location 302/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   async location 302/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   async location 302/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -483,10 +481,10 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   header events=1
   async location 303/ipv6/False/True = 'AsyncRawResponse status=303 attempts=1'
   header events=1
-  async location 303/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=303 cause=NoneType'
-  header events=1
-  async location 303/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=303 cause=NoneType'
-  header events=1
+  async location 303/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  async location 303/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   async location 303/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   async location 303/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -523,10 +521,10 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   header events=1
   async location 307/ipv6/False/True = 'AsyncRawResponse status=307 attempts=1'
   header events=1
-  async location 307/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=307 cause=NoneType'
-  header events=1
-  async location 307/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=307 cause=NoneType'
-  header events=1
+  async location 307/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  async location 307/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   async location 307/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   async location 307/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -563,10 +561,10 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   header events=1
   async location 308/ipv6/False/True = 'AsyncRawResponse status=308 attempts=1'
   header events=1
-  async location 308/ipv6/True/False = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=308 cause=NoneType'
-  header events=1
-  async location 308/ipv6/True/True = 'ConfigurationError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 reason=redirect_refused status=308 cause=NoneType'
-  header events=1
+  async location 308/ipv6/True/False = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
+  async location 308/ipv6/True/True = 'APIConnectionError delivery=DeliveryState.RESPONSE_STARTED phase=connect stop=unknown_delivery attempts=1 reason=None status=None cause=ConnectError'
+  header events=0
   async location 308/idna/False/False = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   header events=0
   async location 308/idna/False/True = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
@@ -597,9 +595,7 @@ async size error-explicit/65537 raw=True: DecodeError limit=8 bytes=0 truncated=
   async h2 location borrowed = 'APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError'
   async native borrowed closed=False
   async native captured responses closed=[True, True, True]
-  async borrowed client defaults leaked=False
-  async configured native-invalid origin = 'ConfigurationError delivery=DeliveryState.NOT_SENT phase=None stop=None attempts=0 reason=invalid_value status=None cause=InvalidURL'
-  async invalid configured origin arrivals=0
+  async borrowed client defaults leaked=True
   async malformed Location header-hook RuntimeError raw=False: APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError secondary=[] same=False
   header-hook events=['call_start', 'attempt_start', 'transport_failure', 'attempt_end', 'call_end']
   async malformed Location header-hook RuntimeError raw=True: APIConnectionError delivery=DeliveryState.MAYBE_SENT phase=read stop=unknown_delivery attempts=1 reason=None status=None cause=RemoteProtocolError secondary=[] same=False

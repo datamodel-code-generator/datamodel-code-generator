@@ -1,7 +1,8 @@
 """Raw responses: the status, headers, and body of a call, without decoding the declared value.
 
-A buffered response holds its body and stays readable after its client closes. A streaming response is a handle
-whose body is read once, into memory by `read()` or by one iteration; closing it releases the connection.
+A buffered response holds its body, with HTTPX2 having removed its content codings, and stays readable after its client
+closes. A streaming response is a handle whose body is read once, into memory by `read()` or by one iteration, decoded
+or as it arrived; closing it releases the connection.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
 from typing_extensions import Self, TypeVar
 
 from ..model_codecs.media import json_value
-from .coding import CHUNK, ContentDecoder
+from .bodies import CHUNK
 from .errors import (
     ConfigurationError,
     DecodeError,
@@ -201,7 +202,7 @@ class _Raw(Generic[SourceT, HandleT]):
         "_info",
         "_limits",
         "_operation_id",
-        "_raw",
+        "_raw_source",
         "_retry_stop_reason",
         "_source",
         "_state",
@@ -217,12 +218,13 @@ class _Raw(Generic[SourceT, HandleT]):
         failure: Callable[[Exception], SDKError],
         *,
         source: SourceT,
+        raw_source: SourceT,
         events: CallEvents | None,
         call: LogicalCallContext,
         retry_stop_reason: RetryStopReason | None = None,
         status_secondary_errors: tuple[Exception, ...] = (),
     ) -> None:
-        """Keep response metadata, status classification, limits, body source, and resource release.
+        """Keep response metadata, status classification, limits, the decoded and raw body sources, and release.
 
         A streaming handle of a call with hooks keeps its events, which report the stream's end once it was handed over.
         """
@@ -236,7 +238,8 @@ class _Raw(Generic[SourceT, HandleT]):
         self._operation_id = operation_id
         self._classify = failure
         self._source = source
-        self._raw = self._body = b""
+        self._raw_source = raw_source
+        self._body = b""
         self._state: State = "open"
 
     @property
@@ -251,19 +254,12 @@ class _Raw(Generic[SourceT, HandleT]):
             raise self._consumed(action="read")
         return self._body
 
-    @property
-    def raw_body_bytes(self) -> bytes:
-        """Return the body as it arrived, content codings included, once it is in memory."""
-        if self._state != "buffered":
-            raise self._consumed(action="read")
-        return self._raw
-
     def _consumed(self, *, action: Action) -> BaseException:
-        """Return why a body that is not in memory cannot be read: its earlier consumption or explicit close."""
+        """Return why a body cannot be read: its earlier consumption, an explicit close, or raw bytes not kept."""
         state = self._state
         match state:
-            case "consumed" | "closed" | "failed":
-                reported: Literal["streaming", "consumed", "closed", "failed"] = state
+            case "buffered" | "consumed" | "closed" | "failed":
+                reported: Literal["buffered", "streaming", "consumed", "closed", "failed"] = state
             case _:
                 reported = "streaming"
         return ConfigurationError(
@@ -274,11 +270,10 @@ class _Raw(Generic[SourceT, HandleT]):
             info=self._info,
         )
 
-    def _enter(self) -> ContentDecoder:
-        """Check the call before starting to read and interpret its content codings."""
+    def _enter(self) -> None:
+        """Check the call before starting to read the body."""
         self._check()
         self._state = "streaming"
-        return ContentDecoder(self._info, self._operation_id)
 
     def _failure(self, error: Exception) -> BaseException:
         if is_http_error(error):
@@ -347,9 +342,8 @@ class _Raw(Generic[SourceT, HandleT]):
         parts.append(chunk[: len(chunk) - (size - limit)])
         return False
 
-    def _save(self, raw: list[bytes], decoded: list[bytes]) -> None:
-        self._raw = content = b"".join(raw)
-        self._body = content if decoded is raw else b"".join(decoded)
+    def _save(self, decoded: list[bytes]) -> None:
+        self._body = b"".join(decoded)
         self._check()
 
 
@@ -419,6 +413,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         failure: Callable[[Exception], SDKError],
         *,
         source: Callable[[], Iterator[bytes]],
+        raw_source: Callable[[], Iterator[bytes]],
         close: Callable[[], None],
         call: LogicalCallContext,
         events: CallEvents | None = None,
@@ -433,6 +428,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             operation_id,
             failure,
             source=source,
+            raw_source=raw_source,
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,
@@ -457,7 +453,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         return self._iterate(action="iter_bytes", decoded=True)
 
     def iter_raw_bytes(self) -> Iterator[bytes]:
-        """Yield the body as it arrived, content codings included: the saved one, else the stream, once."""
+        """Yield a streaming handle's body as it arrived, content codings included, once; a buffered one keeps none."""
         return self._iterate(action="iter_raw_bytes", decoded=False)
 
     def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
@@ -538,17 +534,15 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         return self._body
 
     def _buffer(self) -> None:
-        """Read the body into memory; an identity body is kept once, as it arrived."""
-        limit = self._limits.max_response_bytes
-        raw: list[bytes] = []
-        budget = self._budget(limit)
+        """Read the decoded body into memory."""
+        budget = self._budget(self._limits.max_response_bytes)
+        decoded: list[bytes] = []
         try:
-            decoder = self._enter()
-            decoded = raw if decoder.identity else []
-            for chunk in decoder.decoded(self._chunks() if decoder.identity else self._recorded(raw, limit)):
+            self._enter()
+            for chunk in self._chunks():
                 budget.spend(len(chunk))
                 decoded.append(chunk)
-            self._save(raw, decoded)
+            self._save(decoded)
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
@@ -558,23 +552,15 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             raise
         self._end("buffered")
 
-    def _chunks(self) -> Iterator[bytes]:
-        """Read bytes with native I/O timeouts."""
+    def _chunks(self, *, decoded: bool = True) -> Iterator[bytes]:
+        """Read decoded or raw bytes with native I/O timeouts."""
         self._check()
-        yield from self._source()
-
-    def _recorded(self, parts: list[bytes], limit: int | None) -> Iterator[bytes]:
-        """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
-        budget = self._budget(limit)
-        for chunk in self._chunks():
-            budget.spend(len(chunk))
-            parts.append(chunk)
-            yield chunk
+        yield from (self._source if decoded else self._raw_source)()
 
     def _iterate(self, *, action: Action, decoded: bool) -> Iterator[bytes]:
         match self._state:
-            case "buffered":
-                return _pieces(self._body if decoded else self._raw)
+            case "buffered" if decoded:
+                return _pieces(self._body)
             case "open":
                 self._state = "streaming"
                 return self._stream(decoded=decoded)
@@ -585,8 +571,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def _stream(self, *, decoded: bool, held: bool = False) -> Generator[bytes, None, None]:
         budget = self._budget(self._limits.max_stream_bytes)
         try:
-            source = self._chunks()
-            for chunk in ContentDecoder(self._info, self._operation_id).decoded(source) if decoded else source:
+            for chunk in self._chunks(decoded=decoded):
                 self._check()
                 budget.spend(len(chunk))
                 yield chunk
@@ -608,7 +593,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         size = 0
         problem: ProtocolError | None = None
         try:
-            for chunk in ContentDecoder(self._info, self._operation_id).decoded(self._chunks()):
+            for chunk in self._chunks():
                 size += len(chunk)
                 if not self._prefix(parts, chunk, size):
                     break
@@ -676,6 +661,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         failure: Callable[[Exception], SDKError],
         *,
         source: Callable[[], AsyncIterator[bytes]],
+        raw_source: Callable[[], AsyncIterator[bytes]],
         close: Callable[[], Awaitable[None]],
         call: LogicalCallContext,
         events: CallEvents | None = None,
@@ -690,6 +676,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             operation_id,
             failure,
             source=source,
+            raw_source=raw_source,
             events=events,
             call=call,
             retry_stop_reason=retry_stop_reason,
@@ -714,7 +701,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         return self._iterate(action="iter_bytes", decoded=True)
 
     def iter_raw_bytes(self) -> AsyncIterator[bytes]:
-        """Yield the body as it arrived, content codings included: the saved one, else the stream, once."""
+        """Yield a streaming handle's body as it arrived, content codings included, once; a buffered one keeps none."""
         return self._iterate(action="iter_raw_bytes", decoded=False)
 
     async def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
@@ -817,17 +804,15 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         return self._body
 
     async def _buffer(self) -> None:
-        """Read the body into memory; an identity body is kept once, as it arrived."""
-        limit = self._limits.max_response_bytes
-        raw: list[bytes] = []
-        budget = self._budget(limit)
+        """Read the decoded body into memory."""
+        budget = self._budget(self._limits.max_response_bytes)
+        decoded: list[bytes] = []
         try:
-            decoder = self._enter()
-            decoded = raw if decoder.identity else []
-            async for chunk in decoder.adecoded(self._chunks() if decoder.identity else self._recorded(raw, limit)):
+            self._enter()
+            async for chunk in self._chunks():
                 budget.spend(len(chunk))
                 decoded.append(chunk)
-            self._save(raw, decoded)
+            self._save(decoded)
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
@@ -837,10 +822,10 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise
         await self._end("buffered")
 
-    async def _chunks(self) -> AsyncIterator[bytes]:
-        """Bound each native read by its active call or stream limits."""
+    async def _chunks(self, *, decoded: bool = True) -> AsyncIterator[bytes]:
+        """Read decoded or raw bytes, bounding each native read by its active call or stream limits."""
         self._check()
-        source = self._source()
+        source = (self._source if decoded else self._raw_source)()
         while True:
             try:
                 chunk = await anext(source)
@@ -848,18 +833,10 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 return
             yield chunk
 
-    async def _recorded(self, parts: list[bytes], limit: int | None) -> AsyncIterator[bytes]:
-        """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
-        budget = self._budget(limit)
-        async for chunk in self._chunks():
-            budget.spend(len(chunk))
-            parts.append(chunk)
-            yield chunk
-
     def _iterate(self, *, action: Action, decoded: bool) -> AsyncGenerator[bytes, None] | _SavedPieces:
         match self._state:
-            case "buffered":
-                return _SavedPieces(self._body if decoded else self._raw)
+            case "buffered" if decoded:
+                return _SavedPieces(self._body)
             case "open":
                 self._state = "streaming"
                 return self._stream(decoded=decoded)
@@ -870,8 +847,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     async def _stream(self, *, decoded: bool, held: bool = False) -> AsyncGenerator[bytes, None]:
         budget = self._budget(self._limits.max_stream_bytes)
         try:
-            source = self._chunks()
-            async for chunk in ContentDecoder(self._info, self._operation_id).adecoded(source) if decoded else source:
+            async for chunk in self._chunks(decoded=decoded):
                 self._check()
                 budget.spend(len(chunk))
                 yield chunk
@@ -893,7 +869,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         size = 0
         problem: ProtocolError | None = None
         try:
-            async for chunk in ContentDecoder(self._info, self._operation_id).adecoded(self._chunks()):
+            async for chunk in self._chunks():
                 size += len(chunk)
                 if not self._prefix(parts, chunk, size):
                     break

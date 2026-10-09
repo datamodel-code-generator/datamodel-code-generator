@@ -366,9 +366,7 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                         for name, location in _LOCATIONS:
                             server.location = location
                             for enabled in (False, True):
-                                request_options = options.RequestOptions(
-                                    redirects=options.RedirectOptions(enabled=enabled)
-                                )
+                                request_options = options.RequestOptions(follow_redirects=enabled)
                                 for raw in (False, True):
                                     events.clear()
                                     call = (
@@ -391,7 +389,7 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                     for name, location in _LOCATIONS:
                         server.location = location
                         for enabled in (False, True):
-                            request_options = options.RequestOptions(redirects=options.RedirectOptions(enabled=enabled))
+                            request_options = options.RequestOptions(follow_redirects=enabled)
                             for raw in (False, True):
                                 events.clear()
                                 call = api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
@@ -510,40 +508,7 @@ def native_wire(package: ModuleType, lines: list[str]) -> None:
         _refusal(package, options, lines, asynchronous=asynchronous)
         _locations(package, options, lines, asynchronous=asynchronous)
         _borrowed(package, lines, asynchronous=asynchronous)
-        _configured_origins(package, options, lines, asynchronous=asynchronous)
         _location_hooks(package, options, lines, asynchronous=asynchronous)
-
-
-def _configured_origins(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
-    mode = "async" if asynchronous else "sync"
-    server = NativeFixture()
-    try:
-        settings = options.ClientOptions(
-            base_url=server.url,
-            transport=options.TransportOptions(ssl_context=server.verify),
-            redirects=options.RedirectOptions(enabled=True, allowed_origins=("https://☃.example",)),
-        )
-        if asynchronous:
-
-            async def call() -> None:
-                async with package.AsyncClient(options=settings) as api:
-                    await arecord(
-                        lines,
-                        "async configured native-invalid origin",
-                        lambda: _acalled(api.retry.with_response.get_safe),
-                    )
-
-            run(call)
-        else:
-            with package.Client(options=settings) as api:
-                record(
-                    lines,
-                    "sync configured native-invalid origin",
-                    lambda: _called(api.retry.with_response.get_safe),
-                )
-        lines.append(f"  {mode} invalid configured origin arrivals={len(server.requests)}")
-    finally:
-        server.stop()
 
 
 class _HeaderHook:
