@@ -95,7 +95,10 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
     "cli-option.generate-client": ExperimentalFeature(
         id="cli-option.generate-client",
         kind="cli-option",
-        target="--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)",
+        target=(
+            "--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and "
+            "generate() options)"
+        ),
         message=(
             "HTTPX2 client generation from the CLI is experimental; its options and generated package may change."
         ),
@@ -105,8 +108,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "--client-package and --client-model-package name their import paths, and the other --client-* options "
             "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
             "pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice "
-            "on stderr work as with --generate-server. It needs Python 3.11 or later, both to run and as "
-            "--target-python-version."
+            "on stderr work as with --generate-server. generate() takes them as generate_client and the client_* "
+            "options. It needs Python 3.11 or later, both to run and as --target-python-version."
         ),
     ),
     "cli-option.generate-schema-validators": ExperimentalFeature(
@@ -126,7 +129,10 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
     "cli-option.generate-server": ExperimentalFeature(
         id="cli-option.generate-server",
         kind="cli-option",
-        target="--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys)",
+        target=(
+            "--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and "
+            "generate() options)"
+        ),
         message=(
             "FastAPI server generation from the CLI is experimental; its options and generated package may change."
         ),
@@ -137,8 +143,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
             "pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format "
             "json uses the model generation and check payloads, and generation prints a uv add command to stderr. "
-            "It needs Python 3.11 or later, both to run and as "
-            "--target-python-version."
+            "generate() takes them as generate_server and the server_* options, and returns every generated file "
+            "without an output. It needs Python 3.11 or later, both to run and as --target-python-version."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(

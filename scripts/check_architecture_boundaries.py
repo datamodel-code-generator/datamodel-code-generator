@@ -68,6 +68,7 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_config",
     "datamodel_code_generator._target_format",
     "datamodel_code_generator._target_render",
+    "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
     "datamodel_code_generator.api_types",
     "datamodel_code_generator.client",
@@ -138,6 +139,12 @@ class Violation:
 
 
 DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
+    BoundaryKey(
+        "src/datamodel_code_generator/__init__.py",
+        "generate",
+        "target-reverse-import",
+        "datamodel_code_generator._target_selection",
+    ): AllowlistEntry("generate() hands a selected generation target to its lazily imported runner"),
     BoundaryKey(
         "src/datamodel_code_generator/__main__.py",
         "_run_target",
