@@ -672,18 +672,12 @@
     "input": "server-bodies.yaml",
     "services": "bodies",
     "config": {
-      "body_modes": [
-        [
-          "/paths/~1raw/post",
-          "request"
-        ]
-      ],
-      "handler_modes": [
-        [
-          "/paths/~1raw/post",
-          "async"
-        ]
-      ]
+      "server_body_modes": {
+        "/paths/~1raw/post": "request"
+      },
+      "server_handler_modes": {
+        "/paths/~1raw/post": "async"
+      }
     },
     "requests": [
       {
@@ -1156,16 +1150,10 @@
     "input": "server-security.yaml",
     "services": "security",
     "config": {
-      "handler_modes": [
-        [
-          "/paths/~1maybe/get",
-          "async"
-        ],
-        [
-          "/paths/~1custom/get",
-          "async"
-        ]
-      ]
+      "server_handler_modes": {
+        "/paths/~1maybe/get": "async",
+        "/paths/~1custom/get": "async"
+      }
     },
     "apps": [
       {
@@ -1468,25 +1456,13 @@
     "input": "services.yaml",
     "services": "customized",
     "config": {
-      "handler_mode": "async",
-      "operation_names": [
-        [
-          "/paths/~1pets/get",
-          "handle_list_pets"
-        ],
-        [
-          "/paths/~1pets~1{petId}/delete",
-          "handle_delete_pet"
-        ],
-        [
-          "/paths/~1pets~1{petId}~1moves/post",
-          "handle_move_pet"
-        ],
-        [
-          "/paths/~1health/get",
-          "handle_get_health"
-        ]
-      ]
+      "server_handler_mode": "async",
+      "server_operation_names": {
+        "/paths/~1pets/get": "handle_list_pets",
+        "/paths/~1pets~1{petId}/delete": "handle_delete_pet",
+        "/paths/~1pets~1{petId}~1moves/post": "handle_move_pet",
+        "/paths/~1health/get": "handle_get_health"
+      }
     },
     "model": {
       "custom_template_dir": "templates/custom",

@@ -19,10 +19,9 @@ from typing import TYPE_CHECKING, Any, get_type_hints
 
 from pydantic import BaseModel, RootModel, TypeAdapter, ValidationError
 
-from datamodel_code_generator import Error, SchemaParseError
-from datamodel_code_generator.fastapi import generate_fastapi
+from datamodel_code_generator import Error, SchemaParseError, generate
 from tests.data.python.client_generation import generate_client, model_config
-from tests.data.python.fastapi_generation import fastapi_config
+from tests.data.python.fastapi_generation import server_options
 from tests.data.python.generated_packages import generated_root, import_generated, import_generated_codecs
 
 if TYPE_CHECKING:
@@ -101,11 +100,16 @@ def generate_package(
     package = fixture["package"]
     try:
         if server:
-            generate_fastapi(
+            generate(
                 source,
-                model_config=model_config(root / f"{package}_models.py", backend, options),
-                config=fastapi_config(
-                    {"output": package, "package": package, "model_package": f"{package}_models", **config}, root
+                config=model_config(
+                    root / f"{package}_models.py",
+                    backend,
+                    {
+                        **options,
+                        **server_options({"config": config}, package, f"{package}_models"),
+                        "server_output": root / package,
+                    },
                 ),
             )
         else:
