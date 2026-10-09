@@ -1,13 +1,12 @@
-"""Target inputs and identities: canonical JSON, document identities, and the pointers that name documents."""
+"""Target documents: canonical JSON, document identities, and the pointers that name documents."""
 
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import urlsplit
 from urllib.request import url2pathname
@@ -15,7 +14,6 @@ from urllib.request import url2pathname
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -39,28 +37,11 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def target_identity(kind: TargetKind, package: str) -> str:
-    """Identify a target by its kind and package at its own root, without a cross-target registry."""
-    return sha256(canonical_bytes({"kind": kind, "package": package, "root_uri": "."}))
-
-
 def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
     """Raise one configuration diagnostic as an API generation error."""
     return APIGenerationError((
         Diagnostic(code=code, severity="error", stage="config", message=message, option_path=option_path),
     ))
-
-
-def relative_uri(path: Path, root: Path, option_path: str) -> str:
-    """Return the POSIX URI of a path relative to the resolved target root."""
-    try:
-        return PurePosixPath(*Path(os.path.relpath(path.resolve(), root)).parts).as_posix()
-    except ValueError:
-        raise config_error(
-            code="E_CONFIG_VALUE",
-            option_path=option_path,
-            message="A persistent path cannot be expressed relative to the target root",
-        ) from None
 
 
 def document_identity(document: str, base: Path) -> str:
@@ -97,43 +78,23 @@ class RootInput:
     base: Path
 
 
-def persistent_uri(identity: str, root: Path, option_path: str) -> str:
-    """Return the credential-free URI of a document identity, relative to the target root for a file."""
-    from datamodel_code_generator.remote_lock import (  # noqa: PLC0415
-        _display_url,  # pyright: ignore[reportPrivateUsage]
-    )
-
-    parts = urlsplit(identity)
-    match parts.scheme:
-        case "file":
-            return relative_uri(Path(url2pathname(parts.path)), root, option_path)
-        case "http" | "https":
-            return _display_url(identity)
-    return identity
-
-
 class DocumentTable:
-    """Locate the accepted attempt's documents: the root, then the others in URI order."""
+    """Locate the accepted attempt's documents: the root, then the others in identity order."""
 
-    __slots__ = ("_lookup", "pointers", "root_uri", "uris")
+    __slots__ = ("_lookup", "pointers")
 
-    def __init__(self, batch: GeneratedTypeContractBatch, source: RootInput, root: Path) -> None:
-        """Order the non-root documents by their persistent URI, one pointer per identity, without reading them."""
+    def __init__(self, batch: GeneratedTypeContractBatch, source: RootInput) -> None:
+        """Order the non-root documents by their identity, one pointer per identity, without reading them."""
         first, *others = batch.documents
-        self.root_uri = persistent_uri(source.identity, root, "input")
-        located = [(document_identity(document.uri, source.base), document) for document in others]
         entries = sorted(
-            (persistent_uri(identity, root, "input"), identity, document.uri, document.id)
-            for identity, document in located
+            (document_identity(document.uri, source.base), document.uri, document.id) for document in others
         )
         self.pointers: dict[SourceDocumentId, str] = {first.id: ROOT_POINTER}
-        self.uris: dict[SourceDocumentId, str] = {first.id: self.root_uri}
         self._lookup: dict[str, str] = {source.identity: ROOT_POINTER, first.uri: ROOT_POINTER}
         seen: dict[str, str] = {}
-        for uri, identity, name, document in entries:
+        for identity, name, document in entries:
             pointer = seen.setdefault(identity, f"/inputs/documents/{len(seen)}")
             self.pointers[document] = self._lookup[identity] = self._lookup[name] = pointer
-            self.uris[document] = uri
 
     def pointer(self, document: str | None, base: Path) -> str | None:
         """Return the pointer of an explicitly named document, the root when unnamed."""

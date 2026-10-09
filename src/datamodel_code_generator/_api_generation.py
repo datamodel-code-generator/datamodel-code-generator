@@ -14,21 +14,20 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Protocol, cast
 from urllib.parse import ParseResult
 
-from datamodel_code_generator._api_manifest import (
-    ROOT_URN,
-    DocumentTable,
-    RootInput,
-    config_error,
-    document_identity,
-    shown,
-    target_identity,
-)
 from datamodel_code_generator._api_types import (
     APIGenerationError,
     Diagnostic,
     GeneratedArtifact,
     GeneratedProject,
     OperationRef,
+)
+from datamodel_code_generator._target_documents import (
+    ROOT_URN,
+    DocumentTable,
+    RootInput,
+    config_error,
+    document_identity,
+    shown,
 )
 
 if TYPE_CHECKING:
@@ -84,7 +83,6 @@ class TargetRequest:
 
     config: TargetConfig
     model_config: GenerateConfig
-    target_id: str
     batch: GeneratedTypeContractBatch
     lease: SourceLease
     models: tuple[ModelArtifact, ...]
@@ -323,7 +321,7 @@ def _generate_models(
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
         except MetadataCycleError as error:
-            from datamodel_code_generator._api_manifest import named_document, persistent_uri  # noqa: PLC0415
+            from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
             identity = document_identity(error.document, source.base)
             named = "" if identity == source.identity else named_document(identity, identity)
@@ -333,7 +331,6 @@ def _generate_models(
                     severity="error",
                     stage="input",
                     message=f"{error}{named}",
-                    source_uri=persistent_uri(identity, (cwd / target.output.expanduser()).resolve(), "input"),
                     source_pointer=error.pointer,
                 ),
             )) from error
@@ -417,8 +414,7 @@ class _Planner:
         self.cwd = models.cwd
         self.shown_root = self.cwd if shown_root is None else shown_root
         self.root = (self.cwd / config.output.expanduser()).resolve()
-        self.target_id = target_identity(generator.kind, config.package)
-        self.documents = DocumentTable(models.product.batch, models.source, self.root)
+        self.documents = DocumentTable(models.product.batch, models.source)
         self.operations: dict[str, OperationContract] = {}
 
     def operation(self, reference: OperationRef) -> OperationContract | None:
@@ -489,7 +485,6 @@ class _Planner:
                         stage="ownership",
                         message=message,
                         artifact_path=shown(artifact.path, self.cwd).as_posix(),
-                        target_id=self.target_id if artifact.kind == "target" else None,
                     )
                 )
             seen.add(key)
@@ -504,7 +499,6 @@ class _Planner:
             TargetRequest(
                 config=config,
                 model_config=self.effective,
-                target_id=self.target_id,
                 batch=models.product.batch,
                 lease=models.product.source_lease,
                 models=models.artifacts,
