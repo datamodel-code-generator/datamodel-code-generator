@@ -266,6 +266,7 @@
         "name": "populated",
         "context": {
           "package": "client",
+          "public_modules": "options, bodies, errors, and response types",
           "reference": "runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",
@@ -368,6 +369,7 @@
         "name": "minimal",
         "context": {
           "package": "client",
+          "public_modules": "options, bodies, errors, and response types",
           "reference": "runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",
@@ -399,6 +401,7 @@
         "name": "unpack",
         "context": {
           "package": "client",
+          "public_modules": "options, bodies, errors, and response types",
           "reference": "runtime.md",
           "signature_style": "unpack",
           "body_arguments": "both",
@@ -501,6 +504,7 @@
         "name": "stream_without_resume",
         "context": {
           "package": "client",
+          "public_modules": "options, bodies, errors, and response types",
           "reference": "runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",
@@ -597,6 +601,7 @@
         "name": "custom_helper",
         "context": {
           "package": "client",
+          "public_modules": "options, bodies, errors, and response types",
           "reference": "runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",

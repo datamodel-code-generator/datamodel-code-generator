@@ -319,6 +319,7 @@ def _expiries(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
         ("fraction in UTC", "2999-01-01T00:00:00.1Z"),
         ("fraction past microseconds", "2999-01-01T00:00:00.123456789Z"),
         ("HTTP date", "Tue, 01 Jan 2999 00:00:00 GMT"),
+        ("HTTP date with an offset", "Tue, 01 Jan 2999 09:00:00 +0900"),
         ("leap second", "2998-12-31T23:59:60Z"),
         ("leap second with a fraction and an offset", "2999-01-01T08:59:60.5+09:00"),
     ):
