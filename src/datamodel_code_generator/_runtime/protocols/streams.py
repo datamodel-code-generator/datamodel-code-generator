@@ -336,21 +336,20 @@ def _limits(
 def _unpatched(
     core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, request: RequestOptions | None
 ) -> None:
-    """Refuse a call's idempotency key, and headers or query names of a parameter a reopen writes.
+    """Refuse a fixed idempotency key, and headers or query names of a parameter a reopen writes.
 
-    The names are the client's, a view's, and the call's own extra ones, each of which every reopen sends.
+    The names are the call's own extra ones and the client's and its views' default ones, each of which every reopen
+    sends; the refusal names the layer that gave one.
     """
     from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
 
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"), "invalid_value")
-    headers, queries = core.patches(request)
-    for name, _ in headers:
-        if name.lower() in resume.headers:
-            raise _invalid(plan, ("options", "extra_headers", name), "invalid_value")
-    for name, _ in queries:
-        if query_written(resume.call, resume.writes, name):
-            raise _invalid(plan, ("options", "extra_query", name), "invalid_value")
+    written = (
+        core.fixed_key(request, (plan.call, resume.call))
+        or core.named(request, lambda name, _: name.lower() in resume.headers)
+        or core.named(request, lambda name, _: query_written(resume.call, resume.writes, name), query=True)
+    )
+    if written is not None:
+        raise _invalid(plan, written, "invalid_value")
 
 
 def _progress(reconnects: int = 0) -> ProtocolProgress:
