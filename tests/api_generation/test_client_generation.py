@@ -68,6 +68,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "media-errors",
         "server-errors",
         "codec-errors",
+        "cookie-names",
         "reference-errors",
         "setting-errors",
         "empty",

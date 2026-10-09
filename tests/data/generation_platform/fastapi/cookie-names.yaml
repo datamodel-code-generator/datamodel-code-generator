@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info: {title: Cookie names, version: "1.0"}
+paths:
+  /values:
+    get:
+      operationId: getValues
+      parameters:
+        - {name: "ids[]", in: cookie, schema: {type: array, items: {type: string}}}
+        - {name: "a[b]", in: cookie, schema: {type: string}}
+      responses:
+        "204": {description: Done.}

@@ -12,7 +12,7 @@ from typing import Annotated, Final
 
 import models
 import pydantic
-from fastapi import APIRouter, Body, Depends, Header, Path, Query, params
+from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
 from fastapi.responses import Response
 from pydantic import Field
 
@@ -45,7 +45,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
             convert_underscores=False,
         )] = None,
         since: Annotated[pydantic.AwareDatetime | None, Query(alias='since')] = None,
-        parameters: Annotated[contract.ListPets.Parameters, Depends(contract.ListPets.PARAMETERS)],
+        session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:
         return dispatch(
             list_pets_handler(
@@ -54,7 +54,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
                 kind=kind,
                 x_request_id=x_request_id,
                 since=since,
-                session=parameters.session,
+                session=session,
             ),
             contract.ListPets.RESPONSES,
         )
@@ -71,11 +71,6 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='The pets.',
         responses={'default': {'model': models.Error, 'description': 'An error.'}},
-        openapi_extra={
-            'parameters': [
-                {'name': 'session', 'in': 'cookie', 'schema': {'type': 'string'}},
-            ],
-        },
         dependencies=wiring.dependencies.get('list_pets'),
     )
 

@@ -6,14 +6,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Final, TypedDict
 
 from fastapi import params
-from pydantic import TypeAdapter
 
-from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
@@ -30,54 +26,12 @@ OperationDependencies = TypedDict(
 class Router:
     """Plans of the router operation."""
 
-    @dataclass(frozen=True, slots=True, kw_only=True)
-    class Parameters:
-        """The adapter parameters of router."""
-
-        parameters: str | None
-
-    PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='parameters',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='parameters',
-                    style='form',
-                    explode=True,
-                ),
-                adapter=TypeAdapter(str),
-            ),
-        ),
-        record=Parameters,
-    )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class Wiring:
     """Plans of the wiring operation."""
 
-    @dataclass(frozen=True, slots=True, kw_only=True)
-    class Parameters:
-        """The adapter parameters of wiring."""
-
-        wiring_handler: str | None
-
-    PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='wiring_handler',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='wiring_handler',
-                    style='form',
-                    explode=True,
-                ),
-                adapter=TypeAdapter(str),
-            ),
-        ),
-        record=Parameters,
-    )
     RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 

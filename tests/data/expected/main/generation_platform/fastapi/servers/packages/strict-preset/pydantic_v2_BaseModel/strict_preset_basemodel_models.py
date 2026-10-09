@@ -52,3 +52,6 @@ type FieldValuesIdGetHeaderXTagParameter = StrictStr
 
 
 type FieldValuesIdGetQueryBlobParameter = bytes
+
+
+type FieldValuesIdGetCookieVisitsParameter = StrictInt

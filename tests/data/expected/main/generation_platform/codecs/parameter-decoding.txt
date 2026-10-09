@@ -65,8 +65,12 @@ header X-Rate application/json scalar/string {"headers":[["X-Rate",{"hex":"ff"}]
 cookie color form* scalar/string {"headers":[["Cookie","other=x; color=blue"]]}: "blue"
 cookie color form* scalar/string {"headers":[["Cookie","color=a; color=b"]]}: WireValidationError parameter.duplicate
 cookie color form* scalar/string {"headers":[["Cookie","other=x"]]}: UNSET
-cookie color form* scalar/string {"headers":[["Cookie","color=a%2Cb"]]}: "a,b"
-cookie color form* scalar/string {"headers":[["Cookie","color=%zz"]]}: WireValidationError parameter.percent
+cookie color form* scalar/string {"headers":[["Cookie","color=a%2Cb"]]}: "a%2Cb"
+cookie color form* scalar/string {"headers":[["Cookie","color=%zz"]]}: "%zz"
+cookie color form* scalar/string {"headers":[["Cookie","color=50%off"]]}: "50%off"
+cookie color form* scalar/string {"headers":[["Cookie","color=\"a b\""]]}: "\"a b\""
+cookie color form* array/string {"headers":[["Cookie","color=a%2Cb; color=c"]]}: ["a,b","c"]
+cookie color form* scalar/integer {"headers":[["Cookie","color=12"]]}: 12
 cookie color form* array/string {"headers":[["Cookie","color=a"],["Accept","x"],["cookie"," color=b ;;color"]]}: ["a","b",""]
 cookie color form* array/string {"headers":[["Cookie","other=a"]]}: UNSET
 cookie color cookie* object/string {"headers":[["Cookie","R=1; G=2; X=3"]]}: {"R":1,"G":2}

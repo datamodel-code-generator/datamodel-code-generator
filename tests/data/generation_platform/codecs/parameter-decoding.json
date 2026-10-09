@@ -969,6 +969,72 @@
         "location": "cookie",
         "name": "color",
         "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=50%off"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=\"a b\""
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=a%2Cb; color=c"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "kind": "integer"
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=12"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
         "explode": true,
         "shape": "array"
       },

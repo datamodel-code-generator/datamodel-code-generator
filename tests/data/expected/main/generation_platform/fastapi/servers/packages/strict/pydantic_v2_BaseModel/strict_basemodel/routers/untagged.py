@@ -56,6 +56,7 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                 x_trace=parameters.x_trace,
                 x_tag=x_tag,
                 blob=blob,
+                visits=parameters.visits,
             ),
             contract.GetValues.RESPONSES,
         )
@@ -107,6 +108,7 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                     'schema': {'anyOf': [{'type': 'integer'}, {'type': 'null'}]},
                 },
                 {'name': 'X-Trace', 'in': 'header', 'schema': {'type': 'integer'}},
+                {'name': 'visits', 'in': 'cookie', 'schema': {'type': 'integer'}},
             ],
         },
         dependencies=wiring.dependencies.get('get_values'),

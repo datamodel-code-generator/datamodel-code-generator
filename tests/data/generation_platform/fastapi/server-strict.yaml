@@ -20,6 +20,7 @@ paths:
         - {name: X-Trace, in: header, schema: {type: integer}}
         - {name: X-Tag, in: header, schema: {type: string}}
         - {name: blob, in: query, schema: {type: string, format: binary}}
+        - {name: visits, in: cookie, schema: {type: integer}}
       responses:
         "204": {description: Done.}
 components:

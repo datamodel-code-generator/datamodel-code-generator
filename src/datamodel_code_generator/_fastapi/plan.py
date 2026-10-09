@@ -90,7 +90,12 @@ _LOCATIONS: Final[dict[object, ParameterLocation]] = {
     "header": "header",
     "cookie": "cookie",
 }
-_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "cookie"}
+_STYLES: Final[dict[str, frozenset[str]]] = {
+    "path": frozenset({"simple"}),
+    "query": frozenset({"form"}),
+    "header": frozenset({"simple"}),
+    "cookie": frozenset({"cookie", "form"}),
+}
 _APIS: Final[dict[str, NativeApi]] = {"path": "Path", "query": "Query", "header": "Header", "cookie": "Cookie"}
 _SCALAR_BUILTINS: Final = frozenset({"str", "int", "float", "bool", "bytes", "object"})
 _SCALAR_MODULES: Final = frozenset({"datetime", "decimal", "ipaddress", "pydantic", "pydantic.networks", "uuid"})
@@ -1195,7 +1200,7 @@ def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | 
         plan.content_media_type is None
         and kind is not None
         and kind == {"scalar": "scalar", "array": "sequence"}.get(plan.shape)
-        and _STYLES.get(location) == plan.style
+        and plan.style in _STYLES.get(location, ())
         and (kind != "sequence" or (location == "query" and plan.explode))
         and not (location == "path" and repeated)
     )

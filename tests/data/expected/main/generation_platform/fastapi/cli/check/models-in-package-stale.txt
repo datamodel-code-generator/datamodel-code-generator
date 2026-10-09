@@ -1,6 +1,6 @@
 --- server/_generated/contract.py
 +++ server/_generated/contract.py (expected)
-@@ -22,10 +22,6 @@
+@@ -19,10 +19,6 @@
      {
          'list_pets': Sequence[params.Depends],
          'create_pet': Sequence[params.Depends],
@@ -11,7 +11,7 @@
      },
      total=False,
  )
-@@ -80,52 +76,3 @@
+@@ -56,52 +52,3 @@
              ),
          },
      )
@@ -147,13 +147,13 @@
  
  import pydantic
  import server.models as server_models
--from fastapi import APIRouter, Body, Depends, Header, Path, Query, params
+-from fastapi import APIRouter, Body, Cookie, Header, Path, Query, params
 -from fastapi.responses import Response
-+from fastapi import APIRouter, Body, Depends, Header, Query, params
++from fastapi import APIRouter, Body, Cookie, Header, Query, params
  from pydantic import Field
  
  from .._generated import contract
-@@ -107,94 +106,11 @@
+@@ -102,94 +101,11 @@
      )
  
  

@@ -43,6 +43,7 @@ class GetValues:
         size: int
         maybe: pydantic.StrictInt | None
         x_trace: pydantic.StrictInt | None
+        visits: pydantic.StrictInt | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -164,6 +165,17 @@ class GetValues:
                     style='simple',
                     kind='integer',
                     reserved_names=('X-Tag',),
+                ),
+                adapter=TypeAdapter(pydantic.StrictInt),
+            ),
+            ParameterArgument(
+                name='visits',
+                plan=ParameterPlan(
+                    location='cookie',
+                    name='visits',
+                    style='form',
+                    explode=True,
+                    kind='integer',
                 ),
                 adapter=TypeAdapter(pydantic.StrictInt),
             ),

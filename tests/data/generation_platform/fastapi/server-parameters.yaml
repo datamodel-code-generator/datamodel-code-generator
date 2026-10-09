@@ -37,6 +37,13 @@ paths:
         - {name: cap, in: query, schema: {type: [integer, "null"]}}
       responses:
         "204": {description: Done.}
+  /codes:
+    get:
+      operationId: getCodes
+      parameters:
+        - {name: X-Codes, in: header, required: true, schema: {type: array, items: {type: integer}}}
+      responses:
+        "204": {description: Done.}
   /repeat/{id}/again/{id}:
     get:
       operationId: repeat

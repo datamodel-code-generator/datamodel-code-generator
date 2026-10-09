@@ -56,3 +56,6 @@ FieldValuesIdGetHeaderXTagParameter = TypeAliasType("FieldValuesIdGetHeaderXTagP
 
 
 FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobParameter", bytes)
+
+
+FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVisitsParameter", StrictInt)
