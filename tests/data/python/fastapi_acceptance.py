@@ -36,12 +36,7 @@ def fastapi_scope_report(root: Path) -> str:
 
 
 def _files(root: Path) -> dict[str, bytes]:
-    """Return every generated file but the target manifest, whose identity across checkouts is not compared."""
-    return {
-        path.relative_to(root).as_posix(): path.read_bytes()
-        for path in sorted(root.rglob("*"))
-        if path.is_file() and path.name != ".dcg-target-manifest.json"
-    }
+    return {path.relative_to(root).as_posix(): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
 
 
 def _compare(label: str, first: Path, second: Path) -> str:

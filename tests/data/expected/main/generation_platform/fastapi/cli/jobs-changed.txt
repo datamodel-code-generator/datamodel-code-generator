@@ -1,4 +1,0 @@
-models.py
-pets.yaml
-pyproject.toml
-server
