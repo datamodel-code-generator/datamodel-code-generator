@@ -29,7 +29,9 @@ Secret: TypeAlias = str | Callable[[], str]
 UserPassword: TypeAlias = tuple[str, str] | Callable[[], tuple[str, str]]
 
 _UNAUTHORIZED: Final = 401
-_INVALID_TOKEN: Final = re.compile(r"""error\s*=\s*"?invalid_token\b""", re.IGNORECASE)
+_CHALLENGE_ITEMS: Final = re.compile(r'(?:[^,"]|"(?:[^"\\]|\\.)*(?:"|$))+')
+_CHALLENGE: Final = re.compile(r"([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?![ \t]*=)(?:[ \t]+(.*))?", re.DOTALL)
+_INVALID_TOKEN: Final = re.compile(r'error[ \t]*=[ \t]*(?:invalid_token|"invalid_token")', re.IGNORECASE)
 _HEADER_UNSAFE: Final = re.compile(r"[\x00-\x1f\x7f]")
 _COOKIE_UNSAFE: Final = re.compile(r'[\x00-\x20\x7f";,\\]')
 
@@ -144,7 +146,19 @@ def _rejected(response: httpx2.Response, request: httpx2.Request, *, challenge_l
         return False
     if not (values := response.headers.get_list("www-authenticate")):
         return challenge_less
-    return any(_INVALID_TOKEN.search(value) for value in values)
+    return any(_bearer_invalid_token(value) for value in values)
+
+
+def _bearer_invalid_token(value: str) -> bool:
+    """Return whether a WWW-Authenticate value holds a Bearer challenge whose error is invalid_token."""
+    scheme = None
+    for item in _CHALLENGE_ITEMS.findall(value):
+        text = item.strip(" \t")
+        if (start := _CHALLENGE.fullmatch(text)) is not None:
+            scheme, text = start[1].lower(), start[2] or ""
+        if scheme == "bearer" and _INVALID_TOKEN.fullmatch(text) is not None:
+            return True
+    return False
 
 
 class SchemeAuth(httpx2.Auth):

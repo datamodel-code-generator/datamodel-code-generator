@@ -16,6 +16,7 @@ paths:
           headers:
             Location: {required: true, schema: {type: string}}
             X-Rate: {schema: {type: integer, minimum: 0}}
+            X-Note: {content: {text/plain: {schema: {type: string}}}}
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Thing"}

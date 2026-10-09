@@ -202,5 +202,17 @@
     "target": "OpenAPI 3.1 nullable keyword",
     "warning_category": "DeprecationWarning",
     "warning_since": "0.53.0"
+  },
+  {
+    "id": "dependency.python-310-runtime",
+    "kind": "dependency",
+    "message": "Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected.",
+    "note": "Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.",
+    "removal_version": "0.85.0",
+    "replacement": "Run datamodel-code-generator on Python 3.11 or newer.",
+    "status": "active",
+    "target": "Running datamodel-code-generator on Python 3.10",
+    "warning_category": "FutureWarning",
+    "warning_since": "0.84.0"
   }
 ]
