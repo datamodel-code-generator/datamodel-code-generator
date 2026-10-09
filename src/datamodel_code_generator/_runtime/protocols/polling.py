@@ -525,7 +525,7 @@ class _Operation(Generic[T, P]):
             raise self._error(info, _absence(value), read, plan.operation)
         if not isinstance(value, str):
             raise self._error(info, "type", read, plan.operation)
-        if (expires_at := server_expiry(value)) is None:
+        if (expires_at := server_expiry(value, self._limits.clock.time())) is None:
             raise self._error(info, "value", read, plan.operation)
         return expires_at
 

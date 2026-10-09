@@ -9,7 +9,7 @@ from typing import Final, Literal, TypeAlias, cast
 from urllib.parse import quote
 
 from .errors import ParameterEncodingError
-from .media import FieldPlan, JSONValue, LexicalKind, encode_form, json_bytes, lexical, media_kind
+from .media import FieldPlan, JSONValue, LexicalKind, encode_form, finite, json_bytes, lexical, media_kind
 
 ParameterLocation: TypeAlias = Literal["path", "query", "querystring", "header", "cookie"]
 ValueShape: TypeAlias = Literal["scalar", "array", "object"]
@@ -223,6 +223,7 @@ def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
 def _content(plan: ParameterPlan, value: JSONValue) -> str:
     match media_kind(plan.content_media_type or ""), value:
         case "json", _:
+            finite(value)
             text = json_bytes(value).decode()
             return text if plan.location != "header" or text.isascii() else json_bytes(value, ascii_only=True).decode()
         case "text", str():

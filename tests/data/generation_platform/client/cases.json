@@ -846,6 +846,16 @@
       ]
     }
   },
+  "empty-security": {
+    "input": "empty-security.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
+  },
   "evolution": {
     "input": "evolution.yaml",
     "backends": [

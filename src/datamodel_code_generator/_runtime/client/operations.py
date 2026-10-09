@@ -12,6 +12,7 @@ from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import (
     decode_form,
     encode_form,
+    finite,
     form_encode,
     json_value,
     percent_decode,
@@ -149,7 +150,8 @@ class ParameterSpec:
     converts: bool = False
 
     def dump(self, value: object) -> JSONValue:
-        """Return the wire value of a present argument."""
+        """Return the wire value of a present argument, refusing a non-finite number before its codec dumps it."""
+        finite(value)
         if (codec := self.codec) is None:
             return cast("JSONValue", value)
         return cast("JSONValue", codec.dump(codec.convert(value) if self.converts else value))

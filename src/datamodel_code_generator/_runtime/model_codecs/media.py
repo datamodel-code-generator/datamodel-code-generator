@@ -142,6 +142,23 @@ def decode_text(data: bytes, encoding: str = "utf-8") -> str:
         raise MalformedError(message) from None
 
 
+def finite(value: object) -> None:
+    """Refuse a non-finite float or Decimal, alone or in lists, tuples, and mappings, as no JSON number writes it."""
+    match value:
+        case float() if not isfinite(value):
+            raise ParameterEncodingError(_NON_FINITE)
+        case Decimal() if not value.is_finite():
+            raise ParameterEncodingError(_NON_FINITE)
+        case list() | tuple():
+            for item in value:
+                finite(item)
+        case Mapping():
+            for item in value.values():
+                finite(item)
+        case _:
+            pass
+
+
 def lexical(value: object, kind: LexicalKind) -> str:
     """Format one native JSON scalar for a parameter or form field."""
     if (text := _lexical_text(value, kind)) is None:
@@ -156,11 +173,8 @@ def _lexical_text(value: object, kind: LexicalKind) -> str | None:
             return "true" if value else "false"
         case str():
             return value
-        case float() if not isfinite(value):
-            raise ParameterEncodingError(_NON_FINITE)
-        case Decimal() if not value.is_finite():
-            raise ParameterEncodingError(_NON_FINITE)
         case int() | float() | Decimal():
+            finite(value)
             return _numeral(value, kind) or _numeral(value, "number")
         case _:
             return None

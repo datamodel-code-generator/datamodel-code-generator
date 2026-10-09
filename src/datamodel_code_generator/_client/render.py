@@ -1628,11 +1628,10 @@ class _Security:
         for spec in self.plan.operations:
             if (binding := spec.security) is None:
                 continue
-            requirement = module.local(runtime, "SecurityRequirement")
             alternatives = _tuple(
                 _tuple(
                     _call(
-                        requirement,
+                        module.local(runtime, "SecurityRequirement"),
                         (("scheme=", self.names[item.scheme]), ("required_scopes=", repr(item.required_scopes))),
                     )
                     for item in alternative
@@ -3048,8 +3047,10 @@ class ClientRenderer:
         groups: dict[str, list[str]] = {}
         for path in runtime:
             groups.setdefault(path.parent.as_posix(), []).append(path.name)
+        public = ("options", *(("bodies",) if _bodies(capabilities) is not None else ()), "errors")
         return self.role("readme.jinja2", readme_template.render)(
             package=config.package,
+            public_modules=f"{', '.join(public)}, and response types",
             reference="runtime.md",
             signature_style=config.signature_style,
             body_arguments=config.body_arguments,
@@ -3203,8 +3204,9 @@ GET, HEAD, OPTIONS, PUT, and DELETE retry by default; POST and PATCH need an ide
 header. A connect failure, connect timeout, or pool timeout (with `retry_on_pool_timeout=True`) retries any call no
 earlier attempt delivered; other transport failures, callbacks, decoding, cancellation, and deadlines never retry, and
 `retry_safety="never"` forbids every resend. Full jitter samples up to the capped exponential delay. A Retry-After delay
-is a minimum; its date is read as the standard library reads an RFC 5322 date, a date without a zone or with an unknown
-one being UTC. Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff.
+is a minimum; its date is read by `email.utils.parsedate_to_datetime`, UTC without a known zone, and an RFC 850 date's
+two-digit year is the latest at most 50 years after receipt; a year below 100 in another form is read as 1969 to 2068.
+Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff.
 `IdempotencyKey(value)` gives a stable key and `idempotency_key=None` disables the key an operation with a declared key
 header creates once per call; one call keeps its key, origin, and encoded body across attempts.
 

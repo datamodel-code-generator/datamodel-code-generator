@@ -20,6 +20,10 @@
   > GET https://api.example.com/values?mixed=5
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send mixed '5' = None
+  refuse amount Decimal('NaN') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amount Decimal('Infinity') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amounts [Decimal('1.50'), Decimal('-Infinity')] ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amounts') [operation_id='getValues', location=('query', 'amounts'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse count inf ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.count') [operation_id='getValues', location=('query', 'count'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
   > GET https://api.example.com/values?step=0.25
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send step of 0.25 = None
@@ -105,6 +109,10 @@
   > GET https://api.example.com/values?mixed=5
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send mixed '5' = None
+  refuse amount Decimal('NaN') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amount Decimal('Infinity') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amounts [Decimal('1.50'), Decimal('-Infinity')] ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amounts') [operation_id='getValues', location=('query', 'amounts'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse count inf ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.count') [operation_id='getValues', location=('query', 'count'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
   > GET https://api.example.com/values?step=0.25
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send step of 0.25 = None
@@ -190,6 +198,10 @@
   > GET https://api.example.com/values?mixed=5
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send mixed '5' = None
+  refuse amount Decimal('NaN') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amount Decimal('Infinity') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amounts [Decimal('1.50'), Decimal('-Infinity')] ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amounts') [operation_id='getValues', location=('query', 'amounts'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse count inf ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.count') [operation_id='getValues', location=('query', 'count'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
   > GET https://api.example.com/values?step=0.25
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send step of 0.25 = None
@@ -275,6 +287,10 @@
   > GET https://api.example.com/values?mixed=5
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send mixed '5' = None
+  refuse amount Decimal('NaN') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amount Decimal('Infinity') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amounts [Decimal('1.50'), Decimal('-Infinity')] ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amounts') [operation_id='getValues', location=('query', 'amounts'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse count inf ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.count') [operation_id='getValues', location=('query', 'count'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
   > GET https://api.example.com/values?step=0.25
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send step of 0.25 = None
@@ -360,6 +376,10 @@
   > GET https://api.example.com/values?mixed=5
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send mixed '5' = None
+  refuse amount Decimal('NaN') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amount Decimal('Infinity') ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amount') [operation_id='getValues', location=('query', 'amount'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse amounts [Decimal('1.50'), Decimal('-Infinity')] ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.amounts') [operation_id='getValues', location=('query', 'amounts'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
+  refuse count inf ! DecodeError: DecodeError(operation_id='getValues', reason='unencodable', location='query.count') [operation_id='getValues', location=('query', 'count'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable
   > GET https://api.example.com/values?step=0.25
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send step of 0.25 = None

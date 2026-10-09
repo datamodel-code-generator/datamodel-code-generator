@@ -648,6 +648,7 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
         record(lines, "search all", api.default.search)
         patched = options.RequestOptions(query=(("page", "3"),))
         record(lines, "search with a query patch", lambda: api.default.search(criteria=criteria, options=patched))
+        record(lines, "lookup with a non-finite member", lambda: api.default.lookup(filter={"page": float("inf")}))
 
 
 def servers(package: ModuleType, lines: list[str]) -> None:

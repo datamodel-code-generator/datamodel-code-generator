@@ -6,3 +6,4 @@
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   search all = FieldSearchGetResponse(root=[])
   search with a query patch ! ConfigurationError: ConfigurationError(operation_id='search', reason='conflicts_with_querystring', field_path='query') [operation_id='search', field_path=('query',)] conflicts_with_querystring
+  lookup with a non-finite member ! DecodeError: DecodeError(operation_id='lookup', reason='unencodable', location='querystring.filter') [operation_id='lookup', location=('querystring', 'filter'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable

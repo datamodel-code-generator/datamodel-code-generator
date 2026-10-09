@@ -3070,9 +3070,10 @@ failure after the send started may have been sent and is never sent again. `retr
 resend, including an unsent request.
 
 A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline, and a
-valid server veto prevents a retry. `Retry-After` gives seconds or an HTTP date, read as the standard library's
-`email.utils.parsedate_to_datetime` reads an RFC 5322 date: a two-digit year follows RFC 5322, a date without a zone,
-with `-0000`, or with an unknown zone is UTC, and an impossible date, such as one with a leap second, is ignored.
+valid server veto prevents a retry. `Retry-After` gives seconds or an HTTP date, read by the standard library's
+`email.utils.parsedate_to_datetime`: a date without a zone, with `-0000`, or with an unknown zone is UTC, and an
+impossible date, such as one with a leap second, is ignored. The two-digit year of an RFC 850 date is the latest that
+is at most 50 years after receipt, as RFC 9110 reads it; a year below 100 in another form is read as 1969 to 2068.
 Without a valid hint, bounded exponential backoff applies. Retry waits consume the same logical budget as sending and
 decoding. `RetryOptions(respect_retry_after=False)` is an explicit application policy override, disclosed in every
 generated README; it is never silently embedded in generated defaults.

@@ -107,11 +107,12 @@ class Patch:
         return wire
 
 
-def server_expiry(value: str) -> datetime | None:
+def server_expiry(value: str, now: float) -> datetime | None:
     """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
 
-    An RFC 3339 leap second is the second after the one before it. The zone `Z` and fractions of any length are
-    spelled as Python 3.10 parses them, fractions past microseconds cut.
+    An RFC 3339 leap second is the second after the one before it, and `now` is the receipt wall time that places an
+    RFC 850 date's two-digit year. The zone `Z` and fractions of any length are spelled as Python 3.10 parses
+    them, fractions past microseconds cut.
     """
     try:
         if (matched := _RFC3339.fullmatch(value.upper())) is not None:
@@ -123,7 +124,7 @@ def server_expiry(value: str) -> datetime | None:
             return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
         from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
 
-        return http_date(value)
+        return http_date(value, now)
     except (ValueError, OverflowError):
         return None
 

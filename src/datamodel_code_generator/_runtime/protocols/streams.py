@@ -482,7 +482,7 @@ def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
-def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo) -> datetime:
+def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo, clock: Clock) -> datetime:
     """Return the server's expiry an open response's header gives, an RFC 3339 date-time with offset or an HTTP date.
 
     A value that is no string, which only a selector of every occurrence would read, is refused like an unreadable one.
@@ -493,18 +493,18 @@ def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo) -> dat
         raise _data_error(plan, plan.operation, info, "malformed", read) from None
     if value is MISSING:
         raise _data_error(plan, plan.operation, info, "missing", read)
-    if (expires_at := server_expiry(value) if isinstance(value, str) else None) is None:
+    if (expires_at := server_expiry(value, clock.time()) if isinstance(value, str) else None) is None:
         raise _data_error(plan, plan.operation, info, "value", read)
     return expires_at
 
 
-def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, info: ResponseInfo) -> _Position:
+def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, clock: Clock, info: ResponseInfo) -> _Position:
     """Return where a stream starts after its open response: the bindings' values and the server's expiry it gives."""
     kept = given if resume.own else None
     return _Position(
         given=kept,
         bound=_bound(plan, resume, plan.operation, info, kept),
-        expires_at=None if (read := resume.expires_at) is None else _expiry(plan, read, info),
+        expires_at=None if (read := resume.expires_at) is None else _expiry(plan, read, info, clock),
     )
 
 
@@ -1420,7 +1420,11 @@ def open_events(  # noqa: PLR0913
     session = _session(limits)
     given = (arguments, body, media_type)
     response = _sent(core, plan.call, given, limits, session, plan.media)
-    position = _START if (resume := plan.resume) is None else _accepted(response, partial(_opened, plan, resume, given))
+    position = (
+        _START
+        if (resume := plan.resume) is None
+        else _accepted(response, partial(_opened, plan, resume, given, limits.clock))
+    )
     return EventStream(core, plan, limits, session, response, position=position)
 
 
@@ -1441,7 +1445,9 @@ async def aopen_events(  # noqa: PLR0913
     given = (arguments, body, media_type)
     response = await _asent(core, plan.call, given, limits, session, plan.media)
     position = (
-        _START if (resume := plan.resume) is None else await _aaccepted(response, partial(_opened, plan, resume, given))
+        _START
+        if (resume := plan.resume) is None
+        else await _aaccepted(response, partial(_opened, plan, resume, given, limits.clock))
     )
     return AsyncEventStream(core, plan, limits, session, response, position=position)
 

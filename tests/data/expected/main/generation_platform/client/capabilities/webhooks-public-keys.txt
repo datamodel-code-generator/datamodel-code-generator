@@ -14,20 +14,20 @@ copied runtime
   client/logical.py: 190
   client/media.py: 77
   client/native.py: 175
-  client/operations.py: 837
+  client/operations.py: 839
   client/options.py: 532
   client/paths.py: 40
   client/positions.py: 79
   client/raw.py: 876
   client/responses.py: 87
-  client/retry.py: 301
+  client/retry.py: 313
   client/timing.py: 148
   client/urls.py: 80
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 18
-  model_codecs/media.py: 286
+  model_codecs/media.py: 300
   model_codecs/native.py: 172
-  model_codecs/parameters.py: 306
+  model_codecs/parameters.py: 307
   model_codecs/unset.py: 26
   protocols/__init__.py: 4
   protocols/errors.py: 163
@@ -35,12 +35,12 @@ copied runtime
   protocols/records.py: 243
   protocols/references.py: 16
   protocols/signatures.py: 99
-  protocols/values.py: 157
+  protocols/values.py: 158
   protocols/verification.py: 203
   protocols/webhook_events.py: 280
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 106
-total 34 modules, 8289 lines
+total 34 modules, 8319 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

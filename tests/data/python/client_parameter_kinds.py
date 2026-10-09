@@ -21,6 +21,12 @@ _ARGUMENTS: Final[tuple[tuple[str, object], ...]] = (
     ("mixed", 5),
     ("mixed", "5"),
 )
+_NON_FINITE: Final[tuple[tuple[str, object], ...]] = (
+    ("amount", Decimal("NaN")),
+    ("amount", Decimal("Infinity")),
+    ("amounts", [Decimal("1.50"), Decimal("-Infinity")]),
+    ("count", float("inf")),
+)
 _WIRE_ARGUMENTS: Final[tuple[tuple[str, object], ...]] = (("step", 0.25), ("ratio", 2.2), ("level", 2))
 _HEADERS: Final = (
     ("X-Amount", _LONG),
@@ -56,9 +62,12 @@ def _pairs(*fields: tuple[str, str]) -> bytes:
 
 
 def _parts(*fields: tuple[str, str]) -> bytes:
-    return b"".join(
-        f'--b1\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{text}\r\n'.encode() for name, text in fields
-    ) + b"--b1--\r\n"
+    return (
+        b"".join(
+            f'--b1\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{text}\r\n'.encode() for name, text in fields
+        )
+        + b"--b1--\r\n"
+    )
 
 
 def parameter_kinds(package: ModuleType, lines: list[str]) -> None:
@@ -73,14 +82,20 @@ def parameter_kinds(package: ModuleType, lines: list[str]) -> None:
                 f"send {name} {value!r}",
                 lambda name=name, value=value: api.values.get_values(**{name: value}),
             )
+        for name, value in _NON_FINITE:
+            record(
+                lines,
+                f"refuse {name} {value!r}",
+                lambda name=name, value=value: api.values.get_values(**{name: value}),
+            )
         for name, wire in _WIRE_ARGUMENTS:
             exchange.respond(raw_response(204))
             record(
                 lines,
                 f"send {name} of {wire!r}",
-                lambda name=name, wire=wire: api.values.get_values(
-                    **{name: argument(package, "getValues", "query", name, wire)}
-                ),
+                lambda name=name, wire=wire: api.values.get_values(**{
+                    name: argument(package, "getValues", "query", name, wire)
+                }),
             )
             exchange.responders.clear()
         for name, text in _HEADERS:

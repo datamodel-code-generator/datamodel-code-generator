@@ -397,14 +397,14 @@ class _Fetch(Generic[T]):
         ):
             return None
         origin = received.received
-        date = None if (value := origin.get("date")) is None else http_timestamp(value)
+        date = None if (value := origin.get("date")) is None else http_timestamp(value, now)
         date = now if date is None else date
         lifetime = 0.0
         if "no-cache" not in directives:
             if (seconds := _delta(directives.get("max-age"))) is not None:
                 lifetime = float(seconds)
             elif (expires := headers.get("expires")) is not None:
-                lifetime = 0.0 if (expiry := http_timestamp(expires)) is None else max(0.0, expiry - date)
+                lifetime = 0.0 if (expiry := http_timestamp(expires, now)) is None else max(0.0, expiry - date)
         freshness = min(lifetime, self.max_ttl)
         if "no-store" in directives or (freshness <= 0 and _validator(plan, headers) is None):
             return None

@@ -30,6 +30,9 @@ class _Statuses:
         self(response)
 
 
+_RECEIVED: Final = 1767225600.0
+
+
 class _Clock:
     def __init__(self) -> None:
         self.value = 100.0
@@ -213,7 +216,10 @@ def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -
         exchange.client() as native,
         package.Client(
             http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retry_after=0.01)),
+            options=options.ClientOptions(
+                retry=options.RetryOptions(initial_delay=0, max_retry_after=0.01),
+                clock=options.Clock(time=lambda: _RECEIVED),
+            ),
         ) as api,
     ):
         for label, values in (
@@ -225,6 +231,8 @@ def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -
             ("obsolete asctime", ("Sun Nov  6 08:49:37 1994",)),
             ("obsolete RFC850", ("Sunday, 06-Nov-94 08:49:37 GMT",)),
             ("RFC850 future window", ("Sunday, 06-Nov-74 08:49:37 GMT",)),
+            ("RFC850 window boundary", ("Thursday, 01-Jan-76 00:00:00 GMT",)),
+            ("RFC850 past the window", ("Thursday, 01-Jan-76 00:00:01 GMT",)),
             ("unknown date timezone", ("Sun, 06 Nov 2094 08:49:37 BOGUS",)),
             ("unknown local timezone", ("Sun, 06 Nov 2094 08:49:37 -0000",)),
             ("offset timezone", ("Sun, 06 Nov 2094 08:49:37 +0900",)),

@@ -496,7 +496,7 @@ class _Upload(Generic[T]):
         if (read := plan.expires_at) is not None:
             if not isinstance(value := self._read(read, wire, info), str):
                 raise self._data_error(info, "null" if value is None else "type", read)
-            if (expires_at := server_expiry(value)) is None:
+            if (expires_at := server_expiry(value, self._limits.clock.time())) is None:
                 raise self._data_error(info, "value", read)
         return bound, expires_at
 

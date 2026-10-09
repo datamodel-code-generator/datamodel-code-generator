@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -35,6 +36,8 @@ _SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS", "PUT", "DELETE"})
 _AUTH_STATUSES: Final = frozenset({401, 403, 407})
 _ERROR_STATUS_MIN: Final = 400
 _ERROR_STATUS_MAX: Final = 599
+_RFC850_YEAR: Final = re.compile(r"[A-Za-z]+, *[0-9]{1,2}-[A-Za-z]+-(?P<year>[0-9]{2})[ \t]")
+_YEAR_WINDOW: Final = 50
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,21 +201,30 @@ def _integer(value: str) -> float | None:
     return result if math.isfinite(result) else None
 
 
-def http_date(value: str) -> datetime | None:
+def http_date(value: str, received_wall_time: float) -> datetime | None:
     """Return the UTC time of an HTTP date, read as the standard library reads RFC 5322 dates, or None for another one.
 
-    A date without a zone, or with an unknown one, is UTC.
+    A date without a zone, or with an unknown one, is UTC. The two-digit year of an RFC 850 date is the latest that is
+    at most 50 years after the receipt wall time, as RFC 9110 reads it.
     """
     try:
         date = parsedate_to_datetime(value)
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=timezone.utc)
+        if (matched := _RFC850_YEAR.match(value)) is None:
+            return date
+        received = datetime.fromtimestamp(received_wall_time, timezone.utc)
+        year = received.year // 100 * 100 + int(matched["year"])
+        if (year, *date.utctimetuple()[1:6]) > (received.year + _YEAR_WINDOW, *received.utctimetuple()[1:6]):
+            year -= 100
+        return date.replace(year=year)
     except (TypeError, ValueError, IndexError, OverflowError):
         return None
-    return date if date.tzinfo is not None else date.replace(tzinfo=timezone.utc)
 
 
-def http_timestamp(value: str) -> float | None:
+def http_timestamp(value: str, received_wall_time: float) -> float | None:
     """Return the POSIX time of an HTTP date within ASCII whitespace, or None for no date or an impossible one."""
-    date = http_date(value.strip(_ASCII_WHITESPACE))
+    date = http_date(value.strip(_ASCII_WHITESPACE), received_wall_time)
     return None if date is None else date.timestamp()
 
 
@@ -220,7 +232,7 @@ def _seconds(value: str, received_wall_time: float) -> float | None:
     normalized = value.strip(_ASCII_WHITESPACE)
     if (integer := _integer(normalized)) is not None:
         return integer
-    date = http_timestamp(normalized)
+    date = http_timestamp(normalized, received_wall_time)
     return None if date is None else max(0.0, date - received_wall_time)
 
 

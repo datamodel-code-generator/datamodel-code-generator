@@ -21,7 +21,7 @@ client/paths.py: __future__, collections.abc, re, typing
 client/positions.py: __future__, functools, typing
 client/raw.py: ..model_codecs.media, .content, .errors, .logical, .media, .operations, .options, .responses, __future__, collections.abc, contextlib, errno, httpx2, os, pathlib, threading, types, typing, typing_extensions
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
-client/retry.py: ..model_codecs.unset, .errors, .logical, .options, .responses, __future__, collections.abc, dataclasses, datetime, email.utils, math, typing
+client/retry.py: ..model_codecs.unset, .errors, .logical, .options, .responses, __future__, collections.abc, dataclasses, datetime, email.utils, math, re, typing
 client/security.py: .client, .urls, __future__, collections.abc, dataclasses, httpx2, typing
 client/timing.py: ..model_codecs.unset, .errors, __future__, collections.abc, dataclasses, math, secrets, sys, time, typing
 client/urls.py: __future__, dataclasses, functools, httpx2, re, typing, urllib.parse
