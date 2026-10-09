@@ -785,6 +785,28 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 STRUCTURAL: Final = BACKENDS[2:]
 _PYDANTIC_DOCS: Final = re.compile(r"errors\.pydantic\.dev/[0-9.]+/")
+_VALIDATION_ERRORS: Final = re.compile(r"(?P<count>\d+) validation errors for [^\n]+\n")
+_VALIDATION_ERROR: Final = re.compile(
+    r"[^\n]*\n  [^\n]*\n    For further information visit https://errors\.pydantic\.dev/<version>/v/[\w-]+"
+)
+
+
+def _sorted_validation_errors(text: str) -> str:
+    """Sort the errors of each multi-error validation message, whose order pydantic-core changed in 2.14."""
+    parts = []
+    position = 0
+    for header in _VALIDATION_ERRORS.finditer(text):
+        if header.start() < position:
+            continue
+        errors = []
+        end = header.end()
+        while len(errors) < int(header["count"]) and (error := _VALIDATION_ERROR.match(text, end)):
+            errors.append(error[0])
+            end = error.end() + 1
+        if len(errors) == int(header["count"]):
+            parts.extend((text[position : header.end()], "\n".join(sorted(errors))))
+            position = end - 1
+    return "".join((*parts, text[position:]))
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "allowreserved-path-30": ("allowreserved-path-30", BACKENDS, reserved_paths),
     "allowreserved-path-31": ("allowreserved-path-31", BACKENDS, reserved_paths),
@@ -920,4 +942,4 @@ def client_runtime_report(name: str, root: Path) -> str:
             if name != "webhook-backends" or "needs a declared discriminator" not in str(error):
                 raise
             reports.append(f"# {case} {backend}\n  generation {error}\n")
-    return _PYDANTIC_DOCS.sub("errors.pydantic.dev/<version>/", "".join(reports))
+    return _sorted_validation_errors(_PYDANTIC_DOCS.sub("errors.pydantic.dev/<version>/", "".join(reports)))

@@ -531,6 +531,7 @@ def _run_input_model_without_runtime_type_probe() -> dict[str, Any]:
         textwrap.dedent(
             """
             import json
+            import secrets
             import sys
 
             from datamodel_code_generator import InputFileType
@@ -538,13 +539,17 @@ def _run_input_model_without_runtime_type_probe() -> dict[str, Any]:
                 _load_model_schema_with_python_type_expressions,
             )
 
+            # Pydantic 2.14 imports secrets itself, so count nonce draws instead of checking the module.
+            nonces = []
+            token_hex = secrets.token_hex
+            secrets.token_hex = lambda *args: nonces.append(args) or token_hex(*args)
             loaded = _load_model_schema_with_python_type_expressions(
                 ["tests.data.python.input_model.pydantic_models:User"],
                 InputFileType.Auto,
             )
             print(json.dumps({
                 "expression_count": len(loaded.python_type_expressions),
-                "imported_secrets": "secrets" in sys.modules,
+                "drew_nonce": bool(nonces),
                 "imported_python_type_codec": (
                     "datamodel_code_generator._python_type_annotation_codec" in sys.modules
                 ),
