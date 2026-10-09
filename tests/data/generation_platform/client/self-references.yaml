@@ -29,6 +29,7 @@ paths:
           links:
             pets: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/links/Pets"}
             owners: {$ref: "references-library.yaml#/components/links/Alias"}
+            metadata: {$ref: "references-metadata.yaml#/components/links/Pets"}
       callbacks:
         created: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/callbacks/Created"}
   /owners:
@@ -38,6 +39,7 @@ components:
     bearer: {type: http, scheme: bearer}
     bearer_alias: {$ref: "https://example.com/apis/v1/openapi.yaml#/components/securitySchemes/bearer"}
     library_key: {$ref: "references-library.yaml#/components/securitySchemes/alias"}
+    metadata_key: {$ref: "references-metadata.yaml#/components/securitySchemes/key"}
   parameters:
     Limit: {name: limit, in: query, schema: {type: integer, minimum: 1}}
     Trace: {name: X-Trace, in: header, schema: {type: string}}
@@ -70,6 +72,8 @@ components:
     Owners:
       get:
         operationId: listOwners
+        security:
+          - metadata_key: []
         parameters:
           - {$ref: "https://example.com/apis/v1/openapi.yaml#/components/parameters/Limit"}
         responses:

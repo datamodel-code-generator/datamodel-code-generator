@@ -46,22 +46,6 @@ _SCHEME_3: Final = SecurityScheme(
 )
 
 
-_SCHEME_4: Final = SecurityScheme(
-    name='auth',
-    kind='api_key',
-    location='header',
-    wire_name='X-Idempotency',
-)
-
-
-_SCHEME_5: Final = SecurityScheme(
-    name='actualHeader',
-    kind='api_key',
-    location='query',
-    wire_name='external_token',
-)
-
-
 ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
     _SCHEME_0,
     _SCHEME_1,
@@ -107,12 +91,12 @@ OPERATION_5: Final = SecurityBinding(
 
 
 OPERATION_6: Final = SecurityBinding(
-    schemes=(_SCHEME_4, _SCHEME_5),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),),),
 )
 
 
 OPERATION_7: Final = SecurityBinding(
-    schemes=(_SCHEME_4, _SCHEME_5),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_1, required_scopes=()),),),
 )

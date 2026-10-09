@@ -175,7 +175,7 @@
   request url userinfo ! ConfigurationError: ConfigurationError(call_id='<call>', reason='invalid_url', field_path='url') [field_path=('url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=InvalidURL('Expected an absolute HTTP URL without user information')] invalid_url
   request url port ! ConfigurationError: ConfigurationError(call_id='<call>', reason='invalid_url', field_path='url') [field_path=('url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=InvalidURL('Invalid origin port')] invalid_url
   request url type ! ConfigurationError: ConfigurationError(call_id='<call>', reason='invalid_url', field_path='url') [field_path=('url',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_url
-  request body type ! DecodeError: DecodeError(call_id='<call>', reason='unencodable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] unencodable
+  request body type ! DecodeError: DecodeError(call_id='<call>', reason='unencodable', location='body') [location=('body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=TypeError('A binary body must be bytes, a path, a binary file or an iterable of bytes')] unencodable
   request options type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
   > GET https://x.example.com/
     [host: x.example.com, accept-encoding: gzip, deflate] b''

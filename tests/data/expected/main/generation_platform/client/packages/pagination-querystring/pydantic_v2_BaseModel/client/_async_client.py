@@ -15,10 +15,11 @@ from typing_extensions import Self
 
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
+from ._runtime.client.options import ClientOptions
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import AsyncBodyInput
 from .model_codecs import JSONValue
-from .options import ClientOptions, RequestOptions
+from .options import RequestOptions
 from .responses import AsyncRawResponse
 
 if TYPE_CHECKING:

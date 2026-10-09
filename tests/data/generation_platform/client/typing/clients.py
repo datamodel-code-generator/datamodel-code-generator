@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator, Set
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from pathlib import Path
 from ssl import SSLContext, create_default_context
-from typing import BinaryIO, Literal
+from typing import IO, BinaryIO, Literal
 
 import httpx2
 from typing_extensions import assert_type
@@ -16,21 +16,12 @@ from pets import AsyncClient, AsyncClientView, Client, ClientView
 from pets.auth import OAuthProviderOptions
 from pets.bodies import (
     AsyncBinaryBody,
-    AsyncBodyAttempt,
-    AsyncBodyFactory,
-    AsyncFileBody,
     AsyncMultipartBody,
-    AsyncStreamBody,
-    BodyAttempt,
-    BodyAttemptContext,
-    BodyFactory,
     DecodedPart,
     FieldPart,
-    FileBody,
     FilePart,
     MultipartBody,
     MultipartData,
-    StreamBody,
     SyncBinaryBody,
 )
 from pets.model_codecs import JSONValue
@@ -52,7 +43,6 @@ from pets.options import (
     UNSET,
     ClientOptions,
     Clock,
-    Deadline,
     IdempotencyKey,
     RedirectOptions,
     RequestOptions,
@@ -113,7 +103,13 @@ async def call_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParamet
     await client.aclose()
 
 
-def raw(client: Client, sink: BinaryIO, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter, body: NewPet) -> None:
+def raw(
+    client: Client,
+    sink: BinaryIO,
+    trace: FieldPetsGetHeaderXTraceParameter,
+    pet: FieldPetsPetIdGetPathPetIdParameter,
+    body: NewPet,
+) -> None:
     saved = client.pets.with_raw_response.list_pets(x_trace=trace)
     assert_type(saved, RawResponse)
     assert_type(saved.info, ResponseInfo)
@@ -133,7 +129,9 @@ def raw(client: Client, sink: BinaryIO, trace: FieldPetsGetHeaderXTraceParameter
         download.stream_to("file.bin", overwrite=True)
 
 
-async def raw_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
+async def raw_async(
+    client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter
+) -> None:
     saved = await client.pets.with_raw_response.list_pets(x_trace=trace)
     assert_type(saved, AsyncRawResponse)
     assert_type(await saved.read(), bytes)
@@ -149,66 +147,47 @@ async def raw_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParamete
         await download.stream_to("file.bin")
 
 
-def build(context: BodyAttemptContext) -> BodyAttempt:
-    raise NotImplementedError(context.call_id)
 
-
-async def abuild(context: BodyAttemptContext) -> AsyncBodyAttempt:
-    raise NotImplementedError(context.attempt_index)
-
-
-def bodies(client: Client, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
-    inputs: tuple[SyncBinaryBody, ...] = (
-        b"\x00",
-        FileBody(file),
-        FileBody(file, ownership="owned"),
-        FileBody.from_path("photo.png"),
-        StreamBody([b"a", b"b"]),
-        StreamBody(iter([b"a"]), ownership="owned"),
-        BodyFactory(build, content_length=1, content_type="image/png", fingerprint=b"f"),
-    )
+def bodies(
+    client: Client, file: BinaryIO, spooled: IO[bytes], photo: FieldPetsPetIdPhotoPutPathPetIdParameter
+) -> None:
+    inputs: tuple[SyncBinaryBody, ...] = (b"\x00", file, spooled, Path("photo.png"), [b"a", b"b"], iter([b"a"]))
     for body in inputs:
         client.pets.photos.upload(pet_id=photo, body=body)
-    assert_type(BodyFactory(build).content_type, str | None)
-    client.request_raw("PUT", "https://example.com/file", body=FileBody.from_path("photo.png"))
+    client.request_raw("PUT", "https://example.com/file", body=Path("photo.png"))
 
 
 async def bodies_async(client: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
-
     async def chunks() -> AsyncIterator[bytes]:
         yield b"a"
 
-    body = AsyncFileBody.from_path("photo.png")
-    inputs: tuple[AsyncBinaryBody, ...] = (
-        b"\x00",
-        AsyncFileBody(file),
-        body,
-        AsyncStreamBody(chunks()),
-        AsyncBodyFactory(abuild),
-    )
-    for each in inputs:
-        await client.pets.photos.upload(pet_id=photo, body=each)
-    await client.request_raw("PUT", "https://example.com/file", body=AsyncStreamBody(chunks(), ownership="owned"))
-    await body.aclose()
-    body.close()
+    inputs: tuple[AsyncBinaryBody, ...] = (b"\x00", file, Path("photo.png"), iter([b"a"]), chunks())
+    for body in inputs:
+        await client.pets.photos.upload(pet_id=photo, body=body)
+    await client.request_raw("PUT", "https://example.com/file", body=chunks())
 
 
 def multipart(client: Client, file: BinaryIO) -> None:
     name: FieldPart[str] = FieldPart("name", "Ada")
     count = FieldPart("count", 3, content_type="text/plain", headers=(("X-Trace", "t"),))
-    photo = FilePart("photo", FileBody(file), filename="a.png", content_type="image/png")
-    assert_type(photo.content, FileBody)
+    photo = FilePart("photo", file, filename="a.png", content_type="image/png")
+    assert_type(photo.content, BinaryIO)
     parts: MultipartBody[str | int] = MultipartBody((name, count, photo))
     assert_type(parts.parts, tuple[FilePart[SyncBinaryBody] | FieldPart[str | int], ...])
     body = MultipartBody[JSONValue]((FieldPart("meta", {"k": 1}), FieldPart("skipped", UNSET), FilePart("f", b"x")))
     client.request_raw("POST", "https://example.com/forms", body=body)
 
 
-def file_parts(client: Client, file: BinaryIO, pet: FieldPetsPetIdFilesPostPathPetIdParameter, read: FieldPetsPetIdFilesGetPathPetIdParameter) -> None:
+def file_parts(
+    client: Client,
+    file: BinaryIO,
+    pet: FieldPetsPetIdFilesPostPathPetIdParameter,
+    read: FieldPetsPetIdFilesGetPathPetIdParameter,
+) -> None:
     note = FieldPart("note", "hello")
     labels = FieldPart("labels", ["a", "b"])
     assert_type(labels, FieldPart[list[str]])
-    client.pets.attach_files(pet_id=pet, body=MultipartBody((note, labels, FilePart("file", FileBody(file)))))
+    client.pets.attach_files(pet_id=pet, body=MultipartBody((note, labels, FilePart("file", file))))
     files = client.pets.read_files(pet_id=read)
     assert_type(files, MultipartData[str | bytes])
     for part in files.parts:
@@ -228,7 +207,7 @@ def multipart_data(data: MultipartData[bytes]) -> None:
 
 
 async def multipart_async(client: AsyncClient) -> None:
-    body = AsyncMultipartBody[JSONValue]((FieldPart("a", "x"), FilePart("f", AsyncFileBody.from_path("a.bin"))))
+    body = AsyncMultipartBody[JSONValue]((FieldPart("a", "x"), FilePart("f", Path("a.bin"))))
     await client.request_raw("POST", "https://example.com/forms", body=body)
 
 
@@ -261,38 +240,26 @@ def hooks(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
 
 
 def timing_options(client: Client) -> None:
-    deadline = Deadline.after(60)
-    assert_type(deadline.at, float)
-    assert_type(deadline.remaining(), float)
-    assert_type(deadline.clock, Clock)
     clock = Clock(monotonic=lambda: 0.0, random=lambda: 0.5)
-    assert_type(Deadline.after(1, clock=clock), Deadline)
     assert_type(OAuthProviderOptions(clock=clock).clock, Clock)
     phases = TimeoutOptions(connect=1, read=None, write=UNSET, pool=0)
     assert_type(phases.read, float | Unset | None)
     configured = ClientOptions(
         timeout=phases,
         total_timeout=None,
-        deadline=deadline,
-        stream_idle_timeout=60,
-        stream_total_timeout=None,
         clock=clock,
     )
     assert_type(configured.clock, Clock | Unset)
     assert_type(configured.timeout, TimeoutOptions | Unset | None)
     assert_type(configured.total_timeout, float | Unset | None)
-    assert_type(configured.deadline, Deadline | Unset | None)
     assert_type(configured.limiter, Limiter | AsyncLimiter | Unset | None)
-    assert_type(configured.stream_idle_timeout, float | Unset | None)
-    assert_type(configured.stream_total_timeout, float | Unset | None)
     Client(options=configured)
     assert_type(client.with_options(RequestOptions(timeout=None, total_timeout=0)), ClientView)
-    client.with_options(RequestOptions(deadline=None, limiter=None))
+    client.with_options(RequestOptions(limiter=None))
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
-    deadline = Deadline.after(10)
-    options = RequestOptions(total_timeout=20, deadline=deadline, timeout=TimeoutOptions(read=3))
+    options = RequestOptions(total_timeout=10, timeout=TimeoutOptions(read=3))
     view = client.with_options(options)
     response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
     return response.read()
@@ -317,7 +284,7 @@ def instant_retries(url: str) -> Client:
 
 
 def download(client: Client, url: str, destination: BinaryIO) -> None:
-    options = RequestOptions(total_timeout=10, stream_idle_timeout=60, stream_total_timeout=300)
+    options = RequestOptions(total_timeout=10, timeout=TimeoutOptions(read=60))
     with client.with_streaming_response.request_raw("GET", url, options=options) as response:
         response.stream_to(destination)
 
@@ -444,7 +411,7 @@ def keyed_view(client: Client, value: str) -> ClientView:
 
 def upload_file(client: Client, url: str, path: Path) -> bytes:
     response = client.request_raw(
-        "PUT", url, body=FileBody.from_path(path), options=RequestOptions(retry=RetryOptions(max_retries=2))
+        "PUT", url, body=path, options=RequestOptions(retry=RetryOptions(max_retries=2))
     )
     return response.read()
 

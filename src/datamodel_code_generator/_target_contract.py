@@ -400,7 +400,7 @@ class TypeUseBinding:
 
 @dataclass(frozen=True, slots=True)
 class SourceReference:
-    """Retain a metadata reference without acquiring another source for observation."""
+    """Retain a metadata reference and whether it reaches an object of a document that loads."""
 
     source: SourceLocation
     reference: str
@@ -445,7 +445,6 @@ class OperationContract:
     method: str
     path: str
     explicit_operation_id: bool
-    security_declared: bool
     servers_declared: bool
     order: int
     facts: tuple[tuple[str, FrozenLiteral], ...]

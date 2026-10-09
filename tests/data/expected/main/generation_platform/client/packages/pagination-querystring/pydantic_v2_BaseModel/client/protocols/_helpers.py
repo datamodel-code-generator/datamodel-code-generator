@@ -10,7 +10,9 @@ from functools import cached_property
 from models import FieldLookupGetQuerystringFilterParameter as _dcg_type_1
 from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.model_codecs.media import JSONValue
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.pagination import (
     Page,
     Pager,
@@ -19,7 +21,6 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from .._runtime.protocols.resume import ResumeState
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.default import LookupResponse, SearchResponse
 from . import PaginationOptions, _plans
@@ -28,9 +29,9 @@ from . import PaginationOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def search(self) -> SearchProtocols:
@@ -142,8 +143,9 @@ class SearchAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -153,6 +155,7 @@ class SearchAllPagination:
             self._core,
             _plans.PLAN_0,
             state,
+            (criteria,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -222,8 +225,9 @@ class SearchFixedPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -233,6 +237,7 @@ class SearchFixedPagination:
             self._core,
             _plans.PLAN_1,
             state,
+            (criteria,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -302,8 +307,9 @@ class SearchNextPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        criteria: _dcg_type_0 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -313,6 +319,7 @@ class SearchNextPagination:
             self._core,
             _plans.PLAN_2,
             state,
+            (criteria,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -382,8 +389,9 @@ class LookupAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        filter: _dcg_type_1 | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -393,6 +401,7 @@ class LookupAllPagination:
             self._core,
             _plans.PLAN_3,
             state,
+            (filter,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,

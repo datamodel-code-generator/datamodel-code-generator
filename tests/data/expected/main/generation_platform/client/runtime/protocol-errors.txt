@@ -39,13 +39,12 @@
     str=ResumeStateError(operation_id='protocol', call_id='call-1', condition='fingerprint') repr=ResumeStateError() secret=False progress shown=False
   PaginationCycleError: base=ProtocolDataError sdk=True reason=pagination_cycle_error
     chain=['PaginationCycleError', 'ProtocolDataError', 'ProtocolError', 'SDKError']
-    fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,first_seen_page_index,helper_id,info,location,operation,operation_id,page_index,parent_session_id,reason,resume_state,secondary_errors
+    fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,first_seen_page_index,helper_id,info,location,operation,operation_id,page_index,parent_session_id,reason,secondary_errors
     context=True/True/True/True/True call=protocol/call-1/session-1
     measurements=(1, 0.25, None)
     hints=True/True/True retained=True progress copied=True
     str=PaginationCycleError(operation_id='protocol', call_id='call-1', condition='inconsistent', page_index=4, first_seen_page_index=1) repr=PaginationCycleError() secret=False progress shown=False
     location hint=True identity=True
-    resume hint=True identity=True
   PollingStateError: base=ProtocolDataError sdk=True reason=polling_state_error
     chain=['PollingStateError', 'ProtocolDataError', 'ProtocolError', 'SDKError']
     fields=attempt_count,call_id,cause,completed_result,condition,delivery_state,elapsed,helper_id,info,location,operation,operation_id,parent_session_id,reason,secondary_errors
@@ -167,7 +166,7 @@
   session limit defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) SessionLimitError(kind='pages', limit=0)
   resume exhausted defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) StreamResumeExhaustedError(kind='reconnects', limit=16)
   resume defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) ResumeStateError(condition='malformed')
-  cycle defaults: (None, None, None, None, None, None, None, (), None, None, 0, None) PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0)
+  cycle defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0)
   polling defaults: (None, None, None, None, None, None, None, (), None, '-', 0, None) PollingStateError(condition='value')
   wait defaults: (None, None, None, None, None, None, None, (), '-', None, 0, None) PollWaitLimitError(kind='deadline', required_wait=0.0, limit=0.0)
   failed defaults: (None, None, None, None, None, None, None, (), '-', '-', 0, None) OperationFailedError()
@@ -210,7 +209,7 @@
   cycle fixed condition ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'condition' []
   cycle negative ! ValueError: page_index must be a nonnegative integer []
   cycle cursor field ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'continuation' []
-  cycle resume type ! ValueError: resume_state must be a ResumeState or None []
+  cycle resume field ! TypeError: PaginationCycleError.__init__() got an unexpected keyword argument 'resume_state' []
   polling condition missing ! ValueError: condition must be one of its declared values []
   wait kind unknown ! ValueError: kind must be one of its declared values []
   wait nan ! ValueError: required_wait must be a finite number in its permitted range []

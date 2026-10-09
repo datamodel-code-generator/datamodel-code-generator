@@ -682,9 +682,7 @@ def _requirement_names(value: FrozenLiteral | None) -> list[str]:
 
 def auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
     """Return the locations and names of the apiKey credentials the operation's security requirements send."""
-    document = (
-        operation.declaration.location.document if operation.security_declared else operation.id.use_site.document
-    )
+    document = operation.id.use_site.document
     schemes = {scheme.name: scheme for scheme in batch.security_schemes if scheme.use_site.document == document}
     requirements = next((value for name, value in operation.facts if name == "security"), None)
     return list(

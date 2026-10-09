@@ -17,7 +17,6 @@ from uuid import uuid4
 import httpx2
 from typing_extensions import TypeVar
 
-from ..client.client import stored_value
 from ..client.errors import ConfigurationError, add_secondary
 from ..client.media import normalized
 from ..client.native import request_fields, wire_fields
@@ -26,6 +25,7 @@ from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
 from ..model_codecs.unset import UNSET, Unset
 from .caches import CacheEntry, CacheResult, CacheSource
+from .client import stored_value
 from .errors import CacheProtocolError, CacheStoreError, CacheValidatorConflictError
 from .options import CacheOptions
 from .records import canonical_json
@@ -33,9 +33,9 @@ from .records import canonical_json
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from ..client.client import AsyncClientCore, ClientCore
     from ..client.operations import OperationPlan
     from .caches import AsyncCacheStore, CacheStore
+    from .client import AsyncClientCore, ClientCore
     from .references import OperationRef
 
 __all__ = ("CachePlan", "afetch", "fetch")

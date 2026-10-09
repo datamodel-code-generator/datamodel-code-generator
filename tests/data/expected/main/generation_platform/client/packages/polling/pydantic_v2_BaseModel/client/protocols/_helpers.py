@@ -11,7 +11,8 @@ from typing import Literal
 from models import JobRequest as _dcg_type_0
 from models import Report as _dcg_type_1
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.polling import LroHandle, resume_operation, start_operation
 from .._runtime.protocols.records import CancelReceipt
 from .._runtime.protocols.resume import ResumeState
@@ -25,9 +26,9 @@ from . import PollOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def jobs(self) -> JobsProtocols:
