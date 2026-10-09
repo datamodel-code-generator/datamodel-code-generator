@@ -6,7 +6,7 @@ import json
 import re
 import shutil
 import warnings
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias
 from urllib.parse import urlparse
@@ -14,7 +14,6 @@ from urllib.parse import urlparse
 import yaml
 
 from datamodel_code_generator import Error, GenerateConfig, generate
-from datamodel_code_generator.fastapi import FastAPIConfig, OperationRef, ResponseChoice
 from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
 from tests.data.python.client_generation import cyclic_input_failure
 
@@ -33,28 +32,6 @@ Files: TypeAlias = dict[tuple[str, ...], str]
 
 def _runtime(path: Path) -> bool:
     return "_runtime" in path.parts
-
-
-def _selector(value: str | dict[str, str]) -> OperationRef | str:
-    if isinstance(value, str):
-        return value
-    return OperationRef(**{key: item.replace("{root}", Path.cwd().as_uri()) for key, item in value.items()})
-
-
-def _config(values: dict[str, Any]) -> FastAPIConfig:
-    values = {"output": "server", "package": "example.server", "model_package": "example.models", **values}
-    converted: dict[str, Any] = {}
-    for key, value in values.items():
-        match key:
-            case "output" if isinstance(value, str):
-                converted[key] = Path(value)
-            case "primary_responses":
-                converted[key] = {_selector(selector): ResponseChoice(**choice) for selector, choice in value}
-            case "operation_names":
-                converted[key] = {_selector(selector): name for selector, name in value}
-            case _:
-                converted[key] = value
-    return FastAPIConfig(**converted)
 
 
 def _settings(model: dict[str, Any], server: dict[str, Any], root: Path, *, write: bool) -> GenerateConfig:
@@ -322,16 +299,3 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
             getattr(scenario, name)(value)
         scenario.lines.extend(f"  {item.category.__name__}: {item.message}" for item in recorded)
     return "\n".join(scenario.lines) + "\n"
-
-
-def target_config_report(case_name: str) -> str:
-    """Construct one target configuration and report every setting or the ordered diagnostics."""
-    values = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
-    try:
-        config = _config(values)
-    except Error as error:
-        return f"Error: {error}\n"
-    return "".join(
-        f"{item.name}={value.as_posix() if isinstance(value := getattr(config, item.name), Path) else value!r}\n"
-        for item in fields(config)
-    )

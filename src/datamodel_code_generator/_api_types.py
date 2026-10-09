@@ -1,7 +1,7 @@
 """Shared records, diagnostics, and errors of the single-target API generators.
 
-The target entry points expose the artifact, selector, and warning records through
-`datamodel_code_generator.api_types`; failures reach callers as ordinary `datamodel_code_generator.Error`s.
+generate() and the command line reach the targets through these records; failures reach callers as ordinary
+`datamodel_code_generator.Error`s.
 """
 
 from __future__ import annotations

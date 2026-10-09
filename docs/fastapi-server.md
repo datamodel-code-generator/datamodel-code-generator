@@ -142,6 +142,7 @@ operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`
 `datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
 options take mappings keyed by the same operation references:
 
+<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
 from pathlib import Path
 
@@ -158,9 +159,9 @@ generate(
     server_output=Path("server"),
     server_package="server",
     server_model_package="models",
-    server_primary_responses={"/paths/~1pets/post": {"status_code": 201}},
 )
 ```
+<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 It publishes the models and the package together and returns `None`, like model generation. Without an `output`, it
 returns every model and server file as `GeneratedModules`, under the paths their import paths imply, such as
@@ -169,31 +170,6 @@ update; see [Generating a Server or Client Package](using_as_module.md#generatin
 `load_pyproject_config()` reads the server keys of `pyproject.toml`, whose paths and operation documents resolve
 against its directory. Invalid settings, bindings, and template failures raise `datamodel_code_generator.Error` with
 the message the command line prints after `Error:`. The `uv add` notice is a command-line message only.
-
-The separate entry points of `datamodel_code_generator.fastapi` take the server settings as a `FastAPIConfig`:
-
-<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
-```python
-from pathlib import Path
-
-from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
-from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
-
-generate_fastapi(
-    Path("openapi.yaml"),
-    model_config=GenerateConfig(
-        output=Path("models.py"),
-        input_file_type=InputFileType.OpenAPI,
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        preset="standard-py312-20260909",
-    ),
-    config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
-)
-```
-<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
-
-`render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
 
 ## Server options
 
