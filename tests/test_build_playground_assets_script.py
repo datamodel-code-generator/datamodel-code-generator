@@ -79,3 +79,21 @@ def _metadata_docs_summary(
         "name": metadata["name"],
         "docs_url": metadata["docs_url"],
     }
+
+
+def test_playground_target_options_unsupported() -> None:
+    """Server and client options are generate() options that the browser playground does not offer."""
+    metadata = build_playground_assets.build_metadata()
+    output = {
+        option["dest"]: {
+            "browser_supported": option["browser_supported"],
+            "unsupported_reason": option["unsupported_reason"],
+        }
+        for option in metadata["options"]
+        if option["dest"].startswith(("generate_server", "generate_client", "server_", "client_"))
+    }
+
+    assert_output(
+        json.dumps(output, indent=2, sort_keys=True) + "\n",
+        EXPECTED_PLAYGROUND_ASSETS_PATH / "target_options.txt",
+    )

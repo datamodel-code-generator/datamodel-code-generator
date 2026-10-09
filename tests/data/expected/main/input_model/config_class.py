@@ -8,7 +8,11 @@ from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal, TypeAlias
 
-from datamodel_code_generator.enums import StrictTypes
+from datamodel_code_generator.enums import (
+    ServerBodyMode,
+    ServerHandlerMode,
+    StrictTypes,
+)
 from datamodel_code_generator.validators import ModelValidators
 from typing_extensions import NotRequired, TypedDict
 
@@ -30,6 +34,15 @@ AllOfMergeMode: TypeAlias = Literal['constraints', 'all', 'none']
 
 
 ClassNameAffixScope: TypeAlias = Literal['all', 'models', 'enums']
+
+
+ClientBodyArguments: TypeAlias = Literal['body', 'both']
+
+
+ClientSignatureStyle: TypeAlias = Literal['explicit', 'unpack']
+
+
+ClientType: TypeAlias = Literal['httpx2']
 
 
 CollapseRootModelsNameStrategy: TypeAlias = Literal['child', 'parent']
@@ -126,6 +139,18 @@ ReuseScope: TypeAlias = Literal['module', 'tree']
 
 
 SchemaValidatorType: TypeAlias = Literal['pydantic-v2']
+
+
+ServerBodyModeModel: TypeAlias = Literal['typed', 'request']
+
+
+ServerHandlerModeModel: TypeAlias = Literal['sync', 'async']
+
+
+ServerLayout: TypeAlias = Literal['routers', 'single']
+
+
+ServerType: TypeAlias = Literal['fastapi']
 
 
 StrictTypesModel: TypeAlias = Literal['str', 'bytes', 'int', 'float', 'bool']
@@ -297,6 +322,31 @@ class BaseGenerateConfig(TypedDict):
     schema_version: NotRequired[str | None]
     schema_version_mode: NotRequired[VersionMode | None]
     external_ref_mapping: NotRequired[dict[str, str] | None]
+    generate_server: NotRequired[ServerType | None]
+    server_output: NotRequired[str | None]
+    server_package: NotRequired[str | None]
+    server_model_package: NotRequired[str | None]
+    server_layout: NotRequired[ServerLayout | None]
+    server_handler_mode: NotRequired[ServerHandlerModeModel | None]
+    server_handler_modes: NotRequired[Mapping[str, ServerHandlerMode] | None]
+    server_include_request: NotRequired[bool | None]
+    server_body_mode: NotRequired[ServerBodyModeModel | None]
+    server_body_modes: NotRequired[Mapping[str, ServerBodyMode] | None]
+    server_primary_responses: NotRequired[Mapping[str, Any] | None]
+    server_operation_names: NotRequired[Mapping[str, str] | None]
+    server_router_names: NotRequired[Mapping[str, str] | None]
+    server_parameter_names: NotRequired[Mapping[str, Mapping[str, str]] | None]
+    generate_client: NotRequired[ClientType | None]
+    client_output: NotRequired[str | None]
+    client_package: NotRequired[str | None]
+    client_model_package: NotRequired[str | None]
+    client_signature_style: NotRequired[ClientSignatureStyle | None]
+    client_body_arguments: NotRequired[ClientBodyArguments | None]
+    client_resource_names: NotRequired[Mapping[str, str] | None]
+    client_operations: NotRequired[Mapping[str, Mapping[str, Any]] | None]
+    client_default_base_url: NotRequired[str | None]
+    client_server_base_url: NotRequired[str | None]
+    client_protocols: NotRequired[Mapping[str, Any] | None]
 
 
 class GenerateConfig(BaseGenerateConfig, closed=True):

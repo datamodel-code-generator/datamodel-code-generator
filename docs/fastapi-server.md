@@ -130,7 +130,39 @@ object with the right methods works, and type checkers check it where you pass i
 
 ## Python API
 
-`datamodel_code_generator.fastapi` has the same entry points:
+`generate()` takes the server options under their Python names, with the model options; the choices are enums of
+`datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
+options take mappings keyed by the same operation references:
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import DataModelType, InputFileType, OpenAPIScope, ServerType, generate
+
+generate(
+    Path("openapi.yaml"),
+    input_file_type=InputFileType.OpenAPI,
+    openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+    output_model_type=DataModelType.PydanticV2BaseModel,
+    preset="standard-py312-20260909",
+    output=Path("models.py"),
+    generate_server=ServerType.FastAPI,
+    server_output=Path("server"),
+    server_package="server",
+    server_model_package="models",
+    server_primary_responses={"/paths/~1pets/post": {"status_code": 201}},
+)
+```
+
+It publishes the models and the package together and returns `None`, like model generation. Without an `output`, it
+returns every model and server file as `GeneratedModules`, under the paths their import paths imply, such as
+`("models.py",)` and `("server", "application.py")`, and writes nothing but the model metadata and a remote lock
+update; see [Generating a Server or Client Package](using_as_module.md#generating-a-server-or-client-package).
+`load_pyproject_config()` reads the server keys of `pyproject.toml`, whose paths and operation documents resolve
+against its directory. Invalid settings, bindings, and template failures raise `datamodel_code_generator.Error` with
+the message the command line prints after `Error:`. The `uv add` notice is a command-line message only.
+
+The separate entry points of `datamodel_code_generator.fastapi` take the server settings as a `FastAPIConfig`:
 
 <!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
@@ -154,13 +186,6 @@ generate_fastapi(
 <!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
-`generate_fastapi` publishes the files and returns `None`, like model generation.
-The rendered project lists the package's runtime requirement specifiers in `dependencies`, which the command line
-prints as a `uv add` command. Neither public result contains diagnostic records.
-Invalid settings and bindings raise `APIGenerationError`, a subclass of
-`datamodel_code_generator.Error` with a plain message and ordered `Diagnostic` records in `diagnostics`;
-model generation errors keep their own types and messages. The records, errors, warnings, and codec
-registrations are also available from `datamodel_code_generator.api_types`.
 
 ## Server options
 
@@ -329,8 +354,8 @@ Run the same command again after the OpenAPI document changes. The service Proto
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
 lacks a new method; modules outside the package are never touched. `--check` renders everything without writing it
 and exits with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or
-deleted or a file that is no longer generated, and 2 for an error; `render_fastapi` returns the same artifacts, each
-with its action.
+deleted or a file that is no longer generated, and 2 for an error. In Python, compare the files `generate()` returns
+without an `output`.
 
 `--check` uses the model output comparison: it prints unified diffs and missing or extra file messages to stdout.
 It compares the rendered model and server text, including the README and `py.typed`, plus extra `.py` files under
@@ -461,7 +486,7 @@ The command line prints failures to stderr as `Error: message` and exits with 2.
 messages in order, without codes, severity or stage labels. Model generation errors keep their
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
 Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
-Python `UserWarning` subclasses from `datamodel_code_generator.api_types`: `DocumentationAnnotationWarning` reports
+Python `UserWarning` subclasses from `datamodel_code_generator`: `DocumentationAnnotationWarning` reports
 a documentation value the served document cannot carry. Each message starts with the output path, spelled relative
 to the working directory when it lies inside it, so every generated package reports its own files. They respect
 `--disable-warnings` and Python warning filters, and are not returned as diagnostic records.
