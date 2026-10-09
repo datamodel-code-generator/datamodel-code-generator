@@ -21,7 +21,7 @@ from .._runtime.protocols.pagination import (
     resume_pages,
 )
 from .._runtime.protocols.streams import EventStream, open_events
-from ..options import UNSET, RequestOptions, SessionOptions
+from ..options import UNSET, RequestOptions
 from ..types.notes import ListNotesResponse
 from . import PaginationOptions, StreamOptions, _plans
 
@@ -70,7 +70,6 @@ class NotesAllPagination:
         cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.Note, ListNotesResponse]:
         """Fetch the first page of GET /notes."""
         return first_page(
@@ -79,7 +78,6 @@ class NotesAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
@@ -88,7 +86,6 @@ class NotesAllPagination:
         cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.Note, ListNotesResponse]:
         """Return a pager over the items of GET /notes; it sends nothing until it is iterated."""
         return iterate_pages(
@@ -97,7 +94,6 @@ class NotesAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
@@ -106,7 +102,6 @@ class NotesAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[models.Note, ListNotesResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
@@ -115,7 +110,6 @@ class NotesAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
@@ -125,7 +119,6 @@ class NotesAllPagination:
         cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Pager[models.Note, ListNotesResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
@@ -135,7 +128,6 @@ class NotesAllPagination:
             (cursor,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -151,7 +143,6 @@ class NotesWatchSse:
         *,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> EventStream[models.Note]:
         """Open the event stream of GET /notes/events, returning once its response is a declared success."""
         return open_events(
@@ -160,5 +151,4 @@ class NotesWatchSse:
             (),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )

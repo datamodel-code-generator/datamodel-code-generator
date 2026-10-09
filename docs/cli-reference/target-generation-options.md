@@ -142,7 +142,7 @@ overrides it for that operation.
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -172,8 +172,8 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
@@ -190,8 +190,8 @@ overrides it for that operation.
             self,
             *,
             body: models.NewPet,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -200,9 +200,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -210,9 +210,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: models.NewPet | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -239,8 +239,8 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
@@ -257,8 +257,8 @@ overrides it for that operation.
             self,
             *,
             body: models.NewPet,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -267,9 +267,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -277,9 +277,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: models.NewPet | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -306,8 +306,8 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
@@ -324,8 +324,8 @@ overrides it for that operation.
             self,
             *,
             body: models.NewPet,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -334,9 +334,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -344,9 +344,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: models.NewPet | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -373,8 +373,8 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
@@ -391,8 +391,8 @@ overrides it for that operation.
             self,
             *,
             body: models.NewPet,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -401,9 +401,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -411,9 +411,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: models.NewPet | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -720,7 +720,7 @@ generates.
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -750,8 +750,8 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
@@ -792,8 +792,8 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
@@ -834,8 +834,8 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
@@ -876,8 +876,8 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
@@ -1030,7 +1030,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListAllResponse
 
@@ -1060,8 +1060,8 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListAllResponse:
@@ -1102,8 +1102,8 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListAllResponse]:
@@ -1144,8 +1144,8 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
@@ -1186,8 +1186,8 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
@@ -1332,7 +1332,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -1362,8 +1362,8 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
@@ -1404,8 +1404,8 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
@@ -1446,8 +1446,8 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
@@ -1488,8 +1488,8 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
@@ -1633,7 +1633,7 @@ generation prints name the package by it; the package imports its own modules re
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -1663,8 +1663,8 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
@@ -1705,8 +1705,8 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
@@ -1747,8 +1747,8 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
@@ -1789,8 +1789,8 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
@@ -1944,7 +1944,7 @@ references name resolve against the directory of the JSON file that holds them, 
         iterate_pages,
         resume_pages,
     )
-    from ..options import UNSET, RequestOptions, SessionOptions, Unset
+    from ..options import UNSET, RequestOptions
     from ..types.pets import ListPetsResponse
     from . import PaginationOptions, _plans
 
@@ -1985,11 +1985,10 @@ references name resolve against the directory of the JSON file that holds them, 
         def page(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Page[models.Pet, ListPetsResponse]:
             """Fetch the first page of GET /pets."""
             return first_page(
@@ -1998,17 +1997,15 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def iterate(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
             return iterate_pages(
@@ -2017,7 +2014,6 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def next_page(
@@ -2026,7 +2022,6 @@ references name resolve against the directory of the JSON file that holds them, 
             *,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Page[models.Pet, ListPetsResponse] | None:
             """Fetch the page after a page of this helper, or return None after the last page."""
             return following_page(
@@ -2035,18 +2030,16 @@ references name resolve against the directory of the JSON file that holds them, 
                 page,
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def resume(
             self,
             state: JSONValue,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
         ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
             return resume_pages(
@@ -2056,7 +2049,6 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
     ```
 
@@ -2174,7 +2166,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.animals import CreatePetResponse, ListPetsResponse
 
@@ -2204,8 +2196,8 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
@@ -2246,8 +2238,8 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
@@ -2288,8 +2280,8 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
@@ -2330,8 +2322,8 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
@@ -2933,7 +2925,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -2963,8 +2955,8 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
@@ -3005,8 +2997,8 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
@@ -3047,8 +3039,8 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
@@ -3089,8 +3081,8 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:

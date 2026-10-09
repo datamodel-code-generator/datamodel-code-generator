@@ -13,7 +13,7 @@ import models._internal as models__internal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.default import AddItemResponse, ListItemsResponse
 
@@ -43,7 +43,7 @@ class DefaultResource:
     def list_items(
         self,
         *,
-        kind: models__internal.Kind | Unset = UNSET,
+        kind: models__internal.Kind | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListItemsResponse:
@@ -82,7 +82,7 @@ class DefaultWithResponse:
     def list_items(
         self,
         *,
-        kind: models__internal.Kind | Unset = UNSET,
+        kind: models__internal.Kind | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListItemsResponse]:
@@ -121,7 +121,7 @@ class DefaultWithRawResponse:
     def list_items(
         self,
         *,
-        kind: models__internal.Kind | Unset = UNSET,
+        kind: models__internal.Kind | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -160,7 +160,7 @@ class DefaultWithStreamingResponse:
     def list_items(
         self,
         *,
-        kind: models__internal.Kind | Unset = UNSET,
+        kind: models__internal.Kind | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
