@@ -1,0 +1,2 @@
+Python 3.10 support is deprecated and will be removed in 0.85.0 (3.10 reached end of life in October 2026).
+Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.

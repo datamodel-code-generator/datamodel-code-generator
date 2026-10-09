@@ -30,6 +30,7 @@ DeprecationId = Literal[
     "dependency.black-minimum",
     "dependency.isort-minimum",
     "dependency.pydantic-runtime-minimum",
+    "dependency.python-310-runtime",
     "format.default-formatters",
     "python-api.python-version-has-type-alias",
     "schema.jsonschema-items-array",
@@ -178,6 +179,20 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         warning_category="FutureWarning",
         note="This is advance notice only. Current dependency ranges and compatibility remain unchanged.",
     ),
+    "dependency.python-310-runtime": Deprecation(
+        id="dependency.python-310-runtime",
+        kind="dependency",
+        target="Running datamodel-code-generator on Python 3.10",
+        message=(
+            "Python 3.10 support is deprecated and will be removed in 0.85.0 "
+            "(3.10 reached end of life in October 2026)."
+        ),
+        warning_since="0.84.0",
+        removal_version="0.85.0",
+        replacement="Run datamodel-code-generator on Python 3.11 or newer.",
+        warning_category="FutureWarning",
+        note="Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.",
+    ),
     "config.yaml-non-lowercase-bool": Deprecation(
         id="config.yaml-non-lowercase-bool",
         kind="config",
@@ -244,6 +259,7 @@ _MIGRATION_WARNINGS = frozenset({
     "dependency.black-minimum",
     "dependency.isort-minimum",
     "dependency.pydantic-runtime-minimum",
+    "dependency.python-310-runtime",
 })
 _CLI_MIGRATION_WARNINGS: ContextVar[set[DeprecationId] | None] = ContextVar("cli_migration_warnings", default=None)
 
