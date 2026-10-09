@@ -11,7 +11,6 @@ from pathlib import Path
 WATCHED = (
     "datamodel_code_generator.remote_lock",
     "datamodel_code_generator._publication",
-    "datamodel_code_generator._api_publication",
     "datamodel_code_generator._openapi_generation",
 )
 TARGET = (
@@ -19,6 +18,8 @@ TARGET = (
     "datamodel_code_generator._api_generation",
     "datamodel_code_generator._fastapi",
     "datamodel_code_generator.fastapi",
+    "datamodel_code_generator._client",
+    "datamodel_code_generator.client",
     "datamodel_code_generator.api_types",
 )
 EMPTY = 'openapi: 3.1.0\ninfo: {title: Empty, version: "1.0"}\npaths: {}\n'

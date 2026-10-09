@@ -266,7 +266,7 @@ class ServerRenderer:  # noqa: PLR0904
 
     @staticmethod
     def file(path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:
-        """Return one owned file of the package."""
+        """Return one generated file of the package."""
         return RenderedFile(path=path, kind=kind, text=text, verbatim=verbatim)
 
     def files(self) -> tuple[RenderedFile, ...]:

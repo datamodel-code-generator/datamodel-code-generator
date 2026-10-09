@@ -35,9 +35,9 @@ client/urls.py: __future__, dataclasses, functools, httpx2, re, typing, urllib.p
 model_codecs/__init__.py: -
 model_codecs/errors.py: __future__, dataclasses, typing
 model_codecs/media.py: .errors, .wire, __future__, collections.abc, dataclasses, decimal, json, json.encoder, re, typing, typing_extensions, urllib.parse
-model_codecs/native.py: __future__, collections.abc, msgspec, msgspec.json, pydantic, pydantic_core, typing, typing_extensions
+model_codecs/native.py: .media, __future__, collections.abc, msgspec, msgspec.json, pydantic, pydantic_core, typing, typing_extensions
 model_codecs/parameters.py: .errors, .media, .unset, .wire, __future__, collections.abc, dataclasses, itertools, re, typing, urllib.parse
-model_codecs/stdlib.py: __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
+model_codecs/stdlib.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
 model_codecs/unset.py: __future__, enum, typing
 model_codecs/wire.py: __future__, collections.abc, decimal, math, re, types, typing, typing_extensions
 protocols/__init__.py: -
@@ -71,8 +71,8 @@ protocols/websocket_native.py: ..client.errors, ..client.responses, ..client.tim
 protocols/websocket_types.py: ..client.responses, ..client.timing, __future__, dataclasses, ssl, typing, typing_extensions
 protocols/writes.py: ..client.operations, ..client.paths, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, .records, .values, __future__, collections.abc, dataclasses, typing, typing_extensions
 server/__init__.py: -
-server/application.py: .security, __future__, collections.abc, dataclasses, fastapi, fastapi.encoders, fastapi.exceptions, fastapi.params, starlette.requests, starlette.responses, typing, typing_extensions
+server/application.py: .security, __future__, collections.abc, dataclasses, fastapi, fastapi.params, inspect, types, typing, typing_extensions
 server/errors.py: ..model_codecs.errors, ..model_codecs.wire, __future__, fastapi.exceptions, pydantic, typing
-server/requests.py: ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.wire, .errors, __future__, collections.abc, copy, dataclasses, fastapi.exceptions, pydantic, re, starlette.datastructures, starlette.requests, typing, urllib.parse
-server/responses.py: ..model_codecs.media, .errors, __future__, collections.abc, dataclasses, fastapi.encoders, fastapi.exceptions, inspect, json, pydantic, starlette.responses, typing, typing_extensions
+server/requests.py: ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, .errors, __future__, collections.abc, copy, dataclasses, fastapi.exceptions, pydantic, re, starlette.datastructures, starlette.requests, typing, urllib.parse
+server/responses.py: ..model_codecs.media, .application, .errors, __future__, collections.abc, dataclasses, fastapi.encoders, fastapi.exceptions, json, pydantic, starlette.responses, typing, typing_extensions
 server/security.py: __future__, collections.abc, fastapi, inspect, starlette.concurrency, typing, typing_extensions

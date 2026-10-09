@@ -17,6 +17,7 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
     _label,
     _listed,
     _Pages,
+    _parameter_key,
     _problem,
     _target_key,
     credential_place,
@@ -59,7 +60,7 @@ class StreamSpec:
     """A stream helper ready to render: its operation and stream media, each event and error schema's use, its schemas.
 
     `media` is the event stream or NDJSON media type the operation declares in `response`, which the helper requests.
-    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the manifest
+    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the source
     reference of every schema the helper decodes, in the order of its settings. A helper declaring resumption reopens
     its stream with `reopen`, requesting the `reopen_media` its `reopen_response` declares.
     """
@@ -138,7 +139,7 @@ class _Streams:
     """Check every enabled stream helper against its operation and bind the schemas of its events."""
 
     def __init__(self, protocols: Protocols, request: TargetRequest, wire: WirePlan) -> None:
-        """Index the documents by manifest pointer and the value use of each schema by its location and direction."""
+        """Index the documents by pointer and the value use of each schema by its location and direction."""
         self.protocols = protocols
         self.request = request
         self.wire = wire
@@ -352,10 +353,7 @@ def _cursor(helper: Helper, spec: StreamSpec, reopen: OperationSpec, pages: _Pag
             yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, reopen)
             return
         key = _target_key(write)
-        if any(
-            item.required and _target_key({"in": item.location, "name": item.wire_name}) == key
-            for item in reopen.parameters
-        ):
+        if any(item.required and _parameter_key(item.location, item.wire_name) == key for item in reopen.parameters):
             message = f"The cursor of {name!r} can be cleared, which {place}, a required one, cannot omit"
             yield _problem("E_CONFIG_VALUE", "config", where, message, reopen)
             return

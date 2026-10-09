@@ -1,0 +1,5 @@
+# link-errors
+render pydantic_v2.BaseModel
+  Error: /paths/~1pets/post/responses/201/links/missing: The link 'missing' references '#/components/links/Absent', which reaches no loaded link; /paths/~1pets/post/callbacks/created/{$request.body#~1url}/post/responses/204/links/unobserved: The link 'unobserved' references 'link-errors-library.yaml#/components/links/Pets', which reaches no loaded link
+  F_LINK_INVALID target /paths/~1pets/post/responses/201/links/missing: The link 'missing' references '#/components/links/Absent', which reaches no loaded link
+  F_LINK_INVALID target /paths/~1pets/post/callbacks/created/{$request.body#~1url}/post/responses/204/links/unobserved: The link 'unobserved' references 'link-errors-library.yaml#/components/links/Pets', which reaches no loaded link
