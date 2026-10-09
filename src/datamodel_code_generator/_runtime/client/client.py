@@ -23,7 +23,7 @@ import httpx2
 from typing_extensions import Self
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
+from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import EncodedAttempt, is_file_input
 from .body_sources import RequestCoding, bind_body, capture_body
@@ -101,7 +101,7 @@ if TYPE_CHECKING:
     )
 
     from ..model_codecs.media import JSONValue
-    from ..model_codecs.parameters import ParameterFragment
+    from ..model_codecs.parameters import ParameterPlan
     from .bodies import AsyncContent, SyncContent
     from .body_sources import BodyBindings, BodySource
     from .multipart import AsyncBodyInput, BodyInput
@@ -357,7 +357,7 @@ def _parameters(operation: OperationPlan[object], arguments: tuple[object, ...])
                 raise request_decode_error(operation, (plan.location, plan.name))
             continue
         try:
-            request.add(encode_parameter(plan, spec.dump(value)), plan.name)
+            request.add(plan, spec.dump(value))
         except request_errors(spec.codec) as error:
             raise request_decode_error(operation, (plan.location, plan.name), error) from None
     return request
@@ -372,26 +372,18 @@ class _Request:
         self.headers: list[tuple[str, str]] = []
         self.cookies: list[str] = []
 
-    def add(self, contribution: FragmentContribution | QueryStringContribution, name: str) -> None:
-        if isinstance(contribution, QueryStringContribution):
-            self.query.append(contribution.raw_query.decode("ascii"))
-            return
-        fragments = contribution.ordered_fragments
-        match contribution.location:
+    def add(self, plan: ParameterPlan, value: object) -> None:
+        match plan.location:
             case "path":
-                self.path[name] = "".join(fragment.value.decode("ascii") for fragment in fragments)
+                self.path[plan.name] = path_text(plan, value)
             case "query":
-                self.query.extend(_pairs(fragments))
+                self.query.extend(query_pairs(plan, value))
+            case "querystring":
+                self.query.append(querystring(plan, value))
             case "header":
-                self.headers.extend(
-                    ((fragment.name or b"").decode("ascii"), fragment.value.decode()) for fragment in fragments
-                )
+                self.headers.extend((key or "", text) for key, text in pairs(plan, value))
             case _:
-                self.cookies.extend(_pairs(fragments))
-
-
-def _pairs(fragments: tuple[ParameterFragment, ...]) -> Iterator[str]:
-    return (f"{(fragment.name or b'').decode('ascii')}={fragment.value.decode('ascii')}" for fragment in fragments)
+                self.cookies.extend(query_pairs(plan, value))
 
 
 class ReceivedBody:

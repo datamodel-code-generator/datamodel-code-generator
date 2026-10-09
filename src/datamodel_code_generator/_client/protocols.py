@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datamodel_code_generator._api_types import OperationSelector
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (

@@ -15,10 +15,5 @@ kind application/octet-stream: binary
 kind image/png: binary
 text 616263: "abc"
 text c3a9: "\u00e9"
-text ff: WireValidationError text.encoding
-issue-code: ValueError A wire issue code must be a dotted identifier
-issue-message: ValueError A wire issue message must not exceed 1024 characters
-error-empty: The wire value is invalid
-error-pointer: Wrong type at /a
-error-root: Wrong type at /
+text ff: MediaError Text must be UTF-8
 unset: UNSET False True

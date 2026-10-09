@@ -27,7 +27,6 @@ from datamodel_code_generator._fastapi.plan import (
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
-from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
 from datamodel_code_generator._target_contract import (
     ConstructorType,
     LiteralScalar,
@@ -57,7 +56,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedEnumMember,
         GeneratedTypeContractBatch,
@@ -121,7 +120,6 @@ _INPUT_RUNTIME: Final = (
     "model_codecs/media.py",
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
-    "model_codecs/wire.py",
     "server/errors.py",
     "server/requests.py",
 )
@@ -136,7 +134,7 @@ def _reads_inputs(spec: OperationSpec) -> bool:
 
 def _python(value: object) -> str:
     """Return a Python literal for a finite configuration or schema value."""
-    return repr(thaw_wire(checked_wire(value)))
+    return repr(value)
 
 
 def _unique(base: str, taken: Iterable[str]) -> str:

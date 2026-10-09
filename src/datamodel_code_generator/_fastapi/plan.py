@@ -27,7 +27,6 @@ from datamodel_code_generator._fastapi.routes import (
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
-from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
@@ -52,9 +51,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FrozenLiteral,
@@ -356,7 +354,7 @@ class ServerPlan:
     operations: tuple[OperationSpec, ...]
     groups: tuple[GroupSpec, ...]
     schemes: tuple[SchemeSpec, ...]
-    info: tuple[tuple[str, WireValue], ...]
+    info: tuple[tuple[str, JSONValue], ...]
 
 
 class PlanError(Exception):
@@ -646,18 +644,18 @@ class Planner:  # noqa: PLR0904
         else:
             self.schemes[name] = scheme
 
-    def info(self) -> tuple[tuple[str, WireValue], ...]:
+    def info(self) -> tuple[tuple[str, JSONValue], ...]:
         """Return the FastAPI settings the root document's info, tags, and servers supply, in constructor order."""
         root = {
             key: found for key, value in self.request.batch.document_facts if (found := json_value(value)) is not None
         }
         sources = {"root": root, "info": root.get("info")}
-        found: list[tuple[str, WireValue]] = []
+        found: list[tuple[str, JSONValue]] = []
         for container, key, option, kind in _INFO:
             match kind, _member(sources[container], key):
                 case ("text", str() as value) | ("object", Mapping() as value):
                     found.append((option, value))
-                case "objects", tuple() as value if all(isinstance(item, Mapping) for item in value):
+                case "objects", list() as value if all(isinstance(item, Mapping) for item in value):
                     found.append((option, value))
                 case _:
                     pass
@@ -1125,10 +1123,6 @@ class Planner:  # noqa: PLR0904
         return arguments
 
 
-def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
-    return isinstance(value, Mapping)
-
-
 def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:
     if value is None:
         return ()
@@ -1210,9 +1204,9 @@ def _names(value: LiteralMapping) -> list[str] | None:
     return names if len(names) == len(value.entries) else None
 
 
-def _member(source: object, key: str) -> WireValue | None:
-    """Return a recorded JSON member of an info source as a wire value, or None when it has none."""
-    return checked_wire(source[key]) if _is_mapping(source) and key in source else None
+def _member(source: object, key: str) -> JSONValue | None:
+    """Return a recorded JSON member of an info source, or None when it has none."""
+    return source.get(key) if isinstance(source, dict) else None
 
 
 def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:

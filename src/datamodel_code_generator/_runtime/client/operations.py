@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias, 
 
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.errors import CodecError, CodecResourceLimitError, ParameterEncodingError, WireValidationError
+from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import (
     decode_form,
     encode_form,
@@ -48,7 +48,7 @@ _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
 _MAX_ERROR: Final = 599
 _PAIR: Final = 2
-PARSE_ERRORS: Final = (CodecResourceLimitError, ParameterEncodingError, WireValidationError)
+PARSE_ERRORS: Final = (CodecError,)
 
 
 class OutboundModelCodec(Protocol):

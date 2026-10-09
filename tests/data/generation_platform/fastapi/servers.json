@@ -244,6 +244,13 @@
       },
       {
         "method": "GET",
+        "url": "/search?blob=%7B%22a%22%3A1%2C%22a%22%3A2%7D",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
         "url": "/search?code=A&code=B",
         "headers": {
           "Cookie": "session=abc"

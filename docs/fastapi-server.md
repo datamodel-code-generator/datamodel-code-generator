@@ -408,6 +408,8 @@ spellings than FastAPI does for a parameter it reads itself: integers and number
 `2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
 `--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
 FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A parameter with JSON `content` is parsed by its model's `TypeAdapter.validate_json`, as a JSON body is: an object
+that repeats a member keeps the last value, and text that is not JSON answers `422` with `json_invalid`.
 A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
