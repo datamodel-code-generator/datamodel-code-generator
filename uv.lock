@@ -706,7 +706,7 @@ blacklatest = [
     { name = "black", version = "26.1a1", source = { registry = "https://pypi.org/simple" } },
 ]
 client = [
-    { name = "httpx2", extra = ["http2"] },
+    { name = "httpx2", extra = ["http2", "ws"] },
     { name = "websockets", marker = "python_full_version >= '3.11' or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black23') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort5') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort6') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8')" },
 ]
 coverage = [
@@ -722,7 +722,7 @@ dev = [
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "fastapi" },
-    { name = "httpx2", extra = ["http2"], marker = "(extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black23') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-dev') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-dev') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8')" },
+    { name = "httpx2", extra = ["http2", "ws"], marker = "(extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black23') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-dev') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-dev') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8')" },
     { name = "hypothesis" },
     { name = "hypothesis-jsonschema" },
     { name = "inline-snapshot" },
@@ -807,7 +807,7 @@ type = [
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "fastapi" },
-    { name = "httpx2", extra = ["http2"] },
+    { name = "httpx2", extra = ["http2", "ws"] },
     { name = "hypothesis" },
     { name = "hypothesis-jsonschema" },
     { name = "inline-snapshot" },
@@ -879,7 +879,7 @@ black22 = [{ name = "black", specifier = "==22.1" }]
 black24 = [{ name = "black", specifier = "==24.1" }]
 blacklatest = [{ name = "black" }]
 client = [
-    { name = "httpx2", extras = ["http2"], specifier = ">=2.13,<3" },
+    { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "websockets", marker = "python_full_version >= '3.11'", specifier = ">=17.1" },
 ]
 coverage = [
@@ -896,7 +896,7 @@ dev = [
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
     { name = "httpx2", specifier = ">=2,<3" },
-    { name = "httpx2", extras = ["http2"], specifier = ">=2.13,<3" },
+    { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6" },
     { name = "hypothesis-jsonschema", specifier = ">=0.23.1" },
     { name = "inline-snapshot", specifier = ">=0.34.2" },
@@ -974,7 +974,7 @@ type = [
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
     { name = "httpx2", specifier = ">=2,<3" },
-    { name = "httpx2", extras = ["http2"], specifier = ">=2.13,<3" },
+    { name = "httpx2", extras = ["http2", "ws"], specifier = ">=2.13,<3" },
     { name = "hypothesis", specifier = ">=6.136.6" },
     { name = "hypothesis-jsonschema", specifier = ">=0.23.1" },
     { name = "inline-snapshot", specifier = ">=0.34.2" },
@@ -1343,6 +1343,9 @@ wheels = [
 [package.optional-dependencies]
 http2 = [
     { name = "h2" },
+]
+ws = [
+    { name = "wsproto" },
 ]
 
 [[package]]
@@ -3622,6 +3625,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/38/be/726dab762b770d0417e505c58e26d661aac1ec0c831e483cda4817ca2417/wheel_filename-1.4.2.tar.gz", hash = "sha256:87891c465dcbb40b40394a906f01a93214bdd51aa5d25e3a9a59cae62bc298fd", size = 7911, upload-time = "2024-12-01T13:03:16.012Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b4/0f/6e97a3bc38cdde32e3ec49f8c0903fe3559ec9ec9db181782f0bb4417717/wheel_filename-1.4.2-py3-none-any.whl", hash = "sha256:3fa599046443d4ca830d06e3d180cd0a675d5871af0a68daa5623318bb4d17e3", size = 6195, upload-time = "2024-12-01T13:03:00.536Z" },
+]
+
+[[package]]
+name = "wsproto"
+version = "1.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "h11" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c7/79/12135bdf8b9c9367b8701c2c19a14c913c120b882d50b014ca0d38083c2c/wsproto-1.3.2.tar.gz", hash = "sha256:b86885dcf294e15204919950f666e06ffc6c7c114ca900b060d6e16293528294", size = 50116, upload-time = "2025-11-20T18:18:01.871Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/f5/10b68b7b1544245097b2a1b8238f66f2fc6dcaeb24ba5d917f52bd2eed4f/wsproto-1.3.2-py3-none-any.whl", hash = "sha256:61eea322cdf56e8cc904bd3ad7573359a242ba65688716b0710a5eb12beab584", size = 24405, upload-time = "2025-11-20T18:18:00.454Z" },
 ]
 
 [[package]]
