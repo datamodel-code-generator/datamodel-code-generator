@@ -16,7 +16,6 @@ from ..model_codecs.media import (
     issue,
     json_value,
     percent_decode,
-    plain,
     split_form,
 )
 from ..model_codecs.media import json_bytes as _json_bytes
@@ -100,8 +99,8 @@ class InboundModelCodec(Protocol[T_co]):
         """Return the value of received JSON bytes."""
         ...
 
-    def convert(self, value: object) -> T_co:
-        """Return the value of a parsed JSON value, such as a header's, a form's, or a text part's."""
+    def text(self, value: object) -> T_co:
+        """Return the value of parsed text, such as a header's, a form's, or a text part's."""
         ...
 
     @property
@@ -570,7 +569,7 @@ class _Model(Generic[T_co]):
     def __call__(self, body: bytes, info: ResponseInfo) -> T_co:
         codec = self.codec
         try:
-            return codec.decode(body) if self.kind == "json" else codec.convert(plain(self.read(body, info)))
+            return codec.decode(body) if self.kind == "json" else codec.text(self.read(body, info))
         except codec.errors as error:
             if codec.malformed(error):
                 raise _InvalidBodyError(error) from None
