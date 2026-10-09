@@ -893,7 +893,11 @@ class Call(LogicalCallContext):
         replayable: bool,
     ) -> RetryDelay | None:
         """Apply the ordered pure gates and retain one absolute delay before response disposal."""
-        self.check("send")
+        if error is None:
+            self.check("send")
+        elif (expired := self.expired("send", cause=error.cause)) is not None:
+            expired.phase = error.phase
+            raise expired
         if self.retry_blocked:
             self.stop_reason = "callback_failure"
             return None

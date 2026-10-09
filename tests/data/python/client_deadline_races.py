@@ -35,23 +35,27 @@ def _snapshot(error: BaseException) -> tuple[object, ...]:
     )
 
 
-def _captured(call: Callable[[], object]) -> tuple[object, ...]:
+def _captured(
+    call: Callable[[], object], snapshot: Callable[[BaseException], tuple[object, ...]] = _snapshot
+) -> tuple[object, ...]:
     try:
         call()
     except BaseException as error:
-        return _snapshot(error)
+        return snapshot(error)
     return ("returned",)
 
 
 async def _acaptured(
-    call: Callable[[], Awaitable[object]], errors: list[BaseException] | None = None
+    call: Callable[[], Awaitable[object]],
+    errors: list[BaseException] | None = None,
+    snapshot: Callable[[BaseException], tuple[object, ...]] = _snapshot,
 ) -> tuple[object, ...]:
     try:
         await call()
     except BaseException as error:
         if errors is not None:
             errors.append(error)
-        return _snapshot(error)
+        return snapshot(error)
     return ("returned",)
 
 
@@ -175,14 +179,17 @@ async def _unexpected_send() -> None:
     raise RuntimeError(msg)
 
 
+_NATIVE_TIMEOUTS = (
+    ("connect", httpx2.ConnectTimeout),
+    ("read", httpx2.ReadTimeout),
+    ("write", httpx2.WriteTimeout),
+    ("pool", httpx2.PoolTimeout),
+)
+
+
 def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     clock = options.Clock(monotonic=_Clock())
-    for phase, failure in (
-        ("connect", httpx2.ConnectTimeout),
-        ("read", httpx2.ReadTimeout),
-        ("write", httpx2.WriteTimeout),
-        ("pool", httpx2.PoolTimeout),
-    ):
+    for phase, failure in _NATIVE_TIMEOUTS:
 
         def failed(request: httpx2.Request) -> httpx2.Response:
             raise failure("injected timeout", request=request)
@@ -219,6 +226,56 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
                 lines,
                 "native timeout unknown phase",
                 lambda: _captured(lambda: api.request_raw("GET", "https://race.example/timeout")),
+            )
+
+
+def _expired_snapshot(error: BaseException) -> tuple[object, ...]:
+    return (*_snapshot(error)[:4], getattr(error, "reason", None))
+
+
+def _expiring(options: ModuleType, failure: type[httpx2.TimeoutException]) -> tuple[httpx2.MockTransport, object]:
+    clock = _Clock()
+
+    def capped(request: httpx2.Request) -> httpx2.Response:
+        clock.value += 1.0
+        msg = "capped timeout"
+        raise failure(msg, request=request)
+
+    settings = options.ClientOptions(
+        retry=options.RetryOptions(max_retries=2, initial_delay=0),
+        total_timeout=1.0,
+        clock=options.Clock(monotonic=clock),
+    )
+    return httpx2.MockTransport(capped), settings
+
+
+def _expired_sources(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    for phase, failure in _NATIVE_TIMEOUTS:
+        transport, settings = _expiring(options, failure)
+        with (
+            httpx2.Client(transport=transport) as native,
+            package.Client(http_client=native, options=settings) as api,
+        ):
+            record(
+                lines,
+                f"capped native timeout {phase}",
+                lambda: _captured(lambda: api.request_raw("GET", "https://race.example/capped"), _expired_snapshot),
+            )
+
+
+async def _aexpired_sources(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    for phase, failure in _NATIVE_TIMEOUTS:
+        transport, settings = _expiring(options, failure)
+        async with (
+            httpx2.AsyncClient(transport=transport) as native,
+            package.AsyncClient(http_client=native, options=settings) as api,
+        ):
+            await arecord(
+                lines,
+                f"async capped native timeout {phase}",
+                lambda: _acaptured(
+                    lambda: api.request_raw("GET", "https://race.example/capped"), snapshot=_expired_snapshot
+                ),
             )
 
 
@@ -653,6 +710,7 @@ async def _cancelled_binding(package: ModuleType, options: ModuleType, lines: li
 
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    await _aexpired_sources(package, options, lines)
     await _acompleted_response(package, options, lines)
     await _async_races(package, options, lines)
     await _expired_read(package, options, lines)
@@ -668,6 +726,7 @@ def deadline_races(package: ModuleType, lines: list[str]) -> None:
     """Inject only failures and deterministic races, exercising public generated client calls throughout."""
     options = importlib.import_module(f"{package.__name__}.options")
     _phase_sources(package, options, lines)
+    _expired_sources(package, options, lines)
     _admission_race(package, options, lines)
     _sync_races(package, options, lines)
     _completed_response(package, options, lines)
@@ -693,9 +752,12 @@ def _completed_response(package: ModuleType, options: ModuleType, lines: list[st
             record(
                 lines,
                 "completed typed response after expiry",
-                lambda: api.pets.with_response.list_pets(
-                    x_trace=argument(package, "listPets", "header", "X-Trace", "t")
-                ).data.root[0].name,
+                lambda: (
+                    api.pets.with_response
+                    .list_pets(x_trace=argument(package, "listPets", "header", "X-Trace", "t"))
+                    .data.root[0]
+                    .name
+                ),
             )
         record(lines, "completed response resources", lambda: (transport.sent, body.closed, native.is_closed))
 
@@ -712,6 +774,7 @@ async def _acompleted_response(package: ModuleType, options: ModuleType, lines: 
             http_client=native,
             options=settings,
         ) as api:
+
             async def completed() -> object:
                 response = await api.pets.with_response.list_pets(
                     x_trace=argument(package, "listPets", "header", "X-Trace", "t")

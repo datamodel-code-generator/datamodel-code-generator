@@ -18,10 +18,10 @@
   stream read APITimeoutError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 200 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
+  buffered acquisition 200 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 503 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
+  buffered acquisition 503 ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] deadline_exceeded
   > GET https://example.com/saved
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/release
@@ -70,7 +70,7 @@
   async stream read APITimeoutError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async buffered acquisition ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='unknown') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown'] deadline_exceeded
+  async buffered acquisition ! APITimeoutError: APITimeoutError(call_id='<call>', reason='deadline_exceeded', delivery_state='RESPONSE_STARTED', phase='read') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('')] deadline_exceeded
   > GET https://example.com/native-cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream native cancellation propagated

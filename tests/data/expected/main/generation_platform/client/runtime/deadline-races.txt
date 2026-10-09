@@ -16,6 +16,10 @@
   phase source pool none = ('APITimeoutError', 1, 'pool', 'PoolTimeout', ())
   phase source pool unlimited = ('APITimeoutError', 1, 'pool', 'PoolTimeout', ())
   native timeout unknown phase = ('APITimeoutError', 1, 'unknown', 'TimeoutException', ())
+  capped native timeout connect = ('APITimeoutError', 1, 'connect', 'ConnectTimeout', 'deadline_exceeded')
+  capped native timeout read = ('APITimeoutError', 1, 'read', 'ReadTimeout', 'deadline_exceeded')
+  capped native timeout write = ('APITimeoutError', 1, 'write', 'WriteTimeout', 'deadline_exceeded')
+  capped native timeout pool = ('APITimeoutError', 1, 'pool', 'PoolTimeout', 'deadline_exceeded')
   closing during admission = ('returned',)
   closing during admission sends = 1
   sync deadline = ('returned',)
@@ -28,6 +32,10 @@
   sync deadline close failure resources = (1, 1)
   completed typed response after expiry = 'cat'
   completed response resources = (1, 1, False)
+  async capped native timeout connect = ('APITimeoutError', 1, 'connect', 'ConnectTimeout', 'deadline_exceeded')
+  async capped native timeout read = ('APITimeoutError', 1, 'read', 'ReadTimeout', 'deadline_exceeded')
+  async capped native timeout write = ('APITimeoutError', 1, 'write', 'WriteTimeout', 'deadline_exceeded')
+  async capped native timeout pool = ('APITimeoutError', 1, 'pool', 'PoolTimeout', 'deadline_exceeded')
   async completed typed response after expiry = 'cat'
   async completed response resources = (1, 1, False)
   async closing/result = ('returned',)
