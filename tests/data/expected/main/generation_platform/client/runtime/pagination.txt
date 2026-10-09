@@ -132,12 +132,6 @@ data.0.id
   nested items ['1', '2']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  response limit smaller [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='response_too_large') [operation_id='listUsers', body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  response limit removed ['1']
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   broken coding [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='malformed_coding') [operation_id='listUsers', body_bytes=b'', truncated=False, cause=DecodingError('Error -3 while decompressing data: unknown compression method')] malformed_coding
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -281,7 +275,4 @@ data.0.id
   async after the last page = None
   async page of another helper ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='page') [field_path=('page',)] binding_mismatch
   async zero items page ! SessionLimitError: SessionLimitError(reason='items', limit=0) [limit=0] items
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async response limit smaller [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='response_too_large') [operation_id='listUsers', body_bytes=b'', truncated=False, limit=10, observed=21] response_too_large
   async after close [] ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='aiter.closed') [field_path=('aiter', 'closed')] invalid_state

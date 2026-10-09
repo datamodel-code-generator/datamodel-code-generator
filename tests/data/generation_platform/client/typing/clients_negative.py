@@ -15,15 +15,15 @@ from pets.errors import (
     SDKError,
 )
 from pets.options import (
-    ClientOptions,
     Clock,
-    IdempotencyKey,
     RequestOptions,
     RetryOptions,
-    TimeoutOptions,
-    TransportOptions,
+    ServerSelection,
 )
-from pets.responses import RawResponse, ResponseInfo
+from pets.responses import (
+    RawResponse,
+    ResponseInfo,
+)
 from pets.types.pets import decode_list_pets_header
 from pets_models import (
     FieldPetsGetHeaderXTraceParameter,
@@ -117,17 +117,17 @@ def misuse_multipart_data(data: object) -> None:
     del narrowed, data
 
 
-def misuse_timing(phase: TimeoutOptions) -> None:
-    TimeoutOptions(connect="slow")  # error
-    ClientOptions(timeout=30)  # error
+def misuse_timing(client: Client, options: RequestOptions) -> None:
+    RequestOptions(timeout="slow")  # error
+    ServerSelection(index="first")  # error
     RequestOptions(total_timeout="soon")  # error
     RequestOptions(deadline=60)  # error
     RequestOptions(stream_idle_timeout="forever")  # error
-    RequestOptions(stream_total_timeout="forever")  # error
+    Client(timeout="slow")  # error
     Clock(monotonic=0.0)  # error
     RequestOptions(clock=Clock())  # error
-    ClientOptions(clock=None)  # error
-    phase.read = 1  # error
+    client.with_options(clock=Clock())  # error
+    options.timeout = 1  # error
 
 
 def misuse_deadline_errors(error: SDKError) -> None:
@@ -139,22 +139,22 @@ def misuse_deadline_errors(error: SDKError) -> None:
     error.attempt_count = "zero"  # error
 
 
-def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: ConfigurationError) -> None:
-    RetryOptions(max_retries=None)  # error
+def misuse_retry_options(client: Client, info: ResponseInfo, error: ConfigurationError) -> None:
+    RetryOptions(max_retries=1)  # error
     RetryOptions(jitter="equal")  # error
     RetryOptions(statuses=[429, 503])  # error
     RetryOptions(respect_retry_after=None)  # error
     RetryOptions(retry_after_ms_header=42)  # error
-    ClientOptions(follow_redirects="yes")  # error
-    RequestOptions(retry=None)  # error
-    RequestOptions(follow_redirects=None)  # error
-    RequestOptions(idempotency_key="opaque")  # error
-    RequestOptions(transport=TransportOptions())  # error
-    ClientOptions(transport=None)  # error
-    TransportOptions(verify="strict")  # error
-    IdempotencyKey()  # error
-    IdempotencyKey("opaque", None)  # error
-    key.value = "changed"  # error
+    Client(follow_redirects="yes")  # error
+    Client(max_retries=None)  # error
+    RequestOptions(idempotency_key=5)  # error
+    Client(default_headers={"a": 1})  # error
+    Client(options=RequestOptions())  # error
+    Client(compression="gzip")  # error
+    RetryOptions(retry_on_pool_timeout="yes")  # error
+    RetryOptions(initial_delay="soon")  # error
+    client.with_options(options=RequestOptions())  # error
+    RequestOptions(default_headers={"X-Trace": "t"})  # error
     ResponseInfo(
         status_code=200,
         headers=info.headers,

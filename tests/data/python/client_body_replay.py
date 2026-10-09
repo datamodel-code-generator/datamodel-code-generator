@@ -112,13 +112,10 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
     data = json.loads(_DATA.read_text())
     exchange = Exchange([])
     replies = _Replies(exchange)
-    config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0),
-        follow_redirects=True,
-    )
+    config = {"retry": options.RetryOptions(initial_delay=0), "follow_redirects": True}
     with (
         exchange.client() as native,
-        package.Client(http_client=native, options=config) as api,
+        package.Client(http_client=native, **config) as api,
         tempfile.TemporaryDirectory() as directory,
     ):
         replies.reset(*data["retry"])
@@ -129,7 +126,7 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
         replies.reset(*data["hops"])
         with (
             exchange.client(event_hooks={"request": [lambda _: file.seek(0)]}) as moving,
-            package.Client(http_client=moving, options=config) as moved,
+            package.Client(http_client=moving, **config) as moved,
         ):
             record(lines, "borrowed entry offset", lambda: moved.retry.post_idempotent(body=file))
         replies.report(lines)
@@ -173,9 +170,9 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
 async def _async_replay(package: ModuleType, options: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
     exchange = Exchange([])
     replies = _Replies(exchange)
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0), follow_redirects=True)
+    config = {"retry": options.RetryOptions(initial_delay=0), "follow_redirects": True}
     with tempfile.TemporaryDirectory() as directory:
-        async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+        async with exchange.async_client() as native, package.AsyncClient(http_client=native, **config) as api:
             file = _File(data["file"].encode())
             file.seek(data["offset"])
             path = Path(directory) / "async.bin"
@@ -200,7 +197,7 @@ def multipart_replay(package: ModuleType, lines: list[str]) -> None:
     bodies, options = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "options"))
     data = json.loads(_DATA.read_text())
     exchange = Exchange([])
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    config = {"retry": options.RetryOptions(initial_delay=0)}
     file = _File(data["file"].encode())
     file.seek(data["offset"])
     parts = (bodies.FilePart("first", file), bodies.FilePart("second", file))
@@ -209,7 +206,7 @@ def multipart_replay(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"    multipart payload count={request.content.count(data['file'][data['offset'] :].encode())}")
         return httpx2.Response(200, headers={"content-type": "text/plain"}, stream=httpx2.ByteStream(b"ok"))
 
-    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+    with exchange.client() as native, package.Client(http_client=native, **config) as api:
         exchange.respond(received, received)
         record(
             lines,
@@ -228,7 +225,7 @@ def multipart_replay(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _async_multipart(
-    package: ModuleType, bodies: ModuleType, config: Any, data: dict[str, Any], lines: list[str]
+    package: ModuleType, bodies: ModuleType, config: dict[str, Any], data: dict[str, Any], lines: list[str]
 ) -> None:
     exchange = Exchange([])
     file = _File(data["file"].encode())
@@ -240,7 +237,7 @@ async def _async_multipart(
         )
         return httpx2.Response(200, headers={"content-type": "text/plain"}, stream=httpx2.ByteStream(b"ok"))
 
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, **config) as api:
         exchange.respond(received)
         body = bodies.AsyncMultipartBody((bodies.FilePart("first", file), bodies.FilePart("second", file)))
 

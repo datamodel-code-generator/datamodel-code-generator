@@ -101,11 +101,7 @@ def _credentials(package: ModuleType, exchange: Exchange, lines: list[str]) -> N
         lines.append(f"  callable calls={rotating.calls}")
         exchange.respond(_OK, _OK)
         record(lines, "raw request", lambda: api.request_raw("GET", "https://api.example.com/bearer").info.status_code)
-        patched = api.with_options(
-            importlib.import_module(f"{package.__name__}.options").RequestOptions(
-                headers=(("X-API-Key", "patched"), ("Authorization", "Bearer patched"))
-            )
-        )
+        patched = api.with_options(default_headers={"X-API-Key": "patched", "Authorization": "Bearer patched"})
         record(lines, "credentials replace patches", patched.auth.and_auth)
 
 
@@ -126,9 +122,15 @@ def _selection(package: ModuleType, exchange: Exchange, lines: list[str]) -> Non
 def _native(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
     with exchange.client() as http, package.Client(http_client=http, bearer="token-secret") as api:
-        exchange.respond(_OK, _OK, _OK)
-        native = api.with_options(options.RequestOptions(auth=_Marked("view")))
+        exchange.respond(_OK, _OK, _OK, _OK, _OK)
+        native = api.with_options(auth=_Marked("view"))
         record(lines, "view auth replaces credentials", native.auth.bearer)
+        record(lines, "view auth none", api.with_options(auth=None).auth.optional_auth)
+        record(
+            lines,
+            "call auth over view auth",
+            lambda: native.auth.bearer(options=options.RequestOptions(auth=_Marked("call over view"))),
+        )
         record(lines, "call auth", lambda: api.auth.and_auth(options=options.RequestOptions(auth=_Marked("call"))))
         record(
             lines, "auth none on anonymous", lambda: api.auth.optional_auth(options=options.RequestOptions(auth=None))
@@ -138,27 +140,25 @@ def _native(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
         exchange.respond(_OK, _OK)
         record(lines, "client auth on required", api.auth.bearer)
         record(lines, "client auth on anonymous", api.auth.anonymous)
-    with (
-        exchange.client() as http,
-        package.Client(http_client=http, options=options.ClientOptions(auth=_Marked("root"))) as api,
-    ):
+    with exchange.client(auth=_Marked("client")) as http, package.Client(http_client=http, auth=None) as api:
         exchange.respond(_OK)
-        record(lines, "root option auth", api.auth.bearer)
+        record(lines, "root auth none over client auth", api.auth.optional_auth)
+    with exchange.client() as http, package.Client(http_client=http, auth=_Marked("root")) as api:
+        exchange.respond(_OK, _OK)
+        record(lines, "root auth", api.auth.bearer)
+        record(lines, "view inherits root auth", api.with_options(max_retries=0).auth.bearer)
 
 
 def _refusals(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
-    options = importlib.import_module(f"{package.__name__}.options")
     with exchange.client(auth=_Marked("client")) as http:
         _failure(
             lines, "credentials beside client auth", lambda: package.Client(http_client=http, bearer="token-secret")
         )
-        _failure(
-            lines,
-            "credentials beside option auth",
-            lambda: package.Client(options=options.ClientOptions(auth=None), bearer="token-secret"),
-        )
+    _failure(lines, "credentials beside auth none", lambda: package.Client(auth=None, bearer="token-secret"))
+    _failure(
+        lines, "credentials beside native auth", lambda: package.Client(auth=_Marked("root"), bearer="token-secret")
+    )
     _failure(lines, "credential of no credential type", lambda: package.Client(bearer=b"token-secret"))
-    record(lines, "option auth of another type", lambda: options.RequestOptions(auth="token-secret"))
     with exchange.client() as http:
         for label, credentials, call in (
             ("callable failure", {"bearer": _failing}, "bearer"),

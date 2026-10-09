@@ -1,16 +1,19 @@
 mypy pets and compression.py: clean
 pyright pets and compression.py: clean
 ty pets and compression.py: clean
-compression_negative.py 3 marked lines
-mypy compression_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
-  10 arg-type
+compression_negative.py 4 marked lines
+mypy compression_negative.py: 4/4 marked lines with one error, 0 elsewhere, 0 in other files
   11 arg-type
-  12 call-arg
-pyright compression_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
-  10 reportArgumentType
+  12 arg-type
+  13 call-arg
+  14 call-arg
+pyright compression_negative.py: 4/4 marked lines with one error, 0 elsewhere, 0 in other files
   11 reportArgumentType
-  12 reportCallIssue
-ty compression_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
-  10 invalid-argument-type
+  12 reportArgumentType
+  13 reportCallIssue
+  14 reportCallIssue
+ty compression_negative.py: 4/4 marked lines with one error, 0 elsewhere, 0 in other files
   11 invalid-argument-type
-  12 unknown-argument
+  12 invalid-argument-type
+  13 unknown-argument
+  14 unknown-argument

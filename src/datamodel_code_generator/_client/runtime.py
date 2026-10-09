@@ -48,9 +48,7 @@ _CORE: Final = (
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",
-    "protocols/client_options.py",
     "protocols/caches.py",
-    "protocols/names.py",
     "protocols/options.py",
     "protocols/origins.py",
 )

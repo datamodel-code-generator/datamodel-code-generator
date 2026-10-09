@@ -16,7 +16,7 @@ from tests.data.python.client_runtime import arecord, argument, describe, record
 from tests.data.python.client_streams import _event, _Feed, _Harness
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterable, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
     from types import ModuleType
 
 _NDJSON: Final = "application/x-ndjson"
@@ -98,18 +98,18 @@ class _Resumes:
         self.feed.replies.append(self.harness.reply(chunks, **settings))
 
     @contextmanager
-    def client(self, options: Any = None, **credentials: str) -> Iterator[Any]:
-        """Yield a client of the package sending through the reporting transport."""
+    def client(self, settings: Mapping[str, Any] | None = None, **credentials: str) -> Iterator[Any]:
+        """Yield a client of the package, configured by the keywords given, sending through the reporting transport."""
         package = self.harness.package
-        with self.feed.client() as http, package.Client(http_client=http, options=options, **credentials) as api:
+        with self.feed.client() as http, package.Client(http_client=http, **settings or {}, **credentials) as api:
             yield api
 
     @asynccontextmanager
-    async def async_client(self, options: Any = None, **credentials: str) -> AsyncIterator[Any]:
-        """Yield an asyncio client of the package sending through the reporting transport."""
+    async def async_client(self, settings: Mapping[str, Any] | None = None, **credentials: str) -> AsyncIterator[Any]:
+        """Yield an asyncio client of the package, configured by the keywords given, sending through the transport."""
         async with (
             self.feed.async_client() as http,
-            self.harness.package.AsyncClient(http_client=http, options=options, **credentials) as api,
+            self.harness.package.AsyncClient(http_client=http, **settings or {}, **credentials) as api,
         ):
             yield api
 
@@ -126,10 +126,9 @@ class _Resumes:
         """Return an argument of an operation, the events one unless told otherwise, for a wire value."""
         return argument(self.harness.package, operation_id, location, name, wire)
 
-    def client_options(self) -> Any:
-        """Return client options whose reconnection backoff waits for nothing."""
-        options = self.harness.options
-        return options.ClientOptions(retry=options.RetryOptions(initial_delay=0.0, max_delay=0.0))
+    def client_options(self) -> dict[str, Any]:
+        """Return client keywords whose reconnection backoff waits for nothing."""
+        return {"retry": self.harness.options.RetryOptions(initial_delay=0.0, max_delay=0.0)}
 
 
 def stream_resume(package: ModuleType, lines: list[str]) -> None:
@@ -152,20 +151,21 @@ def stream_resume(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_resume(package, lines))
     _clocked(package, lines)
     run(lambda: _aclocked(package, lines))
+    _slept(package, lines)
     _write_guards(package, lines)
     run(lambda: _awrite_guards(package, lines))
 
 
-def _clock_options(resumes: _Resumes) -> Any:
+def _clock_options(resumes: _Resumes) -> dict[str, Any]:
     """Advance past backoff and SSE retry waits on every clock read, with a wall clock before the server expiry."""
     options = resumes.harness.options
     ticks = itertools.count(100.0, 10.0)
-    return options.ClientOptions(
-        clock=options.Clock(monotonic=lambda: next(ticks), time=lambda: 0.0, random=lambda: 0.5),
-        total_timeout=None,
-        timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
-        retry=options.RetryOptions(initial_delay=8.0, max_delay=16.0),
-    )
+    return {
+        "clock": options.Clock(monotonic=lambda: next(ticks), time=lambda: 0.0, random=lambda: 0.5),
+        "total_timeout": None,
+        "timeout": None,
+        "retry": options.RetryOptions(initial_delay=8.0, max_delay=16.0),
+    }
 
 
 def _clock_replies(resumes: _Resumes) -> Any:
@@ -218,6 +218,44 @@ async def _aclocked(package: ModuleType, lines: list[str]) -> None:
         await _adrained(lines, "resumed and reconnected", resumed)
         _saved(lines, "clock checkpoint", resumed.checkpoint())
         lines.append(f"  clock progress {dict(resumed.progress)}")
+
+
+def _slept(package: ModuleType, lines: list[str]) -> None:
+    """Wait out each reconnection through the client clock's sleep, which moves the clock as far as the wait."""
+    resumes = _Resumes(package, lines)
+    options, now, waits = resumes.harness.options, [100.0], []
+
+    def sleep(duration: float) -> None:
+        waits.append(duration)
+        now[0] += duration
+
+    async def asleep(duration: float) -> None:
+        sleep(duration)
+
+    clock = options.Clock(monotonic=lambda: now[0], random=lambda: 0.5, sleep=sleep, asleep=asleep)
+    settings = {"clock": clock, "retry": options.RetryOptions(initial_delay=1.0, max_delay=4.0)}
+    cut = resumes.harness.interrupted()
+
+    def replies() -> None:
+        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
+        resumes.reply(b'retry: 2500\nid: 2\ndata: {"text": "b"}\n\n', cut)
+        resumes.reply(*_events('id: 3\ndata: {"text": "c"}\n\n'))
+
+    lines.append("reconnection waits through the client clock's sleep")
+    replies()
+    with resumes.client(settings) as api:
+        _drained(lines, "reconnected twice", api.protocols.events.live.open(stream_options=resumes.reconnect))
+    lines.append(f"  waits {waits}")
+    waits.clear()
+
+    async def awaited() -> None:
+        replies()
+        async with resumes.async_client(settings) as api:
+            stream = await api.protocols.events.live.open(stream_options=resumes.reconnect)
+            await _adrained(lines, "async reconnected twice", stream)
+
+    run(awaited)
+    lines.append(f"  async waits {waits}")
 
 
 def _cursors(resumes: _Resumes, api: Any) -> None:
@@ -288,18 +326,25 @@ def _checkpoints(resumes: _Resumes, api: Any) -> None:
         next(plain)
         record(lines, "checkpoint without resume metadata", plain.checkpoint)
         lines.append(f"  progress without resume metadata {dict(plain.progress)}")
-    headers = harness.options.RequestOptions(headers=(("last-event-id", "7"),))
+    headers = harness.options.RequestOptions(extra_headers={"last-event-id": "7"})
     record(lines, "open patching the cursor header", lambda: helper.open(options=headers))
-    query = harness.options.RequestOptions(query=(("after", "7"),))
+    query = harness.options.RequestOptions(extra_query={"after": "7"})
     record(lines, "open patching the cursor query", lambda: api.protocols.records.all.open(options=query))
     record(
-        lines, "open through a view patching the cursor header", api.with_options(headers).protocols.events.live.open
+        lines,
+        "open through a view patching the cursor query",
+        api.with_options(default_query={"after": "7"}).protocols.records.all.open,
     )
-    with resumes.client(harness.options.ClientOptions(headers=(("Last-Event-ID", "7"),))) as patched:
+    record(
+        lines,
+        "open through a view patching the cursor header",
+        api.with_options(default_headers={"last-event-id": "7"}).protocols.events.live.open,
+    )
+    with resumes.client({"default_headers": {"Last-Event-ID": "7"}}) as patched:
         record(lines, "open on a client patching the cursor header", patched.protocols.events.live.open)
-    fixed = harness.options.RequestOptions(idempotency_key=harness.options.IdempotencyKey.new())
+    fixed = harness.options.RequestOptions(idempotency_key="fixed-key")
     record(lines, "open fixing an idempotency key", lambda: helper.open(options=fixed))
-    ok = harness.options.RequestOptions(headers=(("x-trace", "1"),), query=(("trace", "1"),))
+    ok = harness.options.RequestOptions(extra_headers={"x-trace": "1"}, extra_query={"trace": "1"})
     resumes.reply(*_events('id: 1\ndata: {"text": "a"}\n\n'))
     _drained(lines, "open patching other parameters", helper.open(options=ok))
 
@@ -332,7 +377,7 @@ def _reconnects(resumes: _Resumes, api: Any) -> None:
     resumes.reply(b'retry: 1\nid: 1\ndata: {"text": "a"}\n\n', cut)
     resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
     _drained(lines, "reopened after the reconnection time", helper.open(stream_options=resumes.reconnect))
-    read = harness.options.RequestOptions(timeout=harness.options.TimeoutOptions(read=5.0))
+    read = harness.options.RequestOptions(timeout=httpx2.Timeout(None, read=5.0))
     resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', harness.idle())
     resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
     stream = helper.open(options=read, stream_options=resumes.reconnect)
@@ -348,7 +393,7 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
     _drained(lines, "undecodable event", helper.open(stream_options=resumes.reconnect))
     resumes.reply(first, harness.idle())
     _drained(lines, "idle read", helper.open(stream_options=resumes.reconnect))
-    level = harness.options.RequestOptions(timeout=harness.options.TimeoutOptions(read=60.0))
+    level = harness.options.RequestOptions(timeout=httpx2.Timeout(None, read=60.0))
     resumes.reply(first, harness.idle())
     _drained(
         lines, "read timeout tied with the idle limit", helper.open(options=level, stream_options=resumes.reconnect)
@@ -745,9 +790,8 @@ async def _aguarded(lines: list[str], label: str, action: Callable[[], Any]) -> 
     lines.append(f"  new sends={sum(line.startswith('  >') for line in lines) - sends}")
 
 
-def _query_patches(resumes: _Resumes) -> Iterable[tuple[str, str, str, Any]]:
+def _query_patches() -> Iterable[tuple[str, str, str, dict[str, str]]]:
     """Give collisions at each options origin and both known and dynamic expanded property names."""
-    options = resumes.harness.options
     for helper, names in (
         ("scoped", ("scope", "after", "page", "tag")),
         ("named", ("after",)),
@@ -755,14 +799,12 @@ def _query_patches(resumes: _Resumes) -> Iterable[tuple[str, str, str, Any]]:
     ):
         for name in names:
             for origin in ("client", "view", "call"):
-                kind = options.ClientOptions if origin == "client" else options.RequestOptions
-                yield helper, name, origin, kind(query=((name, "STALE"), ("tag", "kept")))
+                yield helper, name, origin, {name: "STALE", "tag": "kept"}
 
 
-def _guard_auth(resumes: _Resumes) -> Any:
-    """Return client options whose reconnection waits for nothing; an authenticated client also takes its key."""
-    options = resumes.harness.options
-    return options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_delay=0))
+def _guard_auth(resumes: _Resumes) -> dict[str, Any]:
+    """Return client keywords whose reconnection waits for nothing; an authenticated client also takes its key."""
+    return {"retry": resumes.harness.options.RetryOptions(initial_delay=0, max_delay=0)}
 
 
 def _guard_key(*, authenticated: bool) -> dict[str, str]:
@@ -792,16 +834,13 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
                     lines.append(f"  delivered sequence={next(stream).sequence}")
                 scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "streamMarks")
                 _guarded(lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope))
-    for name, field, origin, patch in _query_patches(resumes):
-        settings = patch if origin == "client" else resumes.client_options()
+    for name, field, origin, query in _query_patches():
+        settings = {"default_query": query} if origin == "client" else resumes.client_options()
         with resumes.client(settings) as api:
-            owner = api.with_options(patch) if origin == "view" else api
+            owner = api.with_options(default_query=query) if origin == "view" else api
             helper = getattr(owner.protocols.marks, name)
-            _guarded(
-                lines,
-                f"query patch {name} {field} {origin}",
-                partial(helper.open, options=patch if origin == "call" else None),
-            )
+            call = options.RequestOptions(extra_query=query) if origin == "call" else None
+            _guarded(lines, f"query patch {name} {field} {origin}", partial(helper.open, options=call))
     with resumes.client(resumes.client_options()) as api:
         _cleared_guards(resumes, api)
         query = resumes.harness.models.FeedQuery(topic="t")
@@ -814,15 +853,15 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
         _guarded(lines, "credential resume into a querystring", partial(keyed.resume, state, body=query))
         resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
         with api.protocols.feed.ticks.open(
-            body=query, options=options.RequestOptions(query=(("tag", "kept"),))
+            body=query, options=options.RequestOptions(extra_query={"tag": "kept"})
         ) as stream:
             next(stream)
             state = stream.checkpoint()
         resumes.reply(b"data: [DONE]\n\n")
         api.protocols.feed.ticks.resume(
-            state, body=query, options=options.RequestOptions(query=(("tag", "kept"),))
+            state, body=query, options=options.RequestOptions(extra_query={"tag": "kept"})
         ).close()
-        patch = options.RequestOptions(query=(("tag", "kept"),))
+        patch = options.RequestOptions(extra_query={"tag": "kept"})
         resumes.reply(b'{"id": "r1", "text": "a"}\n', media=_NDJSON)
         with api.protocols.records.all.open(options=patch) as stream:
             next(stream)
@@ -835,7 +874,7 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
     """Clear known and dynamic cursor fields on explicit and automatic reopens while keeping another parameter."""
     lines, options = resumes.lines, resumes.harness.options
     for name in ("scoped", "named", "deep"):
-        owner = api if name == "scoped" else api.with_options(options.RequestOptions(query=(("tag", "kept"),)))
+        owner = api if name == "scoped" else api.with_options(default_query={"tag": "kept"})
         helper = getattr(owner.protocols.marks, name)
         cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
         resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
@@ -858,11 +897,11 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
             _guarded(
                 lines,
                 f"cleared resume patch {name} {field}",
-                partial(helper.resume, cleared, **given, options=options.RequestOptions(query=((field, "STALE"),))),
+                partial(helper.resume, cleared, **given, options=options.RequestOptions(extra_query={field: "STALE"})),
             )
     for name, field in (("named", "page"), ("named", "scope"), ("deep", "scope")):
         helper = getattr(api.protocols.marks, name)
-        patch = options.RequestOptions(query=((field, "unrelated"),))
+        patch = options.RequestOptions(extra_query={field: "unrelated"})
         resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
         stream = helper.open(options=patch)
         next(stream)
@@ -873,7 +912,7 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
     helper = api.protocols.marks.deep
     for field in ("scope[after", "other"):
         resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
-        stream = helper.open(options=options.RequestOptions(query=((field, "unrelated"),)))
+        stream = helper.open(options=options.RequestOptions(extra_query={field: "unrelated"}))
         next(stream)
         stream.checkpoint()
         stream.close()
@@ -906,19 +945,16 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
                 await _aguarded(
                     lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope)
                 )
-    for name, field, origin, patch in _query_patches(resumes):
-        settings = patch if origin == "client" else resumes.client_options()
+    for name, field, origin, query in _query_patches():
+        settings = {"default_query": query} if origin == "client" else resumes.client_options()
         async with resumes.async_client(settings) as api:
-            owner = api.with_options(patch) if origin == "view" else api
+            owner = api.with_options(default_query=query) if origin == "view" else api
             helper = getattr(owner.protocols.marks, name)
-            await _aguarded(
-                lines,
-                f"query patch {name} {field} {origin}",
-                partial(helper.open, options=patch if origin == "call" else None),
-            )
+            call = options.RequestOptions(extra_query=query) if origin == "call" else None
+            await _aguarded(lines, f"query patch {name} {field} {origin}", partial(helper.open, options=call))
     async with resumes.async_client(resumes.client_options()) as api:
         for name in ("scoped", "named", "deep"):
-            owner = api if name == "scoped" else api.with_options(options.RequestOptions(query=(("tag", "kept"),)))
+            owner = api if name == "scoped" else api.with_options(default_query={"tag": "kept"})
             helper = getattr(owner.protocols.marks, name)
             cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
             resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
@@ -941,11 +977,13 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
                 await _aguarded(
                     lines,
                     f"cleared resume patch {name} {field}",
-                    partial(helper.resume, cleared, **given, options=options.RequestOptions(query=((field, "STALE"),))),
+                    partial(
+                        helper.resume, cleared, **given, options=options.RequestOptions(extra_query={field: "STALE"})
+                    ),
                 )
         for name, field in (("named", "page"), ("named", "scope"), ("deep", "scope")):
             helper = getattr(api.protocols.marks, name)
-            patch = options.RequestOptions(query=((field, "unrelated"),))
+            patch = options.RequestOptions(extra_query={field: "unrelated"})
             resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
             stream = await helper.open(options=patch)
             await anext(stream)
@@ -953,7 +991,7 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
             await stream.aclose()
             resumes.reply()
             await (await helper.resume(state, options=patch)).aclose()
-        patch = options.RequestOptions(query=(("tag", "kept"),))
+        patch = options.RequestOptions(extra_query={"tag": "kept"})
         resumes.reply(b'{"id": "r1", "text": "a"}\n', media=_NDJSON)
         async with await api.protocols.records.all.open(options=patch) as stream:
             await anext(stream)

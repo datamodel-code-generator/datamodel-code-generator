@@ -1,12 +1,4 @@
 # compression pydantic_v2.BaseModel
-# values
-  client gzip = 'gzip'
-  client upper = 'gzip'
-  client none = None
-  client brotli ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='compression') [field_path=('compression',)] invalid_value
-  client identity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='compression') [field_path=('compression',)] invalid_value
-  client not a token ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='compression') [field_path=('compression',)] invalid_value
-  client type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='compression') [field_path=('compression',)] invalid_type
 # inherited
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"compressed"}'
@@ -63,6 +55,12 @@
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 8] b'disabled'
   client disabled = None
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 13] b'view disabled'
+  view of a disabled client = None
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 13] b'call disabled'
+  call of a disabled view = None
 # signed
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>, x-signed: yes] gzip b'signed'

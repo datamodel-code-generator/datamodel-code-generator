@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions
+from pets.options import ProtocolClientOptions, RequestOptions
 from pets.protocols import (
     AsyncCacheStore,
     AsyncMemoryCacheStore,
@@ -26,7 +26,7 @@ from typing_extensions import Literal, assert_type
 def cached_client() -> Client:
     """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
     store = MemoryCacheStore(max_entries=1000)
-    return Client(options=ClientOptions(protocols=ProtocolClientOptions(cache_stores={"users.profile": store})))
+    return Client(protocols=ProtocolClientOptions(cache_stores={"users.profile": store}))
 
 
 def stores() -> tuple[CacheStore, AsyncCacheStore]:

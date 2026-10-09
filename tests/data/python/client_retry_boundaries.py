@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
-import sys
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import httpx2
 
@@ -76,20 +74,21 @@ def retry_boundaries(package: ModuleType, lines: list[str]) -> None:
 
 
 def _configuration(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    with package.Client() as api:
+    """Send a caller header of the declared key name as the call's key, retained through a retry."""
+    exchange = Exchange(lines)
+    exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"accepted", "text/plain"))
+    with (
+        exchange.client() as native,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
+    ):
         record(
             lines,
-            "declared key header stays managed",
+            "declared key header becomes the key",
             lambda: api.retry.post_keyed(
-                body=b"payload", options=options.RequestOptions(headers=(("Idempotency-Key", "manual"),))
+                body=b"payload", options=options.RequestOptions(extra_headers={"Idempotency-Key": "manual"})
             ),
         )
-    with patch.dict(sys.modules, {"h2": None}):
-        record(
-            lines,
-            "missing optional HTTP2 dependency",
-            lambda: package.Client(options=options.ClientOptions(transport=options.TransportOptions(http2=True))),
-        )
+    lines.append(f"    queued={len(exchange.responders)}")
 
 
 def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
@@ -99,10 +98,7 @@ def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
         with (
             exchange.client(event_hooks={"request": [fault, events.request], "response": [events.response]}) as native,
-            package.Client(
-                http_client=native,
-                options=options.ClientOptions(total_timeout=None, retry=options.RetryOptions(initial_delay=0)),
-            ) as api,
+            package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
         ):
             try:
                 api.retry.get_safe()
@@ -117,12 +113,15 @@ def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines
 def _uncapped(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Classify native timeouts after the send started when no phase timeout or deadline bounds the attempt."""
     exchange = Exchange([])
-    config = options.ClientOptions(
-        total_timeout=None,
-        timeout=options.TimeoutOptions(read=None, write=None),
-        retry=options.RetryOptions(max_retries=1, initial_delay=0),
-    )
-    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+    with (
+        exchange.client() as native,
+        package.Client(
+            http_client=native,
+            timeout=httpx2.Timeout(600.0, connect=5.0, read=None, write=None),
+            max_retries=1,
+            retry=options.RetryOptions(initial_delay=0),
+        ) as api,
+    ):
         for error in (httpx2.ReadTimeout, httpx2.WriteTimeout):
             exchange.respond(failing(error), raw_response(200, b"resent", "text/plain"))
             record(lines, f"uncapped native {error.__name__}", lambda: _capture(api.retry.get_safe))
@@ -141,16 +140,10 @@ async def _async(package: ModuleType, options: ModuleType, errors: ModuleType, l
         exchange.async_client() as native,
         package.AsyncClient(http_client=native) as api,
         api.retry.with_streaming_response.get_safe(
-            options=options.RequestOptions(timeout=options.TimeoutOptions(read=2))
+            options=options.RequestOptions(timeout=httpx2.Timeout(600.0, connect=5.0, read=2.0))
         ) as response,
     ):
         await arecord(lines, "stream reuses its deadline through EOF", response.read)
-    with patch.dict(sys.modules, {"h2": None}):
-        record(
-            lines,
-            "async missing optional HTTP2 dependency",
-            lambda: package.AsyncClient(options=options.ClientOptions(transport=options.TransportOptions(http2=True))),
-        )
 
 
 async def _async_presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
@@ -161,10 +154,7 @@ async def _async_presend(package: ModuleType, options: ModuleType, errors: Modul
         hooks = {"request": [fault.asynchronous, events.arequest], "response": [events.aresponse]}
         async with (
             exchange.async_client(event_hooks=hooks) as native,
-            package.AsyncClient(
-                http_client=native,
-                options=options.ClientOptions(total_timeout=None, retry=options.RetryOptions(initial_delay=0)),
-            ) as api,
+            package.AsyncClient(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
         ):
             try:
                 await api.retry.get_safe()

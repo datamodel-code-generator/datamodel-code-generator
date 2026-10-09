@@ -14,10 +14,11 @@ from contextlib import (
     asynccontextmanager,
     contextmanager,
 )
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_plus
+from uuid import uuid4
 
 import httpx2
 from typing_extensions import Self
@@ -35,7 +36,6 @@ from .errors import (
     add_secondary,
     is_transport,
     kept_primary,
-    too_large,
 )
 from .logical import Delivery, LogicalCallContext
 from .media import normalized
@@ -55,23 +55,9 @@ from .native import (
     wire_fields,
 )
 from .operations import ResponseDecoder, request_errors
-from .options import (
-    DEFAULT_TIMEOUT,
-    DEFAULT_TRANSPORT,
-    ClientOptions,
-    HeaderPatch,
-    IdempotencyKey,
-    QueryPatch,
-    RequestOptions,
-    ServerSelection,
-    Settings,
-    TimeoutOptions,
-    checked_base_url,
-    layered_retry,
-    resolve_transport_options,
-)
+from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
 from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
-from .raw import AsyncRawResponse, RawResponse
+from .raw import MAX_ERROR_BODY_BYTES, AsyncRawResponse, RawResponse
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
     EMPTY_RETRY_HEADERS,
@@ -85,7 +71,7 @@ from .retry import (
     status_retry_reason,
 )
 from .security import positional, protected_positions, secret_names
-from .timing import ResolvedTimeoutOptions
+from .timing import SYSTEM_CLOCK
 from .urls import URLValidationError, absolute_target, request_origin, strip_query
 
 if TYPE_CHECKING:
@@ -94,10 +80,11 @@ if TYPE_CHECKING:
         AsyncIterator,
         Awaitable,
         Callable,
+        Collection,
         Generator,
         Iterable,
         Iterator,
-        Sequence,
+        Mapping,
     )
 
     from ..model_codecs.media import JSONValue
@@ -106,18 +93,24 @@ if TYPE_CHECKING:
     from .body_sources import BodyBindings, BodySource
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ServerPlan
-    from .options import NativeAuth, ResolvedTransportOptions
+    from .options import NativeAuth, Pairs, RetryOptions, ServerSelection
     from .retry import RetryDelay
     from .security import AsyncSend, Credentials, Placement, SecuritySchemeEntry, Send
     from .timing import Clock
     from .urls import Origin
+
+    class _HelperSettings:
+        """The protocol settings of a client whose package declares helpers."""
+
+        def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
+            """Check the settings against the package's helpers before the native client is created."""
+
 
 T = TypeVar("T")
 R = TypeVar("R")
 AdapterT = TypeVar("AdapterT")
 HandleT = TypeVar("HandleT")
 
-MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 CLEANUP_TIMEOUT: Final = 5.0
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
@@ -139,80 +132,44 @@ class ClientDefaults:
     request_coding: RequestCoding | None = None
 
 
-_DEFAULT_SERVER: Final = ServerSelection()
-
-
-def _layered(
-    settings: Settings,
-    layer: ClientOptions | RequestOptions,
-    operation_id: str | None = None,
+def _root_settings(  # noqa: PLR0913
+    http_client: object,
+    *,
+    base_url: str | None = None,
+    server: ServerSelection | None = None,
+    timeout: float | httpx2.Timeout | Unset | None = UNSET,
+    total_timeout: float | None = None,
+    max_retries: int = 2,
+    retry: RetryOptions | None = None,
+    default_headers: Mapping[str, str | None] | None = None,
+    default_query: Mapping[str, str | None] | None = None,
+    follow_redirects: bool | None = None,
+    auth: httpx2.Auth | Unset | None = UNSET,
+    compression: str | None = "gzip",
+    clock: Clock | None = None,
 ) -> Settings:
-    """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit."""
-    base_url, server = settings.base_url, settings.server
-    if not isinstance(layer.base_url, Unset):
-        base_url, server = layer.base_url.rstrip("/"), _DEFAULT_SERVER
-    elif not isinstance(layer.server, Unset):
-        base_url, server = None, layer.server
-    return Settings(
-        base_url,
-        server,
-        settings.max_response_bytes if isinstance(layer.max_response_bytes, Unset) else layer.max_response_bytes,
-        settings.max_error_body_bytes if isinstance(layer.max_error_body_bytes, Unset) else layer.max_error_body_bytes,
-        settings.max_stream_bytes if isinstance(layer.max_stream_bytes, Unset) else layer.max_stream_bytes,
-        (*settings.headers, layer.headers) if layer.headers else settings.headers,
-        (*settings.query, layer.query) if layer.query else settings.query,
-        retry=layered_retry(settings.retry, layer.retry, operation_id),
-        follow_redirects=settings.follow_redirects
-        if isinstance(layer.follow_redirects, Unset)
-        else layer.follow_redirects,
-        idempotency_key=settings.idempotency_key if isinstance(layer.idempotency_key, Unset) else layer.idempotency_key,
-        auth=settings.auth if isinstance(layer.auth, Unset) else layer.auth,
-        timeout=_timeouts(settings.timeout, layer.timeout),
-        total_timeout=settings.total_timeout if isinstance(layer.total_timeout, Unset) else layer.total_timeout,
-        compression=layer.compression if isinstance(layer, ClientOptions) else settings.compression,
-        clock=settings.clock,
-    )
-
-
-def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | None) -> ResolvedTimeoutOptions:
-    """Resolve nested phase fields while preserving the difference between omission and an explicit None."""
-    if isinstance(layer, Unset):
-        return current
-    if layer is None:
-        return ResolvedTimeoutOptions(connect=None, read=None, write=None, pool=None)
-    return ResolvedTimeoutOptions(
-        connect=current.connect if isinstance(layer.connect, Unset) else layer.connect,
-        read=current.read if isinstance(layer.read, Unset) else layer.read,
-        write=current.write if isinstance(layer.write, Unset) else layer.write,
-        pool=current.pool if isinstance(layer.pool, Unset) else layer.pool,
-    )
-
-
-def _client_settings(options: object, http_client: object) -> Settings:
-    phases = DEFAULT_TIMEOUT
+    """Return a root's settings: its keywords over the generated defaults, an injected client's timeout among them."""
+    current = DEFAULT_TIMEOUT
     if isinstance(http_client, (httpx2.Client, httpx2.AsyncClient)):
-        timeout = http_client.timeout
-        phases = ResolvedTimeoutOptions(
-            connect=timeout.connect,
-            read=timeout.read,
-            write=timeout.write,
-            pool=timeout.pool,
-        )
-    settings = Settings(None, _DEFAULT_SERVER, None, MAX_ERROR_BODY_BYTES, None, timeout=phases)
-    match options:
-        case None:
-            return settings
-        case ClientOptions():
-            if not isinstance(clock := options.clock, Unset):
-                settings = replace(settings, clock=clock)
-            return _layered(settings, options)
-        case _:
-            pass
-    raise ConfigurationError(field_path=("options",), reason="invalid_type")
+        current = phases(http_client.timeout, current)
+    layer = RequestOptions(
+        base_url=base_url,
+        server=server,
+        timeout=timeout,
+        total_timeout=total_timeout,
+        max_retries=max_retries,
+        retry=retry,
+        extra_headers=default_headers,
+        extra_query=default_query,
+        follow_redirects=follow_redirects,
+        auth=auth,
+    )
+    root = Settings(None, DEFAULT_SERVER, timeout=current, clock=clock or SYSTEM_CLOCK, compression=compression)
+    return layered(root, layer, view=True)
 
 
 def _patched(
-    pairs: list[tuple[str, str]], patch: Sequence[tuple[str, str | None]], fold: Callable[[str], str] = str.lower
+    pairs: list[tuple[str, str]], patch: Collection[tuple[str, str | None]], fold: Callable[[str], str] = str.lower
 ) -> list[tuple[str, str]]:
     """Return named values with one layer applied: the values it gives a name replace that name's at their first place.
 
@@ -239,71 +196,54 @@ def _patched(
 
 def _headers(
     generated: list[tuple[str, str]],
-    patches: tuple[Sequence[tuple[str, str | None]], ...],
+    layers: tuple[Collection[tuple[str, str | None]], ...],
+    call: Mapping[str, str | None] | None,
     media_type: str | None,
 ) -> HeadersView:
-    """Return the headers of a call: the generated ones with each layer applied in order, then the body's media type."""
-    for patch in patches:
-        generated = _patched(generated, patch)
+    """Return the headers of a call: the generated ones with each layer and then the call's applied, in order.
+
+    The body's media type ranks above every layer but the call's own extra headers, whose Content-Type relabels the
+    body or, as None, sends it unlabelled; a multipart relabel without a boundary keeps the body's encoded one.
+    """
+    for layer in (*layers, () if call is None else call.items()):
+        generated = _patched(generated, layer)
     if media_type is None:
         return HeadersView(generated)
-    return HeadersView([
-        *(pair for pair in generated if pair[0].lower() != "content-type"),
-        ("Content-Type", media_type),
-    ])
+    label: str | None = media_type
+    for name, value in () if call is None else call.items():
+        if name.lower() == "content-type":
+            label = _relabel(value, media_type)
+    unlabelled = (pair for pair in generated if pair[0].lower() != "content-type")
+    return HeadersView([*unlabelled, *(() if label is None else (("Content-Type", label),))])
 
 
-def _query(lower: tuple[QueryPatch, ...], explicit: list[str], call: QueryPatch) -> str:
-    """Return a query with its layers applied: the client's and views' patches, the explicit pairs, and the call's.
+def _relabel(value: str | None, media_type: str) -> str | None:
+    """Return a call's Content-Type for a body, adding the body's boundary to a multipart value that lacks one."""
+    if value is None or not value.lower().startswith("multipart/") or "boundary=" in value.lower():
+        return value
+    _, separator, boundary = media_type.partition("boundary=")
+    return f"{value}; boundary={boundary}" if separator else value
 
-    A patch's names and values are percent-encoded once, and explicit pairs compare by their names decoded as forms
-    decode them, a plus sign being a space.
+
+def _query(lower: Pairs, explicit: list[str], call: Mapping[str, str | None] | None) -> str:
+    """Return a query with its layers applied: the client's and views' names, the explicit pairs, and the call's.
+
+    A layer's names and values are percent-encoded once, and explicit pairs, a querystring parameter's split at each
+    `&`, compare by their names decoded as forms decode them, a plus sign being a space.
     """
-    named: list[tuple[str, str | None]] = [(unquote_plus(pair.partition("=")[0]), pair) for pair in explicit]
+    named: list[tuple[str, str | None]] = [
+        (unquote_plus(pair.partition("=")[0]), pair) for item in explicit for pair in item.split("&") if pair
+    ]
     pairs: list[tuple[str, str]] = []
-    for layer in (*map(_encoded_query, lower), named, _encoded_query(call)):
+    for layer in (_encoded_query(lower), named, _encoded_query(() if call is None else call.items())):
         pairs = _patched(pairs, layer, str)
     return "&".join(pair for _, pair in pairs)
 
 
-def _encoded_query(patch: QueryPatch) -> list[tuple[str, str | None]]:
+def _encoded_query(layer: Collection[tuple[str, str | None]]) -> list[tuple[str, str | None]]:
     return [
-        (name, None if value is None else f"{quote(name, safe='')}={quote(value, safe='')}") for name, value in patch
+        (name, None if value is None else f"{quote(name, safe='')}={quote(value, safe='')}") for name, value in layer
     ]
-
-
-def _unframed(
-    patches: tuple[HeaderPatch, ...], media_type: str | None, accept: str | None, operation_id: str | None
-) -> None:
-    """Refuse header patches that relabel a call's body or its narrowed response media.
-
-    A Content-Type patch must name the body's media type, or remove it from a call without a body, and an Accept patch
-    must name the media type a call narrowed its response to; media types compare normalized.
-    """
-    for patch in patches:
-        for name, value in patch:
-            if (condition := _conflict(name, value, media_type, accept)) is not None:
-                raise ConfigurationError(field_path=("headers", name), reason=condition, operation_id=operation_id)
-
-
-def _conflict(name: str, value: str | None, media_type: str | None, accept: str | None) -> str | None:
-    match name.lower():
-        case "content-type" if _relabels(value, media_type):
-            return "conflicts_with_body_media"
-        case "accept" if accept is not None and _relabels(value, accept):
-            return "conflicts_with_response_media"
-        case _:
-            return None
-
-
-def _relabels(value: str | None, media_type: str | None) -> bool:
-    match value, media_type:
-        case None, None:
-            return False
-        case str(), str():
-            return normalized(value) != normalized(media_type)
-        case _:
-            return True
 
 
 def _server_url(operation: OperationPlan[object], selection: ServerSelection) -> str:
@@ -321,7 +261,7 @@ def _server_url(operation: OperationPlan[object], selection: ServerSelection) ->
             raise ConfigurationError(
                 field_path=("server", "variables", name), reason="not_allowed", operation_id=operation_id
             )
-    return checked_base_url(PLACEHOLDER.sub(lambda match: values[match[1]], server.url), ("server",)).rstrip("/")
+    return PLACEHOLDER.sub(lambda match: values[match[1]], server.url).rstrip("/")
 
 
 def request_decode_error(
@@ -395,31 +335,23 @@ def _pairs(fragments: tuple[ParameterFragment, ...]) -> Iterator[str]:
 
 
 class ReceivedBody:
-    __slots__ = ("chunks", "limit", "overflow", "problem", "size", "success", "truncated")
+    __slots__ = ("chunks", "problem", "size", "success", "truncated")
 
-    def __init__(self, limit: int | None, *, success: bool) -> None:
-        self.limit = limit
+    def __init__(self, *, success: bool) -> None:
         self.success = success
         self.chunks: list[bytes] = []
         self.size = 0
         self.truncated = False
-        self.overflow = False
         self.problem: DecodeError | None = None
 
     def add(self, chunk: bytes) -> bool:
-        """Keep a chunk within the limit and return whether reading continues.
-
-        A success body over its limit stops reading as an overflow; an error body keeps its bounded prefix.
-        """
+        """Keep a chunk and return whether reading continues: an error body keeps only its bounded prefix."""
         self.size += len(chunk)
-        if self.limit is None or self.size <= self.limit:
+        if self.success or self.size <= MAX_ERROR_BODY_BYTES:
             self.chunks.append(chunk)
             return True
-        if self.success:
-            self.overflow = True
-        else:
-            self.chunks.append(chunk[: len(chunk) - (self.size - self.limit)])
-            self.truncated = True
+        self.chunks.append(chunk[: len(chunk) - (self.size - MAX_ERROR_BODY_BYTES)])
+        self.truncated = True
         return False
 
     @property
@@ -478,17 +410,9 @@ def delivery_state(call: Call) -> Delivery:
     return call.furthest()
 
 
-def _received(decoder: ResponseDecoder[object], status: int, settings: Settings) -> ReceivedBody:
-    success = decoder.success(status)
-    return ReceivedBody(settings.max_response_bytes if success else settings.max_error_body_bytes, success=success)
-
-
 def decode_response(
-    decoder: ResponseDecoder[T], info: ResponseInfo, body: ReceivedBody, settings: Settings, operation_id: str | None
+    decoder: ResponseDecoder[T], info: ResponseInfo, body: ReceivedBody, operation_id: str | None
 ) -> Response[T]:
-    if body.overflow:
-        assert settings.max_response_bytes is not None
-        raise too_large(info, settings.max_response_bytes, body.size, operation_id)
     if (problem := body.problem) is not None and body.success:
         raise problem
     truncated = body.truncated or problem is not None
@@ -731,7 +655,7 @@ class Call(LogicalCallContext):
         )
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
-        self.key = IdempotencyKey.new() if self.idempotency is not None and isinstance(key, Unset) else key
+        self.key = str(uuid4()) if self.idempotency is not None and isinstance(key, Unset) else key
         self.last_failure: BaseException | None = None
         self.last_info: ResponseInfo | None = None
         self.raw_response = False
@@ -749,7 +673,7 @@ class Call(LogicalCallContext):
     def bind(self) -> None:
         """Validate operation-bound controls before encoding and any send."""
         operation = self.operation
-        if self.idempotency is None and isinstance(self.key, IdempotencyKey):
+        if self.idempotency is None and isinstance(self.key, str):
             raise ConfigurationError(field_path=("idempotency_key",), reason="not_declared")
         retry = self.settings.retry
         if (
@@ -767,21 +691,25 @@ class Call(LogicalCallContext):
             )
 
     def prepared(self, request: httpx2.Request) -> httpx2.Request:
-        """Retain the original method and attach the call's sole declared idempotency key."""
+        """Retain the original method and attach the call's declared idempotency key.
+
+        A key the request's headers already carry, as a caller's extra header gives it, is the call's key instead.
+        """
         self.method = request.method
         if self.placements:
             self.initial_origin = self.current_origin = request_origin(str(request.url))
         if self.idempotency is None:
             return request
         name = self.idempotency.header_name
-        if request.headers.get_list(name):
-            raise ConfigurationError(field_path=("headers", name), reason="managed")
-        if not isinstance(self.key, IdempotencyKey):
+        if (given := request.headers.get(name)) is not None:
+            self.key = given
+            return request
+        if not isinstance(self.key, str):
             return request
         return build_request(
             method=request.method,
             url=str(request.url),
-            headers=HeadersView((*request_fields(request), (name, self.key.value))),
+            headers=HeadersView((*request_fields(request), (name, self.key))),
             body=request_body(request),
         )
 
@@ -820,7 +748,7 @@ class Call(LogicalCallContext):
                 reason=reason,
                 method=self.method,
                 retry_safety=self.retry_safety,
-                idempotency=self.idempotency if isinstance(self.key, IdempotencyKey) else None,
+                idempotency=self.idempotency if isinstance(self.key, str) else None,
                 delivery=self.delivery_state,
                 delivered_before=self.earlier is not Delivery.NOT_SENT,
                 attempt_count=self.attempt_count,
@@ -910,18 +838,15 @@ class Call(LogicalCallContext):
 class _Shared(Generic[AdapterT]):
     """The native client and construction ownership shared by root and option views."""
 
-    def __init__(
-        self, defaults: ClientDefaults, http_client: AdapterT, transport: ResolvedTransportOptions, *, created: bool
-    ) -> None:
+    def __init__(self, defaults: ClientDefaults, http_client: AdapterT, *, created: bool) -> None:
         self.http_client = http_client
         self.created = created
         self.closed = False
-        self.transport = transport
         self.security_schemes = defaults.security_schemes
         self.request_coding = defaults.request_coding
         coding = cast("httpx2.Client | httpx2.AsyncClient", http_client).headers.get("accept-encoding")
         self.fixed: tuple[tuple[str, str], ...] = () if coding is None else (("Accept-Encoding", coding),)
-        self.options: ClientOptions | None = None
+        self.protocols: object = None
         self.root_auth: NativeAuth | Unset | None = UNSET
         self.credentials: Credentials | None = None
         self.sockets: set[Callable[[], None]] = set()
@@ -952,11 +877,16 @@ class Core(Generic[AdapterT, HandleT]):
         """Bind a declared helper to this view's shared resources and effective settings."""
         return build(self._shared, self._settings)
 
-    def view(self, options: object) -> Self:
-        """Layer request options while sharing the native client with the root."""
-        if not isinstance(options, RequestOptions):
-            raise ConfigurationError(field_path=("options",), reason="invalid_type")
-        return type(self)(self._shared, self._call_settings(options, None))
+    def view(
+        self,
+        *,
+        default_headers: Mapping[str, str | None] | None = None,
+        default_query: Mapping[str, str | None] | None = None,
+        **keywords: Any,
+    ) -> Self:
+        """Layer a view's settings while sharing the native client with the root."""
+        layer = RequestOptions(extra_headers=default_headers, extra_query=default_query, **keywords)
+        return type(self)(self._shared, layered(self._settings, layer, view=True))
 
     def _admitted(self, call: LogicalCallContext) -> None:
         if self._shared.closed:
@@ -988,20 +918,17 @@ class Core(Generic[AdapterT, HandleT]):
         Bytes are the request's attempt; any other body is returned beside it, to build its own attempt.
         """
         verb, target = _checked_raw(method, url)
-        if self._settings.query or (options is not None and options.query):
+        if self._settings.query or (options is not None and options.extra_query):
             base, _, explicit = target.partition("?")
-            call = () if options is None else options.query
-            query = _query(self._settings.query, [pair for pair in explicit.split("&") if pair], call)
+            query = _query(self._settings.query, [explicit], None if options is None else options.extra_query)
             target = f"{base}?{query}" if query else base
         media_type = None
         if is_multipart(body):
             body, media_type = encode_parts(body)
         fixed = self._shared.fixed
-        call = () if options is None else options.headers
+        call = None if options is None else options.extra_headers
         if self._settings.headers or call:
-            if media_type is not None:
-                _unframed((*self._settings.headers, call), media_type, None, None)
-            headers = _headers([*fixed], (*self._settings.headers, call), media_type)
+            headers = _headers([*fixed], (self._settings.headers,), call, media_type)
         else:
             headers = HeadersView(fixed if media_type is None else (*fixed, ("Content-Type", media_type)))
         attempt, deferred = _encoded(body, None)
@@ -1027,13 +954,11 @@ class Core(Generic[AdapterT, HandleT]):
         media_type = response_media_type or operation.response_media_type
         return decoder if media_type is None else decoder.narrowed(operation.operation_id, media_type)
 
-    def _call_settings(self, options: object, operation_id: str | None) -> Settings:
+    def _call_settings(self, options: RequestOptions | None, operation_id: str | None) -> Settings:
         """Return the settings a call runs with: this client's or view's, with the call's options layered on them."""
         if options is None:
             return self._settings
-        if not isinstance(options, RequestOptions):
-            raise ConfigurationError(field_path=("options",), reason="invalid_type", operation_id=operation_id)
-        return _layered(self._settings, options, operation_id)
+        return layered(self._settings, options, view=False, operation_id=operation_id)
 
     def _bind_auth(self, call: Call) -> None:
         """Select the generated credentials an operation's call places, refusing a required call none authenticates.
@@ -1067,16 +992,15 @@ class Core(Generic[AdapterT, HandleT]):
         media_type: str | None,
         options: RequestOptions | None,
         accept: str | None,
-        narrowed: bool,
         url: str | None = None,
         checked: Callable[[HeadersView], None] | None = None,
     ) -> tuple[httpx2.Request, object]:
         """Return a call's request, and its body input when that builds its own attempts or else UNSET.
 
-        Header patches apply in layers: the client's and views' over the generated headers, the parameters' over those,
-        and the call's last; the body's media type and a narrowed Accept stay as the call chose them. A `url` a server
-        gave replaces the one the operation's path and query build, without the query patches. `checked` sees the
-        headers before the native request adds its own.
+        Headers apply in layers: the client's and views' over the generated headers, the parameters' over those, and
+        the call's extra headers last, a None value removing a name. A `url` a server gave replaces the one the
+        operation's path and query build, without the layers' query. `checked` sees the headers before the native
+        request adds its own.
         """
         request = _parameters(operation, arguments)
         encoded = None if operation.body is None else operation.body.encode(operation.operation_id, body, media_type)
@@ -1091,7 +1015,7 @@ class Core(Generic[AdapterT, HandleT]):
                 and (name := _dot_parameter(operation.path, path)) is not None
             ):
                 raise request_decode_error(operation, ("path", name), ParameterEncodingError(_DOT_CAUSE))
-            query = self._call_query(operation, request.query, options)
+            query = self._call_query(request.query, options)
             url = f"{base}{route}{'?' if query else ''}{query}"
         headers = [*self._shared.fixed]
         if accept is not None:
@@ -1106,8 +1030,6 @@ class Core(Generic[AdapterT, HandleT]):
             request.headers,
             options,
             media_type=sent,
-            accept=accept if narrowed else None,
-            operation_id=operation.operation_id,
         )
         if checked is not None:
             checked(prepared)
@@ -1115,39 +1037,29 @@ class Core(Generic[AdapterT, HandleT]):
             attempt, deferred = _encoded(encoded.content, encoded.media_type)
         return build_request(method=operation.method, url=url, headers=prepared, body=attempt), deferred
 
-    def _call_query(self, operation: OperationPlan[object], pairs: list[str], options: RequestOptions | None) -> str:
-        """Return a typed call's query: its parameters' pairs, patched when a layer patches them.
-
-        An operation whose querystring parameter carries its whole query takes no query patch.
-        """
-        call = () if options is None else options.query
+    def _call_query(self, pairs: list[str], options: RequestOptions | None) -> str:
+        """Return a typed call's query: its parameters' pairs, with the layers' names over them when there are any."""
+        call = None if options is None else options.extra_query
         if not self._settings.query and not call:
             return "&".join(pairs)
-        if any(spec.plan.location == "querystring" for spec in operation.parameters):
-            raise ConfigurationError(
-                field_path=("query",), reason="conflicts_with_querystring", operation_id=operation.operation_id
-            )
         return _query(self._settings.query, pairs, call)
 
-    def _call_headers(  # noqa: PLR0913
+    def _call_headers(
         self,
         generated: list[tuple[str, str]],
         params: list[tuple[str, str]],
         options: RequestOptions | None,
         *,
         media_type: str | None,
-        accept: str | None,
-        operation_id: str | None,
     ) -> HeadersView:
-        """Return a typed call's headers: the parameters' over the generated ones, patched when a layer patches them."""
-        call = () if options is None else options.headers
+        """Return a typed call's headers: the parameters' over the generated ones, then the layers' over those."""
+        call = None if options is None else options.extra_headers
         if not self._settings.headers and not call:
             generated.extend(params)
             if media_type is not None:
                 generated.append(("Content-Type", media_type))
             return HeadersView(generated)
-        _unframed((*self._settings.headers, call), media_type, accept, operation_id)
-        return _headers(generated, (*self._settings.headers, params, call), media_type)
+        return _headers(generated, (self._settings.headers, params), call, media_type)
 
     def call_settings(self, options: RequestOptions | None, operation: OperationPlan[object]) -> Settings:
         """Return the settings a call of the operation runs with under these options."""
@@ -1161,24 +1073,6 @@ def _credentials(credentials: Credentials | None, settings: Settings, http_clien
     if not isinstance(settings.auth, Unset) or getattr(http_client, "auth", None) is not None:
         raise ConfigurationError(field_path=("auth",), reason="conflicting_auth")
     return credentials
-
-
-def _transport(options: ClientOptions | None, http_client: object) -> ResolvedTransportOptions:
-    resolved = resolve_transport_options(UNSET if options is None else options.transport)
-    if http_client is not None and not isinstance(http_client, Unset):
-        for name in (
-            "verify",
-            "ssl_context",
-            "proxy",
-            "trust_env",
-            "http2",
-            "max_connections",
-            "max_keepalive_connections",
-            "keepalive_expiry",
-        ):
-            if getattr(resolved, name) != getattr(DEFAULT_TRANSPORT, name):
-                raise ConfigurationError(field_path=("transport", name), reason="injected_transport")
-    return resolved
 
 
 @contextmanager
@@ -1215,27 +1109,27 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         cls,
         defaults: ClientDefaults,
         *,
-        options: ClientOptions | None = None,
-        http_client: httpx2.Client | Unset | None = UNSET,
+        http_client: object = None,
         credentials: Credentials | None = None,
+        protocols: object = None,
+        **keywords: Any,
     ) -> Self:
-        """Borrow a mode-correct native client, or create and own one from transport settings.
+        """Borrow a mode-correct native client, or create and own one, with the root's settings.
 
         The credentials of the package's declared schemes, by scheme name, replace the HTTP client's Auth.
         """
-        settings = _client_settings(options, http_client)
+        settings = _root_settings(http_client, **keywords)
         checked = _credentials(credentials, settings, http_client)
-        if options is not None:
-            options.check_helpers(defaults.helpers, asynchronous=cls._asynchronous)
-        transport = _transport(options, http_client)
-        created = http_client is None or isinstance(http_client, Unset)
-        if created:
-            http_client = native_client(transport)
-        elif not isinstance(http_client, httpx2.Client):
+        if protocols is not None:
+            cast("_HelperSettings", protocols).check_helpers(defaults.helpers, asynchronous=cls._asynchronous)
+        if http_client is None:
+            native = native_client()
+        elif isinstance(http_client, httpx2.Client):
+            native = http_client
+        else:
             raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
-        shared = _Shared(defaults, http_client, transport, created=created)
-        shared.options, shared.root_auth = options, settings.auth
-        shared.credentials = checked
+        shared = _Shared(defaults, native, created=http_client is None)
+        shared.protocols, shared.root_auth, shared.credentials = protocols, settings.auth, checked
         return cls(shared, settings)
 
     def execute(  # noqa: PLR0913
@@ -1267,13 +1161,12 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 media_type=media_type,
                 options=options,
                 accept=decoder.accept,
-                narrowed=response_media_type is not None,
             )
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> Response[T]:
             received = self._read(response, info, decoder, call)
 
-            return decode_response(decoder, info, received, call.settings, call.operation_id)
+            return decode_response(decoder, info, received, call.operation_id)
 
         try:
             if fields:
@@ -1322,7 +1215,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
                 media_type=media_type,
                 options=options,
                 accept=decoder.accept,
-                narrowed=response_media_type is not None,
             )
 
         def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
@@ -1522,7 +1414,6 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         handle = RawResponse(
             info,
             call.decoder,
-            call.settings,
             call.operation_id,
             lambda error: self._classified(error, call),
             source=partial(decoded_bytes, response, info, call.operation_id),
@@ -1639,7 +1530,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> ReceivedBody:
-        received = _received(decoder, info.status_code, call.settings)
+        received = ReceivedBody(success=decoder.success(info.status_code))
         chunks = decoded_bytes(response, info, call.operation_id)
         try:
             for chunk in chunks:
@@ -1680,27 +1571,27 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         cls,
         defaults: ClientDefaults,
         *,
-        options: ClientOptions | None = None,
-        http_client: httpx2.AsyncClient | Unset | None = UNSET,
+        http_client: object = None,
         credentials: Credentials | None = None,
+        protocols: object = None,
+        **keywords: Any,
     ) -> Self:
-        """Borrow a mode-correct native client, or create and own one from transport settings.
+        """Borrow a mode-correct native client, or create and own one, with the root's settings.
 
         The credentials of the package's declared schemes, by scheme name, replace the HTTP client's Auth.
         """
-        settings = _client_settings(options, http_client)
+        settings = _root_settings(http_client, **keywords)
         checked = _credentials(credentials, settings, http_client)
-        if options is not None:
-            options.check_helpers(defaults.helpers, asynchronous=cls._asynchronous)
-        transport = _transport(options, http_client)
-        created = http_client is None or isinstance(http_client, Unset)
-        if created:
-            http_client = native_async_client(transport)
-        elif not isinstance(http_client, httpx2.AsyncClient):
+        if protocols is not None:
+            cast("_HelperSettings", protocols).check_helpers(defaults.helpers, asynchronous=cls._asynchronous)
+        if http_client is None:
+            native = native_async_client()
+        elif isinstance(http_client, httpx2.AsyncClient):
+            native = http_client
+        else:
             raise ConfigurationError(field_path=("http_client",), reason="invalid_type")
-        shared = _Shared(defaults, http_client, transport, created=created)
-        shared.options, shared.root_auth = options, settings.auth
-        shared.credentials = checked
+        shared = _Shared(defaults, native, created=http_client is None)
+        shared.protocols, shared.root_auth, shared.credentials = protocols, settings.auth, checked
         return cls(shared, settings)
 
     async def execute(  # noqa: PLR0913
@@ -1732,13 +1623,12 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 media_type=media_type,
                 options=options,
                 accept=decoder.accept,
-                narrowed=response_media_type is not None,
             )
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> Response[T]:
             received = await self._read(response, info, decoder, call)
 
-            return decode_response(decoder, info, received, call.settings, call.operation_id)
+            return decode_response(decoder, info, received, call.operation_id)
 
         try:
             if fields:
@@ -1787,7 +1677,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
                 media_type=media_type,
                 options=options,
                 accept=decoder.accept,
-                narrowed=response_media_type is not None,
             )
 
         async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
@@ -1989,7 +1878,6 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         handle = AsyncRawResponse(
             info,
             call.decoder,
-            call.settings,
             call.operation_id,
             lambda error: self._classified(error, call),
             source=partial(async_decoded_bytes, response, info, call.operation_id),
@@ -2103,7 +1991,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         decoder: ResponseDecoder[object],
         call: LogicalCallContext,
     ) -> ReceivedBody:
-        received = _received(decoder, info.status_code, call.settings)
+        received = ReceivedBody(success=decoder.success(info.status_code))
         chunks = async_decoded_bytes(response, info, call.operation_id)
         try:
             async for chunk in chunks:

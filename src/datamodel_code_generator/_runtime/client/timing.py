@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import time as _time
-from collections.abc import Callable  # noqa: TC003 - Public annotations support get_type_hints().
+from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
 from typing import Final, final
 
@@ -52,23 +52,34 @@ def _random() -> float:
     return randbits(53) / (1 << 53)
 
 
+async def _asleep(duration: float) -> None:
+    """Wait on the running event loop, loading the async library only once an asyncio client waits."""
+    import anyio  # noqa: PLC0415
+
+    await anyio.sleep(duration)
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Clock:
-    """The time and jitter sources of a client, an OAuth provider or flow, the system's by default.
+    """The time, jitter, and wait sources of a client, an OAuth provider or flow, the system's by default.
 
     monotonic returns seconds on one never-decreasing scale, which measures every elapsed time, expiry, and wait. time
     returns POSIX wall-clock seconds, read only to place a wall-clock instant on that scale. random returns a float in
-    [0, 1) for full-jitter backoff. Hashing ignores the sources.
+    [0, 1) for full-jitter backoff. sleep waits the seconds given in a synchronous client, and asleep returns the
+    awaitable an asyncio client waits on, through which every retry, poll, and reconnection wait passes. Hashing ignores
+    the sources.
     """
 
     monotonic: Callable[[], float] = field(default=_time.monotonic, hash=False)
     time: Callable[[], float] = field(default=_time.time, hash=False)
     random: Callable[[], float] = field(default=_random, hash=False)
+    sleep: Callable[[float], None] = field(default=_time.sleep, hash=False)
+    asleep: Callable[[float], Awaitable[None]] = field(default=_asleep, hash=False)
 
     def __post_init__(self) -> None:
         """Refuse a source that cannot be called."""
-        for name in ("monotonic", "time", "random"):
+        for name in ("monotonic", "time", "random", "sleep", "asleep"):
             if not callable(getattr(self, name)):
                 raise ConfigurationError(field_path=("clock", name), reason="invalid_type")
 

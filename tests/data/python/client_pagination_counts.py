@@ -73,7 +73,9 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         ("querystring without a start", {"term": "a"}),
         ("no querystring", None),
     ):
-        arguments = {} if criteria is None else {"criteria": harness.argument("find", "querystring", "criteria", criteria)}
+        arguments = (
+            {} if criteria is None else {"criteria": harness.argument("find", "querystring", "criteria", criteria)}
+        )
         exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
         drained(lines, label, api.protocols.finds.all.iterate(**arguments))
     drained(lines, "text start", listing.offsets.iterate(offset="forty"))

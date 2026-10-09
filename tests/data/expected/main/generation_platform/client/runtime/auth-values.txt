@@ -1,6 +1,6 @@
 # auth pydantic_v2.BaseModel
 credentials
-  arguments ('bearer', 'header_key', 'basic', 'query_key', 'cookie_key', 'bearer_alias', 'oauth', 'openid', 'options', 'http_client')
+  arguments ('bearer', 'header_key', 'basic', 'query_key', 'cookie_key', 'bearer_alias', 'oauth', 'openid', 'base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'default_headers', 'default_query', 'follow_redirects', 'auth', 'clock', 'http_client')
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
   bearer = b'ok'
@@ -73,6 +73,12 @@ native auth
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: view] b''
   view auth replaces credentials = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  view auth none = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: call over view] b''
+  call auth over view auth = b'ok'
   > GET https://api.example.com/and
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: call] b''
   call auth = b'ok'
@@ -86,14 +92,20 @@ native auth
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: client] b''
   client auth on anonymous = b'ok'
+  > GET https://api.example.com/optional
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  root auth none over client auth = b'ok'
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: root] b''
-  root option auth = b'ok'
+  root auth = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: root] b''
+  view inherits root auth = b'ok'
 refusals
   credentials beside client auth ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
-  credentials beside option auth ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
+  credentials beside auth none ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
+  credentials beside native auth ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
   credential of no credential type ! ConfigurationError reason=invalid_type field_path=('bearer',) cause=NoneType leaked=[]
-  option auth of another type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   callable failure ! AuthError reason=provider_failed field_path=None cause=OSError leaked=[]
   callable of another type ! ConfigurationError reason=invalid_type field_path=('bearer',) cause=NoneType leaked=[]
   basic of another shape ! ConfigurationError reason=invalid_type field_path=('basic',) cause=NoneType leaked=[]

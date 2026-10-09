@@ -32,7 +32,7 @@ from ..client.errors import (
     is_transport,
 )
 from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
-from ..client.options import RequestOptions, TimeoutOptions
+from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import ParameterEncodingError
@@ -297,9 +297,9 @@ def _limits(
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     An idle timeout either layer sets replaces the call's merged stream idle timeout. Reconnecting needs resume
-    metadata, so a stream of a helper without it that would reconnect is refused. A helper with it refuses effective
-    options fixing an idempotency key, since each reopen is a child call of its own, and header or query patches of a
-    parameter a reopen writes.
+    metadata, so a stream of a helper without it that would reconnect is refused. A helper with it refuses a call's
+    idempotency key, since each reopen is a child call of its own, and extra headers or query names of a parameter a
+    reopen writes.
     """
     for name, value, kind in (
         ("stream_options", stream_options, StreamOptions),
@@ -319,11 +319,9 @@ def _limits(
     else:
         _unpatched(core, plan, resume, request)
     if not isinstance(idle := layered(kinds, "idle_timeout", _DEFAULTS.idle_timeout), Unset):
-        request = request or RequestOptions()
-        timeout = request.timeout
-        if not isinstance(timeout, TimeoutOptions):
-            timeout = TimeoutOptions(connect=None, write=None, pool=None) if timeout is None else TimeoutOptions()
-        request = replace(request, timeout=replace(timeout, read=idle))
+        phases = core.call_settings(request, plan.call).timeout
+        timeout = httpx2.Timeout(connect=phases.connect, read=idle, write=phases.write, pool=phases.pool)
+        request = replace(request or RequestOptions(), timeout=timeout)
     return _Limits(
         reconnect=reconnect,
         max_reconnects=layered(kinds, "max_reconnects", _DEFAULTS.max_reconnects),
@@ -337,23 +335,20 @@ def _limits(
 def _unpatched(
     core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, request: RequestOptions | None
 ) -> None:
-    """Refuse effective options fixing an idempotency key or patching a header or query parameter a reopen writes.
+    """Refuse a fixed idempotency key, and headers or query names of a parameter a reopen writes.
 
-    The effective options are the client's, a view's, and the call's own, each of which patches every reopen.
+    The names are the call's own extra ones and the client's and its views' default ones, each of which every reopen
+    sends; the refusal names the layer that gave one.
     """
     from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
 
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"), "invalid_value")
-    headers, queries = core.patches(request)
-    for patch in headers:
-        for name, _ in patch:
-            if name.lower() in resume.headers:
-                raise _invalid(plan, ("options", "headers", name), "invalid_value")
-    for patch in queries:
-        for name, _ in patch:
-            if query_written(resume.call, resume.writes, name):
-                raise _invalid(plan, ("options", "query", name), "invalid_value")
+    written = (
+        core.fixed_key(request, (plan.call, resume.call))
+        or core.named(request, lambda name, _: name.lower() in resume.headers)
+        or core.named(request, lambda name, _: query_written(resume.call, resume.writes, name), query=True)
+    )
+    if written is not None:
+        raise _invalid(plan, written, "invalid_value")
 
 
 def _progress(reconnects: int = 0) -> ProtocolProgress:

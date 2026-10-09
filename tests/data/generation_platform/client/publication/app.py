@@ -14,7 +14,7 @@ from pathlib import Path
 import httpx2
 import publication_client
 import publication_client_models as models
-from publication_client import AsyncClient, Client, options
+from publication_client import AsyncClient, Client
 
 
 def _credentials(profile: str, url: str) -> dict[str, object]:
@@ -46,7 +46,7 @@ def _result(value: object) -> str:
 
 async def _async(profile: str, backend: str, url: str, context: ssl.SSLContext) -> None:
     async with httpx2.AsyncClient(verify=context, trust_env=False) as native:
-        async with AsyncClient(options=options.ClientOptions(base_url=url), http_client=native, **_credentials(profile, url)) as client:
+        async with AsyncClient(base_url=url, http_client=native, **_credentials(profile, url)) as client:
             print("async", _result(await client.pets.create_pet(body=_body(backend, profile), **({"media_type": "application/json"} if profile == "all" else {}))))
 
 
@@ -61,7 +61,7 @@ def main() -> None:
     print("optional distributions", [name for name in names if name in installed])
     context = ssl.create_default_context(cafile=authority)
     with httpx2.Client(verify=context, trust_env=False) as native:
-        with Client(options=options.ClientOptions(base_url=url), http_client=native, **_credentials(profile, url)) as client:
+        with Client(base_url=url, http_client=native, **_credentials(profile, url)) as client:
             print("sync", _result(client.pets.create_pet(body=_body(backend, profile), **({"media_type": "application/json"} if profile == "all" else {}))))
     asyncio.run(_async(profile, backend, url, context))
 

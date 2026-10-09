@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from pets import Client
 from pets.errors import ProtocolDataError, SessionLimitError, StreamInterruptedError
-from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions
+from pets.options import ProtocolClientOptions, RequestOptions
 from pets.protocols import (
     HeaderSelector,
     Origin,
@@ -45,7 +46,7 @@ def wrong_options(security: ProtocolSecurityContext) -> None:
     ProtocolSecurityContext()  # error
     ProtocolDefaults(options=WebhookOptions())  # error
     ProtocolClientOptions(defaults={"users": PaginationOptions()})  # error
-    ClientOptions(protocols=security)  # error
+    Client(protocols=security)  # error
     RequestOptions(protocols=ProtocolClientOptions())  # error
 
 

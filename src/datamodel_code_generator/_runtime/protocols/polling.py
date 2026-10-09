@@ -220,9 +220,9 @@ def _limits(
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     The interval defaults to the helper's; one longer than the allowed wait, or not shorter than the session, could
-    never be waited out, so it is refused before anything is sent. Effective options fixing an idempotency key are
-    refused, since the create call and each poll need keys of their own, and so are header or query patches of a
-    parameter the helper writes.
+    never be waited out, so it is refused before anything is sent. A fixed idempotency key, the call's own or a header
+    of its name the call, the client, or a view sends, is refused, since the create call and each poll need keys of
+    their own, and so are the call's extra headers or query names of a parameter the helper writes.
     """
     for name, value, kind in (
         ("poll_options", poll_options, PollOptions),
@@ -232,15 +232,15 @@ def _limits(
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     request = options if isinstance(options, RequestOptions) else None
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"))
+    if (fixed := core.fixed_key(request, (plan.create, plan.poll, plan.fetch))) is not None:
+        raise _invalid(plan, fixed)
     if request is not None:
-        for name, _ in request.headers:
+        for name in request.extra_headers or ():
             if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "headers", name))
-        for name, _ in request.query:
+                raise _invalid(plan, ("options", "extra_headers", name))
+        for name in request.extra_query or ():
             if name in plan.queries:
-                raise _invalid(plan, ("options", "query", name))
+                raise _invalid(plan, ("options", "extra_query", name))
     defaults = core.protocol_defaults(plan.helper_id)
     kinds = (poll_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)

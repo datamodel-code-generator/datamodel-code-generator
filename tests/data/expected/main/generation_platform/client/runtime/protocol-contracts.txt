@@ -1,9 +1,9 @@
 # pets-protocols pydantic_v2.BaseModel
-  client imports load protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=[]
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -13,7 +13,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
+  configured client loads protocols=[]
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -336,18 +336,13 @@
   protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
   protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
   protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols identity=True omitted=UNSET hint=True defaults in options=False request field=False
-  client protocols None = None
-  client protocols mapping ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
-  client protocols security ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -358,16 +353,16 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   anonymous protocols list = FieldPetsGetResponse(root=[])
-  client wrong protocols ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = FieldPetsGetResponse(root=[Pet(id=2, name='dog', tag=None)])
 # pets-protocols pydantic_v2.dataclass
-  client imports load protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=[]
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -377,7 +372,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
+  configured client loads protocols=[]
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -700,18 +695,13 @@
   protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
   protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
   protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols identity=True omitted=UNSET hint=True defaults in options=False request field=False
-  client protocols None = None
-  client protocols mapping ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
-  client protocols security ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   unknown options attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -722,16 +712,16 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   anonymous protocols list = []
-  client wrong protocols ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
 # pets-protocols dataclasses.dataclass
-  client imports load protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=[]
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -741,7 +731,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
+  configured client loads protocols=[]
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -1064,18 +1054,13 @@
   protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
   protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
   protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols identity=True omitted=UNSET hint=True defaults in options=False request field=False
-  client protocols None = None
-  client protocols mapping ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
-  client protocols security ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   unknown options attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -1086,16 +1071,16 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   anonymous protocols list = []
-  client wrong protocols ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=None)]
 # pets-protocols typing.TypedDict
-  client imports load protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=[]
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -1105,7 +1090,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
+  configured client loads protocols=[]
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -1428,18 +1413,13 @@
   protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
   protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
   protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols identity=True omitted=UNSET hint=True defaults in options=False request field=False
-  client protocols None = None
-  client protocols mapping ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
-  client protocols security ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   unknown options attribute ! AttributeError: module 'pets_protocols_typing_typeddict.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_typing_typeddict.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_typing_typeddict._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -1450,16 +1430,16 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   anonymous protocols list = []
-  client wrong protocols ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [{'id': 2, 'name': 'dog'}]
 # pets-protocols msgspec.Struct
-  client imports load protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
-  dir lists lazy names=(True, True, True, True)
+  client imports load protocols=[]
+  dir lists lazy names=(True, True, True)
   dir loads nothing=True
   protocol errors loaded on use=True
-  lazy names cached=(True, False, True, True, True)
+  lazy names cached=(True, False, False)
   optional imports=[]
   import threads unchanged=True
   replay loaded with contracts=False
@@ -1469,7 +1449,7 @@
   client protocols=True
   option identities=(True, True)
   construction threads unchanged=True
-  configured client loads protocols=['_runtime.protocols.client_options', '_runtime.protocols.names']
+  configured client loads protocols=[]
   BodySelector fields=('pointer',)
   BodySelector keyword-only=True hints=('pointer',)
   HeaderSelector fields=('name', 'occurrence')
@@ -1792,18 +1772,13 @@
   protocol options defaults None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults') [field_path=('defaults',)] invalid_value
   protocol options defaults value ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
   protocol options defaults value None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='defaults.users') [field_path=('defaults', 'users')] invalid_value
-  client protocols identity=True omitted=UNSET hint=True defaults in options=False request field=False
-  client protocols None = None
-  client protocols mapping ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
-  client protocols security ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client protocols keyword=KEYWORD_ONLY default=None defaults in options=False request field=False
   request protocols ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   request protocols None ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'protocols' []
   unknown options attribute ! AttributeError: module 'pets_protocols_msgspec_struct.options' has no attribute 'MissingProtocolType' []
   options dir = ['ProtocolClientOptions']
   unknown errors attribute ! AttributeError: module 'pets_protocols_msgspec_struct.errors' has no attribute 'MissingProtocolType' []
   errors dir = ['ProtocolDataError']
-  unknown names attribute ! AttributeError: module 'pets_protocols_msgspec_struct._runtime.protocols.names' has no attribute 'MissingProtocolType' []
-  names dir = ['ProtocolClientOptions']
   client with defaults of helpers it lacks ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.defaults.users.all') [field_path=('protocols', 'defaults', 'users.all')] unknown_field
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -1814,7 +1789,7 @@
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   anonymous protocols list = []
-  client wrong protocols ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='protocols') [field_path=('protocols',)] invalid_type
+  client wrong protocols ! AttributeError: 'str' object has no attribute 'check_helpers' []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   async configured client list = [Pet(id=2, name='dog', tag=UNSET)]

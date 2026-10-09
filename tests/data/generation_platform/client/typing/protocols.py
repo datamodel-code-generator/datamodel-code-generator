@@ -5,9 +5,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Literal
 
+from pets import AsyncClient, Client
 from pets.errors import ConfigurationError, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from pets.model_codecs import JSONValue
-from pets.options import UNSET, ClientOptions, ProtocolClientOptions, SessionOptions, Unset
+from pets.options import UNSET, ProtocolClientOptions, SessionOptions, Unset
 from pets.protocols import (
     AsyncCacheStore,
     BodySelector,
@@ -66,7 +67,7 @@ def accepts_snapshot(snapshot: PollSnapshot[object]) -> None:
     assert_type(snapshot.data, object)
 
 
-def options(origin: Origin) -> ClientOptions:
+def options(origin: Origin) -> Client:
     """Expose each option field type and construct client-level protocol settings."""
     pagination = PaginationOptions(max_pages=None, max_items=0)
     assert_type(pagination.max_items, int | Unset | None)
@@ -88,9 +89,8 @@ def options(origin: Origin) -> ClientOptions:
     assert_type(protocols.security, ProtocolSecurityContext | Unset | None)
     assert_type(protocols.defaults, Mapping[str, ProtocolDefaults] | Unset)
     assert_type(protocols.cache_stores, Mapping[str, CacheStore | AsyncCacheStore] | Unset)
-    client = ClientOptions(protocols=protocols)
-    assert_type(client.protocols, ProtocolClientOptions | Unset | None)
-    return ClientOptions(protocols=None)
+    AsyncClient(protocols=None)
+    return Client(protocols=protocols)
 
 
 def errors(snapshot: PollSnapshot[Pet]) -> None:

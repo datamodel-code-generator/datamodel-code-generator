@@ -311,8 +311,6 @@ class DecodeError(SDKError):
         body_bytes: bytes = b"",
         truncated: bool = False,
         media_type: str | None = None,
-        limit: int | None = None,
-        observed: int | None = None,
         operation_id: str | None = None,
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
@@ -324,8 +322,6 @@ class DecodeError(SDKError):
         self.body_bytes = body_bytes
         self.truncated = truncated
         self.media_type = media_type
-        self.limit = limit
-        self.observed = observed
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         located = ("location", ".".join(map(str, self.location)) or None)
@@ -337,13 +333,6 @@ class DecodeError(SDKError):
 def body_failure(reason: str, cause: BaseException | None = None) -> DecodeError:
     """Return the failure of a binary input that cannot be opened or rewound for sending."""
     return DecodeError(reason=reason, direction="request", location=("body",), cause=cause)
-
-
-def too_large(info: ResponseInfo, limit: int, observed: int, operation_id: str | None = None) -> DecodeError:
-    """Return the failure of a body larger than its buffer limit; nothing is retried."""
-    return DecodeError(
-        reason="response_too_large", info=info, limit=limit, observed=observed, operation_id=operation_id
-    )
 
 
 def response_failure(

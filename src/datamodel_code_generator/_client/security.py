@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeGuard
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._client.naming import pascal, snake, token
+from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, pascal, snake, token
 from datamodel_code_generator._runtime.client.security import (
     SecurityBinding,
     SecurityRequirement,
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 _SCOPE: Final = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
-_ARGUMENTS: Final = frozenset({"options", "http_client", "self"})
+_ARGUMENTS: Final = frozenset({"self", *CLIENT_KEYWORDS})
 _REFRESHED: Final = ("authorizationCode", "password", "deviceAuthorization", "implicit")
 Flow: TypeAlias = Literal["client_credentials", "refresh_token"]
 

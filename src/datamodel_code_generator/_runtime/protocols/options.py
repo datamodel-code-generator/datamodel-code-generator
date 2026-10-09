@@ -279,6 +279,10 @@ class ProtocolClientOptions:
         if not isinstance(self.cache_stores, Unset):
             object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
 
+    def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
+        """Check the helper names and stores against the package's helpers before the native client is created."""
+        check_helpers(self, helpers, asynchronous=asynchronous)
+
 
 _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "pagination": PaginationOptions,

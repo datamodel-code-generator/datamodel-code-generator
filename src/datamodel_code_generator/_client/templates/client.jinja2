@@ -18,9 +18,16 @@ class {{ name }}View:
         view._core = core
         return view
 
-    def with_options(self, options: {{ request_options }}) -> {{ name }}View:
-        """Return a typed view with these request options layered on the current settings."""
-        return {{ name }}View._from_core(self._core.view(options))
+    def with_options(
+        self,
+        *,
+{%- for argument in view_keywords %}
+        {{ argument.name }}: {{ argument.annotation }} = {{ argument.default }},
+{%- endfor %}
+    ) -> {{ name }}View:
+        """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
+        core = {{ view }}
+        return {{ name }}View._from_core(core)
 
     {{ coroutine }}def request_raw(
         self,
@@ -66,8 +73,9 @@ class {{ name }}({{ name }}View):
 {%- for argument in credentials %}
         {{ argument.name }}: {{ argument.annotation }} | None = None,
 {%- endfor %}
-        options: {{ options }} | None = None,
-        http_client: {{ http_client }} | {{ unset }} | None = {{ unset_value }},
+{%- for argument in client_keywords %}
+        {{ argument.name }}: {{ argument.annotation }} = {{ argument.default }},
+{%- endfor %}
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
         self._core = {{ create }}
