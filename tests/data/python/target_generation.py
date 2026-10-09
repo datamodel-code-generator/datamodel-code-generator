@@ -1,4 +1,4 @@
-"""Replay target scenarios through the FastAPI entry points and report artifacts, manifests, and failures."""
+"""Replay target scenarios through the FastAPI entry points and report artifacts, files, and failures."""
 
 from __future__ import annotations
 
@@ -20,7 +20,6 @@ from datamodel_code_generator.fastapi import (
     FastAPIConfig,
     GeneratedProject,
     OperationRef,
-    PublicationRollbackError,
     ResponseChoice,
     generate_fastapi,
     render_fastapi,
@@ -32,10 +31,7 @@ if TYPE_CHECKING:
     import pytest
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "targets"
-MANIFEST = ".dcg-target-manifest.json"
-_HASH = re.compile(r'"[0-9a-f]{64}"')
 _PRIVATE = re.compile(r"(?<![0-9a-f])(?:[0-9a-f]{32}|[0-9a-f]{16})(?![0-9a-f])")
-_MASKED = frozenset({"version"})
 
 
 def _runtime(path: Path) -> bool:
@@ -102,20 +98,6 @@ def _input(value: dict[str, Any], server: str | None) -> object:
             raise ValueError(value)
 
 
-def _mask(value: Any, server: str | None) -> Any:
-    match value:
-        case dict():
-            return {
-                key: "<masked>" if key in _MASKED else _mask(item, server)
-                for key, item in value.items()
-                if "_runtime" not in key.split("/")
-            }
-        case str() if server is not None and server in value:
-            return value.replace(server, "http://server")
-        case _:
-            return value
-
-
 def _relative(path: Path, root: Path) -> str:
     if not path.is_absolute():
         return path.as_posix()
@@ -136,7 +118,6 @@ def _report_project(project: GeneratedProject, root: Path, lines: list[str]) -> 
     lines.append(f"  target={project.target} schema_version={project.schema_version}")
     lines.extend(
         f"  {artifact.action} {artifact.kind} {_relative(artifact.path, root)}"
-        + ("" if artifact.target_id is None else " (target)")
         for artifact in project.artifacts
         if not _runtime(artifact.path)
     )
@@ -145,34 +126,13 @@ def _report_project(project: GeneratedProject, root: Path, lines: list[str]) -> 
 
 def _publish(project: GeneratedProject, root: Path) -> None:
     for artifact in project.artifacts:
-        location = root / artifact.path
-        match artifact.action, artifact.content:
-            case "write", bytes() as content:
-                location.parent.mkdir(parents=True, exist_ok=True)
-                location.write_bytes(content)
-            case "delete", _:
-                location.unlink()
-            case _:
-                pass
+        if artifact.action == "write":
+            (location := root / artifact.path).parent.mkdir(parents=True, exist_ok=True)
+            location.write_bytes(artifact.content)
 
 
-def _patched(data: bytes, changes: dict[str, Any]) -> bytes:
-    value = json.loads(data)
-    for pointer, item in [*changes.get("set", {}).items(), *((pointer, None) for pointer in changes.get("delete", []))]:
-        *parents, last = [token.replace("~1", "/").replace("~0", "~") for token in pointer[1:].split("/")]
-        container = value
-        for token in parents:
-            container = container[int(token)] if isinstance(container, list) else container[token]
-        key = int(last) if isinstance(container, list) else last
-        if pointer in changes.get("set", {}):
-            container[key] = item
-        else:
-            del container[key]
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode() + b"\n"
-
-
-def _manifest(project: GeneratedProject) -> bytes:
-    return next(artifact.content for artifact in project.artifacts if artifact.path.name == MANIFEST) or b""
+def _files(project: GeneratedProject, root: Path) -> dict[str, bytes]:
+    return {_relative(artifact.path, root): artifact.content for artifact in project.artifacts}
 
 
 def _run(
@@ -185,15 +145,7 @@ def _run(
         return (generate_fastapi if publish else render_fastapi)(
             _input(spec["input"], server), model_config=_model(model, root), config=_config(config)
         )
-    except (
-        APIGenerationError,
-        PublicationRollbackError,
-        Error,
-        RemoteLockError,
-        OSError,
-        UnicodeError,
-        KeyboardInterrupt,
-    ) as error:
+    except (APIGenerationError, Error, RemoteLockError, OSError, UnicodeError) as error:
         if case["input"] in ({"path": "input-cycle-dict.yaml"}, {"path": "input-cycle-reference.yaml"}):
             if not isinstance(error, (APIGenerationError, InvalidFileFormatError)):
                 raise
@@ -213,12 +165,6 @@ def _run(
             return "\n".join((f"  Error: {error}", *(_diagnostic(item) for item in error.diagnostics))).replace(
                 root.resolve().as_posix(), "<root>"
             )
-        if isinstance(error, PublicationRollbackError):
-            unrestored = ", ".join(_relative(path, root) for path in error.unrestored)
-            cause = type(error.__cause__).__name__
-            return (
-                f"  PublicationRollbackError after {cause}: unrestored {unrestored}; {len(error.backups)} backups kept"
-            )
         return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>").replace("\\", "/")
 
 
@@ -232,8 +178,7 @@ class _Scenario:
     server: str | None
     lines: list[str] = field(default_factory=list)
     project: GeneratedProject | None = None
-    published: dict[str, bytes] = field(default_factory=dict)
-    remembered: dict[str, bytes] = field(default_factory=dict)
+    remembered: dict[str, dict[str, bytes]] = field(default_factory=dict)
 
     @property
     def current(self) -> GeneratedProject:
@@ -285,6 +230,10 @@ class _Scenario:
         (self.root / path).mkdir(parents=True)
         self.lines.append(f"mkdir {path}")
 
+    def leftovers(self, _: None) -> None:
+        hidden = sorted(path.relative_to(self.root).as_posix() for path in self.root.rglob(".*"))
+        self.lines.append(f"leftovers {[_PRIVATE.sub('<private>', path) for path in hidden]}")
+
     def tree(self, _: None) -> None:
         self.lines.append("tree")
         files = [
@@ -299,11 +248,6 @@ class _Scenario:
 
     def publish(self, _: None) -> None:
         _publish(self.current, self.root)
-        self.published.update(
-            (artifact.path.as_posix(), artifact.content)
-            for artifact in self.current.artifacts
-            if artifact.content is not None
-        )
         self.lines.append("publish")
 
     def write(self, value: list[str]) -> None:
@@ -312,27 +256,15 @@ class _Scenario:
         (self.root / path).write_bytes(text.encode())
         self.lines.append(f"write {path}")
 
-    def restore(self, path: str) -> None:
-        (self.root / path).write_bytes(self.published[path])
-        self.lines.append(f"restore {path}")
-
     def remove(self, path: str) -> None:
         (self.root / path).unlink()
         self.lines.append(f"remove {path}")
 
-    def patch(self, value: dict[str, Any]) -> None:
-        path, changes = value["file"], {key: item for key, item in value.items() if key != "file"}
-        (self.root / path).write_bytes(_patched(self.published[path], changes))
-        self.lines.append(f"patch {path} {json.dumps(changes, sort_keys=True)}")
-
     def remember(self, name: str) -> None:
-        self.remembered[name] = _manifest(self.current)
+        self.remembered[name] = _files(self.current, self.root)
 
     def compare(self, name: str) -> None:
-        self.lines.append(f"manifest identical to {name}: {_manifest(self.current) == self.remembered[name]}")
-
-    def manifest(self, _: None) -> None:
-        self.lines.append(json.dumps(_mask(json.loads(_manifest(self.current)), self.server), indent=2, sort_keys=True))
+        self.lines.append(f"files identical to {name}: {_files(self.current, self.root) == self.remembered[name]}")
 
     def relocate(self, name: str) -> None:
         other = self.root / name
@@ -343,7 +275,8 @@ class _Scenario:
         self.monkeypatch.chdir(other)
         match _run(self.case, {}, other, self.server, publish=False):
             case GeneratedProject() as relocated:
-                self.lines.append(f"relocated manifest identical: {_manifest(relocated) == _manifest(self.current)}")
+                identical = _files(relocated, other) == _files(self.current, self.root)
+                self.lines.append(f"relocated files identical: {identical}")
             case failure:
                 raise AssertionError(failure)
         self.monkeypatch.chdir(self.root)
@@ -362,7 +295,7 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
             warnings.simplefilter("always", UserWarning)
             getattr(scenario, name)(value)
         scenario.lines.extend(f"  {item.category.__name__}: {item.message}" for item in recorded)
-    return _HASH.sub('"<sha256>"', "\n".join(scenario.lines)) + "\n"
+    return "\n".join(scenario.lines) + "\n"
 
 
 def target_config_report(case_name: str) -> str:

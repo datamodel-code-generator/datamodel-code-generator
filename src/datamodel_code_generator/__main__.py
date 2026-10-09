@@ -1688,8 +1688,8 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
     """Return the remote lock file a generation target's models read or update, or None while no lock applies.
 
-    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target, and the
-    target manifest, only while a policy uses it: an update, a locked run, or an existing file to verify.
+    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target only
+    while a policy uses it: an update, a locked run, or an existing file to verify.
     """
     if config.lockfile is not None:
         return config.lockfile

@@ -2,24 +2,22 @@
 render
   target=fastapi schema_version=1
   write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/untagged.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/untagged.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/errors.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
   11 runtime modules ['write']
 tree
 generate
   returned None
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -33,7 +31,6 @@ tree
   11 runtime modules ['present']
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -48,21 +45,19 @@ tree
 render
   target=fastapi schema_version=1
   write model models.py
-  unchanged target server/__init__.py (target)
-  unchanged target server/application.py (target)
-  unchanged target server/routers/__init__.py (target)
-  unchanged target server/routers/untagged.py (target)
-  unchanged target server/_generated/__init__.py (target)
-  unchanged target server/_generated/contract.py (target)
-  unchanged target server/errors.py (target)
-  unchanged target server/services.py (target)
-  write target server/README.md (target)
-  unchanged target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  unchanged target server/__init__.py
+  unchanged target server/application.py
+  unchanged target server/routers/__init__.py
+  unchanged target server/routers/untagged.py
+  unchanged target server/_generated/__init__.py
+  unchanged target server/_generated/contract.py
+  unchanged target server/errors.py
+  unchanged target server/services.py
+  write target server/README.md
+  unchanged target server/py.typed
   11 runtime modules ['unchanged']
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -78,7 +73,6 @@ generate
   returned None
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -92,7 +86,6 @@ tree
   11 runtime modules ['present']
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py

@@ -27,7 +27,6 @@ from datamodel_code_generator.format import Formatter
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
-MANIFEST = ".dcg-target-manifest.json"
 RUNTIME = Path(_runtime.__file__).parent
 BUILTIN_TEMPLATES = RUNTIME.parent / "_fastapi" / "templates"
 _DIGEST = re.compile(r'"[0-9a-f]{64}"')
@@ -135,7 +134,7 @@ def _render(
                     "package_snapshots", case.get("backends", ["pydantic_v2.BaseModel"])
                 ):
                     modules[parts] = content.decode(encoding)
-            case _ if path.name != MANIFEST:
+            case _:
                 files.append(f"  file {path.as_posix()}")
                 shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', content.decode()))
                 files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
@@ -183,10 +182,7 @@ def fastapi_config_report(case_name: str, root: Path) -> str:
 
 
 def fastapi_api_report(root: Path) -> str:
-    """Resolve the entry points' annotations, render, generate twice, then generate over edited owned files.
-
-    The last step regenerates two packages in one process under the default warning action.
-    """
+    """Resolve the entry points' annotations, render, generate twice, then generate over an edited file."""
     hints = {"input_": GenerationInput, "model_config": GenerateConfig, "config": FastAPIConfig}
     lines = [
         f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
@@ -202,7 +198,7 @@ def fastapi_api_report(root: Path) -> str:
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
     )
-    config, other = fastapi_config({}, root), fastapi_config({"output": f"other/{PACKAGE}"}, root)
+    config = fastapi_config({}, root)
     project = render_fastapi(source, model_config=model, config=config)
     lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
     for _ in range(2):
@@ -215,26 +211,7 @@ def fastapi_api_report(root: Path) -> str:
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
         result = generate_fastapi(source, model_config=model, config=config)
-    lines.append(f"generate returned {result}; readme restored {readme.read_bytes() == original}")
-    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
-    for action in ("ignore", "error"):
-        readme.write_text("# edited\n", encoding="utf-8")
-        with warnings.catch_warnings(record=True) as recorded:
-            warnings.simplefilter(action, UserWarning)
-            try:
-                generate_fastapi(source, model_config=model, config=config)
-            except UserWarning as error:
-                lines.append(f"filter {action}: {type(error).__name__}: {error}")
-            else:
-                lines.append(f"filter {action}: {len(recorded)} warnings")
-        lines.append(f"filter {action}: readme restored {readme.read_bytes() == original}")
-    packages = [(model, config), (model.model_copy(update={"output": root / "other" / "models.py"}), other)]
-    generate_fastapi(source, model_config=packages[1][0], config=other)
-    for _, package in packages:
-        (package.output / "README.md").write_text("# edited\n", encoding="utf-8")
-    with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("default", UserWarning)
-        for package_model, package in packages:
-            generate_fastapi(source, model_config=package_model, config=package)
-    lines.extend(f"filter default: {item.category.__name__}: {item.message}" for item in recorded)
+    lines.append(
+        f"generate returned {result}; readme restored {readme.read_bytes() == original}; warnings {len(recorded)}"
+    )
     return "\n".join(lines).replace(root.as_posix(), "<root>") + "\n"

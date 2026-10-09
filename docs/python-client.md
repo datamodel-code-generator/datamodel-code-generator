@@ -48,6 +48,11 @@ Generation ends by printing to stderr the `uv add` command that adds the runtime
 project. `--check` compares without writing and prints the differences as for models, and `--output-format json`
 emits the model generation and check payloads, as with `--generate-server`.
 
+As for models, every generation overwrites every generated file of the package, also one you edited, and never
+deletes one. The modules of a resource that is no longer generated stay until you delete them, and `--check` lists
+them as extra files; keep your own code outside the package, because `--check` treats every `.py` file under
+`--client-output` as generated.
+
 ## Client settings
 
 Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pyproject.toml`, and a field of
@@ -144,9 +149,8 @@ generate_client(
 `generate_client` publishes every change together and returns `None`, like model generation; `render_client` returns
 the `GeneratedProject` without writing it. The records `ClientGenerationConfig` takes, such as `ClientOperationConfig`,
 `ResourceName`, and `RuntimeOperationMetadata`, and the helper records of a `ProtocolConfiguration`, are imported
-from `datamodel_code_generator.client`. So are the warnings of the
-[server target](fastapi-server.md#errors-and-warnings), such as the `TargetEditWarning` for an owned file edited
-since the last generation.
+from `datamodel_code_generator.client`. So is `DocumentationAnnotationWarning`, the warning of the
+[server target](fastapi-server.md#errors-and-warnings).
 
 ## Requirements
 

@@ -1,4 +1,4 @@
-"""Generate the FastAPI server target from the command line: publish, check, report, and refuse conflicts."""
+"""Generate the FastAPI server target from the command line: publish, check, report, and overwrite like models."""
 
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def _methods(services: Path) -> str:
 def test_fastapi_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the models and the server package, check an edit and a missing owned file, then rewrite both."""
+    """Write the models and the server package, check an edit and a missing generated file, then rewrite both."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -147,6 +147,39 @@ def test_fastapi_cli_generate(
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
 
 
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
+def test_fastapi_cli_check_read_only(
+    structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Check a package whose directories cannot be written to: a check creates nothing inside the output it compares."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        input_file_type="openapi",
+        output_path=Path("models.py"),
+        extra_args=_server(),
+        capsys=capsys,
+        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+    )
+    directories = [tmp_path / "server", *(path for path in (tmp_path / "server").rglob("*") if path.is_dir())]
+    for directory in directories:
+        directory.chmod(0o555)
+    try:
+        run_main_and_assert(
+            input_path=Path("pets.yaml"),
+            input_file_type="openapi",
+            output_path=Path("models.py"),
+            extra_args=_server("--check", *(["--output-format", "json"] if structured else [])),
+            capsys=capsys,
+            assert_no_stderr=True,
+            expected_stdout_path=EXPECTED / "cli" / "check" / f"unchanged.{'json' if structured else 'txt'}",
+        )
+    finally:
+        for directory in directories:
+            directory.chmod(0o755)
+
+
 @pytest.mark.parametrize("case_name", CHECK_CASES)
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_check_outputs(
@@ -156,7 +189,10 @@ def test_fastapi_cli_check_outputs(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Compare real model and target text without publishing or changing any output file."""
+    """Compare real model and target text without publishing or changing any output file.
+
+    A fresh case checks a tree no generation wrote; a regenerate case generates over its edits before the check.
+    """
     case = CHECK_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
@@ -170,14 +206,15 @@ def test_fastapi_cli_check_outputs(
     if case.get("templates"):
         shutil.copytree(CLI / "check-templates", tmp_path / "templates")
         options.extend(["--custom-template-dir", "templates"])
-    run_main_and_assert(
-        input_path=source,
-        input_file_type="openapi",
-        output_path=output,
-        extra_args=_server(*options),
-        capsys=capsys,
-        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
-    )
+    if not case.get("fresh"):
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=output,
+            extra_args=_server(*options),
+            capsys=capsys,
+            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+        )
     for name in case.get("remove", ()):
         if (path := tmp_path / name).is_dir():
             shutil.rmtree(path)
@@ -193,12 +230,22 @@ def test_fastapi_cli_check_outputs(
         (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline="\r\n")
     for name in case.get("binary", ()):
         (tmp_path / name).write_bytes((CLI / "non-text.dat").read_bytes())
+    if case.get("regenerate"):
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=output,
+            extra_args=_server(*options, *case.get("options", ())),
+            capsys=capsys,
+            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+        )
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     if case.get("nested"):
         monkeypatch.chdir(tmp_path / "server")
     base = Path("..") if case.get("nested") else Path()
-    changed = any(key in case for key in ("remove", "append", "binary", "changed"))
+    changed = any(key in case for key in ("remove", "append", "binary"))
     changed |= "write" in case and any(name.endswith(".py") and "__pycache__" not in name for name in case["write"])
+    changed = case.get("changed", changed)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("error", UserWarning)
         run_main_and_assert(
@@ -233,11 +280,15 @@ def test_fastapi_cli_check_outputs(
 def test_fastapi_cli_generation_json(
     case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Print one generation payload whose paths compose with its output, and name files the same way in a check."""
+    """Print one generation payload whose paths compose with its output, and name files the same way in a check.
+
+    A case can write files before the run, which overwrites those at its paths and leaves the others. A stale case
+    regenerates fewer files, so the check that follows lists what the generation left in place as extra.
+    """
     case = JSON_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
-    source = Path("pets.yaml")
+    source = Path(shutil.copy2(SOURCE / name, name)) if (name := case.get("input")) else Path("pets.yaml")
     if name := case.get("source"):
         shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
         source = Path("spec") / name
@@ -258,9 +309,9 @@ def test_fastapi_cli_generation_json(
             capsys=capsys,
             expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         )
-    if case.get("unowned"):
-        server.mkdir()
-        (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
+    for name, text in case.get("write", {}).items():
+        (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding=encoding)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
         run_main_and_assert(
@@ -274,24 +325,33 @@ def test_fastapi_cli_generation_json(
     assert_output(captured.err, DEPENDENCIES)
     if payload := case.get("payload"):
         assert_output(captured.out.replace(tmp_path.as_posix(), "<root>"), EXPECTED / "cli" / "json" / f"{payload}.txt")
-    assert_output(
-        "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
-        EXPECTED / "cli" / ("unowned-warning.txt" if case.get("unowned") else "no-warning.txt"),
-    )
     if case.get("package"):
         assert_file_content(tmp_path / model, PACKAGE / "models.py")
         assert_directory_content(tmp_path / server, PACKAGE / "server")
     for name in case.get("published", ()):
         assert_file_content(tmp_path / name, EXPECTED / "cli" / "json" / "published" / f"{name}.txt")
-    run_main_and_assert(
-        input_path=source,
-        input_file_type="openapi",
-        output_path=model,
-        extra_args=_server("--check", *options, output=str(server)),
-        capsys=capsys,
-        assert_no_stderr=True,
-        expected_stdout_path=EXPECTED / "cli" / "check" / "unchanged.json",
-        skip_code_validation=encoding != "utf-8",
+    stale = case.get("stale")
+    with warnings.catch_warnings(record=True) as checked:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=model,
+            extra_args=_server("--check", *options, output=str(server)),
+            capsys=capsys,
+            assert_no_stderr=True,
+            expected_exit=Exit.DIFF if stale else Exit.OK,
+            expected_stdout_path=EXPECTED
+            / "cli"
+            / (Path("json", "check", f"{stale}.txt") if stale else Path("check", "unchanged.json")),
+            skip_code_validation=encoding != "utf-8",
+        )
+    assert_output(
+        "\n".join([
+            *(f"{item.category.__name__}: {item.message}" for item in recorded),
+            *(f"check {item.category.__name__}: {item.message}" for item in checked),
+        ]),
+        EXPECTED / "cli" / case.get("warnings", "no-warning.txt"),
     )
     if removed := case.get("remove"):
         for name in removed:
@@ -1111,28 +1171,6 @@ def test_fastapi_cli_job_lockfile(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     )
 
 
-def test_fastapi_cli_job_changed(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Publish nothing when a file a server job planned changes before the batch publishes it."""
-    monkeypatch.chdir(tmp_path)
-    _copy(tmp_path, "pyproject-jobs.toml")
-    run_main_with_args(["--job", "server"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
-    shutil.copy2(CLI / "pyproject-interfered-jobs.toml", tmp_path / "pyproject.toml")
-    run_main_with_args(
-        ["--all-jobs"],
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stderr=(
-            f"Error: could not publish batch output: {(Path.cwd() / 'server' / '.dcg-target-manifest.json').as_posix()}"
-            ": The file changed after the target was planned\n"
-        ),
-    )
-    assert_output(
-        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-changed.txt"
-    )
-
-
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
@@ -1709,12 +1747,15 @@ def test_fastapi_cli_failures(
     )
 
 
-@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent"])
+@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent", "publication"])
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_model_error_context(
     case: str, structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files."""
+    """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files.
+
+    A failed publication is reported as by the model runs that publish through the same journal.
+    """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
     options: list[str] = []
@@ -1736,6 +1777,9 @@ def test_fastapi_cli_model_error_context(
             (tmp_path / "api.lock").write_text("{broken", encoding="utf-8")
             options = ["--lockfile", "api.lock"]
             stderr = "Error: Unable to read remote lock "
+        case "publication":
+            (tmp_path / "server" / "services.py").mkdir(parents=True)
+            stderr = "Error: could not publish batch output: [Errno 21] Is a directory: "
         case _:
             (tmp_path / "occupied").write_text("occupied\n", encoding="utf-8")
             output = Path("occupied/models.py")
@@ -1749,32 +1793,4 @@ def test_fastapi_cli_model_error_context(
         expected_stderr_contains=stderr,
         expected_stdout_path=EXPECTED / "cli" / "json" / "error-empty.txt" if structured else None,
         output_should_not_exist=True,
-    )
-
-
-@pytest.mark.parametrize("disabled", [False, True])
-def test_fastapi_cli_unowned_manifest(
-    disabled: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Keep the unowned-state warning separate from the error that refuses to overwrite existing files."""
-    monkeypatch.chdir(tmp_path)
-    _copy(tmp_path)
-    (server := tmp_path / "server").mkdir()
-    (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
-    (server / "application.py").write_text("# User application\n", encoding="utf-8")
-    with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("always", UserWarning)
-        run_main_and_assert(
-            input_path=Path("pets.yaml"),
-            output_path=Path("models.py"),
-            input_file_type="openapi",
-            extra_args=_server(*(["--disable-warnings"] if disabled else [])),
-            expected_exit=Exit.ERROR,
-            capsys=capsys,
-            expected_stderr="Error: application.py: An unmanaged file occupies a path the target owns\n",
-            output_should_not_exist=True,
-        )
-    assert_output(
-        "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
-        EXPECTED / "cli" / ("no-warning.txt" if disabled else "unowned-warning.txt"),
     )

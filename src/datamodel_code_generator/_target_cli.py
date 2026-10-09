@@ -8,7 +8,7 @@ import traceback
 from dataclasses import replace
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
 from datamodel_code_generator._api_manifest import document_identity, shown
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from datamodel_code_generator.__main__ import OutputComparison
-    from datamodel_code_generator._api_publication import PlannedTarget
+    from datamodel_code_generator._api_generation import PlannedTarget
     from datamodel_code_generator._api_types import GeneratedProject, OperationSelector
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.target import ClientTarget
@@ -52,7 +52,8 @@ def run_target(  # noqa: PLR0913, PLR0917
 
     A model setting the target needs but the config lacks is refused like a model option conflict, before the run. A
     batch `job` appends the planned target to the targets its `batch` has planned instead of publishing it, and its
-    models record into the batch's remote `lock`.
+    models record into the batch's remote `lock`. A single run publishes its target as a batch of one, so a failed
+    publication is reported as for the model runs that publish through the same journal.
     """
     from datamodel_code_generator._api_generation import model_requirement  # noqa: PLC0415
 
@@ -114,16 +115,14 @@ def _run(  # noqa: PLR0913, PLR0917
     job: str,
 ) -> int:
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
+        _publish_or_error,  # pyright: ignore[reportPrivateUsage]
+        _single_job_plan,  # pyright: ignore[reportPrivateUsage]
+        _stage_job_plans,  # pyright: ignore[reportPrivateUsage]
         _target_lockfile,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
         _target_settings,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
         _write_comparison_output,  # pyright: ignore[reportPrivateUsage]
     )
-    from datamodel_code_generator._api_generation import (  # noqa: PLC0415
-        generate_target,
-        plan_target,
-        prepare_target,
-        render_target,
-    )
+    from datamodel_code_generator._api_generation import plan_target, prepare_target, render_target  # noqa: PLC0415
 
     lockfile = _target_lockfile(config, pyproject_path)
     if flags := [flag for name, flag in _CONFLICTS if getattr(config, name)]:
@@ -136,7 +135,7 @@ def _run(  # noqa: PLR0913, PLR0917
         prepare_target("", effective, generator)
         source = sys.stdin.read()
     if config.check:
-        project = render_target(source, model_config=effective, config=target, generator=generator, warn_edits=False)
+        project = render_target(source, model_config=effective, config=target, generator=generator)
         comparison = _compare_target(project, config.output, target.output, config.encoding)
         _write_comparison_output(comparison, namespace.output_format)
         return _DIFF if comparison.differences else _OK
@@ -148,18 +147,15 @@ def _run(  # noqa: PLR0913, PLR0917
             print(_target_json(planned.project, config.output, config.encoding))  # noqa: T201
         batch.append((job, planned, _next_step(target, planned.project.dependencies)))
         return _OK
-    if json_output:
-        from datamodel_code_generator._api_generation import _plan  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-        from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
-
-        planner, project = _plan(source, effective, target, generator, publish=True)
-        output = _target_json(project, config.output, config.encoding)
-        publish_project(project, planner.observed, cwd=planner.models.cwd, lock=planner.models.lock)
+    planned = plan_target(source, model_config=effective, config=target, generator=generator, publish=True)
+    project = planned.project
+    output = _target_json(project, config.output, config.encoding) if json_output else None
+    (staged,) = _stage_job_plans((_single_job_plan(config, pyproject_path),))
+    cast("list[Any]", staged.targets).append((job, planned, _next_step(target, project.dependencies)))
+    if (failure := _publish_or_error((staged,))) is not None:
+        return int(failure)
+    if output is not None:
         print(output)  # noqa: T201
-        dependencies = project.dependencies
-    else:
-        dependencies = generate_target(source, model_config=effective, config=target, generator=generator).dependencies
-    print(_next_step(target, dependencies), file=sys.stderr)  # noqa: T201
     return _OK
 
 
@@ -168,7 +164,7 @@ def publish_targets(files: Iterable[StagedFile], targets: Sequence[tuple[str, Pl
 
     Each target's dependency notice follows the publication on stderr, as after a single run.
     """
-    from datamodel_code_generator._api_publication import publish_planned  # noqa: PLC0415
+    from datamodel_code_generator._api_generation import publish_planned  # noqa: PLC0415
 
     publish_planned(files, [(job, planned) for job, planned, _ in targets])
     for _, _, notice in targets:

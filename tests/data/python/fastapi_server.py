@@ -6,6 +6,7 @@ import importlib
 import inspect
 import json
 import shutil
+import sys
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -179,7 +180,9 @@ def fastapi_server_report(
 ) -> tuple[str, dict[str, dict[tuple[str, ...], str]]]:
     """Generate one server per backend, replay the case's builds, applications, and requests.
 
-    Return the report and each backend's generated modules.
+    A case with a `previous` document first generates the package from it, so that the generation the case serves
+    leaves the modules only that document needs in place; the report says whether each `stale` module is still a
+    file and whether serving imported it. Return the report and each backend's generated modules.
     """
     case = json.loads((SOURCE / "servers.json").read_text(encoding="utf-8"))[case_name]
     services = importlib.import_module(f"tests.data.python.fastapi_handlers.{case['services']}")
@@ -193,6 +196,8 @@ def fastapi_server_report(
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         package = f"{case_name.replace('-', '_')}_{backend.rpartition('.')[2].lower()}"
         lines.append(f"serve {backend}")
+        if (previous := case.get("previous")) is not None:
+            _generate({**case, "input": previous}, backend, root, package)
         _generate(case, backend, root, package)
         packages[backend.replace(".", "_")] = _generated(root, package, package_snapshots)
         try:
@@ -215,6 +220,11 @@ def fastapi_server_report(
                 with TestClient(_WithoutRawPath(app)) as client:
                     for request in app_case.get("requests", ()):
                         _exchange(client, request, calls, lines, errors)
+            lines.extend(
+                f"stale {name}: file {(root / package / name).is_file()}; imported "
+                f"{'.'.join((package, *Path(name).with_suffix('').parts)) in sys.modules}"
+                for name in case.get("stale", ())
+            )
         finally:
             forget_generated(package)
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", packages
