@@ -1,43 +1,31 @@
-"""Render runtime wire-rule results as text, keeping case inputs in external fixture files."""
+"""Render runtime codec results as text, keeping case inputs in external fixture files."""
 
 from __future__ import annotations
 
 import json
-from collections import OrderedDict
 from collections.abc import Mapping
 from decimal import Decimal
-from enum import IntEnum
-from types import MappingProxyType
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._runtime.model_codecs.errors import (
-    CodecError,
-    WireIssue,
-    WireValidationError,
-)
+from datamodel_code_generator._runtime.model_codecs.errors import CodecError
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
-    decode_json,
     decode_text,
-    encode_json,
+    json_bytes,
     media_kind,
     normalize_media_type,
     plain,
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import (
-    EncodedParameterContribution,
     ParameterPlan,
-    QueryStringContribution,
     RawParameters,
     decode_parameter,
-    decode_parameters,
-    encode_parameter,
-    encode_parameters,
+    pairs,
     path_text,
+    querystring,
     raw_parameter,
 )
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
-from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire, thaw_wire
+from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
     import ast
@@ -46,10 +34,8 @@ if TYPE_CHECKING:
 
 
 def failure(error: Exception) -> str:
-    """Name a codec failure by its class and value-free issue codes."""
-    if isinstance(error, WireValidationError):
-        return f"{type(error).__name__} {','.join(item.code for item in error.issues)}"
-    return f"{type(error).__name__} {error}"
+    """Name a codec failure by its class and value-free message, without the detail some Python versions append."""
+    return f"{type(error).__name__} {str(error).partition(': ')[0]}"
 
 
 def attempt(action: Callable[[], str]) -> str:
@@ -60,94 +46,8 @@ def attempt(action: Callable[[], str]) -> str:
         return failure(error)
 
 
-def _snapshot(wire: object) -> str:
-    encoded = encode_json(wire)
-    return f"json={encoded.decode()} ascii={encode_json(wire, ascii_only=True).decode()}"
-
-
-def json_media_report(path: Path) -> str:
-    """Decode each fixture body and re-encode its wire snapshot."""
-    lines = []
-    for case in json.loads(path.read_text(encoding="utf-8")):
-        data = bytes.fromhex(case["hex"]) if "hex" in case else case["text"].encode()
-        lines.append(f"{case['name']}: {attempt(lambda data=data: _snapshot(decode_json(data)))}")
-    lines.extend(
-        f"{name}: {attempt(lambda depth=depth: _snapshot(decode_json(b'[' * depth + b']' * depth)))}"
-        for name, depth in (("deep-nesting", 100_000), ("snapshot-nesting", 700))
-    )
-    return "\n".join(lines) + "\n"
-
-
-class _Color(IntEnum):
-    RED = 1
-
-
-class _Text(str):
-    __slots__ = ()
-
-
-def _cyclic_list() -> list[object]:
-    value: list[object] = []
-    value.append(value)
-    return value
-
-
-def _cyclic_mapping() -> dict[str, object]:
-    value: dict[str, object] = {}
-    value["self"] = value
-    return value
-
-
-def _python_values() -> list[tuple[str, Callable[[], object]]]:
-    shared = [1]
-    return [
-        ("ordered", lambda: OrderedDict([("b", (1, 2)), ("a", [Decimal("0.10"), 2.5, None])])),
-        ("mapping-proxy", lambda: MappingProxyType({"x": {"y": [True, False]}})),
-        ("shared-branches", lambda: {"left": shared, "right": shared}),
-        ("large-decimal", lambda: Decimal("1E+999999")),
-        ("negative-zero", lambda: [-0.0, Decimal("-0")]),
-        ("nan-float", lambda: [float("nan")]),
-        ("infinite-decimal", lambda: {"a": Decimal("Infinity")}),
-        ("integer-key", lambda: {1: "a"}),
-        ("str-subclass", lambda: [_Text("a")]),
-        ("int-enum", lambda: [_Color.RED]),
-        ("bytes", lambda: [b"a"]),
-        ("set", lambda: {"a": {1}}),
-        ("lone-surrogate-value", lambda: ["\ud800"]),
-        ("lone-surrogate-key", lambda: {"\udfff": 1}),
-        ("cyclic-list", _cyclic_list),
-        ("cyclic-mapping", _cyclic_mapping),
-        ("huge-integer", lambda: 10**5000),
-    ]
-
-
-def _copies(value: object) -> str:
-    frozen = freeze_wire(value)
-    thawed = thaw_wire(frozen)
-    second = thaw_wire(frozen)
-    if isinstance(thawed, (list, dict)):
-        thawed.clear()
-    return f"{_snapshot(frozen)} independent={thaw_wire(frozen) == second}"
-
-
-def wire_value_report() -> str:
-    """Freeze and thaw in-memory JSON-domain values and rejected objects."""
-    lines = [f"{name}: {attempt(lambda factory=factory: _copies(factory()))}" for name, factory in _python_values()]
-    return "\n".join(lines) + "\n"
-
-
-_LOGICAL = "https://dcg.invalid/inputs/"
-
-
-def _issues(issues: tuple[WireIssue, ...]) -> str:
-    return (
-        " | ".join(
-            f"{item.code} {item.instance_pointer or '/'} {item.schema_id.removeprefix(_LOGICAL)}#{item.schema_pointer} "
-            f"{item.message}"
-            for item in issues
-        )
-        or "valid"
-    )
+def _json(value: object) -> str:
+    return json_bytes(value).decode()
 
 
 def _field(data: Mapping[str, object] | None) -> FieldPlan | None:
@@ -179,47 +79,34 @@ def _label(plan: ParameterPlan) -> str:
     return f"{plan.location} {plan.name} {form} {plan.shape}/{plan.kind}"
 
 
-def _http(contribution: EncodedParameterContribution) -> str:
-    if isinstance(contribution, QueryStringContribution):
-        return f"?{contribution.raw_query.decode()}"
-    fragments = contribution.ordered_fragments
-    match contribution.location:
+def _http(plan: ParameterPlan, value: object) -> tuple[str, RawParameters]:
+    if plan.location == "querystring":
+        query = querystring(plan, value)
+        return f"?{query}", RawParameters(query=query.encode())
+    written = [(key or "", text) for key, text in pairs(plan, value)]
+    match plan.location:
         case "path":
-            return f"/{fragments[0].value.decode()}"
+            text = written[0][1]
+            return f"/{text}", RawParameters(path={plan.name: text.encode()})
         case "query":
-            return "?" + "&".join(f"{item.name.decode()}={item.value.decode()}" for item in fragments)
+            query = "&".join(f"{key}={text}" for key, text in written)
+            return f"?{query}", RawParameters(query=query.encode())
         case "header":
-            return " / ".join(f"{item.name.decode()}: {item.value.decode()}" for item in fragments)
+            headers = tuple((key.encode(), text.encode()) for key, text in written)
+            return " / ".join(f"{key}: {text}" for key, text in written), RawParameters(headers=headers)
         case _:
-            return "Cookie: " + "; ".join(f"{item.name.decode()}={item.value.decode()}" for item in fragments)
-
-
-def _raw_parameters(plan: ParameterPlan, contribution: EncodedParameterContribution) -> RawParameters:
-    if isinstance(contribution, QueryStringContribution):
-        return RawParameters(query=contribution.raw_query)
-    fragments = contribution.ordered_fragments
-    match contribution.location:
-        case "path":
-            return RawParameters(path={plan.name: fragments[0].value})
-        case "query":
-            return RawParameters(query=b"&".join(item.name + b"=" + item.value for item in fragments))
-        case "header":
-            return RawParameters(headers=tuple((item.name, item.value) for item in fragments))
-        case _:
-            return RawParameters(
-                headers=((b"Cookie", b"; ".join(item.name + b"=" + item.value for item in fragments)),)
-            )
+            cookie = "; ".join(f"{key}={text}" for key, text in written)
+            return f"Cookie: {cookie}", RawParameters(headers=((b"Cookie", cookie.encode()),))
 
 
 def _round_trip(plan: ParameterPlan, value: object) -> str:
-    contribution = encode_parameter(plan, value)
-    decoded = decode_parameters([plan], _raw_parameters(plan, contribution))[plan.location, plan.name]
-    return f"{_http(contribution)} => {encode_json(plain(decoded)).decode()}"
+    http, raw = _http(plan, value)
+    return f"{http} => {_decoded(decode_parameter(plan, raw_parameter(plan, raw)))}"
 
 
 def parameter_encoding_report(path: Path) -> str:
-    """Encode official style examples and boundary values, then decode each contribution again."""
-    fixture = decode_json(path.read_bytes())
+    """Encode official style examples and boundary values, keeping exact number lexemes, then decode them again."""
+    fixture = json.loads(path.read_bytes(), parse_float=Decimal)
     lines = [
         f"{_label(parameter_plan(case['plan']))}: {attempt(lambda case=case: _round_trip(parameter_plan(case['plan']), case['value']))}"
         for case in (*fixture["encode"], *fixture["failures"])
@@ -242,12 +129,6 @@ def parameter_encoding_report(path: Path) -> str:
         f"python {_label(parameter_plan(data))}: {attempt(lambda data=data, value=value: _round_trip(parameter_plan(data), value))}"
         for data, value in python_values
     )
-    required = parameter_plan({"location": "query", "name": "q", "style": "form", "explode": True, "required": True})
-    optional = parameter_plan({"location": "header", "name": "X-Page", "style": "simple", "kind": "integer"})
-    lines.extend((
-        f"operation-present: {attempt(lambda: ' | '.join(map(_http, encode_parameters([required, optional], {('query', 'q'): 'a', ('header', 'X-Page'): UNSET}))))}",
-        f"operation-missing: {attempt(lambda: str(encode_parameters([required, optional], {('header', 'X-Page'): 2})))}",
-    ))
     return "\n".join(lines) + "\n"
 
 
@@ -268,40 +149,24 @@ def _fixture_raw(data: Mapping[str, object]) -> RawParameters:
 
 
 def _decoded(value: object) -> str:
-    return "UNSET" if value is UNSET else encode_json(plain(value)).decode()
+    return "UNSET" if value is UNSET else _json(plain(value))
 
 
 def parameter_decoding_report(path: Path) -> str:
-    """Decode raw fixture occurrences for every location, rendering UNSET, values, or issue codes."""
-    fixture = decode_json(path.read_bytes())
+    """Decode raw fixture occurrences for every location, rendering UNSET, values, or failures."""
+    fixture = json.loads(path.read_bytes())
     lines = []
     for case in fixture["cases"]:
         plan = parameter_plan(case["plan"])
         raw = _fixture_raw(case["raw"])
         lines.append(
-            f"{_label(plan)} {encode_json(case['raw']).decode()}: {attempt(lambda plan=plan, raw=raw: _decoded(decode_parameter(plan, raw_parameter(plan, raw))))}"
+            f"{_label(plan)} {_json(case['raw'])}: {attempt(lambda plan=plan, raw=raw: _decoded(decode_parameter(plan, raw_parameter(plan, raw))))}"
         )
-    plans = [parameter_plan(item) for item in fixture["operation"]["plans"]]
-    for data in fixture["operation"]["raw"]:
-        raw = RawParameters(
-            path={name: _bytes(value) for name, value in data["path"].items()},
-            query=_bytes(data["query"]),
-            headers=tuple((_bytes(name), _bytes(value)) for name, value in data["headers"]),
-        )
-        try:
-            values = decode_parameters(plans, raw)
-        except WireValidationError as error:
-            lines.append("operation: " + " | ".join(f"{item.code} {item.message}" for item in error.issues))
-        else:
-            lines.append(
-                "operation: "
-                + ", ".join(f"{location}.{name}={_decoded(value)}" for (location, name), value in values.items())
-            )
     return "\n".join(lines) + "\n"
 
 
 def media_report(path: Path) -> str:
-    """Normalize media identities, classify builtin representations, and check shared error records."""
+    """Normalize media identities, classify builtin representations, and decode text bodies."""
     fixture = json.loads(path.read_text(encoding="utf-8"))
     lines = [
         f"normalize {json.dumps(value)}: {attempt(lambda value=value: normalize_media_type(value))}"
@@ -312,37 +177,21 @@ def media_report(path: Path) -> str:
         f"text {item['hex']}: {attempt(lambda item=item: json.dumps(decode_text(bytes.fromhex(item['hex']))))}"
         for item in fixture["text"]
     )
-    issue = WireIssue(
-        code="schema.type", message="Wrong type", instance_pointer="/a", schema_id="s", schema_pointer="/type"
-    )
-    root_issue = WireIssue(
-        code="schema.type", message="Wrong type", instance_pointer="", schema_id="s", schema_pointer="/type"
-    )
-    lines.extend((
-        f"issue-code: {attempt(lambda: str(WireIssue(code='not a code', message='', instance_pointer='', schema_id='', schema_pointer='')))}",
-        f"issue-message: {attempt(lambda: str(WireIssue(code='a.b', message='x' * 1025, instance_pointer='', schema_id='', schema_pointer='')))}",
-        f"error-empty: {WireValidationError(())}",
-        f"error-pointer: {WireValidationError((issue, root_issue))}",
-        f"error-root: {WireValidationError((root_issue,))}",
-        f"unset: {UNSET!r} {bool(UNSET)} {UNSET is Unset.UNSET}",
-    ))
+    lines.append(f"unset: {UNSET!r} {bool(UNSET)}")
     return "\n".join(lines) + "\n"
 
 
 def alias_hint_report() -> str:
-    """Resolve the recursive wire aliases through another module's private import aliases."""
+    """Resolve the recursive JSON aliases through another module's private import aliases."""
     from typing import get_type_hints
 
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONScalar, JSONValue, WireValue
-    from tests.data.generation_platform.codecs.typing.annotations import snapshot
+    from datamodel_code_generator._runtime.model_codecs.media import JSONScalar, JSONValue
+    from tests.data.generation_platform.codecs.typing.annotations import encoded
 
-    hints = get_type_hints(snapshot, include_extras=True)
-    lines = [f"snapshot: value={hints['value'] is JSONValue} return={hints['return'] is WireValue}"]
-    lines.extend(
-        f"{alias.__name__} {alias.__module__}: {alias.__value__}" for alias in (JSONScalar, JSONValue, WireValue)
-    )
-    result = snapshot({"a": [1, None]})
-    lines.append(f"call: {type(result).__name__} {type(result['a']).__name__} {_snapshot(result)}")
+    hints = get_type_hints(encoded, include_extras=True)
+    lines = [f"encoded: value={hints['value'] is JSONValue} scalar={hints['scalar'] is JSONScalar}"]
+    lines.extend(f"{alias.__name__} {alias.__module__}: {alias.__value__}" for alias in (JSONScalar, JSONValue))
+    lines.append(f"call: {encoded({'a': [1, None]}, 'é').decode()}")
     return "\n".join(lines) + "\n"
 
 

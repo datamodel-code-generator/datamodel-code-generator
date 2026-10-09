@@ -3,7 +3,6 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   miss = network 3:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-length', '21'), ('content-type', 'application/json')]
   fresh hit = fresh_cache 3:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-type', 'application/json'), ('Content-Length', '21')]
-  fresh hit over the response limit ! DecodeError: DecodeError(status_code=200, operation_id='getUser', reason='response_too_large') [operation_id='getUser', body_bytes=b'', truncated=False, limit=5, observed=21] response_too_large
   > GET https://api.example.com/users/30
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   aged past max-age stored = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"e"'), ('cache-control', 'max-age=60'), ('age', '100'), ('content-length', '22'), ('content-type', 'application/json')]
@@ -137,14 +136,6 @@ message
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: ] b''
   Vary empty replacement = network 9:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '21'), ('content-type', 'application/json')]
   Vary empty hit = fresh_cache 9:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '21')]
-  > GET https://api.example.com/users/9
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: en, accept-language: fr] b''
-  Vary repeated replacement = network 9:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '21'), ('content-type', 'application/json')]
-  Vary repeated hit = fresh_cache 9:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '21')]
-  > GET https://api.example.com/users/9
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, accept-language: fr, accept-language: en] b''
-  Vary reordered replacement = network 9:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-length', '21'), ('content-type', 'application/json')]
-  Vary reordered hit = fresh_cache 9:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Accept-Language, accept-language'), ('content-type', 'application/json'), ('Content-Length', '21')]
   > GET https://api.example.com/users/43
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: a] b''
   alice key = network 43:alice status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
@@ -323,7 +314,6 @@ name
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
   other caller validator = network 13:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   other caller date ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='If-Modified-Since') [field_path=('If-Modified-Since',)] binding_mismatch
-  caller validator twice ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='If-None-Match') [field_path=('If-None-Match',)] binding_mismatch
   > GET https://api.example.com/users/18
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "g"] b''
   cold 304 ! APIStatusError: Error code: 302 [operation_id='getUser', status_code=302, body=b'', body_bytes=b'', truncated=False] unexpected_status
@@ -331,12 +321,12 @@ name
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users/30
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
-  stored after an auth challenge = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+  unstored after an auth challenge = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/30
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users/30
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h", authorization: Challenge answered] b''
-  304 after an auth challenge = revalidated 30:cat status=200 network=304 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('etag', '"h"'), ('Content-Length', '22')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
+  sent again after an auth challenge = network 30:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async miss = network 20:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.options import RequestOptions, SessionOptions
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncLroHandle,
     CancelReceipt,
@@ -26,9 +26,8 @@ def operations(client: Client, job: JobRequest) -> None:
     helper = client.protocols.jobs.run
     handle = helper.start(
         body=job,
-        poll_options=PollOptions(max_polls=3, interval=0.5),
+        poll_options=PollOptions(max_polls=3, interval=0.5, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(handle, LroHandle[GetReportResponse, GetJobResponse])
     snapshot = handle.status()
@@ -69,9 +68,8 @@ def checkpoints(client: Client, job: JobRequest, state: JSONValue) -> None:
     assert_type(helper.resume(saved), LroHandle[GetReportResponse, GetJobResponse])
     resumed = helper.resume(
         state,
-        poll_options=PollOptions(max_polls=2),
+        poll_options=PollOptions(max_polls=2, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(resumed.wait(), GetReportResponse)
     tracked = client.protocols.jobs.tracked.start(body=job)

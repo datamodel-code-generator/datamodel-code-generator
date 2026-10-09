@@ -1,8 +1,8 @@
 """Conditional fetches through a private response cache.
 
 A fetch answers from a fresh stored representation without sending, revalidates a stale one with its validator, or
-sends its request as an ordinary call; a stored body is decoded again at every use. Entries live only in the store the
-client's protocol settings lend the helper, keyed by the request and by the credentials it carries.
+sends its request as an ordinary call; a stored body is decoded again at every use. Entries live in the store the
+client lends the helper, or else in a memory store of the client's root, keyed by the request as its Auth sends it.
 """
 
 from __future__ import annotations
@@ -22,11 +22,11 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
-from ..model_codecs.unset import UNSET, Unset
+from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CacheEntry, CacheResult, CacheSource
 from .client import stored_value
 from .errors import ProtocolDataError
-from .options import CacheOptions
+from .options import CacheOptions, layered
 from .records import canonical_json
 
 if TYPE_CHECKING:
@@ -34,13 +34,12 @@ if TYPE_CHECKING:
 
     from ..client.operations import OperationPlan
     from .caches import AsyncCacheStore, CacheStore
-    from .client import AsyncClientCore, ClientCore
+    from .client import AsyncClientCore, CacheIdentity, ClientCore
     from .references import OperationRef
 
 __all__ = ("CachePlan", "afetch", "fetch")
 
 T = TypeVar("T")
-V = TypeVar("V")
 
 _Limits = tuple[int, float, RequestOptions | None]
 
@@ -122,7 +121,8 @@ class _Directives:
 class _Received(Generic[T]):
     """A network response a fetch may store: its decoded result, its body after content decoding, and stored headers.
 
-    A revalidation's result carries the merged representation, and its status is the stored one.
+    A revalidation's result carries the merged representation, and its status is the stored one. `sent` is the
+    request the response answered, as its Auth sent it.
     """
 
     response: Response[T]
@@ -131,13 +131,7 @@ class _Received(Generic[T]):
     source: CacheSource
     received: HeadersView
     redirected: bool
-
-
-def _option(layers: tuple[object, ...], name: str, default: V) -> V:
-    for layer in layers:
-        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
-            return cast("V", value)
-    return default
+    sent: httpx2.Request
 
 
 def _directives(values: tuple[str, ...]) -> dict[str, str | None] | None:
@@ -215,13 +209,16 @@ class _Fetch(Generic[T]):
         "credential_headers",
         "directives",
         "entry",
+        "identity",
         "implicit",
         "max_entry_bytes",
         "max_ttl",
         "options",
         "plan",
+        "prepared",
         "request",
         "requested_at",
+        "sending",
         "settings",
         "started",
         "usable",
@@ -230,57 +227,59 @@ class _Fetch(Generic[T]):
     def __init__(
         self, core: ClientCore | AsyncClientCore, plan: CachePlan[T], arguments: tuple[object, ...], limits: _Limits
     ) -> None:
-        """Prepare the fetch's request, refuse what a cache cannot answer, and derive its base key.
+        """Prepare the fetch's request and refuse what a cache cannot answer, before its identity is known.
 
-        A request carrying credentials needs the client's credential partition and a helper declared authenticated,
-        and an anonymous one a helper declared anonymous. The base key names the headers its entries vary on beyond a
-        response's Vary: each one a header patch or a header parameter fills, and Cookie for a cookie parameter. A
-        request patching other headers than a stored one never shares its entries, whichever was stored first.
+        Its entries vary on the headers each one the client's, a view's, or the call's extra headers name or a header
+        parameter fills, and Cookie for a cookie parameter, beyond a response's Vary, credential headers aside, which
+        its identity covers. A request naming other headers than a stored one never shares its entries, whichever was
+        stored first.
         """
         self.plan, self.clock = plan, core.clock
         self.started = self.clock.monotonic()
         self.requested_at = 0.0
         self.entry: CacheEntry | None = None
         self.usable: CacheEntry | None = None
+        self.identity: CacheIdentity | None = None
+        self.base_key = b""
         self.max_entry_bytes, self.max_ttl, self.options = limits
-        prepared = core.cache_request(plan.call, arguments, self.options)
-        self.settings, self.request, self.credential_headers = (
-            prepared.settings,
-            prepared.request,
-            prepared.credential_headers,
-        )
-        credentials, partition = prepared.credentials, prepared.partition
+        prepared = self.prepared = core.cache_request(plan.call, arguments, self.options)
+        self.settings, self.request = prepared.settings, prepared.request
+        self.sending = self.request
+        self.credential_headers = prepared.credential_headers
         headers = HeadersView(request_fields(self.request))
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
             raise _invalid(plan, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
-        if prepared.foreign_auth:
-            raise _configuration(plan, ("options", "auth"), "security_partition")
-        if (credentials is not None) != plan.authenticated:
-            raise _configuration(plan, ("auth",), "binding_mismatch")
-        if credentials is not None and partition is None:
-            raise _configuration(plan, ("protocols", "security"), "security_partition")
-        patched = {name.lower() for layer in self.settings.headers for name, _ in layer}
+        extra = () if self.options is None or self.options.extra_headers is None else self.options.extra_headers
+        patched = {name.lower() for name, _ in self.settings.headers} | {name.lower() for name in extra}
         declared = {
             spec.plan.name.lower() if spec.plan.location == "header" else "cookie"
             for spec in plan.call.parameters
             if spec.plan.location in _VARIED_LOCATIONS
         }
-        self.implicit = implicit = frozenset(patched | declared) - _NOT_VARIED - self.credential_headers
-        url = prepared.url
+        self.implicit = frozenset(patched | declared) - _NOT_VARIED - self.credential_headers
+
+    def keyed(self, identity: CacheIdentity) -> bytes:
+        """Keep the identity the fetch asks as and return its base key, refusing one its helper's declaration denies.
+
+        A request carrying credentials needs a helper declared authenticated, and a helper declared authenticated needs
+        a request carrying credentials or an Auth, which may place them only after a challenge. The base key covers the
+        method, the identity's URL and header values, the Accept header, and the names its entries vary on.
+        """
+        authenticated = self.plan.authenticated
+        if identity.authenticated > authenticated or authenticated > (identity.authenticated or identity.authorized):
+            raise _configuration(self.plan, ("auth",), "binding_mismatch")
+        self.identity = identity
         self.base_key = sha256(
             canonical_json({
                 "method": self.request.method,
-                "url": url,
-                "accept": headers.get("accept"),
-                "partition": "anonymous" if partition is None else partition,
-                "credentials": credentials,
-                "credential_values": [
-                    (name, headers.get_all(name)) for name in sorted(self.credential_headers) if name in headers
-                ],
-                "varied": sorted(implicit),
+                "url": identity.url,
+                "accept": HeadersView(request_fields(self.request)).get("accept"),
+                "credentials": identity.headers,
+                "varied": sorted(self.implicit),
             })
         ).digest()
+        return self.base_key
 
     def found(self, entry: object) -> CacheEntry | None:
         """Keep a looked-up entry, refusing another result, and return it when this helper may use it.
@@ -312,7 +311,7 @@ class _Fetch(Generic[T]):
         ):
             return None
         info = self.info(entry.status_code, entry.headers)
-        data = stored_value(self.plan.call, info, entry.body, self.settings)
+        data = stored_value(self.plan.call, info, entry.body)
         return CacheResult(
             data=data,
             source="fresh_cache",
@@ -344,23 +343,33 @@ class _Fetch(Generic[T]):
         validator = None if entry is None else _validator(self.plan, entry.headers)
         if validator is None or validator[0] in request.headers:
             return request
-        return httpx2.Request(
+        self.sending = httpx2.Request(
             request.method,
             request.url,
             headers=wire_fields((*request_fields(request), validator)),
             content=request.content,
             extensions=dict(request.extensions),
         )
+        return self.sending
 
     @staticmethod
-    def modified(response: Response[T], body: bytes, redirected: bool) -> tuple[Response[T], _Received[T]]:  # noqa: FBT001
+    def modified(
+        response: Response[T],
+        body: bytes,
+        redirected: bool,  # noqa: FBT001
+        sent: httpx2.Request,
+    ) -> tuple[Response[T], _Received[T]]:
         """Keep a decoded network response with its body and the headers an entry of it stores."""
         received = response.info.headers
-        return response, _Received(
-            response, body, HeadersView(_without(received, _UNSTORED, len(body))), "network", received, redirected
-        )
+        stored = HeadersView(_without(received, _UNSTORED, len(body)))
+        return response, _Received(response, body, stored, "network", received, redirected, sent)
 
-    def not_modified(self, info: ResponseInfo, redirected: bool) -> tuple[Response[T], _Received[T]]:  # noqa: FBT001
+    def not_modified(
+        self,
+        info: ResponseInfo,
+        redirected: bool,  # noqa: FBT001
+        sent: httpx2.Request,
+    ) -> tuple[Response[T], _Received[T]]:
         """Decode the looked-up representation a 304 validates, with its headers merged, or refuse the 304.
 
         A 304 needs a usable entry, the request URL itself rather than a redirect's, and no validator other than the
@@ -373,17 +382,19 @@ class _Fetch(Generic[T]):
             )
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
-        response = Response(data=stored_value(plan.call, merged, entry.body, self.settings), info=merged)
-        return response, _Received(response, entry.body, headers, "revalidated", info.headers, redirected)
+        response = Response(data=stored_value(plan.call, merged, entry.body), info=merged)
+        return response, _Received(response, entry.body, headers, "revalidated", info.headers, redirected, sent)
 
     def stored(self, received: _Received[T]) -> dict[str, Any] | None:
         """Return the fields of the entry a response becomes including its plain Vary values, or None to store nothing.
 
-        It is refused for an unlisted status, a redirect, a body over the limit, a Set-Cookie, an unsupported or
-        malformed Cache-Control, no-store, a Vary outside the allowlist or `*`, a Vary naming a header credentials
-        travel in, a revalidation whose Vary changed, and a response that is neither fresh nor revalidatable. The
-        entry varies on the response's Vary and on the headers its base key names, and its date and age are those of
-        the response received, so a 304 without Age makes the entry's age 0.
+        It is refused for a request sent as another identity than the one looked up, such as a rotated credential, a
+        renewed token, or a header an Auth's later round or a request hook added, an unlisted status, a redirect, a
+        body over the limit, a Set-Cookie, an unsupported or malformed Cache-Control, no-store, a Vary outside the
+        allowlist and the credential headers the key covers or `*`, a revalidation whose Vary changed, and a response
+        that is neither fresh nor revalidatable. The entry varies on the response's Vary and on the headers its base key
+        names, except the credential headers, and its date and age are those of the response received, so a 304 without
+        Age makes the entry's age 0.
         """
         plan, headers, now = self.plan, received.headers, self.clock.time()
         directives = _directives(headers.get_all("cache-control"))
@@ -392,8 +403,7 @@ class _Fetch(Generic[T]):
             directives is None
             or not _well_formed(directives)
             or not self.fits(received, vary)
-            or not plan.vary_allowlist.issuperset(vary)
-            or not self.credential_headers.isdisjoint(vary)
+            or not plan.vary_allowlist.union(self.credential_headers).issuperset(vary)
         ):
             return None
         origin = received.received
@@ -410,7 +420,7 @@ class _Fetch(Generic[T]):
             return None
         age = _delta(origin.get("age")) if "age" in origin else 0
         initial = max(now - date, (_MAX_DELTA if age is None else age) + (now - self.requested_at), 0.0)
-        names = tuple(sorted(self.implicit.union(vary)))
+        names = tuple(sorted(self.implicit.union(vary) - self.credential_headers))
         return {
             "vary": names,
             "vary_values": tuple(tuple(self.request.headers.get_list(name)) for name in names),
@@ -426,10 +436,13 @@ class _Fetch(Generic[T]):
         }
 
     def fits(self, received: _Received[T], vary: tuple[str, ...]) -> bool:
-        """Return whether the status, origin, size, and cookies, and a revalidation's Vary, let a response be stored."""
-        usable = self.usable
+        """Return whether the identity, status, origin, size, cookies, and a revalidation's Vary let it be stored."""
+        usable, identity = self.usable, self.identity
         return (
-            received.response.info.status_code in self.plan.statuses
+            identity is not None
+            and (sent := self.prepared.identity(received.sent, self.sending)).url == identity.url
+            and sent.headers == identity.headers
+            and received.response.info.status_code in self.plan.statuses
             and not received.redirected
             and len(received.body) <= self.max_entry_bytes
             and "set-cookie" not in received.headers
@@ -468,7 +481,7 @@ def _validator(plan: CachePlan[T], headers: HeadersView) -> tuple[str, str] | No
 def _configuration(
     plan: CachePlan[T],
     path: tuple[str, ...],
-    condition: Literal["invalid_value", "binding_mismatch", "security_partition", "missing_adapter"],
+    condition: Literal["invalid_value", "binding_mismatch"],
 ) -> ConfigurationError:
     return ConfigurationError(field_path=path, reason=condition, helper_id=plan.helper_id)
 
@@ -497,17 +510,9 @@ def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_option
     for name, value, kind in (("cache_options", cache_options, CacheOptions), ("options", options, RequestOptions)):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
-    defaults = core.protocol_defaults(plan.helper_id)
-    layers = (cache_options, UNSET if defaults is None else defaults.options)
+    layers = (cache_options, core.helper_defaults(plan.helper_id))
     request = options if isinstance(options, RequestOptions) else None
-    return _option(layers, "max_entry_bytes", _MAX_ENTRY_BYTES), _option(layers, "max_ttl", _MAX_TTL), request
-
-
-def _store(core: ClientCore | AsyncClientCore, plan: CachePlan[T]) -> Any:
-    """Return the store the client lends the helper, refusing a client without one before anything is sent."""
-    if (store := core.cache_store(plan.helper_id)) is None:
-        raise _configuration(plan, ("protocols", "cache_stores", plan.helper_id), "missing_adapter")
-    return store
+    return layered(layers, "max_entry_bytes", _MAX_ENTRY_BYTES), layered(layers, "max_ttl", _MAX_TTL), request
 
 
 def _checked(valid: bool) -> None:  # noqa: FBT001
@@ -549,9 +554,9 @@ def fetch(
     raise SDKError with the reason store_failed; the request is never sent again for them.
     """
     limits = _limits(core, plan, cache_options, options)
-    store: CacheStore = _store(core, plan)
+    store = cast("CacheStore", core.cache_store(plan.helper_id, MemoryCacheStore))
     state = _Fetch(core, plan, arguments, limits)
-    key = state.base_key
+    key = state.keyed(core.cache_identity(state.prepared))
     found = None
     if not state.directives.no_store:
         found = state.found(_run(lambda: store.get(key)))
@@ -588,9 +593,9 @@ async def afetch(
 ) -> CacheResult[T]:
     """Fetch as `fetch` does, awaiting the asynchronous store and the asyncio call."""
     limits = _limits(core, plan, cache_options, options)
-    store: AsyncCacheStore = _store(core, plan)
+    store = cast("AsyncCacheStore", core.cache_store(plan.helper_id, AsyncMemoryCacheStore))
     state = _Fetch(core, plan, arguments, limits)
-    key = state.base_key
+    key = state.keyed(await core.acache_identity(state.prepared))
     found = None
     if not state.directives.no_store:
         found = state.found(await _arun(lambda: store.get(key)))

@@ -1,143 +1,39 @@
-"""Client and request options: frozen values where UNSET inherits and each field's None has its own meaning."""
+"""Request options and the settings a call runs with: None inherits, and UNSET marks a field whose None removes."""
 
 from __future__ import annotations
 
 import math
-import re
-from collections.abc import Mapping
-from collections.abc import Set as AbstractSet
-from dataclasses import dataclass, field
-from ssl import SSLContext
+from collections.abc import Mapping  # noqa: TC003 - Public annotations support get_type_hints().
+from collections.abc import Set as AbstractSet  # noqa: TC003 - Public annotations support get_type_hints().
+from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import urlsplit
-from uuid import uuid4
 
-from typing_extensions import TypeIs
-
-from ..model_codecs.unset import UNSET, Unset
-from .errors import ConfigurationError, is_sequence
-from .timing import (
-    SYSTEM_CLOCK,
-    Clock,
-    ResolvedTimeoutOptions,
-    SessionOptions,
-    checked_count,
-    checked_instance,
-    seconds,
-)
+from ..model_codecs.unset import UNSET
+from .errors import ConfigurationError
+from .timing import SYSTEM_CLOCK, Clock, ResolvedTimeoutOptions, checked_count, seconds
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Callable, Generator
+    from collections.abc import AsyncGenerator, Generator
 
     import httpx2
 
 __all__ = (
     "UNSET",
-    "ClientOptions",
     "Clock",
-    "HeaderPatch",
-    "IdempotencyKey",
-    "QueryPatch",
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
-    "SessionOptions",
-    "TimeoutOptions",
-    "TransportOptions",
-    "Unset",
 )
 
-HeaderPatch: TypeAlias = tuple[tuple[str, str | None], ...]
-QueryPatch: TypeAlias = tuple[tuple[str, str | None], ...]
+Pairs: TypeAlias = tuple[tuple[str, str | None], ...]
 
-MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
 _SCHEMES: Final = frozenset({"http", "https"})
-_NAME: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
-_VALUE: Final = re.compile(r"[^\x00-\x08\x0a-\x1f\x7f]*")
-_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
-_RESERVED: Final = frozenset({"host", "content-length", "transfer-encoding"})
-_PAIR: Final = 2
-_JITTER: Final = frozenset({"full", "none"})
-_RETRY_OWNERS: Final = frozenset({"sdk", "transport"})
 _RETRY_STATUS_MIN: Final = 400
 _RETRY_STATUS_MAX: Final = 599
 _RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
 _OptionT = TypeVar("_OptionT")
-
-
-def _positive_seconds(value: float, path: tuple[str, ...]) -> None:
-    if not 0 < value < math.inf:
-        raise ConfigurationError(field_path=path, reason="out_of_range")
-
-
-def _header_patch(value: object) -> HeaderPatch:
-    """Return a copy of a header patch, refusing reserved or malformed headers and a name both set and removed."""
-    patch = _patch(value, "headers")
-    for name, text in patch:
-        match name.lower(), text:
-            case _ if not _NAME.fullmatch(name) or (text is not None and not _VALUE.fullmatch(text)):
-                raise ConfigurationError(field_path=("headers", name), reason="invalid_value")
-            case key, _ if key in _RESERVED:
-                raise ConfigurationError(field_path=("headers", name), reason="reserved")
-            case _:
-                pass
-    _settled(patch, "headers", str.lower)
-    return patch
-
-
-def _query_patch(value: object) -> QueryPatch:
-    """Return a copy of a query patch, refusing an empty name and a name both set and removed."""
-    patch = _patch(value, "query")
-    if not all(name for name, _ in patch):
-        raise ConfigurationError(field_path=("query",), reason="invalid_value")
-    _settled(patch, "query", str)
-    return patch
-
-
-def _patch(value: object, field: str) -> tuple[tuple[str, str | None], ...]:
-    if not is_sequence(value):
-        raise ConfigurationError(field_path=(field,), reason="invalid_type")
-    return tuple(_pair(item, field) for item in value)
-
-
-def _pair(item: object, field: str) -> tuple[str, str | None]:
-    if is_sequence(item) and len(item) == _PAIR:
-        match item[0], item[1]:
-            case str() as name, (str() | None) as text:
-                return name, text
-            case _:
-                pass
-    raise ConfigurationError(field_path=(field,), reason="invalid_type")
-
-
-def _settled(patch: tuple[tuple[str, str | None], ...], field: str, fold: Callable[[str], str]) -> None:
-    """Refuse a patch that both sets and removes one name."""
-    removed = {fold(name) for name, text in patch if text is None}
-    if any(fold(name) in removed for name, text in patch if text is not None):
-        raise ConfigurationError(field_path=(field,), reason="set_and_removed")
-
-
-class NativeAuth(Protocol):
-    """An HTTPX2 Auth: the flows HTTPX2 runs around each request it sends, such as `httpx2.BasicAuth`."""
-
-    def sync_auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
-        """Authenticate a synchronous client's request, yielding each request to send."""
-        ...
-
-    def async_auth_flow(self, request: httpx2.Request) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
-        """Authenticate an asyncio client's request, yielding each request to send."""
-        ...
-
-
-def _auth_type(value: object) -> None:
-    """Refuse an auth that is not an HTTPX2 Auth, UNSET, or None, importing HTTPX2 only for a given one."""
-    if value is None or isinstance(value, Unset):
-        return
-    import httpx2  # noqa: PLC0415 - Options without an Auth stay importable without the HTTP client.
-
-    if not isinstance(value, httpx2.Auth):
-        raise ConfigurationError(field_path=("auth",), reason="invalid_type")
 
 
 def is_base_url(value: str) -> bool:
@@ -148,17 +44,6 @@ def is_base_url(value: str) -> bool:
     parts = urlsplit(value)
     absolute = parts.scheme in _SCHEMES and bool(parts.hostname) and parts.port != 0
     return absolute and parts.username is None and not parts.query and not parts.fragment
-
-
-def checked_base_url(value: str, path: tuple[str, ...]) -> str:
-    """Return a URL that is_base_url accepts, or raise ConfigurationError."""
-    try:
-        valid = is_base_url(value)
-    except ValueError as error:
-        raise ConfigurationError(field_path=path, reason="invalid_url", cause=error) from None
-    if not valid:
-        raise ConfigurationError(field_path=path, reason="invalid_url")
-    return value
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -177,163 +62,72 @@ class ServerSelection:
         object.__setattr__(self, "variables", MappingProxyType(variables))
 
 
+class NativeAuth(Protocol):
+    """An HTTPX2 Auth: the flows HTTPX2 runs around each request it sends, such as `httpx2.BasicAuth`."""
+
+    def sync_auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        """Authenticate a synchronous client's request, yielding each request to send."""
+        ...
+
+    def async_auth_flow(self, request: httpx2.Request) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
+        """Authenticate an asyncio client's request, yielding each request to send."""
+        ...
+
+
+class NativeTimeout(Protocol):
+    """An HTTPX2 timeout, such as `httpx2.Timeout(10, connect=5)`: each phase's seconds, None leaving it unlimited."""
+
+    connect: float | None
+    read: float | None
+    write: float | None
+    pool: float | None
+
+
 DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=600.0, write=600.0, pool=600.0)
+_UNLIMITED: Final = ResolvedTimeoutOptions(connect=None, read=None, write=None, pool=None)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TimeoutOptions:
-    """Phase timeout overrides in seconds; UNSET inherits and None disables only that phase."""
-
-    connect: float | Unset | None = UNSET
-    read: float | Unset | None = UNSET
-    write: float | Unset | None = UNSET
-    pool: float | Unset | None = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse booleans, negative durations, and nonfinite durations."""
-        for name in ("connect", "read", "write", "pool"):
-            if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
-                object.__setattr__(self, name, seconds(value, ("timeout", name)))
+def _statuses(value: AbstractSet[int]) -> frozenset[int]:
+    if any(
+        type(item) is not int or not _RETRY_STATUS_MIN <= item <= _RETRY_STATUS_MAX or item in _RETRY_STATUS_EXCLUDED
+        for item in value
+    ):
+        raise ConfigurationError(field_path=("retry", "statuses"), reason="out_of_range")
+    return frozenset(value)
 
 
-def _choice(value: object, choices: frozenset[str], path: tuple[str, ...]) -> None:
-    if type(value) is not str or value not in choices:
-        raise ConfigurationError(field_path=path, reason="invalid_value")
-
-
-def _is_set(value: object) -> TypeIs[AbstractSet[object]]:
-    return isinstance(value, AbstractSet)
-
-
-def _statuses(value: object) -> frozenset[int]:
-    path = ("retry", "statuses")
-    if not _is_set(value):
-        raise ConfigurationError(field_path=path, reason="invalid_type")
-    checked: set[int] = set()
-    for item in value:
-        if (
-            type(item) is not int
-            or not _RETRY_STATUS_MIN <= item <= _RETRY_STATUS_MAX
-            or item in _RETRY_STATUS_EXCLUDED
-        ):
-            raise ConfigurationError(field_path=path, reason="out_of_range")
-        checked.add(item)
-    return frozenset(checked)
-
-
-def _retry_header(value: object, name: str) -> None:
-    if value is None or isinstance(value, Unset):
-        return
-    if not isinstance(value, str) or not _NAME.fullmatch(value):
-        raise ConfigurationError(field_path=("retry", name), reason="invalid_value")
-
-
-def _ordered_delays(initial: float | Unset, maximum: float | Unset, operation_id: str | None = None) -> None:
-    if not isinstance(initial, Unset) and not isinstance(maximum, Unset) and maximum < initial:
+def _ordered_delays(initial: float | UNSET, maximum: float | UNSET, operation_id: str | None = None) -> None:
+    if initial is not UNSET and maximum is not UNSET and maximum < initial:
         raise ConfigurationError(field_path=("retry", "max_delay"), reason="out_of_range", operation_id=operation_id)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RetryOptions:
-    """Override retry limits, status selection, and delays; omitted fields inherit independently."""
+    """Override which failures retry and how long each wait is; omitted fields inherit independently."""
 
-    max_retries: int | Unset = UNSET
-    initial_delay: float | Unset = UNSET
-    max_delay: float | Unset = UNSET
-    jitter: Literal["full", "none"] | Unset = UNSET
-    statuses: AbstractSet[int] | Unset = UNSET
-    max_retry_after: float | Unset | None = UNSET
-    respect_retry_after: bool | Unset = UNSET
-    retry_after_ms_header: str | Unset | None = UNSET
-    should_retry_header: str | Unset | None = UNSET
-    retry_on_pool_timeout: bool | Unset = UNSET
+    initial_delay: float | UNSET = UNSET
+    max_delay: float | UNSET = UNSET
+    jitter: Literal["full", "none"] | UNSET = UNSET
+    statuses: AbstractSet[int] | UNSET = UNSET
+    max_retry_after: float | UNSET | None = UNSET
+    respect_retry_after: bool | UNSET = UNSET
+    retry_after_ms_header: str | UNSET | None = UNSET
+    should_retry_header: str | UNSET | None = UNSET
+    retry_on_pool_timeout: bool | UNSET = UNSET
 
     def __post_init__(self) -> None:
-        """Validate explicit overrides without resolving values inherited from another layer."""
-        if not isinstance(self.max_retries, Unset):
-            checked_count(self.max_retries, ("retry", "max_retries"))
+        """Refuse negative or nonfinite delays, a maximum below the initial delay, and statuses no retry may select."""
         for name, value in (("initial_delay", self.initial_delay), ("max_delay", self.max_delay)):
-            if not isinstance(value, Unset):
+            if value is not UNSET:
                 object.__setattr__(self, name, seconds(value, ("retry", name)))
         _ordered_delays(self.initial_delay, self.max_delay)
-        if not isinstance(self.jitter, Unset):
-            _choice(self.jitter, _JITTER, ("retry", "jitter"))
-        if not isinstance(self.statuses, Unset):
+        if self.statuses is not UNSET:
             object.__setattr__(self, "statuses", _statuses(self.statuses))
-        if self.max_retry_after is not None and not isinstance(self.max_retry_after, Unset):
+        if self.max_retry_after is not None and self.max_retry_after is not UNSET:
             path = ("retry", "max_retry_after")
-            duration = seconds(self.max_retry_after, path)
-            _positive_seconds(duration, path)
+            if not 0 < (duration := seconds(self.max_retry_after, path)) < math.inf:
+                raise ConfigurationError(field_path=path, reason="out_of_range")
             object.__setattr__(self, "max_retry_after", duration)
-        for name, value in (
-            ("respect_retry_after", self.respect_retry_after),
-            ("retry_on_pool_timeout", self.retry_on_pool_timeout),
-        ):
-            if not isinstance(value, Unset):
-                checked_instance(value, (bool,), ("retry", name))
-        _retry_header(self.retry_after_ms_header, "retry_after_ms_header")
-        _retry_header(self.should_retry_header, "should_retry_header")
-
-
-def _key_value(value: object) -> None:
-    match value:
-        case str() if (
-            value
-            and value[0] not in " \t"
-            and value[-1] not in " \t"
-            and _VALUE.fullmatch(value)
-            and (value.isascii() or not _SURROGATE.search(value))
-        ):
-            return
-        case _:
-            raise ConfigurationError(field_path=("idempotency_key",), reason="invalid_value")
-
-
-@dataclass(frozen=True, slots=True)
-class IdempotencyKey:
-    """A stable idempotency key reused across retries of one logical call."""
-
-    value: str = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Reject empty or unsafe header values."""
-        _key_value(self.value)
-
-    @staticmethod
-    def new() -> IdempotencyKey:
-        """Create a UUID4 idempotency key."""
-        return IdempotencyKey(str(uuid4()))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TransportOptions:
-    """Configure an SDK-created native transport; injected transports retain their construction settings."""
-
-    verify: bool | Unset = UNSET
-    ssl_context: SSLContext | None = None
-    proxy: str | None = None
-    trust_env: bool = True
-    http2: bool = False
-    max_connections: int = 100
-    max_keepalive_connections: int = 20
-    keepalive_expiry: float = 5.0
-
-    def __post_init__(self) -> None:
-        """Validate construction fields and reject any explicit verify alongside an SSLContext."""
-        if not isinstance(self.verify, Unset):
-            checked_instance(self.verify, (bool,), ("transport", "verify"))
-        checked_instance(self.ssl_context, (SSLContext, type(None)), ("transport", "ssl_context"))
-        if self.ssl_context is not None and not isinstance(self.verify, Unset):
-            raise ConfigurationError(field_path=("transport", "verify"), reason="conflicts_with_ssl_context")
-        checked_instance(self.proxy, (str, type(None)), ("transport", "proxy"))
-        for name, enabled in (("trust_env", self.trust_env), ("http2", self.http2)):
-            checked_instance(enabled, (bool,), ("transport", name))
-        for name, count in (
-            ("max_connections", self.max_connections),
-            ("max_keepalive_connections", self.max_keepalive_connections),
-        ):
-            checked_count(count, ("transport", name))
-        object.__setattr__(self, "keepalive_expiry", seconds(self.keepalive_expiry, ("transport", "keepalive_expiry")))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -347,44 +141,31 @@ class ResolvedRetryOptions:
     statuses: frozenset[int] = frozenset({408, 429, 500, 502, 503, 504})
     max_retry_after: float | None = 60.0
     respect_retry_after: bool = True
-    retry_after_ms_header: str | Unset | None = UNSET
-    should_retry_header: str | Unset | None = UNSET
+    retry_after_ms_header: str | UNSET | None = UNSET
+    should_retry_header: str | UNSET | None = UNSET
     retry_on_pool_timeout: bool = False
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ResolvedTransportOptions:
-    """Client construction settings after verify omission has been resolved."""
-
-    verify: bool = True
-    ssl_context: SSLContext | None = None
-    proxy: str | None = None
-    trust_env: bool = True
-    http2: bool = False
-    max_connections: int = 100
-    max_keepalive_connections: int = 20
-    keepalive_expiry: float = 5.0
-
-
 DEFAULT_RETRY: Final = ResolvedRetryOptions()
-DEFAULT_TRANSPORT: Final = ResolvedTransportOptions()
 
 
-def _inherited(current: _OptionT, layer: _OptionT | Unset) -> _OptionT:
-    return current if isinstance(layer, Unset) else layer
+def _inherited(current: _OptionT, layer: _OptionT | UNSET) -> _OptionT:
+    return current if layer is UNSET else layer
 
 
 def layered_retry(
-    current: ResolvedRetryOptions, layer: RetryOptions | Unset, operation_id: str | None = None
+    current: ResolvedRetryOptions, layer: RetryOptions | None, max_retries: int | None, operation_id: str | None = None
 ) -> ResolvedRetryOptions:
-    """Apply each explicit retry field, then validate the resulting delay pair."""
-    if isinstance(layer, Unset):
+    """Apply the retry count and each explicit retry field, then validate the resulting delay pair."""
+    if max_retries is not None:
+        current = replace(current, max_retries=max_retries)
+    if layer is None:
         return current
     initial_delay = _inherited(current.initial_delay, layer.initial_delay)
     max_delay = _inherited(current.max_delay, layer.max_delay)
     _ordered_delays(initial_delay, max_delay, operation_id)
     return ResolvedRetryOptions(
-        max_retries=_inherited(current.max_retries, layer.max_retries),
+        max_retries=current.max_retries,
         initial_delay=initial_delay,
         max_delay=max_delay,
         jitter=_inherited(current.jitter, layer.jitter),
@@ -397,133 +178,119 @@ def layered_retry(
     )
 
 
-def resolve_transport_options(options: TransportOptions | Unset) -> ResolvedTransportOptions:
-    """Resolve client-only construction options without creating an HTTP client or SSLContext."""
-    if isinstance(options, Unset):
-        return DEFAULT_TRANSPORT
-    return ResolvedTransportOptions(
-        verify=_inherited(DEFAULT_TRANSPORT.verify, options.verify),
-        ssl_context=options.ssl_context,
-        proxy=options.proxy,
-        trust_env=options.trust_env,
-        http2=options.http2,
-        max_connections=options.max_connections,
-        max_keepalive_connections=options.max_keepalive_connections,
-        keepalive_expiry=options.keepalive_expiry,
-    )
+def phases(value: float | NativeTimeout | UNSET | None, current: ResolvedTimeoutOptions) -> ResolvedTimeoutOptions:
+    """Return the phase timeouts a timeout gives: UNSET keeps the current ones and None lifts every limit.
 
-
-_CODING: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-z-]+")
-_ENCODERS: Final = frozenset({"gzip"})
-
-
-def _compression(value: object) -> str | None:
-    """Return a selected request coding in lowercase, refusing another type, an invalid token, and identity.
-
-    Only codings with a builtin encoder are accepted.
+    A number limits every phase; an `httpx2.Timeout` gives each phase its own.
     """
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise ConfigurationError(field_path=("compression",), reason="invalid_type")
-    if not _CODING.fullmatch(token := value.lower()) or token not in _ENCODERS:
-        raise ConfigurationError(field_path=("compression",), reason="invalid_value")
-    return token
+    if value is UNSET:
+        return current
+    match value:
+        case None:
+            return _UNLIMITED
+        case int() | float():
+            return ResolvedTimeoutOptions(connect=value, read=value, write=value, pool=value)
+        case _:
+            return ResolvedTimeoutOptions(connect=value.connect, read=value.read, write=value.write, pool=value.pool)
+
+
+def _frozen(value: Mapping[str, str | None] | None) -> Mapping[str, str | None] | None:
+    return None if value is None else MappingProxyType(dict(value))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _Options:
-    server: ServerSelection | Unset = UNSET
-    base_url: str | Unset = UNSET
-    headers: HeaderPatch = ()
-    query: QueryPatch = ()
-    max_response_bytes: int | Unset | None = UNSET
-    max_error_body_bytes: int | Unset = UNSET
-    max_stream_bytes: int | Unset | None = UNSET
-    timeout: TimeoutOptions | Unset | None = UNSET
-    total_timeout: float | Unset | None = UNSET
-    retry: RetryOptions | Unset = UNSET
-    follow_redirects: bool | Unset = UNSET
-    idempotency_key: IdempotencyKey | Unset | None = UNSET
-    auth: NativeAuth | Unset | None = field(default=UNSET, repr=False)
+class RequestOptions:
+    """Settings of one call; each field left None, or UNSET where None removes, inherits the client's or view's.
 
-    def _check_timing(self) -> None:
-        checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
-        if (value := self.total_timeout) is not None and not isinstance(value, Unset):
-            object.__setattr__(self, "total_timeout", seconds(value, ("total_timeout",)))  # noqa: PLC2801
+    Its extra headers and query replace the values of each name they give last, after the client's, a view's, and the
+    call's parameters'; a None value removes that name. Header names compare case-insensitively.
+    """
+
+    base_url: str | None = None
+    server: ServerSelection | None = None
+    timeout: float | NativeTimeout | UNSET | None = UNSET
+    total_timeout: float | UNSET | None = UNSET
+    max_retries: int | None = None
+    retry: RetryOptions | None = None
+    extra_headers: Mapping[str, str | None] | None = None
+    extra_query: Mapping[str, str | None] | None = None
+    follow_redirects: bool | None = None
+    idempotency_key: str | UNSET | None = UNSET
+    auth: NativeAuth | UNSET | None = field(default=UNSET, repr=False)
 
     def __post_init__(self) -> None:
-        self._check_timing()
-        _auth_type(self.auth)
-        checked_instance(self.retry, (RetryOptions, Unset), ("retry",))
-        checked_instance(self.follow_redirects, (bool, Unset), ("follow_redirects",))
-        checked_instance(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
-        if self.headers != ():
-            object.__setattr__(self, "headers", _header_patch(self.headers))
-        if self.query != ():
-            object.__setattr__(self, "query", _query_patch(self.query))
-        if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
+        """Refuse a server beside a base URL, a negative retry count, and negative or nonfinite durations or phases."""
+        if self.base_url is not None and self.server is not None:
             raise ConfigurationError(field_path=("base_url",), reason="conflicts_with_server")
-        checked_instance(self.server, (ServerSelection, Unset), ("server",))
-        if not isinstance(self.base_url, Unset):
-            if type(self.base_url) is not str:
-                raise ConfigurationError(field_path=("base_url",), reason="invalid_type")
-            checked_base_url(self.base_url, ("base_url",))
-        if self.max_response_bytes is not None and not isinstance(self.max_response_bytes, Unset):
-            checked_count(self.max_response_bytes, ("max_response_bytes",))
-        if not isinstance(self.max_error_body_bytes, Unset):
-            checked_count(self.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
-        if self.max_stream_bytes is not None and not isinstance(self.max_stream_bytes, Unset):
-            checked_count(self.max_stream_bytes, ("max_stream_bytes",))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ClientOptions(_Options):
-    """Settings of one client; every field left UNSET takes the generated default.
-
-    Its headers and query patch the generated ones: each name it gives replaces their values of that name, and None
-    removes them. Its clock times every call, and no view or call changes it.
-    """
-
-    compression: Literal["gzip"] | None = "gzip"
-    transport: TransportOptions | Unset = UNSET
-    clock: Clock | Unset = UNSET
-
-    def __post_init__(self) -> None:
-        """Validate ordinary options and the client-only construction settings."""
-        _Options.__post_init__(self)
-        object.__setattr__(self, "compression", _compression(self.compression))
-        checked_instance(self.transport, (TransportOptions, Unset), ("transport",))
-        checked_instance(self.clock, (Clock, Unset), ("clock",))
-
-    def check_helpers(self, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
-        """Check settings supplied by a declared helper client."""
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class RequestOptions(_Options):
-    """Settings of one call; every field left UNSET inherits the client's.
-
-    Its headers and query patch the lower layers' last: the client's, a view's, and those the call's parameters give.
-    """
+        if self.max_retries is not None:
+            checked_count(self.max_retries, ("max_retries",))
+        if isinstance(timeout := self.timeout, int | float):
+            object.__setattr__(self, "timeout", seconds(timeout, ("timeout",)))
+        elif timeout is not None and timeout is not UNSET:
+            for phase in ("connect", "read", "write", "pool"):
+                if (value := getattr(timeout, phase)) is not None:
+                    seconds(value, ("timeout", phase))
+        if (total := self.total_timeout) is not None and total is not UNSET:
+            object.__setattr__(self, "total_timeout", seconds(total, ("total_timeout",)))
+        object.__setattr__(self, "extra_headers", _frozen(self.extra_headers))
+        object.__setattr__(self, "extra_query", _frozen(self.extra_query))
 
 
 @dataclass(frozen=True, slots=True)
 class Settings:
-    """The settings a call runs with: its client's or view's, with the call's options layered on them."""
+    """The settings a call runs with: its client's or view's, with the call's options layered on them.
+
+    `headers` and `query` are the names the client and its views replace, merged so that the latest layer wins.
+    """
 
     base_url: str | None
     server: ServerSelection
-    max_response_bytes: int | None
-    max_error_body_bytes: int
-    max_stream_bytes: int | None
-    headers: tuple[HeaderPatch, ...] = ()
-    query: tuple[QueryPatch, ...] = ()
+    headers: Pairs = ()
+    query: Pairs = ()
     timeout: ResolvedTimeoutOptions = DEFAULT_TIMEOUT
     total_timeout: float | None = None
     retry: ResolvedRetryOptions = DEFAULT_RETRY
     follow_redirects: bool | None = None
-    idempotency_key: IdempotencyKey | Unset | None = UNSET
-    auth: NativeAuth | Unset | None = field(default=UNSET, repr=False)
+    idempotency_key: str | UNSET | None = UNSET
+    auth: NativeAuth | UNSET | None = field(default=UNSET, repr=False)
     clock: Clock = field(default=SYSTEM_CLOCK, repr=False)
     compression: str | None = "gzip"
+
+
+def merged(lower: Pairs, layer: Mapping[str, str | None] | None, *, fold: bool) -> Pairs:
+    """Return names and values with a layer's replacing the lower ones of the same name, each where it first came."""
+    if not layer:
+        return lower
+    key = str.lower if fold else str
+    pairs = {key(name): (name, value) for name, value in lower}
+    pairs.update((key(name), (name, value)) for name, value in layer.items())
+    return tuple(pairs.values())
+
+
+DEFAULT_SERVER: Final = ServerSelection()
+
+
+def layered(settings: Settings, layer: RequestOptions, *, view: bool, operation_id: str | None = None) -> Settings:
+    """Return the settings with one layer applied: its given fields replace, the others inherit.
+
+    A view's extra headers and query join the settings; a call's apply to its own request after its parameters'.
+    """
+    base_url, server = settings.base_url, settings.server
+    if layer.base_url is not None:
+        base_url, server = layer.base_url.rstrip("/"), DEFAULT_SERVER
+    elif layer.server is not None:
+        base_url, server = None, layer.server
+    return Settings(
+        base_url,
+        server,
+        merged(settings.headers, layer.extra_headers, fold=True) if view else settings.headers,
+        merged(settings.query, layer.extra_query, fold=False) if view else settings.query,
+        timeout=phases(layer.timeout, settings.timeout),
+        total_timeout=settings.total_timeout if layer.total_timeout is UNSET else layer.total_timeout,
+        retry=layered_retry(settings.retry, layer.retry, layer.max_retries, operation_id),
+        follow_redirects=settings.follow_redirects if layer.follow_redirects is None else layer.follow_redirects,
+        idempotency_key=layer.idempotency_key,
+        auth=settings.auth if layer.auth is UNSET else layer.auth,
+        clock=settings.clock,
+        compression=settings.compression,
+    )

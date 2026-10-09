@@ -15,7 +15,7 @@ from .._runtime.protocols.uploads import (
     aresume_upload,
     astart_upload,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from ..types.files import CompleteFileResponse
 from . import UploadOptions, UploadSource, _plans
 
@@ -68,7 +68,7 @@ class AsyncFilesUploadResumableUpload:
         source: UploadSource,
         *,
         tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -117,7 +117,7 @@ class AsyncFilesFinishResumableUpload:
         source: UploadSource,
         *,
         tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -167,7 +167,7 @@ class AsyncFilesPutResumableUpload:
         *,
         upload_length: int,
         tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        x_name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

@@ -14,7 +14,7 @@ from urllib.request import url2pathname
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         OperationId,
@@ -25,6 +25,16 @@ if TYPE_CHECKING:
 ROOT_URN: Final = "urn:dcg:root"
 ROOT_POINTER: Final = "/inputs/root"
 JSONObject: TypeAlias = "dict[str, JSONValue]"
+
+
+def escape_pointer_token(token: str | int) -> str:
+    """Escape one RFC 6901 reference token."""
+    return token.replace("~", "~0").replace("/", "~1") if isinstance(token, str) else str(token)
+
+
+def pointer_tokens(pointer: str) -> list[str]:
+    """Split an RFC 6901 pointer into its unescaped reference tokens."""
+    return [token.replace("~1", "/").replace("~0", "~") for token in pointer[1:].split("/")] if pointer else []
 
 
 def canonical_bytes(value: JSONValue) -> bytes:

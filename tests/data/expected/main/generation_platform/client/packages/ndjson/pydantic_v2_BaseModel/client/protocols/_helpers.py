@@ -13,7 +13,7 @@ import models
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from . import StreamOptions, _plans
 
 
@@ -81,7 +81,7 @@ class RecordsAllNdjson:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -107,7 +107,7 @@ class RecordsLenientNdjson:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -133,7 +133,7 @@ class RecordsTaggedNdjson:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

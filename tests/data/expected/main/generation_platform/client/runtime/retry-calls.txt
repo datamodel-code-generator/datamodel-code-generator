@@ -34,250 +34,111 @@
     events=[] queued=2
   pre-send failure first response = (('APITimeoutError', 'phase_timeout', 1, ()), True, False, 1)
     events=[('request', 'POST', '/idempotent'), ('response', 503)] queued=1
-  key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client typed declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  key admission = ([None], 1)
-  key client typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key', 'call-key'], 0)
-  key client typed declared=True same object = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client response declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client response declared=True empty = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client response declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  key admission = ([None], 1)
-  key client response declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key', 'call-key'], 0)
-  key client response declared=True same object = FieldKeyedPostResponse(root='client-key')
-  key admission = (['client-key', 'client-key'], 0)
-  key client buffered declared=True omitted = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client buffered declared=True empty = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client buffered declared=True UNSET = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client buffered declared=True None = b'absent'
-  key admission = ([None], 1)
-  key client buffered declared=True override = b'call-key'
-  key admission = (['call-key', 'call-key'], 0)
-  key client buffered declared=True same object = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client stream declared=True omitted = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client stream declared=True empty = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client stream declared=True UNSET = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client stream declared=True None = b'absent'
-  key admission = ([None], 1)
-  key client stream declared=True override = b'call-key'
-  key admission = (['call-key', 'call-key'], 0)
-  key client stream declared=True same object = b'client-key'
-  key admission = (['client-key', 'client-key'], 0)
-  key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client typed declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None, None], 0)
-  key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client response declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None, None], 0)
-  key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client buffered declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client stream declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request raw declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request raw declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key client request raw declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request raw declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request stream declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request stream declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key client request stream declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key client request stream declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view typed declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view typed declared=True empty = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view typed declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  key admission = ([None], 1)
-  key view typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key', 'call-key'], 0)
-  key view typed declared=True same object = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view response declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view response declared=True empty = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view response declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  key admission = ([None], 1)
-  key view response declared=True override = FieldKeyedPostResponse(root='call-key')
-  key admission = (['call-key', 'call-key'], 0)
-  key view response declared=True same object = FieldKeyedPostResponse(root='view-key')
-  key admission = (['view-key', 'view-key'], 0)
-  key view buffered declared=True omitted = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view buffered declared=True empty = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view buffered declared=True UNSET = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view buffered declared=True None = b'absent'
-  key admission = ([None], 1)
-  key view buffered declared=True override = b'call-key'
-  key admission = (['call-key', 'call-key'], 0)
-  key view buffered declared=True same object = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view stream declared=True omitted = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view stream declared=True empty = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view stream declared=True UNSET = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view stream declared=True None = b'absent'
-  key admission = ([None], 1)
-  key view stream declared=True override = b'call-key'
-  key admission = (['call-key', 'call-key'], 0)
-  key view stream declared=True same object = b'view-key'
-  key admission = (['view-key', 'view-key'], 0)
-  key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view typed declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None, None], 0)
-  key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view response declared=False None = FieldSafeGetResponse(root='absent')
-  key admission = ([None, None], 0)
-  key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view buffered declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view stream declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request raw declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request raw declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key view request raw declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request raw declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request stream declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request stream declared=False None = b'absent'
-  key admission = ([None, None], 0)
-  key view request stream declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  key view request stream declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  key admission = ([], 2)
-  concurrent inherited keys = ((FieldKeyedPostResponse(root='client-key'), None), ('ConfigurationError', 'not_declared', 0, ()), (FieldKeyedPostResponse(root='view-key'), None), ('ConfigurationError', 'not_declared', 0, ()))
-  concurrent key admission = (['client-key', 'view-key'], 2)
-  key client unchanged after mixed calls = FieldKeyedPostResponse(root='client-key')
-  key view unchanged after mixed calls = FieldKeyedPostResponse(root='view-key')
+  sync wait interrupted = ('KeyboardInterrupt', None, None, ())
+    wait durations=[30.0]
+    events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
+  key typed declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  key admission = (['<call>', '<call>'], 1, 0)
+  key typed declared=True empty = FieldKeyedPostResponse(root='<call>')
+  key admission = (['<call>', '<call>'], 1, 0)
+  key typed declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  key admission = (['<call>', '<call>'], 1, 0)
+  key typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  key admission = ([None], 1, 1)
+  key typed declared=True caller = FieldKeyedPostResponse(root='call-key')
+  key admission = (['call-key', 'call-key'], 1, 0)
+  key response declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  key admission = (['<call>', '<call>'], 1, 0)
+  key response declared=True empty = FieldKeyedPostResponse(root='<call>')
+  key admission = (['<call>', '<call>'], 1, 0)
+  key response declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  key admission = (['<call>', '<call>'], 1, 0)
+  key response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  key admission = ([None], 1, 1)
+  key response declared=True caller = FieldKeyedPostResponse(root='call-key')
+  key admission = (['call-key', 'call-key'], 1, 0)
+  key buffered declared=True omitted = b'<call>'
+  key admission = (['<call>', '<call>'], 1, 0)
+  key buffered declared=True empty = b'<call>'
+  key admission = (['<call>', '<call>'], 1, 0)
+  key buffered declared=True UNSET = b'<call>'
+  key admission = (['<call>', '<call>'], 1, 0)
+  key buffered declared=True None = b'absent'
+  key admission = ([None], 1, 1)
+  key buffered declared=True caller = b'call-key'
+  key admission = (['call-key', 'call-key'], 1, 0)
+  key stream declared=True omitted = b'<call>'
+  key admission = (['<call>', '<call>'], 1, 0)
+  key stream declared=True empty = b'<call>'
+  key admission = (['<call>', '<call>'], 1, 0)
+  key stream declared=True UNSET = b'<call>'
+  key admission = (['<call>', '<call>'], 1, 0)
+  key stream declared=True None = b'absent'
+  key admission = ([None], 1, 1)
+  key stream declared=True caller = b'call-key'
+  key admission = (['call-key', 'call-key'], 1, 0)
+  key typed declared=False omitted = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key typed declared=False empty = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key typed declared=False UNSET = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key typed declared=False None = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key typed declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  key admission = ([], 0, 2)
+  key response declared=False omitted = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key response declared=False empty = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key response declared=False UNSET = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key response declared=False None = FieldSafeGetResponse(root='absent')
+  key admission = ([None, None], 1, 0)
+  key response declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  key admission = ([], 0, 2)
+  key buffered declared=False omitted = b'absent'
+  key admission = ([None, None], 1, 0)
+  key buffered declared=False empty = b'absent'
+  key admission = ([None, None], 1, 0)
+  key buffered declared=False UNSET = b'absent'
+  key admission = ([None, None], 1, 0)
+  key buffered declared=False None = b'absent'
+  key admission = ([None, None], 1, 0)
+  key buffered declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  key admission = ([], 0, 2)
+  key stream declared=False omitted = b'absent'
+  key admission = ([None, None], 1, 0)
+  key stream declared=False empty = b'absent'
+  key admission = ([None, None], 1, 0)
+  key stream declared=False UNSET = b'absent'
+  key admission = ([None, None], 1, 0)
+  key stream declared=False None = b'absent'
+  key admission = ([None, None], 1, 0)
+  key stream declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  key admission = ([], 0, 2)
+  key request raw declared=False omitted = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request raw declared=False empty = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request raw declared=False UNSET = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request raw declared=False None = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request raw declared=False caller ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
+  key admission = ([], 0, 2)
+  key request stream declared=False omitted = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request stream declared=False empty = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request stream declared=False UNSET = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request stream declared=False None = b'absent'
+  key admission = ([None, None], 1, 0)
+  key request stream declared=False caller ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
+  key admission = ([], 0, 2)
+  concurrent automatic keys = ((FieldKeyedPostResponse(root='<call>'), None), (b'absent', None), (FieldKeyedPostResponse(root='<call>'), None), (b'absent', None))
+  concurrent key admission = (['<call>', '<call>', None, None], 3, 0)
   async typed read failure never resent = ('APIConnectionError', None, 1, ())
   async failed response closes = 1
     events=[('request', 'GET', '/safe'), ('response', 200)] queued=1
@@ -306,255 +167,114 @@
   async native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary failure: InternalServerError'], ['original close note', 'Secondary failure: InternalServerError']), 1)
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
   async wait native = ('CancelledError', ('retry wait interrupted',))
+    wait durations=[30.0]
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
   async pre-send failure before call = (('APITimeoutError', 'phase_timeout', 0, ()), True, False, 1)
     events=[] queued=2
   async pre-send failure first response = (('APITimeoutError', 'phase_timeout', 1, ()), True, False, 1)
     events=[('request', 'POST', '/idempotent'), ('response', 503)] queued=1
-  async key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client typed declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  async key admission = ([None], 1)
-  async key client typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key', 'call-key'], 0)
-  async key client typed declared=True same object = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client response declared=True omitted = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client response declared=True empty = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client response declared=True UNSET = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  async key admission = ([None], 1)
-  async key client response declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key', 'call-key'], 0)
-  async key client response declared=True same object = FieldKeyedPostResponse(root='client-key')
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client buffered declared=True omitted = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client buffered declared=True empty = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client buffered declared=True UNSET = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client buffered declared=True None = b'absent'
-  async key admission = ([None], 1)
-  async key client buffered declared=True override = b'call-key'
-  async key admission = (['call-key', 'call-key'], 0)
-  async key client buffered declared=True same object = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client stream declared=True omitted = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client stream declared=True empty = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client stream declared=True UNSET = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client stream declared=True None = b'absent'
-  async key admission = ([None], 1)
-  async key client stream declared=True override = b'call-key'
-  async key admission = (['call-key', 'call-key'], 0)
-  async key client stream declared=True same object = b'client-key'
-  async key admission = (['client-key', 'client-key'], 0)
-  async key client typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client typed declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None, None], 0)
-  async key client typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client response declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None, None], 0)
-  async key client response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client buffered declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key client buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client stream declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key client stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request raw declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request raw declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request raw declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request raw declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key client request raw declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request raw declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request stream declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request stream declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request stream declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request stream declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key client request stream declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key client request stream declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view typed declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view typed declared=True empty = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view typed declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  async key admission = ([None], 1)
-  async key view typed declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key', 'call-key'], 0)
-  async key view typed declared=True same object = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view response declared=True omitted = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view response declared=True empty = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view response declared=True UNSET = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
-  async key admission = ([None], 1)
-  async key view response declared=True override = FieldKeyedPostResponse(root='call-key')
-  async key admission = (['call-key', 'call-key'], 0)
-  async key view response declared=True same object = FieldKeyedPostResponse(root='view-key')
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view buffered declared=True omitted = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view buffered declared=True empty = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view buffered declared=True UNSET = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view buffered declared=True None = b'absent'
-  async key admission = ([None], 1)
-  async key view buffered declared=True override = b'call-key'
-  async key admission = (['call-key', 'call-key'], 0)
-  async key view buffered declared=True same object = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view stream declared=True omitted = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view stream declared=True empty = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view stream declared=True UNSET = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view stream declared=True None = b'absent'
-  async key admission = ([None], 1)
-  async key view stream declared=True override = b'call-key'
-  async key admission = (['call-key', 'call-key'], 0)
-  async key view stream declared=True same object = b'view-key'
-  async key admission = (['view-key', 'view-key'], 0)
-  async key view typed declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view typed declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view typed declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view typed declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None, None], 0)
-  async key view typed declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view typed declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view response declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view response declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view response declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view response declared=False None = FieldSafeGetResponse(root='absent')
-  async key admission = ([None, None], 0)
-  async key view response declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view response declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view buffered declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view buffered declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view buffered declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view buffered declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key view buffered declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view buffered declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view stream declared=False omitted ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view stream declared=False empty ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view stream declared=False UNSET ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view stream declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key view stream declared=False override ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view stream declared=False same object ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request raw declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request raw declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request raw declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request raw declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key view request raw declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request raw declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request stream declared=False omitted ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request stream declared=False empty ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request stream declared=False UNSET ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request stream declared=False None = b'absent'
-  async key admission = ([None, None], 0)
-  async key view request stream declared=False override ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async key view request stream declared=False same object ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
-  async key admission = ([], 2)
-  async concurrent inherited keys = [(FieldKeyedPostResponse(root='client-key'), None), ('ConfigurationError', 'not_declared', 0, ()), (FieldKeyedPostResponse(root='view-key'), None), ('ConfigurationError', 'not_declared', 0, ())]
-  async concurrent key admission = (['client-key', 'view-key'], 2)
-  async key client unchanged after mixed calls = FieldKeyedPostResponse(root='client-key')
-  async key view unchanged after mixed calls = FieldKeyedPostResponse(root='view-key')
+  async key typed declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key typed declared=True empty = FieldKeyedPostResponse(root='<call>')
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key typed declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  async key admission = ([None], 1, 1)
+  async key typed declared=True caller = FieldKeyedPostResponse(root='call-key')
+  async key admission = (['call-key', 'call-key'], 1, 0)
+  async key response declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key response declared=True empty = FieldKeyedPostResponse(root='<call>')
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key response declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  async key admission = ([None], 1, 1)
+  async key response declared=True caller = FieldKeyedPostResponse(root='call-key')
+  async key admission = (['call-key', 'call-key'], 1, 0)
+  async key buffered declared=True omitted = b'<call>'
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key buffered declared=True empty = b'<call>'
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key buffered declared=True UNSET = b'<call>'
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key buffered declared=True None = b'absent'
+  async key admission = ([None], 1, 1)
+  async key buffered declared=True caller = b'call-key'
+  async key admission = (['call-key', 'call-key'], 1, 0)
+  async key stream declared=True omitted = b'<call>'
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key stream declared=True empty = b'<call>'
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key stream declared=True UNSET = b'<call>'
+  async key admission = (['<call>', '<call>'], 1, 0)
+  async key stream declared=True None = b'absent'
+  async key admission = ([None], 1, 1)
+  async key stream declared=True caller = b'call-key'
+  async key admission = (['call-key', 'call-key'], 1, 0)
+  async key typed declared=False omitted = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key typed declared=False empty = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key typed declared=False UNSET = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key typed declared=False None = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key typed declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  async key admission = ([], 0, 2)
+  async key response declared=False omitted = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key response declared=False empty = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key response declared=False UNSET = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key response declared=False None = FieldSafeGetResponse(root='absent')
+  async key admission = ([None, None], 1, 0)
+  async key response declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  async key admission = ([], 0, 2)
+  async key buffered declared=False omitted = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key buffered declared=False empty = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key buffered declared=False UNSET = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key buffered declared=False None = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key buffered declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  async key admission = ([], 0, 2)
+  async key stream declared=False omitted = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key stream declared=False empty = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key stream declared=False UNSET = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key stream declared=False None = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key stream declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  async key admission = ([], 0, 2)
+  async key request raw declared=False omitted = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request raw declared=False empty = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request raw declared=False UNSET = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request raw declared=False None = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request raw declared=False caller ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
+  async key admission = ([], 0, 2)
+  async key request stream declared=False omitted = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request stream declared=False empty = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request stream declared=False UNSET = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request stream declared=False None = b'absent'
+  async key admission = ([None, None], 1, 0)
+  async key request stream declared=False caller ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
+  async key admission = ([], 0, 2)
+  async concurrent automatic keys = [(FieldKeyedPostResponse(root='<call>'), None), (b'absent', None), (FieldKeyedPostResponse(root='<call>'), None), (b'absent', None)]
+  async concurrent key admission = (['<call>', '<call>', None, None], 3, 0)
   async automatic key retained through retry = FieldKeyedPostResponse(root='<call>')
   async automatic key fresh next call = FieldKeyedPostResponse(root='<call>')
   async automatic key admission = (3, True, True)

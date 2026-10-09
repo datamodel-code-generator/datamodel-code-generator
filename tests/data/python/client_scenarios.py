@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import gzip
 import importlib
+import inspect
 import json
 import re
 import zlib
-from dataclasses import fields as dataclass_fields
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
@@ -73,6 +73,7 @@ from tests.data.python.client_runtime import (
     generated,
     injected,
     json_response,
+    outcome,
     raw_response,
     record,
     request_body,
@@ -118,23 +119,11 @@ def _options(package: ModuleType, lines: list[str]) -> None:
     (options,) = _modules(package, "options")
     selection = options.ServerSelection
     for label, build in (
-        ("server and base_url", lambda: options.ClientOptions(server=selection(), base_url="https://a.example.com")),
-        ("server type", lambda: options.RequestOptions(server="eu")),
-        ("base_url type", lambda: options.RequestOptions(base_url=5)),
-        ("base_url scheme", lambda: options.RequestOptions(base_url="ftp://a.example.com")),
-        ("base_url port", lambda: options.RequestOptions(base_url="https://a.example.com:port")),
-        ("base_url userinfo", lambda: options.RequestOptions(base_url="https://user@a.example.com")),
-        ("base_url query", lambda: options.RequestOptions(base_url="https://a.example.com/v1?key=1")),
-        ("base_url fragment", lambda: options.RequestOptions(base_url="https://a.example.com/#top")),
-        ("base_url port zero", lambda: options.RequestOptions(base_url="https://a.example.com:0")),
-        ("max_response_bytes bool", lambda: options.RequestOptions(max_response_bytes=True)),
-        ("max_response_bytes negative", lambda: options.RequestOptions(max_response_bytes=-1)),
-        ("max_error_body_bytes zero", lambda: options.RequestOptions(max_error_body_bytes=0)),
-        ("max_error_body_bytes large", lambda: options.RequestOptions(max_error_body_bytes=2 * 1024 * 1024)),
+        ("server and base_url", lambda: options.RequestOptions(server=selection(), base_url="https://a.example.com")),
+        ("client server and base_url", lambda: package.Client(server=selection(), base_url="https://a.example.com")),
         ("server index", lambda: selection(index=-1)),
         ("server variables", lambda: selection(variables={"region": 1})),
         ("server", lambda: selection(index=0, variables={"region": "eu"})),
-        ("limits", lambda: options.RequestOptions(max_response_bytes=None, max_error_body_bytes=10)),
     ):
         record(lines, f"options {label}", build)
 
@@ -168,7 +157,7 @@ def _lifecycle(package: ModuleType, lines: list[str]) -> None:
     lines.append(f"  lifecycle borrowed closed {borrowed_http.is_closed}")
     borrowed_http.close()
     record(lines, "client http_client", lambda: package.Client(http_client="http"))
-    record(lines, "client options", lambda: package.Client(options="fast"))
+    lines.append(f"  client unknown keyword {outcome(lambda: package.Client(options='fast'))}")
 
 
 def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -182,7 +171,11 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     exchange.respond(json_response(200, pets, **headers))
     record(lines, "list", lambda: api.pets.list_pets(limit=limit, labels=labels, x_trace=trace, session=session))
     exchange.respond(json_response(200, pets))
-    for label, value in (("cookie as given", "a%20b+c"), ("cookie delimiter", "a;b"), ("cookie non-ASCII", "caf\u00e9")):
+    for label, value in (
+        ("cookie as given", "a%20b+c"),
+        ("cookie delimiter", "a;b"),
+        ("cookie non-ASCII", "caf\u00e9"),
+    ):
         cookie = argument(package, "listPets", "cookie", "session", value)
         record(lines, label, lambda cookie=cookie: api.pets.list_pets(x_trace=trace, session=cookie))
     exchange.respond(json_response(200, pets, **{"X-Rate": "10"}))
@@ -199,6 +192,9 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             f"header {label}",
             lambda response=response: types.decode_list_pets_header(response.info, name="X-Rate"),
         )
+    exchange.respond(lambda _: httpx2.Response(200, headers=[("X-Rate", "1"), ("X-Rate", "2")], json=pets))
+    response = api.pets.with_response.list_pets(x_trace=trace)
+    record(lines, "header repeated", lambda: types.decode_list_pets_header(response.info, name="X-Rate"))
     for label, responder, attempts in (
         ("error", json_response(500, {"code": 7, "message": "boom"}), 3),
         ("error syntax", raw_response(500, b"{", "application/json"), 3),
@@ -234,16 +230,10 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
                     "header error",
                     lambda failure=failure: types.decode_list_pets_header(failure.info, name="X-Next"),
                 )
-    exchange.respond(*((raw_response(500, b"x" * 20, "application/json"),) * 3))
-    options = importlib.import_module(f"{package.__name__}.options")
-    record(
-        lines,
-        "list truncated",
-        lambda: api.pets.list_pets(x_trace=trace, options=options.RequestOptions(max_error_body_bytes=4)),
-    )
-    record(lines, "list missing", lambda: api.pets.list_pets(x_trace=options.UNSET))
+    unset = importlib.import_module(f"{package.__name__}.options").UNSET
+    record(lines, "list missing", lambda: api.pets.list_pets(x_trace=unset))
     record(lines, "list invalid", lambda: api.pets.list_pets(x_trace=_trace(package, "line\nbreak")))
-    record(lines, "list options", lambda: api.pets.list_pets(x_trace=trace, options="fast"))
+    record(lines, "list lone surrogate", lambda: api.pets.list_pets(x_trace="x\ud800"))
 
 
 def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -311,9 +301,8 @@ def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: l
     (options,) = _modules(package, "options")
     selection = options.ServerSelection
     http = exchange.client()
-    override = options.ClientOptions(base_url="https://override.example.com/root/")
     pet = _pet(package, "DELETE /pets/{petId}")
-    with package.Client(http_client=http, options=override) as api:
+    with package.Client(http_client=http, base_url="https://override.example.com/root/") as api:
         exchange.respond(raw_response(204), raw_response(204))
         record(lines, "base_url", lambda: api.pets.delete_pets_by_pet_id(pet_id=pet))
         eu = options.RequestOptions(server=selection(variables={"region": "eu"}))
@@ -332,22 +321,6 @@ def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: l
             )
     http.close()
     del api_options
-
-
-def _limits(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    (options,) = _modules(package, "options")
-    pets = [{"id": index, "name": "x" * 20} for index in range(20)]
-    exchange.respond(json_response(200, pets, **{"X-Rate": "1"}), json_response(200, pets, **{"X-Rate": "1"}))
-    trace = _trace(package)
-    record(
-        lines,
-        "too large",
-        lambda: api.pets.list_pets(x_trace=trace, options=options.RequestOptions(max_response_bytes=10)),
-    )
-    unlimited = options.RequestOptions(max_response_bytes=None)
-    record(
-        lines, "unlimited", lambda: api.pets.with_response.list_pets(x_trace=trace, options=unlimited).info.status_code
-    )
 
 
 def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -370,19 +343,18 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
 def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
     runtime = Path(package.__file__).parent / "_runtime" / "protocols"
-    optional = ("client", "client_options", "caches", "names", "options", "origins")
+    optional = ("client", "caches", "options", "origins")
     (options,) = _modules(package, "options")
-    option_fields = {item.name for item in dataclass_fields(options.ClientOptions)}
     lines.extend((
         f"  helper modules copied={[name for name in optional if (runtime / f'{name}.py').is_file()]}",
-        f"  helper options field={'protocols' in option_fields}",
+        f"  helper protocols keyword={'protocols' in inspect.signature(package.Client).parameters}",
     ))
     exchange = Exchange(lines)
     with (
         exchange.client() as http,
-        package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api,
+        package.Client(http_client=http, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
-        for step in (_list_pets, _create_pet, _get_pet, _upload, _limits, _transports):
+        for step in (_list_pets, _create_pet, _get_pet, _upload, _transports):
             step(package, api, exchange, lines)
     _servers(package, None, exchange, lines)
     _options(package, lines)
@@ -399,9 +371,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
     trace, pet = _trace(package), _pet(package, "getPet")
     (_types,) = _modules(package, "types.pets")
     text = request_body(package, "createPet", "text/plain", "dog")
-    async with package.AsyncClient(
-        http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-    ) as api:
+    async with package.AsyncClient(http_client=http, retry=options.RetryOptions(initial_delay=0)) as api:
         exchange.respond(json_response(200, [{"id": 1, "name": "cat"}], **{"X-Rate": "1"}))
         await arecord(lines, "async list", lambda: api.pets.list_pets(x_trace=trace))
         exchange.respond(json_response(201, {"id": 2, "name": "dog"}))
@@ -412,12 +382,6 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
         await arecord(lines, "async connect", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(abroken)
         await arecord(lines, "async broken", lambda: api.pets.get_pet(pet_id=pet))
-        exchange.respond(raw_response(200, b"[" * 40, "application/json"))
-        limited = options.RequestOptions(max_response_bytes=10)
-        await arecord(lines, "async too large", lambda: api.pets.list_pets(x_trace=trace, options=limited))
-        exchange.respond(*((raw_response(500, b"x" * 40, "application/json"),) * 3))
-        truncated = options.RequestOptions(max_error_body_bytes=4)
-        await arecord(lines, "async truncated", lambda: api.pets.list_pets(x_trace=trace, options=truncated))
     lines.append(f"  async borrowed closed {http.is_closed}")
     await http.aclose()
     owned = package.AsyncClient()
@@ -450,7 +414,9 @@ def media(package: ModuleType, lines: list[str]) -> None:
         )
         record(lines, "form", lambda: api.forms.submit_form(body=form))
         record(lines, "form invalid", lambda: api.forms.submit_form(body=form))
-        exchange.respond(raw_response(200, b"name=known&unknown=first&unknown=last", "application/x-www-form-urlencoded"))
+        exchange.respond(
+            raw_response(200, b"name=known&unknown=first&unknown=last", "application/x-www-form-urlencoded")
+        )
         record(lines, "form repeated undeclared member", lambda: api.forms.submit_form(body=form))
         exchange.respond(
             raw_response(200, b"a=1&a=2&b=%20", "application/x-www-form-urlencoded"),
@@ -620,7 +586,7 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
 
 
 def querystring(package: ModuleType, lines: list[str]) -> None:
-    """Send a whole query through one querystring parameter, which no query patch may add to."""
+    """Send a whole query through one querystring parameter, which a call's extra query joins after its names."""
     _types, options = _modules(package, "types.default", "options")
     exchange = Exchange(lines)
     criteria = argument(
@@ -637,8 +603,9 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
         record(lines, "search all", api.default.search)
-        patched = options.RequestOptions(query=(("page", "3"),))
-        record(lines, "search with a query patch", lambda: api.default.search(criteria=criteria, options=patched))
+        exchange.respond(json_response(200, []))
+        extra = options.RequestOptions(extra_query={"page": "3", "sort": "name"})
+        record(lines, "search with an extra query", lambda: api.default.search(criteria=criteria, options=extra))
 
 
 def servers(package: ModuleType, lines: list[str]) -> None:
@@ -717,7 +684,7 @@ async def _async_paths(package: ModuleType, lines: list[str]) -> None:
 
 _PET: Final = json.dumps({"id": 3, "name": "fox"}).encode()
 _ERROR: Final = json.dumps({"code": 7, "message": "boom"}).encode()
-_BOMB: Final = gzip.compress(bytes(2 * 1024 * 1024), mtime=0)
+_BOMB: Final = gzip.compress(b'{"id":3,"name":"' + b"x" * (2 * 1024 * 1024) + b'"}', mtime=0)
 
 
 def _coded(coding: str, content: bytes, status: int = 200) -> Callable[[Any], Any]:
@@ -729,15 +696,13 @@ def _corrupt(content: bytes) -> bytes:
 
 
 def codings(package: ModuleType, lines: list[str]) -> None:
-    """Remove gzip, deflate, and stacked codings with HTTPX2, refuse broken ones, and bound expanding ones."""
+    """Remove gzip, deflate, and stacked codings with HTTPX2, refuse broken ones, and decode expanding ones whole."""
     exchange = Exchange(lines)
     pets = json.dumps([{"id": index, "name": "cat"} for index in range(4000)]).encode()
     (options,) = _modules(package, "options")
     with (
         exchange.client() as http,
-        package.Client(
-            http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-        ) as api,
+        package.Client(http_client=http, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
         pet, trace = _pet(package, "getPet"), _trace(package)
         for label, responder in (
@@ -757,8 +722,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(responder)
             record(lines, f"coding {label}", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(_coded("gzip", _BOMB))
-        bounded = options.RequestOptions(max_response_bytes=1024 * 1024)
-        record(lines, "coding bomb past the response limit", lambda: api.pets.get_pet(pet_id=pet, options=bounded))
+        record(lines, "coding expanding to 2 MiB, decoded uncapped", lambda: len(api.pets.get_pet(pet_id=pet).name))
         exchange.respond(injected(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"})))
         record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(

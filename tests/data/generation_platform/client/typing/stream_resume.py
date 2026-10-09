@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pets.errors import SessionLimitError, StreamInterruptedError
-from pets.options import RequestOptions, SessionOptions
+from pets.options import RequestOptions
 from pets.model_codecs import JSONValue
 from pets.protocols import AsyncEventStream, EventStream, StreamOptions, UnknownEvent
 from pets_models import Created, Mark, Message, Record
@@ -23,9 +23,8 @@ def resumed(client: Client) -> None:
     again = client.protocols.events.live.resume(
         state,
         topic="news",
-        stream_options=StreamOptions(reconnect=True, max_reconnect_wait=5),
+        stream_options=StreamOptions(reconnect=True, max_reconnect_wait=5, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(again, EventStream[Message])
     assert_type(client.protocols.events.tracked.resume(state), EventStream[Created | UnknownEvent])

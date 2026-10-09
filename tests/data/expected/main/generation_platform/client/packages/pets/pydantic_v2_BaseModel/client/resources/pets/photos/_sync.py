@@ -12,7 +12,7 @@ from typing import Literal
 from .... import _operations
 from ...._runtime.client.client import ClientCore
 from ....bodies import SyncBinaryBody
-from ....options import UNSET, RequestOptions, Unset
+from ....options import UNSET, RequestOptions
 from ....responses import RawResponse, Response
 from ....types.pets.photos import UploadResponse
 
@@ -43,7 +43,7 @@ class PetsPhotosResource:
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -70,7 +70,7 @@ class PetsPhotosWithResponse:
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -97,7 +97,7 @@ class PetsPhotosWithRawResponse:
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -124,7 +124,7 @@ class PetsPhotosWithStreamingResponse:
         self,
         *,
         pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,

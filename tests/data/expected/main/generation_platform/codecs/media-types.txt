@@ -21,4 +21,4 @@ issue-message: ValueError A wire issue message must not exceed 1024 characters
 error-empty: The wire value is invalid
 error-pointer: Wrong type at /a
 error-root: Wrong type at /
-unset: UNSET False True
+unset: UNSET True

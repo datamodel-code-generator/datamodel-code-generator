@@ -44,13 +44,10 @@ _CORE: Final = (
     "model_codecs/media.py",
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
-    "model_codecs/wire.py",
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",
-    "protocols/client_options.py",
     "protocols/caches.py",
-    "protocols/names.py",
     "protocols/options.py",
     "protocols/origins.py",
 )
@@ -115,7 +112,7 @@ class Capabilities:
 
     @property
     def protocols(self) -> bool:
-        """Whether a helper that `ProtocolClientOptions` configures is declared."""
+        """Whether a helper that the client's helper settings configure is declared."""
         return bool(self.helpers - {"webhooks", "compression"})
 
     def modules(self) -> tuple[str, ...]:

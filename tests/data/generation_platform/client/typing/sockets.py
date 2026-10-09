@@ -8,12 +8,11 @@ from typing import Literal
 
 from pets import AsyncClient, Client
 from pets.errors import APIConnectionError, ConfigurationError, WebSocketClosedError
-from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions, SessionOptions
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncWebSocketSession,
     Message,
     PingReceipt,
-    ProtocolDefaults,
     WebSocketSession,
     WSOptions,
 )
@@ -38,9 +37,8 @@ def sockets(
     session = client.protocols.rooms.chat.connect(
         room=room,
         since=since,
-        ws_options=WSOptions(open_timeout=1, idle_timeout=None, max_message_bytes=65536),
+        ws_options=WSOptions(open_timeout=1, idle_timeout=None, max_message_bytes=65536, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(session, WebSocketSession[ClientMessage, ServerMessage])
     session.send(message)
@@ -76,13 +74,9 @@ def failures(error: WebSocketClosedError, unknown: APIConnectionError, busy: Con
     assert_type(busy.field_path, tuple[str | int, ...])
 
 
-def options() -> ClientOptions:
+def options() -> Client:
     """Give a client WebSocket helper defaults; transport settings are the HTTP client's."""
-    return ClientOptions(
-        protocols=ProtocolClientOptions(
-            defaults={"rooms.chat": ProtocolDefaults(options=WSOptions(ping_interval=None))}
-        ),
-    )
+    return Client(helper_defaults={"rooms.chat": WSOptions(ping_interval=None, total_timeout=None)})
 
 
 async def async_sockets(

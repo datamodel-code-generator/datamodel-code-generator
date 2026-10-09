@@ -126,7 +126,7 @@ refused states
   not JSON ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   another helper's state = LroHandle(phase='pending', polls=0)
   expired state ! ConfigurationError: ConfigurationError(reason='expired', field_path='state') [field_path=('state',)] expired
-  resumed with a patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Trace') [field_path=('options', 'headers', 'X-Trace')] invalid_value
+  resumed with a patched written header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.X-Trace') [field_path=('options', 'extra_headers', 'X-Trace')] invalid_value
   resumed with poll options of another type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='poll_options') [field_path=('poll_options',)] invalid_value
 malformed states
   > POST https://api.example.com/jobs

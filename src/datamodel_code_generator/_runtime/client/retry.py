@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 from .logical import Delivery
 
@@ -71,8 +71,8 @@ class RetryHeaders:
 EMPTY_RETRY_HEADERS: Final = RetryHeaders(None, None)
 
 
-def _header(value: str | Unset | None, declared: str | None, name: str) -> str | None:
-    if isinstance(value, Unset):
+def _header(value: str | UNSET | None, declared: str | None, name: str) -> str | None:
+    if value is UNSET:
         return declared
     if value is not None and (declared is None or value.lower() != declared.lower()):
         raise ConfigurationError(field_path=("retry", name), reason="invalid_value")

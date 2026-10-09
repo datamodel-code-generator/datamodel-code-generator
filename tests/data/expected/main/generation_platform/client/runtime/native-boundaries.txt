@@ -1,5 +1,5 @@
 # native-boundaries pydantic_v2.BaseModel
-  public codec exports ['JSONValue', 'UNSET', 'Unset']
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')
@@ -123,7 +123,7 @@ unknown
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries pydantic_v2.dataclass
-  public codec exports ['JSONValue', 'UNSET', 'Unset']
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')
@@ -247,7 +247,7 @@ unknown
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries dataclasses.dataclass
-  public codec exports ['JSONValue', 'UNSET', 'Unset']
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')
@@ -364,7 +364,7 @@ unknown
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries typing.TypedDict
-  public codec exports ['JSONValue', 'UNSET', 'Unset']
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = {'value': 'last'}
@@ -481,7 +481,7 @@ unknown
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries msgspec.Struct
-  public codec exports ['JSONValue', 'UNSET', 'Unset']
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')

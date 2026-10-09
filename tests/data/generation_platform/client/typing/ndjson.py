@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
 from pets.errors import ProtocolDataError
-from pets.options import RequestOptions, SessionOptions
+from pets.options import RequestOptions
 from pets.protocols import AsyncEventStream, EventStream, StreamEvent, StreamOptions, UnknownEvent
 from pets_models import Created, Deleted, Record, SearchQuery
 from typing_extensions import assert_type
@@ -15,9 +15,8 @@ from typing_extensions import assert_type
 def records(client: Client, query: SearchQuery) -> None:
     """Yield typed records and their data, keep unknown records in the union, and read error records as object."""
     stream = client.protocols.records.all.open(
-        stream_options=StreamOptions(idle_timeout=5),
+        stream_options=StreamOptions(idle_timeout=5, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(stream, EventStream[Record])
     events: Iterator[StreamEvent[Record]] = stream

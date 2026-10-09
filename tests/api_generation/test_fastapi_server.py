@@ -43,6 +43,7 @@ PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start 
         "bodies",
         "results",
         "security",
+        "security-templates",
         "customized",
         "locals",
         "unauthorized",
@@ -54,6 +55,8 @@ PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start 
         "responses",
         "nested-models",
         "stale",
+        "spellings",
+        "spellings-exact",
     ],
 )
 def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

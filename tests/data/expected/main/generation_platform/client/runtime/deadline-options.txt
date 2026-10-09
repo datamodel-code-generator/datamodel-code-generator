@@ -1,50 +1,31 @@
 # pets pydantic_v2.BaseModel
-  phase connect bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
-  phase read bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
-  phase write bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
-  phase pool bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
   option total_timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
-  phase connect negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
-  phase read negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
-  phase write negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
-  phase pool negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option timeout negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
   option total_timeout negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
-  phase connect nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
-  phase read nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
-  phase write nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
-  phase pool nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option timeout nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
   option total_timeout nan ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
-  phase connect infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
-  phase read infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
-  phase write infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
-  phase pool infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option timeout infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
   option total_timeout infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
-  phase connect negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
-  phase read negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
-  phase write negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
-  phase pool negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option timeout negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
   option total_timeout negative infinity ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
-  phase connect text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
-  phase read text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
-  phase write text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
-  phase pool text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
-  option total_timeout text ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
-  phase connect overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
-  phase read overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.read') [field_path=('timeout', 'read')] out_of_range
-  phase write overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.write') [field_path=('timeout', 'write')] out_of_range
-  phase pool overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.pool') [field_path=('timeout', 'pool')] out_of_range
+  option timeout overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
   option total_timeout overflow ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
-  option timeout type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='timeout') [field_path=('timeout',)] invalid_type
-  option clock type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock') [field_path=('clock',)] invalid_type
-  timeout unset = TimeoutOptions(connect=UNSET, read=UNSET, write=UNSET, pool=UNSET)
-  timeout zero = TimeoutOptions(connect=0.0, read=0.0, write=0.0, pool=0.0)
-  timeout mixed = TimeoutOptions(connect=None, read=1.0, write=2.5, pool=UNSET)
+  root timeout negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
+  view timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout') [field_path=('timeout',)] out_of_range
+  root total_timeout negative ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  view total_timeout bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='total_timeout') [field_path=('total_timeout',)] out_of_range
+  option timeout negative phases ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  root timeout negative phases ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
+  view timeout negative phases ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='timeout.connect') [field_path=('timeout', 'connect')] out_of_range
   public deadline exported=False
+  public timeout options exported=False
   removed option deadline ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'deadline' []
   removed option stream_idle_timeout ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'stream_idle_timeout' []
   removed option stream_total_timeout ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'stream_total_timeout' []
-  seconds 0.0
-  slotted (False, False)
+  seconds timeout=0.0 total=0.0
+  phases timeout=Timeout(connect=None, read=1, write=None, pool=None) total=None
+  slotted False
   error SDKError() reason=None attempts=1 elapsed=2 request=None
   with response SDKError() safe=True
   error APITimeoutError(reason='phase_timeout') reason=phase_timeout attempts=0 elapsed=0.0 request=None
@@ -53,30 +34,70 @@
   with response APITimeoutError(reason='deadline_exceeded', cause='RuntimeError') safe=True
   response measurements attempts=3 elapsed=0.5
   hierarchy timeout=True
-  hints TimeoutOptions ('connect', 'read', 'write', 'pool', 'return')
-  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'timeout', 'total_timeout', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'clock', 'return')
-  hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'timeout', 'total_timeout', 'retry', 'follow_redirects', 'idempotency_key', 'auth', 'return')
-  hints Clock ('monotonic', 'time', 'random', 'return')
-  hints SDKError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
-  hints APIConnectionError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
-  hints APITimeoutError ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
+  hints Client = ('base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'default_headers', 'default_query', 'follow_redirects', 'auth', 'clock', 'http_client', 'return')
+  hints ClientView.with_options = ('base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'default_headers', 'default_query', 'follow_redirects', 'auth', 'return')
+  hints RequestOptions = ('base_url', 'server', 'timeout', 'total_timeout', 'max_retries', 'retry', 'extra_headers', 'extra_query', 'follow_redirects', 'idempotency_key', 'auth', 'return')
+  hints Clock = ('monotonic', 'time', 'random', 'sleep', 'asleep', 'return')
+  hints SDKError = ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
+  hints APIConnectionError = ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
+  hints APITimeoutError = ('reason', 'operation_id', 'info', 'cause', 'attempt_count', 'elapsed', 'return')
   native timeout {'connect': 5.0, 'read': 5.0, 'write': 5.0, 'pool': 5.0}
   > GET https://example.com/default
     [host: example.com, accept-encoding: gzip, deflate] b''
-  default total and phases = b'default'
-  native timeout {'connect': 3.0, 'read': 5.0, 'write': 7.0, 'pool': 2.0}
-  > GET https://example.com/layered
+  injected default timeout kept = b'default'
+  native timeout {'connect': 4, 'read': 9, 'write': 9, 'pool': 9}
+  > GET https://example.com/injected
     [host: example.com, accept-encoding: gzip, deflate] b''
-  nested timeout merge = b'layered'
-  native timeout {'connect': None, 'read': 8.0, 'write': None, 'pool': None}
+  injected own timeout kept = b'injected'
+  native timeout {'connect': 2.5, 'read': 2.5, 'write': 2.5, 'pool': 2.5}
+  > GET https://example.com/number
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  root number limits every phase = b'number'
+  native timeout {'connect': None, 'read': None, 'write': None, 'pool': None}
+  > GET https://example.com/unlimited
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  root none lifts every phase = b'unlimited'
+  native timeout {'connect': 3, 'read': 5, 'write': 7, 'pool': 2}
+  > GET https://example.com/inherited
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  root phases inherited by view and call = b'inherited'
+  native timeout {'connect': 7.0, 'read': 7.0, 'write': 7.0, 'pool': 7.0}
+  > GET https://example.com/view-number
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  view number over root phases = b'view-number'
+  native timeout {'connect': None, 'read': 8, 'write': None, 'pool': None}
+  > GET https://example.com/call-phases
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  call phases over view number = b'call-phases'
+  native timeout {'connect': None, 'read': None, 'write': None, 'pool': None}
   > GET https://example.com/cleared
     [host: example.com, accept-encoding: gzip, deflate] b''
-  nested timeout clear = b'cleared'
+  view none inherited by call = b'cleared'
+  native timeout {'connect': 1.0, 'read': 1.0, 'write': 1.0, 'pool': 1.0}
+  > GET https://example.com/call-number
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  call number over view none = b'call-number'
+  native timeout {'connect': None, 'read': None, 'write': None, 'pool': None}
+  > GET https://example.com/call-none
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  call none over root phases = b'call-none'
   refused attempts ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
   attempts=2 phases share the remaining time=True within the deadline=True shrinking=True
   clock monotonic type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.monotonic') [field_path=('clock', 'monotonic')] invalid_type
   clock time type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.time') [field_path=('clock', 'time')] invalid_type
   clock random type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.random') [field_path=('clock', 'random')] invalid_type
+  clock sleep type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.sleep') [field_path=('clock', 'sleep')] invalid_type
+  clock asleep type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='clock.asleep') [field_path=('clock', 'asleep')] invalid_type
   hashing ignores sources clock=True
   budget on the client clock ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
   native phases [{'connect': 5.0, 'read': 5.0, 'write': 5.0, 'pool': 5.0}]
+  view none removes the budget ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
+  native phases [{'connect': None, 'read': None, 'write': None, 'pool': None}]
+  call none removes the budget ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
+  native phases [{'connect': None, 'read': None, 'write': None, 'pool': None}]
+  call budget over a view without one ! APIConnectionError: APIConnectionError(cause='ConnectError') [cause=ConnectError('refused')]
+  native phases [{'connect': 2.0, 'read': 2.0, 'write': 2.0, 'pool': 2.0}]
+  call zero budget ! APITimeoutError: APITimeoutError(reason='deadline_exceeded') [] deadline_exceeded
+  native phases []
+  view zero budget ! APITimeoutError: APITimeoutError(reason='deadline_exceeded') [] deadline_exceeded
+  native phases []

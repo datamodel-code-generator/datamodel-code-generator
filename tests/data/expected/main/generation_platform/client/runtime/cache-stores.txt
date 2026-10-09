@@ -18,9 +18,7 @@
   options = CacheOptions(max_entry_bytes=1, max_ttl=0.5)
   options zero bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entry_bytes') [field_path=('max_entry_bytes',)] invalid_value
   options boolean ttl ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_ttl') [field_path=('max_ttl',)] invalid_value
-  defaults = ProtocolDefaults(session=UNSET, options=CacheOptions(max_entry_bytes=UNSET, max_ttl=1))
-  stores list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_stores') [field_path=('cache_stores',)] invalid_value
-  stores name ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_stores') [field_path=('cache_stores',)] invalid_value
+  stores name ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='cache_stores.no name') [field_path=('cache_stores', 'no name')] unknown_field
   protocol error = ProtocolDataError: ProtocolDataError(reason='inconsistent') [] inconsistent
   memory zero entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',)] invalid_value
   memory boolean entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',)] invalid_value
@@ -49,14 +47,25 @@
   async memory delete None
   async memory repeated delete None
   async memory deleted None
-  unknown helper store ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.cache_stores.users.unknown') [field_path=('protocols', 'cache_stores', 'users.unknown')] unknown_field
-  pagination-free name ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.cache_stores.users') [field_path=('protocols', 'cache_stores', 'users')] unknown_field
-  object store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] wrong_capability
-  asynchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] wrong_capability
-  synchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] wrong_capability
-  session defaults ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.profile.session') [field_path=('protocols', 'defaults', 'users.profile', 'session')] invalid_value
-  pagination defaults ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.profile.options') [field_path=('protocols', 'defaults', 'users.profile', 'options')] invalid_value
-  no store ! ConfigurationError: ConfigurationError(reason='missing_adapter', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] missing_adapter
+  unknown helper store ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='cache_stores.users.unknown') [field_path=('cache_stores', 'users.unknown')] unknown_field
+  pagination-free name ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='cache_stores.users') [field_path=('cache_stores', 'users')] unknown_field
+  object store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='cache_stores.users.profile') [field_path=('cache_stores', 'users.profile')] wrong_capability
+  asynchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='cache_stores.users.profile') [field_path=('cache_stores', 'users.profile')] wrong_capability
+  synchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='cache_stores.users.profile') [field_path=('cache_stores', 'users.profile')] wrong_capability
+  pagination defaults ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.users.profile') [field_path=('helper_defaults', 'users.profile')] invalid_value
+  > GET https://api.example.com/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default store miss = network 3:own status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
+  default store hit = fresh_cache 3:own status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  default store of the root in a view = fresh_cache 3:own status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  > GET https://api.example.com/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  another client's default store = network 3:other status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '23'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dict store miss = network 3:plain status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '23'), ('content-type', 'application/json')]
+  dict store hit = fresh_cache 3:plain status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '23')]
+  dict store keys=[('bytes', 32)]
     get key=32
   > GET https://api.example.com/users/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -158,35 +167,50 @@
   after a response hook failure = network 23:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
   hit without a request = fresh_cache 23:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
-  no partition ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='protocols.security') [field_path=('protocols', 'security')] security_partition
-  no credentials ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',)] binding_mismatch
+  no credentials ! ConfigurationError: ConfigurationError(operation_id='getSecureUser', reason='missing_credentials', field_path='auth') [operation_id='getSecureUser', field_path=('auth',)] missing_credentials
+  failing credential ! AuthError: AuthError(operation_id='getSecureUser', reason='provider_failed') [operation_id='getSecureUser', cause=RuntimeError('vault down')] provider_failed
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  tenant a stored = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-  tenant a shared = fresh_cache 1:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  token stored = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
+  same token shared = fresh_cache 1:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
   > GET https://api.example.com/secure/users/1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  tenant b isolated = network 1:other status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '23'), ('content-type', 'application/json')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer other] b''
+  other token isolated = network 1:other status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '23'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   anonymous helper = network 1:anonymous status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '27'), ('content-type', 'application/json')]
   anonymous helper with a credential ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',)] binding_mismatch
-  anonymous helper same tenant = fresh_cache 1:anonymous status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
-  > GET https://api.example.com/users/1
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  anonymous helper other tenant = network 1:b status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '19'), ('content-type', 'application/json')]
+  anonymous helper of another token = fresh_cache 1:anonymous status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
   > GET https://api.example.com/secure/users/2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice] b''
   alice varying on authorization = network 2:alice status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '23'), ('content-type', 'application/json')]
   > GET https://api.example.com/secure/users/2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer bob] b''
-  bob in the same partition = network 2:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '21'), ('content-type', 'application/json')]
+  bob through the same store = network 2:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '21'), ('content-type', 'application/json')]
+  alice again = fresh_cache 2:alice status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-type', 'application/json'), ('Content-Length', '23')]
+  bob again = fresh_cache 2:bob status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  view sending bob's authorization = fresh_cache 2:bob status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-type', 'application/json'), ('Content-Length', '21')]
   > GET https://api.example.com/secure/users/2
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice] b''
-  alice again = network 2:alice again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '29'), ('content-type', 'application/json')]
-  view with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth')] security_partition
-  call with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth')] security_partition
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer carol] b''
+  call with carol's auth = network 2:carol status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '23'), ('content-type', 'application/json')]
+  call with carol's auth again = fresh_cache 2:carol status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-type', 'application/json'), ('Content-Length', '23')]
   anonymous view = fresh_cache 1:anonymous status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
+  > GET https://api.example.com/secure/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer a] b''
+  callable key a = network 3:a status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer b] b''
+  callable key b = network 3:b status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  callable key a = fresh_cache 3:a status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+  callable key b = fresh_cache 3:b status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+    get key=32
+  > GET https://api.example.com/secure/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer rotated-1] b''
+  rotated between lookup and send = network 3:first status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '23'), ('content-type', 'application/json')]
+    get key=32
+  > GET https://api.example.com/secure/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer rotated-3] b''
+  rotated again = network 3:second status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
   > GET https://api.example.com/secure/users/4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
   on behalf of u = network 4:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
@@ -201,9 +225,7 @@
   > GET https://api.example.com/secure/users/5
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
   on behalf of u after the service = network 5:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
-  > GET https://api.example.com/secure/users/4
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  view patching the bound authorization ! APIConnectionError: APIConnectionError(operation_id='getSecureUser', cause='RemoteProtocolError') [operation_id='getSecureUser', cause=RemoteProtocolError('Server disconnected without sending a response.')]
+  view patching the bound authorization = fresh_cache 4:service status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '25')]
   > GET https://api.example.com/carts/current
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=alice] b''
   alice cart = network 44:alice status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
@@ -211,8 +233,49 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=bob] b''
   bob cart = network 44:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   alice cart again = fresh_cache 44:alice status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
+  > POST https://auth.example.com/token
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, authorization: Basic YzpzZWNyZXQ=, content-length: 42] b'grant_type=client_credentials&audience=api'
+    get key=32
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer t1] b''
+  > POST https://auth.example.com/token
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, authorization: Basic YzpzZWNyZXQ=, content-length: 42] b'grant_type=client_credentials&audience=api'
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer t2] b''
+  renewed token unstored = network 1:renewed status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+    get key=32
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer t2] b''
+    set status=200 vary=() values=0 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
+  next round stored = network 1:next status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+    get key=32
+  next round fresh = fresh_cache 1:next status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
     get key=32
   granted ! SDKError: SDKError(reason='store_failed') [cause=OSError('down')] store_failed
+  > GET https://api.example.com/users/6
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users/6
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-session: alice] b''
+  session added after a challenge = network 6:alice session status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '31'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/6
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  anonymous after the session = network 6:anonymous status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '27'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
+  challenge-first auth = network 8:answered status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '26'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/secure/users/8
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Challenge answered] b''
+  challenge-first auth again = network 8:answered again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '32'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/7
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-hooked: yes] b''
+  header a request hook adds = network 7:hooked status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/7
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-hooked: yes] b''
+  header a request hook adds again = network 7:hooked again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '30'), ('content-type', 'application/json')]
     get key=32
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -268,5 +331,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
   async on behalf of u = network 1:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
   async on behalf of u again = fresh_cache 1:u status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+  async failing credential ! AuthError: AuthError(operation_id='getSecureUser', reason='provider_failed') [operation_id='getSecureUser', cause=RuntimeError('vault down')] provider_failed
+  > POST https://auth.example.com/token
+    [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, authorization: Basic YzpzZWNyZXQ=, content-length: 29] b'grant_type=client_credentials'
     get key=32
   async granted ! SDKError: SDKError(reason='store_failed') [cause=OSError('down')] store_failed

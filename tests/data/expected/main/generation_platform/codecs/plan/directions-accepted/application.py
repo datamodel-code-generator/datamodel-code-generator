@@ -14,11 +14,11 @@ from ._runtime.server.application import build, error_handlers, validation_error
 from .routers import untagged
 from .services import UntaggedService
 
-ROUTES: Final = (*untagged.LITERAL_ROUTES, *untagged.TEMPLATED_ROUTES)
-INFO: Final[dict[str, Any]] = {
-    'title': 'Directions that one schema view per direction serves',
-    'version': '1',
-}
+ROUTES: Final = (
+    *untagged.LITERAL_ROUTES,
+    *untagged.TEMPLATED_ROUTES,
+)
+INFO: Final[dict[str, Any]] = {'title': 'Directions that one schema view per direction serves', 'version': '1'}
 
 
 def build_router(

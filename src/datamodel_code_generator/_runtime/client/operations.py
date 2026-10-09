@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias, 
 
 from typing_extensions import TypeIs, TypeVar
 
-from ..model_codecs.errors import CodecError, CodecResourceLimitError, ParameterEncodingError, WireValidationError
+from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import (
     decode_form,
     encode_form,
@@ -19,7 +19,7 @@ from ..model_codecs.media import (
 )
 from ..model_codecs.media import json_bytes as _json_bytes
 from ..model_codecs.parameters import path_text, query_pairs
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import APIStatusError, ConfigurationError, DecodeError, response_failure, status_error
 from .media import charset, encode_text, essence, most_specific, normalized, with_charset
 from .multipart import PartPlan, encode_multipart, encode_parts
@@ -48,7 +48,7 @@ _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
 _MAX_ERROR: Final = 599
 _PAIR: Final = 2
-PARSE_ERRORS: Final = (CodecResourceLimitError, ParameterEncodingError, WireValidationError)
+PARSE_ERRORS: Final = (CodecError,)
 
 
 class OutboundModelCodec(Protocol):
@@ -190,7 +190,7 @@ class FieldBody:
         return {
             wire_name: value
             for (_, wire_name, _), value in zip(self.branch.fields, self.values, strict=True)
-            if not isinstance(value, Unset)
+            if value is not UNSET
         }
 
 
@@ -315,7 +315,7 @@ class RequestBody:
 
         A media range such as image/* is never named by a call.
         """
-        if isinstance(value, Unset):
+        if value is UNSET:
             if media_type is not None:
                 raise ConfigurationError(field_path=("media_type",), reason="without_body", operation_id=operation_id)
             if self.required:
@@ -806,14 +806,14 @@ class OperationPlan(Generic[T_co]):
         required body whose media's fields are all optional is an empty object when the call gives neither. Any other
         binding the call's method cannot take raises TypeError, as Python refuses arguments.
         """
-        given = [index for index, value in enumerate(values) if not isinstance(value, Unset)]
+        given = [index for index, value in enumerate(values) if value is not UNSET]
         request, fields = self.body, self.fields
         assert request is not None
         assert fields is not None
-        if not given and (not isinstance(body, Unset) or not request.required):
+        if not given and (body is not UNSET or not request.required):
             return body
         method = fields.method
-        if given and not isinstance(body, Unset):
+        if given and body is not UNSET:
             msg = f"{method}() takes a body or its field arguments, not both: {_quoted(fields.names, given)}"
             raise TypeError(msg)
         selected, sent = request.selected(self.operation_id, media_type)
@@ -826,7 +826,7 @@ class OperationPlan(Generic[T_co]):
         if unexpected := [index for index in given if index not in branch.taken]:
             msg = f"{method}() takes no such field arguments for {wanted}: {_quoted(fields.names, unexpected)}"
             raise TypeError(msg)
-        if missing := [position for position in branch.required if isinstance(values[position], Unset)]:
+        if missing := [position for position in branch.required if values[position] is UNSET]:
             msg = f"{method}() missing required field arguments for {wanted}: {_quoted(fields.names, missing)}"
             raise TypeError(msg)
         return FieldBody(branch, tuple(values[position] for position in branch.positions), selected, sent)

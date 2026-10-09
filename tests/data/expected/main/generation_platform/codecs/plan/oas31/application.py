@@ -21,7 +21,10 @@ from ._runtime.server.security import (
 from .routers import untagged
 from .services import UntaggedService
 
-ROUTES: Final = (*untagged.LITERAL_ROUTES, *untagged.TEMPLATED_ROUTES)
+ROUTES: Final = (
+    *untagged.LITERAL_ROUTES,
+    *untagged.TEMPLATED_ROUTES,
+)
 INFO: Final[dict[str, Any]] = {'title': 'Wire plan', 'version': '1'}
 
 

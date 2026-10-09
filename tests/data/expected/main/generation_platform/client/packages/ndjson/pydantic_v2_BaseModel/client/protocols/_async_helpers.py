@@ -13,7 +13,7 @@ import models
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.streams import AsyncEventStream, UnknownEvent, aopen_events
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions, SessionOptions
 from . import StreamOptions, _plans
 
 
@@ -81,7 +81,7 @@ class AsyncRecordsAllNdjson:
     async def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -107,7 +107,7 @@ class AsyncRecordsLenientNdjson:
     async def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -133,7 +133,7 @@ class AsyncRecordsTaggedNdjson:
     async def open(
         self,
         *,
-        topic: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,

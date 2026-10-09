@@ -30,19 +30,17 @@ OperationDependencies = TypedDict(
 class ListPets:
     """Plans of the list_pets operation."""
 
+    OPERATION: Final = 'list_pets'
+
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=models.FieldPetsGetResponse,
-            ),
-            'default': Declared(media_type='application/json', model=models.Error),
-        },
+        responses={'200': Declared(media_type='application/json', model=models.FieldPetsGetResponse), 'default': Declared(media_type='application/json', model=models.Error)},
     )
 
 
 class CreatePet:
     """Plans of the create_pet operation."""
+
+    OPERATION: Final = 'create_pet'
 
     RESPONSES: Final = OperationResponses(
         responses={'201': Declared(media_type='application/json', model=models.Pet)},
@@ -52,41 +50,39 @@ class CreatePet:
 class ListMyPets:
     """Plans of the list_my_pets operation."""
 
+    OPERATION: Final = 'list_my_pets'
+
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=models.FieldPetsMineGetResponse,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=models.FieldPetsMineGetResponse)},
     )
 
 
 class GetPet:
     """Plans of the get_pet operation."""
 
+    OPERATION: Final = 'get_pet'
+
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(media_type='application/json', model=models.Pet),
-            '404': Declared(media_type='application/json', model=models.Error),
-        },
+        responses={'200': Declared(media_type='application/json', model=models.Pet), '404': Declared(media_type='application/json', model=models.Error)},
     )
 
 
 class DeletePet:
     """Plans of the delete_pet operation."""
 
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    OPERATION: Final = 'delete_pet'
+
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class GetInventory:
     """Plans of the get_inventory operation."""
 
+    OPERATION: Final = 'get_inventory'
+
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                model=models.FieldStoreInventoryGetResponse,
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=models.FieldStoreInventoryGetResponse)},
     )

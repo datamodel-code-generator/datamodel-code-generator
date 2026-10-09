@@ -4,6 +4,9 @@
   start after the close ! ConfigurationError: ConfigurationError(operation_id='createFile', reason='client_closed', field_path='client.closed') [operation_id='createFile', field_path=('client', 'closed')] client_closed
   fresh size=0 token=1 resource=['POST /files', 'POST /files/u1/complete', 'POST /files', 'POST /files/u2/complete']
   responses closed=True borrowed closed=False
+  start under a client idempotency header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='default_headers.Idempotency-Key') [field_path=('default_headers', 'Idempotency-Key')] invalid_value
+  start with a call idempotency header ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.idempotency-key') [field_path=('options', 'extra_headers', 'idempotency-key')] invalid_value
+  start removing a client idempotency header = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=0)
   async run outlasting the close = Stored(id='u1', size=0, sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
   handle AsyncUploadHandle(phase='complete', confirmed_bytes=0, total_bytes=0) token=1 resource=['POST /files', 'POST /files/u1/complete']
   async start after the close ! ConfigurationError: ConfigurationError(operation_id='createFile', reason='client_closed', field_path='client.closed') [operation_id='createFile', field_path=('client', 'closed')] client_closed
@@ -12,7 +15,7 @@
   responses closed=True borrowed closed=False
 file source change remains terminal
   > POST https://api.example.com/files
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0, idempotency-key: <call>] b''
   first advance ! ConfigurationError: ConfigurationError(reason='source_changed', field_path='source') [field_path=('source',)] source_changed
   checkpoint confirmed=0 phase=uploading
   advance after restore ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='advance.source_changed') [field_path=('advance', 'source_changed')] invalid_state
@@ -24,7 +27,7 @@ file source change remains terminal
   stored u1: 0 bytes, original=False
 async file source change remains terminal
   > POST https://api.example.com/files
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0, idempotency-key: <call>] b''
   first advance ! ConfigurationError: ConfigurationError(reason='source_changed', field_path='source') [field_path=('source',)] source_changed
   checkpoint confirmed=0 phase=uploading
   advance after restore ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='advance.source_changed') [field_path=('advance', 'source_changed')] invalid_state

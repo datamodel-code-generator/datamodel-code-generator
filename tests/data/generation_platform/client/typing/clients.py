@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator, Set
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from pathlib import Path
@@ -34,17 +35,7 @@ from pets.errors import (
     NotFoundError,
     SDKError,
 )
-from pets.options import (
-    UNSET,
-    ClientOptions,
-    Clock,
-    IdempotencyKey,
-    RequestOptions,
-    RetryOptions,
-    TimeoutOptions,
-    TransportOptions,
-    Unset,
-)
+from pets.options import UNSET, Clock, RequestOptions, RetryOptions, ServerSelection
 from pets.responses import AsyncRawResponse, HeadersView, RawResponse, Response, ResponseInfo
 from pets.types.pets import (
     CreatePetResponse,
@@ -71,7 +62,9 @@ def call(
     photo: FieldPetsPetIdPhotoPutPathPetIdParameter,
 ) -> None:
     assert_type(client.pets.list_pets(x_trace=trace, limit=UNSET), ListPetsResponse)
-    response = client.pets.with_response.list_pets(x_trace=trace, options=RequestOptions(max_response_bytes=None))
+    response = client.pets.with_response.list_pets(
+        x_trace=trace, options=RequestOptions(extra_headers={"X-Debug": "1"})
+    )
     assert_type(response, Response[ListPetsResponse])
     decode_list_pets_header(response.info, name="X-Next")
     decode_list_pets_header(response.info, name="X-Rate")
@@ -141,10 +134,7 @@ async def raw_async(
         await download.stream_to("file.bin")
 
 
-
-def bodies(
-    client: Client, file: BinaryIO, spooled: IO[bytes], photo: FieldPetsPetIdPhotoPutPathPetIdParameter
-) -> None:
+def bodies(client: Client, file: BinaryIO, spooled: IO[bytes], photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
     inputs: tuple[SyncBinaryBody, ...] = (b"\x00", file, spooled, Path("photo.png"), [b"a", b"b"], iter([b"a"]))
     for body in inputs:
         client.pets.photos.upload(pet_id=photo, body=body)
@@ -208,9 +198,9 @@ async def multipart_async(client: AsyncClient) -> None:
 def transports() -> None:
     with httpx2.Client() as native:
         borrowed = Client(http_client=native)
-        assert_type(borrowed.with_options(RequestOptions(total_timeout=1.0)), ClientView)
+        assert_type(borrowed.with_options(total_timeout=1.0), ClientView)
         borrowed.close()
-    assert_type(AsyncClient(http_client=httpx2.AsyncClient()).with_options(RequestOptions()), AsyncClientView)
+    assert_type(AsyncClient(http_client=httpx2.AsyncClient()).with_options(), AsyncClientView)
 
 
 def trace(request: httpx2.Request) -> None:
@@ -240,24 +230,19 @@ async def async_event_hooks(pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
 
 def timing_options(client: Client) -> None:
     clock = Clock(monotonic=lambda: 0.0, random=lambda: 0.5)
-    phases = TimeoutOptions(connect=1, read=None, write=UNSET, pool=0)
-    assert_type(phases.read, float | Unset | None)
-    configured = ClientOptions(
-        timeout=phases,
-        total_timeout=None,
-        clock=clock,
-    )
-    assert_type(configured.clock, Clock | Unset)
-    assert_type(configured.timeout, TimeoutOptions | Unset | None)
-    assert_type(configured.total_timeout, float | Unset | None)
-    Client(options=configured)
-    assert_type(client.with_options(RequestOptions(timeout=None, total_timeout=0)), ClientView)
+    Client(timeout=httpx2.Timeout(5, connect=1, read=None), total_timeout=None, clock=clock)
+    Client(timeout=30)
+    Client(timeout=None, total_timeout=60.5)
+    AsyncClient(timeout=UNSET, clock=Clock(asleep=asyncio.sleep))
+    assert_type(client.with_options(timeout=None, total_timeout=0), ClientView)
+    client.with_options(timeout=httpx2.Timeout(2), total_timeout=None)
+    options = RequestOptions(timeout=1.5, total_timeout=UNSET)
+    assert_type(options.total_timeout, float | UNSET | None)
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
-    options = RequestOptions(total_timeout=10, timeout=TimeoutOptions(read=3))
-    view = client.with_options(options)
-    response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
+    view = client.with_options(total_timeout=10, timeout=httpx2.Timeout(None, read=3))
+    response = view.request_raw("GET", url, options=RequestOptions(timeout=httpx2.Timeout(None, connect=2)))
     return response.read()
 
 
@@ -268,15 +253,18 @@ class SteppedClock:
     def __call__(self) -> float:
         return self.now
 
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
 
 def instant_retries(url: str) -> Client:
     stepped = SteppedClock()
-    clock = Clock(monotonic=stepped, random=lambda: 0.5)
-    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), clock=clock))
+    clock = Clock(monotonic=stepped, random=lambda: 0.5, sleep=stepped.sleep)
+    return Client(base_url=url, retry=RetryOptions(), clock=clock)
 
 
 def download(client: Client, url: str, destination: BinaryIO) -> None:
-    options = RequestOptions(total_timeout=10, timeout=TimeoutOptions(read=60))
+    options = RequestOptions(total_timeout=10, timeout=httpx2.Timeout(5, read=60))
     with client.with_streaming_response.request_raw("GET", url, options=options) as response:
         response.stream_to(destination)
 
@@ -307,7 +295,6 @@ def error_measurements(error: SDKError, info: ResponseInfo) -> None:
 
 def retry_options(client: Client) -> None:
     retry = RetryOptions(
-        max_retries=3,
         initial_delay=0.25,
         max_delay=2,
         jitter="none",
@@ -318,62 +305,84 @@ def retry_options(client: Client) -> None:
         should_retry_header=UNSET,
         retry_on_pool_timeout=False,
     )
-    assert_type(retry.statuses, Set[int] | Unset)
-    assert_type(retry.jitter, Literal["full", "none"] | Unset)
-    assert_type(retry.max_retry_after, float | Unset | None)
-    client.with_options(RequestOptions(retry=retry, follow_redirects=True))
-    follows = ClientOptions(retry=RetryOptions(max_retries=0), follow_redirects=False)
-    Client(options=follows)
-    assert_type(follows.follow_redirects, bool | Unset)
+    assert_type(retry.statuses, Set[int] | UNSET)
+    assert_type(retry.jitter, Literal["full", "none"] | UNSET)
+    assert_type(retry.max_retry_after, float | UNSET | None)
+    client.with_options(retry=retry, max_retries=3, follow_redirects=True)
+    client.request_raw("GET", "https://example.com", options=RequestOptions(retry=retry, follow_redirects=True))
+    Client(max_retries=0, retry=RetryOptions(initial_delay=1), follow_redirects=False)
+    Client(follow_redirects=None)
+
+
+def retry_delay(retry: RetryOptions) -> float | None:
+    if (after := retry.max_retry_after) is UNSET:
+        assert_type(after, UNSET)
+        return None
+    assert_type(after, float | None)
+    if retry.max_delay is not UNSET:
+        assert_type(retry.max_delay, float)
+    return after
 
 
 def fetch_with_retries(client: Client, url: str) -> bytes:
     options = RequestOptions(
-        retry=RetryOptions(max_retries=2, max_retry_after=20),
+        max_retries=2,
+        retry=RetryOptions(max_retry_after=20),
         follow_redirects=True,
         total_timeout=30,
     )
+    assert_type(options.max_retries, int | None)
     return client.request_raw("GET", url, options=options).read()
 
 
-def keyed_view(client: Client, value: str) -> ClientView:
-    key = IdempotencyKey(value)
-    return client.with_options(RequestOptions(idempotency_key=key))
+def headers_and_query(client: Client, url: str) -> ClientView:
+    configured = Client(
+        base_url=url,
+        default_headers={"X-Tenant": "acme", "User-Agent": None},
+        default_query={"region": "eu", "debug": None},
+    )
+    configured.request_raw(
+        "GET", url, options=RequestOptions(extra_headers={"X-Trace": "t", "X-Tenant": None}, extra_query={"page": "2"})
+    )
+    headers: dict[str, str | None] = {"X-Tenant": None}
+    del configured
+    return client.with_options(default_headers=headers, default_query={"region": None})
+
+
+def servers(client: Client) -> None:
+    selection = ServerSelection(index=0, variables={"region": "eu"})
+    Client(server=selection)
+    client.with_options(server=selection)
+    client.with_options(base_url="https://staging.example.com")
+    client.request_raw("GET", "/pets", options=RequestOptions(base_url="https://example.com", server=None))
 
 
 def upload_file(client: Client, url: str, path: Path) -> bytes:
-    response = client.request_raw(
-        "PUT", url, body=path, options=RequestOptions(retry=RetryOptions(max_retries=2))
-    )
+    response = client.request_raw("PUT", url, body=path, options=RequestOptions(max_retries=2))
     return response.read()
 
 
 def configured_client(ca_file: str) -> Client:
     context = create_default_context(cafile=ca_file)
-    transport = TransportOptions(ssl_context=context, max_connections=50, max_keepalive_connections=10)
-    return Client(options=ClientOptions(transport=transport))
+    limits = httpx2.Limits(max_connections=50, max_keepalive_connections=10)
+    return Client(http_client=httpx2.Client(verify=context, limits=limits))
 
 
-def idempotency_input(client: Client) -> None:
-    key = IdempotencyKey("stored-key")
-    assert_type(key.value, str)
-    assert_type(IdempotencyKey.new(), IdempotencyKey)
-    client.with_options(RequestOptions(idempotency_key=key))
-    Client(options=ClientOptions(idempotency_key=IdempotencyKey.new()))
-    client.with_options(RequestOptions(idempotency_key=None))
+def idempotency_input(client: Client, stored: str | None) -> None:
+    client.request_raw("POST", "https://example.com/jobs", options=RequestOptions(idempotency_key="stored-key"))
+    client.request_raw("POST", "https://example.com/jobs", options=RequestOptions(idempotency_key=None))
+    options = RequestOptions(idempotency_key=stored)
+    assert_type(options.idempotency_key, str | UNSET | None)
+
+
+def native_auth(client: Client) -> None:
+    Client(auth=httpx2.BasicAuth("user", "password"))
+    Client(auth=None)
+    client.with_options(auth=None)
+    client.request_raw("GET", "https://example.com", options=RequestOptions(auth=UNSET))
 
 
 def transport_options(context: SSLContext) -> None:
-    transport = TransportOptions(
-        ssl_context=context,
-        proxy="http://proxy.example.com:8080",
-        trust_env=False,
-        http2=False,
-        max_connections=50,
-        max_keepalive_connections=10,
-        keepalive_expiry=5,
-    )
-    assert_type(transport.verify, bool | Unset)
-    assert_type(transport.ssl_context, SSLContext | None)
-    Client(options=ClientOptions(transport=transport))
-    AsyncClient(options=ClientOptions(transport=TransportOptions(verify=True)))
+    native = httpx2.Client(verify=context, proxy="http://proxy.example.com:8080", trust_env=False, http2=False)
+    Client(http_client=native)
+    AsyncClient(http_client=httpx2.AsyncClient(verify=True))

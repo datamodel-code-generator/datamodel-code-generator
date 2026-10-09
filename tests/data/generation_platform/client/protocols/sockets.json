@@ -3,7 +3,6 @@
     "kind": "websocket",
     "operation": "/paths/~1rooms~1{room}~1socket/get",
     "subprotocols": ["chat.v2", "chat.v1"],
-    "compression": true,
     "send": {"codec": "json", "schema": {"pointer": "/components/schemas/ClientMessage"}},
     "receive": {"codec": "json", "schema": {"pointer": "/components/schemas/ServerMessage"}}
   },
