@@ -3315,7 +3315,8 @@ The JSON encoding allocation scales with the call's input size independently of 
 fixes its boundary once per logical call and can replay only if every part can replay.
 
 A binary body, and the content of a multipart `FilePart`, is one of the inputs below. Each is consumed in exactly
-one way, and nothing is buffered or spooled to make a one-shot input replayable.
+one way, and nothing is buffered or spooled to make a one-shot input replayable; only an async file or async iterable
+given as a multipart file part is read into memory for its attempt, since HTTPX2 reads multipart files synchronously.
 
 | Input | Calls | How it is read | Framing | Sent again |
 | --- | --- | --- | --- | --- |
@@ -3342,7 +3343,8 @@ file:
 
 | File | Async call |
 | --- | --- |
-| A path given as a body or `FilePart`, which the call opens | Opened, read one chunk of at most 64 KiB at a time, and closed in a worker thread (`asyncio.to_thread`). |
+| A path given as a body, which the call opens | Opened, read one chunk of at most 64 KiB at a time, and closed in a worker thread (`asyncio.to_thread`). |
+| A path given as a `FilePart`, which the call opens | Opened and closed in a worker thread; HTTPX2 reads it on the event loop, as it reads multipart files. |
 | A synchronous file object the caller opened | `tell`, `seek` and each `read` of at most 64 KiB block the event loop, as HTTPX2 reads multipart files. |
 | An async file object | `await read(65536)` on the event loop; the file decides where its I/O runs. |
 | `stream_to(path)` | The temporary file is created, written about 64 KiB at a time, moved to the target, or removed in a worker thread. |
@@ -3361,6 +3363,22 @@ sending. An iterable, an async file, an async iterable or a file that cannot see
 call is not retried and ends with the retry stop reason `body_not_replayable`. Multipart can replay when every file
 part can. A failure while a file or iterable is read during sending raises `APIConnectionError` with that failure as
 `cause`.
+
+### Multipart bodies
+
+A `MultipartBody` (`AsyncMultipartBody` for an asyncio client) is sent through HTTPX2's `files=` encoding, its parts
+in their order: each `FieldPart` and `FilePart` keeps its name, filename, media type and extra headers, and parts may
+repeat a name. A field's value goes through its member's model codec, a repeated member sends a part for each item,
+a styled member the parts its style gives, and a media type the member's encoding declares must cover the one a part
+names. The SDK does not check parts against the schema: a missing, repeated, undeclared or read-only member is sent as
+given and left to the server's model. HTTPX2 refuses a part header that is no token or holds a line break; that, and a
+part that is not a `FieldPart` or a `FilePart` with a string name, raises a request `DecodeError` with the reason
+`unencodable` before sending. A body whose parts are all bytes is encoded once, with `Content-Length`; a body without
+parts is sent empty, without a Content-Type, as HTTPX2 sends it. HTTPX2 chooses the boundary.
+
+A multipart response is read only when the operation declares one, with the standard library's MIME parser: a part's
+bytes are kept as they arrived unless it names a transfer encoding, and a broken body, or a part that is itself a
+multipart body or a message, raises `DecodeError` with the reason `invalid_framing`.
 
 ```python
 from pathlib import Path

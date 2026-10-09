@@ -98,13 +98,16 @@ _DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PartSpec:
-    """One member of a form-data body with file parts: its plan and its values' type use.
+    """One member of a form-data body with file parts: its plan, its values' type use, and its kind of part.
 
-    A file member has no type use of its values.
+    A file member has no type use of its values. A received member may be required, or excluded by its direction.
     """
 
     plan: PartPlan
     use: TypeUseBinding | None = None
+    file: bool = False
+    required: bool = False
+    excluded: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1013,7 +1016,7 @@ def _sent(  # noqa: PLR0913
         case False:
             additional = None
         case Mapping() as declared if declared and _file(wire, extra):
-            additional = PartSpec(plan=PartPlan("", repeated=_array(wire, extra), file=True))
+            additional = PartSpec(plan=PartPlan("", repeated=_array(wire, extra)), file=True)
         case Mapping() as declared if declared and (
             typed := schema_use(schemas, extra, use.id.direction, wire.schema(extra)[0])
         ):
@@ -1024,22 +1027,20 @@ def _sent(  # noqa: PLR0913
         case _:
             additional = PartSpec(plan=PartPlan(""))
     files = {name for name, member, _ in members if _file(wire, member)}
-    if not files and (additional is None or not additional.plan.file):
+    if not files and (additional is None or not additional.file):
         return None, None
     return tuple(
         PartSpec(
             plan=PartPlan(
                 name,
                 repeated=name not in styles_of and _array(wire, member),
-                file=name in files,
-                required=facts.required and not facts.read_only,
-                excluded=facts.read_only,
                 content_types=media_of.get(name, ()),
                 style=styles_of.get(name),
             ),
             use=None
             if name in files
             else _part_use(use, member, name, TypeUseBinding(use.id, "bound", facts.type, None)),
+            file=name in files,
         )
         for name, member, facts in members
     ), additional
@@ -1071,7 +1072,7 @@ def _received(
         case _ if typed:
             additional = _read(wire, schemas, use, "", extra, file=file_extra, required=False)
         case _:
-            additional = PartSpec(plan=PartPlan("", repeated=True, file=True))
+            additional = PartSpec(plan=PartPlan("", repeated=True), file=True)
     return tuple(
         _read(
             wire,
@@ -1101,16 +1102,16 @@ def _read(  # noqa: PLR0913
     """Return how a member's parts are read: a file's as bytes, any other in its kind by its own or its items' use."""
     if file:
         return PartSpec(
-            plan=PartPlan(name, repeated=_array(wire, location), file=True, required=required, excluded=excluded)
+            plan=PartPlan(name, repeated=_array(wire, location)), file=True, required=required, excluded=excluded
         )
-    plan = _part_plan(wire, name, location, required=required, excluded=excluded)
+    plan = _part_plan(wire, name, location)
     if plan.repeated:
         resolved, _ = wire.schema(location)
         location = SourceLocation(resolved.document, f"{resolved.pointer}/items", "schema")
     bound = schema_use(schemas, location, body.id.direction, wire.schema(location)[0]) or TypeUseBinding(
         body.id, "not_generated", None, None
     )
-    return PartSpec(plan=plan, use=_part_use(body, location, name or None, bound))
+    return PartSpec(plan=plan, use=_part_use(body, location, name or None, bound), required=required, excluded=excluded)
 
 
 def _part_use(
@@ -1152,16 +1153,14 @@ def _part_plans(wire: WirePlan, use: TypeUseBinding | None) -> tuple[tuple[PartP
     return parts, PartPlan("")
 
 
-def _part_plan(
-    wire: WirePlan, name: str, location: SourceLocation, *, required: bool = False, excluded: bool = False
-) -> PartPlan:
+def _part_plan(wire: WirePlan, name: str, location: SourceLocation) -> PartPlan:
     """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
     _, schema = wire.schema(location)
     if repeated := _types(schema) - _NULL == _ARRAY:
         _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
     text = (types := _types(schema) - _NULL) and not types & _NESTED
     kind: PartKind = (wire.kinds.at((location, ("items",) if repeated else ())) if text else None) or "json"
-    return PartPlan(name, kind, repeated=repeated, required=required, excluded=excluded)
+    return PartPlan(name, kind, repeated=repeated)
 
 
 def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:

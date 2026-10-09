@@ -48,7 +48,7 @@ from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .logical import LogicalCallContext
 from .media import normalized
-from .multipart import MultipartSource, is_multipart, new_boundary
+from .multipart import encode_parts, is_multipart
 from .native import (
     async_decoded_bytes,
     async_response_bytes,
@@ -604,13 +604,18 @@ def _close_failed(failures: list[OSError], call: Call, error: BaseException | No
 def _framing(
     request: httpx2.Request, attempt: SyncContent | AsyncContent | EncodedAttempt | None
 ) -> list[tuple[str, str]]:
-    """Return a request's headers without the framing HTTPX2 writes, with the Content-Length of a measured stream."""
-    headers = [
-        (name, value)
-        for name, value in request_fields(request)
-        if name.lower() not in {"host", "content-length", "transfer-encoding"}
-    ]
-    if not isinstance(attempt, EncodedAttempt | None) and (length := attempt.content_length) is not None:
+    """Return a request's headers without the framing HTTPX2 writes, with the Content-Length of a measured stream.
+
+    A stream that names its media type, as a multipart body's attempt names its boundary, sends it as Content-Type.
+    """
+    media_type = length = None
+    if not isinstance(attempt, EncodedAttempt | None):
+        media_type, length = attempt.content_type, attempt.content_length
+    framed = {"host", "content-length", "transfer-encoding", *(() if media_type is None else ("content-type",))}
+    headers = [(name, value) for name, value in request_fields(request) if name.lower() not in framed]
+    if media_type is not None:
+        headers.append(("Content-Type", media_type))
+    if length is not None:
         headers.append(("Content-Length", str(length)))
     return headers
 
@@ -1138,8 +1143,7 @@ class Core(Generic[AdapterT, HandleT]):
             target = f"{base}?{query}" if query else base
         media_type = None
         if is_multipart(body):
-            body = MultipartSource(body, boundary := new_boundary())
-            media_type = f"multipart/form-data; boundary={boundary}"
+            body, media_type = encode_parts(body)
         fixed = self._shared.fixed
         call = () if options is None else options.headers
         if self._settings.headers or call:
