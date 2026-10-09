@@ -58,7 +58,7 @@ app included
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"], "input": "other", "ctx": {"expected": "'bare', 'result' or 'value'"}}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1
@@ -130,7 +130,7 @@ app included
   get_greeting(mode=<FieldGreetingsGetQueryModeParameter.result: 'result'>)
 < 200 application/json "ok"
 > GET /greetings?mode=other
-< 422 application/json [{"type": "enum", "loc": ["query", "mode"]}]
+< 422 application/json [{"type": "enum", "loc": ["query", "mode"], "input": "other", "ctx": {"expected": "'bare', 'result' or 'value'"}}]
 > HEAD /greetings
 < 405 application/json
 > GET /pets/1

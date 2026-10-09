@@ -7,18 +7,22 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import models
-from fastapi import APIRouter, Body, Path, Query
+from fastapi import APIRouter, Body, Path, Query, params
 from fastapi.responses import Response
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
-from .._runtime.server.application import Dependency, Wiring, build
+from .._runtime.server.application import Wiring, build, checked
 from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
 
 def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-    list_pets_handler = wiring.handlers['list_pets']
+    pets: PetsService = wiring.services['pets']
+    list_pets_handler = checked(
+        pets.list_pets,
+        'The pets.list_pets method of GET /pets',
+    )
 
     def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
         return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
@@ -34,12 +38,16 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listPets',
         tags=['pets'],
         response_description='The pets.',
-        dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+        dependencies=wiring.dependencies.get('list_pets'),
     )
 
 
 def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-    create_pet_handler = wiring.handlers['create_pet']
+    pets: PetsService = wiring.services['pets']
+    create_pet_handler = checked(
+        pets.create_pet,
+        'The pets.create_pet method of POST /pets',
+    )
 
     def create_pet(
         *,
@@ -59,12 +67,16 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Created.',
         responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
-        dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+        dependencies=wiring.dependencies.get('create_pet'),
     )
 
 
 def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
-    replace_pet_handler = wiring.handlers['replace_pet']
+    pets: PetsService = wiring.services['pets']
+    replace_pet_handler = checked(
+        pets.replace_pet,
+        'The pets.replace_pet method of PUT /pets/{name}',
+    )
 
     def replace_pet(
         *,
@@ -87,25 +99,25 @@ def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Replaced.',
         responses={'204': {'description': 'Replaced.'}},
-        dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+        dependencies=wiring.dependencies.get('replace_pet'),
     )
 
 
 LITERAL_ROUTES: Final = (
-    (contract.ListPets.OPERATION, _add_list_pets),
-    (contract.CreatePet.OPERATION, _add_create_pet),
+    ('list_pets', _add_list_pets),
+    ('create_pet', _add_create_pet),
 )
-TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
 def build_router(
     *,
     pets: PetsService,
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:
-    """Check the service and settings, then register the pets operations on a new router, literal paths first."""
+    """Register the pets operations on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={'pets': pets},

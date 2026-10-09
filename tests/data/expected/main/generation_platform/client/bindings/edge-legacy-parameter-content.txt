@@ -1,3 +1,3 @@
 # edge-legacy-parameter-content
 render pydantic_v2.BaseModel default
-  diagnostic SchemaParseError: Error at schema path 'parameter_content.yaml/#/paths//items/get/parameters/1': API_INVALID_OBJECT: parameter/header content must have one medium
+  diagnostic Error: Error at schema path 'parameter_content.yaml/#/paths//items/get/parameters/1': API_INVALID_OBJECT: parameter/header content must have one medium

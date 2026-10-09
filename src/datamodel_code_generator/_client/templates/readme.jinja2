@@ -88,8 +88,10 @@ the response.
 {%- endif %}
 {%- endif %}
 {%- if sockets %}
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
+`with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
+lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`
+closes the connection.
 {%- endif %}
 {%- if "pagination" in kinds %}
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a

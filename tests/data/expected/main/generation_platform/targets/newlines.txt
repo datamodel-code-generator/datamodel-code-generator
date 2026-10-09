@@ -8,20 +8,19 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  4 runtime modules ['present']
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
 written like a text file server/README.md: True
 written like a text file server/py.typed: True
-written like a text file server/_runtime/model_codecs/unset.py: True
+written like a text file server/_runtime/server/__init__.py: True
 render
   target=fastapi schema_version=1
   unchanged model models.py
@@ -33,12 +32,11 @@ render
   unchanged target server/routers/untagged.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
-  unchanged target server/errors.py
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
-  13 runtime modules ['unchanged']
-rewrite with '\r\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/model_codecs/unset.py']
+  4 runtime modules ['unchanged']
+rewrite with '\r\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/server/__init__.py']
 generate
   returned None
 tree
@@ -48,21 +46,20 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  4 runtime modules ['present']
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
 written like a text file server/README.md: True
 written like a text file server/py.typed: True
-written like a text file server/_runtime/model_codecs/unset.py: True
-rewrite with '\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/model_codecs/unset.py']
+written like a text file server/_runtime/server/__init__.py: True
+rewrite with '\n' line endings ['models.py', 'server/__init__.py', 'server/services.py', 'server/README.md', 'server/py.typed', 'server/_runtime/server/__init__.py']
 generate
   returned None
 tree
@@ -72,17 +69,16 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  4 runtime modules ['present']
 written like a text file models.py: True
 written like a text file server/__init__.py: True
 written like a text file server/services.py: True
 written like a text file server/README.md: True
 written like a text file server/py.typed: True
-written like a text file server/_runtime/model_codecs/unset.py: True
+written like a text file server/_runtime/server/__init__.py: True

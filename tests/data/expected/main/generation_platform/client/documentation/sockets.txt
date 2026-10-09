@@ -37,7 +37,7 @@
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'pydantic>=2.13.5']
+  dependencies ['httpx2[ws]>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
 # client
@@ -135,8 +135,10 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
+`with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
+lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`
+closes the connection.
 See the runtime reference for their limits.
 
 ```json
@@ -169,9 +171,8 @@ See the runtime reference for their limits.
 
 The package needs these distributions at run time:
 
-- `httpx2>=2.13.0`
+- `httpx2[ws]>=2.13.0`
 - `typing-extensions>=4.16`
-- `websockets>=17.1`
 - `pydantic>=2.13.5`
 
 Each generation reports them; add them to your project, for example with `uv add`.
@@ -188,7 +189,7 @@ The package copies the runtime modules its capabilities and model backend need:
 - `_runtime`: `__init__.py`
 - `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
-- `_runtime/protocols`: `__init__.py`, `caches.py`, `client.py`, `client_options.py`, `errors.py`, `names.py`, `options.py`, `origins.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `websocket.py`, `websocket_connectors.py`, `websocket_native.py`, `websocket_types.py`
+- `_runtime/protocols`: `__init__.py`, `caches.py`, `client.py`, `client_options.py`, `errors.py`, `names.py`, `options.py`, `origins.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `websocket.py`
 
 
 # artifact client/_generated_docs/runtime.md
@@ -258,16 +259,19 @@ One logical call retains its key, origin, encoded body, and multipart boundary a
 Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
 A binary body or multipart file part is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of
 `bytes`; async calls also accept an async file object whose `read` is a coroutine function and an async iterable of
-`bytes`. Bytes and seekable files, including paths, are sent with `Content-Length` for the bytes measured at call
+`bytes` as a body, but HTTPX2 reads multipart files synchronously, so an async file or async iterable as a file part
+raises a request `DecodeError` with the reason `unencodable` before sending, in either client. Bytes and seekable
+files, including paths, are sent with `Content-Length` for the bytes measured at call
 entry; other inputs use chunked transfer encoding. Text, `bytearray`, `memoryview`, synchronous text-mode or closed
 files and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable` before sending; an
 async file is not inspected first, and a text-mode or closed one fails while sending as `APIConnectionError`.
 Seekable files replay from their offset at call entry. Caller files stay open and their final position is not restored.
 The SDK opens a path when the body is first sent and closes it when the call ends. Consumed nonseekable inputs,
-async files and async iterables cannot replay and are never buffered or spooled implicitly. Multipart can replay when
-all its file parts can. Files are read at most 64 KiB at a time. In async calls a path the call opens is opened,
-read and closed in a worker thread, a synchronous file the caller opened is read with blocking calls on the event
-loop, and an async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
+async files and async iterables cannot replay and are never buffered or spooled. Multipart can replay when all its
+file parts can. Files are read at most 64 KiB at a time. In async calls a
+path the call opens is opened, read and closed in a worker thread, unless it is a multipart file part that HTTPX2
+reads on the event loop, a synchronous file the caller opened is read with blocking calls on the event loop, and an
+async file is read with `await read(65536)`, never line by line. A cancelled call waits for the file
 call running in a thread before it closes the file.
 
 ## Redirects and transport construction
@@ -369,47 +373,38 @@ Native task cancellation propagates unchanged, and user callbacks are not shield
 
 ## WebSocket sessions
 
-A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
-initial authentication, limiter, and hooks: a 101 hands the connection to the session, and any other response raises
-the operation's `APIStatusError`. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
+A WebSocket helper's `connect` is one session. On `Client` it returns the session, which `with` or `close()` closes; on
+`AsyncClient` it is used as `async with client.protocols.<name>.connect(...) as session:`, and the session runs in the
+task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
+sent through the client's HTTP client with initial authentication, limiter, and hooks, and with the HTTP client's
+transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
+raises the operation's `APIStatusError`. Each limit comes from the call's options, then `ProtocolClientOptions.defaults`
+for the helper, then the default below. The session types are imported from:
 
-- `client.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
-  `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,
-  `WebSocketConnection`, `AsyncWebSocketConnection`, `WebSocketOpenRequest`, and `WSFrame`
+- `client.protocols`: `WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`
 - `client.options`: `SessionOptions` and `ProtocolClientOptions`
 
 | Limit | Effective default |
 |---|---|
-| open timeout | 5 seconds, also capped by the connect, read, and write timeouts and the deadline; None removes it |
+| open timeout | 5 seconds, also capped by the native connect, read, write, and pool timeouts and the deadline |
 | idle timeout | the native read timeout; None removes it |
-| message size | 1 MiB, decompressed |
-| received frames buffered before reading pauses | 16 |
-| send timeout | 30 seconds, waiting for earlier sends included; None removes it |
+| message size | 1 MiB |
 | ping interval and pong timeout | 20 seconds each; None removes them |
-| close timeout | 5 seconds |
 | session total timeout | None |
 
-The connection and the handshake's limiter permit belong to the session until it closes or fails; closing the client
-leaves an open session to its owner. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`;
-sends go one at a time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a
-cancelled send or ping fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind
-the helper declares; one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one
-over the size limit raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than
-the idle timeout raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError`
-with its code and reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises
-`APITimeoutError` and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`,
-closes the session, and is never sent again. Messages are written whole: in a `WebSocketSession`, the send timeout is
-checked before the write starts, and a started write runs until it completes or the connection fails. Sessions never
-reconnect. `WSOptions(compression="deflate")` raises `ConfigurationError` for a helper that does not permit compression.
-Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or invalidated
-by a refused upgrade. Only a transport failure proven `NOT_SENT` before handover may use the call's existing retry
-policy.
-
-`ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
-opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS
-context, an HTTP or HTTPS proxy, and whether environment proxies apply; both reach a borrowed connector too. Closing a
-session sends the code and reason given, 1000 by default, and drops the connection when the closing handshake fails.
+The handshake's limiter permit belongs to the session until it closes or fails; the connection belongs to the HTTP
+client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
+and a second one raises `ConcurrentReceiveError`; HTTPX2 writes sends one at a time beside it. Cancelling an asyncio
+`receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON coded by the helper's schema,
+UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode raises `StreamDecodeError` and
+closes the connection with 1002, and one over the size limit raises `ProtocolSizeError` after HTTPX2 closed the
+connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` and closes with 1001.
+A closure by the server raises `WebSocketClosedError` with its code and reason, is answered with the same code, and
+ends iteration when it was normal. A send or ping on a connection that is already closing raises `WebSocketClosedError`
+without a code; a send that may have reached the server raises `DeliveryUnknownError`, closes the session, and is never
+sent again. Sessions never reconnect. Received handshake refusals are terminal, including redirects and 401s;
+credentials are never refreshed or invalidated by a refused upgrade. Only a transport failure proven `NOT_SENT` before
+handover may use the call's existing retry policy. Closing a session sends the code and reason given, 1000 by default.
 
 ## Request compression
 

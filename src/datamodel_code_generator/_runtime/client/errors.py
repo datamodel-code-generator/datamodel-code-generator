@@ -648,8 +648,6 @@ class ProtocolSizeError(ProtocolError):
         kind: Literal[
             "page",
             "cursor",
-            "line",
-            "event",
             "message",
             "body",
             "headers",

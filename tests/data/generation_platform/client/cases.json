@@ -767,6 +767,9 @@
   "codec-errors": {
     "input": "codec-errors.yaml"
   },
+  "cookie-names": {
+    "input": "cookie-names.yaml"
+  },
   "setting-errors": {
     "input": "pets.yaml",
     "config": {
@@ -5053,5 +5056,77 @@
     "model": {
       "reuse_model": true
     }
+  },
+  "parameter-content-defaults-30": {
+    "input": "parameter-content-defaults-30.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "parameter-content-defaults-31": {
+    "input": "parameter-content-defaults-31.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "media-item-parts": {
+    "input": "media-item-parts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-referenced-items": {
+    "input": "multipart-referenced-items.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "fingerprint-nested": {
+    "input": "fingerprint-nested.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "fingerprint-nested-changed": {
+    "input": "fingerprint-nested-changed.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
   }
 }

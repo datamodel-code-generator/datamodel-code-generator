@@ -9,33 +9,25 @@ import decimal
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_parameters_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1pages/get',
-    '/paths/~1options/get',
-    '/paths/~1more/get',
-    '/paths/~1headers/get',
-    '/paths/~1kinds/get',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1pages/get': Sequence[Dependency],
-        '/paths/~1options/get': Sequence[Dependency],
-        '/paths/~1more/get': Sequence[Dependency],
-        '/paths/~1headers/get': Sequence[Dependency],
-        '/paths/~1kinds/get': Sequence[Dependency],
+        'get__pages': Sequence[params.Depends],
+        'get__options': Sequence[params.Depends],
+        'get__more': Sequence[params.Depends],
+        'get__headers': Sequence[params.Depends],
+        'get__kinds': Sequence[params.Depends],
     },
     total=False,
 )
@@ -44,17 +36,11 @@ OperationDependencies = TypedDict(
 class GetPages:
     """Plans of the get__pages operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__pages',
-        key='/paths/~1pages/get',
-        service='untagged',
-        keywords=('x_token', 'page', 'pager'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__pages."""
 
-        pager: plan_parameters_models.FieldPagesGetQueryPagerParameter | Unset
+        pager: plan_parameters_models.FieldPagesGetQueryPagerParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -80,17 +66,11 @@ class GetPages:
 class GetOptions:
     """Plans of the get__options operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__options',
-        key='/paths/~1options/get',
-        service='untagged',
-        keywords=('opts',),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__options."""
 
-        opts: plan_parameters_models.FieldOptionsGetQueryOptsParameter | Unset
+        opts: plan_parameters_models.FieldOptionsGetQueryOptsParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -115,17 +95,11 @@ class GetOptions:
 class GetMore:
     """Plans of the get__more operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__more',
-        key='/paths/~1more/get',
-        service='untagged',
-        keywords=('more',),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__more."""
 
-        more: plan_parameters_models.FieldMoreGetQueryMoreParameter | Unset
+        more: plan_parameters_models.FieldMoreGetQueryMoreParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -150,22 +124,16 @@ class GetMore:
 class GetHeaders:
     """Plans of the get__headers operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__headers',
-        key='/paths/~1headers/get',
-        service='untagged',
-        keywords=('flag', 'ratio', 'mode', 'shaped', 'counts', 'any_map', 'plain'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__headers."""
 
-        flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | Unset
-        ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | Unset
-        shaped: typing.Any | Unset
-        counts: dict[str, int] | Unset
-        any_map: dict[str, typing.Any] | Unset
-        plain: str | Unset
+        flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | None
+        ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | None
+        shaped: typing.Any | None
+        counts: dict[str, int] | None
+        any_map: dict[str, typing.Any] | None
+        plain: str | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -246,41 +214,21 @@ class GetHeaders:
 class GetKinds:
     """Plans of the get__kinds operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__kinds',
-        key='/paths/~1kinds/get',
-        service='untagged',
-        keywords=(
-            'amount',
-            'amounts',
-            'scales',
-            'mixed',
-            'anything',
-            'no_items',
-            'any_items',
-            'loose',
-            'composed',
-            'only',
-            'maybe',
-            'whatever',
-            'prices',
-        ),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
         """The adapter parameters of get__kinds."""
 
-        amounts: list[decimal.Decimal] | Unset
-        scales: list[int | float] | Unset
-        anything: typing.Any | Unset
-        no_items: list[typing.Any] | Unset
-        any_items: list[typing.Any] | Unset
-        loose: str | typing.Any | Unset
-        composed: list[int] | Unset
-        only: list[int] | Unset
-        maybe: list[int] | None | Unset
-        whatever: typing.Any | Unset
-        prices: plan_parameters_models.FieldKindsGetHeaderPricesParameter | Unset
+        amounts: list[decimal.Decimal] | None
+        scales: list[int | float] | None
+        anything: typing.Any | None
+        no_items: list[typing.Any] | None
+        any_items: list[typing.Any] | None
+        loose: str | typing.Any | None
+        composed: list[int] | None
+        only: list[int] | None
+        maybe: list[int] | None
+        whatever: typing.Any | None
+        prices: plan_parameters_models.FieldKindsGetHeaderPricesParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

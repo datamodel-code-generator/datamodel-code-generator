@@ -11216,8 +11216,7 @@ the same run, a FastAPI server package for its operations: routers, a service Pr
 adapters for the parameter styles and media types FastAPI cannot read, authentication, and the served OpenAPI
 document. Every
 generated file is regenerated on each run. You write the business logic in your own modules, implementing the
-service Protocols, and type checkers, Python, and the package at startup check that every operation has a
-matching method.
+service Protocols, and type checkers and Python check that every operation has a matching method.
 
 Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
 Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
@@ -11263,8 +11262,11 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 <!-- END AUTO-GENERATED FASTAPI QUICK START -->
 
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
-`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. For a
-document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
+`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. An optional
+parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
+The routes declare such an input as FastAPI applications do, `T | None = None`, so the served document shows its
+schema as `anyOf` of the type and `null`.
+For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:
 
 ```python
@@ -11298,10 +11300,19 @@ uv run uvicorn app:app
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, passes its other keyword arguments, such as `lifespan` or
-`middleware`, to `FastAPI`, and checks every method when the application starts; any
-object with the right methods works, and type checkers check it where you pass it. The generated
+`middleware`, to `FastAPI`, and looks every method up when it registers the routes; any object with the right
+methods works, and type checkers check it where you pass it. Registration stops with an error for what would
+otherwise go wrong without one: a missing method (`AttributeError`), a coroutine function for an operation in the
+`sync` handler mode or a plain method for one in the `async` mode, a secured operation without a callable
+`authorize`, and an `operation_dependencies` entry that is not a sequence of `Depends(...)` (`TypeError`) or that
+names no method of the router (`ValueError`). The package does not check the arguments of a method: one whose
+signature a type checker would reject fails with Python's own error when its operation is requested. The generated
 `server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
+
+`create_app` and `build_router` also take `prefix` and `operation_dependencies`, FastAPI dependencies of single
+operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`; `build_router` takes
+`dependencies` for all of its routes, which `create_app` passes to `FastAPI`.
 
 ## Requirements
 
@@ -11438,6 +11449,8 @@ an error before generation.
 Per-operation settings are keyed by operation reference: the JSON pointer of the path item method in the input
 document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, such as
 `pets.yaml#/paths/~1pets/get`. The README of the generated package lists the reference of every operation.
+These settings decide the generated code, including each method name, so they name an operation as the input
+document does; `operation_dependencies`, an argument of the generated package, names it by its method.
 
 ```toml
 [tool.datamodel-codegen.server-handler-modes]
@@ -11499,8 +11512,8 @@ The batch publishes the server packages together with the models of every job on
 nothing when a job fails or when jobs generate different models for a shared `output`; the `uv add` notice of each
 package follows the publication on stderr. `--check` compares every job as a single run does and exits with 1 when
 any of them would change. With `--output-format json`, a server job adds the generation or check payload of a single
-server run to the batch document, with file paths relative to that job's model output directory. Server jobs refuse
-`--watch`, as a single server run does.
+server run to the batch document, with file paths relative to that job's model output directory. `--all-jobs
+--watch` regenerates the batch, server jobs included, whenever an input any job read changes.
 
 ## The generated package
 
@@ -11509,7 +11522,7 @@ server run to the batch document, with file paths relative to that job's model o
 | `__init__.py`, `application.py` | `create_app`, `build_router`, and the public types |
 | `services.py` | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | Route registrations |
-| `errors.py`, `security.py` | Errors, and one FastAPI security dependency for each scheme |
+| `security.py` | One FastAPI security dependency for each scheme |
 | `_generated/`, `_runtime/` | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | Documentation and typing marker |
 
@@ -11565,6 +11578,13 @@ It compares the rendered model and server text, including the README and `py.typ
 the model and server output directories. CRLF and LF compare equally. Unrelated text files are outside this scope.
 `--check --output-format json` uses the same check payload as model generation. Checking publishes nothing.
 
+`--diff-against OLD_INPUT` renders the models and the server from both inputs without writing anything, and prints
+what changes between them with the model input diff: unified diffs labeled `(baseline input)` and `(current input)`,
+and files generated only from one of the inputs. It exits with 0 when both render the same files and 1 otherwise;
+`--output-format json` emits the model input-diff payload. `--watch` regenerates the models and the server whenever
+the input, a document it references, or a file an option names changes, as for model generation, and has the same
+limits: it needs a local `--input` and cannot be combined with `--check` or `--output-format json`.
+
 `--output-format json` publishes the files and emits the existing generation payload as one JSON document on
 stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. As in
 the model payload, a file path is relative to the model output directory, which is `output` for a model directory
@@ -11593,15 +11613,33 @@ The generated models are the runtime contract. Routes declare the model types di
 `Annotated[Model, Body()]`, a URL-encoded form of a `BaseModel` is a FastAPI form model, a primary JSON response is
 `response_model=Model`, and path, query, header, and cookie parameters are `Annotated` FastAPI parameters of the
 parameter's model type. A parameter's root model or type alias is unwrapped to its type when that type alone
-validates the same, so the method receives the value; the default is the one the model declares. How strictly a
-value follows the OpenAPI document is decided by the model generation options, not by the server.
+validates the same, so the method receives the value. A default that the parameter's schema declares reaches the
+method whenever the request omits the parameter, however the model options spell the type, such as with
+`--use-annotated` or `--field-constraints`; a parameter whose type stays a root model receives that model with its
+own default. How strictly a value follows the OpenAPI document is decided by the model generation options, not by
+the server.
 
 FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
-form-style cookies, header and path arrays, objects, enums and literals of non-string values, repeated path
-placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
-`pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
-`bytes`.
+cookie arrays, header and path arrays, objects, enums and literals of non-string values, strict integers,
+numbers, and booleans (`--strict-types`), repeated path placeholders, request bodies with several media types, text
+and binary bodies, multipart forms, and forms of the `pydantic_v2.dataclass` backend. A multipart form body reaches
+the method as its model, with uploads read to `bytes`.
+
+A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
+as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the
+quotes, a `;` ends the value, and the last of several cookies of one name is taken. The generated client sends such
+values as they are, too, and generation stops with an error for such a cookie whose name is not a token. An adapter that reads a single-valued cookie, for a strict integer for instance, does not
+percent-decode it either; cookie arrays and objects, one cookie for each item or property, keep the `form` style's
+percent-encoding.
+
+An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
+spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. A query parameter, header,
+or cookie that an adapter reads answers `400` when the request repeats a single value, where FastAPI takes the last
+query value and the first header. Turning on `--strict-types int float bool` therefore narrows what those
+parameters accept. A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
 route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
@@ -11631,12 +11669,40 @@ operation as a separate alternative, since FastAPI cannot document a requirement
 ## Served OpenAPI document
 
 The application serves FastAPI's own document, built from the routes and the models they declare, so routes
-added later and other routers appear in it as usual. Each generated route adds what FastAPI cannot derive from it,
-taken from the source document at generation time: `responses=` documents every declared response, through its
-model when the body is JSON, and `openapi_extra` documents the parameters, request bodies, and callbacks that
-adapters read, with schema references resolved in place (a schema that refers to itself documents the inner
-reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
-own placeholder names.
+added later and other routers appear in it as usual. The generated models own every schema in it: FastAPI documents
+the models it validates parameters and bodies with, a route's response model, and the model of each declared JSON
+response. Each generated route adds the HTTP metadata FastAPI cannot derive from it, taken from the source document
+at generation time: `responses=` documents every declared response with its description, headers, media, and
+links, and `openapi_extra` documents the parameters, request bodies, and callbacks that adapters read, with their
+descriptions, styles, examples, and encodings. These annotations copy no source schema, so a parameter, header,
+or medium that only an adapter reads appears without one. Path placeholders that are not Python identifiers, or
+that repeat, appear under the route's own placeholder names.
+
+## Production settings
+
+The application keeps FastAPI's defaults for its documentation endpoints and for the shape of its error
+responses, with one difference: a request that fails validation answers `422` with FastAPI's `{"detail": [...]}`
+records without their `input` and `ctx`, and without pydantic's `url`, which FastAPI already leaves out: the
+response carries each record's `type`, `loc`, and `msg`, so it does not return the rejected value as such. `loc`
+and `msg` are still pydantic's and can hold text the client chose: a key of a mapping or an unexpected field in
+`loc`, a discriminator tag in `msg`, and whatever a validator of your own puts in its error message. Parameters and
+bodies that adapters read answer with the same three keys.
+
+- `create_app` registers the handler, `validation_error_handler`, through FastAPI's `exception_handlers`. Pass
+  your own `exception_handlers` to send other error bodies, for example ones without `loc` and `msg`; an entry
+  for `RequestValidationError` replaces the package's.
+- An application of your own that includes `build_router(...)` keeps FastAPI's default records, with `input` and
+  `ctx`, unless you register the handler: `app.add_exception_handler(RequestValidationError,
+  validation_error_handler)`, imported from the generated package.
+- Other errors are FastAPI's: `404` and `405` bodies, and an opaque `500` for an exception in a service method or a
+  result that fails its response model. That error goes to the server log with the values it rejected. Inputs that
+  adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`.
+- The served document describes validation errors with FastAPI's own `ValidationError` schema, in which `loc`,
+  `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies conform to it.
+- `create_app(..., docs_url=None, redoc_url=None, openapi_url=None)` removes `/docs`, `/redoc`, and
+  `/openapi.json`.
+- The `server` response header is the ASGI server's, not the application's; uvicorn leaves it out with
+  `--no-server-header`.
 
 ## Templates
 
@@ -11678,6 +11744,12 @@ datamodel-codegen \
   --server-package server \
   --server-model-package models
 ```
+
+The values a role receives can change while server generation is experimental, and a value that an older copy of a
+builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
+compare an override with the current builtin template after an upgrade. `router.jinja2` receives one `route` for
+each operation: `adder`, `router`, `wiring`, `service`, `protocol`, `group`, `handler`, `lookup`, `principal`,
+`signature`, `body`, and `registration`.
 
 A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
@@ -44975,18 +45047,22 @@ Choose how the server package lays out its routes (experimental).
     from typing import Annotated, Final
 
     import models
-    from fastapi import APIRouter, Body, Path, Query
+    from fastapi import APIRouter, Body, Path, Query, params
     from fastapi.responses import Response
 
     from ._generated import contract
     from ._generated.contract import OperationDependencies
-    from ._runtime.server.application import Dependency, Wiring, build
+    from ._runtime.server.application import Wiring, build, checked
     from ._runtime.server.responses import dispatch
     from .services import Service
 
 
     def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-        list_pets_handler = wiring.handlers['list_pets']
+        service: Service = wiring.services['service']
+        list_pets_handler = checked(
+            service.list_pets,
+            'The service.list_pets method of GET /pets',
+        )
 
         def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
             return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
@@ -45002,12 +45078,16 @@ Choose how the server package lays out its routes (experimental).
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
     def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-        create_pet_handler = wiring.handlers['create_pet']
+        service: Service = wiring.services['service']
+        create_pet_handler = checked(
+            service.create_pet,
+            'The service.create_pet method of POST /pets',
+        )
 
         def create_pet(
             *,
@@ -45027,12 +45107,16 @@ Choose how the server package lays out its routes (experimental).
             tags=['pets'],
             response_description='Already there.',
             responses={'201': {'model': models.Pet, 'description': 'Created.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
     def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
-        replace_pet_handler = wiring.handlers['replace_pet']
+        service: Service = wiring.services['service']
+        replace_pet_handler = checked(
+            service.replace_pet,
+            'The service.replace_pet method of PUT /pets/{name}',
+        )
 
         def replace_pet(
             *,
@@ -45055,25 +45139,25 @@ Choose how the server package lays out its routes (experimental).
             tags=['pets'],
             response_description='Replaced.',
             responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
     LITERAL_ROUTES: Final = (
-        (contract.ListPets.OPERATION, _add_list_pets),
-        (contract.CreatePet.OPERATION, _add_create_pet),
+        ('list_pets', _add_list_pets),
+        ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
     def build_router(
         *,
         service: Service,
-        dependencies: Sequence[Dependency] = (),
+        dependencies: Sequence[params.Depends] = (),
         operation_dependencies: OperationDependencies | None = None,
         prefix: str = "",
     ) -> APIRouter:
-        """Check the service and settings, then register every operation on a new router, literal paths first."""
+        """Register every operation on a new router, literal paths first."""
         return build(
             (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
             services={'service': service},
@@ -45861,18 +45945,22 @@ without a file against the working directory, and against the pyproject.toml dir
     from typing import Annotated, Final
 
     import models
-    from fastapi import APIRouter, Body, Path, Query
+    from fastapi import APIRouter, Body, Path, Query, params
     from fastapi.responses import Response
 
     from .._generated import contract
     from .._generated.contract import OperationDependencies
-    from .._runtime.server.application import Dependency, Wiring, build
+    from .._runtime.server.application import Wiring, build, checked
     from .._runtime.server.responses import dispatch
     from ..services import PetsService
 
 
     def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-        list_pets_handler = wiring.handlers['list_pets']
+        pets: PetsService = wiring.services['pets']
+        list_pets_handler = checked(
+            pets.list_pets,
+            'The pets.list_pets method of GET /pets',
+        )
 
         def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
             return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
@@ -45888,12 +45976,16 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
     def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-        create_pet_handler = wiring.handlers['create_pet']
+        pets: PetsService = wiring.services['pets']
+        create_pet_handler = checked(
+            pets.create_pet,
+            'The pets.create_pet method of POST /pets',
+        )
 
         def create_pet(
             *,
@@ -45913,12 +46005,16 @@ without a file against the working directory, and against the pyproject.toml dir
             tags=['pets'],
             response_description='Created.',
             responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
     def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
-        replace_pet_handler = wiring.handlers['replace_pet']
+        pets: PetsService = wiring.services['pets']
+        replace_pet_handler = checked(
+            pets.replace_pet,
+            'The pets.replace_pet method of PUT /pets/{name}',
+        )
 
         def replace_pet(
             *,
@@ -45941,25 +46037,25 @@ without a file against the working directory, and against the pyproject.toml dir
             tags=['pets'],
             response_description='Replaced.',
             responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
     LITERAL_ROUTES: Final = (
-        (contract.ListPets.OPERATION, _add_list_pets),
-        (contract.CreatePet.OPERATION, _add_create_pet),
+        ('list_pets', _add_list_pets),
+        ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
     def build_router(
         *,
         pets: PetsService,
-        dependencies: Sequence[Dependency] = (),
+        dependencies: Sequence[params.Depends] = (),
         operation_dependencies: OperationDependencies | None = None,
         prefix: str = "",
     ) -> APIRouter:
-        """Check the service and settings, then register the pets operations on a new router, literal paths first."""
+        """Register the pets operations on a new router, literal paths first."""
         return build(
             (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
             services={'pets': pets},
@@ -48391,7 +48487,7 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 
 HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
 
---generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --diff-against, --watch, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.generate-schema-validators`
 
@@ -48411,7 +48507,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
---generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --diff-against compares the files two inputs render, --watch regenerates after input changes, --output-format json uses the model generation, check, and input-diff payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 

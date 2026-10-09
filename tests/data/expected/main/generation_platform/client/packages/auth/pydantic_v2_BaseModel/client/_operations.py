@@ -508,7 +508,7 @@ OPERATION_25: Final[OperationPlan[SignedMultipartResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 parts=(
-                    PartPlan('file', file=True, required=True),
+                    PartPlan('file'),
                     PartPlan('note', codec=model_bindings.codec_4),
                 ),
             ),

@@ -1,4 +1,3 @@
 # protocols-pagination-wrapper-checks
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols['has_more.wrapped_model'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.wrapped_model' reads object values, where only boolean values fit
+  Error: --client-protocols['has_more.wrapped_model'].continuation.has_more: The has_more of 'has_more.wrapped_model' reads object values, where only boolean values fit

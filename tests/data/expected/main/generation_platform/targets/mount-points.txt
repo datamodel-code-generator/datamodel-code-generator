@@ -13,12 +13,11 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/store.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 leftovers []
 write server/services.py
 write models/pets.py
@@ -34,12 +33,11 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/store.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 leftovers []
 render
   target=fastapi schema_version=1
@@ -52,9 +50,8 @@ render
   unchanged target server/routers/store.py
   unchanged target server/_generated/__init__.py
   unchanged target server/_generated/contract.py
-  unchanged target server/errors.py
   unchanged target server/services.py
   unchanged target server/README.md
   unchanged target server/py.typed
   unchanged remote_lock remote.lock
-  11 runtime modules ['unchanged']
+  4 runtime modules ['unchanged']

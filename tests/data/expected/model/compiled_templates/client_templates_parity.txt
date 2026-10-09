@@ -328,8 +328,10 @@ An SSE and NDJSON helper's `open` sends its operation in a session of its own an
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
 the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
 `checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
+`with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
+lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`
+closes the connection.
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
 once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
@@ -516,8 +518,10 @@ An SSE and NDJSON helper's `open` sends its operation in a session of its own an
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
 the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
 `checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
+`with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
+lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`
+closes the connection.
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
 once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime

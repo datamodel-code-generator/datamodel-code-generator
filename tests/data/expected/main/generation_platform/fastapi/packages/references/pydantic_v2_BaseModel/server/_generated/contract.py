@@ -6,25 +6,19 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import models
-from pydantic import TypeAdapter
+from fastapi import params
 
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1pets/get',
-    '/paths/~1pets/post',
-    '/paths/~1owners/get',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1pets/get': Sequence[Dependency],
-        '/paths/~1pets/post': Sequence[Dependency],
-        '/paths/~1owners/get': Sequence[Dependency],
+        'list_pets': Sequence[params.Depends],
+        'create_pet': Sequence[params.Depends],
+        'list_owners': Sequence[params.Depends],
     },
     total=False,
 )
@@ -33,19 +27,9 @@ OperationDependencies = TypedDict(
 class ListPets:
     """Plans of the list_pets operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_pets',
-        key='/paths/~1pets/get',
-        service='service',
-        keywords=('principal', 'limit', 'page', 'x_trace'),
-        secured=True,
-    )
     RESPONSES: Final = OperationResponses(
         responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.PetsResponse),
-            ),
+            '200': Declared(media_type='application/json', model=models.PetsResponse),
         },
     )
 
@@ -53,38 +37,19 @@ class ListPets:
 class CreatePet:
     """Plans of the create_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='create_pet',
-        key='/paths/~1pets/post',
-        service='service',
-        keywords=('principal', 'x_trace', 'body'),
-        secured=True,
-    )
     RESPONSES: Final = OperationResponses(
-        responses={
-            '201': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(models.Pet),
-            ),
-        },
+        responses={'201': Declared(media_type='application/json', model=models.Pet)},
     )
 
 
 class ListOwners:
     """Plans of the list_owners operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_owners',
-        key='/paths/~1owners/get',
-        service='service',
-        keywords=('principal', 'limit'),
-        secured=True,
-    )
     RESPONSES: Final = OperationResponses(
         responses={
             '200': Declared(
                 media_type='application/json',
-                adapter=TypeAdapter(models.FieldOwnersGetResponse),
+                model=models.FieldOwnersGetResponse,
             ),
         },
     )

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._fastapi.plan import ServerPlan
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
-    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
+    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 
 DEPENDENCIES: Final = ("fastapi>=0.141.1", "pydantic>=2.13.5")
 FORMS: Final = "python-multipart>=0.0.32"
@@ -48,10 +48,8 @@ class FastAPITarget:
         assert isinstance(config, FastAPIConfig)
         wire = plan_wire(
             request.batch,
-            request.lease,
             [use for operation in request.operations for use in operation_uses(operation)],
             operations=frozenset(operation.id for operation in request.operations),
-            documents=request.documents.pointers,
         )
         try:
             plan = Planner(request, config, wire).plan()
@@ -63,7 +61,7 @@ class FastAPITarget:
         selected = {operation.contract.id for operation in plan.operations}
         if problems := [item for item in wire.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
-        docs = _docs(plan, request, wire)
+        docs = _docs(plan, request)
         renderer = ServerRenderer(
             config=config,
             backend=_BACKENDS[request.model_config.output_model_type],
@@ -80,11 +78,8 @@ class FastAPITarget:
         return TargetRender(files=files, dependencies=_dependencies(plan, request.model_imports))
 
 
-def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documentation:
-    """Return the documentation builder, planning the schemas of callbacks, which no route reads, apart.
-
-    A link of a documented response that reaches no link naming an operation is refused.
-    """
+def _docs(plan: ServerPlan, request: TargetRequest) -> Documentation:
+    """Return the documentation builder, refusing a link of a documented response that names no operation."""
     index = CallbackIndex(request.batch)
     callbacks = list(
         {
@@ -95,19 +90,7 @@ def _docs(plan: ServerPlan, request: TargetRequest, wire: WirePlan) -> Documenta
     )
     if links := invalid_links((*(spec.contract for spec in plan.operations), *callbacks)):
         raise APIGenerationError(tuple(replace(item, target_id=request.target_id) for item in links))
-    wires: tuple[WirePlan, ...] = (wire,)
-    if callbacks:
-        wires = (
-            wire,
-            plan_wire(
-                request.batch,
-                request.lease,
-                [use for operation in callbacks for use in operation_uses(operation)],
-                operations=frozenset(operation.id for operation in callbacks),
-                documents=request.documents.pointers,
-            ),
-        )
-    return Documentation(plan, request, wires)
+    return Documentation(plan, request)
 
 
 def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:

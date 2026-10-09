@@ -7,11 +7,10 @@ render
   write target server/routers/untagged.py
   write target server/_generated/__init__.py
   write target server/_generated/contract.py
-  write target server/errors.py
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  11 runtime modules ['write']
+  4 runtime modules ['write']
 generate
   returned None
 tree
@@ -20,21 +19,19 @@ tree
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']
 tree
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  4 runtime modules ['present']

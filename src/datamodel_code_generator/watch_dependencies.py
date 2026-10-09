@@ -18,6 +18,9 @@ if TYPE_CHECKING:
 _JSON_CONFIG_FIELDS = frozenset({
     "aliases",
     "base_class_map",
+    "client_operations",
+    "client_protocols",
+    "client_resource_names",
     "custom_formatters_kwargs",
     "default_values",
     "duplicate_name_suffix",
@@ -26,9 +29,16 @@ _JSON_CONFIG_FIELDS = frozenset({
     "import_overrides",
     "model_name_map",
     "serialization_aliases",
+    "server_body_modes",
+    "server_handler_modes",
+    "server_operation_names",
+    "server_parameter_names",
+    "server_primary_responses",
+    "server_router_names",
     "type_overrides",
     "validators",
 })
+_TARGET_OUTPUT_FIELDS = ("server_output", "client_output")
 
 
 class _Weakrefable:
@@ -317,6 +327,8 @@ class WatchDependencies(_Weakrefable):
         self._add_output(config.output, candidate.outputs)
         # Metadata is always a single file, including when its name has no suffix.
         self._add_output(config.emit_model_metadata, candidate.outputs, is_directory=False)
+        for field_name in _TARGET_OUTPUT_FIELDS:
+            self._add_output(getattr(config, field_name, None), candidate.outputs, is_directory=True)
 
     def configure(
         self,
@@ -378,6 +390,9 @@ class WatchDependencies(_Weakrefable):
             self._add_output(Path(output), candidate.outputs)
         if isinstance(metadata := config_values.get("emit_model_metadata"), (str, Path)):
             self._add_output(Path(metadata), candidate.outputs, is_directory=False)
+        for field_name in _TARGET_OUTPUT_FIELDS:
+            if isinstance(target_output := config_values.get(field_name), (str, Path)):
+                self._add_output(Path(target_output), candidate.outputs, is_directory=True)
         with self._lock:
             self._pending_static = candidate
             self._publish()

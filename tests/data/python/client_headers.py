@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _RAW: Final = "https://raw.example.com/items"
-_BOUNDARY: Final = re.compile(r"dcg[0-9a-f]{32}")
+_BOUNDARY: Final = re.compile(r"\b[0-9a-f]{32}\b")
 _PART: Final = '--b\r\nContent-Disposition: form-data; name="{}"\r\n\r\n{}\r\n'
 
 

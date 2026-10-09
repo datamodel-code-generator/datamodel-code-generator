@@ -17,11 +17,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
 from datamodel_code_generator import client as public_client
 from datamodel_code_generator._api_generation import generate_target, render_target
-from datamodel_code_generator._api_types import (
-    APIGenerationError,
-    Diagnostic,
-    OperationRef,
-)
+from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._client.config import (
     BodyFieldName,
     ClientGenerationConfig,
@@ -40,7 +36,6 @@ from tests.data.python.client_protocol_records import RECORDS
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRender, TargetRequest
     from datamodel_code_generator._api_types import GeneratedArtifact, GeneratedProject
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
@@ -200,11 +195,6 @@ def publication_client(case: dict[str, Any], root: Path, backend: str) -> Genera
     )()
 
 
-def _diagnostic(item: Diagnostic) -> str:
-    location = " ".join(str(part) for part in (item.stage, item.option_path, item.source_pointer) if part is not None)
-    return f"  {item.code} {location}: {item.message}"
-
-
 def copy_references(case: dict[str, Any], root: Path) -> None:
     """Copy the documents a case references beside its input, keeping their relative paths."""
     for reference in case.get("references", ()):
@@ -242,15 +232,13 @@ def _render(
                 config=client_config(case.get("config", {}), root),
                 generator=ClientTarget(),
             )
-    except APIGenerationError as error:
-        lines = ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+    except Error as error:
+        lines = [f"  Error: {error}"]
         if case.get("publish"):
             kept = {case["input"], *case.get("references", ())}
             files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
             lines.append(f"  files {[path for path in files if path not in kept]}")
         return lines
-    except Error as error:
-        return [f"  Error: {error}"]
     lines: list[str] = []
     for artifact in project.artifacts:
         path = (root / artifact.path).relative_to(root)
@@ -268,22 +256,6 @@ def _render(
     return lines
 
 
-class _BindingDiagnosticsTarget(ClientTarget):
-    """Render a client package and keep the binding diagnostics of the batch it renders from."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.binding_diagnostics: list[str] = []
-
-    def render(self, request: TargetRequest) -> TargetRender:
-        """Keep the batch's binding diagnostics, then render as the client target does."""
-        self.binding_diagnostics = [
-            " ".join(["binding", item.code, *(f"{key}={value}" for key, value in item.details)])
-            for item in request.batch.diagnostics
-        ]
-        return super().render(request)
-
-
 def render_client(
     source: Path,
     root: Path,
@@ -292,30 +264,26 @@ def render_client(
     config: Mapping[str, Any],
     *,
     models: str = "models.py",
-    binding_diagnostics: bool = False,
 ) -> tuple[list[str], Modules]:
-    """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules.
+    """Render a document's client package under a root, returning the refusal and the Python modules.
 
-    The models go to the module or package path models names under the root. With binding_diagnostics, the
-    diagnostics also hold those of the model binding batch, which no package shows.
+    The models go to the module or package path models names under the root.
     """
-    target = _BindingDiagnosticsTarget()
     try:
         project = render_target(
             source,
             model_config=model_config(root / models, backend, model),
             config=client_config(dict(config), root),
-            generator=target,
+            generator=ClientTarget(),
         )
-    except APIGenerationError as error:
-        lines = ["APIGenerationError", *(_diagnostic(item).strip() for item in error.diagnostics)]
-        return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], {}
+    except Error as error:
+        return [f"Error: {error}"], {}
     modules: Modules = {
         path.parts: artifact_text(artifact)
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
-    return target.binding_diagnostics if binding_diagnostics else [], modules
+    return [], modules
 
 
 def _rendered(case: dict[str, Any], root: Path) -> dict[str, bytes]:
@@ -456,7 +424,7 @@ def client_api_report(root: Path) -> str:
     )
     lines.append(f"reading every public name imports {json.loads(probe.stdout)} of {list(_DEFERRED_MODULES)}")
     try:
-        client_api.Missing  # noqa: B018
+        client_api.Missing  # ruff: ignore[useless-expression]
     except AttributeError as error:
         lines.append(f"AttributeError: {error}")
     source = shutil.copy2(SOURCE / "cli" / "options.yaml", root / "api.yaml")
@@ -505,19 +473,15 @@ def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, M
 def cyclic_input_failure(error: Exception, *, source: str, pointer: str, location: tuple[int, int]) -> str:
     """Report only the two handled cyclic-input refusals for the seven retained YAML cases.
 
-    A loader may reject the fixed anchor before the target can report E_INPUT_CYCLE. Raw recursion errors,
-    other parse errors, model errors, and the removed BindingCaptureError remain failures.
+    A loader may reject the fixed anchor before the target reports the cycle, naming a document other than the
+    root input. Raw recursion errors, other parse errors, model errors, and the removed BindingCaptureError remain
+    failures.
     """
-    if isinstance(error, APIGenerationError) and len(error.diagnostics) == 1:
-        diagnostic = error.diagnostics[0]
-        if (diagnostic.code, diagnostic.severity, diagnostic.stage, diagnostic.message, diagnostic.source_pointer) == (
-            "E_INPUT_CYCLE",
-            "error",
-            "input",
-            "The input document contains a cyclic mapping or sequence",
-            pointer,
-        ) and Path(diagnostic.source_uri or "").name == source:
-            return "cyclic YAML input rejected"
+    refusal = f"{pointer}: The input document contains a cyclic mapping or sequence"
+    if not isinstance(error, InvalidFileFormatError) and (
+        str(error) == refusal or re.fullmatch(rf"{re.escape(refusal)} in '.*/{re.escape(source)}'", str(error))
+    ):
+        return "cyclic YAML input rejected"
     if isinstance(error, InvalidFileFormatError):
         original = error.original_error
         if type(original) is Error:
@@ -542,7 +506,7 @@ def client_cyclic_metadata_report(source: Path, root: Path, model: Mapping[str, 
             config=client_config({"default_base_url": "https://bindings.invalid"}, root),
             generator=ClientTarget(),
         )
-    except (APIGenerationError, InvalidFileFormatError) as error:
+    except Error as error:
         lines.append(
             "  "
             + cyclic_input_failure(
@@ -611,22 +575,13 @@ def client_input_report(case_name: str, root: Path) -> str:
                     config=config,
                     generator=ClientTarget(),
                 )
-            except (APIGenerationError, InvalidFileFormatError) as error:
+            except Error as error:
                 if case_name in cycles:
                     filename, pointer, location = cycles[case_name]
                     failure = cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
-                    lines.extend(
-                        (
-                            "  APIGenerationError",
-                            *(_diagnostic(item) for item in error.diagnostics),
-                            *(f"  source {item.source_uri}" for item in error.diagnostics),
-                        )
-                        if case_name == "input-cycle-reference" and isinstance(error, APIGenerationError)
-                        else ("  " + failure, f"  source ../{filename}")
-                    )
-                elif isinstance(error, APIGenerationError):
-                    lines.extend(("  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)))
-                    lines.extend(f"  source {item.source_uri}" for item in error.diagnostics)
+                    lines.extend(("  " + failure, f"  source ../{filename}"))
+                elif not isinstance(error, InvalidFileFormatError):
+                    lines.append(f"  Error: {error}")
                 else:
                     raise
             else:
@@ -692,8 +647,8 @@ def client_config_report(case_name: str, root: Path) -> str:
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
         config = client_config(case, root)
-    except APIGenerationError as error:
-        return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
+    except Error as error:
+        return f"Error: {error}\n"
     except TypeError as error:
         return f"TypeError: {error}\n"
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
@@ -724,7 +679,7 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, externa
                 config=client_config({}, attempt),
                 generator=ClientTarget(),
             )
-        except (APIGenerationError, InvalidFileFormatError) as error:
+        except Error as error:
             if external_sequence:
                 lines.append(
                     cyclic_input_failure(
@@ -734,18 +689,8 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, externa
                         location=(5, 14),
                     )
                 )
-            elif isinstance(error, APIGenerationError):
-                lines.extend((
-                    type(error).__name__,
-                    json.dumps(
-                        [
-                            {field.name: getattr(item, field.name) for field in fields(item)}
-                            for item in error.diagnostics
-                        ],
-                        indent=2,
-                        sort_keys=True,
-                    ),
-                ))
+            elif not isinstance(error, InvalidFileFormatError):
+                lines.append(f"Error: {error}")
             else:
                 raise
         else:

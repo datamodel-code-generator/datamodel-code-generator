@@ -19,8 +19,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "pattern": "^[A-Z]+$",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Z]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Code"
             }
           },
@@ -29,8 +36,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "email",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "email"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Mail"
             }
           },
@@ -39,7 +53,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Other"
             }
           },
@@ -58,8 +79,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "date-time",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Stamp"
             }
           },
@@ -75,79 +103,44 @@
           {
             "name": "session",
             "in": "cookie",
+            "required": false,
             "schema": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session"
             }
           },
           {
             "name": "filter",
             "in": "query",
             "style": "deepObject",
-            "explode": true,
-            "schema": {
-              "type": "object",
-              "required": [
-                "id",
-                "name"
-              ],
-              "properties": {
-                "id": {
-                  "type": "integer",
-                  "readOnly": true
-                },
-                "name": {
-                  "type": "string"
-                }
-              }
-            }
+            "explode": true
           },
           {
             "name": "ids",
             "in": "query",
-            "explode": false,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "integer"
-              }
-            }
+            "explode": false
           },
           {
             "name": "X-Ids",
-            "in": "header",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "integer"
-              }
-            }
+            "in": "header"
           },
           {
             "name": "blob",
             "in": "query",
             "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
+              "application/json": {}
             }
           },
           {
             "name": "point",
-            "in": "query",
-            "schema": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "x"
-              ],
-              "properties": {
-                "x": {
-                  "type": "integer"
-                }
-              }
-            }
+            "in": "query"
           }
         ],
         "responses": {
@@ -216,8 +209,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "number",
-              "multipleOf": 0.5,
+              "anyOf": [
+                {
+                  "type": "number",
+                  "multipleOf": 0.5
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Ratio"
             }
           },
@@ -236,8 +236,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "date",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "deprecated": true,
               "examples": [
                 "2024-01-01"
@@ -251,8 +258,15 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Ref"
             }
           },
@@ -261,7 +275,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter"
+              "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetQueryModeParameter",
+              "default": "fast"
             }
           },
           {
@@ -269,7 +284,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Request"
             }
           },
@@ -278,7 +300,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Part"
             }
           },
@@ -287,7 +316,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "2Fa"
             }
           },
@@ -296,31 +332,24 @@
             "in": "header",
             "required": false,
             "schema": {
-              "type": "string",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "X-Trace"
             }
           },
           {
             "name": "tags",
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 4
-              },
-              "minItems": 1,
-              "default": [
-                "a"
-              ]
-            }
+            "in": "query"
           },
           {
             "name": "level",
-            "in": "query",
-            "schema": {
-              "const": 3
-            }
+            "in": "query"
           }
         ],
         "responses": {
@@ -363,18 +392,12 @@
           {
             "name": "dcg_p0",
             "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
+            "required": true
           },
           {
             "name": "dcg_p1",
             "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
+            "required": true
           }
         ]
       }
