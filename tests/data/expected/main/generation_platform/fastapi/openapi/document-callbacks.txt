@@ -49,32 +49,8 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                 "requestBody": {
                   "required": true,
                   "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "object",
-                        "required": [
-                          "id"
-                        ],
-                        "properties": {
-                          "id": {
-                            "type": "integer"
-                          },
-                          "kind": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
+                    "application/json": {},
                     "multipart/form-data": {
-                      "schema": {
-                        "type": "object",
-                        "properties": {
-                          "file": {
-                            "type": "string",
-                            "format": "binary"
-                          }
-                        }
-                      },
                       "encoding": {
                         "file": {
                           "contentType": "image/png"
@@ -110,40 +86,12 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                 "parameters": [
                   {
                     "name": "X-Trace",
-                    "in": "header",
-                    "schema": {
-                      "type": "string"
-                    }
+                    "in": "header"
                   }
                 ],
                 "requestBody": {
                   "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "object",
-                        "required": [
-                          "state"
-                        ],
-                        "properties": {
-                          "state": {
-                            "type": "string",
-                            "enum": [
-                              "up",
-                              "down"
-                            ]
-                          }
-                        },
-                        "$defs": {
-                          "State": {
-                            "type": "string",
-                            "enum": [
-                              "up",
-                              "down"
-                            ]
-                          }
-                        }
-                      }
-                    }
+                    "application/json": {}
                   }
                 },
                 "responses": {
@@ -183,27 +131,13 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
               }
             },
             "headers": {
-              "X-Map": {
-                "schema": {
-                  "type": "object"
-                }
-              }
+              "X-Map": {}
             }
           },
           "500": {
             "description": "Failed.",
             "content": {
-              "application/xml": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "children": {
-                      "type": "array",
-                      "items": {}
-                    }
-                  }
-                }
-              },
+              "application/xml": {},
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Event"
@@ -219,40 +153,12 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
                 "parameters": [
                   {
                     "name": "X-Trace",
-                    "in": "header",
-                    "schema": {
-                      "type": "string"
-                    }
+                    "in": "header"
                   }
                 ],
                 "requestBody": {
                   "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "object",
-                        "required": [
-                          "state"
-                        ],
-                        "properties": {
-                          "state": {
-                            "type": "string",
-                            "enum": [
-                              "up",
-                              "down"
-                            ]
-                          }
-                        },
-                        "$defs": {
-                          "State": {
-                            "type": "string",
-                            "enum": [
-                              "up",
-                              "down"
-                            ]
-                          }
-                        }
-                      }
-                    }
+                    "application/json": {}
                   }
                 },
                 "responses": {
@@ -298,11 +204,7 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
           "401": {
             "description": "Denied.",
             "headers": {
-              "www-authenticate": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+              "www-authenticate": {}
             }
           },
           "403": {
@@ -322,10 +224,7 @@ DocumentationAnnotationWarning: <root>/docs_calls: /paths/~1events/get: The serv
         "parameters": [
           {
             "name": "token",
-            "in": "cookie",
-            "schema": {
-              "type": "string"
-            }
+            "in": "cookie"
           }
         ]
       }

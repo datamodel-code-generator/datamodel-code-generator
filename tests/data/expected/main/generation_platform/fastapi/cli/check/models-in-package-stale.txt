@@ -189,7 +189,7 @@
  from pydantic import Field
  
  from .._generated import contract
-@@ -105,85 +104,11 @@
+@@ -101,85 +100,11 @@
      )
  
  

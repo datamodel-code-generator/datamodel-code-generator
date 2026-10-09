@@ -74,7 +74,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='listPets',
         response_description='The pets.',
-        responses={'200': {'headers': {'X-Total': {'schema': {'type': 'integer'}}}}},
+        responses={'200': {'headers': {'X-Total': {}}}},
         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
     )
 
@@ -144,18 +144,7 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
                         'post': {
                             'requestBody': {
                                 'required': True,
-                                'content': {
-                                    'application/json': {
-                                        'schema': {
-                                            'type': 'object',
-                                            'required': ['id', 'name'],
-                                            'properties': {
-                                                'id': {'type': 'integer'},
-                                                'name': {'type': 'string'},
-                                            },
-                                        },
-                                    },
-                                },
+                                'content': {'application/json': {}},
                             },
                             'responses': {'204': {'description': 'Received.'}},
                         },

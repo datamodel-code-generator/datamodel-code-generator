@@ -35,7 +35,7 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1search-feed/post'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='57719299ed0f55c7d846d410e2e5d7ec1d1eb58ecc6cb1dc5daaf20a856cd96b',
+    fingerprint='3ba3270b5741532154402077c20b280c246cb46a370c8640187eb77c94f9b883',
     event=model_bindings.codec_43,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1search-feed/post'),
@@ -55,7 +55,7 @@ STREAM_1: Final[EventPlan[_dcg_type_0]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1feed/post'),
     call=_operations.OPERATION_6,
     media='text/event-stream',
-    fingerprint='acac621adb7ea831794101f7606db81c599380ae42849d82cd2b76640cb5dc54',
+    fingerprint='fff2133dc416f63b710bf06b47f70b51ce4e871ab614d7a247f1940f97353335',
     event=model_bindings.codec_44,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1feed/post'),
@@ -72,7 +72,7 @@ STREAM_2: Final[EventPlan[_dcg_type_1]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='aae3411d1e251d38f9a7baf70300294801c2b2a259595d622e7cfdd6736b72fe',
+    fingerprint='0f209b6bc4ecf9539158dec16f78cc50cb77b0620ca477fb36c54d67b85e4cb7',
     event=model_bindings.codec_45,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1events/get'),
@@ -89,7 +89,7 @@ STREAM_3: Final[EventPlan[_dcg_type_1]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='80c34baaa42995dab35066fe12824d5d20006c3e98253a8093453eb1f9c70ffd',
+    fingerprint='5acb18b66ea1c6ed3c4aaeda31d64a4bc28fe757e472f4f8ee62f0ef2798bd9b',
     event=model_bindings.codec_45,
 )
 
@@ -99,7 +99,7 @@ STREAM_4: Final[EventPlan[_dcg_type_2 | UnknownEvent]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='0a624a40c6dd7e04de6f101d13e9f812e4bf47c59668ce0e2c309ca9b00799e9',
+    fingerprint='db3f87eae8bc32bbca51085ac26040023494fc06b6e63062b1f5ef07f9627171',
     routes=(('created', model_bindings.codec_46),),
     unknown=unknown_event,
     errors=(('error', model_bindings.codec_47),),
@@ -137,7 +137,7 @@ STREAM_5: Final[EventPlan[_dcg_type_1]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1rooms~1{room}{shard}/get'),
     call=_operations.OPERATION_3,
     media='text/event-stream',
-    fingerprint='eae7aec80a771ae54146e8511c5e9e33d00b1fb4bd6278a6c4e2e7fa0b85f6ac',
+    fingerprint='ee90edff0268bd9a42f205faca1cc0370b74ce8b521032407f9465101b4dd07d',
     event=model_bindings.codec_48,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1rooms~1{room}{shard}/get'),
@@ -161,7 +161,7 @@ STREAM_6: Final[EventPlan[_dcg_type_3]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1records/get'),
     call=_operations.OPERATION_5,
     media='application/x-ndjson',
-    fingerprint='975adb5b4744242bdfbe45f4235784f5c5fc9d70f52469440a763efdcd4a7f12',
+    fingerprint='37474b82cc2b763881a7bf53166f0d01e7852eeda3c765ae815ea41f69f334a5',
     event=model_bindings.codec_49,
     kind='ndjson',
     resume=StreamResumePlan(
@@ -180,7 +180,7 @@ STREAM_7: Final[EventPlan[_dcg_type_0 | UnknownEvent]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1feed/post'),
     call=_operations.OPERATION_6,
     media='text/event-stream',
-    fingerprint='e7abe4ff5c0cb1d4add2665fbeb6f3d4092eae8bf9be677dcdc59b511c35f77c',
+    fingerprint='61ff96d194477fe6d602cfd71e3803030af86f5d41bd77eb321919bcb66433b9',
     routes=(('tick', model_bindings.codec_44),),
     unknown=unknown_event,
     completion='sentinel',
@@ -204,7 +204,7 @@ STREAM_8: Final[EventPlan[_dcg_type_2 | UnknownEvent]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='b91009cd58106e803d7da22d7a0a9cc2f3013d75bed0e9705a50b18ef48533ee',
+    fingerprint='54ed2770b3e478ab82cbd5e0b6a029ec5f488f63db93f6f21f2c5b965b2aa9a6',
     routes=(('created', model_bindings.codec_46),),
     unknown=unknown_event,
     resume=StreamResumePlan(
@@ -223,7 +223,7 @@ STREAM_9: Final[EventPlan[_dcg_type_4]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1marks/get'),
     call=_operations.OPERATION_7,
     media='text/event-stream',
-    fingerprint='84e5d8e314cbd3ddbda65ae230fcafc57a0e9b7f16fedcddac0924b093dc0d2b',
+    fingerprint='a15e625742b34dc0095d6dbe27797974dcc52432541ccac493fdc7a8161a6830',
     event=model_bindings.codec_50,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1marks/get'),
@@ -241,7 +241,7 @@ STREAM_10: Final[EventPlan[_dcg_type_4]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1named-marks/get'),
     call=_operations.OPERATION_8,
     media='text/event-stream',
-    fingerprint='9e4ab637e35440d4000aca638631f94d3792bdd8f159853f68e37d8fbdfd0d97',
+    fingerprint='9422349d648f0500d36a82dc988dc39afda6a95397d68459a99647ebd0b5653d',
     event=model_bindings.codec_51,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1named-marks/get'),
@@ -259,7 +259,7 @@ STREAM_11: Final[EventPlan[_dcg_type_4]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1deep-marks/get'),
     call=_operations.OPERATION_9,
     media='text/event-stream',
-    fingerprint='6b8b52bc991bf859b090771a92fe18c1f7933ccab3cc7d5b1f2385ca5da31577',
+    fingerprint='a90097c2a14b578137a4bad3c3e967b23bc1421773c7babd6e973afac8c49057',
     event=model_bindings.codec_52,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1deep-marks/get'),
@@ -277,7 +277,7 @@ STREAM_12: Final[EventPlan[_dcg_type_4]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1marks/get'),
     call=_operations.OPERATION_7,
     media='text/event-stream',
-    fingerprint='406608586501fc36e87553d25a434d54e4781656e885ec2deb024eb92bf9721f',
+    fingerprint='099e7ed5053fb1e7ecacb74b239a37d89da5ff2b58b6e66304d04e3e7d961c3c',
     event=model_bindings.codec_50,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1marks/get'),
@@ -300,7 +300,7 @@ STREAM_13: Final[EventPlan[_dcg_type_4]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1deep-marks/get'),
     call=_operations.OPERATION_9,
     media='text/event-stream',
-    fingerprint='4f433df465f8b0d6c90ee0f70529353def3135c220677dba4accad54ae630941',
+    fingerprint='28796c8bfdc065af6bc551076622f25cc516efba3430a83ebbec2f576a22529f',
     event=model_bindings.codec_52,
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1deep-marks/get'),

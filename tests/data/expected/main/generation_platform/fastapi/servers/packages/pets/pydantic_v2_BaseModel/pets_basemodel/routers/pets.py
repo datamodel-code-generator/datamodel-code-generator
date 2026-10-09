@@ -75,11 +75,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
                 'description': 'An error.',
             },
         },
-        openapi_extra={
-            'parameters': [
-                {'name': 'session', 'in': 'cookie', 'schema': {'type': 'string'}},
-            ],
-        },
+        openapi_extra={'parameters': [{'name': 'session', 'in': 'cookie'}]},
         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
     )
 

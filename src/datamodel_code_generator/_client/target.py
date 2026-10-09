@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 from functools import partial
-from typing import TYPE_CHECKING, Final, cast
+from typing import TYPE_CHECKING, Final
 
 from typing_extensions import TypeIs
 
@@ -49,6 +49,12 @@ from datamodel_code_generator._client.webhooks import (
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
+from datamodel_code_generator._target_contract import (
+    AnnotatedType,
+    GeneratedEnumMember,
+    GeneratedSymbolType,
+    GenericType,
+)
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
@@ -67,10 +73,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._target_contract import (
+        FinalPythonType,
         GeneratedTypeContractBatch,
-        SourceLocation,
+        ModelFieldFacts,
+        SymbolId,
         TypeUseBinding,
-        TypeUseId,
     )
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
@@ -127,8 +134,6 @@ class ClientTarget:
         batch = request.batch
         if parts := (*part_uses(plan), *stream_events, *messages):
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-        if parts or events:
-            wire = _wire(request, batch, parts, received)
         codecs = plan_client_codecs(batch, wire, backend, uses, facts)
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
@@ -167,7 +172,7 @@ class ClientTarget:
                 ),
                 option_prefix=OPTION_PREFIX,
             )
-        data = _HelperDigests(request, codecs, wire)
+        data = _HelperDigests(request, codecs, facts)
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
@@ -200,27 +205,15 @@ class ClientTarget:
         return TargetRender(files=renderer.files(), dependencies=dependencies)
 
 
-def _wire(
-    request: TargetRequest,
-    batch: GeneratedTypeContractBatch,
-    parts: tuple[TypeUseBinding, ...] = (),
-    received: frozenset[TypeUseId] = frozenset(),
-) -> WirePlan:
-    """Plan the wire of the selected operations' uses, the parts they send, and the webhook events they receive.
-
-    Forms get their member plans.
-    """
+def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan:
+    """Plan the parameters and headers of the selected operations, with the member plans of their forms."""
     return plan_wire(
         batch,
-        request.lease,
         [
             *(use for operation in request.operations for use in operation_uses(operation)),
             *encoding_header_uses(request),
-            *(part.id for part in parts),
-            *received,
         ],
         operations=frozenset(operation.id for operation in request.operations),
-        documents=request.documents.pointers,
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
     )
@@ -241,10 +234,10 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
 class _HelperDigests:
     """Digest each rendered helper's contract closure."""
 
-    def __init__(self, request: TargetRequest, codecs: ClientCodecs, wire: WirePlan) -> None:
+    def __init__(self, request: TargetRequest, codecs: ClientCodecs, facts: ModelFacts) -> None:
         """Index the import locations of the generated symbols."""
         self.request = request
-        self.wire = wire
+        self.facts = facts
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
     def fingerprint(self, spec: PaginationSpec, settings: JSONValue) -> str:
@@ -378,8 +371,52 @@ class _HelperDigests:
         return None if use is None or use.type is None else self.spelling.static(use.type)
 
     def contract(self, use: TypeUseBinding) -> object:
-        """Return a retained helper use's normalized schema at its site."""
-        return self.wire.schema(cast("SourceLocation", use.schema))[1]
+        """Return a retained helper use's contract: its type, and the values or fields of each model type it names.
+
+        A field gives its wire name, member kind, exclusion, requiredness, nullability, direction and type, so a schema
+        change that changes those models changes the digest.
+        """
+        symbols = dict.fromkeys(() if use.type is None else _named(use.type))
+        return {
+            "type": self.type(use),
+            "models": {
+                self.spelling.static(GeneratedSymbolType(symbol)): {
+                    "kind": (found := self.facts.symbols[symbol]).kind,
+                    "values": [None if value is None else repr(value.value) for value in found.values],
+                    "fields": [
+                        [member.wire_name, member.member_kind, member.exclusion, *self.field(member.model_facts)]
+                        for member in self.facts.members.get(symbol, ())
+                    ],
+                }
+                for symbol in symbols
+            },
+        }
+
+    def field(self, facts: ModelFieldFacts | None) -> tuple[object, ...]:
+        """Return what a model field's facts give its contract: requiredness, nullability, direction and type."""
+        return (
+            ()
+            if facts is None
+            else (facts.required, facts.nullable, facts.read_only, facts.write_only, self.spelling.static(facts.type))
+        )
+
+
+def _named(value: FinalPythonType) -> tuple[SymbolId, ...]:
+    """Return the generated symbols a type names, through its members, arguments, metadata base and enum literals."""
+    nested: tuple[FinalPythonType, ...] = (
+        *getattr(value, "members", ()),
+        *getattr(value, "arguments", ()),
+        *((value.base,) if isinstance(value, AnnotatedType | GenericType) else ()),
+        *(
+            GeneratedSymbolType(item.symbol)
+            for item in getattr(value, "values", ())
+            if isinstance(item, GeneratedEnumMember)
+        ),
+    )
+    return (
+        *((value.symbol,) if isinstance(value, GeneratedSymbolType) else ()),
+        *(symbol for item in nested for symbol in _named(item)),
+    )
 
 
 def _digest(value: object) -> str:

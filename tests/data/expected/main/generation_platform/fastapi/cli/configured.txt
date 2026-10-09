@@ -206,11 +206,7 @@ def _add_list_all(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='The pets.',
         responses={'default': {'model': models.Error, 'description': 'An error.'}},
-        openapi_extra={
-            'parameters': [
-                {'name': 'session', 'in': 'cookie', 'schema': {'type': 'string'}},
-            ],
-        },
+        openapi_extra={'parameters': [{'name': 'session', 'in': 'cookie'}]},
         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
     )
 

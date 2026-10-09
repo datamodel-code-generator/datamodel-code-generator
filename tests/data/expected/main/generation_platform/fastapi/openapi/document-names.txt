@@ -106,10 +106,7 @@
           },
           {
             "name": "session",
-            "in": "cookie",
-            "schema": {
-              "type": "string"
-            }
+            "in": "cookie"
           }
         ],
         "responses": {

@@ -1,32 +1,22 @@
 # session-final-imports
 render pydantic_v2.BaseModel plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render pydantic_v2.BaseModel annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render pydantic_v2.dataclass plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render pydantic_v2.dataclass annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render dataclasses.dataclass plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/native: The dataclasses.dataclass converter has no conversion for the custom_uuid.UUID type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/bound_native: The dataclasses.dataclass converter has no conversion for the custom_runtime.argparse.HelpFormatter._Section type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/handler: The dataclasses.dataclass converter has no conversion for the Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type
@@ -37,8 +27,6 @@ render dataclasses.dataclass plain
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render dataclasses.dataclass annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/native: The dataclasses.dataclass converter has no conversion for the custom_uuid.UUID type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/bound_native: The dataclasses.dataclass converter has no conversion for the custom_runtime.argparse.HelpFormatter._Section type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/handler: The dataclasses.dataclass converter has no conversion for the Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type
@@ -49,8 +37,6 @@ render dataclasses.dataclass annotated
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render typing.TypedDict plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/native: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/bound_native: The typing.TypedDict converter has no conversion for the custom_runtime.argparse.HelpFormatter._Section type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/handler: The typing.TypedDict converter has no conversion for the Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type
@@ -61,8 +47,6 @@ render typing.TypedDict plain
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render typing.TypedDict annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/native: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/bound_native: The typing.TypedDict converter has no conversion for the custom_runtime.argparse.HelpFormatter._Section type
   diagnostic MC_CODEC_UNSUPPORTED binding /components/schemas/Types/properties/handler: The typing.TypedDict converter has no conversion for the Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type
@@ -73,13 +57,9 @@ render typing.TypedDict annotated
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render msgspec.Struct plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render msgspec.Struct annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import

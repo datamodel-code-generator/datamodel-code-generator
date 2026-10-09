@@ -150,32 +150,8 @@
         "operationId": "postMany",
         "requestBody": {
           "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                },
-                "type": "object",
-                "required": [
-                  "name"
-                ]
-              }
-            },
-            "application/vnd.item+json": {
-              "schema": {
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  }
-                },
-                "type": "object",
-                "required": [
-                  "name"
-                ]
-              }
-            }
+            "application/json": {},
+            "application/vnd.item+json": {}
           },
           "required": true
         },
@@ -195,12 +171,7 @@
         "operationId": "postText",
         "requestBody": {
           "content": {
-            "text/plain": {
-              "schema": {
-                "type": "string",
-                "maxLength": 10
-              }
-            }
+            "text/plain": {}
           },
           "required": true
         },
@@ -240,11 +211,7 @@
         "requestBody": {
           "description": "The server passes this body to its handler as the request, without validating it.",
           "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
-            }
+            "application/json": {}
           },
           "required": true
         },
@@ -298,25 +265,7 @@
         "operationId": "postOptionalForm",
         "requestBody": {
           "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "flags": {
-                    "items": {
-                      "type": "boolean"
-                    },
-                    "type": "array"
-                  },
-                  "ratio": {
-                    "type": "number"
-                  }
-                },
-                "type": "object"
-              }
-            }
+            "application/x-www-form-urlencoded": {}
           }
         },
         "responses": {
@@ -369,24 +318,7 @@
         "operationId": "postNestedForm",
         "requestBody": {
           "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "properties": {
-                  "point": {
-                    "properties": {
-                      "x": {
-                        "type": "number"
-                      }
-                    },
-                    "type": "object"
-                  }
-                },
-                "additionalProperties": {
-                  "type": "integer"
-                },
-                "type": "object"
-              }
-            }
+            "application/x-www-form-urlencoded": {}
           },
           "required": true
         },
@@ -474,30 +406,7 @@
         "operationId": "upload",
         "requestBody": {
           "content": {
-            "multipart/form-data": {
-              "schema": {
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  },
-                  "extra": {
-                    "items": {
-                      "type": "string",
-                      "format": "binary"
-                    },
-                    "type": "array"
-                  },
-                  "note": {
-                    "type": "string"
-                  }
-                },
-                "type": "object",
-                "required": [
-                  "file"
-                ]
-              }
-            }
+            "multipart/form-data": {}
           },
           "required": true
         },

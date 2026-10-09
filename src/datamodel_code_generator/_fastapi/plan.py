@@ -6,6 +6,7 @@ from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from enum import Enum
+from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
@@ -53,7 +54,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalPythonType,
@@ -77,7 +78,6 @@ Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
-Schema: TypeAlias = "Mapping[str, WireValue]"
 
 RESERVED: Final = frozenset({"request", "principal", "body", "media_type"})
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
@@ -613,8 +613,10 @@ class Planner:  # noqa: PLR0904
 
     def info(self) -> tuple[tuple[str, WireValue], ...]:
         """Return the FastAPI settings the root document's info, tags, and servers supply, in constructor order."""
-        root = self.request.lease.borrow(SourceLocation(self.request.batch.documents[0].id, "", "declaration"))
-        sources = {"root": root, "info": root.get("info") if isinstance(root, dict) else None}
+        root = {
+            key: found for key, value in self.request.batch.document_facts if (found := json_value(value)) is not None
+        }
+        sources = {"root": root, "info": root.get("info")}
         found: list[tuple[str, WireValue]] = []
         for container, key, option, kind in _INFO:
             match kind, _member(sources[container], key):
@@ -727,7 +729,7 @@ class Planner:  # noqa: PLR0904
             seen
             and use.schema is not None
             and (isinstance(value, LiteralType) or not self.literal(value))
-            and (literal := self.wire.default(use.schema)) is not None
+            and (literal := use.default) is not None
         ):
             default = literal
         return value, default
@@ -818,9 +820,14 @@ class Planner:  # noqa: PLR0904
                 pass
         return isinstance(value, LiteralType)
 
-    def documentation(self, declaration: WireDeclaration, use: TypeUseBinding | None) -> Iterator[tuple[str, object]]:
+    @staticmethod
+    def documentation(declaration: WireDeclaration, use: TypeUseBinding | None) -> Iterator[tuple[str, object]]:
         """Yield a parameter's documentation keywords: its schema's title, description, deprecation, and examples."""
-        schema: Schema = {} if use is None or use.schema is None else self.wire.schema(use.schema)[1]
+        schema = {
+            key: found
+            for key, value in (() if use is None or use.schema is None else use.documentation)
+            if (found := json_value(value)) is not None
+        }
         if isinstance(title := schema.get("title"), str):
             yield "title", title
         if isinstance(description := fact(declaration, "description"), str) or isinstance(
@@ -829,7 +836,7 @@ class Planner:  # noqa: PLR0904
             yield "description", description
         if fact(declaration, "deprecated") is True or schema.get("deprecated") is True:
             yield "deprecated", True
-        if isinstance(examples := schema.get("examples"), tuple) and examples:
+        if isinstance(examples := schema.get("examples"), list) and examples:
             yield "examples", examples
 
     def body(self, operation: OperationContract, declaration: WireDeclaration) -> BodySpec:
@@ -1083,13 +1090,42 @@ def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
     return None
 
 
-def _member(source: object, key: str) -> WireValue | None:
-    if not _is_mapping(source) or key not in source:
-        return None
+class NotJSONError(Exception):
+    """A documentation value that has no JSON form."""
+
+
+def json_literal(value: FrozenLiteral) -> JSONValue:
+    """Return a recorded literal as JSON, or raise `NotJSONError` when it has no JSON form."""
+    if isinstance(value, LiteralSequence):
+        return [json_literal(item) for item in value.items]
+    if isinstance(value, LiteralMapping) and (names := _names(value)) is not None:
+        return {name: json_literal(item) for name, (_, item) in zip(names, value.entries, strict=True)}
+    if isinstance(value, LiteralScalar) and is_json_scalar(scalar := value.value):
+        return scalar
+    raise NotJSONError
+
+
+def json_value(value: FrozenLiteral) -> JSONValue | None:
+    """Return a recorded literal as JSON, or None when it has no JSON form."""
     try:
-        return checked_wire(source[key])
-    except (TypeError, ValueError):
+        return json_literal(value)
+    except NotJSONError:
         return None
+
+
+def is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
+    """Return whether a value is a finite JSON scalar."""
+    return value is None or isinstance(value, (bool, int, str)) or (isinstance(value, float) and isfinite(value))
+
+
+def _names(value: LiteralMapping) -> list[str] | None:
+    names = [key.value for key, _ in value.entries if isinstance(key, LiteralScalar) and isinstance(key.value, str)]
+    return names if len(names) == len(value.entries) else None
+
+
+def _member(source: object, key: str) -> WireValue | None:
+    """Return a recorded JSON member of an info source as a wire value, or None when it has none."""
+    return checked_wire(source[key]) if _is_mapping(source) and key in source else None
 
 
 def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:
