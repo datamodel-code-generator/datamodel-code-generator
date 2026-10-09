@@ -20,7 +20,6 @@ from secured import (
     OperationDependencies,
     OperationKey,
     RequirementSets,
-    Unset,
     build_router,
     create_app,
 )
@@ -73,9 +72,9 @@ class Public:
 
 
 class Untagged(UntaggedService[User]):
-    async def get_maybe(self, *, principal: User | None, query_principal: str | Unset) -> PlainTextResponse:
+    async def get_maybe(self, *, principal: User | None, query_principal: str | None) -> PlainTextResponse:
         name = "anonymous" if principal is None else principal.name
-        return PlainTextResponse(name if isinstance(query_principal, Unset) else query_principal)
+        return PlainTextResponse(name if query_principal is None else query_principal)
 
     def put_pet(self, *, principal: object, pet_id: int) -> HTTPResult[None]:
         return HTTPResult(204, headers={"x-pet": f"{principal} {pet_id}"})

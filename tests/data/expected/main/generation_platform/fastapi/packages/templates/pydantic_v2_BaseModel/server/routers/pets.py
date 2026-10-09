@@ -19,7 +19,6 @@ from pydantic import Field
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.requests import absent, present
 from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
@@ -33,29 +32,24 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
             alias='limit',
             description='Page size.',
         )] = 20,
-        tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
-        kind: Annotated[models.FieldPetsGetQueryKindParameter, Query(
+        tags: Annotated[list[str] | None, Query(alias='tags')] = None,
+        kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(
             alias='kind',
-            default_factory=absent,
-        )],
-        x_request_id: Annotated[uuid.UUID, Header(
+        )] = None,
+        x_request_id: Annotated[uuid.UUID | None, Header(
             alias='X-Request-Id',
             convert_underscores=False,
-            default_factory=absent,
-        )],
-        since: Annotated[pydantic.AwareDatetime, Query(
-            alias='since',
-            default_factory=absent,
-        )],
+        )] = None,
+        since: Annotated[pydantic.AwareDatetime | None, Query(alias='since')] = None,
         parameters: Annotated[contract.ListPets.Parameters, Depends(contract.ListPets.PARAMETERS)],
     ) -> object:
         return dispatch(
             list_pets_handler(
                 limit=limit,
-                tags=present(tags),
-                kind=present(kind),
-                x_request_id=present(x_request_id),
-                since=present(since),
+                tags=tags,
+                kind=kind,
+                x_request_id=x_request_id,
+                since=since,
                 session=parameters.session,
             ),
             contract.ListPets.RESPONSES,

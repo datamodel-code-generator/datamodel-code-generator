@@ -14,7 +14,6 @@ from pydantic import StringConstraints
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
-from .._runtime.server.requests import absent, present
 from .._runtime.server.responses import dispatch
 from ..services import UntaggedService
 
@@ -24,23 +23,15 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
 
     def get_values(
         *,
-        name: Annotated[pydantic.StrictStr, Query(
-            alias='name',
-            default_factory=absent,
-        )],
-        label: Annotated[str, StringConstraints(min_length=2, strict=True), Query(
+        name: Annotated[pydantic.StrictStr | None, Query(alias='name')] = None,
+        label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(
             alias='label',
-            default_factory=absent,
-        )],
-        names: Annotated[list[pydantic.StrictStr], Query(
-            alias='names',
-            default_factory=absent,
-        )],
-        x_tag: Annotated[pydantic.StrictStr, Header(
+        )] = None,
+        names: Annotated[list[pydantic.StrictStr] | None, Query(alias='names')] = None,
+        x_tag: Annotated[pydantic.StrictStr | None, Header(
             alias='X-Tag',
             convert_underscores=False,
-            default_factory=absent,
-        )],
+        )] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
         return dispatch(
@@ -50,15 +41,15 @@ def _add_get_values(router: APIRouter, wiring: Wiring) -> None:
                 bounded=parameters.bounded,
                 score=parameters.score,
                 flag=parameters.flag,
-                name=present(name),
-                label=present(label),
+                name=name,
+                label=label,
                 counts=parameters.counts,
-                names=present(names),
+                names=names,
                 page=parameters.page,
                 size=parameters.size,
                 maybe=parameters.maybe,
                 x_trace=parameters.x_trace,
-                x_tag=present(x_tag),
+                x_tag=x_tag,
             ),
             contract.GetValues.RESPONSES,
         )

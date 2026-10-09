@@ -1,6 +1,6 @@
 --- server/_generated/contract.py
 +++ server/_generated/contract.py (expected)
-@@ -18,23 +18,12 @@
+@@ -17,23 +17,12 @@
  from .._runtime.server.requests import ParameterAdapter, ParameterArgument
  from .._runtime.server.responses import Declared, OperationResponses
  
@@ -25,7 +25,7 @@
      },
      total=False,
  )
-@@ -101,74 +90,3 @@
+@@ -100,74 +89,3 @@
              ),
          },
      )
@@ -189,7 +189,7 @@
  from pydantic import Field
  
  from .._generated import contract
-@@ -105,85 +104,11 @@
+@@ -99,85 +98,11 @@
      )
  
  
@@ -278,7 +278,7 @@
  def build_router(
 --- server/services.py
 +++ server/services.py (expected)
-@@ -42,39 +42,3 @@
+@@ -41,39 +41,3 @@
          *,
          body: server_models.NewPet,
      ) -> server_models.Pet | HTTPResult[server_models.Pet] | Response: ...

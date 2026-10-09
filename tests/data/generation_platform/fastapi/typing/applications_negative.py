@@ -6,7 +6,7 @@ from applications import Admin, Pets, Public, Untagged, User, authorize, store
 from fastapi import FastAPI
 from secured_models import FieldPetsGetResponse
 
-from secured import Authorize, OperationDependencies, RequirementSets, Unset, create_app
+from secured import Authorize, OperationDependencies, RequirementSets, create_app
 from secured.services import PetsService, UntaggedService
 
 
@@ -20,12 +20,12 @@ class Counted(PetsService[User]):
 
 
 class Required(UntaggedService[User]):
-    async def get_maybe(self, *, principal: User, query_principal: str | Unset) -> None:  # error
+    async def get_maybe(self, *, principal: User, query_principal: str | None) -> None:  # error
         del principal, query_principal
 
 
 class Blocking(UntaggedService[User]):
-    def get_maybe(self, *, principal: User | None, query_principal: str | Unset) -> None:  # error
+    def get_maybe(self, *, principal: User | None, query_principal: str | None) -> None:  # error
         del principal, query_principal
 
 

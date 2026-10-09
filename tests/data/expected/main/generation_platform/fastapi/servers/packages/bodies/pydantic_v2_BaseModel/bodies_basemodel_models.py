@@ -90,5 +90,9 @@ class FieldUploadsPostRequest(BaseModel):
     note: str | None = None
 
 
+class FieldNotesPostRequest(RootModel[Item | None]):
+    root: Item | None
+
+
 class FieldRawPostRequest(BaseModel):
     pass

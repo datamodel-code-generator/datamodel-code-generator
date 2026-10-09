@@ -13,7 +13,6 @@ import pets_basemodel_models
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
@@ -53,7 +52,7 @@ class ListPets:
     class Parameters:
         """The adapter parameters of list_pets."""
 
-        session: str | Unset
+        session: str | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

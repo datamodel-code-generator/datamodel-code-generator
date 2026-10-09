@@ -13,7 +13,6 @@ import pydantic
 from pydantic import Field, TypeAdapter
 
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument, RawPath
 from .._runtime.server.responses import Declared, OperationResponses
@@ -57,15 +56,15 @@ class GetValues:
         """The adapter parameters of get_values."""
 
         id: pydantic.StrictInt
-        count: pydantic.StrictInt | Unset
-        bounded: int | Unset
-        score: pydantic.StrictFloat | Unset
-        flag: pydantic.StrictBool | Unset
-        counts: list[pydantic.StrictInt] | Unset
+        count: pydantic.StrictInt | None
+        bounded: int | None
+        score: pydantic.StrictFloat | None
+        flag: pydantic.StrictBool | None
+        counts: list[pydantic.StrictInt] | None
         page: pydantic.StrictInt
         size: int
-        maybe: pydantic.StrictInt | None | Unset
-        x_trace: pydantic.StrictInt | Unset
+        maybe: pydantic.StrictInt | None
+        x_trace: pydantic.StrictInt | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

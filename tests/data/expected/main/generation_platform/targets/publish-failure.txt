@@ -20,7 +20,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']
 generate
   OSError: No space left on device
 tree
@@ -39,7 +39,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  11 runtime modules ['present']
 leftovers []
 render
   target=fastapi schema_version=1
@@ -58,5 +58,5 @@ render
   unchanged target server/py.typed
   unchanged model_metadata meta/models.json
   unchanged remote_lock remote.lock
-  13 runtime modules ['unchanged']
+  11 runtime modules ['unchanged']
 staged lock updates discarded: 1

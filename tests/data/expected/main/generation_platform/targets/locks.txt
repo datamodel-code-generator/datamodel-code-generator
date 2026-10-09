@@ -16,7 +16,7 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  13 runtime modules ['write']
+  11 runtime modules ['write']
 render
   target=fastapi schema_version=1
   write model models.py
@@ -32,4 +32,4 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  13 runtime modules ['write']
+  11 runtime modules ['write']

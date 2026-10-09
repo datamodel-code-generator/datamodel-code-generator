@@ -14,7 +14,6 @@ from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
@@ -53,10 +52,10 @@ class GetPetsPetId:
     class Parameters:
         """The adapter parameters of get__pets_pet_id."""
 
-        filter: plan_oas31_models.Filter | Unset
-        session: str | Unset
-        coords: plan_oas31_models.Coords | Unset
-        ids: list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum] | Unset
+        filter: plan_oas31_models.Filter | None
+        session: str | None
+        coords: plan_oas31_models.Coords | None
+        ids: list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum] | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(

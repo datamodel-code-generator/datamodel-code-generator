@@ -15,7 +15,6 @@ from . import security
 from ._generated import contract
 from ._generated.contract import OperationDependencies
 from ._runtime.server.application import Dependency, Wiring, build
-from ._runtime.server.requests import absent, present
 from ._runtime.server.responses import dispatch
 from ._runtime.server.security import (
     AsyncAuthorize,
@@ -43,23 +42,21 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
     def list_pets(
         *,
         principal: Annotated[object, Depends(list_pets_principal)],
-        limit: Annotated[int, Field(ge=1), Query(
+        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(
             alias='limit',
-            default_factory=absent,
-        )],
-        page: Annotated[int, Field(ge=1), Query(alias='page', default_factory=absent)],
-        x_trace: Annotated[str, Header(
+        )] = None,
+        page: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='page')] = None,
+        x_trace: Annotated[str | None, Header(
             alias='X-Trace',
             convert_underscores=False,
-            default_factory=absent,
-        )],
+        )] = None,
     ) -> object:
         return dispatch(
             list_pets_handler(
                 principal=principal,
-                limit=present(limit),
-                page=present(page),
-                x_trace=present(x_trace),
+                limit=limit,
+                page=page,
+                x_trace=x_trace,
             ),
             contract.ListPets.RESPONSES,
         )
@@ -96,19 +93,14 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
     def create_pet(
         *,
         principal: Annotated[object, Depends(create_pet_principal)],
-        x_trace: Annotated[str, Header(
+        x_trace: Annotated[str | None, Header(
             alias='X-Trace',
             convert_underscores=False,
-            default_factory=absent,
-        )],
+        )] = None,
         body: Annotated[models.Pet, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
-            create_pet_handler(
-                principal=principal,
-                x_trace=present(x_trace),
-                body=body,
-            ),
+            create_pet_handler(principal=principal, x_trace=x_trace, body=body),
             contract.CreatePet.RESPONSES,
         )
 
@@ -184,13 +176,12 @@ def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
     def list_owners(
         *,
         principal: Annotated[object, Depends(list_owners_principal)],
-        limit: Annotated[int, Field(ge=1), Query(
+        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(
             alias='limit',
-            default_factory=absent,
-        )],
+        )] = None,
     ) -> object:
         return dispatch(
-            list_owners_handler(principal=principal, limit=present(limit)),
+            list_owners_handler(principal=principal, limit=limit),
             contract.ListOwners.RESPONSES,
         )
 

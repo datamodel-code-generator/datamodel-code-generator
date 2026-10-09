@@ -17,6 +17,6 @@ render
   write target server/services.py
   write target server/README.md
   write target server/py.typed
-  13 runtime modules ['write']
+  11 runtime modules ['write']
 chmod server 0755
 leftovers []
