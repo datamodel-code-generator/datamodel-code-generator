@@ -21,7 +21,6 @@ from pets.options import (
     ClientOptions,
     Clock,
     IdempotencyKey,
-    RedirectOptions,
     RequestOptions,
     RetryOptions,
     TimeoutOptions,
@@ -166,10 +165,9 @@ def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: Configu
     RetryOptions(statuses=[429, 503])  # error
     RetryOptions(respect_retry_after=None)  # error
     RetryOptions(retry_after_ms_header=42)  # error
-    RedirectOptions(enabled=None)  # error
-    RedirectOptions(allowed_origins=["https://example.com"])  # error
+    ClientOptions(follow_redirects="yes")  # error
     RequestOptions(retry=None)  # error
-    RequestOptions(redirects=None)  # error
+    RequestOptions(follow_redirects=None)  # error
     RequestOptions(idempotency_key="opaque")  # error
     RequestOptions(transport=TransportOptions())  # error
     ClientOptions(transport=None)  # error

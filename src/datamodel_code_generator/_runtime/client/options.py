@@ -42,7 +42,6 @@ __all__ = (
     "HeaderPatch",
     "IdempotencyKey",
     "QueryPatch",
-    "RedirectOptions",
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
@@ -59,13 +58,10 @@ MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
 MAX_CONTEXT_BYTES: Final = 8 * 1024
 NO_CONTEXT: Final[Mapping[str, JSONScalar]] = MappingProxyType({})
 _SCHEMES: Final = frozenset({"http", "https"})
-_ORIGIN: Final = re.compile(r"https?://[^\s/?#\\\x00-\x1f\x7f]+", re.IGNORECASE)
 _NAME: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _VALUE: Final = re.compile(r"[^\x00-\x08\x0a-\x1f\x7f]*")
 _SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 _RESERVED: Final = frozenset({"host", "content-length", "transfer-encoding"})
-_CODINGS: Final = frozenset({"identity", "gzip", "x-gzip", "deflate"})
-_WEIGHT: Final = re.compile(r"[qQ]=(?:0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?)")
 _PAIR: Final = 2
 _JITTER: Final = frozenset({"full", "none"})
 _RETRY_OWNERS: Final = frozenset({"sdk", "transport"})
@@ -89,8 +85,6 @@ def _header_patch(value: object) -> HeaderPatch:
                 raise ConfigurationError(field_path=("headers", name), reason="invalid_value")
             case key, _ if key in _RESERVED:
                 raise ConfigurationError(field_path=("headers", name), reason="reserved")
-            case "accept-encoding", str() if not _accepted(text):
-                raise ConfigurationError(field_path=("headers", name), reason="unsupported_coding")
             case _:
                 pass
     _settled(patch, "headers", str.lower)
@@ -175,19 +169,6 @@ def _settled(patch: tuple[tuple[str, str | None], ...], field: str, fold: Callab
     removed = {fold(name) for name, text in patch if text is None}
     if any(fold(name) in removed for name, text in patch if text is not None):
         raise ConfigurationError(field_path=(field,), reason="set_and_removed")
-
-
-def _accepted(value: str) -> bool:
-    """Return whether an Accept-Encoding value names each coding a client decodes once, with a valid weight."""
-    seen: set[str] = set()
-    for element in value.split(","):
-        coding, *weights = (part.strip() for part in element.split(";"))
-        if (key := coding.lower()) not in _CODINGS or key in seen or len(weights) > 1:
-            return False
-        if weights and not _WEIGHT.fullmatch(weights[0]):
-            return False
-        seen.add(key)
-    return True
 
 
 def _auth_type(value: object) -> None:
@@ -330,46 +311,6 @@ class RetryOptions:
         _retry_header(self.should_retry_header, "should_retry_header")
 
 
-def _origin(value: object) -> str:
-    path = ("redirects", "allowed_origins")
-    if not isinstance(value, str):
-        raise ConfigurationError(field_path=path, reason="invalid_type")
-    if not _ORIGIN.fullmatch(value):
-        raise ConfigurationError(field_path=path, reason="invalid_url")
-    return checked_base_url(value, path)
-
-
-def _origins(value: object) -> tuple[str, ...]:
-    if not is_sequence(value):
-        raise ConfigurationError(field_path=("redirects", "allowed_origins"), reason="invalid_type")
-    return tuple(_origin(item) for item in value)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class RedirectOptions:
-    """Override redirect admission; an empty origin allowlist permits only the initial origin."""
-
-    enabled: bool | Unset = UNSET
-    max_redirects: int | Unset = UNSET
-    allow_303_to_get: bool | Unset = UNSET
-    allowed_origins: tuple[str, ...] | Unset = UNSET
-    allow_https_downgrade: bool | Unset = UNSET
-
-    def __post_init__(self) -> None:
-        """Freeze configured origins and reject invalid counts or nonboolean policy switches."""
-        for name, value in (
-            ("enabled", self.enabled),
-            ("allow_303_to_get", self.allow_303_to_get),
-            ("allow_https_downgrade", self.allow_https_downgrade),
-        ):
-            if not isinstance(value, Unset):
-                checked_instance(value, (bool,), ("redirects", name))
-        if not isinstance(self.max_redirects, Unset):
-            checked_count(self.max_redirects, ("redirects", "max_redirects"))
-        if not isinstance(self.allowed_origins, Unset):
-            object.__setattr__(self, "allowed_origins", _origins(self.allowed_origins))
-
-
 def _key_value(value: object) -> None:
     match value:
         case str() if (
@@ -448,17 +389,6 @@ class ResolvedRetryOptions:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class ResolvedRedirectOptions:
-    """Merged redirect limits and permitted destinations."""
-
-    enabled: bool = False
-    max_redirects: int = 5
-    allow_303_to_get: bool = False
-    allowed_origins: tuple[str, ...] = ()
-    allow_https_downgrade: bool = False
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class ResolvedTransportOptions:
     """Client construction settings after verify omission has been resolved."""
 
@@ -473,7 +403,6 @@ class ResolvedTransportOptions:
 
 
 DEFAULT_RETRY: Final = ResolvedRetryOptions()
-DEFAULT_REDIRECTS: Final = ResolvedRedirectOptions()
 DEFAULT_TRANSPORT: Final = ResolvedTransportOptions()
 
 
@@ -501,19 +430,6 @@ def layered_retry(
         retry_after_ms_header=_inherited(current.retry_after_ms_header, layer.retry_after_ms_header),
         should_retry_header=_inherited(current.should_retry_header, layer.should_retry_header),
         retry_on_pool_timeout=_inherited(current.retry_on_pool_timeout, layer.retry_on_pool_timeout),
-    )
-
-
-def layered_redirects(current: ResolvedRedirectOptions, layer: RedirectOptions | Unset) -> ResolvedRedirectOptions:
-    """Apply each explicit redirect field without resetting the remaining policy."""
-    if isinstance(layer, Unset):
-        return current
-    return ResolvedRedirectOptions(
-        enabled=_inherited(current.enabled, layer.enabled),
-        max_redirects=_inherited(current.max_redirects, layer.max_redirects),
-        allow_303_to_get=_inherited(current.allow_303_to_get, layer.allow_303_to_get),
-        allowed_origins=_inherited(current.allowed_origins, layer.allowed_origins),
-        allow_https_downgrade=_inherited(current.allow_https_downgrade, layer.allow_https_downgrade),
     )
 
 
@@ -570,7 +486,7 @@ class _Options:
     total_timeout: float | Unset | None = UNSET
     limiter: Limiter | AsyncLimiter | Unset | None = field(default=UNSET, repr=False)
     retry: RetryOptions | Unset = UNSET
-    redirects: RedirectOptions | Unset = UNSET
+    follow_redirects: bool | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
     auth: AuthConfig | Unset | None = field(default=UNSET, repr=False)
 
@@ -585,7 +501,7 @@ class _Options:
         self._check_timing()
         _auth_type(self.auth)
         checked_instance(self.retry, (RetryOptions, Unset), ("retry",))
-        checked_instance(self.redirects, (RedirectOptions, Unset), ("redirects",))
+        checked_instance(self.follow_redirects, (bool, Unset), ("follow_redirects",))
         checked_instance(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
         if not isinstance(self.hooks, Unset):
             object.__setattr__(self, "hooks", _hooks(self.hooks))
@@ -662,7 +578,7 @@ class Settings:
     total_timeout: float | None = None
     limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
     retry: ResolvedRetryOptions = DEFAULT_RETRY
-    redirects: ResolvedRedirectOptions = DEFAULT_REDIRECTS
+    follow_redirects: bool | None = None
     idempotency_key: IdempotencyKey | Unset | None = UNSET
     auth: AuthConfig | None = field(default=None, repr=False)
     clock: Clock = field(default=SYSTEM_CLOCK, repr=False)

@@ -126,7 +126,7 @@ def _framing(  # noqa: PLR0913, PLR0917
 
 
 def _malformed(lines: list[str], options: ModuleType) -> None:
-    """Refuse reserved, malformed, contradictory, and undecodable header patches when the options are made."""
+    """Refuse reserved, malformed, and contradictory header patches when the options are made."""
     for label, patch in (
         ("reserved header", (("Host", "a"),)),
         ("header name that is no token", (("Bad Name", "v"),)),
@@ -135,10 +135,7 @@ def _malformed(lines: list[str], options: ModuleType) -> None:
         ("header that is no pair", (("X-A",),)),
         ("header value that is no text", (("X-A", 1),)),
         ("headers that are no sequence", "X-A: a"),
-        ("coding without a decoder", (("Accept-Encoding", "br"),)),
-        ("coding named twice", (("Accept-Encoding", "gzip, GZIP"),)),
-        ("coding of a weight out of range", (("Accept-Encoding", "gzip;q=2"),)),
-        ("coding of two weights", (("Accept-Encoding", "deflate;q=1;q=0"),)),
+        ("a coding left to the native client", (("Accept-Encoding", "br"),)),
     ):
         record(lines, label, lambda patch=patch: options.RequestOptions(headers=patch))
     record(lines, "headers listed", lambda: options.ClientOptions(headers=[["X-A", "a"], ("X-B", None)]).headers)

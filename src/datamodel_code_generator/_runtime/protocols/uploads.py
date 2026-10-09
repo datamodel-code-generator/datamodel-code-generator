@@ -2,7 +2,8 @@
 
 A helper's `start` measures the source, creates the upload in one child call, and returns a handle. Each `advance`
 reads the unconfirmed bytes of the chunk holding the confirmed offset from the source and appends them, and an append
-whose outcome is unknown is settled by probing the server's offset instead of sending it again blindly.
+whose outcome is unknown is settled by probing the server's offset once instead of sending it again blindly. A
+checkpoint is plain JSON: the upload's size, chunk size, confirmed offset, and the values the server gave.
 """
 
 from __future__ import annotations
@@ -19,8 +20,6 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import APIConnectionError, APIStatusError, ConfigurationError, DeliveryState, is_transport
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
-from ..model_codecs.errors import CodecError
-from ..model_codecs.media import json_value
 from ..model_codecs.unset import UNSET
 from .errors import (
     NonResumableSourceError,
@@ -32,17 +31,14 @@ from .errors import (
     UploadSourceChangedError,
 )
 from .options import UploadOptions, layered
-from .records import HeaderSelector
+from .records import HeaderSelector, plain_copy
 from .resume import (
     MalformedStateError,
-    ResumeState,
-    ResumeStateError,
     require_state,
     saved_expiry,
     state_array,
     state_count,
     state_expiry,
-    state_fields,
     state_text,
 )
 from .sources import UploadProgress
@@ -134,7 +130,6 @@ class UploadPlan(Generic[T, C]):
     offset: ParameterTarget
     max_chunk_bytes: int
     partial_commit: bool
-    fingerprint: str
     size: ParameterTarget | None = None
     expires_at: Selector | None = None
     probe_bindings: tuple[PageBinding, ...] = ()
@@ -190,8 +185,6 @@ class _Limits:
     """The effective limits of one helper call, each from the first layer that sets it; None removes a limit."""
 
     chunk_bytes: int = 8 * 1024 * 1024
-    max_parts: int | None = 10000
-    max_uncertain_probes: int = 3
     total_timeout: float | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
@@ -242,8 +235,6 @@ def _limits(
     sessions = (session_options, UNSET if defaults is None else defaults.session)
     return _Limits(
         chunk_bytes=layered(kinds, "chunk_bytes", _DEFAULTS.chunk_bytes),
-        max_parts=layered(kinds, "max_parts", _DEFAULTS.max_parts),
-        max_uncertain_probes=layered(kinds, "max_uncertain_probes", _DEFAULTS.max_uncertain_probes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
@@ -334,19 +325,6 @@ def _content(plan: UploadPlan[T, C], source: object) -> _Content:
     if (kind := _source_kind(source)) is None:
         raise _invalid(plan, ("source",))
     raise NonResumableSourceError(source_kind=kind, helper_id=plan.helper_id, operation=plan.operation)
-
-
-def _layout(plan: UploadPlan[T, C], limits: _Limits, size: int, chunk: int) -> int:
-    """Return the chunk size of an upload, refusing one the options do not allow.
-
-    A resumed checkpoint keeps its chunk size, which must not exceed the call's `chunk_bytes`, since one chunk is what
-    an append holds in memory.
-    """
-    if chunk > limits.chunk_bytes:
-        raise _invalid(plan, ("upload_options", "chunk_bytes"))
-    if (limit := limits.max_parts) is not None and -(-size // chunk) > limit:
-        raise _invalid(plan, ("upload_options", "max_parts"))
-    return chunk
 
 
 class _Upload(Generic[T]):
@@ -472,7 +450,6 @@ class _Upload(Generic[T]):
             phase=phase,
             progress=self._progress(),
             delivery_state=delivery,
-            resume_state=self._checkpoint(),
             helper_id=plan.helper_id,
             operation=plan.operation,
             parent_session_id=self._session.session_id,
@@ -495,7 +472,6 @@ class _Upload(Generic[T]):
             expected_offset=expected,
             remote_offset=remote,
             size=self._size,
-            resume_state=self._checkpoint(),
             location=plan.remote_offset,
             helper_id=plan.helper_id,
             operation=plan.probe_operation,
@@ -671,30 +647,26 @@ class _Upload(Generic[T]):
             return error
         return self._unknown(phase="complete", delivery=delivery, error=error)
 
-    def checkpoint(self) -> ResumeState:
-        """Return the state a later `resume` continues from, sending nothing; a complete upload has none.
+    def checkpoint(self) -> JSONValue:
+        """Return the plain JSON a later `resume` continues from, sending nothing; a complete upload has none.
 
         It keeps the upload's size and chunk size, the confirmed offset, a completion of unknown outcome, the values
-        later calls write, and the server's expiry, under the helper's identity.
+        later calls write, and the server's expiry.
         """
         with self._guard:
             if (phase := self._phase) is _Phase.COMPLETE:
                 action = "checkpoint"
                 raise self._state_error(action, phase.value)
-            return self._checkpoint()
-
-    def _checkpoint(self) -> ResumeState:
-        delivery = self._delivery
-        state: JSONValue = {
-            "size": self._size,
-            "chunk": self._chunk,
-            "confirmed": self._confirmed,
-            "phase": self._phase.value,
-            "delivery": None if delivery is None else delivery.value,
-            "bound": [list(group) for group in self._bound],
-            "expires_at": saved_expiry(self._expires_at),
-        }
-        return ResumeState(helper=self._plan.fingerprint, state=state)
+            delivery = self._delivery
+            return plain_copy({
+                "size": self._size,
+                "chunk": self._chunk,
+                "confirmed": self._confirmed,
+                "phase": phase.value,
+                "delivery": None if delivery is None else delivery.value,
+                "bound": self._bound,
+                "expires_at": saved_expiry(self._expires_at),
+            })
 
 
 def _dotted(
@@ -835,18 +807,14 @@ class UploadHandle(_Upload[T]):
             self._settle(end)
 
     def _uncertain(self, error: APIConnectionError, delivery: DeliveryState, end: int) -> bool:
-        """Probe after an append of unknown outcome; return whether its chunk is confirmed, raising when unsettled."""
-        failures: list[BaseException] = []
-        for _ in range(self._limits.max_uncertain_probes):
-            try:
-                remote, info = self._probe()
-            except Exception as failure:
-                if not _probed_again(failure):
-                    raise
-                failures.append(failure)
-                continue
-            return self._reconciled(remote, end, info)
-        raise self._unknown(phase="append", delivery=delivery, error=error, failures=tuple(failures))
+        """Probe once after an append of unknown outcome and return whether its chunk is confirmed."""
+        try:
+            remote, info = self._probe()
+        except Exception as failure:
+            if not _probed_again(failure):
+                raise
+            raise self._unknown(phase="append", delivery=delivery, error=error, failures=(failure,)) from None
+        return self._reconciled(remote, end, info)
 
     def _complete(self) -> None:
         """Send the completion once and keep its result."""
@@ -1000,18 +968,14 @@ class AsyncUploadHandle(_Upload[T]):
             self._settle(end)
 
     async def _uncertain(self, error: APIConnectionError, delivery: DeliveryState, end: int) -> bool:
-        """Probe after an append of unknown outcome; return whether its chunk is confirmed, raising when unsettled."""
-        failures: list[BaseException] = []
-        for _ in range(self._limits.max_uncertain_probes):
-            try:
-                remote, info = await self._probe()
-            except Exception as failure:
-                if not _probed_again(failure):
-                    raise
-                failures.append(failure)
-                continue
-            return self._reconciled(remote, end, info)
-        raise self._unknown(phase="append", delivery=delivery, error=error, failures=tuple(failures))
+        """Probe once after an append of unknown outcome and return whether its chunk is confirmed."""
+        try:
+            remote, info = await self._probe()
+        except Exception as failure:
+            if not _probed_again(failure):
+                raise
+            raise self._unknown(phase="append", delivery=delivery, error=error, failures=(failure,)) from None
+        return self._reconciled(remote, end, info)
 
     async def _complete(self) -> None:
         """Send the completion once and keep its result."""
@@ -1122,7 +1086,7 @@ def start_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload in a session of its own, and return the handle appending to it."""
     limits = _limits(core, plan, upload_options, options, session_options)
     content = _content(plan, source)
-    chunk = _layout(plan, limits, content.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
+    chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = UploadHandle(core, plan, limits, _session(limits), content, chunk)
     handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
@@ -1143,7 +1107,7 @@ async def astart_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options, session_options)
     content = _content(plan, source)
-    chunk = _layout(plan, limits, content.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
+    chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
     handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, chunk)
     await handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
@@ -1160,10 +1124,6 @@ class _Saved:
     delivery: DeliveryState | None
     bound: tuple[tuple[JSONValue, ...], tuple[JSONValue, ...], tuple[JSONValue, ...]]
     expires_at: datetime | None
-
-
-def _resume_error(plan: UploadPlan[Any, Any], condition: Literal["fingerprint", "malformed"]) -> ResumeStateError:
-    return ResumeStateError(condition=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
 def _bound(plan: UploadPlan[Any, Any], saved: JSONValue) -> tuple[tuple[JSONValue, ...], ...]:
@@ -1214,65 +1174,31 @@ def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
     )
 
 
-def _restored(plan: UploadPlan[T, C], state: object, limits: _Limits) -> _Saved:
-    """Return what a checkpoint saved: this helper's, fitting it, and unexpired by the client's clock."""
-    if not isinstance(state, ResumeState):
-        raise _invalid(plan, ("state",))
-    helper, state_json = state_fields(state)
-    if helper != plan.fingerprint:
-        raise _resume_error(plan, "fingerprint")
-    try:
-        saved = _decoded(plan, json_value(state_json))
-    except MalformedStateError:
-        raise _resume_error(plan, "malformed") from None
-    if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
-        raise UploadExpiredError(expires_at=expires_at, helper_id=plan.helper_id, operation=plan.operation)
-    return saved
-
-
-def _checked(
-    core: ClientCore | AsyncClientCore, plan: UploadPlan[Any, Any], options: RequestOptions | None, saved: _Saved
-) -> None:
-    """Prepare each request the saved values write as its call would, refusing values that cannot be sent.
-
-    Read values that make a path segment a dot segment raise ProtocolDataError, as if a server gave them; any other
-    refusal of a saved value makes the checkpoint malformed.
-    """
-    from ..client.errors import DecodeError  # noqa: PLC0415 - Only a resume checks saved values.
-
-    probe, append, completion = saved.bound
-    offsets = _written(plan, 0, b"")
-    requests: list[tuple[Targeted[Any], tuple[JSONValue, ...], tuple[JSONValue, ...], object]] = [
-        (plan.probed, probe, (), None),
-        (plan.appended, append, offsets, b""),
-    ]
-    if (completed := plan.completed) is not None:
-        requests.append((completed, completion, (), None))
-    for targeted, values, extra, payload in requests:
-        _dotted(plan, targeted, values, None)
-        arguments, body = targeted.request((*values, *extra))
-        try:
-            core.checked_page(targeted.call, _fixed(arguments, body if payload is None else payload), None, options)
-        except (DecodeError, ProtocolDataError, CodecError):
-            raise _resume_error(plan, "malformed") from None
-
-
-def _fixed(arguments: tuple[object, ...], body: object) -> Callable[[], tuple[tuple[object, ...], object, None]]:
-    """Return the request of a check, built once."""
-    return lambda: (arguments, body, None)
-
-
 def _resume_start(
-    core: ClientCore | AsyncClientCore,
     plan: UploadPlan[T, C],
     source: object,
     state: object,
     limits: _Limits,
 ) -> tuple[_Saved, _Content]:
-    """Check the checkpoint, its layout and saved values, then the source's size, before any read or send."""
-    saved = _restored(plan, state, limits)
-    _layout(plan, limits, saved.size, saved.chunk)
-    _checked(core, plan, limits.options, saved)
+    """Check the checkpoint's form, expiry, chunk size, and dot segments, then the source's size, before any send.
+
+    A checkpoint that is not JSON or does not fit the helper raises ConfigurationError. Its chunk size must not
+    exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory. Saved values are encoded as
+    the server's are when each request is built.
+    """
+    try:
+        saved = _decoded(plan, plain_copy(state))
+    except (MalformedStateError, TypeError, ValueError):
+        raise _invalid(plan, ("state",)) from None
+    if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
+        raise UploadExpiredError(expires_at=expires_at, helper_id=plan.helper_id, operation=plan.operation)
+    if saved.chunk > limits.chunk_bytes:
+        raise _invalid(plan, ("upload_options", "chunk_bytes"))
+    probe, append, completion = saved.bound
+    _dotted(plan, plan.probed, probe, None)
+    _dotted(plan, plan.appended, (*append, *_written(plan, 0, b"")), None)
+    if (completed := plan.completed) is not None:
+        _dotted(plan, completed, completion, None)
     content = _content(plan, source)
     if content.size != saved.size:
         raise UploadSourceChangedError(
@@ -1308,7 +1234,7 @@ def resume_upload(  # noqa: PLR0913
     A completion of unknown outcome raises again, without reading or sending.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
-    saved, content = _resume_start(core, plan, source, state, limits)
+    saved, content = _resume_start(plan, source, state, limits)
     handle = UploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
     _resumed(handle, saved)
     handle._verified(*handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -1330,7 +1256,7 @@ async def aresume_upload(  # noqa: PLR0913
     A completion of unknown outcome raises again, without reading or sending.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
-    saved, content = _resume_start(core, plan, source, state, limits)
+    saved, content = _resume_start(plan, source, state, limits)
     handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
     _resumed(handle, saved)
     handle._verified(*await handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001

@@ -255,19 +255,23 @@ async def _async_fields(context: _Fields, lines: list[str]) -> None:
 
 
 def optional_models(package: ModuleType, lines: list[str]) -> None:
-    """Require the fields a body's schema requires, though models generated to make every field optional omit them."""
+    """Let a call omit the fields that models generated to make every field optional construct without."""
     context = _Fields(package)
     exchange = Exchange(lines)
     http = exchange.client()
     kind = context.kind()
     with package.Client(http_client=http) as api:
         pets = api.default
-        for label, call in (
-            ("create giving nothing", lambda: pets.create_pet(media_type=_JSON)),
-            ("create without its kind", lambda: pets.create_pet(name="Mimi", media_type=_JSON)),
-            ("create an owner giving nothing", lambda: pets.create_owner()),
+        for label, call, answer in (
+            ("create giving nothing", lambda: pets.create_pet(media_type=_JSON), json_response(201, _CREATED)),
+            (
+                "create without its kind",
+                lambda: pets.create_pet(name="Mimi", media_type=_JSON),
+                json_response(201, _CREATED),
+            ),
+            ("create an owner giving nothing", lambda: pets.create_owner(), raw_response(204)),
         ):
-            record(lines, label, call)
+            _exchanged(exchange, lines, label, call, answer)
         _exchanged(
             exchange,
             lines,
