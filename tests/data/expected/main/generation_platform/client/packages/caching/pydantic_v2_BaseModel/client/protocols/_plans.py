@@ -42,7 +42,7 @@ PLAN_2: Final[CachePlan[ListUsersResponse]] = CachePlan(
     call=_operations.OPERATION_4,
     validator='etag',
     authenticated=False,
-    fingerprint='6c1d531d1e31936065acb46a25b0f3c6525b0330ad910db403738f94046c5416',
+    fingerprint='970cde9310d294c8d8574cf12aac47405317331203fc8e988b7ceafc4e93f503',
     vary_allowlist=frozenset(('accept-language',)),
 )
 

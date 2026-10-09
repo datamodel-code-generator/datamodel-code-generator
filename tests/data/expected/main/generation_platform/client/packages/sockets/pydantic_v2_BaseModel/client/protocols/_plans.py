@@ -23,7 +23,7 @@ SOCKET_0: Final[ChannelPlan[_dcg_type_0, _dcg_type_1]] = ChannelPlan(
     helper_id='rooms.chat',
     operation=OperationRef(pointer='/paths/~1rooms~1{room}~1socket/get'),
     call=_operations.OPERATION_0,
-    fingerprint='a86ab666243b652c003fac499af0b6c992fa8d9ab6327667520d5bb9254f9da4',
+    fingerprint='435d1d2751de4b88efc6bca2c67c28823bd25ad0da0841b307529b6989c6b63f',
     connectors=(native_connector, async_native_connector),
     encoder=model_bindings.codec_4,
     decoder=model_bindings.codec_5,
