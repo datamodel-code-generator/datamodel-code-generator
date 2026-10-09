@@ -19,9 +19,7 @@ class Tree(BaseModel):
     spare_node: Node | None = Field(None, alias='spare-node')
     nodes: list[Node] | None = Field(None, min_length=1)
     labels: Labels | None = None
-    favourite: Node | None = Field(
-        {'nodeValue': 7}, title='Favourite', validate_default=True
-    )
+    pick: Node | None = Field({}, title='Pick', validate_default=True)
     spare: Node | None = Field({'nodeValue': 8}, validate_default=True)
     branches: Branches | None = None
 

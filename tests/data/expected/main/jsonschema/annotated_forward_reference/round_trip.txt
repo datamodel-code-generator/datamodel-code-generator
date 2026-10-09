@@ -21,8 +21,7 @@
   "labels": [
     "old"
   ],
-  "favourite": {
-    "nodeValue": 7,
+  "pick": {
     "kind": "leaf"
   },
   "spare": {

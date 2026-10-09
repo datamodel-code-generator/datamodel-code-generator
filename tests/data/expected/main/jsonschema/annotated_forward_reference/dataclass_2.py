@@ -24,11 +24,7 @@ class Tree:
     )
     nodes: Annotated[list[Node] | None, Field(min_length=1)] = None
     labels: Labels | None = None
-    favourite: Node | None = Field(
-        default_factory=lambda: {'nodeValue': 7},
-        title='Favourite',
-        validate_default=True,
-    )
+    pick: Node | None = Field(default_factory=dict, title='Pick', validate_default=True)
     spare: Node | None = Field(
         default_factory=lambda: {'nodeValue': 8}, validate_default=True
     )

@@ -2402,7 +2402,7 @@ def test_main_use_annotated_forward_reference(
 @pytest.mark.parametrize(
     ("output_model_type", "extra_args", "expected_file"),
     [
-        ("pydantic_v2.BaseModel", ["--alias-generator", "to_camel", "--disable-future-imports"], "to_camel_2_eager.py"),
+        ("pydantic_v2.BaseModel", ["--disable-future-imports"], "no_generator_2_eager.py"),
         ("pydantic_v2.dataclass", [], "dataclass_2.py"),
     ],
     ids=["disable-future-imports", "pydantic-dataclass"],

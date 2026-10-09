@@ -24,9 +24,7 @@ class Tree(BaseModel):
     spare_node: Node | None = Field(None, alias='spare-node')
     nodes: list[Node] | None = Field(None, alias='nodes', min_length=1)
     labels: Annotated[Labels | None, Field(alias='labels')] = None
-    favourite: Node | None = Field(
-        {'nodeValue': 7}, alias='favourite', title='Favourite', validate_default=True
-    )
+    pick: Node | None = Field({}, alias='pick', title='Pick', validate_default=True)
     spare: Node | None = Field({'nodeValue': 8}, alias='spare', validate_default=True)
     branches: Branches | None = Field(None, alias='branches')
 

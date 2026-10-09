@@ -23,16 +23,14 @@
     "labels": {
       "$ref": "#/definitions/Labels"
     },
-    "favourite": {
+    "pick": {
       "allOf": [
         {
           "$ref": "#/definitions/Node"
         }
       ],
-      "default": {
-        "nodeValue": 7
-      },
-      "title": "Favourite"
+      "default": {},
+      "title": "Pick"
     },
     "spare": {
       "allOf": [
