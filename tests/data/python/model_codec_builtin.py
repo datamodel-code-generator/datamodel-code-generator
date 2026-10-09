@@ -411,7 +411,7 @@ class _NativeServerCases:
             else:
                 name = re.sub(r"\W", "_", name).lower()
                 service = next(service for service in self.services.values() if hasattr(service, route.name))
-                native_type = get_type_hints(getattr(service, route.name))[name]
+                native_type = get_type_hints(getattr(service, route.name), include_extras=True)[name]
                 members = tuple(
                     member for member in get_args(native_type) if getattr(member, "__name__", "") != "Unset"
                 )

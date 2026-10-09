@@ -2038,6 +2038,86 @@
     ],
     "package_snapshots": []
   },
+  "strict": {
+    "input": "server-strict.yaml",
+    "services": "strict",
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool",
+        "str"
+      ]
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/5"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4",
+        "headers": {
+          "X-Trace": "7",
+          "X-Tag": "t"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/values/x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?count=1.5"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?bounded=-1"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?score=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?flag=maybe"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?label=a"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?counts=1&counts=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?page=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?size=0"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5?maybe=x"
+      },
+      {
+        "method": "GET",
+        "url": "/values/5",
+        "headers": {
+          "X-Trace": "x"
+        }
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
   "nested-models": {
     "input": "unbound.yaml",
     "services": "unbound",

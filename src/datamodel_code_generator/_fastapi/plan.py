@@ -94,6 +94,8 @@ _APIS: Final[dict[str, NativeApi]] = {"path": "Path", "query": "Query", "header"
 _SCALAR_BUILTINS: Final = frozenset({"str", "int", "float", "bool", "bytes", "object"})
 _SCALAR_MODULES: Final = frozenset({"datetime", "decimal", "ipaddress", "pydantic", "pydantic.networks", "uuid"})
 _MODEL_IMPORTS: Final = frozenset({"BaseModel", "RootModel"})
+_STRICT: Final = frozenset({"StrictBool", "StrictFloat", "StrictInt", "confloat", "conint"})
+_STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
@@ -676,7 +678,7 @@ class Planner:  # noqa: PLR0904
         value, default = self.parameter_type(use)
         kind = (
             None
-            if value is None or (plan is not None and plan.kind != "string" and self.literal(value))
+            if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
             else self.kind(value)
         )
         spec = ParameterSpec(
@@ -802,6 +804,10 @@ class Planner:  # noqa: PLR0904
         if isinstance(value, GeneratedSymbolType):
             return self.symbols[value.symbol].kind == "enum"
         return isinstance(value, LiteralType)
+
+    def textless(self, value: FinalPythonType) -> bool:
+        """Return whether a type takes values FastAPI's text is not: enum members, literals, or strict scalars."""
+        return self.literal(value) or _strict(value)
 
     def scalar(self, value: FinalPythonType) -> bool:
         """Return whether FastAPI reads a type as one scalar value: a builtin, enum, literal, or constrained scalar."""
@@ -1124,6 +1130,22 @@ def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | 
         and (kind != "sequence" or (location == "query" and plan.explode))
         and not (location == "path" and repeated)
     )
+
+
+def _strict(value: FinalPythonType) -> bool:
+    """Return whether a type holds a strict int, float, or bool: a pydantic Strict type or strict constrained one."""
+    match value:
+        case UnionType():
+            return any(map(_strict, value.members))
+        case GenericType():
+            return any(map(_strict, value.arguments))
+        case ImportedType():
+            return value.import_.from_ == "pydantic" and value.import_.import_ in _STRICT
+        case ConstructorType():
+            return _STRICT_KEYWORD in value.keywords and _strict(value.callable)
+        case _:
+            pass
+    return False
 
 
 def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequence:
