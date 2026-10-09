@@ -211,6 +211,10 @@ class _PydanticDataclassField(DataModelFieldV2):
     })
     _ALIASES_REQUIRE_ASSIGNMENT: ClassVar[bool] = False
 
+    def _alias_generator_renames(self, name: str) -> bool:  # noqa: ARG002, PLR6301
+        """Return False: the dataclass template renders no alias generator."""
+        return False
+
     def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:
         """Use dataclass-safe factories for mutable schema defaults."""
         data, default_factory = super()._get_field_data_and_default_factory()

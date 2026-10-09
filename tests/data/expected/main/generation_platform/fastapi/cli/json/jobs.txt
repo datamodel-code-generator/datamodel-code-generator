@@ -31,4 +31,3 @@ job schemas; kind check; success True
 job server; kind check; success False
 difference changed server/services.py
 difference missing server/README.md
-TargetEditWarning: server/services.py: The owned file changed since the last generation, and this generation discards the change

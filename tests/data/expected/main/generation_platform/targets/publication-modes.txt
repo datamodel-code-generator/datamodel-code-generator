@@ -4,7 +4,6 @@ generate
   returned None
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -20,13 +19,12 @@ tree
   11 runtime modules ['present']
 mode models.py: 0640
 mode server/__init__.py: 0640
-mode server/.dcg-target-manifest.json: 0640
+mode server/README.md: 0640
 chmod models.py 0604
 generate
   returned None
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
@@ -35,6 +33,8 @@ tree
   server/errors.py
   server/py.typed
   server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
   server/routers/untagged.py
   server/services.py
   11 runtime modules ['present']

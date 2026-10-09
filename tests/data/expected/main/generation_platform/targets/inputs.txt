@@ -2,62 +2,32 @@
 render
   target=fastapi schema_version=1
   write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/items.py (target)
-  write target server/routers/users.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/items.py
+  write target server/routers/users.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/errors.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
   11 runtime modules ['write']
-{
-  "files": {
-    "README.md": "sha256:392a932c7f69f0413f80cd11f8ffccbd63ce4bdcf300f36860025e01f2459147",
-    "__init__.py": "sha256:d3052c0e9e057b89ef1ffcf0f78a07f59b43a50ac9cda053bc670b9ae92f2c16",
-    "_generated/__init__.py": "sha256:10e6a917c6aad1f0b20bd3bc37eb2a23c25709af9263dee4cb4848b6b6f1d218",
-    "_generated/contract.py": "sha256:9d871c369c4d7be28fdb0805a81c5b25d55a7eaa171d8a4082d2655a441b6a7b",
-    "application.py": "sha256:bca7052ea1569d83e766f2c529e8fba624f562dc83349d4cab43b8d0183cd006",
-    "errors.py": "sha256:efdfe792fa77df3c491f826a91e89194b10a156edfb0d5fe67a8fa02e9cd3e52",
-    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "routers/__init__.py": "sha256:e8d9d8df87cbfbf0a9add51823d601424c3087a4061a7b0572f6ac1a5ec8c4f0",
-    "routers/items.py": "sha256:b3a2cbfd9ec169a7ba1609d4e385ee989ef24702e33bdddb7c724fc69f7067af",
-    "routers/users.py": "sha256:4fb3560383753c508b8b235ac41ef55e55f93a084e3c590b162f6c18b038f158",
-    "services.py": "sha256:e21b295b33f9a9ec3557c31ed341809fcc645187fa50a42328aa476b12f688b3"
-  },
-  "format": 1,
-  "generator": {
-    "name": "datamodel-code-generator",
-    "version": "<masked>"
-  },
-  "model": {
-    "output": "../models.py",
-    "sha256": "<sha256>"
-  },
-  "target": {
-    "kind": "fastapi",
-    "package": "example.server"
-  }
-}
 render
   target=fastapi schema_version=1
   write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/items.py (target)
-  write target server/routers/users.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/items.py
+  write target server/routers/users.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/errors.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
   11 runtime modules ['write']
 render
   Error: The --server-operation-names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
