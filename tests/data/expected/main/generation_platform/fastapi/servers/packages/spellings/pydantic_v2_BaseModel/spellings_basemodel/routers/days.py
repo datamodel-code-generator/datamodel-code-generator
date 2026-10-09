@@ -24,7 +24,10 @@ from .._runtime.server.security import (
 from ..services import DaysService
 
 
-def _add_post_day(router: APIRouter, wiring: Wiring) -> None:
+def _add_post_day(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
     days: DaysService[object] = wiring.services['days']
     post_day_handler = checked(
         days.post_day,
