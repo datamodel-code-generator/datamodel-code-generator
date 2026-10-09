@@ -2445,7 +2445,6 @@ lockfile = "{lockfile.as_posix()}"
 
 
 @pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
-@pytest.mark.allow_direct_assert
 def test_target_watch_registers_the_remote_lock_like_the_model_run(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -2467,24 +2466,24 @@ def test_target_watch_registers_the_remote_lock_like_the_model_run(
         *("--watch", "--lockfile", str(lockfile)),
     ]
 
-    dependencies = WatchDependencies()
-    assert main_module._main(arguments, start_watch=False, dependencies=dependencies) is Exit.OK
-    assert lockfile in dependencies.files
-    assert dependencies.accepts_event(lockfile)
+    report: list[str] = []
 
-    updating = WatchDependencies()
-    assert main_module._main([*arguments, "--update-lock"], start_watch=False, dependencies=updating) is Exit.OK
-    assert lockfile in updating.files
-    assert not updating.accepts_event(lockfile)
+    def run(label: str, extra: list[str] | None = None) -> None:
+        dependencies = WatchDependencies()
+        exit_code = main_module._main([*arguments, *(extra or [])], start_watch=False, dependencies=dependencies)
+        verified = lockfile in dependencies._verified_remote_locks
+        report.append(
+            f"{label}: exit={exit_code.name} observed={lockfile in dependencies.files} "
+            f"triggers={dependencies.accepts_event(lockfile)} verified={verified}"
+        )
 
-    verifying = WatchDependencies()
-    assert main_module._main(arguments, start_watch=False, dependencies=verifying) is Exit.OK
-    assert verifying._verified_remote_locks == {lockfile}
-
+    run("create")
+    run("update", ["--update-lock"])
+    run("verify")
     input_file.write_text("openapi: [", encoding="utf-8")
-    failing = WatchDependencies()
-    assert main_module._main(arguments, start_watch=False, dependencies=failing) is Exit.ERROR
-    assert failing._verified_remote_locks == {lockfile}
+    run("failing")
+
+    assert_output("\n".join(report) + "\n", EXPECTED_MAIN_PATH / "watch_target_remote_lock.txt")
 
 
 @pytest.mark.skipif(find_spec("grpc_tools") is None, reason="requires the protobuf extra")
