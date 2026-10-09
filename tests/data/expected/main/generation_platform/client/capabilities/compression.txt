@@ -15,7 +15,7 @@ copied runtime
   client/client.py: 2526
   client/codecs.py: 95
   client/compression.py: 104
-  client/errors.py: 378
+  client/errors.py: 382
   client/logical.py: 191
   client/media.py: 77
   client/multipart.py: 546
@@ -23,7 +23,7 @@ copied runtime
   client/operations.py: 835
   client/options.py: 555
   client/paths.py: 40
-  client/raw.py: 886
+  client/raw.py: 888
   client/responses.py: 87
   client/retry.py: 347
   client/scopes.py: 29
@@ -54,7 +54,7 @@ copied runtime
   protocols/streams.py: 1504
   protocols/values.py: 158
   protocols/writes.py: 288
-total 49 modules, 16931 lines
+total 49 modules, 16937 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
