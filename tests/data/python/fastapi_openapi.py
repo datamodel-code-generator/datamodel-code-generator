@@ -37,6 +37,11 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "hooks": {"input": "served-hooks.yaml", "files": ["served-event.yaml", "served-library.yaml"]},
     "streams": {"input": "served-items.yaml", "files": ["served-items-library.yaml", "events/stamp.yaml"]},
     "resources": {"input": "served-resources.yaml"},
+    "detected": {
+        "input": "served-hooks.yaml",
+        "files": ["served-event.yaml", "served-library.yaml"],
+        "model": {"input_file_type": "auto"},
+    },
     "legacy": {
         "input": "served-legacy.yaml",
         "files": ["served-event.yaml"],
@@ -211,6 +216,13 @@ def document_resources(packages: dict[str, Any]) -> list[str]:
         json.dumps(_connected(resources.create_app, prefix="/api").openapi(), indent=2),
         f"unset {sorted(unset)} {sorted(unset['info'])}",
     ]
+
+
+@_scenario("hooks", "detected")
+def detected_input(packages: dict[str, Any]) -> list[str]:
+    """Serve the same document when the input type is detected, references into other documents bundled."""
+    given, detected = (_connected(packages[name].create_app).openapi() for name in ("hooks", "detected"))
+    return [f"same {given == detected}", f"components {sorted(detected['components'])}"]
 
 
 @_scenario("bodies")
