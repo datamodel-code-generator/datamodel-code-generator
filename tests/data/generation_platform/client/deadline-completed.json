@@ -1,0 +1,7 @@
+{
+  "started": 100,
+  "completed": 200,
+  "total_timeout": 1,
+  "headers": {"content-type": "application/json", "X-Rate": "1"},
+  "response": [{"id": 1, "name": "cat"}]
+}

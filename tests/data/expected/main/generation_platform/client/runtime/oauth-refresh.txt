@@ -130,6 +130,8 @@
     next refresh = access-2 scopes=None expires_in_minutes=60
     callback calls = ['TokenSet() access=access-2 refresh=refresh-2', 'TokenSet() access=access-2 refresh=refresh-3'] sent=['refresh-1', 'refresh-2']
   one refresh for concurrent callers = access-2 scopes=None expires_in_minutes=60 / access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+  generated caller expires while waiting for refresh ! AuthError: AuthError(operation_id='oauth_read', call_id='<call>', reason='timeout', delivery_state='NOT_SENT', phase='unknown') [operation_id='oauth_read', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] timeout
+    original refresh = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
   without a refresh token = access-1 scopes=None expires_in_minutes=60
     get once invalidated = AuthError reason=reauthorization_required delivery_state=NOT_SENT phase=unknown sends=0
   forced refresh without a refresh token = AuthError reason=reauthorization_required delivery_state=NOT_SENT phase=unknown

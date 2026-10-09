@@ -626,9 +626,9 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
         return server(request)
 
     exchange.respond(server, server, server, late)
-    deadline = harness.options.Deadline.after(30, clock=clock)
+    deadline = 30
     handle = helper.start(
-        harness.source(), tus_resumable=harness.tus, options=harness.options.RequestOptions(deadline=deadline)
+        harness.source(), tus_resumable=harness.tus, options=harness.options.RequestOptions(total_timeout=deadline)
     )
     step(lines, "run", handle.run)
     step(lines, "run again", handle.run)
