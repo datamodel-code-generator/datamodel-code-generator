@@ -284,6 +284,8 @@ The `default_headers` and `default_query` of the client and its views, and a cal
 give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
 the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
 names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
+multipart one without a boundary keeps the body's.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
 
 | Setting | Effective default |
@@ -330,7 +332,8 @@ set an optional session total timeout. Close an abandoned stream to release its 
 
 A call's `RequestOptions(idempotency_key="...")` supplies a caller's stable key, sent unchanged, and
 `idempotency_key=None` disables the automatic one; unset, an operation with a declared key header gets a UUID4 key.
-A header of that name among the call's extra headers is the call's key instead.
+A header of that name among the call's extra headers or the client's or a view's default headers is the call's key
+instead; a protocol helper refuses one, as it refuses a call's key.
 The key is created once per logical call and reused across eligible retries.
 A caller key on an operation without a declared header fails before sending.
 One logical call retains its key, origin, encoded body, and multipart boundary across eligible attempts.

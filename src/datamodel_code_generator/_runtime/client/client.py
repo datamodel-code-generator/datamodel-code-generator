@@ -197,20 +197,32 @@ def _patched(
 def _headers(
     generated: list[tuple[str, str]],
     layers: tuple[Collection[tuple[str, str | None]], ...],
+    call: Mapping[str, str | None] | None,
     media_type: str | None,
 ) -> HeadersView:
-    """Return the headers of a call: the generated ones with each layer applied in order, then the body's media type.
+    """Return the headers of a call: the generated ones with each layer and then the call's applied, in order.
 
-    A layer naming Content-Type, to send another value or none, wins over the body's media type.
+    The body's media type ranks above every layer but the call's own extra headers, whose Content-Type relabels the
+    body or, as None, sends it unlabelled; a multipart relabel without a boundary keeps the body's encoded one.
     """
-    for layer in layers:
+    for layer in (*layers, () if call is None else call.items()):
         generated = _patched(generated, layer)
-    if media_type is None or any(name.lower() == "content-type" for layer in layers for name, _ in layer):
+    if media_type is None:
         return HeadersView(generated)
-    return HeadersView([
-        *(pair for pair in generated if pair[0].lower() != "content-type"),
-        ("Content-Type", media_type),
-    ])
+    label = media_type
+    for name, value in () if call is None else call.items():
+        if name.lower() == "content-type":
+            label = _relabel(value, media_type)
+    unlabelled = (pair for pair in generated if pair[0].lower() != "content-type")
+    return HeadersView([*unlabelled, *(() if label is None else (("Content-Type", label),))])
+
+
+def _relabel(value: str | None, media_type: str) -> str | None:
+    """Return a call's Content-Type for a body, adding the body's boundary to a multipart value that lacks one."""
+    if value is None or not value.lower().startswith("multipart/") or "boundary=" in value.lower():
+        return value
+    _, separator, boundary = media_type.partition("boundary=")
+    return f"{value}; boundary={boundary}" if separator else value
 
 
 def _query(lower: Pairs, explicit: list[str], call: Mapping[str, str | None] | None) -> str:
@@ -903,7 +915,7 @@ class Core(Generic[AdapterT, HandleT]):
         fixed = self._shared.fixed
         call = None if options is None else options.extra_headers
         if self._settings.headers or call:
-            headers = _headers([*fixed], (self._settings.headers, () if call is None else call.items()), media_type)
+            headers = _headers([*fixed], (self._settings.headers,), call, media_type)
         else:
             headers = HeadersView(fixed if media_type is None else (*fixed, ("Content-Type", media_type)))
         attempt, deferred = _encoded(body, None)
@@ -1034,7 +1046,7 @@ class Core(Generic[AdapterT, HandleT]):
             if media_type is not None:
                 generated.append(("Content-Type", media_type))
             return HeadersView(generated)
-        return _headers(generated, (self._settings.headers, params, () if call is None else call.items()), media_type)
+        return _headers(generated, (self._settings.headers, params), call, media_type)
 
     def call_settings(self, options: RequestOptions | None, operation: OperationPlan[object]) -> Settings:
         """Return the settings a call of the operation runs with under these options."""

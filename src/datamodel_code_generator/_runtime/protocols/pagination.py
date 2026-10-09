@@ -392,9 +392,9 @@ def _limits(
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
-    Effective options fixing an idempotency key, the client's or a view's included, are refused, since every page is
-    a request of its own that needs its own key, and so are the call's header or query patches of a parameter the
-    helper writes, which would replace the values it writes.
+    A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is
+    refused, since every page is a request of its own that needs its own key, and so are the call's extra headers or
+    query names of a parameter the helper writes, which would replace the values it writes.
     """
     for name, value, kind in (
         ("pagination_options", pagination_options, PaginationOptions),
@@ -403,8 +403,8 @@ def _limits(
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     request = options if isinstance(options, RequestOptions) else None
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"))
+    if (fixed := core.fixed_key(request, (plan.call,))) is not None:
+        raise _invalid(plan, fixed)
     if request is not None:
         for name in request.extra_headers or ():
             if name.lower() in plan.headers:

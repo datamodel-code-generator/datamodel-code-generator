@@ -210,8 +210,9 @@ def _limits(
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
-    Effective options fixing an idempotency key are refused, since the create call and each append need keys of their
-    own, and so are header or query patches of a parameter the helper writes.
+    A fixed idempotency key, the call's own or a header of its name the call, the client, or a view sends, is refused,
+    since the create call and each append need keys of their own, and so are the call's extra headers or query names
+    of a parameter the helper writes.
     """
     for name, value, kind in (
         ("upload_options", upload_options, UploadOptions),
@@ -220,8 +221,8 @@ def _limits(
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     request = options if isinstance(options, RequestOptions) else None
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"))
+    if (fixed := core.fixed_key(request, (plan.create, plan.probe, plan.append, plan.completion))) is not None:
+        raise _invalid(plan, fixed)
     if request is not None:
         for name in request.extra_headers or ():
             if name.lower() in plan.headers:
