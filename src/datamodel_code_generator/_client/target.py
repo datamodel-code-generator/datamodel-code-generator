@@ -341,33 +341,46 @@ class _HelperDigests:
         return None if use is None or use.type is None else self.spelling.static(use.type)
 
     def contract(self, use: TypeUseBinding) -> object:
-        """Return a retained helper use's contract: its type, and the values or fields of each model type it names.
+        """Return a retained helper use's contract: its type, and the values or fields of every model type it reaches.
 
-        A field gives its wire name, member kind, exclusion, requiredness, nullability, direction and type, so a schema
-        change that changes those models changes the digest.
+        The models are those its type names, then those their fields' types name, through recursion. A field gives its
+        wire name, member kind, exclusion, requiredness, nullability, direction, type and emitted default, so a schema
+        change that changes any reached model changes the digest.
         """
-        symbols = dict.fromkeys(() if use.type is None else _named(use.type))
-        return {
-            "type": self.type(use),
-            "models": {
-                self.spelling.static(GeneratedSymbolType(symbol)): {
-                    "kind": (found := self.facts.symbols[symbol]).kind,
-                    "values": [None if value is None else repr(value.value) for value in found.values],
-                    "fields": [
-                        [member.wire_name, member.member_kind, member.exclusion, *self.field(member.model_facts)]
-                        for member in self.facts.members.get(symbol, ())
-                    ],
-                }
-                for symbol in symbols
-            },
-        }
+        pending = list(() if use.type is None else _named(use.type))
+        models: dict[str, object] = {}
+        while pending:
+            symbol = pending.pop()
+            if (name := self.spelling.static(GeneratedSymbolType(symbol))) in models:
+                continue
+            found, members = self.facts.symbols[symbol], self.facts.members.get(symbol, ())
+            models[name] = {
+                "kind": found.kind,
+                "values": [None if value is None else repr(value.value) for value in found.values],
+                "fields": [
+                    [member.wire_name, member.member_kind, member.exclusion, *self.field(member.model_facts)]
+                    for member in members
+                ],
+            }
+            pending.extend(
+                symbol for member in members if member.model_facts for symbol in _named(member.model_facts.type)
+            )
+        return {"type": self.type(use), "models": models}
 
     def field(self, facts: ModelFieldFacts | None) -> tuple[object, ...]:
-        """Return what a model field's facts give its contract: requiredness, nullability, direction and type."""
+        """Return a model field's contract facts: requiredness, nullability, direction, type and default."""
         return (
             ()
             if facts is None
-            else (facts.required, facts.nullable, facts.read_only, facts.write_only, self.spelling.static(facts.type))
+            else (
+                facts.required,
+                facts.nullable,
+                facts.read_only,
+                facts.write_only,
+                self.spelling.static(facts.type),
+                facts.backend.emitted.emitted_default_kind,
+                repr(facts.backend.emitted.emitted_default_value),
+            )
         )
 
 

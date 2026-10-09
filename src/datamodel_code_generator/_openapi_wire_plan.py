@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from datamodel_code_generator._codec_type_source import LexicalKinds
@@ -423,6 +424,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
     location = _LOCATIONS[_fact(declaration, "in")]
     name = declaration.name or ""
     required = _fact(declaration, "required") is True
+    _finite(planner, declaration)
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(planner, _encoded(_schema_use(planner, declaration.schemas, source)).value)
@@ -478,6 +480,18 @@ def _content_parameter(
     return ParameterPlan(
         location=location, name=name, required=required, content_media_type=media, fields=fields, additional=additional
     )
+
+
+def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:
+    """Refuse a parameter whose schema declares a non-finite default, which no JSON number or parameter text writes."""
+    for use in (planner.uses[item] for item in _uses(declaration) if item in planner.uses):
+        if isinstance(value := getattr(use.default, "value", None), float) and not isfinite(value):
+            location = _located(use)
+            raise _PlanError(
+                code="MC_PARAMETER_ENCODING",
+                source=replace(location, pointer=f"{location.pointer}/default"),
+                message="A schema value must be a finite JSON number",
+            )
 
 
 def _schema_use(planner: _WirePlanner, uses: tuple[TypeUseId, ...], source: SourceLocation) -> TypeUseBinding:
