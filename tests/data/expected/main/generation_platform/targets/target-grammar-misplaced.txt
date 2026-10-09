@@ -1,3 +1,16 @@
 # target-grammar-misplaced
 render
-  Error: application.py: The generated Python source is invalid: 'return' outside function
+  target=fastapi schema_version=1
+  write model models.py
+  write target server/__init__.py
+  write target server/application.py
+  write target server/routers/__init__.py
+  write target server/routers/pets.py
+  write target server/routers/store.py
+  write target server/routers/untagged.py
+  write target server/_generated/__init__.py
+  write target server/_generated/contract.py
+  write target server/services.py
+  write target server/README.md
+  write target server/py.typed
+  4 runtime modules ['write']
