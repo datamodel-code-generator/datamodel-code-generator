@@ -13967,6 +13967,28 @@ def test_main_jsonschema_use_serialization_alias_alias_generator(
         )
 
 
+def test_main_jsonschema_use_serialization_alias_alias_generator_target_pydantic_version(output_file: Path) -> None:
+    """Pin the generated alias and keep the schema name on output for --target-pydantic-version 2."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="alias_generator_serialization_alias/to_camel_snake_case_field_target_2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            "to_camel",
+            "--use-serialization-alias",
+            "--snake-case-field",
+            "--target-pydantic-version",
+            "2",
+        ],
+        skip_code_validation=not installed_pydantic_runs_target("2"),
+    )
+
+
 def test_main_jsonschema_use_serialization_alias_alias_generator_template_data_dataclass(output_file: Path) -> None:
     """Leave dataclass fields without a redundant alias when template data names a generator the template ignores."""
     run_main_and_assert(
