@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Final
 from datamodel_code_generator import Error
 from datamodel_code_generator._api_manifest import document_identity
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -169,7 +170,8 @@ def generate_selected_target(input_: _GenerationInput, config: GenerateConfig) -
 
     if (missing := _missing_target_options(config, output=config.output is not None)) is not None:
         raise Error(missing)
-    cwd = Path.cwd()
+    with PROCESS_STATE_LOCK:
+        cwd = Path.cwd()
     bases = config._target_document_bases or {}  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
     try:
         if config.output is not None:
