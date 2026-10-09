@@ -112,7 +112,7 @@ class Capabilities:
     """What a client package declares: its usable security schemes, its helpers, and its model codec kinds.
 
     `signatures` holds the signature kinds of the webhook helpers; `keywords` marks a package whose generated keyword
-    records name the runtime's unpacked-argument types.
+    records name the runtime's unpacked-argument types, and `multipart_responses` one that reads multipart responses.
     """
 
     security: frozenset[Security]
@@ -120,6 +120,7 @@ class Capabilities:
     signatures: frozenset[str]
     backends: frozenset[str]
     keywords: bool
+    multipart_responses: bool = False
 
     @property
     def oauth(self) -> bool:
@@ -149,6 +150,8 @@ class Capabilities:
             modules.update(_OAUTH)
         if self.keywords:
             modules.add("client/arguments.py")
+        if self.multipart_responses:
+            modules.add("client/multipart_responses.py")
         return tuple(sorted(modules))
 
 
