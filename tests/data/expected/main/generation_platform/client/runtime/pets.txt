@@ -5,6 +5,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
   > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=a%20b+c] b''
+  cookie as given = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
+  cookie delimiter ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='cookie.session') [operation_id='listPets', location=('cookie', 'session'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A cookie name must be a token and its value unquoted cookie octets')] unencodable
+  cookie non-ASCII ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='cookie.session') [operation_id='listPets', location=('cookie', 'session'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A cookie name must be a token and its value unquoted cookie octets')] unencodable
+  > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list response = Response(FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)]), 200, 'application/json', None, [('x-rate', '10'), ('content-length', '34'), ('content-type', 'application/json')])
   info 200 application/json None HeadersView(<3 headers>)
@@ -303,6 +308,11 @@
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = [{'id': 1, 'name': 'cat', 'tag': None}]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=a%20b+c] b''
+  cookie as given = [{'id': 1, 'name': 'cat', 'tag': None}]
+  cookie delimiter ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='cookie.session') [operation_id='listPets', location=('cookie', 'session'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A cookie name must be a token and its value unquoted cookie octets')] unencodable
+  cookie non-ASCII ! DecodeError: DecodeError(operation_id='listPets', call_id='<call>', reason='unencodable', location='cookie.session') [operation_id='listPets', location=('cookie', 'session'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError('A cookie name must be a token and its value unquoted cookie octets')] unencodable
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list response = Response([{'id': 1, 'name': 'cat', 'tag': None}], 200, 'application/json', None, [('x-rate', '10'), ('content-length', '34'), ('content-type', 'application/json')])

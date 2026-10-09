@@ -1,13 +1,13 @@
 # pagination-counts pydantic_v2.BaseModel
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset total b'1.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
@@ -72,13 +72,13 @@
   position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset total b'1.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  async ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
@@ -144,13 +144,13 @@
 # pagination-counts pydantic_v2.dataclass
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset total b'1.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
@@ -215,13 +215,13 @@
   position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset total b'1.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None)
+  async ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
@@ -287,13 +287,13 @@
 # pagination-counts dataclasses.dataclass
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None)
+  ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset total b'1.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None)
+  ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
@@ -358,13 +358,13 @@
   position 9007199254740993 next = [9007199254740995,9007199254740996] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None)
+  async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset total b'1.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None)
+  async ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=None, total=1.0, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1

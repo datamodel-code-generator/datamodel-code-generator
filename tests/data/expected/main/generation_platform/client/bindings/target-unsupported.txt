@@ -1,4 +1,3 @@
 # target-unsupported
 render pydantic_v2.BaseModel default
-  diagnostic APIGenerationError
-  diagnostic E_RESERVED_NAME target /paths/~1search/get/parameters/0: The querystring parameter '' of GET /search needs an explicit python_name
+  diagnostic Error: /paths/~1search/get/parameters/0: The querystring parameter '' of GET /search needs an explicit python_name

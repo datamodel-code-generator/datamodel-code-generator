@@ -1521,7 +1521,7 @@
   sync readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   sync readHeadersAndCookies reserved = None
   requests 1
@@ -3096,7 +3096,7 @@
   async readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   async readHeadersAndCookies reserved = None
   requests 1
@@ -4673,7 +4673,7 @@
   sync readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   sync readHeadersAndCookies reserved = None
   requests 1
@@ -6248,7 +6248,7 @@
   async readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   async readHeadersAndCookies reserved = None
   requests 1
@@ -7825,7 +7825,7 @@
   sync readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   sync readHeadersAndCookies reserved = None
   requests 1
@@ -9400,7 +9400,7 @@
   async readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   async readHeadersAndCookies reserved = None
   requests 1
@@ -10977,7 +10977,7 @@
   sync readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   sync readHeadersAndCookies reserved = None
   requests 1
@@ -12552,7 +12552,7 @@
   async readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   async readHeadersAndCookies reserved = None
   requests 1
@@ -14129,7 +14129,7 @@
   sync readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   sync readHeadersAndCookies reserved = None
   requests 1
@@ -15704,7 +15704,7 @@
   async readDeepObject reserved = None
   requests 1
   > GET https://api.example.com/controls
-    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a%2Fb%3Ac] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, x-wire: a:b, cookie: session=a/b:c] b''
   received url https://api.example.com/controls host api.example.com target b'/controls' status 204
   async readHeadersAndCookies reserved = None
   requests 1

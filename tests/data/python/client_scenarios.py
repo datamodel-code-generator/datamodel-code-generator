@@ -89,7 +89,7 @@ from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
-from tests.data.python.client_unions import split_unions, unions
+from tests.data.python.client_unions import copied_unions, split_unions, unions
 from tests.data.python.client_uploads import upload_compression, uploads, uploads_oauth
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -186,6 +186,10 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     pets = [{"id": 1, "name": "cat", "tag": None}]
     exchange.respond(json_response(200, pets, **headers))
     record(lines, "list", lambda: api.pets.list_pets(limit=limit, labels=labels, x_trace=trace, session=session))
+    exchange.respond(json_response(200, pets))
+    for label, value in (("cookie as given", "a%20b+c"), ("cookie delimiter", "a;b"), ("cookie non-ASCII", "caf\u00e9")):
+        cookie = argument(package, "listPets", "cookie", "session", value)
+        record(lines, label, lambda cookie=cookie: api.pets.list_pets(x_trace=trace, session=cookie))
     exchange.respond(json_response(200, pets, **{"X-Rate": "10"}))
     response = record(lines, "list response", lambda: api.pets.with_response.list_pets(x_trace=trace))
     info = response.info
@@ -931,6 +935,13 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
     "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-split": ("unions-split", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), split_unions),
+    "discriminator-copies": (
+        "discriminator-copies",
+        ("typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.BaseModel"),
+        copied_unions,
+    ),
+    "discriminator-variants": ("discriminator-variants", ("typing.TypedDict",), copied_unions),
+    "discriminator-reuse": ("discriminator-reuse", ("typing.TypedDict", "dataclasses.dataclass"), copied_unions),
 }
 
 

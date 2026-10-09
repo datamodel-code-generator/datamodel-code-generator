@@ -121,8 +121,8 @@ class ClientTarget:
             ) from None
         events, hooked = webhook_uses(protocols, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
-        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request, wire)
-        opened, messages, socket_problems = socket_uses(protocols, plan, request, wire)
+        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
+        opened, messages, socket_problems = socket_uses(protocols, plan, request)
         uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
         batch = request.batch
         if parts := (*part_uses(plan), *stream_events, *messages):
@@ -134,14 +134,14 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         coded = frozenset(item.use for item in codecs.uses)
-        plan, named = plan_fields(plan, facts, coded, wire)
-        pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
-        polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
-        caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)
-        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, wire, request)
+        plan, named = plan_fields(plan, facts, coded)
+        pages, checked = plan_pagination(protocols, plan, facts, coded, request)
+        polls, polled = plan_polling(protocols, plan, facts, coded, request)
+        caches, cached = plan_caches(protocols, plan, facts, coded, request)
+        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, facts, coded, wire, request, stream_problems)
+        streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
         sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
         if refused := (

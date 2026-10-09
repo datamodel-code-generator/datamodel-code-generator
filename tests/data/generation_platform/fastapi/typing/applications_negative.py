@@ -6,7 +6,7 @@ from applications import Admin, Pets, Public, Untagged, User, authorize, store
 from fastapi import FastAPI
 from secured_models import FieldPetsGetResponse
 
-from secured import Authorize, OperationDependencies, RequirementSets, Unset, create_app
+from secured import Authorize, OperationDependencies, RequirementSets, create_app
 from secured.services import PetsService, UntaggedService
 
 
@@ -20,12 +20,12 @@ class Counted(PetsService[User]):
 
 
 class Required(UntaggedService[User]):
-    async def get_maybe(self, *, principal: User, query_principal: str | Unset) -> None:  # error
+    async def get_maybe(self, *, principal: User, query_principal: str | None) -> None:  # error
         del principal, query_principal
 
 
 class Blocking(UntaggedService[User]):
-    def get_maybe(self, *, principal: User | None, query_principal: str | Unset) -> None:  # error
+    def get_maybe(self, *, principal: User | None, query_principal: str | None) -> None:  # error
         del principal, query_principal
 
 
@@ -53,8 +53,8 @@ class Wrong:
         return len(principal.name)
 
 
-dependencies: OperationDependencies = {"/paths/~1nope/get": []}  # error
-method_key: OperationDependencies = {"list_pets": []}  # error
+dependencies: OperationDependencies = {"nope": []}  # error
+reference_key: OperationDependencies = {"/paths/~1pets/get": []}  # error
 narrow: Authorize[str] = authorize_text  # error
 incomplete = Incomplete()  # error
 structural: PetsService[User] = Wrong()  # error

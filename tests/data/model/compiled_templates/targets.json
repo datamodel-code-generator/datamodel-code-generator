@@ -625,6 +625,7 @@
           ],
           "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
           "fastapi": "FastAPI",
+          "error_handlers": "error_handlers",
           "arguments": [
             "pets",
             "authorize",
@@ -650,6 +651,7 @@
           "settings": [],
           "app_signature": "def create_app(*, pets: Pets, **fastapi_kwargs: object) -> FastAPI:",
           "fastapi": "FastAPI",
+          "error_handlers": "error_handlers",
           "arguments": [],
           "exports": []
         }
@@ -667,7 +669,12 @@
             {
               "adder": "add_get",
               "handler": "handle_get",
-              "handlers": "async_handlers",
+              "router": "router",
+              "wiring": "wiring",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "\"pets\"",
+              "lookup": "checked(pets.get, \"The pets.get method of GET /pets/{pet_id}\", asynchronous=True)",
               "name": "\"get\"",
               "principal": "async def principal() -> str:\n        return \"principal\"",
               "signature": "async def get(*, pet_id: int) -> Pet:",
@@ -677,7 +684,12 @@
             {
               "adder": "add_list",
               "handler": "handle_get",
-              "handlers": "async_handlers",
+              "router": "router",
+              "wiring": "wiring",
+              "service": "pets",
+              "protocol": "PetsService[object]",
+              "group": "\"pets\"",
+              "lookup": "checked(pets.get, \"The pets.get method of GET /pets/{pet_id}\", asynchronous=True)",
               "name": "\"get\"",
               "principal": null,
               "signature": "async def get(*, pet_id: int) -> Pet:",
