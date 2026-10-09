@@ -7,7 +7,7 @@ from contextlib import suppress
 from dataclasses import dataclass, replace
 from enum import Enum
 from math import isfinite
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import quote, unquote, urldefrag, urljoin
 
 from datamodel_code_generator._codec_type_source import LeafStep, LexicalKinds
@@ -100,12 +100,6 @@ _ARRAY: Final = frozenset({"array"})
 _OBJECT: Final = frozenset({"object"})
 _STRING: Final = frozenset({"string"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
-_SCALAR_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
-    bool: "bool",
-    int: "int",
-    float: "float",
-    str: "str",
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,12 +146,6 @@ class WirePlan:
         if target is None or len(schema) != 1:
             return location, schema
         return self.schema(SourceLocation(target, unquote(fragment), "schema"))
-
-    def default(self, location: SourceLocation) -> LiteralScalar | None:
-        """Return the default a schema declares when it is a JSON boolean, number, or string."""
-        value = self.schema(location)[1].get("default")
-        kind = _SCALAR_KINDS.get(type(value))
-        return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
 
     def _node(self, location: SourceLocation) -> WireValue:
         """Return the bundled value at a location, or None when the bundle holds nothing there."""
