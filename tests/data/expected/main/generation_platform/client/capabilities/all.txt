@@ -15,7 +15,7 @@ copied runtime
   client/compression.py: 102
   client/content.py: 102
   client/errors.py: 306
-  client/logical.py: 228
+  client/logical.py: 230
   client/media.py: 77
   client/multipart.py: 636
   client/multipart_responses.py: 414
@@ -63,7 +63,7 @@ copied runtime
   protocols/webhooks.py: 106
   protocols/websocket.py: 936
   protocols/writes.py: 288
-total 57 modules, 18281 lines
+total 57 modules, 18283 lines
 public files
   publication_client/__init__.py
   publication_client/bodies.py

@@ -46,7 +46,9 @@ def run_sync(flow: Coroutine[object, None, T]) -> T:
     except StopIteration as finished:
         result: T = finished.value
         return result
-    raise AssertionError
+    flow.close()  # pragma: no cover
+    message = "a synchronous primitive suspended"  # pragma: no cover
+    raise AssertionError(message)
 
 
 class Ready(Generic[T]):
