@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._target_contract import (
     AnnotatedType,
@@ -21,8 +21,6 @@ from datamodel_code_generator._target_contract import (
     UnsupportedBindingValueError,
 )
 
-LeafStep: TypeAlias = Literal["items", "values"]
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
 
@@ -31,6 +29,7 @@ if TYPE_CHECKING:
         FinalModelSymbol,
         FinalPythonType,
         GeneratedTypeContractBatch,
+        LeafStep,
         SourceLocation,
         TypeArgument,
         TypeProjectionReason,

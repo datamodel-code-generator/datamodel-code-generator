@@ -449,8 +449,11 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return a received message decoded as declared, raising StreamDecodeError for one that is not."""
         self._received += 1
         plan = self._plan
-        text = isinstance(event, TextMessage)
-        data = event.data.encode("utf-8") if isinstance(event, TextMessage) else bytes(cast("BytesMessage", event).data)
+        if text := isinstance(event, TextMessage):
+            data = event.data.encode("utf-8")
+        else:
+            binary: BytesMessage = cast("BytesMessage", event)
+            data = bytes(binary.data)
         kind: Literal["text", "binary"] = "text" if text else "binary"
         if kind != plan.receive_frame:
             raise self._decode_error(data, "type")
@@ -647,8 +650,10 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         state, code, reason, failure = self._ended_as(error)
         if not self._ending(state):
             return self._state_error(action)
-        self._shut(code, reason)
-        finished(self._response, failure)
+        try:
+            self._shut(code, reason)
+        finally:
+            finished(self._response, failure)
         return error
 
     def send(self, value: SendT) -> None:
@@ -713,8 +718,10 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         """Close with a code and a reason; closing again does nothing."""
         self._checked_close(code, reason)
         if self._ending(_State.CLOSED):
-            self._shut(code, reason)
-            self._response.close()
+            try:
+                self._shut(code, reason)
+            finally:
+                self._response.close()
 
     def __iter__(self) -> Self:
         """Iterate over the messages."""
@@ -814,9 +821,11 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         state, code, reason, failure = self._ended_as(error)
         if not self._ending(state):
             return self._state_error(action)
-        await self._shut(code, reason)
-        with anyio.CancelScope(shield=True):
-            await afinished(self._response, failure)
+        try:
+            await self._shut(code, reason)
+        finally:
+            with anyio.CancelScope(shield=True):
+                await afinished(self._response, failure)
         return error
 
     async def send(self, value: SendT) -> None:
@@ -883,8 +892,10 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         """Close with a code and a reason; closing again does nothing."""
         self._checked_close(code, reason)
         if self._ending(_State.CLOSED):
-            await self._shut(code, reason)
-            await self._response.aclose()
+            try:
+                await self._shut(code, reason)
+            finally:
+                await self._response.aclose()
 
     def __aiter__(self) -> Self:
         """Iterate over the messages."""

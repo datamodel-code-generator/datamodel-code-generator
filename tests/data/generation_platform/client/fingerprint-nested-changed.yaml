@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info:
+  title: Fingerprint nested
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /things:
+    get:
+      operationId: listThings
+      parameters:
+        - name: offset
+          in: query
+          schema: {type: integer}
+      responses:
+        '200':
+          description: One page of things.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ThingPage'}
+components:
+  schemas:
+    ThingPage:
+      type: object
+      required: [data, has_more]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Thing'}
+        has_more: {type: boolean}
+    Thing:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer}
+        owner: {$ref: '#/components/schemas/Owner'}
+        children:
+          type: array
+          items: {$ref: '#/components/schemas/Thing'}
+    Owner:
+      type: object
+      properties:
+        name: {type: integer}
+        rank: {type: integer, default: 1}

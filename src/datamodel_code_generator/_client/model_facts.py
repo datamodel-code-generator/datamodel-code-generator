@@ -45,7 +45,6 @@ __all__ = ("ALIASES", "WRAPPERS", "ItemStep", "JSONTypes", "ModelFacts", "ModelF
 StepKind: TypeAlias = Literal["attr", "key", "get", "root"]
 JSONTypes: TypeAlias = frozenset[str] | None
 _NULL: Final = frozenset({"null"})
-_NULLABLE_ORIGINS: Final = frozenset({"schema", "preexisting_type"})
 _SCALARS: Final = MappingProxyType({
     "none": "null",
     "bool": "boolean",
@@ -331,7 +330,7 @@ class ModelFacts:
         present = self.json_types(_without_none(field.type))
         accepts_null = field.nullable or field.type_has_null
         if field.nullable is None:
-            accepts_null = accepts_null or field.none_default_provenance.annotation_null_origin in _NULLABLE_ORIGINS
+            accepts_null = accepts_null or field.schema_null
         return present if present is None or not accepts_null else present | _NULL
 
     def nullable(self, value: FinalPythonType) -> bool:

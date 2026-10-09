@@ -9,7 +9,9 @@ once, before disposal, and returns an immutable contract batch.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, replace
+from contextlib import suppress
+from dataclasses import dataclass, is_dataclass, replace
+from dataclasses import fields as dataclass_fields
 from decimal import Decimal
 from functools import cached_property
 from keyword import iskeyword
@@ -18,7 +20,8 @@ from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urljoin
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._generation_contract import AttemptId
+from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
+from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     AnnotatedType,
     BackendFieldFacts,
@@ -29,8 +32,8 @@ from datamodel_code_generator._target_contract import (
     ConstructorType,
     DeclarationId,
     EmittedFieldFacts,
+    EncodingFacts,
     FieldSlot,
-    FieldSourceOrigin,
     FieldUseBinding,
     FinalModelSymbol,
     GeneratedEnumMember,
@@ -41,16 +44,16 @@ from datamodel_code_generator._target_contract import (
     IgnoredDeclaration,
     ImportedExpression,
     ImportedType,
+    KindSite,
     KnownBackendValue,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
     LiteralType,
+    MemberShape,
     MetadataCall,
-    MetaLayer,
     ModelArtifactAddress,
     ModelFieldFacts,
-    NoneDefaultProvenance,
     NoneType,
     OpaqueBackendValue,
     OperationContract,
@@ -58,12 +61,14 @@ from datamodel_code_generator._target_contract import (
     PartFacts,
     PartSchema,
     RuntimeBackendValue,
+    SchemaSite,
     SourceDocument,
     SourceDocumentId,
     SourceExpression,
     SourceLocation,
     SourceReference,
     SymbolId,
+    TextShape,
     TypeProjection,
     TypeUseBinding,
     TypeUseId,
@@ -86,7 +91,7 @@ from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasMode
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.parser.generation import GenerationStore
-from datamodel_code_generator.parser.jsonschema import Discriminator
+from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
@@ -129,6 +134,10 @@ _STRING: Final = frozenset({"string"})
 _OBJECT: Final = frozenset({"object"})
 _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
+_ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
+_FORMS: Final = frozenset({"form", "multipart"})
+_SCHEMA_KEYWORDS: Final = ("title", "description", "deprecated", "examples", "default")
+_DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
 _DEFAULT_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
     bool: "bool",
     int: "int",
@@ -196,15 +205,6 @@ _SEQUENCES: Final[dict[type, Literal["list", "tuple", "set", "frozenset"]]] = {
     tuple: "tuple",
     set: "set",
     frozenset: "frozenset",
-}
-_EMITTED_DEFAULTS: Final[dict[str, Literal["absent", "none", "value", "factory", "missing", "opaque"]]] = {
-    "absent": "absent",
-    "none": "none",
-    "literal": "value",
-    "expression": "value",
-    "factory": "factory",
-    "msgspec_unset": "missing",
-    "pydantic_missing": "missing",
 }
 _SERIALIZE_AS_ANY: Final = Import(import_="SerializeAsAny", from_="pydantic")
 _PYDANTIC_FIELD: Final = Import(import_="Field", from_="pydantic")
@@ -319,14 +319,20 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
+        self.model_imports: set[str] = set()
         self.operations: list[_WalkedOperation] = []
         self.resolutions: dict[_Declaration, tuple[_Declaration, dict[str, YamlValue]]] = {}
         self.unions: dict[int, _Union] = {}
         self.copies: dict[int, tuple[DataModelFieldBase, DataModelFieldBase]] = {}
+        self.schema_records: dict[_Declaration, _SchemaRecord] = {}
+        self.nullable_fields: set[int] = set()
+        self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
+        self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
         self._callback_origin: _Declaration | None = None
         super().__init__(source, config=config)
+        self._reader = _Reader(self._api_documents, versions=[])
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
         """Record the declaration a reference object resolves to."""
@@ -453,12 +459,49 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.copies[id(copied)] = (copied, inherited_field)
         return copied
 
+    def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
+        """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
+        document = "/".join(path_parts)
+        facts: list[tuple[str, FrozenLiteral]] = []
+        for key in _DOCUMENT_FACTS:
+            if key in specification:
+                with suppress(_UnsupportedError):
+                    facts.append((key, _freeze_literal(specification[key], set())))
+        self.document_facts[document] = tuple(facts)
+        self._reader.versions.append(str(specification.get("openapi", "")))
+        super()._parse_specification(specification, path_parts)
+
+    def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Record a field whose own schema says it is nullable, which strict nullability alone puts on the field."""
+        field = super().get_object_field(**options)
+        if isinstance(schema := options.get("field"), JsonSchemaObject) and schema.nullable is True:
+            self.nullable_fields.add(id(field))
+        return field
+
+    def nullable(self, field: DataModelFieldBase) -> bool:
+        """Return whether the schema a field, or the field it is a copy of, was generated from says it is nullable."""
+        while id(field) not in self.nullable_fields:
+            if (copy := self.copies.get(id(field))) is None:
+                return False
+            field = copy[1]
+        return True
+
     def _acquire_schema(self, name: str, raw: YamlValue, path: list[str], *, role: SchemaRole) -> None:
-        """Record the declaration's engine key, even when it was already generated."""
-        self.acquisitions.setdefault(
-            (_declaration(self._declaration_id(path)), "value"), self.model_resolver.join_path(tuple(path))
-        )
+        """Record the declaration's engine key, even when it was already generated, and what its schema says.
+
+        Once the schema is generated, its default, keywords, parts and text encoding are recorded as the
+        documents spell them, since its model types do not say them.
+        """
+        declaration = _declaration(self._declaration_id(path))
+        self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(path)))
         super()._acquire_schema(name, raw, path, role=role)
+        if declaration not in self.schema_records:
+            self.schema_records[declaration] = self._reader.record(declaration, role, self._locate)
+
+    def _locate(self, declaration: _Declaration) -> SourceLocation:
+        """Return a declaration's location, its document identified in the order the records first name them."""
+        document = self.record_documents.setdefault(declaration.document, SourceDocumentId(len(self.record_documents)))
+        return SourceLocation(document, _escape(declaration.tokens), "schema")
 
     def _acquire_item_schema(
         self, name: str, item: YamlValue, path: list[str], projected: YamlValue, *, role: SchemaRole
@@ -482,12 +525,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         require_update_action_models: list[str],
         future_imports_str: str,
     ) -> Result | None:
-        """Record the module's final models once its output exists."""
+        """Record the module's final models and the imports the parser finalized for it once its output exists."""
         result = super()._generate_module_output(
             ctx, config, contexts, forwarder_map, require_update_action_models, future_imports_str
         )
         if result is not None:
             self.module_outputs.append((ctx.module, tuple(ctx.models), result))
+            self.model_imports.update(_imported_names(self.imports), _imported_names(ctx.imports))
         return result
 
     def referenced_document(self, document: str, ref: str) -> str | None:
@@ -518,14 +562,30 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Drop the recorded graph anchors and borrowed source nodes, and the state of a walk that failed."""
         self.acquisitions.clear()
         self.module_outputs.clear()
+        self.model_imports.clear()
         self.operations.clear()
         self.resolutions.clear()
         self.unions.clear()
         self.copies.clear()
+        self.schema_records.clear()
+        self.nullable_fields.clear()
+        self.document_facts.clear()
+        self.record_documents.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
         self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
+
+
+def _imported_names(imports: Imports) -> Iterator[str]:
+    """Yield every module and module member that the import statements of a collection name."""
+    for module, names in imports.items():
+        members = (name.partition(" as ")[0] for name in names)
+        if module is None:
+            yield from members
+        else:
+            yield module
+            yield from (f"{module}.{member}" for member in members)
 
 
 def _escape(tokens: tuple[str, ...]) -> str:
@@ -544,6 +604,89 @@ def _declaration(value: _DeclarationLike) -> _Declaration:
     return _Declaration(value.document, value.tokens)
 
 
+_Locate: TypeAlias = "Callable[[_Declaration], SourceLocation]"
+
+
+@dataclass(frozen=True, slots=True)
+class _PartsRecord:
+    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's."""
+
+    object: bool
+    members: tuple[tuple[SourceLocation, PartSchema], ...]
+    extra: PartSchema | Literal["closed"] | None
+
+
+@dataclass(frozen=True, slots=True)
+class _SchemaRecord:
+    """What the walk recorded of an acquired schema that its model types do not say."""
+
+    default: LiteralScalar | None
+    keywords: tuple[tuple[str, FrozenLiteral], ...]
+    parts: _PartsRecord | None
+    encoding: EncodingFacts | None
+
+
+def _media_kind(media: str) -> MediaKind | None:
+    try:
+        return media_kind(normalize_media_type(media))
+    except ValueError:
+        return None
+
+
+def _default(value: YamlValue) -> LiteralScalar | None:
+    """Return a schema's default when it is a JSON boolean, number, or string."""
+    kind = _DEFAULT_KINDS.get(type(value))
+    return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
+
+
+def _keywords(raw: dict[str, YamlValue]) -> tuple[tuple[str, FrozenLiteral], ...]:
+    """Return the title, description, deprecation, examples and default a schema declares, each with a literal."""
+    found: list[tuple[str, FrozenLiteral]] = []
+    for key in _SCHEMA_KEYWORDS:
+        if key in raw:
+            with suppress(_UnsupportedError):
+                found.append((key, _freeze_literal(raw[key], set())))
+    return tuple(found)
+
+
+def _value_kind(value: object) -> str:
+    """Return the JSON type an enum or const value gives a schema, any container as an object."""
+    match value:
+        case bool():
+            return "boolean"
+        case int():
+            return "integer"
+        case float():
+            return "number"
+        case None:
+            return "null"
+        case str():
+            return "string"
+        case _:
+            return "object"
+
+
+def _relocated(value: object, documents: Mapping[SourceDocumentId, SourceDocumentId]) -> object:
+    """Return a record with each location's document identity the one the attempt's documents give it."""
+    match value:
+        case SourceLocation():
+            return replace(value, document=documents[value.document])
+        case tuple():
+            return tuple(_relocated(item, documents) for item in value)
+        case _ if is_dataclass(value) and not isinstance(value, type):
+            return replace(
+                value,
+                **{field.name: _relocated(getattr(value, field.name), documents) for field in dataclass_fields(value)},
+            )
+        case _:
+            return value
+
+
+_UNRECORDED: Final = _SchemaRecord(None, (), None, None)
+_NOT_OBJECT: Final = "A URL-encoded value must be an object"
+_PATTERNS: Final = "Pattern properties have no builtin parameter encoding"
+_UNDECLARED_PARTS: Final = _PartsRecord(object=True, members=(), extra=None)
+_NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=False)
 _BAD_PERCENT: Final = re.compile(r"%(?![0-9a-fA-F]{2})")
 _BAD_ESCAPE: Final = re.compile(r"~(?![01])")
 _MISSING: Final = cast("YamlValue", object())
@@ -735,7 +878,6 @@ class _Reference:
 class _Policy:
     backend: BackendName | None
     kind: Literal["model", "root", "alias", "enum", "custom"]
-    custom_base: bool
     functional_typeddict: bool
 
 
@@ -758,8 +900,7 @@ def _policy(model: DataModel, configured: type[DataModel]) -> _Policy:
             for field in model.fields
         )
     )
-    custom_base = backend is not None and model.custom_base_class not in (None, model.BASE_CLASS, [model.BASE_CLASS])
-    return _Policy(backend, kind, custom_base, functional)
+    return _Policy(backend, kind, functional)
 
 
 def _source(reference: Reference) -> DataModel:
@@ -1184,28 +1325,28 @@ def _bound(value: BoundPythonType, resolve: Callable[[Import], Import]) -> Bound
 
 def _emitted_default(  # ruff: ignore[too-many-return-statements]
     field: DataModelFieldBase, backend: BackendName
-) -> tuple[DefaultKind, FrozenLiteral | SourceExpression | None, bool]:
-    """Return the default kind, value and factory presence that the builtin backend renders for a field."""
+) -> tuple[DefaultKind, FrozenLiteral | SourceExpression | None]:
+    """Return the default kind and value that the builtin backend renders for a field."""
     if backend == "typeddict":
-        return "absent", None, False
+        return "absent", None
     if getattr(field, "use_missing_sentinel_default", False):
-        return "pydantic_missing", None, False
+        return "pydantic_missing", None
     has_default, has_value = field._get_constructor_default_info()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
     if not has_default:
-        return "absent", None, False
+        return "absent", None
     if not has_value:
-        return "factory", None, True
+        return "factory", None
     if isinstance(field, MsgspecField) and field._get_field_data().get("default") is msgspec.UNSET:  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-        return "msgspec_unset", None, False
+        return "msgspec_unset", None
     if field.default is None or field.default is UNDEFINED:
-        return "none", LiteralScalar("none", None), False
+        return "none", LiteralScalar("none", None)
     try:
         value = _freeze_argument(field.default)
     except _UnsupportedError:
-        return "expression", SourceExpression(repr(field.default)), False
+        return "expression", SourceExpression(repr(field.default))
     if isinstance(value, (SourceExpression, ImportedExpression)):
-        return "expression", SourceExpression(repr(field.default)), False
-    return "literal", value, False
+        return "expression", SourceExpression(repr(field.default))
+    return "literal", value
 
 
 def _constructor_keywords(
@@ -1248,19 +1389,6 @@ def _qualifiers(field: DataModelFieldBase, backend: BackendName) -> tuple[str, .
     return tuple(qualifiers)
 
 
-def _meta_layers(field: DataModelFieldBase, backend: BackendName) -> tuple[MetaLayer, ...]:
-    if backend != "msgspec" or not isinstance(field, MsgspecField) or (meta := field._get_meta_string()) is None:  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-        return ()
-    keywords: list[tuple[str, FrozenLiteral | SourceExpression]] = []
-    constraints = field.constraints._exclude_unset_dump if field.constraints is not None else {}  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-    keywords.extend(
-        (name, _freeze_literal(value, set()))
-        for name, value in constraints.items()
-        if value is not None and name in meta
-    )
-    return (MetaLayer((), 0, tuple(keywords), 0, 0),)
-
-
 def _setting(
     name: str, keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...], *, fallback: bool | None
 ) -> BackendValue:
@@ -1272,7 +1400,7 @@ def _setting(
     return _backend_value(fallback) if fallback is not None else OpaqueBackendValue("model_policy_required")
 
 
-def _model_settings(model: DataModel, backend: BackendName) -> tuple[dict[str, BackendValue] | None, bool]:
+def _model_settings(model: DataModel, backend: BackendName) -> dict[str, BackendValue] | None:
     internal: dict[str, object] = model._internal_template_data  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
     match backend:
         case "dataclass" | "pydantic_dataclass":
@@ -1280,24 +1408,24 @@ def _model_settings(model: DataModel, backend: BackendName) -> tuple[dict[str, B
                 name: _backend_value(value)
                 for name, value in model.dataclass_arguments.items()  # pyright: ignore[reportAttributeAccessIssue]
                 if value is not False and value is not None
-            }, False
+            }
         case "msgspec":
             raw = model.extra_template_data.get("base_class_kwargs", {})
             adopted = cast("dict[str, str]", internal.get("base_class_kwargs", {}))
             if not isinstance(raw, dict):
-                return None, False
+                return None
             values: dict[str, BackendValue] = {
                 name: _backend_value(value) for name, value in raw.items() if name in _MSGSPEC_PARAMETERS
             }
             values.update(
                 (name, _syntax_value(value)) for name, value in adopted.items() if name in _MSGSPEC_PARAMETERS
             )
-            return values, False
+            return values
         case "typeddict":
             arguments = cast("dict[str, str]", internal.get("typed_dict_kwargs", {}))
-            return {name: _syntax_value(value) for name, value in arguments.items()}, "extra_items" in arguments
+            return {name: _syntax_value(value) for name, value in arguments.items()}
         case _:
-            return {}, False
+            return {}
 
 
 def _settings(names: tuple[str, ...], values: dict[str, BackendValue] | None) -> tuple[BackendSetting, ...]:
@@ -1311,7 +1439,7 @@ def _settings(names: tuple[str, ...], values: dict[str, BackendValue] | None) ->
 def _model_facts(model: DataModel, policy: _Policy) -> BackendModelFacts | None:
     if (backend := policy.backend) is None or policy.kind == "custom" or model.decorators:
         return None
-    values, extra_present = _model_settings(model, backend)
+    values = _model_settings(model, backend)
     match backend:
         case "dataclass" | "pydantic_dataclass":
             parameters = _DATACLASS_PARAMETERS
@@ -1329,39 +1457,18 @@ def _model_facts(model: DataModel, policy: _Policy) -> BackendModelFacts | None:
             _PYDANTIC_CONFIGURATION,
             {name: _syntax_value(value) for name, value in items if name in _PYDANTIC_CONFIGURATION},
         )
-    return BackendModelFacts(
-        backend,
-        _settings(parameters, values),
-        configuration,
-        policy.functional_typeddict,
-        extra_present if values is not None else None,
-        None,
-        policy.custom_base,
-    )
-
-
-def _constructor_policy(facts: BackendModelFacts | None, name: Literal["init", "kw_only"]) -> bool | None:
-    if facts is None:
-        return None
-    for setting in facts.parameters:
-        if setting.name == name and setting.present is None:
-            return None
-        if setting.name == name and setting.present:
-            value = setting.value.value if isinstance(setting.value, KnownBackendValue) else None
-            return value.value if isinstance(value, LiteralScalar) and isinstance(value.value, bool) else None
-    return name == "init" or facts.backend == "pydantic"
+    return BackendModelFacts(backend, _settings(parameters, values), configuration, policy.functional_typeddict)
 
 
 @dataclass(frozen=True, slots=True)
 class _FieldContext:
-    """Producer facts of a property field, None where the producer is unknown."""
+    """Producer facts of a property field: whether its schema is nullable, and whether its own type accepts None.
 
-    original_required: bool | None
-    schema_default: bool | None
-    explicit_model_default: bool | None
-    explicit_nullable: bool | None
+    None says the field's own type is unknown.
+    """
+
+    explicit_nullable: bool
     preexisting_null: bool | None
-    configuration_nullable: bool
 
 
 def _field_facts(
@@ -1369,141 +1476,43 @@ def _field_facts(
     type_value: FinalPythonType,
     backend: BackendName,
     model_facts: BackendModelFacts | None,
-    context: _FieldContext,
+    context: _FieldContext | None,
 ) -> ModelFieldFacts:
     """Read a field's model and builtin backend facts from the final field and its render data."""
     emitted = not (backend == "msgspec" and field.extras.get("is_classvar") is True)
     qualifiers = _qualifiers(field, backend)
-    default_kind, default_value, factory = _emitted_default(field, backend)
+    default_kind, default_value = _emitted_default(field, backend)
     keywords = _constructor_keywords(field, backend)
     null_in_annotation = _annotation_null(field, type_value)
     emitted_facts = EmittedFieldFacts(
         emitted=emitted,
         emitted_default_kind=default_kind,
         emitted_default_value=default_value,
-        factory_present=factory,
-        factory_expression=next(
-            (value for name, value in keywords if name == "default_factory" and isinstance(value, SourceExpression)),
-            None,
-        ),
-        unset_default=default_kind == "msgspec_unset",
-        unset_type_in_annotation=backend == "msgspec" and default_kind == "msgspec_unset",
-        null_type_in_annotation=null_in_annotation,
         qualifiers=qualifiers,
         constructor_keywords=keywords if backend != "typeddict" else (),
-        meta_layers=_meta_layers(field, backend),
     )
-    if backend == "typeddict":
-        constructor_init = init_var = kw_only = _backend_value(None)
-    else:
-        constructor_init = (
-            _backend_value(value=False)
-            if not emitted or "ClassVar" in qualifiers
-            else _setting("init", keywords, fallback=_constructor_policy(model_facts, "init"))
-        )
-        init_var = _setting("init_var", keywords, fallback="InitVar" in qualifiers)
-        kw_only = _setting("kw_only", keywords, fallback=_constructor_policy(model_facts, "kw_only"))
-    backend_facts = BackendFieldFacts(
-        backend,
-        (
-            ("name", _backend_value(field.name)),
-            ("original_name", _backend_value(field.original_name)),
-            ("alias", _backend_value(field.alias)),
-            ("validation_aliases", _backend_value(field.validation_aliases)),
-            ("serialization_alias", _backend_value(field.serialization_alias)),
-            ("use_serialization_alias", _backend_value(field.use_serialization_alias)),
-        ),
-        emitted_facts,
-        constructor_init,
-        init_var,
-        kw_only,
-        RuntimeBackendValue("factory_result") if factory else _backend_value(None),
-        RuntimeBackendValue("fields_set") if backend == "pydantic" else _backend_value(None),
+    constructor_init = (
+        _backend_value(None)
+        if backend == "typeddict"
+        else _backend_value(value=False)
+        if not emitted or "ClassVar" in qualifiers
+        else _setting("init", keywords, fallback=None if model_facts is None else True)
     )
     return ModelFieldFacts(
         field.required,
         field.nullable,
         field.has_default,
-        "default_factory" in field.extras,
         field.type_has_null,
         field.read_only,
         field.write_only,
-        field.alias,
-        tuple(field.validation_aliases) if field.validation_aliases is not None else None,
-        field.serialization_alias,
-        field.use_serialization_alias,
         type_value,
-        backend_facts,
-        _provenance(field, default_kind, null_in_annotation=null_in_annotation, factory=factory, context=context),
+        BackendFieldFacts(backend, emitted_facts, constructor_init),
+        context is not None
+        and (
+            context.preexisting_null is True
+            or (context.preexisting_null is False and context.explicit_nullable and null_in_annotation)
+        ),
     )
-
-
-def _provenance(  # ruff: ignore[too-many-branches]
-    field: DataModelFieldBase,
-    default_kind: DefaultKind,
-    *,
-    null_in_annotation: bool,
-    factory: bool,
-    context: _FieldContext,
-) -> NoneDefaultProvenance:
-    """Explain a None default and a None annotation from the field's producer facts."""
-    emitted_default = _EMITTED_DEFAULTS[default_kind]
-    unknown = any(
-        value is None
-        for value in (
-            context.original_required,
-            context.schema_default,
-            context.explicit_model_default,
-            context.explicit_nullable,
-            context.preexisting_null,
-        )
-    )
-    fallback = (
-        not unknown
-        and context.original_required is False
-        and not context.configuration_nullable
-        and not field.required
-        and field.nullable is None
-        and field.type_has_null is not True
-        and context.preexisting_null is False
-        and "default_factory" not in field.extras
-    )
-    annotation: Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]
-    if not null_in_annotation and context.preexisting_null is False:
-        annotation = "none"
-    elif unknown:
-        annotation = "opaque"
-    elif context.explicit_nullable:
-        annotation = "schema"
-    elif context.preexisting_null:
-        annotation = "preexisting_type"
-    elif context.configuration_nullable or (context.original_required and not field.required):
-        annotation = "model_configuration"
-    else:
-        annotation = "optional_fallback" if fallback else "opaque"
-    origin: Literal[
-        "synthesized_optional_fallback",
-        "schema_default",
-        "explicit_model_default",
-        "explicit_nullable",
-        "runtime_or_opaque",
-        "not_applicable",
-    ]
-    if emitted_default != "none":
-        origin = "not_applicable"
-    elif unknown:
-        origin = "runtime_or_opaque"
-    elif context.explicit_model_default:
-        origin = "explicit_model_default"
-    elif context.schema_default:
-        origin = "schema_default"
-    elif context.explicit_nullable:
-        origin = "explicit_nullable"
-    elif fallback and not factory and field.default is None and not field.has_default:
-        origin = "synthesized_optional_fallback"
-    else:
-        origin = "runtime_or_opaque"
-    return NoneDefaultProvenance(emitted_default, origin, annotation)
 
 
 def _annotation_null(field: DataModelFieldBase, type_value: FinalPythonType) -> bool:
@@ -1619,24 +1628,29 @@ def _c3(sequences: tuple[tuple[SymbolId, ...], ...]) -> tuple[SymbolId, ...] | N
     return tuple(result)
 
 
-class _Schemas:
-    """Read the loaded API documents by declaration, following references as the documents spell them."""
+class _ShapeError(Exception):
+    """A schema whose values no builtin parameter or form encoding writes, at the location that says so."""
 
-    def __init__(self, parser: TargetApiOpenAPIParser) -> None:
-        loaded = parser._api_documents  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-        roots = [document for document in loaded if document in parser._api_roots]  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-        self.documents: dict[str, dict[str, YamlValue]] = {}
-        self.ids: dict[str, SourceDocumentId] = {}
-        self.unloadable: set[str] = set()
-        for document in (*roots, *loaded):
-            if document not in self.ids:
-                self.ids[document] = SourceDocumentId(len(self.ids))
-                self.documents[document] = loaded[document]
-        self.walked = tuple(self.documents)
+    def __init__(self, declaration: _Declaration, message: str) -> None:
+        super().__init__(message)
+        self.declaration = declaration
 
-    def location(self, declaration: _Declaration, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
-        """Return a declaration's plain pointer location in its loaded document."""
-        return SourceLocation(self.ids[declaration.document], _escape(declaration.tokens), role)
+
+class _Reader:
+    """Read the loaded API documents by declaration, following references as the documents spell them.
+
+    The target parser reads with it while it walks, to record what the model types do not say; the binder reads with
+    it to locate the declarations its records point at.
+    """
+
+    def __init__(self, documents: dict[str, dict[str, YamlValue]], *, versions: list[str]) -> None:
+        self.documents = documents
+        self.versions = versions
+
+    @property
+    def legacy(self) -> bool:
+        """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
+        return next(iter(self.versions), "").startswith("3.0")
 
     def borrow(self, declaration: _Declaration, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
@@ -1653,6 +1667,7 @@ class _Schemas:
         return value
 
     def target(self, declaration: _Declaration, ref: str) -> _Declaration | None:
+        """Return the declaration a reference names, or None when no loaded document has it."""
         document = (
             urljoin(declaration.document, ref.partition("#")[0]) if not ref.startswith("#") else declaration.document
         )
@@ -1733,18 +1748,6 @@ class _Schemas:
             and self.required(target, name, inherited=inherited)
         )
 
-    def declaration(self, location: SourceLocation) -> _Declaration:
-        """Return the declaration at a location of a loaded document."""
-        document = next(uri for uri, identity in self.ids.items() if identity == location.document)
-        tokens = location.pointer[1:].split("/") if location.pointer else ()
-        return _Declaration(document, tuple(token.replace("~1", "/").replace("~0", "~") for token in tokens))
-
-    @cached_property
-    def legacy(self) -> bool:
-        """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
-        entry = next(iter(self.documents.values()), {})
-        return str(entry.get("openapi", "")).startswith("3.0")
-
     def whole(self, declaration: _Declaration) -> tuple[_Declaration, dict[str, YamlValue]]:
         """Follow a schema that is nothing but a reference to the schema it names, through such schemas.
 
@@ -1762,48 +1765,6 @@ class _Schemas:
             declaration, raw = target, _mapping(self.borrow(target))
         return declaration, raw
 
-    def default(self, declaration: _Declaration) -> LiteralScalar | None:
-        """Return the default a schema declares when it is a JSON boolean, number, or string."""
-        value = self.whole(declaration)[1].get("default")
-        kind = _DEFAULT_KINDS.get(type(value))
-        return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
-
-    def part(self, declaration: _Declaration) -> PartSchema:
-        """Return how a multipart member's schema encodes its parts, reading an array's items at its own `items`.
-
-        A string is binary by its binary format, or by a content media type without a content encoding.
-        """
-        raw = self.whole(declaration)[1]
-        if repeated := _json_types(raw) - _NULL == _ARRAY:
-            raw = self.whole(_child(declaration, "items"))[1]
-        types = _json_types(raw) - _NULL
-        binary = raw.get("format") == "binary" or ("contentMediaType" in raw and "contentEncoding" not in raw)
-        return PartSchema(
-            file=types == _STRING and binary,
-            repeated=repeated,
-            text=bool(types) and not types & _NESTED,
-            structured=bool(types & _NESTED),
-        )
-
-    def parts(self, schema: _Declaration, members: tuple[FieldUseBinding, ...]) -> PartFacts:
-        """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
-        location, raw = self.whole(schema)
-        declared = raw.get("additionalProperties", True)
-        extra: PartSchema | Literal["closed"] | None = None
-        if declared is False:
-            extra = "closed"
-        elif isinstance(declared, dict) and declared:
-            extra = self.part(_child(location, "additionalProperties"))
-        return PartFacts(
-            _json_types(raw) - _NULL <= _OBJECT,
-            tuple(
-                (member.wire_name, self.part(self.declaration(member.schema)))
-                for member in members
-                if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
-            ),
-            extra,
-        )
-
     def properties(self, schema: _Declaration) -> dict[str, _Declaration]:
         """Return a schema's properties in declaration order, allOf branches and references included."""
         raw = _mapping(self.borrow(schema))
@@ -1815,6 +1776,207 @@ class _Schemas:
             found.update(self.properties(_child(schema, "allOf", str(index))))
         found.update((name, _child(schema, "properties", name)) for name in _mapping(raw.get("properties")))
         return found
+
+    def members(self, schema: _Declaration) -> dict[str, _Declaration]:
+        """Return the property declaration of each name a schema declares, as its model's fields are located."""
+        return {
+            name: found
+            for name in self.properties(schema)
+            if (found := self.property_location(schema, name, set())) is not None
+        }
+
+    def record(self, declaration: _Declaration, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
+        """Record what an acquired schema says that its model types do not, as the walk acquires it.
+
+        A parameter's schema gives its default and keywords; a multipart schema how its members encode parts;
+        and any schema read as parameter or form text how its values are written.
+        """
+        media = declaration.tokens[-2] if declaration.tokens[-3:-2] == ("content",) else None
+        kind = None if media is None else _media_kind(media)
+        parameter = role == "parameter"
+        whole = self.whole(declaration)[1] if parameter else {}
+        return _SchemaRecord(
+            _default(whole.get("default")),
+            _keywords(whole) if parameter else (),
+            self.parts(declaration, locate)
+            if media is not None and media.strip().lower().startswith("multipart/")
+            else None,
+            self.encoding(declaration, locate, members=kind in _FORMS)
+            if parameter or media is None or kind in _FORMS
+            else None,
+        )
+
+    def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
+        """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
+
+        A string is binary by its binary format, or by a content media type without a content encoding. The member's
+        values are read where its schema is, or where its items' is when it repeats.
+        """
+        target, raw = self.whole(declaration)
+        own = SchemaSite(locate(declaration), locate(target))
+        items: SchemaSite | None = None
+        if repeated := _json_types(raw) - _NULL == _ARRAY:
+            items = SchemaSite(locate(found := _child(target, "items")), locate(self.whole(found)[0]))
+            raw = self.whole(found)[1]
+        types = _json_types(raw) - _NULL
+        binary = raw.get("format") == "binary" or ("contentMediaType" in raw and "contentEncoding" not in raw)
+        return PartSchema(
+            file=types == _STRING and binary,
+            repeated=repeated,
+            text=bool(types) and not types & _NESTED,
+            structured=bool(types & _NESTED),
+            own=own,
+            items=items,
+        )
+
+    def parts(self, schema: _Declaration, locate: _Locate) -> _PartsRecord:
+        """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
+        location, raw = self.whole(schema)
+        declared = raw.get("additionalProperties", True)
+        extra: PartSchema | Literal["closed"] | None = None
+        if declared is False:
+            extra = "closed"
+        elif isinstance(declared, dict) and declared:
+            extra = self.part(_child(location, "additionalProperties"), locate)
+        return _PartsRecord(
+            _json_types(raw) - _NULL <= _OBJECT,
+            tuple((locate(found), self.part(found, locate)) for found in self.members(schema).values()),
+            extra,
+        )
+
+    def encoding(self, schema: _Declaration, locate: _Locate, *, members: bool) -> EncodingFacts:
+        """Return how a schema's values are written as text: as one value, as form members, and member by member.
+
+        Only a form's members, which its encodings can give a style, are written member by member.
+        """
+        return EncodingFacts(
+            self.kinds(schema),
+            self.shape(schema, locate, form=False),
+            self.shape(schema, locate, form=True),
+            tuple((locate(found), self.shape(found, locate, form=False)) for found in self.members(schema).values())
+            if members
+            else (),
+        )
+
+    def resolved(self, declaration: _Declaration) -> tuple[dict[str, YamlValue], _Declaration]:
+        """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
+        location, value = self.resolve(declaration, self.borrow(declaration))
+        return value, location
+
+    def kinds(self, declaration: _Declaration) -> frozenset[str] | None:
+        """Return the JSON types a schema's values have, by its types, enum, const, and combined branches."""
+        value, declaration = self.resolved(declaration)
+        kinds: frozenset[str] | None = None
+        match value.get("type"):
+            case str() as single:
+                kinds = frozenset({single})
+            case list() as many:
+                kinds = frozenset(str(item) for item in many)
+            case _:
+                pass
+        if kinds is None and isinstance(
+            values := value.get("enum", [value["const"]] if "const" in value else None), list
+        ):
+            kinds = frozenset(_value_kind(item) for item in values)
+        for keyword in ("allOf", "anyOf", "oneOf"):
+            branches = value.get(keyword)
+            if not isinstance(branches, list) or not branches:
+                continue
+            found_kinds = [self.kinds(_child(declaration, keyword, str(index))) for index in range(len(branches))]
+            if keyword == "allOf":
+                for found in found_kinds:
+                    kinds = found if kinds is None else kinds if found is None else kinds & found
+            elif all(found is not None for found in found_kinds):
+                union = frozenset[str]().union(*(found for found in found_kinds if found is not None))
+                kinds = union if kinds is None else kinds & union
+        return kinds
+
+    def shape(self, declaration: _Declaration, locate: _Locate, *, form: bool) -> TextShape:
+        """Return how a schema's values are written as one parameter value, or as the members of a URL-encoded form.
+
+        A schema no builtin encoding writes keeps the members found before the problem.
+        """
+        members: list[MemberShape] = []
+        try:
+            return self._shape(declaration, locate, members, form=form)
+        except _ShapeError as error:
+            return TextShape("object", members=tuple(members), problem=(locate(error.declaration), str(error)))
+
+    def _shape(
+        self, declaration: _Declaration, locate: _Locate, members: list[MemberShape], *, form: bool
+    ) -> TextShape:
+        source = locate(declaration)
+        value, resolved = self.resolved(declaration)
+        location = locate(resolved)
+        kinds = (self.kinds(resolved) or frozenset()) - _NULL
+        if kinds == _ARRAY and not form:
+            return TextShape(
+                "array", KindSite(locate(_child(resolved, "items")), ((source, _ITEMS), (location, _ITEMS)))
+            )
+        if kinds != _OBJECT:
+            if form:
+                raise _ShapeError(resolved, _NOT_OBJECT)
+            return TextShape("scalar", KindSite(location, ((source, ()), (location, ()))))
+        if "patternProperties" in value:
+            raise _ShapeError(resolved, _PATTERNS)
+        properties = value.get("properties")
+        members.extend(
+            self.field(_child(resolved, "properties", name), name, locate, (source, location), form=form)
+            for name in (properties if isinstance(properties, dict) else {})
+        )
+        declared = value.get("additionalProperties", True)
+        additional = (
+            None
+            if declared is False
+            else MemberShape("")
+            if declared is True or declared == {}
+            else self.field(_child(resolved, "additionalProperties"), "", locate, (source, location), form=form)
+        )
+        return TextShape("object", members=tuple(members), additional=additional)
+
+    def field(
+        self,
+        declaration: _Declaration,
+        name: str,
+        locate: _Locate,
+        owners: tuple[SourceLocation, ...],
+        *,
+        form: bool,
+    ) -> MemberShape:
+        """Return a member's shape: its kind by the type bound at its schema, or as a value of a mapping at an owner.
+
+        An array member of a form repeats, in its items' kind.
+        """
+        _, resolved = self.resolved(declaration)
+        steps: tuple[LeafStep, ...] = ()
+        location = locate(declaration)
+        source = location
+        if repeated := form and (self.kinds(declaration) or frozenset()) - _NULL == _ARRAY:
+            steps, source = _ITEMS, locate(_child(resolved, "items"))
+        leaves = ((location, steps), (locate(resolved), steps), *((owner, ("values", *steps)) for owner in owners))
+        return MemberShape(name, KindSite(source, leaves), repeated=repeated)
+
+
+class _Schemas(_Reader):
+    """The documents an attempt loaded, by identity: the walked roots first, then the documents they reference."""
+
+    def __init__(self, parser: TargetApiOpenAPIParser) -> None:
+        loaded = parser._api_documents  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+        roots = [document for document in loaded if document in parser._api_roots]  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+        documents: dict[str, dict[str, YamlValue]] = {}
+        self.ids: dict[str, SourceDocumentId] = {}
+        self.unloadable: set[str] = set()
+        for document in (*roots, *loaded):
+            if document not in self.ids:
+                self.ids[document] = SourceDocumentId(len(self.ids))
+                documents[document] = loaded[document]
+        self.walked = tuple(documents)
+        entry = next(iter(documents.values()), {})
+        super().__init__(documents, versions=[str(entry.get("openapi", ""))])
+
+    def location(self, declaration: _Declaration, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
+        """Return a declaration's plain pointer location in its loaded document."""
+        return SourceLocation(self.ids[declaration.document], _escape(declaration.tokens), role)
 
 
 class _Models:
@@ -1846,7 +2008,7 @@ class _Models:
         self.slots: dict[int, FieldSlot] = {}
         self.facts: dict[FieldSlot, ModelFieldFacts] = {}
         self.locations: dict[SymbolId, _Declaration | None] = {}
-        self.contexts_by_field: dict[int, tuple[FieldKind, _Declaration | None, str | None, _FieldContext]] = {}
+        self.contexts_by_field: dict[int, tuple[FieldKind, _Declaration | None, str | None, _FieldContext | None]] = {}
         self.alias_nulls: dict[SymbolId, bool | None] = {}
         self.helpers: dict[_Declaration, list[TypeProjection]] = {}
         self.variants = any(SPECIAL_PATH_MARKER + "read-write-" in key for key in self.parser.model_resolver.references)
@@ -1909,26 +2071,6 @@ class _Models:
         for item in data_type.all_data_types if data_type is not None else ():
             item.unregister_reference()
         return projected
-
-    def extra_items(self, symbols: tuple[FinalModelSymbol, ...]) -> tuple[FinalModelSymbol, ...]:
-        """Complete TypedDict extra items with the type of the schema's additional properties."""
-        completed: list[FinalModelSymbol] = []
-        for model, symbol in zip(self.binder.models, symbols, strict=True):
-            facts = symbol.facts
-            if (
-                facts is not None
-                and facts.extra_items_present
-                and (location := self.locations.get(symbol.id)) is not None
-                and (
-                    value := self.lightweight(
-                        _child(location, "additionalProperties"), self.variant_direction(model)
-                    ).value
-                )
-                is not None
-            ):
-                symbol = replace(symbol, facts=replace(facts, extra_items=value))  # noqa: PLW2901
-            completed.append(symbol)
-        return tuple(completed)
 
     def variant_direction(self, model: DataModel) -> Direction:
         key = self.binder.keys.get(id(model.reference), model.reference.path)
@@ -2023,8 +2165,8 @@ class _Models:
 
     def context(
         self, model: DataModel, field: DataModelFieldBase
-    ) -> tuple[FieldKind, _Declaration | None, str | None, _FieldContext]:
-        """Return a field's member kind, property declaration, wire name and producer facts."""
+    ) -> tuple[FieldKind, _Declaration | None, str | None, _FieldContext | None]:
+        """Return a field's member kind, property declaration, wire name and, for a property, its producer facts."""
         if (known := self.contexts_by_field.get(id(field))) is not None:
             return known
         location = self.locations.get(self.binder.symbols[id(model)])
@@ -2051,29 +2193,11 @@ class _Models:
                 kind = "discriminator_synthetic"
             elif schema is None and self.schemas.required(location, wire_name, inherited=True):
                 kind = "required_only"
-        configuration_nullable = bool(self.parser.force_optional_for_required_fields)
-        preexisting = None if kind == "additional_properties" else self.preexisting_null(field.data_type)
-        if kind == "property":
-            raw = {} if schema is None else _mapping(self.schemas.borrow(schema))
-            original_required = (
-                field.required
-                if not configuration_nullable or schema is None
-                else self.schemas.required(
-                    _Declaration(schema.document, schema.tokens[:-2]), wire_name or "", inherited=False
-                )
-            )
-            overrides = self.parser.model_resolver.default_value_overrides
-            name = field.original_name or field.name or ""
-            context = _FieldContext(
-                original_required,
-                field.has_default,
-                f"{model.class_name}.{name}" in overrides or name in overrides,
-                raw.get("nullable") is True or field.nullable is True,
-                preexisting,
-                configuration_nullable,
-            )
-        else:
-            context = _FieldContext(None, None, None, None, preexisting, configuration_nullable)
+        context = (
+            _FieldContext(self.parser.nullable(field) or field.nullable is True, self.preexisting_null(field.data_type))
+            if kind == "property"
+            else None
+        )
         known = self.contexts_by_field[id(field)] = kind, schema, wire_name, context
         return known
 
@@ -2219,10 +2343,7 @@ class _Models:
         kind, schema, wire_name, _ = self.context(owner, field)
         source = None if schema is None else self.schemas.location(schema, "schema")
         return FieldUseBinding(
-            "known" if source is not None else "unavailable",
-            None if source is not None else "producer_unobserved",
             kind,
-            () if source is None else (FieldSourceOrigin(source, kind),),
             wire_name,
             symbol.id,
             slot,
@@ -2253,10 +2374,7 @@ class _Models:
             schema = self.schemas.location(declaration, "schema")
             excluded.append(
                 FieldUseBinding(
-                    "known",
-                    None,
                     "property",
-                    (FieldSourceOrigin(schema, "property"),),
                     name,
                     symbol.id,
                     None,
@@ -2320,9 +2438,6 @@ class _SchemaUses(_Models):
             if found is not None and (location := self.schemas.location(found, "schema")) != member.schema:
                 member = replace(  # noqa: PLW2901
                     member,
-                    origin_state="known",
-                    origin_reason=None,
-                    occurrences=(FieldSourceOrigin(location, member.member_kind),),
                     schema=location,
                 )
             members.append(replace(member, direction=direction) if direction != member.direction else member)
@@ -2361,8 +2476,6 @@ class _SchemaUses(_Models):
             status,
             media,
         )
-        if use in self.uses:
-            return use
         projected = self.projection(schema, projection, direction)
         members = (
             self.members_at(projected.value.symbol, schema, direction)
@@ -2375,7 +2488,6 @@ class _SchemaUses(_Models):
             projected.value,
             projected.reason,
             members,
-            (),
             locate(schema, "schema"),
         )
         return use
@@ -2474,7 +2586,6 @@ class _SchemaUses(_Models):
             tuple(self.members.get(projected.value.symbol, ()))
             if isinstance(projected.value, GeneratedSymbolType)
             else (),
-            (),
             use.schema_site,
         )
 
@@ -2536,6 +2647,29 @@ class _Contracts(_SchemaUses):
         self.schemas.ids[document] = SourceDocumentId(len(self.schemas.ids))
         self.schemas.documents[document] = raw
         return True
+
+    @cached_property
+    def relocations(self) -> dict[SourceDocumentId, SourceDocumentId]:
+        """Map the document identities the walk's records use to the attempt's."""
+        return {provisional: self.schemas.ids[uri] for uri, provisional in self.parser.record_documents.items()}
+
+    def record(self, schema: _Declaration) -> _SchemaRecord:
+        """Return what the walk recorded of an acquired schema, located in the attempt's documents."""
+        return cast("_SchemaRecord", _relocated(self.parser.schema_records.get(schema, _UNRECORDED), self.relocations))
+
+    def parts(self, schema: _Declaration, members: tuple[FieldUseBinding, ...]) -> PartFacts:
+        """Return how a multipart body's schema encodes the parts of its use's members, as the walk recorded it."""
+        record = self.record(schema).parts or _UNDECLARED_PARTS
+        declared = dict(record.members)
+        return PartFacts(
+            record.object,
+            tuple(
+                (member.wire_name, declared.get(member.schema, _NO_PART))
+                for member in members
+                if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
+            ),
+            record.extra,
+        )
 
     def declared(self, declaration: _Declaration, raw: YamlValue) -> tuple[_Declaration, dict[str, YamlValue]]:
         """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
@@ -2602,16 +2736,22 @@ class _Contracts(_SchemaUses):
     def media_facts(
         self, uses: tuple[TypeUseId, ...], schema: _Declaration, role: TypeUseRole, media: str
     ) -> tuple[TypeUseId, ...]:
-        """Record the parts and the parameter default that the media's own schema keyword declares on its uses."""
+        """Record what the walk recorded of the media's own schema keyword on its uses.
+
+        A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
+        text encoding of its schema.
+        """
         multipart = media.strip().lower().startswith("multipart/")
-        default = self.schemas.default(schema) if role == "parameter" else None
+        record = self.record(schema)
         for use in uses:
             binding = self.uses[use]
-            if multipart:
-                binding = replace(binding, parts=self.schemas.parts(schema, binding.members))
-            if default is not None:
-                binding = replace(binding, default=default)
-            self.uses[use] = binding
+            self.uses[use] = replace(
+                binding,
+                parts=self.parts(schema, binding.members) if multipart else None,
+                default=record.default if role == "parameter" else None,
+                keywords=record.keywords,
+                encoding=record.encoding,
+            )
         return uses
 
     def media(  # noqa: PLR0913
@@ -2734,8 +2874,13 @@ class _Contracts(_SchemaUses):
                 status=status,
                 media=media,
             )
-            if role == "parameter" and (default := self.schemas.default(schema)) is not None:
-                self.uses[use] = replace(self.uses[use], default=default)
+            record = self.record(schema)
+            self.uses[use] = replace(
+                self.uses[use],
+                default=record.default if role == "parameter" else None,
+                keywords=record.keywords,
+                encoding=record.encoding,
+            )
             schemas = (use,)
         children = self.media(
             value.get("content"),
@@ -2850,6 +2995,9 @@ class _Contracts(_SchemaUses):
                 children=self.media(value.get("content"), declared, used, identity, "request_body"),
             )
         statuses = {str(status): value for status, value in _mapping(raw.get("responses")).items()}
+        if len(statuses) != len(_mapping(raw.get("responses"))):
+            msg = "Source pointer is ambiguous between string and integer keys"
+            raise BindingCaptureError(msg)
         responses = tuple(
             self.response(
                 statuses[str(status)],
@@ -2942,7 +3090,6 @@ def bind_operations(
     builder = _Contracts(parser, results, attempt=attempt, output=output, model_package=model_package)
     symbols, artifacts = builder.symbols()
     builder.field_facts(symbols)
-    symbols = builder.extra_items(symbols)
     fields = builder.field_bindings(symbols)
     operations = builder.operations()
     builder.schema_uses()
@@ -2960,31 +3107,34 @@ def bind_operations(
             symbols,
             artifacts,
             fields,
-            (),
             security_schemes,
             api_scope=True,
+            document_facts=parser.document_facts.get(next(iter(schemas.ids), ""), ()),
         ),
         tuple(schemas.documents.items()),
     )
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator, Mapping
     from pathlib import Path
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         BackendValue,
         DefaultKind,
         FinalPythonType,
         FrozenLiteral,
+        LeafStep,
         TypeArgument,
         TypeUseRole,
     )
     from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
 
     class _DeclarationLike(Protocol):
@@ -2998,6 +3148,5 @@ if TYPE_CHECKING:
         def tokens(self) -> tuple[str, ...]:
             """The raw JSON pointer tokens."""
 
-    from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
     from datamodel_code_generator.parser.openapi_scope import ApiDeclarationId, ApiParameterDeclaration, SchemaRole
     from datamodel_code_generator.reference import Reference
