@@ -129,10 +129,10 @@ def _written(parts: tuple[str, ...], model: dict[str, Any], server: dict[str, An
     return Path(model["output"], *parts[len(models) :])
 
 
-def _state(location: Path, content: bytes) -> str:
+def _state(location: Path, content: str, encoding: str) -> str:
     if not location.is_file():
         return "new"
-    return "unchanged" if location.read_bytes() == content else "changed"
+    return "unchanged" if location.read_text(encoding=encoding) == content else "changed"
 
 
 def _report_files(files: Files, model: dict[str, Any], server: dict[str, Any], lines: list[str]) -> None:
@@ -140,7 +140,7 @@ def _report_files(files: Files, model: dict[str, Any], server: dict[str, Any], l
     encoding = model.get("encoding", "utf-8")
     states = {
         (location := _written(parts, model, server)).as_posix(): _state(
-            location, text.encode(encoding if parts[-1].endswith(".py") else "utf-8")
+            location, text, encoding if parts[-1].endswith(".py") else "utf-8"
         )
         for parts, text in files.items()
     }

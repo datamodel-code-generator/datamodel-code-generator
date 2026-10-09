@@ -4955,6 +4955,12 @@
       "custom_template_dir": "templates/not-found"
     }
   },
+  "output-required": {
+    "input": "pets.yaml",
+    "model": {
+      "output": null
+    }
+  },
   "api-scope-required": {
     "input": "pets.yaml",
     "model": {

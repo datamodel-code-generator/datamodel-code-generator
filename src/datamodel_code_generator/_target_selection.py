@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import warnings
 from dataclasses import replace
 from enum import Enum
 from functools import partial
@@ -208,32 +207,19 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
         for field in ("settings_path", "http_local_ref_path"):
             if (path := getattr(config, field)) is not None and not path.expanduser().is_absolute():
                 updates[field] = cwd / path.expanduser()
-        prefix = root.relative_to(cwd).as_posix()
-        recorded: list[warnings.WarningMessage] = []
         try:
-            with warnings.catch_warnings(record=True) as recorded:
-                warnings.simplefilter("always")
-                planned = plan_target(
-                    input_,
-                    model_config=config.model_copy(update=updates),
-                    config=target,
-                    generator=generator,
-                    models_module=True,
-                )
+            planned = plan_target(
+                input_,
+                model_config=config.model_copy(update=updates),
+                config=target,
+                generator=generator,
+                models_module=True,
+                shown_root=root,
+            )
         except APIGenerationError as error:
-            if (staged := _staged(error, prefix)) is error:
+            if (staged := _staged(error, root.relative_to(cwd).as_posix())) is error:
                 raise
             raise staged from None
-        finally:
-            for item in recorded:
-                message = str(item.message)
-                warnings.warn_explicit(
-                    message.removeprefix(f"{prefix}/") if message.startswith(f"{prefix}/") else item.message,
-                    item.category,
-                    item.filename,
-                    item.lineno,
-                    source=item.source,
-                )
         artifacts = planned.project.artifacts
         publish_target(
             replace(

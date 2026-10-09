@@ -312,13 +312,16 @@ def test_generate_target_input_errors(tmp_path: Path) -> None:
     )
 
 
-def test_generate_server_warnings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Warn about documentation the served document leaves out, as the command line does."""
+@pytest.mark.parametrize("output", ["models.py", None])
+def test_generate_server_warnings(output: str | None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Warn once about documentation the served document leaves out, from the package, with or without an output."""
     monkeypatch.chdir(tmp_path)
     source = _server(tmp_path, "callbacks.yaml")
     with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("always", UserWarning)
-        generate(source, **MODELS, **SERVER, output=Path("models.py"), server_output=Path("server"))
+        warnings.simplefilter("ignore")
+        warnings.filterwarnings("default", category=DocumentationAnnotationWarning, module="datamodel_code_generator")
+        for _ in range(2):
+            generate(source, **MODELS, **SERVER, output=output, server_output=Path("server"))
     assert_output(
         "".join(
             f"{item.category.__name__}: {item.message}\n"

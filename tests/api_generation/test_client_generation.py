@@ -120,6 +120,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "templates-invalid",
         "templates-not-found",
         "api-scope-required",
+        "output-required",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
