@@ -62,7 +62,7 @@ redirects
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
   > GET https://other.example.com/bearer
     [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  bearer rejected by another origin ! AuthenticationError: AuthenticationError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=401, body=b'', body_bytes=b'', truncated=False, cause=DecodeError()] authentication_error
+  bearer rejected by another origin ! AuthenticationError: Error code: 401 [operation_id='bearer', status_code=401, body=b'', body_bytes=b'', truncated=False, cause=DecodeError()]
   > GET https://api.example.com/api-key/header
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret] b''
   async header key not redirected = ('returned', 302, 'https://other.example.com/api-key/header')

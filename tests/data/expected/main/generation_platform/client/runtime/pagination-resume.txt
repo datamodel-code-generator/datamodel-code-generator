@@ -30,19 +30,19 @@
   closed checkpoint = 'a'
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  checkpoint during fetch ! ProtocolStateError: ProtocolStateError(state='fetching', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  checkpoint during fetch ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.fetching') [field_path=('checkpoint', 'fetching')] invalid_state
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  resumed cursor cycle ['4'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
   cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   path continuation 'a2' ['6']
-  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', call_id='<call>', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
-  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   removed cursor cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_cursor_bytes' []
   removed page cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_page_bytes' []
   offsets initial checkpoint = None
@@ -53,9 +53,9 @@
   > GET https://api.example.com/v1/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offsets resumed ['3']
-  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   numbered initial checkpoint = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -64,9 +64,9 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   numbered resumed ['3']
-  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   initial offset = None
   > GET https://api.example.com/v1/users?offset=7
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -86,7 +86,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  total resumed counts from its page to an error ['3'] ! NotFoundError: Error code: 404 - {"detail":"no page"} [operation_id='listUsers', status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False]
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
@@ -94,12 +94,12 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow resumed ['2']
-  follow other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  follow other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=BodySelector(pointer='/next')] malformed
+  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked first page = [1] continuation='https://api.example.com/v1/users?page=2' status=200 attempts=1
@@ -107,16 +107,16 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked resumed ['2']
-  linked other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  linked other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=HeaderSelector(name='Link', occurrence='all')] malformed
+  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  supplied URL removes echoed key ['3'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next')] pagination_cycle
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
@@ -145,14 +145,14 @@
   typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
+  page limit ['1'] ! SessionLimitError: SessionLimitError(reason='pages', limit=1) [limit=1] pages
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -161,7 +161,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(reason='items', limit=3) [limit=3] items
   limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
@@ -206,19 +206,19 @@
   closed checkpoint = 'a'
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  checkpoint during fetch ! ProtocolStateError: ProtocolStateError(state='fetching', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  checkpoint during fetch ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.fetching') [field_path=('checkpoint', 'fetching')] invalid_state
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  resumed cursor cycle ['4'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
   cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   path continuation 'a2' ['6']
-  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', call_id='<call>', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
-  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   removed cursor cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_cursor_bytes' []
   removed page cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_page_bytes' []
   offsets initial checkpoint = None
@@ -229,9 +229,9 @@
   > GET https://api.example.com/v1/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offsets resumed ['3']
-  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   numbered initial checkpoint = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -240,9 +240,9 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   numbered resumed ['3']
-  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   initial offset = None
   > GET https://api.example.com/v1/users?offset=7
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -262,7 +262,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  total resumed counts from its page to an error ['3'] ! NotFoundError: Error code: 404 - {"detail":"no page"} [operation_id='listUsers', status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False]
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
@@ -270,12 +270,12 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow resumed ['2']
-  follow other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  follow other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=BodySelector(pointer='/next')] malformed
+  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked first page = [1] continuation='https://api.example.com/v1/users?page=2' status=200 attempts=1
@@ -283,16 +283,16 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked resumed ['2']
-  linked other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  linked other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=HeaderSelector(name='Link', occurrence='all')] malformed
+  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  supplied URL removes echoed key ['3'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next')] pagination_cycle
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
@@ -321,14 +321,14 @@
   typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
+  page limit ['1'] ! SessionLimitError: SessionLimitError(reason='pages', limit=1) [limit=1] pages
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -337,7 +337,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(reason='items', limit=3) [limit=3] items
   limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
@@ -382,19 +382,19 @@
   closed checkpoint = 'a'
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  checkpoint during fetch ! ProtocolStateError: ProtocolStateError(state='fetching', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  checkpoint during fetch ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.fetching') [field_path=('checkpoint', 'fetching')] invalid_state
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  resumed cursor cycle ['4'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
   cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   path continuation 'a2' ['6']
-  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', call_id='<call>', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
-  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   removed cursor cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_cursor_bytes' []
   removed page cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_page_bytes' []
   offsets initial checkpoint = None
@@ -405,9 +405,9 @@
   > GET https://api.example.com/v1/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offsets resumed ['3']
-  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   numbered initial checkpoint = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -416,9 +416,9 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   numbered resumed ['3']
-  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   initial offset = None
   > GET https://api.example.com/v1/users?offset=7
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -438,7 +438,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  total resumed counts from its page to an error ['3'] ! NotFoundError: Error code: 404 - {"detail":"no page"} [operation_id='listUsers', status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False]
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
@@ -446,12 +446,12 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow resumed ['2']
-  follow other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  follow other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=BodySelector(pointer='/next')] malformed
+  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked first page = [1] continuation='https://api.example.com/v1/users?page=2' status=200 attempts=1
@@ -459,16 +459,16 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked resumed ['2']
-  linked other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  linked other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=HeaderSelector(name='Link', occurrence='all')] malformed
+  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  supplied URL removes echoed key ['3'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next')] pagination_cycle
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
@@ -497,14 +497,14 @@
   typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
+  page limit ['1'] ! SessionLimitError: SessionLimitError(reason='pages', limit=1) [limit=1] pages
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -513,7 +513,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(reason='items', limit=3) [limit=3] items
   limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
@@ -558,19 +558,19 @@
   closed checkpoint = 'a'
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  checkpoint during fetch ! ProtocolStateError: ProtocolStateError(state='fetching', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  checkpoint during fetch ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.fetching') [field_path=('checkpoint', 'fetching')] invalid_state
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  resumed cursor cycle ['4'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
   cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   path continuation 'a2' ['6']
-  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', call_id='<call>', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
-  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   removed cursor cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_cursor_bytes' []
   removed page cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_page_bytes' []
   offsets initial checkpoint = None
@@ -581,9 +581,9 @@
   > GET https://api.example.com/v1/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offsets resumed ['3']
-  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   numbered initial checkpoint = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -592,9 +592,9 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   numbered resumed ['3']
-  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   initial offset = None
   > GET https://api.example.com/v1/users?offset=7
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -614,7 +614,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  total resumed counts from its page to an error ['3'] ! NotFoundError: Error code: 404 - {"detail":"no page"} [operation_id='listUsers', status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False]
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
@@ -622,12 +622,12 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow resumed ['2']
-  follow other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  follow other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=BodySelector(pointer='/next')] malformed
+  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked first page = [1] continuation='https://api.example.com/v1/users?page=2' status=200 attempts=1
@@ -635,16 +635,16 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked resumed ['2']
-  linked other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  linked other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=HeaderSelector(name='Link', occurrence='all')] malformed
+  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  supplied URL removes echoed key ['3'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next')] pagination_cycle
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
@@ -673,14 +673,14 @@
   typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
+  page limit ['1'] ! SessionLimitError: SessionLimitError(reason='pages', limit=1) [limit=1] pages
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -689,7 +689,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(reason='items', limit=3) [limit=3] items
   limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}
@@ -734,19 +734,19 @@
   closed checkpoint = 'a'
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  checkpoint during fetch ! ProtocolStateError: ProtocolStateError(state='fetching', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  checkpoint during fetch ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.fetching') [field_path=('checkpoint', 'fetching')] invalid_state
   fetching checkpoint preserves traversal ['5']
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  resumed cursor cycle ['4'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  resumed cursor cycle ['4'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next_cursor')] pagination_cycle
   cycle checkpoint = 'a'
   resumed zero item limit sends nothing []
   > GET https://api.example.com/v1/archive/a2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   path continuation 'a2' ['6']
-  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', call_id='<call>', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
-  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  path continuation '..' [] ! DecodeError: DecodeError(operation_id='listArchive', reason='unencodable', location='path.cursor') [operation_id='listArchive', location=('path', 'cursor'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  non-JSON continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  nonfinite continuation ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   removed cursor cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_cursor_bytes' []
   removed page cap ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'max_page_bytes' []
   offsets initial checkpoint = None
@@ -757,9 +757,9 @@
   > GET https://api.example.com/v1/users?offset=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offsets resumed ['3']
-  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  offsets negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  offsets text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   numbered initial checkpoint = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -768,9 +768,9 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   numbered resumed ['3']
-  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  numbered negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered boolean ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  numbered text ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   initial offset = None
   > GET https://api.example.com/v1/users?offset=7
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -790,7 +790,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?page=3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total resumed counts from its page to an error ['3'] ! NotFoundError: NotFoundError(status_code=404, operation_id='listUsers', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False] not_found_error
+  total resumed counts from its page to an error ['3'] ! NotFoundError: Error code: 404 - {"detail":"no page"} [operation_id='listUsers', status_code=404, body=b'{"detail":"no page"}', body_bytes=b'{"detail":"no page"}', truncated=False]
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow first page = [1] continuation='https://api.example.com/v1/users?cursor=a' status=200 attempts=1
@@ -798,12 +798,12 @@
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   follow resumed ['2']
-  follow other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  follow other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/next')] value
+  follow bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=BodySelector(pointer='/next')] malformed
+  follow wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked first page = [1] continuation='https://api.example.com/v1/users?page=2' status=200 attempts=1
@@ -811,16 +811,16 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   linked resumed ['2']
-  linked other origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked userinfo ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked relative URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked fragment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked bad percent ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', location=HeaderSelector(name='Link', occurrence='all'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  linked other origin ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked userinfo ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked relative URL ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked fragment ! ProtocolDataError: ProtocolDataError(reason='value') [location=HeaderSelector(name='Link', occurrence='all')] value
+  linked bad percent ! ProtocolDataError: ProtocolDataError(reason='malformed') [location=HeaderSelector(name='Link', occurrence='all')] malformed
+  linked wrong type ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a' key kept=False
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  supplied URL removes echoed key ['3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] pagination_cycle_error
+  supplied URL removes echoed key ['3'] ! ProtocolDataError: ProtocolDataError(reason='pagination_cycle') [location=BodySelector(pointer='/next')] pagination_cycle
   supplied URL checkpoint='https://api.example.com/v1/users?cursor=a&sig=stale' sig kept=True
   initial body cursor = None
   > POST https://api.example.com/v1/searches
@@ -849,14 +849,14 @@
   typed binding target keeps the caller's argument ['5', '6']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page limit ['1'] ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='pages', limit=1] session_limit_error
+  page limit ['1'] ! SessionLimitError: SessionLimitError(reason='pages', limit=1) [limit=1] pages
   limited checkpoint = 'a'
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resume starts fresh page limit ['2']
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=1] session_limit_error
+  item limit at partial page ['1'] ! SessionLimitError: SessionLimitError(reason='items', limit=1) [limit=1] items
   limited partial boundary = None
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -865,7 +865,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/v1/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(kind='items', limit=3) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='items', limit=3] session_limit_error
+  item limit in a later page ['1', '2', '3'] ! SessionLimitError: SessionLimitError(reason='items', limit=3) [limit=3] items
   limited boundary before its page = 'a'
   async initial checkpoint = None
   async initial resumed = {'pages': 0, 'items': 0}

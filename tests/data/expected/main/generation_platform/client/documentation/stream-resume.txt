@@ -410,7 +410,7 @@ The package copies the runtime modules its capabilities and model backend need:
 - `_runtime`: `__init__.py`
 - `_runtime/client`: `__init__.py`, `auth.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
-- `_runtime/protocols`: `__init__.py`, `caches.py`, `client.py`, `client_options.py`, `errors.py`, `links.py`, `names.py`, `options.py`, `origins.py`, `pagination.py`, `records.py`, `references.py`, `resume.py`, `sources.py`, `streams.py`, `values.py`, `writes.py`
+- `_runtime/protocols`: `__init__.py`, `caches.py`, `client.py`, `client_options.py`, `errors.py`, `links.py`, `names.py`, `options.py`, `origins.py`, `pagination.py`, `records.py`, `references.py`, `resume.py`, `streams.py`, `values.py`, `writes.py`
 
 
 # artifact client/_generated_docs/runtime.md
@@ -503,10 +503,10 @@ SDK-created client follows none and an injected one keeps its own. HTTPX2 follow
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
 that carries a credential at a position a declared security scheme names other than `Authorization` is never
 redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
-cookie never reaches another origin. Response content codings are removed by HTTPX2: the native
-client's `Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a
-body that does not decode raises `ProtocolDataError`. A streaming raw response's `iter_raw_bytes()` yields the body as
-it arrived; a buffered one keeps only its decoded body.
+cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
+`Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
+does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
+yields the body as it arrived; a buffered one keeps only its decoded body.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
@@ -550,19 +550,20 @@ records at INFO level.
 
 ## Errors and cleanup
 
-Every exception derives from `SDKError`, which keeps a stable `reason`, the call's `attempt_count`, `elapsed`, and
-`request_id`, and how far the request got. `APIConnectionError` is an I/O failure and `APITimeoutError` a phase cap
-(`effective_timeout`) or the logical/stream deadline (`deadline_at`). A final status the operation does not declare as
-a success raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with
-`status_code`, `headers`, `request_id`, and `body` decoded with the operation's declared error schema, else the
-bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
-declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
-values.
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase timeout (`phase_timeout`) or the call's or stream's total timeout
+(`deadline_exceeded`). A final status the operation does not declare as a success raises `APIStatusError`, or its
+subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with `status_code`, `headers`, `request_id`, and `body`
+decoded with the operation's declared error schema, else the bounded raw bytes; its message gives the status and the
+start of the body. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
+declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
+key, header, or body values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Resource release
-runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
-and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
-Native task cancellation propagates unchanged, and user callbacks are not shielded.
+A limiter permit is acquired before opening a body and released when its response is released. Resource release runs in
+finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
+and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
+cancellation propagates unchanged, and user callbacks are not shielded.
 
 ## SSE or NDJSON streams
 
@@ -585,42 +586,42 @@ from:
 
 The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
 UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
-fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the native
-`SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator maps it to; data that does not
-decode raises `StreamDecodeError`, and a declared error event raises `StreamRemoteError`. The stream ends at its
-declared completion; an end before it raises `StreamInterruptedError`, and a broken connection
-`StreamInterruptedError` with its transport failure as the cause. A frame an SSE body ends in the middle of is
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the reason
+`too_large` and the native `SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator
+maps it to; data that does not decode raises `DecodeError`, and a declared error event raises `ProtocolDataError` with
+the reason `error_event` and the decoded event as `data`. The stream ends at its declared completion; an end before it
+raises `StreamInterruptedError` with the reason `eof`, and a broken connection one with the reason `transport` and its
+transport failure as the cause. A frame an SSE body ends in the middle of is
 discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
 never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
 active streams; each stream releases its own response and limiter permit.
 
 An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
-blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. Bytes after the last line end raise
-`IncompleteFrameError` unless the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record
-has the empty string as its event type and no event ID, and a declared error record raises `StreamRemoteError` with
-the event type None.
+blank line or one that is not UTF-8 or JSON raises `DecodeError`. Bytes after the last line end raise
+`StreamInterruptedError` with the reason `eof` unless the helper's `final_line` is `allow_eof`, which decodes them as
+the last record. A record has the empty string as its event type and no event ID, and a declared error record raises
+`ProtocolDataError` with the reason `error_event`.
 
 A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's
-expiry, never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that
-failed, ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing
-the cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
+a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's expiry,
+never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that failed,
+ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing the
+cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
 reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
-caller. It refuses a state that is not JSON or does not fit with `ConfigurationError` and an expired one with
-`ResumeStateError` before sending, and a cursor written where a credential goes with `ConfigurationError` with the
-reason `wrong_capability`. No options, the client's, a view's, or the call's, may patch a header or query parameter a
-reopen writes or fix an idempotency key.
+caller. It refuses a state that is not JSON or does not fit with `ConfigurationError`, an expired one with the reason
+`expired`, before sending, and a cursor written where a credential goes with the reason `wrong_capability`. No options,
+the client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
 
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
 transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
 `TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
 delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
-`StreamResumeExhaustedError`; a wait whose backoff cap or `retry` time is
-longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
-idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
-reopen are delivered again.
+`SessionLimitError` with the reason `reconnects`; a wait whose backoff cap or `retry` time is longer than allowed, or a
+wait longer than the session has left, raises the interruption instead. Decode, size, remote, idle, and deadline
+failures, the declared end, and closing never reconnect, and events the server sends again after a reopen are delivered
+again.
 
 ## Request compression
 

@@ -2310,17 +2310,17 @@ Entries hold the body after content decoding and the headers without `Content-En
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
 events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
-auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
-A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
-and the client's own auth, not a view's or a call's; anything else raises `ConfigurationError`. A response whose
-`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
-cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
-only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
-`ProtocolDataError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
-`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `SDKError` with the reason `store_failed` and never resend a
-request.
+time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the schemes of the
+credentials the client places, and selected by the request headers its `Vary` names and those a header patch or a
+declared parameter fills. A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper
+declared authenticated, and the client's own credentials or Auth, not a view's or a call's Auth; anything else raises
+`ConfigurationError`. A response whose `Vary` names a credential header is never stored, and one partition is one
+permission set: credentials the client cannot see, such as a client certificate, need a partition of their own.
+Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
+and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
+came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
+allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `SDKError` with the reason
+`store_failed` and never resend a request.
 The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
 Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
 Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.

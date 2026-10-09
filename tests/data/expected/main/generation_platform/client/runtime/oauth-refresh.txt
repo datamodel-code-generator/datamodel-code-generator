@@ -22,7 +22,7 @@ rejection
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
-  invalid grant ! AuthError reason=reauthorization_required delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_grant
+  invalid grant ! AuthError reason=reauthorization_required status_code=400 oauth_error=invalid_grant
   saved ['access-1/refresh-1 expires=3600', 'access-2/refresh-1 expires=None']
 expiry
   > GET https://api.example.com/openid/read
@@ -37,16 +37,16 @@ expiry
   > GET https://api.example.com/openid/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
   unrenewable token until its expiry = b'ok'
-  unrenewable token after its expiry ! AuthError reason=reauthorization_required delivery_state=NOT_SENT phase=unknown
+  unrenewable token after its expiry ! AuthError reason=reauthorization_required
   > GET https://api.example.com/openid/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
-  rejected token without a refresh token ! AuthError reason=reauthorization_required delivery_state=NOT_SENT phase=unknown
+  rejected token without a refresh token ! AuthError reason=reauthorization_required
 callbacks
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
-  failing callback ! AuthError reason=provider_failed delivery_state=NOT_SENT phase=unknown cause=OSError
+  failing callback ! AuthError reason=provider_failed cause=OSError
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
   failing callback keeps the refreshed token = b'ok'
@@ -54,20 +54,20 @@ callbacks
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
-  coroutine callback in a synchronous call ! ConfigurationError reason=invalid_mode delivery_state=MAYBE_SENT field_path=('on_token_refreshed',)
+  coroutine callback in a synchronous call ! ConfigurationError reason=invalid_mode field_path=('on_token_refreshed',)
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
   coroutine callback in a synchronous call keeps the refreshed token = b'ok'
-  naive expiry ! ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('expires_at',)
-  empty access token ! ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('access_token',)
-  empty refresh token ! ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('refresh_token',)
-  token set of another type ! ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('token_set',)
-  callback of another type ! ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('on_token_refreshed',)
-  secret without a method ! ConfigurationError reason=forbidden_value delivery_state=NOT_SENT field_path=('client_secret',)
-  method without a secret ! ConfigurationError reason=missing_value delivery_state=NOT_SENT field_path=('client_secret',)
-  empty client id ! ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('client_id',)
-  unknown method ! ConfigurationError reason=invalid_value delivery_state=NOT_SENT field_path=('client_auth_method',)
-  clock of another type ! ConfigurationError reason=invalid_type delivery_state=NOT_SENT field_path=('clock',)
+  naive expiry ! ConfigurationError reason=invalid_value field_path=('expires_at',)
+  empty access token ! ConfigurationError reason=invalid_value field_path=('access_token',)
+  empty refresh token ! ConfigurationError reason=invalid_value field_path=('refresh_token',)
+  token set of another type ! ConfigurationError reason=invalid_type field_path=('token_set',)
+  callback of another type ! ConfigurationError reason=invalid_type field_path=('on_token_refreshed',)
+  secret without a method ! ConfigurationError reason=forbidden_value field_path=('client_secret',)
+  method without a secret ! ConfigurationError reason=missing_value field_path=('client_secret',)
+  empty client id ! ConfigurationError reason=invalid_value field_path=('client_id',)
+  unknown method ! ConfigurationError reason=invalid_value field_path=('client_auth_method',)
+  clock of another type ! ConfigurationError reason=invalid_type field_path=('clock',)
   token set repr TokenSet(expires_at=None)
 async
   > GET https://api.example.com/oauth/read
@@ -81,10 +81,10 @@ async
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=pets-app'
-  async invalid grant ! AuthError reason=reauthorization_required delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_grant
+  async invalid grant ! AuthError reason=reauthorization_required status_code=400 oauth_error=invalid_grant
   async saved ['access-1/refresh-1 expires=3600']
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-0] b''
   > POST https://auth.example.com/refresh
     [host: auth.example.com, accept: application/json, content-type: application/x-www-form-urlencoded, content-length: 67] b'grant_type=refresh_token&refresh_token=refresh-0&client_id=pets-app'
-  async failing callback ! AuthError reason=provider_failed delivery_state=NOT_SENT phase=unknown cause=OSError
+  async failing callback ! AuthError reason=provider_failed cause=OSError

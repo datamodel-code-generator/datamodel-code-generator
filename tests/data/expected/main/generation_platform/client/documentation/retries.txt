@@ -213,7 +213,6 @@ The package copies the runtime modules its capabilities and model backend need:
 - `_runtime`: `__init__.py`
 - `_runtime/client`: `__init__.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
-- `_runtime/protocols`: `__init__.py`, `errors.py`, `records.py`, `references.py`, `resume.py`, `sources.py`
 
 
 # artifact client/_generated_docs/runtime.md
@@ -306,10 +305,10 @@ SDK-created client follows none and an injected one keeps its own. HTTPX2 follow
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
 that carries a credential at a position a declared security scheme names other than `Authorization` is never
 redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
-cookie never reaches another origin. Response content codings are removed by HTTPX2: the native
-client's `Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a
-body that does not decode raises `ProtocolDataError`. A streaming raw response's `iter_raw_bytes()` yields the body as
-it arrived; a buffered one keeps only its decoded body.
+cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
+`Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
+does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
+yields the body as it arrived; a buffered one keeps only its decoded body.
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.
@@ -336,19 +335,20 @@ query credential is part of the request URL, which the `httpx2` logger records a
 
 ## Errors and cleanup
 
-Every exception derives from `SDKError`, which keeps a stable `reason`, the call's `attempt_count`, `elapsed`, and
-`request_id`, and how far the request got. `APIConnectionError` is an I/O failure and `APITimeoutError` a phase cap
-(`effective_timeout`) or the logical/stream deadline (`deadline_at`). A final status the operation does not declare as
-a success raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with
-`status_code`, `headers`, `request_id`, and `body` decoded with the operation's declared error schema, else the
-bounded raw bytes. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
-declaration, and `ConfigurationError` a refused setting or call. Safe error representations omit key/body/header
-values.
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase timeout (`phase_timeout`) or the call's or stream's total timeout
+(`deadline_exceeded`). A final status the operation does not declare as a success raises `APIStatusError`, or its
+subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with `status_code`, `headers`, `request_id`, and `body`
+decoded with the operation's declared error schema, else the bounded raw bytes; its message gives the status and the
+start of the body. `AuthError` names its `reason`, `DecodeError` a request argument or response that does not fit its
+declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
+key, header, or body values.
 
-A limiter permit is acquired before opening a body and released when its response is released. Resource release
-runs in finally; secondary failures stay beside the primary failure. Root close refuses new calls from the root
-and its views, closes a created native client once, and leaves borrowed clients and providers caller owned.
-Native task cancellation propagates unchanged, and user callbacks are not shielded.
+A limiter permit is acquired before opening a body and released when its response is released. Resource release runs in
+finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
+and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
+cancellation propagates unchanged, and user callbacks are not shielded.
 
 ## Request compression
 

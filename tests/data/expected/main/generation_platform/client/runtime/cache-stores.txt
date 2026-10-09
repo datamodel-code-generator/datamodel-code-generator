@@ -16,18 +16,15 @@
   result response ! TypeError: response has the wrong type []
   result status ! TypeError: network_status has the wrong type []
   options = CacheOptions(max_entry_bytes=1, max_ttl=0.5)
-  options zero bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entry_bytes') [field_path=('max_entry_bytes',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  options boolean ttl ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_ttl') [field_path=('max_ttl',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  options zero bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entry_bytes') [field_path=('max_entry_bytes',)] invalid_value
+  options boolean ttl ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_ttl') [field_path=('max_ttl',)] invalid_value
   defaults = ProtocolDefaults(session=UNSET, options=CacheOptions(max_entry_bytes=UNSET, max_ttl=1))
-  stores list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_stores') [field_path=('cache_stores',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  stores name ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_stores') [field_path=('cache_stores',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  conflict = CacheValidatorConflictError: CacheValidatorConflictError(reason='binding_mismatch', field_path='If-None-Match') [field_path=('If-None-Match',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
-  conflict header ! ValueError: header_name must be one of its declared values []
-  protocol error = CacheProtocolError: CacheProtocolError(condition='inconsistent') [condition='inconsistent', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_protocol_error
-  store error = CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
-  memory zero entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  memory boolean entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  memory negative entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  stores list ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_stores') [field_path=('cache_stores',)] invalid_value
+  stores name ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_stores') [field_path=('cache_stores',)] invalid_value
+  protocol error = ProtocolDataError: ProtocolDataError(reason='inconsistent') [] inconsistent
+  memory zero entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',)] invalid_value
+  memory boolean entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',)] invalid_value
+  memory negative entries ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entries') [field_path=('max_entries',)] invalid_value
   memory missing None
   memory set = None
   memory stored b'en'
@@ -40,10 +37,10 @@
   memory delete = None
   memory repeated delete = None
   memory deleted None
-  memory get key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='key') [field_path=('key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  memory set key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='key') [field_path=('key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  memory set entry ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='entry') [field_path=('entry',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  memory delete key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='key') [field_path=('key',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  memory get key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='key') [field_path=('key',)] invalid_value
+  memory set key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='key') [field_path=('key',)] invalid_value
+  memory set entry ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='entry') [field_path=('entry',)] invalid_value
+  memory delete key ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='key') [field_path=('key',)] invalid_value
   async memory missing None
   async memory set None
   async memory get True
@@ -52,14 +49,14 @@
   async memory delete None
   async memory repeated delete None
   async memory deleted None
-  unknown helper store ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.cache_stores.users.unknown') [field_path=('protocols', 'cache_stores', 'users.unknown'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
-  pagination-free name ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.cache_stores.users') [field_path=('protocols', 'cache_stores', 'users'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unknown_field
-  object store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
-  asynchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
-  synchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
-  session defaults ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.profile.session') [field_path=('protocols', 'defaults', 'users.profile', 'session'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  pagination defaults ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.profile.options') [field_path=('protocols', 'defaults', 'users.profile', 'options'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  no store ! ConfigurationError: ConfigurationError(reason='missing_adapter', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_adapter
+  unknown helper store ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.cache_stores.users.unknown') [field_path=('protocols', 'cache_stores', 'users.unknown')] unknown_field
+  pagination-free name ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='protocols.cache_stores.users') [field_path=('protocols', 'cache_stores', 'users')] unknown_field
+  object store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] wrong_capability
+  asynchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] wrong_capability
+  synchronous store ! ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] wrong_capability
+  session defaults ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.profile.session') [field_path=('protocols', 'defaults', 'users.profile', 'session')] invalid_value
+  pagination defaults ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='protocols.defaults.users.profile.options') [field_path=('protocols', 'defaults', 'users.profile', 'options')] invalid_value
+  no store ! ConfigurationError: ConfigurationError(reason='missing_adapter', field_path='protocols.cache_stores.users.profile') [field_path=('protocols', 'cache_stores', 'users.profile')] missing_adapter
     get key=32
   > GET https://api.example.com/users/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -71,9 +68,9 @@
   call entry limit = network 3:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
     get key=32
   call entry limit hit = fresh_cache 3:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
-  pagination options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_options') [field_path=('cache_options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  text options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  closed client ! ConfigurationError: ConfigurationError(operation_id='getUser', call_id='<call>', reason='client_closed', field_path='client.closed') [operation_id='getUser', field_path=('client', 'closed'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] client_closed
+  pagination options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_options') [field_path=('cache_options',)] invalid_value
+  text options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  closed client ! ConfigurationError: ConfigurationError(operation_id='getUser', reason='client_closed', field_path='client.closed') [operation_id='getUser', field_path=('client', 'closed')] client_closed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -143,7 +140,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('gone')] cache_store_error"]
+  refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -153,23 +150,13 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error"]
+  refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
-  lookup failure ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('disk')] cache_store_error
+  lookup failure ! SDKError: SDKError(reason='store_failed') [cause=OSError('disk')] store_failed
     get key=32
-  lookup result ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
+  lookup result ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
-  lookup store error ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
-    get key=32
-    event call_start status=None
-    event attempt_start status=None
-  > GET https://api.example.com/users/21
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
-    event response_headers status=200
-    event attempt_end status=200
-    event call_end status=200
-    set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
-  exchange failure ! CacheStoreError: CacheStoreError(action='set') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('down')] cache_store_error
+  lookup store error ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -179,7 +166,17 @@
     event attempt_end status=200
     event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
-  exchange result ! CacheStoreError: CacheStoreError(action='set') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
+  exchange failure ! SDKError: SDKError(reason='store_failed') [cause=RuntimeError('down')] store_failed
+    get key=32
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
+  exchange result ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -199,7 +196,7 @@
     event attempt_end status=200
     event call_end status=200
     delete
-  delete result ! CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
+  delete result ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -219,7 +216,7 @@
     event attempt_end status=200
     event call_end status=200
     delete
-  delete failure ! CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('gone')] cache_store_error
+  delete failure ! SDKError: SDKError(reason='store_failed') [cause=OSError('gone')] store_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -228,7 +225,7 @@
     event response_headers status=200
     event attempt_end status=200
     event call_end status=200
-  hook failure stores nothing ! SDKError: SDKError(operation_id='getUser', call_id='<call>', reason='hook_failed') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('hook failed')] hook_failed
+  hook failure stores nothing ! SDKError: SDKError(operation_id='getUser', reason='hook_failed') [operation_id='getUser', cause=RuntimeError('hook failed')] hook_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -241,8 +238,8 @@
   after a hook failure = network 23:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
     get key=32
   hit without events = fresh_cache 23:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
-  no partition ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='protocols.security') [field_path=('protocols', 'security'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] security_partition
-  no credentials ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
+  no partition ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='protocols.security') [field_path=('protocols', 'security')] security_partition
+  no credentials ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',)] binding_mismatch
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   tenant a stored = network 1:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
@@ -253,7 +250,7 @@
   > GET https://api.example.com/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   anonymous helper = network 1:anonymous status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '27'), ('content-type', 'application/json')]
-  anonymous helper with a credential ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] binding_mismatch
+  anonymous helper with a credential ! ConfigurationError: ConfigurationError(reason='binding_mismatch', field_path='auth') [field_path=('auth',)] binding_mismatch
   anonymous helper same tenant = fresh_cache 1:anonymous status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
   > GET https://api.example.com/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -267,8 +264,8 @@
   > GET https://api.example.com/secure/users/2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice] b''
   alice again = network 2:alice again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '29'), ('content-type', 'application/json')]
-  view with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] security_partition
-  call with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] security_partition
+  view with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth')] security_partition
+  call with other auth ! ConfigurationError: ConfigurationError(reason='security_partition', field_path='options.auth') [field_path=('options', 'auth')] security_partition
   anonymous view = fresh_cache 1:anonymous status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
   > GET https://api.example.com/secure/users/4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
@@ -286,7 +283,7 @@
   on behalf of u after the service = network 5:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
   > GET https://api.example.com/secure/users/4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
-  view patching the bound authorization ! APIConnectionError: APIConnectionError(operation_id='getSecureUser', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getSecureUser', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=RemoteProtocolError('Server disconnected without sending a response.')] api_connection_error
+  view patching the bound authorization ! APIConnectionError: APIConnectionError(operation_id='getSecureUser', cause='RemoteProtocolError') [operation_id='getSecureUser', cause=RemoteProtocolError('Server disconnected without sending a response.')]
   > GET https://api.example.com/carts/current
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=alice] b''
   alice cart = network 44:alice status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
@@ -295,7 +292,7 @@
   bob cart = network 44:bob status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   alice cart again = fresh_cache 44:alice status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
     get key=32
-  granted ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('down')] cache_store_error
+  granted ! SDKError: SDKError(reason='store_failed') [cause=OSError('down')] store_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -324,11 +321,11 @@
     event response_headers status=404
     event attempt_end status=404
     event call_end status=404
-  async recorded error ! NotFoundError: NotFoundError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=404, body=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False] not_found_error
+  async recorded error ! NotFoundError: Error code: 404 - {"message":"no"} [operation_id='getUser', status_code=404, body=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False]
     get key=32
-  async lookup failure ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('disk')] cache_store_error
+  async lookup failure ! SDKError: SDKError(reason='store_failed') [cause=OSError('disk')] store_failed
     get key=32
-  async lookup store error ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
+  async lookup store error ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -338,7 +335,7 @@
     event attempt_end status=200
     event call_end status=200
     set status=200 vary=('accept-language',) values=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
-  async exchange result ! CacheStoreError: CacheStoreError(action='set') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
+  async exchange result ! SDKError: SDKError(reason='store_failed') [] store_failed
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -358,7 +355,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  async refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('gone')] cache_store_error"]
+  async refused 304 with a failed deletion ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -368,7 +365,7 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  async refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error"]
+  async refused 304 with a deletion result ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent note='Secondary failure: SDKError'
     get key=32
     event call_start status=None
     event attempt_start status=None
@@ -388,7 +385,7 @@
     event attempt_end status=200
     event call_end status=200
     delete
-  async delete result ! CacheStoreError: CacheStoreError(action='delete') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] cache_store_error
+  async delete result ! SDKError: SDKError(reason='store_failed') [] store_failed
   > GET https://api.example.com/secure/users/1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   async service = network 1:service status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
@@ -397,4 +394,4 @@
   async on behalf of u = network 1:u status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
   async on behalf of u again = fresh_cache 1:u status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
     get key=32
-  async granted ! CacheStoreError: CacheStoreError(action='get') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=OSError('down')] cache_store_error
+  async granted ! SDKError: SDKError(reason='store_failed') [cause=OSError('down')] store_failed

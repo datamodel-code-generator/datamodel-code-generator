@@ -57,12 +57,12 @@ selection
   > GET https://api.example.com/or
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
   or falls to bearer = b'ok'
-  alias needs its own credential ! ConfigurationError: ConfigurationError(operation_id='alias_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='alias_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
-  and missing key ! ConfigurationError: ConfigurationError(operation_id='and_auth', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='and_auth', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  alias needs its own credential ! ConfigurationError: ConfigurationError(operation_id='alias_auth', reason='missing_credentials', field_path='auth') [operation_id='alias_auth', field_path=('auth',)] missing_credentials
+  and missing key ! ConfigurationError: ConfigurationError(operation_id='and_auth', reason='missing_credentials', field_path='auth') [operation_id='and_auth', field_path=('auth',)] missing_credentials
   > GET https://api.example.com/optional
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
   optional sends the credential = b'ok'
-  required without credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='bearer', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  required without credentials ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth') [operation_id='bearer', field_path=('auth',)] missing_credentials
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   anonymous without credentials = b'ok'
@@ -79,7 +79,7 @@ native auth
   > GET https://api.example.com/optional
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   auth none on anonymous = b'ok'
-  auth none on required ! ConfigurationError: ConfigurationError(operation_id='bearer', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='bearer', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  auth none on required ! ConfigurationError: ConfigurationError(operation_id='bearer', reason='missing_credentials', field_path='auth') [operation_id='bearer', field_path=('auth',)] missing_credentials
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: client] b''
   client auth on required = b'ok'
@@ -93,7 +93,7 @@ refusals
   credentials beside client auth ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
   credentials beside option auth ! ConfigurationError reason=conflicting_auth field_path=('auth',) cause=NoneType leaked=[]
   credential of no credential type ! ConfigurationError reason=invalid_type field_path=('bearer',) cause=NoneType leaked=[]
-  option auth of another type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
+  option auth of another type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='auth') [field_path=('auth',)] invalid_type
   callable failure ! AuthError reason=provider_failed field_path=None cause=OSError leaked=[]
   callable of another type ! ConfigurationError reason=invalid_type field_path=('bearer',) cause=NoneType leaked=[]
   basic of another shape ! ConfigurationError reason=invalid_type field_path=('basic',) cause=NoneType leaked=[]
@@ -113,4 +113,4 @@ async
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-native: async] b''
   async call auth = b'ok'
-  async required without credentials ! ConfigurationError: ConfigurationError(operation_id='basic', call_id='<call>', reason='missing_credentials', field_path='auth') [operation_id='basic', field_path=('auth',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] missing_credentials
+  async required without credentials ! ConfigurationError: ConfigurationError(operation_id='basic', reason='missing_credentials', field_path='auth') [operation_id='basic', field_path=('auth',)] missing_credentials
