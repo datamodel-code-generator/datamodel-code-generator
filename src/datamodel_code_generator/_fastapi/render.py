@@ -31,7 +31,6 @@ from datamodel_code_generator._target_contract import (
     GenericType,
     ImportedExpression,
     ImportedType,
-    LiteralMapping,
     LiteralScalar,
     LiteralSequence,
     NoneType,
@@ -134,14 +133,17 @@ _INPUT_RUNTIME: Final = (
 
 
 def _constrained(value: TypeView) -> bool:
-    """Return whether a type holds a constrained scalar, whose validating annotation the server spells itself."""
+    """Return whether a type holds a constrained scalar, whose validating annotation the server spells itself.
+
+    A tuple keeps the model's own annotation, which validates its constrained members as the model does.
+    """
     match value:
         case ConstructorType():
             return value.base is not None
         case UnionType():
             return any(map(_constrained, value.members))
         case GenericType():
-            return any(map(_constrained, value.arguments))
+            return value.tuple_form != "fixed" and any(map(_constrained, value.arguments))
         case _:
             pass
     return False
@@ -242,9 +244,7 @@ class Module(TargetModule):
         arguments = [spell(item) for item in value.arguments]
         base = value.base
         identity = (base.import_.from_, base.import_.import_) if isinstance(base, ImportedType) else (None, "")
-        flag = _CONTAINERS.get((None, base.name) if isinstance(base, BuiltinType) else identity)
-        if flag is None or not arguments:
-            return f"{self.hint(base)}[{', '.join(arguments)}]" if arguments else self.hint(base)
+        flag = _CONTAINERS[(None, base.name) if isinstance(base, BuiltinType) else identity]
         if flag in _KEYED:
             return self.container(flag, arguments[-1], key=arguments[0])
         return self.container(flag, arguments[0])
@@ -275,12 +275,11 @@ class Module(TargetModule):
                 return f"{self.name('decimal', 'Decimal')}({str(value.value)!r})"
             case LiteralScalar():
                 return repr(value.value)
-            case LiteralSequence() | LiteralMapping():
-                return repr(json_value(value))
             case SourceExpression():
                 return value.text
-            case ImportedExpression():
+            case _:
                 pass
+        assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
         return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
 
 

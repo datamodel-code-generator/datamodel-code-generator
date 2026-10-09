@@ -16,6 +16,7 @@ from spellings_exact_basemodel_models import (
     Day,
     FieldCountsGetResponse,
     FieldPetsGetResponse,
+    Pair,
     Pet,
     Query,
     Response,
@@ -85,6 +86,8 @@ class GetPet:
 
         day: date | None
         filter: Query | None
+        pair: Pair | None
+        pet: Pet | None
 
     PARAMETERS: Final = ParameterAdapter(
         arguments=(
@@ -95,7 +98,7 @@ class GetPet:
                     name='day',
                     style='form',
                     explode=True,
-                    reserved_names=('code', 'codes', 'filter', 'limit', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'filter', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
                 ),
                 adapter=TypeAdapter(date),
             ),
@@ -109,9 +112,29 @@ class GetPet:
                     shape='object',
                     fields=(FieldPlan('term', 'string'),),
                     additional=FieldPlan('', 'string'),
-                    reserved_names=('code', 'codes', 'day', 'limit', 'raw', 'step'),
+                    reserved_names=('code', 'codes', 'day', 'label', 'limit', 'pair', 'pet', 'raw', 'step'),
                 ),
                 adapter=TypeAdapter(Query),
+            ),
+            ParameterArgument(
+                name='pair',
+                plan=ParameterPlan(
+                    location='query',
+                    name='pair',
+                    style='form',
+                    shape='array',
+                    reserved_names=('code', 'codes', 'day', 'filter', 'label', 'limit', 'pet', 'raw', 'step'),
+                ),
+                adapter=TypeAdapter(Pair),
+            ),
+            ParameterArgument(
+                name='pet',
+                plan=ParameterPlan(
+                    location='query',
+                    name='pet',
+                    content_media_type='application/json',
+                ),
+                adapter=TypeAdapter(Pet),
             ),
         ),
         record=Parameters,

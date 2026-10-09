@@ -5,16 +5,21 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from re import compile
 from typing import Annotated, Literal
 
 from annotated_types import MultipleOf
 from pydantic import BaseModel, Field, RootModel
-from pydantic.types import conint
+from pydantic.types import conint, constr
 from typing_extensions import TypeAliasType
 
 
 class PetId(RootModel[conint(ge=1)]):
     root: conint(ge=1)
+
+
+class Pair(RootModel[list[constr(min_length=1) | conint(ge=0)]]):
+    root: list[constr(min_length=1) | conint(ge=0)] = Field(..., max_length=2)
 
 
 class Day(RootModel[date]):
@@ -83,6 +88,12 @@ FieldPetsPetIdGetQueryRawParameter = TypeAliasType("FieldPetsPetIdGetQueryRawPar
 
 
 FieldPetsPetIdGetQueryDayParameter = TypeAliasType("FieldPetsPetIdGetQueryDayParameter", date)
+
+
+FieldPetsPetIdGetQueryLabelParameter = TypeAliasType(
+    "FieldPetsPetIdGetQueryLabelParameter",
+    Annotated[str, Field(pattern=compile('^(?!x)'))],
+)
 
 
 class Pet(RootModel[Cat | Dog]):

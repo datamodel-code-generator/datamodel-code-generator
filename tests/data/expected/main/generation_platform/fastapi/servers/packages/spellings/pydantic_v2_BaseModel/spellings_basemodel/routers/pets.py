@@ -4,6 +4,7 @@
 """Endpoints of the pets operations; regenerate them instead of editing."""
 
 from collections.abc import Sequence
+from re import compile
 from typing import Annotated, Final
 
 import spellings_basemodel_models
@@ -122,6 +123,9 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
             alias='step',
         )] = None,
         raw: Annotated[bytes | None, Query(alias='raw')] = None,
+        label: Annotated[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))] | None, Query(
+            alias='label',
+        )] = None,
         parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
     ) -> object:
         return dispatch(
@@ -134,6 +138,9 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
                 raw=raw,
                 day=parameters.day,
                 filter=parameters.filter,
+                pair=parameters.pair,
+                label=label,
+                pet=parameters.pet,
             ),
             contract.GetPet.RESPONSES,
         )

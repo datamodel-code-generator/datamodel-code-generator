@@ -63,6 +63,9 @@ class PetsService(Protocol):
         raw: bytes | None,
         day: date | None,
         filter: spellings_basemodel_models.Query | None,
+        pair: spellings_basemodel_models.Pair | None,
+        label: str | None,
+        pet: spellings_basemodel_models.Pet | None,
     ) -> (
         spellings_basemodel_models.Pet
         | HTTPResult[spellings_basemodel_models.Pet]

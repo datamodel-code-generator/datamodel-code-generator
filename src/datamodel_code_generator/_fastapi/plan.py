@@ -807,7 +807,10 @@ class Planner:  # noqa: PLR0904
         return _constrained(value, constraints) if constraints else value
 
     def nested(self, value: TypeView, seen: frozenset[SymbolId]) -> TypeView:
-        """Return a type with each alias among its members and arguments replaced by the type it validates as."""
+        """Return a type with each alias among its members and arguments replaced by the type it validates as.
+
+        A tuple keeps its members, as FastAPI reads none natively.
+        """
         match value:
             case GeneratedSymbolType() if (
                 value.symbol not in seen
@@ -817,7 +820,8 @@ class Planner:  # noqa: PLR0904
             ):
                 return plain
             case GenericType():
-                arguments = tuple(self.nested(item, seen) for item in value.arguments)
+                fixed = value.tuple_form == "fixed"
+                arguments = value.arguments if fixed else tuple(self.nested(item, seen) for item in value.arguments)
                 return value if arguments == value.arguments else replace(value, arguments=arguments, hint=None)
             case UnionType():
                 members = tuple(self.nested(item, seen) for item in value.members)

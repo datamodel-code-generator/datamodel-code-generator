@@ -25,10 +25,10 @@ service PetsService without its methods: TypeError
   list_counts(invalid=True)
 < ResponseValidationError: ['Input should be greater than or equal to 0']
 > GET /pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a
-  get_pet(pet_id=1, limit=5, code='ab', codes=['ab', 'cde'], step=Decimal('1.5'), raw=b'x', day=datetime.date(2024, 1, 2), filter="Query{'term': 'a'}")
+  get_pet(pet_id=1, limit=5, code='ab', codes=['ab', 'cde'], step=Decimal('1.5'), raw=b'x', day=datetime.date(2024, 1, 2), filter="Query{'term': 'a'}", pair=None, label=None, pet=None)
 < 200 application/json {"petType":"cat","name":"Mimi"}
 > GET /pets/2
-  get_pet(pet_id=2, limit=10, code=None, codes=None, step=None, raw=None, day=None, filter=None)
+  get_pet(pet_id=2, limit=10, code=None, codes=None, step=None, raw=None, day=None, filter=None, pair=None, label=None, pet=None)
 < 200 application/json {"petType":"dog","bark":true}
 > GET /pets/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "petId"]}]
@@ -50,3 +50,12 @@ service PetsService without its methods: TypeError
 < 200 application/json "2024-01-02"
 > POST /days
 < 422 application/json [{"type": "date_from_datetime_parsing", "loc": ["body"]}]
+> GET /pets/1?pair=a,1&label=ab&pet=%7B%22petType%22%3A%22dog%22%2C%22bark%22%3Afalse%7D
+  get_pet(pet_id=1, limit=10, code=None, codes=None, step=None, raw=None, day=None, filter=None, pair="Pair{'root': ['a', '1']}", label='ab', pet='Pet{\'root\': "Dog{\'petType\': \'dog\', \'bark\': False}"}')
+< 200 application/json {"petType":"cat","name":"Mimi"}
+> GET /pets/1?pair=,1
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "pair", 0, "constrained-str"]}, {"type": "int_parsing", "loc": ["query", "pair", 0, "constrained-int"]}]
+> GET /pets/1?label=xa
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["query", "label"]}]
+> GET /pets/1?pet=%7B%22petType%22%3A%22dog%22%7D
+< 422 application/json [{"type": "missing", "loc": ["query", "pet", "dog", "bark"]}]

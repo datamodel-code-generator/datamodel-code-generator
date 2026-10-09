@@ -17,6 +17,7 @@ from spellings_exact_basemodel_models import (
     FieldCountsGetResponse,
     FieldModel,
     FieldPetsGetResponse,
+    Pair,
     Pet,
     Query,
 )
@@ -60,6 +61,9 @@ class PetsService(Protocol):
         raw: bytes | None,
         day: date | None,
         filter: Query | None,
+        pair: Pair | None,
+        label: str | None,
+        pet: Pet | None,
     ) -> Pet | HTTPResult[Pet] | Response: ...
 
 

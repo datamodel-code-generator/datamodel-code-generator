@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from datetime import date
+from re import compile
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, RootModel
@@ -17,6 +18,10 @@ class PetId(RootModel[conint(ge=1)]):
 
 class Code(RootModel[constr(min_length=2, max_length=5)]):
     root: constr(min_length=2, max_length=5)
+
+
+class Pair(RootModel[list[constr(min_length=1) | conint(ge=0)]]):
+    root: list[constr(min_length=1) | conint(ge=0)] = Field(..., max_length=2)
 
 
 class Day(RootModel[date]):
@@ -83,6 +88,12 @@ FieldPetsPetIdGetQueryRawParameter = TypeAliasType("FieldPetsPetIdGetQueryRawPar
 
 
 FieldPetsPetIdGetQueryDayParameter = TypeAliasType("FieldPetsPetIdGetQueryDayParameter", date)
+
+
+FieldPetsPetIdGetQueryLabelParameter = TypeAliasType(
+    "FieldPetsPetIdGetQueryLabelParameter",
+    Annotated[str, Field(pattern=compile('^(?!x)'))],
+)
 
 
 class Pet(RootModel[Cat | Dog]):

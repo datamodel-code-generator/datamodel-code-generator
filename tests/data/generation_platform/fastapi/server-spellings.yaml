@@ -58,6 +58,9 @@ paths:
         - {name: raw, in: query, schema: {type: string, format: binary, minLength: 0}}
         - {name: day, in: query, schema: {type: string, x-python-type: "datetime.date"}}
         - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Query"}}
+        - {name: pair, in: query, explode: false, schema: {$ref: "#/components/schemas/Pair"}}
+        - {name: label, in: query, schema: {type: string, pattern: "^(?!x)"}}
+        - {name: pet, in: query, content: {application/json: {schema: {$ref: "#/components/schemas/Pet"}}}}
       responses:
         "200":
           description: The pet.
@@ -98,6 +101,7 @@ components:
   schemas:
     PetId: {type: integer, minimum: 1}
     Code: {type: string, minLength: 2, maxLength: 5}
+    Pair: {type: array, items: [{type: string, minLength: 1}, {type: integer, minimum: 0}], additionalItems: false}
     Day: {type: string, x-python-type: "datetime.date"}
     Pet:
       oneOf:
