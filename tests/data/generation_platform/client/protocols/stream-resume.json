@@ -1,4 +1,34 @@
 {
+  "searches.ticks": {
+    "kind": "sse",
+    "operation": "/paths/~1search-feed/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Tick"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": {"from": "body", "pointer": "/seq"},
+      "missing": "error",
+      "null": "error",
+      "write": {"in": "body", "pointer": "/after"},
+      "reopen_operation": "/paths/~1search-feed/post",
+      "delivery": "at_least_once"
+    }
+  },
+  "feed.live": {
+    "kind": "sse",
+    "operation": "/paths/~1feed/post",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Tick"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "header", "name": "Last-Event-ID"},
+      "reopen_operation": "/paths/~1feed/post",
+      "delivery": "at_least_once"
+    }
+  },
   "events.live": {
     "kind": "sse",
     "operation": "/paths/~1events/get",

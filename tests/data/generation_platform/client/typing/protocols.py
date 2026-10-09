@@ -24,7 +24,6 @@ from pets.protocols import (
     BodyTarget,
     CacheOptions,
     CacheStore,
-    Continuation,
     HeaderSelector,
     Origin,
     PaginationOptions,
@@ -67,8 +66,6 @@ def records(snapshot: PollSnapshot[Pet], selector: Selector, target: RequestTarg
     assert_type(target, ParameterTarget | QuerystringTarget | BodyTarget)
     assert_type(selector, BodySelector | HeaderSelector | StatusSelector)
     del selectors, targets
-    continuation = Continuation(kind="cursor", value={"after": "pet-1", "size": 2})
-    assert_type(continuation.kind, Literal["cursor", "offset", "page", "next_url", "link"])
     origin = Origin(scheme="https", host="api.example.com", port=443)
     assert_type(origin.port, int)
     key: ProgressKey = "pages"
@@ -83,9 +80,9 @@ def accepts_snapshot(snapshot: PollSnapshot[object]) -> None:
 
 def options(origin: Origin) -> ClientOptions:
     """Expose each option field type and construct client-level protocol settings."""
-    pagination = PaginationOptions(max_pages=None, max_items=0, max_page_bytes=1024)
+    pagination = PaginationOptions(max_pages=None, max_items=0)
     assert_type(pagination.max_items, int | Unset | None)
-    assert_type(pagination.max_page_bytes, int | Unset)
+    assert_type(pagination.max_pages, int | Unset | None)
     polling = PollOptions(interval=0.5, max_wait=None)
     assert_type(polling.interval, float | Unset)
     assert_type(polling.max_wait, float | Unset | None)

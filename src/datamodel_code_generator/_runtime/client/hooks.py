@@ -1,6 +1,6 @@
 """Hooks that observe the events of each call, and the events they receive.
 
-A hook's return value never changes a request: request options, credentials, signers, and body factories do. Events
+A hook's return value never changes a request: request options, credentials, and signers do. Events
 carry no query, header, body, or credential values, and a call without hooks builds none.
 """
 

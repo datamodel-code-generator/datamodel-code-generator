@@ -12,7 +12,9 @@ from models import Label as _dcg_type_2
 from models import User as _dcg_type_0
 from models import UserQuery as _dcg_type_1
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.model_codecs.media import JSONValue
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.pagination import (
     Page,
     Pager,
@@ -21,7 +23,6 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from .._runtime.protocols.resume import ResumeState
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.archive import ListArchiveResponse
 from ..types.labels import ListLabelSetsResponse, ListLabelsResponse
@@ -36,9 +37,9 @@ from . import PaginationOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def users(self) -> UsersProtocols:
@@ -254,8 +255,11 @@ class UsersAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -265,6 +269,7 @@ class UsersAllPagination:
             self._core,
             _plans.PLAN_0,
             state,
+            (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -338,8 +343,11 @@ class UsersByHeaderPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
+        limit: int | Unset = UNSET,
+        x_snapshot: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -349,6 +357,7 @@ class UsersByHeaderPagination:
             self._core,
             _plans.PLAN_1,
             state,
+            (cursor, limit, x_snapshot),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -426,8 +435,11 @@ class UsersSearchPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
+        body: _dcg_type_1,
+        media_type: Literal['application/json'] | None = None,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -437,6 +449,9 @@ class UsersSearchPagination:
             self._core,
             _plans.PLAN_2,
             state,
+            (cursor,),
+            body=body,
+            media_type=media_type,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -506,8 +521,9 @@ class LooseAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -517,6 +533,7 @@ class LooseAllPagination:
             self._core,
             _plans.PLAN_3,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -586,8 +603,9 @@ class LooseTokensPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -597,6 +615,7 @@ class LooseTokensPagination:
             self._core,
             _plans.PLAN_4,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -666,8 +685,9 @@ class NestedAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -677,6 +697,7 @@ class NestedAllPagination:
             self._core,
             _plans.PLAN_5,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -746,8 +767,9 @@ class LabelsAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -757,6 +779,7 @@ class LabelsAllPagination:
             self._core,
             _plans.PLAN_6,
             state,
+            (after,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -826,8 +849,9 @@ class LabelsSetsPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        after: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -837,6 +861,7 @@ class LabelsSetsPagination:
             self._core,
             _plans.PLAN_7,
             state,
+            (after,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -906,8 +931,9 @@ class ArchiveAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -917,6 +943,7 @@ class ArchiveAllPagination:
             self._core,
             _plans.PLAN_8,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -986,8 +1013,9 @@ class StatusesAllPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        code: int | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -997,6 +1025,7 @@ class StatusesAllPagination:
             self._core,
             _plans.PLAN_9,
             state,
+            (code,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -1066,8 +1095,9 @@ class SecureUsersPagination:
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        cursor: str | Unset = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
@@ -1077,6 +1107,7 @@ class SecureUsersPagination:
             self._core,
             _plans.PLAN_10,
             state,
+            (cursor,),
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,

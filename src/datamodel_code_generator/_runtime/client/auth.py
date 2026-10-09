@@ -15,7 +15,7 @@ from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError
 from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
-from .timing import Deadline
+from .timing import Budget
 
 __all__ = (
     "AccessToken",
@@ -167,14 +167,14 @@ class CredentialContext:
     required_scopes: tuple[str, ...] = field(repr=False)
     audience: str | None = field(repr=False)
     origin: str = field(repr=False)
-    deadline: Deadline | None = field(repr=False)
+    deadline: Budget | None = field(repr=False)
 
     def __post_init__(self) -> None:
         """Freeze requirements and retain the caller's exact deadline and cancellation references."""
         checked_type(self.scheme, (str,), ("scheme",))
         checked_type(self.audience, (str, type(None)), ("audience",))
         checked_type(self.origin, (str,), ("origin",))
-        checked_type(self.deadline, (Deadline, type(None)), ("deadline",))
+        checked_type(self.deadline, (Budget, type(None)), ("deadline",))
         object.__setattr__(self, "required_scopes", checked_scopes(self.required_scopes, "required_scopes"))
 
 
@@ -231,19 +231,16 @@ CredentialProviderInput: TypeAlias = CredentialProvider | AsyncCredentialProvide
 
 @dataclass(frozen=True, slots=True)
 class SignerCapabilities:
-    """The destinations, wire fields and body digest needed by a signer."""
+    """The destinations and wire fields managed by a signer."""
 
     allowed_origins: tuple[str, ...] = field(repr=False)
     managed_headers: tuple[str, ...] = field(repr=False)
     managed_query: tuple[str, ...] = field(repr=False)
-    requires_body_digest: bool = field(repr=False)
 
     def __post_init__(self) -> None:
         """Copy declared collections without choosing destinations or invoking a signer."""
         for name in ("allowed_origins", "managed_headers", "managed_query"):
             object.__setattr__(self, name, _strings(getattr(self, name), (name,)))
-        if type(self.requires_body_digest) is not bool:
-            raise ConfigurationError(field_path=("requires_body_digest",), reason="invalid_type")
 
 
 @dataclass(frozen=True, slots=True)
@@ -255,7 +252,6 @@ class SigningInput:
     origin: str = field(repr=False)
     query: bytes = field(repr=False)
     headers: HeadersView = field(repr=False)
-    body_digest: bytes | None = field(repr=False)
     attempt_index: int = field(repr=False)
     hop_index: int = field(repr=False)
 
@@ -291,7 +287,7 @@ class RequestSigner(Protocol):
 
     @property
     def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations, managed names and digest requirements."""
+        """Declare immutable destinations and managed names."""
         ...
 
     def sign(self, request: SigningInput) -> SignatureFields:
@@ -304,7 +300,7 @@ class AsyncRequestSigner(Protocol):
 
     @property
     def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations, managed names and digest requirements."""
+        """Declare immutable destinations and managed names."""
         ...
 
     async def sign(self, request: SigningInput) -> SignatureFields:
