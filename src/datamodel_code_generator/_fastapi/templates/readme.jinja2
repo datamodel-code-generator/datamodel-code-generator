@@ -10,13 +10,13 @@ Custom templates, base classes, and Python types stay within these two backends.
 
 ## Operations
 
-| Service | Method | HTTP method | Path | Operation key |
+| Service | Method | HTTP method | Path | Operation reference |
 | --- | --- | --- | --- | --- |
 {%- for operation in operations %}
 | `{{ operation.service }}` | `{{ operation.name }}` | {{ operation.method }} | `{{ operation.path }}` | `{{ operation.key }}` |
 {%- endfor %}
 
-`operation_dependencies` takes the operation keys, the values of `OperationKey`.
+`operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
 
 ## Implementing the services
 

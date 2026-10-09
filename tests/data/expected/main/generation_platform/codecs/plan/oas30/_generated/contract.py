@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_oas30_models
 from pydantic import TypeAdapter
@@ -18,11 +18,10 @@ from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal['/paths/~1items/get']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1items/get': Sequence[Dependency]
+        'get__items': Sequence[Dependency]
     },
     total=False,
 )
@@ -33,7 +32,6 @@ class GetItems:
 
     OPERATION: Final = OperationPlan(
         name='get__items',
-        key='/paths/~1items/get',
         service='untagged',
         keywords=('limit', 'q', 'flags', 'page', 'x_id', 'pref'),
     )

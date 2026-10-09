@@ -72,7 +72,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listPets',
         response_description='The pets.',
         responses={'200': {'headers': {'X-Total': {'schema': {'type': 'integer'}}}}},
-        dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+        dependencies=wiring.dependencies.get('list_pets'),
     )
 
 
@@ -155,7 +155,7 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
                 },
             },
         },
-        dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+        dependencies=wiring.dependencies.get('create_pet'),
     )
 
 
@@ -195,7 +195,7 @@ def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='listOwners',
         response_description='The owners.',
-        dependencies=wiring.dependencies.get('/paths/~1owners/get'),
+        dependencies=wiring.dependencies.get('list_owners'),
     )
 
 

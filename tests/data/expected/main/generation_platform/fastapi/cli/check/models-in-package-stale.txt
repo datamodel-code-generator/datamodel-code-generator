@@ -1,31 +1,17 @@
 --- server/_generated/contract.py
 +++ server/_generated/contract.py (expected)
-@@ -17,23 +17,12 @@
- from .._runtime.server.requests import ParameterAdapter, ParameterArgument
- from .._runtime.server.responses import Declared, OperationResponses
- 
--OperationKey: TypeAlias = Literal[
--    '/paths/~1pets/get',
--    '/paths/~1pets/post',
--    '/paths/~1pets~1mine/get',
--    '/paths/~1pets~1{petId}/get',
--    '/paths/~1pets~1{petId}/delete',
--    '/paths/~1store~1inventory/get',
--]
-+OperationKey: TypeAlias = Literal['/paths/~1pets/get', '/paths/~1pets/post']
- OperationDependencies = TypedDict(
-     'OperationDependencies',
+@@ -22,10 +22,6 @@
      {
-         '/paths/~1pets/get': Sequence[Dependency],
-         '/paths/~1pets/post': Sequence[Dependency],
--        '/paths/~1pets~1mine/get': Sequence[Dependency],
--        '/paths/~1pets~1{petId}/get': Sequence[Dependency],
--        '/paths/~1pets~1{petId}/delete': Sequence[Dependency],
--        '/paths/~1store~1inventory/get': Sequence[Dependency],
+         'list_pets': Sequence[Dependency],
+         'create_pet': Sequence[Dependency],
+-        'list_my_pets': Sequence[Dependency],
+-        'get_pet': Sequence[Dependency],
+-        'delete_pet': Sequence[Dependency],
+-        'get_inventory': Sequence[Dependency],
      },
      total=False,
  )
-@@ -100,74 +89,3 @@
+@@ -90,64 +86,3 @@
              ),
          },
      )
@@ -34,11 +20,7 @@
 -class ListMyPets:
 -    """Plans of the list_my_pets operation."""
 -
--    OPERATION: Final = OperationPlan(
--        name='list_my_pets',
--        key='/paths/~1pets~1mine/get',
--        service='pets',
--    )
+-    OPERATION: Final = OperationPlan(name='list_my_pets', service='pets')
 -    RESPONSES: Final = OperationResponses(
 -        responses={
 -            '200': Declared(
@@ -54,7 +36,6 @@
 -
 -    OPERATION: Final = OperationPlan(
 -        name='get_pet',
--        key='/paths/~1pets~1{petId}/get',
 -        service='pets',
 -        keywords=('pet_id',),
 -    )
@@ -77,7 +58,6 @@
 -
 -    OPERATION: Final = OperationPlan(
 -        name='delete_pet',
--        key='/paths/~1pets~1{petId}/delete',
 -        service='pets',
 -        keywords=('pet_id',),
 -    )
@@ -87,11 +67,7 @@
 -class GetInventory:
 -    """Plans of the get_inventory operation."""
 -
--    OPERATION: Final = OperationPlan(
--        name='get_inventory',
--        key='/paths/~1store~1inventory/get',
--        service='store',
--    )
+-    OPERATION: Final = OperationPlan(name='get_inventory', service='store')
 -    RESPONSES: Final = OperationResponses(
 -        responses={
 -            '200': Declared(
@@ -210,7 +186,7 @@
 -        operation_id='listMyPets',
 -        tags=['pets'],
 -        response_description="The caller's pets.",
--        dependencies=wiring.dependencies.get('/paths/~1pets~1mine/get'),
+-        dependencies=wiring.dependencies.get('list_my_pets'),
 -    )
 -
 -
@@ -232,7 +208,7 @@
 -        tags=['pets'],
 -        response_description='The pet.',
 -        responses={'404': {'model': server_models.Error, 'description': 'Missing.'}},
--        dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
+-        dependencies=wiring.dependencies.get('get_pet'),
 -    )
 -
 -
@@ -259,7 +235,7 @@
 -        tags=['pets'],
 -        response_description='Deleted.',
 -        responses={'204': {'description': 'Deleted.'}},
--        dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
+-        dependencies=wiring.dependencies.get('delete_pet'),
 -    )
 -
 -
@@ -330,7 +306,7 @@ EXTRA: server/routers/store.py (no longer generated)
 -| `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
 -| `StoreService` | `get_inventory` | GET | `/store/inventory` | `/paths/~1store~1inventory/get` |
  
- `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+ `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
  
 @@ -30,18 +26,14 @@
  

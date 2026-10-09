@@ -74,7 +74,7 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
                 {'name': 'session', 'in': 'cookie', 'schema': {'type': 'string'}},
             ],
         },
-        dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+        dependencies=wiring.dependencies.get('list_pets'),
     )
 
 
@@ -100,7 +100,7 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         operation_id='createPet',
         tags=['pets'],
         response_description='Created.',
-        dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+        dependencies=wiring.dependencies.get('create_pet'),
     )
 
 
@@ -121,7 +121,7 @@ def _add_list_my_pets(router: APIRouter, wiring: Wiring) -> None:
         operation_id='listMyPets',
         tags=['pets'],
         response_description="The caller's pets.",
-        dependencies=wiring.dependencies.get('/paths/~1pets~1mine/get'),
+        dependencies=wiring.dependencies.get('list_my_pets'),
     )
 
 
@@ -145,7 +145,7 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
         responses={
             '404': {'model': pets_dataclass_models.Error, 'description': 'Missing.'},
         },
-        dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
+        dependencies=wiring.dependencies.get('get_pet'),
     )
 
 
@@ -172,7 +172,7 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
         tags=['pets'],
         response_description='Deleted.',
         responses={'204': {'description': 'Deleted.'}},
-        dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
+        dependencies=wiring.dependencies.get('delete_pet'),
     )
 
 

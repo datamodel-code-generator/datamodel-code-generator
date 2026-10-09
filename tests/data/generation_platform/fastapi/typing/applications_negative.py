@@ -53,8 +53,8 @@ class Wrong:
         return len(principal.name)
 
 
-dependencies: OperationDependencies = {"/paths/~1nope/get": []}  # error
-method_key: OperationDependencies = {"list_pets": []}  # error
+dependencies: OperationDependencies = {"nope": []}  # error
+reference_key: OperationDependencies = {"/paths/~1pets/get": []}  # error
 narrow: Authorize[str] = authorize_text  # error
 incomplete = Incomplete()  # error
 structural: PetsService[User] = Wrong()  # error

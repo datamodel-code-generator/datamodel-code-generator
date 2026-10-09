@@ -59,7 +59,7 @@ def _add_get_keys(router: APIRouter, wiring: Wiring) -> None:
         operation_id='getKeys',
         response_description='Done.',
         responses={'204': {'description': 'Done.'}},
-        dependencies=wiring.dependencies.get('/paths/~1keys/get'),
+        dependencies=wiring.dependencies.get('get_keys'),
     )
 
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Annotated, Final, Literal, TypeAlias, TypedDict
+from typing import Annotated, Final, TypedDict
 
 import pydantic
 from pydantic import Field, TypeAdapter
@@ -17,11 +17,10 @@ from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument, RawPath
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal['/paths/~1values~1{id}/get']
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1values~1{id}/get': Sequence[Dependency]
+        'get_values': Sequence[Dependency]
     },
     total=False,
 )
@@ -32,7 +31,6 @@ class GetValues:
 
     OPERATION: Final = OperationPlan(
         name='get_values',
-        key='/paths/~1values~1{id}/get',
         service='untagged',
         keywords=(
             'id',

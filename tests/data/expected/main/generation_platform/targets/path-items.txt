@@ -91,7 +91,7 @@ show server/routers/pets.py
   |         operation_id='listPets',
   |         tags=['pets'],
   |         response_description='Pets',
-  |         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+  |         dependencies=wiring.dependencies.get('list_pets'),
   |     )
   | 
   | 

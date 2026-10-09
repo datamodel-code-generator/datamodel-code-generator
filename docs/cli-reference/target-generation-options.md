@@ -4073,7 +4073,7 @@ Choose how the server package lays out its routes (experimental).
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
@@ -4098,7 +4098,7 @@ Choose how the server package lays out its routes (experimental).
             tags=['pets'],
             response_description='Already there.',
             responses={'201': {'model': models.Pet, 'description': 'Created.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
@@ -4126,7 +4126,7 @@ Choose how the server package lays out its routes (experimental).
             tags=['pets'],
             response_description='Replaced.',
             responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
@@ -4959,7 +4959,7 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
@@ -4984,7 +4984,7 @@ without a file against the working directory, and against the pyproject.toml dir
             tags=['pets'],
             response_description='Created.',
             responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
@@ -5012,7 +5012,7 @@ without a file against the working directory, and against the pyproject.toml dir
             tags=['pets'],
             response_description='Replaced.',
             responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_oas32_models
 from pydantic import TypeAdapter
@@ -18,17 +18,12 @@ from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1search/get',
-    '/paths/~1spread/get',
-    '/paths/~1raw/post',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1search/get': Sequence[Dependency],
-        '/paths/~1spread/get': Sequence[Dependency],
-        '/paths/~1raw/post': Sequence[Dependency],
+        'get__search': Sequence[Dependency],
+        'get__spread': Sequence[Dependency],
+        'post__raw': Sequence[Dependency],
     },
     total=False,
 )
@@ -39,7 +34,6 @@ class GetSearch:
 
     OPERATION: Final = OperationPlan(
         name='get__search',
-        key='/paths/~1search/get',
         service='untagged',
         keywords=('query', 'theme', 'prefs'),
     )
@@ -90,7 +84,6 @@ class GetSpread:
 
     OPERATION: Final = OperationPlan(
         name='get__spread',
-        key='/paths/~1spread/get',
         service='untagged',
         keywords=('extra', 'window', 'jar', 'crumbs', 'x_counts', 'x_tallies'),
     )
@@ -199,7 +192,6 @@ class PostRaw:
 
     OPERATION: Final = OperationPlan(
         name='post__raw',
-        key='/paths/~1raw/post',
         service='untagged',
         keywords=('querystring_body', 'note'),
     )

@@ -37,7 +37,7 @@ render pydantic_v2.BaseModel
     |
     | ## Operations
     |
-    | | Service | Method | HTTP method | Path | Operation key |
+    | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
     | | `UntaggedService` | `search` | GET | `/search` | `/paths/~1search/get` |
     | | `UntaggedService` | `get_ratios` | GET | `/ratios` | `/paths/~1ratios/get` |
@@ -47,7 +47,7 @@ render pydantic_v2.BaseModel
     | | `UntaggedService` | `get_menu` | GET | `/menü/{item}` | `/paths/~1menü~1{item}/get` |
     | | `UntaggedService` | `get_item` | GET | `/items/{level}` | `/paths/~1items~1{level}/get` |
     |
-    | `operation_dependencies` takes the operation keys, the values of `OperationKey`.
+    | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
     |
     | ## Implementing the services
     |

@@ -90,7 +90,7 @@ show server/routers/pets.py
   |         operation_id='listPets',
   |         tags=['pets'],
   |         response_description='Pets',
-  |         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+  |         dependencies=wiring.dependencies.get('list_pets'),
   |     )
   | 
   | 
@@ -116,7 +116,7 @@ show server/routers/pets.py
   |         tags=['pets', 'admin'],
   |         response_description='Created',
   |         responses={'201': {'description': 'Created'}},
-  |         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+  |         dependencies=wiring.dependencies.get('create_pet'),
   |     )
   | 
   | 
@@ -161,7 +161,6 @@ show server/__init__.py
   |     Credentials,
   |     Dependency,
   |     OperationDependencies,
-  |     OperationKey,
   |     RequirementSets,
   |     build_router,
   |     create_app,
@@ -177,7 +176,6 @@ show server/__init__.py
   |     "HTTPResult",
   |     "HandlerConfigurationError",
   |     "OperationDependencies",
-  |     "OperationKey",
   |     "RequirementSets",
   |     "build_router",
   |     "create_app",
