@@ -1,0 +1,5 @@
+{
+  "secret_timeout": 30.0,
+  "secret_elapsed": 31.0,
+  "refresh_wait": 0.1
+}

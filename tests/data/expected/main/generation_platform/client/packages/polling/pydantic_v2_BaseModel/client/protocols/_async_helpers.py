@@ -11,7 +11,8 @@ from typing import Literal
 from models import JobRequest as _dcg_type_0
 from models import Report as _dcg_type_1
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.polling import (
     AsyncLroHandle,
     aresume_operation,
@@ -29,9 +30,9 @@ from . import PollOptions, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def jobs(self) -> AsyncJobsProtocols:

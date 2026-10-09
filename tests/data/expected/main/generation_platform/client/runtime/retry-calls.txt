@@ -34,16 +34,16 @@
     events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
   native retry close SystemExit = (('SystemExit', True, ('native retry close',), ['original close note', 'Secondary cleanup failure: InternalServerError'], []), 1)
     events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
-  interrupted cleanup send = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: APIConnectionError', 'Secondary cleanup failure: _Stop'], []), 1, 0, 1, 0)
+  interrupted cleanup send = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: APIConnectionError'], []), 0, 1, 0)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('attempt_end', 0, None, True, 1, None, None), ('call_end', 0, None, True, 1, None, 'cancel')] one-call=True queued=1
-  interrupted cleanup response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: InternalServerError', 'Secondary cleanup failure: _Stop'], []), 1, 1, 1, 0)
+  interrupted cleanup response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: InternalServerError', 'Secondary cleanup failure: _Stop'], []), 1, 1, 0)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
-  interrupted cleanup ordinary response = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: InternalServerError'], []), 1, 1, 1, 0)
+  interrupted cleanup ordinary response = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: InternalServerError'], []), 1, 1, 0)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
-  pre-send failure call_start = (('SDKError', None, 0, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
-  pre-send failure retry_scheduled = (('SDKError', None, 1, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
+  pre-send failure call_start = (('APITimeoutError', None, 0, 'read', ()), True, False, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('transport_failure', 0, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
+  pre-send failure retry_scheduled = (('APITimeoutError', None, 1, 'read', ()), True, False, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('transport_failure', 1, None, False, 1, None, None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
   key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
   key admission = (['client-key', 'client-key'], 0)
   key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')
@@ -319,16 +319,16 @@
     events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
   async wait native = ('CancelledError', ('retry wait interrupted',))
     events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
-  async interrupted cleanup send = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: APIConnectionError', 'Secondary cleanup failure: _Stop'], []), 1, 0, 1, 0)
+  async interrupted cleanup send = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: APIConnectionError'], []), 0, 1, 0)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('attempt_end', 0, None, True, 1, None, None), ('call_end', 0, None, True, 1, None, 'cancel')] one-call=True queued=1
-  async interrupted cleanup response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: InternalServerError', 'Secondary cleanup failure: _Stop'], []), 1, 1, 1, 0)
+  async interrupted cleanup response = (('_Stop', True, ('first cleanup interruption',), ['Secondary cleanup failure: InternalServerError', 'Secondary cleanup failure: _Stop'], []), 1, 1, 0)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
-  async interrupted cleanup ordinary response = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: InternalServerError'], []), 1, 1, 1, 0)
+  async interrupted cleanup ordinary response = (('_Stop', True, ('permit interruption',), ['Secondary cleanup failure: InternalServerError'], []), 1, 1, 0)
     events=[('call_start', None, None, False, 0, None, None), ('limiter_wait', 0, None, False, 0, None, None), ('limiter_acquired', 0, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('call_end', 0, 503, True, 1, None, 'cancel')] one-call=True queued=1
-  async pre-send failure call_start = (('SDKError', None, 0, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
-  async pre-send failure retry_scheduled = (('SDKError', None, 1, None, ()), False, True, 1)
-    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
+  async pre-send failure call_start = (('APITimeoutError', None, 0, 'read', ()), True, False, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('transport_failure', 0, None, False, 0, None, None), ('attempt_end', 0, None, False, 0, None, None), ('call_end', 0, None, False, 0, None, 'error')] one-call=True queued=2
+  async pre-send failure retry_scheduled = (('APITimeoutError', None, 1, 'read', ()), True, False, 1)
+    events=[('call_start', None, None, False, 0, None, None), ('attempt_start', 0, None, False, 0, None, None), ('response_headers', 0, 503, True, 1, None, None), ('attempt_end', 0, 503, True, 1, None, None), ('retry_scheduled', 0, None, True, 1, 'status', None), ('transport_failure', 1, None, False, 1, None, None), ('attempt_end', 1, None, False, 1, None, None), ('call_end', 1, None, True, 1, None, 'error')] one-call=True queued=1
   async key client typed declared=True omitted = FieldKeyedPostResponse(root='client-key')
   async key admission = (['client-key', 'client-key'], 0)
   async key client typed declared=True empty = FieldKeyedPostResponse(root='client-key')

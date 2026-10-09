@@ -38,7 +38,7 @@ from ..client.operations import request_errors
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.responses import HeadersView
-from ..client.timing import SYSTEM_CLOCK, Clock, Deadline, SessionOptions, real_end, wait_left
+from ..client.timing import SYSTEM_CLOCK, Budget, Clock, SessionOptions
 from ..model_codecs.errors import (
     CodecResourceLimitError,
     ParameterEncodingError,
@@ -64,11 +64,11 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
     from types import TracebackType
 
-    from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import InboundModelCodec, OperationPlan, OutboundModelCodec
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
+    from .client import AsyncClientCore, ClientCore
     from .records import ProtocolProgress
     from .references import OperationRef
     from .websocket_types import (
@@ -158,7 +158,6 @@ class _Limits:
     socket: ResolvedWSOptions
     transport: ResolvedWebSocketTransportOptions
     total_timeout: float | None = None
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -229,7 +228,7 @@ def _limits(
     defaults = core.protocol_defaults(plan.helper_id)
     kinds = (ws_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)
-    socket = _socket(kinds, core.call_settings(request, plan.call).stream_idle_timeout)
+    socket = _socket(kinds, core.call_settings(request, plan.call).timeout.read)
     if socket.compression is not None and not plan.compression:
         raise _invalid(plan, ("ws_options", "compression"), "invalid_value")
     protocols = core.protocol_options()
@@ -237,7 +236,6 @@ def _limits(
         socket=socket,
         transport=resolved_transport(UNSET if protocols is None else protocols.websocket_transport),
         total_timeout=_first(sessions, "total_timeout", None),
-        deadline=_first(sessions, "deadline", None),
         options=request,
         clock=core.clock,
     )
@@ -254,7 +252,7 @@ def _session(limits: _Limits) -> OperationSession:
     """Start the socket's session."""
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a connect loads the call runtime.
 
-    return OperationSession(total_timeout=limits.total_timeout, deadline=limits.deadline, clock=limits.clock)
+    return OperationSession(total_timeout=limits.total_timeout, clock=limits.clock)
 
 
 def _checked_headers(headers: HeadersView) -> None:
@@ -722,7 +720,7 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return the failure of a ping whose pong did not arrive before the pong timeout or the deadline."""
         return self._phase_timeout(self._socket.pong_timeout, "read", DeliveryState.RESPONSE_STARTED)
 
-    def _undelivered(self, error: BaseException, cap: Deadline | None = None) -> BaseException:
+    def _undelivered(self, error: BaseException, cap: Budget | None = None) -> BaseException:
         """Return how a send in progress ended: a message that may have gone is undelivered and never sent again.
 
         Only a connection's proof that nothing was sent keeps its failure, and a native interruption stays itself; a
@@ -735,15 +733,15 @@ class _Sockets(Generic[SendT, RecvT]):
         cause = self._unsent() if self._capped(error, cap) else error
         return self._stamped(DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=cause))
 
-    def _deadline(self, cap: float | None) -> Deadline | None:
+    def _deadline(self, cap: float | None) -> Budget | None:
         """Return the earlier of the session's deadline and a cap counted from now, both on the client's clock."""
         deadline = self._call.deadline
         if cap is None:
             return deadline
-        capped = Deadline.after(cap, clock=self._call.settings.clock)
+        capped = Budget.after(cap, clock=self._call.settings.clock)
         return capped if deadline is None or capped.at < deadline.at else deadline
 
-    def _capped(self, error: BaseException, cap: Deadline | None) -> bool:
+    def _capped(self, error: BaseException, cap: Budget | None) -> bool:
         """Return whether a stop is the expiry of an operation's own cap rather than of the session's deadline."""
         deadline = self._call.deadline
         return is_deadline(error) and cap is not None and (deadline is None or cap.at < deadline.at)
@@ -770,14 +768,9 @@ def _utf8(value: object) -> bytes | None:
         return None
 
 
-def _left(deadline: Deadline | None, end: float | None) -> float | None:
-    """Return the time a wait has left: until its deadline's clock expires it, or real time reaches the wait's end."""
-    return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
-
-
-def _end(deadline: Deadline | None) -> float | None:
-    """Return the real time by which a wait for a deadline ends, as the deadline's clock measures it now."""
-    return None if deadline is None else real_end(deadline.remaining())
+def _left(deadline: Budget | None) -> float | None:
+    """Return the remaining native socket wait."""
+    return None if deadline is None else deadline.remaining()
 
 
 class _Queue:
@@ -794,23 +787,20 @@ class _Queue:
         self._next = 0
         self._serving = 0
 
-    def acquire(self, deadline: Deadline | None) -> bool:
+    def acquire(self, deadline: Budget | None) -> bool:
         """Wait for the turn until the deadline; False once it passed."""
-        end = _end(deadline)
         with self._condition:
             ticket = self._next
             self._next += 1
             served = False
             try:
-                while ticket != self._serving:
-                    if (left := _left(deadline, end)) is not None and not left > 0:
-                        return False
-                    self._condition.wait(left)
-                served = True
+                served = ticket == self._serving or self._condition.wait_for(
+                    lambda: ticket == self._serving, timeout=_left(deadline)
+                )
             finally:
                 if not served:
                     self._gone.add(ticket)
-            return True
+            return served
 
     def release(self) -> None:
         """Give the turn to the next ticket that still waits."""
@@ -896,11 +886,10 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             del frame
             raise self._failed(error.with_traceback(None)) from None
 
-    def _frame(self, deadline: Deadline | None) -> WSFrame:
+    def _frame(self, deadline: Budget | None) -> WSFrame:
         """Wait once with the remaining absolute socket deadline."""
         self._checked()
-        left = _left(deadline, _end(deadline))
-        return self._connection.receive(deadline=None if left is None else Deadline.after(max(0.0, left)))
+        return self._connection.receive(deadline=deadline)
 
     def ping(self, payload: bytes = b"") -> PingReceipt:
         """Send a ping, beside any send, and wait at most the pong timeout for its pong."""
@@ -1013,19 +1002,18 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         data, text = self._payload(value)
         self._usable("send")
         cap = self._deadline(self._socket.send_timeout)
-        lane = self._call.lane(cap)
-        left = _left(cap, _end(cap))
+        left = _left(cap)
         try:
             with anyio.fail_after(None if left is None else max(0.0, left)):
-                await lane.bounded(self._queue.acquire, phase="stream", idle=False, cleanup=self._release_turn)
+                await self._queue.acquire()
         except TimeoutError:
             raise self._unsent() from None
         except BaseException as error:  # noqa: BLE001
-            raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
+            raise self._own(error) from None
         deadline = self._call.deadline
         try:
             self._usable("send")
-            left = _left(deadline, _end(deadline))
+            left = _left(deadline)
             with anyio.move_on_after(None if left is None else max(0.0, left)) as bound:
                 await self._connection.send(data, text=text, deadline=cap)
         except TimeoutError:
@@ -1044,11 +1032,6 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise await self._failed(self._stamped(unknown))
         self._sent += 1
 
-    async def _release_turn(self, acquired: object) -> None:
-        """Give back the send turn a send got just as the call stopped it, so later sends can take it."""
-        del acquired
-        self._queue.release()
-
     async def receive(self) -> Message[RecvT]:
         """Return the next message, waiting at most the idle timeout for it."""
         self._enter_receive()
@@ -1060,15 +1043,8 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
     async def _receive(self) -> Message[RecvT]:
         idle = self._socket.idle_timeout
         deadline = self._deadline(idle)
-        lane = self._call.lane(self._call.deadline)
         try:
-            frame = await lane.bounded(
-                lambda: self._connection.receive(deadline=deadline),
-                phase="stream",
-                delivery_state=DeliveryState.RESPONSE_STARTED,
-                idle_timeout=idle,
-                idle=idle is not None,
-            )
+            frame = await self._connection.receive(deadline=deadline)
         except TimeoutError:
             raise await self._failed(self._idle()) from None
         except WebSocketClosedError as closed:
@@ -1089,9 +1065,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         self._usable("ping")
         cap = self._deadline(self._socket.pong_timeout)
         try:
-            latency = await self._call.lane(cap).bounded(
-                lambda: self._connection.ping(payload, deadline=cap), phase="stream", idle=False
-            )
+            latency = await self._connection.ping(payload, deadline=cap)
         except TimeoutError:
             raise await self._failed(self._unanswered()) from None
         except WebSocketClosedError as closed:

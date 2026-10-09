@@ -17,7 +17,7 @@ from typing_extensions import TypeIs, TypeVar
 from ..client.errors import ConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
-from .caches import AsyncCacheStore, CacheStore  # noqa: TC001 - Public annotations support get_type_hints().
+from .caches import AsyncCacheStore, CacheStore  # ruff: ignore[typing-only-first-party-import] - Public annotations support get_type_hints().
 from .origins import Origin
 from .websocket_types import (
     AsyncWebSocketConnector,
@@ -34,8 +34,6 @@ _CONTROL: Final = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 _PAGINATION: Final = (
     ("max_pages", False, True, False),
     ("max_items", False, True, True),
-    ("max_page_bytes", False, False, False),
-    ("max_cursor_bytes", False, False, False),
 )
 _POLL: Final = (
     ("max_polls", False, True, False),
@@ -143,8 +141,6 @@ class PaginationOptions:
 
     max_pages: int | Unset | None = UNSET
     max_items: int | Unset | None = UNSET
-    max_page_bytes: int | Unset = UNSET
-    max_cursor_bytes: int | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Reject booleans, other types, and every forbidden None or zero."""
@@ -198,7 +194,7 @@ class UploadOptions:
 class WSOptions:
     """WebSocket limits; durations are finite positive seconds, None removes a limit where it is allowed.
 
-    `idle_timeout` bounds a receive waiting for a message and inherits the call's stream idle timeout. Compression is
+    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout. Compression is
     `deflate` only where the helper permits it.
     """
 
@@ -222,7 +218,7 @@ class WSOptions:
 def _context(value: object, name: str) -> None:
     if value is None or isinstance(value, Unset):
         return
-    from ssl import SSLContext  # noqa: PLC0415 - Only a given context loads the TLS module.
+    from ssl import SSLContext  # ruff: ignore[import-outside-top-level] - Only a given context loads the TLS module.
 
     _instance(value, (SSLContext,), name)
 
@@ -232,7 +228,7 @@ def valid_proxy(value: object) -> bool:
 
     It has a host and a nonzero port, a path of at most a slash, no query or fragment, and a password with any user.
     """
-    from urllib.parse import urlparse  # noqa: PLC0415 - Only a given proxy is parsed.
+    from urllib.parse import urlparse  # ruff: ignore[import-outside-top-level] - Only a given proxy is parsed.
 
     try:
         parts = urlparse(value) if isinstance(value, str) else None
@@ -462,3 +458,15 @@ def checked_stores(
         methods = [getattr(store, method, None) for method in _CACHE_METHODS]
         if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
             raise ConfigurationError(field_path=("protocols", "cache_stores", name), reason="wrong_capability")
+
+
+def check_helpers(
+    protocols: ProtocolClientOptions, helpers: tuple[tuple[str, str], ...], *, asynchronous: bool
+) -> None:
+    """Check helper names, stores and connector mode before creating the native client."""
+    if not isinstance(defaults := protocols.defaults, Unset) and defaults:
+        checked_defaults(defaults, helpers)
+    if not isinstance(stores := protocols.cache_stores, Unset) and stores:
+        checked_stores(stores, helpers, asynchronous=asynchronous)
+    if (connector := protocols.websocket_connector) is not None and not isinstance(connector, Unset):
+        checked_connector(connector, asynchronous=asynchronous)

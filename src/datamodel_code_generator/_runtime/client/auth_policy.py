@@ -7,7 +7,7 @@ import inspect
 import re
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Final, Literal, TypeVar
+from typing import TYPE_CHECKING, Final, Literal
 from urllib.parse import quote, urlsplit, urlunsplit
 
 import httpx2  # noqa: TC002
@@ -45,7 +45,6 @@ if TYPE_CHECKING:
         SigningInput,
         TokenVersion,
     )
-    from .bodies import AsyncBodyAttempt, BodyAttempt
     from .options import HeaderPatch, QueryPatch
     from .security import SecurityBinding, SecuritySchemeEntry
     from .timing import Clock
@@ -53,7 +52,6 @@ if TYPE_CHECKING:
 
 __all__ = ("invalid_token",)
 
-BodyT = TypeVar("BodyT", bound="BodyAttempt | AsyncBodyAttempt")
 _NAME: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _ORIGIN: Final = re.compile(r"https?://[^\s/?#\\\x00-\x1f\x7f]+", re.IGNORECASE)
 _HEADER_VALUE: Final = re.compile(r"(?:[^\x00-\x20\x7f\ud800-\udfff](?:[ \t]*[^\x00-\x20\x7f\ud800-\udfff])*)?")
@@ -108,7 +106,6 @@ class _BoundAuth:
     managed_headers: frozenset[str]
     managed_query: frozenset[str]
     managed_cookies: frozenset[str]
-    requires_body_digest: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, repr=False)
@@ -337,7 +334,6 @@ def bind_auth(
         managed_headers=headers,
         managed_query=query,
         managed_cookies=cookies,
-        requires_body_digest=any(signer.capabilities.requires_body_digest for signer in signers),
     )
 
 
@@ -380,7 +376,6 @@ def bind_async_auth(
         managed_headers=headers,
         managed_query=query,
         managed_cookies=cookies,
-        requires_body_digest=any(signer.capabilities.requires_body_digest for signer in signers),
     )
 
 

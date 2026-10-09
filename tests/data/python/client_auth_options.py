@@ -83,7 +83,7 @@ def _layered(
     unused = provider_type(auth.BasicCredential("unused", "unused"))
     providers = (root, root_key, view_key, view_token, call_key, unused)
     signer = signer_type(
-        auth.SignerCapabilities((server.url,), ("X-Layer-Signature",), (), False),
+        auth.SignerCapabilities((server.url,), ("X-Layer-Signature",), ()),
         auth.SignatureFields((("X-Layer-Signature", "root-signature"),), ()),
     )
     root_config = auth.AuthConfig(
