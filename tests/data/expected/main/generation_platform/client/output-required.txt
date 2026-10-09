@@ -1,0 +1,3 @@
+# output-required
+render pydantic_v2.BaseModel
+  Error: The client target needs --output

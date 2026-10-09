@@ -76,7 +76,11 @@ def fastapi_checkout_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     lines.append(f"the same checkout from inside it returns {report}")
     shutil.copytree(root / "first", root / "moved")
     files = _generate(root / "moved", root / "moved", monkeypatch, output=False)
-    written = {name: content.decode("utf-8") for name, content in _files(root / "moved").items()}
-    changed = sorted(name for parts, text in files.items() if written.get(name := "/".join(parts)) != text)
+    moved = root / "moved"
+    changed = sorted(
+        "/".join(parts)
+        for parts, text in files.items()
+        if not (location := moved.joinpath(*parts)).is_file() or location.read_text(encoding="utf-8") != text
+    )
     lines.append(f"a moved checkout returns {len(files)} files, {changed or 'all as written'}")
     return "\n".join(lines) + "\n"

@@ -1142,6 +1142,21 @@ def test_fastapi_cli_layout_errors(
     assert_output(f"{capsys.readouterr().err}written {written}\n", EXPECTED / "cli" / "layout-errors" / f"{name}.txt")
 
 
+def test_fastapi_cli_model_dependencies(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print the requirements the models add to the server's, such as the email, ULID, and --use-pendulum types."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("contacts.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--use-pendulum"),
+        copy_files=[(SOURCE / "install" / "contacts.yaml", tmp_path / "contacts.yaml")],
+    )
+    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "model-dependencies.txt")
+
+
 def test_fastapi_cli_nested_models_example(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
