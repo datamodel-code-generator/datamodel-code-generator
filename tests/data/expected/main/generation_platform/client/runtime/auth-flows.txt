@@ -317,6 +317,12 @@
     [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   bearer redirected without Authorization typed = ('returned', 200)
     unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  > GET https://other.example.com/bearer
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  bearer rejected by another origin typed = ('AuthenticationError', None, None, 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
+    unused=0
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   > GET https://other.example.com/anonymous
@@ -396,6 +402,12 @@
   > GET https://other.example.com/bearer
     [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   async bearer redirected without Authorization typed = ('returned', 200)
+    unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  > GET https://other.example.com/bearer
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  async bearer rejected by another origin typed = ('AuthenticationError', None, None, 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
     unused=0
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''

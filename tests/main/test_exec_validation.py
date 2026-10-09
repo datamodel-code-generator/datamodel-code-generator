@@ -93,6 +93,23 @@ def test_openapi_modular_relative_output_exec_current_version(tmp_path: Path, mo
 
 
 @_SKIP_BLACK
+def test_jsonschema_nested_packages_exec_current_version(tmp_path: Path) -> None:
+    """Test that the nested packages of each output are imported from that output."""
+    for name in ("exact_imports_collapse_root_models_title", "exact_imports_collapse_root_models"):
+        (tmp_path / name).mkdir()
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / name,
+            output_path=tmp_path / name / "model",
+            input_file_type="jsonschema",
+            extra_args=get_current_version_args(
+                *("--output-model-type", "pydantic_v2.BaseModel", "--use-exact-imports", "--collapse-root-models"),
+                *("--use-title-as-name", "--snake-case-field"),
+            ),
+            skip_code_validation=False,
+        )
+
+
+@_SKIP_BLACK
 def test_openapi_with_refs_exec_current_version(output_file: Path) -> None:
     """Test that OpenAPI schema with $ref generates executable code."""
     run_main_and_assert(

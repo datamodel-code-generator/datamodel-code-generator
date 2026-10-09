@@ -114,7 +114,7 @@
     unused=0
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
-  307 one-shot body = ('APIConnectionError', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, None, None, 1, 'StreamConsumed')
+  307 one-shot body = ('APIConnectionError', <DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, None, None, 1, 'StreamConsumed')
     unused=1
   > POST https://api.example.com/idempotent
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 8] b'original'
@@ -166,7 +166,7 @@
     counts=(1, None) unused=0
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, transfer-encoding: chunked] b'onetwo'
-  async one-shot POST307 ! APIConnectionError: APIConnectionError(operation_id='postUnsafe', call_id='<call>', delivery_state='MAYBE_SENT', phase='unknown') [operation_id='postUnsafe', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')] api_connection_error
+  async one-shot POST307 ! APIConnectionError: APIConnectionError(operation_id='postUnsafe', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='unknown') [operation_id='postUnsafe', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='unknown', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')] api_connection_error
     unused=1
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 13] b'seekable body'

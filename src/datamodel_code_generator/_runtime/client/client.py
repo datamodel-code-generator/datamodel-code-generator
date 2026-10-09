@@ -664,12 +664,24 @@ class _AsyncReplayed:
 
 
 def _answered(error: Exception, outgoing: httpx2.Request) -> bool:
-    """Return whether a native failure came from a later request, a redirect or an Auth flow's, so one was answered."""
+    """Return whether a native failure came from a later request, a redirect or an Auth flow's, so one was answered.
+
+    A one-shot body asked for again can only follow a redirect, so its StreamConsumed also means one was answered.
+    """
+    if isinstance(error, httpx2.StreamConsumed):
+        return True
     try:
         failed = error.request if isinstance(error, httpx2.RequestError) else outgoing
     except RuntimeError:
         return False
     return failed is not outgoing
+
+
+def _token_unreceived(response: httpx2.Response) -> bool:
+    """Return whether a followed redirect dropped the Authorization header the first request carried."""
+    return bool(response.history) and (
+        "authorization" in response.history[0].request.headers and "authorization" not in response.request.headers
+    )
 
 
 def _credentialed(request: httpx2.Request, schemes: tuple[SecuritySchemeEntry, ...]) -> bool:
@@ -1812,6 +1824,8 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
             if info.status_code >= _ERROR_STATUS
             else None
         )
+        if call.token_unreceived:
+            return None if planned is not None and planned.reason == "auth_invalid_token" else planned
         if planned is not None and planned.reason == "auth_invalid_token":
             self._invalidate(call, recovering=True)
             return None if call.retry_blocked else planned
@@ -2049,6 +2063,7 @@ class ClientCore(Core["httpx2.Client", "RawResponse"]):
         else:
             response = client.send(outgoing, stream=True, follow_redirects=follow)
         call.redirects_followed = len(response.history)
+        call.token_unreceived = _token_unreceived(response)
         return response
 
     @staticmethod
@@ -2496,6 +2511,8 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
             if info.status_code >= _ERROR_STATUS
             else None
         )
+        if call.token_unreceived:
+            return None if planned is not None and planned.reason == "auth_invalid_token" else planned
         if planned is not None and planned.reason == "auth_invalid_token":
             await self._invalidate(call, recovering=True)
             return None if call.retry_blocked else planned
@@ -2738,6 +2755,7 @@ class AsyncClientCore(Core["httpx2.AsyncClient", "AsyncRawResponse"]):
         else:
             response = await client.send(outgoing, stream=True, follow_redirects=follow)
         call.redirects_followed = len(response.history)
+        call.token_unreceived = _token_unreceived(response)
         return response
 
     @staticmethod
