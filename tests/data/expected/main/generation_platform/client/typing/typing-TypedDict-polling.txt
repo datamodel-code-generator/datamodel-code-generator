@@ -3,45 +3,45 @@ pyright pets and polling.py: clean
 ty pets and polling.py: clean
 polling_negative.py 13 marked lines
 mypy polling_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  15 assignment
-  16 call-arg
-  17 arg-type
-  18 misc
-  19 assignment
+  16 assignment
+  17 call-arg
+  18 arg-type
+  19 misc
   20 assignment
-  21 misc
-  22 call-arg
-  23 attr-defined
-  24 misc
-  25 arg-type
-  26 call-arg
-  27 assignment
+  21 assignment
+  22 misc
+  23 call-arg
+  24 attr-defined
+  25 misc
+  26 arg-type
+  27 call-arg
+  28 assignment
 pyright polling_negative.py: 12/13 marked lines with one error, 0 elsewhere, 0 in other files
-  15 reportAssignmentType
-  16 reportCallIssue
-  17 reportArgumentType
-  18 reportGeneralTypeIssues
-  19 reportAssignmentType
+  16 reportAssignmentType
+  17 reportCallIssue
+  18 reportArgumentType
+  19 reportGeneralTypeIssues
   20 reportAssignmentType
-  21 reportAttributeAccessIssue
-  22 reportCallIssue
-  23 reportAttributeAccessIssue
-  23 reportUnknownMemberType
-  24 reportGeneralTypeIssues
-  25 reportArgumentType
-  26 reportCallIssue
-  27 reportAssignmentType
+  21 reportAssignmentType
+  22 reportAttributeAccessIssue
+  23 reportCallIssue
+  24 reportAttributeAccessIssue
+  24 reportUnknownMemberType
+  25 reportGeneralTypeIssues
+  26 reportArgumentType
+  27 reportCallIssue
+  28 reportAssignmentType
 ty polling_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  15 invalid-assignment
-  16 missing-argument
-  17 invalid-argument-type
-  18 invalid-await
-  19 invalid-assignment
+  16 invalid-assignment
+  17 missing-argument
+  18 invalid-argument-type
+  19 invalid-await
   20 invalid-assignment
   21 invalid-assignment
-  22 unknown-argument
-  23 unresolved-attribute
-  24 invalid-await
-  25 invalid-argument-type
-  26 unknown-argument
-  27 invalid-assignment
+  22 invalid-assignment
+  23 unknown-argument
+  24 unresolved-attribute
+  25 invalid-await
+  26 invalid-argument-type
+  27 unknown-argument
+  28 invalid-assignment
