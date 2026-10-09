@@ -303,6 +303,29 @@ async def _async_tokens(package: ModuleType, auth: ModuleType, lines: list[str])
         lines.append(f"  async after cancellation = {await api.auth.oauth_read()!r} token requests={script.sends}")
 
 
+async def _loop_round(package: ModuleType, exchange: Exchange, provider: Any, script: Script, lines: list[str]) -> None:
+    """Send two calls at once on this event loop while the token request they share is held."""
+    hold = script.hold = asyncio.Event()
+    script.entered.clear()
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
+        exchange.respond(_OK, _OK)
+        tasks = [asyncio.create_task(api.auth.oauth_read()) for _ in range(2)]
+        while not script.entered.is_set():
+            await asyncio.sleep(0)
+        hold.set()
+        lines.append(f"  loop gathered={await asyncio.gather(*tasks)} token requests={script.sends}")
+
+
+def _event_loops(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    """Reuse one provider on a second event loop once its token is due, with calls waiting on each loop."""
+    clock = _Clock(importlib.import_module(f"{package.__name__}.options"))
+    script = Script(token("access-loop1", expires_in=100), token("access-loop2", expires_in=100))
+    provider = _provider(auth, http_client=script.async_client(), clock=clock.clock)
+    run(lambda: _loop_round(package, exchange, provider, script, lines))
+    clock.now = 100
+    run(lambda: _loop_round(package, exchange, provider, script, lines))
+
+
 def oauth_client_credentials(package: ModuleType, lines: list[str]) -> None:
     """Request, share, renew, and refuse client credentials tokens through the generated OAuth provider."""
     auth = importlib.import_module(f"{package.__name__}.auth")
@@ -319,3 +342,5 @@ def oauth_client_credentials(package: ModuleType, lines: list[str]) -> None:
         part(package, auth, exchange, lines)
     lines.append("async")
     run(lambda: _async_tokens(package, auth, lines))
+    lines.append("event loops")
+    _event_loops(package, auth, exchange, lines)

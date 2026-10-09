@@ -38,13 +38,10 @@ DeadlinePhase: TypeAlias = Literal[
 AuthPhase: TypeAlias = Literal["connect", "read", "write", "pool", "validate", "unknown"]
 AuthReason: TypeAlias = Literal[
     "provider_failed",
-    "provider_closed",
-    "token_expired",
     "invalid_expiry",
     "oauth_error",
     "timeout",
     "reauthorization_required",
-    "signing_failed",
 ]
 OAuthErrorCode: TypeAlias = Literal[
     "invalid_request",
@@ -499,9 +496,10 @@ def status_error(status: int) -> type[APIStatusError]:
 
 
 class AuthError(SDKError):
-    """Credential acquisition, a token exchange, or request signing failed; no credential material is kept.
+    """Credential acquisition or a token exchange failed; the error itself keeps no credential material.
 
-    An OAuth rejection keeps the token endpoint's status and its standard error code, an expired token its expiry,
+    A `provider_failed` error's cause is the application's own exception from its credential callable or callback. An
+    OAuth rejection keeps the token endpoint's status and its standard error code, an expired token its expiry,
     and a timeout the cap that fired.
     """
 

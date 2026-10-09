@@ -3096,7 +3096,7 @@ Every exception a client raises derives from `SDKError`, and all of them are imp
 | `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's deadline, with the reason `deadline_exceeded` | `effective_timeout` of a phase timeout, or `deadline_at`, the absolute monotonic deadline |
 | `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated`, `retry_stop_reason` |
 | `DecodeError` | A request argument its wire form cannot carry, or a response that cannot become its declared value | `direction` (`request` or `response`), `location`, `body_bytes`, `truncated`, `media_type`, `limit`, `observed` |
-| `AuthError` | Credential acquisition, a token exchange, or request signing failed | `phase`, `status_code`, `oauth_error`, `expires_at`, `effective_timeout` |
+| `AuthError` | Credential acquisition or a token exchange failed | `phase`, `status_code`, `oauth_error`, `expires_at`, `effective_timeout` |
 
 `APIStatusError` has a subclass for each common status: `BadRequestError` (400), `AuthenticationError` (401),
 `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422),
@@ -3111,8 +3111,9 @@ A request `DecodeError` has the reason `unencodable`, with the argument's path a
 `DecodeError` has the reason `invalid_syntax`, `invalid_value` when the model or schema refuses the value,
 `unexpected_media_type` with the response's `media_type`, `forbidden_body`, `missing_body`, `invalid_framing`,
 `invalid_header` with the `location` `("header", name)`, or `response_too_large` with its `limit` and `observed` size.
-`AuthError` has the reason `provider_failed`, `provider_closed`, `token_expired`, `invalid_expiry`, `oauth_error`,
-`timeout`, `reauthorization_required`, or `signing_failed`, and keeps no credential material or provider description.
+`AuthError` has the reason `provider_failed`, `invalid_expiry`, `oauth_error`, `timeout`, or `reauthorization_required`.
+It keeps no credential material or provider description itself; the `cause` of `provider_failed` is the application's
+own exception from its credential callable or token callback.
 
 A failing callback raises `SDKError` itself with the reason `limiter_failed` or `hook_failed`
 and the callback's exception as `cause`. A hook that fails after the call completed keeps that success as the error's
@@ -3572,9 +3573,10 @@ def list_pets(secret: str) -> None:
 `audience` when one is given, and authenticates the client with `client_secret_basic` (the default) or
 `client_secret_post`; the `client_secret` is a string or a callable returning one, called for each token request.
 
-`RefreshToken` keeps an access token current with the refresh token grant, starting from the `TokenSet` an
-authorization produced. The provider alone refreshes it: no other provider, process, or event loop may send the same
-refresh token. Its client authentication defaults to `none`, which sends the `client_id` of a public client.
+`RefreshToken` keeps an access token current with the refresh token grant, starting from the `TokenSet` an authorization
+produced. The provider alone refreshes it: no other provider or process may send the same refresh token, and since
+synchronous calls and each event loop renew under a lock of their own, use it from one of them at a time. Its client
+authentication defaults to `none`, which sends the `client_id` of a public client.
 
 ```python
 from pets import Client
@@ -3601,15 +3603,17 @@ it, and then raises the same error without a request.
 
 A provider serves its token until a tenth of its lifetime, at most thirty seconds, remains, and then the call that
 finds it due requests another; a token without `expires_in` is kept until a resource rejects it. When an early renewal
-fails, the call keeps using the current token until it expires. A 401 whose `WWW-Authenticate` has a Bearer
+fails, the call keeps using the current token until it expires, and each later call in that margin tries the renewal
+again. A 401 whose `WWW-Authenticate` has a Bearer
 `invalid_token` error, or a 401 without a challenge on an operation declaring `auth_challenge_less_401`, renews the
 token once, unless another call already replaced it, and sends the request again when its body can be sent again.
 A 401 after a redirect, and a WebSocket handshake's, renews nothing.
 
 Token requests go through the client's HTTP client without its Auth and without following redirects, with the calling
-request's timeouts, or through the provider's own `http_client` when one is given, which keeps its own settings. Used
-as an `httpx2.Auth` elsewhere, a provider needs its own `http_client`. The token URL must be HTTPS, or HTTP to a
-loopback host. A rejection, an unexpected status, or a response that is not a JSON object with a Bearer
+request's timeouts, or through the provider's own `http_client` when one is given, which keeps its own settings. The
+client's HTTP client runs its event hooks on these token requests and responses, which carry the client authentication
+and tokens. Used as an `httpx2.Auth` elsewhere, a provider needs its own `http_client`. The token URL must be HTTPS, or
+HTTP to a loopback host. A rejection, an unexpected status, or a response that is not a JSON object with a Bearer
 `access_token` raises `AuthError` with the reason `oauth_error`, a rejection keeping its `status_code` and standard
 `oauth_error` code, and an `expires_in` that is not a positive number the reason `invalid_expiry`. A transport failure
 raises `AuthError` with the reason `oauth_error`, or `timeout`, and the native exception as its cause, which can hold

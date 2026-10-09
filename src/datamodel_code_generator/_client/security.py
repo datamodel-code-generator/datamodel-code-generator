@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeGuard
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._client.naming import snake, token
+from datamodel_code_generator._client.naming import pascal, snake, token
 from datamodel_code_generator._runtime.client.security import (
     SecurityBinding,
     SecurityRequirement,
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 _SCOPE: Final = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
-_ARGUMENTS: Final = frozenset({"options", "http_client"})
+_ARGUMENTS: Final = frozenset({"options", "http_client", "self"})
 _REFRESHED: Final = ("authorizationCode", "password", "deviceAuthorization", "implicit")
 Flow: TypeAlias = Literal["client_credentials", "refresh_token"]
 
@@ -164,7 +164,8 @@ class SecurityPlanner:
     def credentials(self, bindings: Iterable[SecurityBinding | None]) -> tuple[CredentialSpec, ...]:
         """Name a constructor credential for each scheme an operation requires, in the order operations name them.
 
-        Its argument is the scheme name in snake case, which must be a new name beside the clients' other arguments.
+        Its argument is the scheme name in snake case, which must be a new name beside the clients' other arguments,
+        and the PascalCase prefix of its OAuth provider classes a new one beside the other providers'.
         """
         used = {
             item.scheme.name: item.scheme
@@ -175,23 +176,32 @@ class SecurityPlanner:
         }
         specs: list[CredentialSpec] = []
         taken = set(_ARGUMENTS)
+        providers: set[str] = set()
         for name, scheme in used.items():
             declaration = self.declarations[name]
             argument = snake(name)
+            flows = _flows(declaration)
+            prefix = pascal(argument) if any(url is not None for _, url in flows) else None
             if not argument or argument in taken:
-                self.problems.append(
-                    Diagnostic(
-                        code="E_RESERVED_NAME",
-                        severity="error",
-                        stage="target",
-                        message=f"The security scheme {name!r} needs another name than its credential argument "
-                        f"{argument!r}",
-                        source_pointer=declaration.use_site.pointer,
-                    )
-                )
+                self._reserved(name, declaration, f"its credential argument {argument!r}")
+            elif prefix is not None and prefix in providers:
+                self._reserved(name, declaration, f"the prefix {prefix!r} of its OAuth provider classes")
             taken.add(argument)
-            specs.append(CredentialSpec(name=argument, scheme=scheme, flows=_flows(declaration)))
+            if prefix is not None:
+                providers.add(prefix)
+            specs.append(CredentialSpec(name=argument, scheme=scheme, flows=flows))
         return tuple(specs)
+
+    def _reserved(self, name: str, declaration: WireDeclaration, what: str) -> None:
+        self.problems.append(
+            Diagnostic(
+                code="E_RESERVED_NAME",
+                severity="error",
+                stage="target",
+                message=f"The security scheme {name!r} needs another name than {what}",
+                source_pointer=declaration.use_site.pointer,
+            )
+        )
 
     def problem(self, operation: OperationContract, message: str, *, conflict: bool = False) -> None:
         """Keep a deterministic diagnostic on the operation that requires invalid security."""

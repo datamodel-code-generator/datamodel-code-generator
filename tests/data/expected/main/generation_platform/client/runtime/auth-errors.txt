@@ -30,13 +30,10 @@
   oauth values {'reason': 'timeout', 'effective_timeout': 1.0} returned "AuthError(reason='timeout', delivery_state='MAYBE_SENT', phase='unknown')"
   oauth values {'reason': 'reauthorization_required', 'oauth_error': 'invalid_grant'} returned "AuthError(reason='reauthorization_required', delivery_state='MAYBE_SENT', phase='unknown', oauth_error='invalid_grant')"
   auth reason provider_failed = 'provider_failed'
-  auth reason provider_closed = 'provider_closed'
-  auth reason token_expired = 'token_expired'
   auth reason invalid_expiry = 'invalid_expiry'
   auth reason oauth_error = 'oauth_error'
   auth reason timeout = 'timeout'
   auth reason reauthorization_required = 'reauthorization_required'
-  auth reason signing_failed = 'signing_failed'
   auth reason expired ! ValueError: reason must be one of its declared values []
   auth reason private-secret ! ValueError: reason must be one of its declared values []
   auth phase connect = 'connect'
@@ -61,6 +58,6 @@
   invalid ConfigurationError reason empty ! ValueError: A reason must be an SDK-defined lowercase symbol []
   invalid ConfigurationError reason none ! ValueError: A reason must be an SDK-defined lowercase symbol []
   invalid ConfigurationError reason list ! ValueError: A reason must be an SDK-defined lowercase symbol []
-  expiry token_expired None same=True
-  expiry token_expired datetime.datetime(2020, 1, 2, 0, 0, tzinfo=datetime.timezone.utc) same=True
-  expiry token_expired datetime.datetime(2020, 1, 2, 0, 0) same=True
+  expiry invalid_expiry None same=True
+  expiry invalid_expiry datetime.datetime(2020, 1, 2, 0, 0, tzinfo=datetime.timezone.utc) same=True
+  expiry invalid_expiry datetime.datetime(2020, 1, 2, 0, 0) same=True

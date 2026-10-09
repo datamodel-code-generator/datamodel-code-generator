@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import inspect
 import threading
+import weakref
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, ClassVar, Final, Literal, cast
@@ -206,7 +207,7 @@ class _Provider(TokenSource):
         self._held: _Held | None = None
         self._callback: Callable[[TokenSet], object] | None = None
         self._lock = threading.Lock()
-        self._alock: asyncio.Lock | None = None
+        self._alocks: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock] = weakref.WeakKeyDictionary()
 
     def _form(self) -> list[tuple[str, str]]:
         raise NotImplementedError
@@ -293,7 +294,10 @@ class _Provider(TokenSource):
             return tokens.access_token
 
     async def atoken(self, send: AsyncSend | None, stale: str | None = None) -> str:
-        """Return a usable token as `token` does, under an asyncio lock on the event loop the provider is used on."""
+        """Return a usable token as `token` does, under an asyncio lock of the running event loop.
+
+        Each event loop has its own lock, so renewals on different loops, and synchronous ones, run independently.
+        """
         import asyncio  # noqa: PLC0415
 
         client = self._http_client
@@ -301,8 +305,9 @@ class _Provider(TokenSource):
             send = _atoken_send(client)
         elif client is not None or send is None:
             raise self._missing()
-        if (lock := self._alock) is None:
-            lock = self._alock = asyncio.Lock()
+        loop = asyncio.get_running_loop()
+        if (lock := self._alocks.get(loop)) is None:
+            lock = self._alocks.setdefault(loop, asyncio.Lock())
         async with lock:
             if (usable := self._usable(stale)) is not None:
                 return usable

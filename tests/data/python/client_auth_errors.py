@@ -112,7 +112,7 @@ def _validation(errors: ModuleType, lines: list[str]) -> None:
             lambda value=value: errors.ConfigurationError(reason=value),
         )
     for expiry in (None, datetime(2020, 1, 2, tzinfo=timezone.utc), datetime(2020, 1, 2)):
-        error = errors.AuthError(reason="token_expired", expires_at=expiry)
+        error = errors.AuthError(reason="invalid_expiry", expires_at=expiry)
         lines.append(f"  expiry {error.reason} {error.expires_at!r} same={error.expires_at is expiry}")
 
 
