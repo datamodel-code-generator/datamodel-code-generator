@@ -886,6 +886,62 @@ def test_watch_cli_regenerates_file_output_on_change(tmp_path: Path) -> None:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
+def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
+    """Regenerate the models and the server package of a single run whenever its input changes."""
+    source = PROJECT_ROOT / "tests/data/generation_platform/fastapi"
+    input_file = tmp_path / "pets.yaml"
+    shutil.copy2(source / "pets.yaml", input_file)
+    router = _WatchedOutput(tmp_path / "server" / "routers" / "pets.py")
+    process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _start_watch_cli_until_ready(
+        input_file,
+        tmp_path / "models.py",
+        [
+            *("--input-file-type", "openapi", "--target-python-version", "3.11"),
+            *("--openapi-scopes", "schemas", "api", "--output-model-type", "pydantic_v2.BaseModel"),
+            *("--generate-server", "fastapi", "--server-output", str(tmp_path / "server")),
+            *("--server-package", "server", "--server-model-package", "models"),
+        ],
+    )
+
+    try:
+        _write_watch_cli_input_and_wait(
+            process,
+            stdout_lines,
+            stderr_lines,
+            input_file,
+            (source / "cli" / "pets-baseline.yaml").read_text(encoding="utf-8"),
+            router.contains("Page size of a listing."),
+            "the server package to be regenerated",
+        )
+        assert_output(router.text, EXPECTED_MAIN_PATH / "generation_platform/fastapi/cli/watch/pets.py")
+    finally:
+        _stop_watch_cli(process, stdout_thread, stderr_thread)
+
+
+def test_watch_cli_regenerates_client_job_on_change(tmp_path: Path) -> None:
+    """Regenerate a client job of a watched batch whenever its input changes, as a model job is."""
+    source = PROJECT_ROOT / "tests/data/generation_platform/client/cli"
+    input_file = tmp_path / "options.yaml"
+    shutil.copy2(source / "options.yaml", input_file)
+    shutil.copy2(source / "pyproject-jobs.toml", tmp_path / "pyproject.toml")
+    resource = _WatchedOutput(tmp_path / "client" / "resources" / "pets" / "_sync.py")
+    process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _start_batch_watch_cli_until_ready(tmp_path)
+
+    try:
+        _write_watch_cli_input_and_wait(
+            process,
+            stdout_lines,
+            stderr_lines,
+            input_file,
+            input_file.read_text(encoding="utf-8").replace("List the pets.", "List every pet."),
+            resource.contains("List every pet."),
+            "the client package to be regenerated",
+        )
+        assert_output(resource.text, EXPECTED_MAIN_PATH / "generation_platform/client/cli/watch/_sync.py")
+    finally:
+        _stop_watch_cli(process, stdout_thread, stderr_thread)
+
+
 def test_watch_cli_regenerates_for_consecutive_input_changes_without_restart(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -3239,7 +3295,7 @@ output = "{output_file.as_posix()}"
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
-def test_watch_failed_lock_path_replan_retains_newly_verified_candidate(  # noqa: PLR0914
+def test_watch_failed_lock_path_replan_retains_newly_verified_candidate(  # ruff: ignore[too-many-locals]
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     watched_http_server: str,
@@ -3373,7 +3429,7 @@ input-file-type = "jsonschema"
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
-def test_batch_watch_failed_lock_path_replan_retains_prior_implicit_intent(  # noqa: PLR0914
+def test_batch_watch_failed_lock_path_replan_retains_prior_implicit_intent(  # ruff: ignore[too-many-locals]
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     watched_http_server: str,

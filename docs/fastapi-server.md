@@ -293,8 +293,8 @@ The batch publishes the server packages together with the models of every job on
 nothing when a job fails or when jobs generate different models for a shared `output`; the `uv add` notice of each
 package follows the publication on stderr. `--check` compares every job as a single run does and exits with 1 when
 any of them would change. With `--output-format json`, a server job adds the generation or check payload of a single
-server run to the batch document, with file paths relative to that job's model output directory. Server jobs refuse
-`--watch`, as a single server run does.
+server run to the batch document, with file paths relative to that job's model output directory. `--all-jobs
+--watch` regenerates the batch, server jobs included, whenever an input any job read changes.
 
 ## The generated package
 
@@ -358,6 +358,13 @@ without an `output`.
 It compares the rendered model and server text, including the README and `py.typed`, plus extra `.py` files under
 the model and server output directories. CRLF and LF compare equally. Unrelated text files are outside this scope.
 `--check --output-format json` uses the same check payload as model generation. Checking publishes nothing.
+
+`--diff-against OLD_INPUT` renders the models and the server from both inputs without writing anything, and prints
+what changes between them with the model input diff: unified diffs labeled `(baseline input)` and `(current input)`,
+and files generated only from one of the inputs. It exits with 0 when both render the same files and 1 otherwise;
+`--output-format json` emits the model input-diff payload. `--watch` regenerates the models and the server whenever
+the input, a document it references, or a file an option names changes, as for model generation, and has the same
+limits: it needs a local `--input` and cannot be combined with `--check` or `--output-format json`.
 
 `--output-format json` publishes the files and emits the existing generation payload as one JSON document on
 stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. As in
