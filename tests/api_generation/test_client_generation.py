@@ -192,6 +192,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-querystring-target-checks",
         "protocols-pagination-count-checks",
         "protocols-pagination-wrapper-checks",
+        "protocols-pagination-strict-checks",
         "protocols-polling-checks",
         "protocols-upload-errors",
         "protocols-upload-checks",

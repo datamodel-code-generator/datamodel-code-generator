@@ -4063,6 +4063,23 @@
     },
     "modules": false
   },
+  "protocols-pagination-strict-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-counts.json"
+    ],
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/pagination-counts.json"
+    },
+    "modules": false
+  },
   "pagination-links": {
     "input": "pagination-links.yaml",
     "references": [
