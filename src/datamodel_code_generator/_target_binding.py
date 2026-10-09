@@ -64,6 +64,7 @@ from datamodel_code_generator._target_contract import (
     TypeProjection,
     TypeUseBinding,
     TypeUseId,
+    UnionDiscriminator,
     UnionType,
     WireDeclaration,
 )
@@ -82,6 +83,7 @@ from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasMode
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.parser.generation import GenerationStore
+from datamodel_code_generator.parser.jsonschema import Discriminator
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
@@ -245,6 +247,15 @@ class _WalkedPathItem:
     shared: dict[int, _Declaration] | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _Selector:
+    """A union's declared discriminator: its wire property, each mapped value's resolved reference, its members."""
+
+    property_name: str
+    mapping: tuple[tuple[str, str], ...]
+    members: tuple[DataType, ...]
+
+
 @dataclass(slots=True)
 class _WalkedOperation:
     """An operation as the target parser walked it, with the parameters in effect in their order."""
@@ -277,6 +288,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
         self.operations: list[_WalkedOperation] = []
         self.resolutions: dict[_Declaration, tuple[_Declaration, dict[str, YamlValue]]] = {}
+        self.selectors: dict[int, _Selector] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
         self._callback_origin: _Declaration | None = None
@@ -367,6 +379,23 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         super()._walk_callback(raw, path, prefix, use_site)
         self._callback_origin = previous
 
+    def parse_combined_schema(
+        self, name: str, obj: JsonSchemaObject, path: list[str], target_attribute_name: str
+    ) -> list[DataType]:
+        """Record the discriminator a oneOf or anyOf declares for the members it parses into.
+
+        Each mapped value's reference resolves where the union is declared, as the parser resolves its references.
+        """
+        members = super().parse_combined_schema(name, obj, path, target_attribute_name)
+        if target_attribute_name != "allOf" and isinstance(declared := obj.discriminator, Discriminator):
+            selector = _Selector(
+                declared.propertyName,
+                tuple((value, self.model_resolver.resolve_ref(ref)) for value, ref in (declared.mapping or {}).items()),
+                tuple(members),
+            )
+            self.selectors.update((id(member), selector) for member in members)
+        return members
+
     def _acquire_schema(self, name: str, raw: YamlValue, path: list[str], *, role: SchemaRole) -> None:
         """Record the declaration's engine key, even when it was already generated."""
         self.acquisitions.setdefault(
@@ -434,6 +463,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.module_outputs.clear()
         self.operations.clear()
         self.resolutions.clear()
+        self.selectors.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
         self._callback_origin = None
@@ -863,6 +893,8 @@ class _Projector:
         )
         inferred_optional = not preserve_order and len(members) != len(flattened)
         union = _ordered_union(members, preserve_order=preserve_order) if members else ImportedType(IMPORT_ANY)
+        if isinstance(union, UnionType) and (selector := self.selector(data_type)) is not None:
+            union = replace(union, discriminator=selector)
         if (discriminator := data_type.discriminator) is not None:
             return (
                 AnnotatedType(
@@ -871,6 +903,24 @@ class _Projector:
                 inferred_optional,
             )
         return union, inferred_optional
+
+    def selector(self, data_type: DataType) -> UnionDiscriminator | None:
+        """Return the discriminator a union's schema declares, when the union holds only the members it was parsed to.
+
+        Each mapped value names the model its reference resolves to in this projection's direction.
+        """
+        selectors = self.binder.parser.selectors
+        if (selector := selectors.get(id(data_type.data_types[0]))) is None or any(
+            selectors.get(id(member)) is not selector for member in data_type.data_types
+        ):
+            return None
+        mapping = []
+        for value, path in selector.mapping:
+            if (reference := self.binder.parser.model_resolver.references.get(path)) is not None and (
+                final := self.binder.final(reference, self.direction)
+            ) is not None:
+                mapping.append((value, self.binder.symbols[id(final.source)]))
+        return UnionDiscriminator(selector.property_name, tuple(mapping))
 
     def _container(self, data_type: DataType, value: FinalPythonType | None) -> FinalPythonType:
         generic = data_type.use_generic_container
@@ -920,7 +970,7 @@ class _Projector:
                     self._imports(value.base), tuple(self._imports(item) for item in value.arguments), value.tuple_form
                 )
             case UnionType():
-                return UnionType(tuple(self._imports(item) for item in value.members), value.preserve_order)
+                return replace(value, members=tuple(self._imports(item) for item in value.members))
             case ConstructorType():
                 return ConstructorType(
                     ImportedType(resolve(value.callable.import_), value.callable.qualified_suffix),
@@ -1708,6 +1758,7 @@ class _Models:
                         tuple(_literal_scalar(get_raw_enum_member_value(field.default)) for field in model.fields)
                         if policy.kind == "enum"
                         else (),
+                        model.reference.path.rsplit("/", 1)[-1],
                     )
                 )
         return tuple(symbols), tuple(artifacts)
@@ -2693,6 +2744,7 @@ if TYPE_CHECKING:
         def tokens(self) -> tuple[str, ...]:
             """The raw JSON pointer tokens."""
 
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
     from datamodel_code_generator.parser.openapi_scope import ApiDeclarationId, ApiParameterDeclaration, SchemaRole
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType

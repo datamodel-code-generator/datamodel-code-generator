@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, NewType, TypeAlias
 
@@ -205,11 +206,23 @@ class GenericType:
 
 
 @dataclass(frozen=True, slots=True)
+class UnionDiscriminator:
+    """The discriminator a union's schema declares: its wire property, and the model each mapped value names."""
+
+    property_name: str
+    mapping: tuple[tuple[str, SymbolId], ...]
+
+
+@dataclass(frozen=True, slots=True)
 class UnionType:
-    """Retain the final engine's ordered member types and ordering policy."""
+    """Retain the final engine's ordered member types and ordering policy, and the discriminator its schema declares.
+
+    The discriminator is metadata of this occurrence, so it takes no part in comparing types.
+    """
 
     members: tuple[FinalPythonType, ...]
     preserve_order: bool
+    discriminator: UnionDiscriminator | None = dataclasses.field(default=None, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -331,6 +344,7 @@ class FinalModelSymbol:
     nullable: bool
     facts: BackendModelFacts | None
     values: tuple[LiteralScalar | None, ...] = ()
+    schema_name: str = ""
 
 
 BindingReason: TypeAlias = Literal[

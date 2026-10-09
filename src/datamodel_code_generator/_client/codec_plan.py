@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
-from urllib.parse import unquote, urldefrag, urljoin
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
@@ -21,7 +19,6 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralType,
     NoneType,
-    SourceLocation,
     UnionType,
 )
 
@@ -33,8 +30,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         FinalPythonType,
         GeneratedTypeContractBatch,
+        SourceLocation,
         SymbolId,
         TypeUseId,
+        UnionDiscriminator,
     )
 
 CodecBackend: TypeAlias = Literal[
@@ -189,36 +188,24 @@ def _literal_kind(value: LiteralType) -> str | None:
 
 
 class _Planner:
-    def __init__(
-        self, batch: GeneratedTypeContractBatch, wire: WirePlan, backend: CodecBackend, facts: ModelFacts
-    ) -> None:
-        self.batch, self.wire, self.backend, self.facts = batch, wire, backend, facts
+    """Plan the conversions of the emitted models' types, reporting where a use's field has no conversion.
+
+    A union of models is told apart by the discriminator its type records from the union's declaration.
+    """
+
+    def __init__(self, backend: CodecBackend, facts: ModelFacts) -> None:
+        self.backend, self.facts = backend, facts
         self.symbols, self.members = facts.symbols, facts.members
         self.models: dict[SymbolId, Model] = {}
         self.building: set[SymbolId] = set()
         self.aliases: set[SymbolId] = set()
         self.diagnostics: dict[CodecDiagnostic, None] = {}
         self.source: SourceLocation
-        self.symbol_schemas = {
-            use.type.symbol: wire.schema(use.schema)[0]
-            for use in batch.type_uses
-            if use.id.role == "schema" and isinstance(use.type, GeneratedSymbolType) and use.schema is not None
-        }
 
     def report(
         self, message: str, source: SourceLocation | None = None, code: CodecReason = "MC_CODEC_UNSUPPORTED"
     ) -> None:
         self.diagnostics[CodecDiagnostic(code, source or self.source, message)] = None
-
-    def child(self, schema: SourceLocation | None, *tokens: str | int) -> SourceLocation | None:
-        return (
-            None
-            if schema is None
-            else replace(
-                self.wire.schema(schema)[0],
-                pointer=self.wire.schema(schema)[0].pointer + "".join(f"/{token}" for token in tokens),
-            )
-        )
 
     def label(self, value: FinalPythonType) -> str:
         if isinstance(value, GeneratedSymbolType):
@@ -268,21 +255,16 @@ class _Planner:
             return Class(value)
         if isinstance(value, GenericType):
             if value.tuple_form == "fixed":
-                return Fixed(
-                    tuple(
-                        self.shape(item, self.child(schema, "prefixItems", index))
-                        for index, item in enumerate(value.arguments)
-                    )
-                )
+                return Fixed(tuple(self.shape(item, schema) for item in value.arguments))
             name = _name(value.base)
             if name in _MAPPINGS and len(value.arguments) == _PAIR:
                 key, item = value.arguments
                 if _name(key) not in {"str", "object", "typing.Any", "typing_extensions.Any"}:
                     self.report(f"The {self.label(key)} key type has no {self.backend} conversion", schema)
-                nested = self.shape(item, self.child(schema, "additionalProperties"))
+                nested = self.shape(item, schema)
                 return None if nested is None else Values(nested)
             if name in _SEQUENCES and len(value.arguments) == 1:
-                item = self.shape(value.arguments[0], self.child(schema, "items"))
+                item = self.shape(value.arguments[0], schema)
                 return None if item is None and _SEQUENCES[name] == "list" else Items(item, _SEQUENCES[name])
             return None
         if isinstance(value, LiteralType):
@@ -359,27 +341,27 @@ class _Planner:
                 kinds[kind] = shape
         tag, tags = None, ()
         if len(models) > 1:
-            tag, tags = self.discriminator(models, schema)
+            tag, tags = self.discriminator(models, value.discriminator)
             kinds.pop("object", None)
         return Choice(tuple(kinds.items()), tag, tags)
 
     def discriminator(
-        self, models: list[SymbolId], schema: SourceLocation | None
+        self, models: list[SymbolId], declared: UnionDiscriminator | None
     ) -> tuple[str | None, tuple[tuple[str, SymbolId], ...]]:
-        location, node = (self.source, {}) if schema is None else self.wire.schema(schema)
-        declared = node.get("discriminator")
-        if not isinstance(declared, Mapping) or not isinstance(tag := declared.get("propertyName"), str):
+        """Return a union's discriminator property and the model of each of its values.
+
+        A model takes the values of its literal field of that property, else the values mapped to it, else the last
+        segment of its schema's name.
+        """
+        if declared is None:
             self.report(
                 f"The union of {' and '.join(self.symbols[item].name for item in models)} "
                 f"needs a declared discriminator for the {self.backend} converter"
             )
             return None, ()
-        mapped: dict[SourceLocation, list[str]] = {}
-        documents = dict(self.wire.documents)
-        for name, reference in cast("Mapping[str, str]", declared.get("mapping", {})).items():
-            uri, pointer = urldefrag(urljoin(documents[location.document], str(reference)))
-            document = next(key for key, logical in documents.items() if logical == uri)
-            target = self.wire.schema(SourceLocation(document, unquote(pointer), "schema"))[0]
+        tag = declared.property_name
+        mapped: dict[SymbolId, list[str]] = {}
+        for name, target in declared.mapping:
             mapped.setdefault(target, []).append(name)
         tags: dict[str, SymbolId] = {}
         for symbol in models:
@@ -390,8 +372,7 @@ class _Planner:
                 if isinstance(type_, LiteralType)
                 else []
             )
-            origin = self.symbol_schemas[symbol]
-            values = values or mapped.get(origin, []) or [origin.pointer.rsplit("/", 1)[-1]]
+            values = values or mapped.get(symbol, []) or [self.symbols[symbol].schema_name]
             for name in values:
                 if name in tags and tags[name] != symbol:
                     self.report(f"The discriminator {tag} gives {name} to two union models")
@@ -407,7 +388,7 @@ def plan_client_codecs(
     facts: ModelFacts,
 ) -> ClientCodecs:
     """Plan only selected directional uses, keeping the accepted batch's final model names and modules."""
-    planner = _Planner(batch, wire, backend, facts)
+    planner = _Planner(backend, facts)
     planned = []
     for use in batch.type_uses:
         if use.id not in uses or use.id.direction == "neutral" or use.schema is None:
