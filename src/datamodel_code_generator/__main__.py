@@ -428,6 +428,24 @@ def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLoc
     return _RemoteLockPlan(canonical_path, canonical_path, literal_path, policy)
 
 
+def _watch_remote_lock_setup(
+    config: Config,
+    pyproject_path: Path | None,
+    watch_dependencies: WatchDependencies | None,
+    bound_plan: _RemoteLockPlan | None,
+) -> tuple[_RemoteLockPlan, set[Path] | None]:
+    """Resolve the lock plan of a run and register its lock with the watcher, returning the lock intent to settle."""
+    lock_plan = bound_plan or _remote_lock_plan(config, pyproject_path)
+    intent: set[Path] | None = None
+    if config.watch and watch_dependencies is not None:
+        if bound_plan is None:
+            (lock_plan,), intent = watch_dependencies._apply_remote_lock_plans((lock_plan,))  # noqa: SLF001
+        watch_dependencies.add_file(lock_plan.canonical_path)
+        if lock_plan.policy == "update":
+            watch_dependencies.exclude_file(lock_plan.canonical_path)
+    return lock_plan, intent
+
+
 def _paths_alias_or_overlap(first: Path, second: Path) -> bool:
     """Treat hard links and parent/child artifacts as one unsafe publication target."""
     return _paths_overlap_or_samefile(first, second)
@@ -2749,22 +2767,25 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
         if not config.watch or watch_dependencies is None:
             return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
+        _, remote_lock_intent = _watch_remote_lock_setup(
+            config, pyproject_path, watch_dependencies, _bound_remote_lock_plan
+        )
         with watch_dependencies.generation() as generation:
             result = _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
             generation.failed = result is not Exit.OK
+        if remote_lock_intent is not None:
+            if result is Exit.OK:
+                watch_dependencies._commit_remote_lock_intent(remote_lock_intent)  # noqa: SLF001
+            else:
+                watch_dependencies._merge_remote_lock_intent(remote_lock_intent)  # noqa: SLF001
         if result is not Exit.OK or not start_watch:
             return result
         return _watch_and_regenerate(args, config, watch_dependencies)
 
-    lock_plan = _bound_remote_lock_plan or _remote_lock_plan(config, pyproject_path)
-    remote_lock_intent: set[Path] | None = None
-    if config.watch and watch_dependencies is not None and _bound_remote_lock_plan is None:
-        (lock_plan,), remote_lock_intent = watch_dependencies._apply_remote_lock_plans((lock_plan,))  # noqa: SLF001
+    lock_plan, remote_lock_intent = _watch_remote_lock_setup(
+        config, pyproject_path, watch_dependencies, _bound_remote_lock_plan
+    )
     active_lockfile = lock_plan.canonical_path if lock_plan.active else None
-    if config.watch and watch_dependencies is not None:
-        watch_dependencies.add_file(lock_plan.canonical_path)
-        if lock_plan.policy == "update":
-            watch_dependencies.exclude_file(lock_plan.canonical_path)
     remote_transaction_owner = False
     if _remote_locks is _UNRESOLVED_REMOTE_LOCKS:
         try:

@@ -21,7 +21,7 @@ import pytest
 
 import datamodel_code_generator
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import assert_output
+from tests.conftest import TARGET_PYTHON, assert_output
 from tests.main.conftest import (
     EXPECTED_MAIN_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -886,6 +886,7 @@ def test_watch_cli_regenerates_file_output_on_change(tmp_path: Path) -> None:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
     """Regenerate the models and the server package of a single run whenever its input changes."""
     source = PROJECT_ROOT / "tests/data/generation_platform/fastapi"
@@ -918,6 +919,7 @@ def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_client_job_on_change(tmp_path: Path) -> None:
     """Regenerate a client job of a watched batch whenever its input changes, as a model job is."""
     source = PROJECT_ROOT / "tests/data/generation_platform/client/cli"
@@ -2440,6 +2442,49 @@ lockfile = "{lockfile.as_posix()}"
     assert lockfile in dependencies.files
     assert lockfile in dependencies.outputs
     assert not dependencies.accepts_event(lockfile)
+
+
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
+@pytest.mark.allow_direct_assert
+def test_target_watch_registers_the_remote_lock_like_the_model_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A watched single client run observes its lock and keeps an update-mode lock from triggering itself."""
+    from datamodel_code_generator import __main__ as main_module
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    source = PROJECT_ROOT / "tests/data/generation_platform/client/cli"
+    input_file = tmp_path / "options.yaml"
+    shutil.copy2(source / "options.yaml", input_file)
+    lockfile = tmp_path / "api.lock"
+    monkeypatch.chdir(tmp_path)
+    arguments = [
+        *("--input", str(input_file), "--input-file-type", "openapi", "--output", "models.py"),
+        *("--target-python-version", "3.11", "--openapi-scopes", "schemas", "api"),
+        *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
+        *("--generate-client", "httpx2", "--client-output", "client"),
+        *("--client-package", "client", "--client-model-package", "models"),
+        *("--watch", "--lockfile", str(lockfile)),
+    ]
+
+    dependencies = WatchDependencies()
+    assert main_module._main(arguments, start_watch=False, dependencies=dependencies) is Exit.OK
+    assert lockfile in dependencies.files
+    assert dependencies.accepts_event(lockfile)
+
+    updating = WatchDependencies()
+    assert main_module._main([*arguments, "--update-lock"], start_watch=False, dependencies=updating) is Exit.OK
+    assert lockfile in updating.files
+    assert not updating.accepts_event(lockfile)
+
+    verifying = WatchDependencies()
+    assert main_module._main(arguments, start_watch=False, dependencies=verifying) is Exit.OK
+    assert verifying._verified_remote_locks == {lockfile}
+
+    input_file.write_text("openapi: [", encoding="utf-8")
+    failing = WatchDependencies()
+    assert main_module._main(arguments, start_watch=False, dependencies=failing) is Exit.ERROR
+    assert failing._verified_remote_locks == {lockfile}
 
 
 @pytest.mark.skipif(find_spec("grpc_tools") is None, reason="requires the protobuf extra")
