@@ -402,6 +402,53 @@ class VersionMode(Enum):
     Strict = "strict"
 
 
+class ServerType(Enum):
+    """Server package a generation run adds to the models."""
+
+    FastAPI = "fastapi"
+
+
+class ServerLayout(Enum):
+    """Module layout of a generated server package."""
+
+    Routers = "routers"
+    Single = "single"
+
+
+class ServerHandlerMode(Enum):
+    """Kind of function a generated service method is."""
+
+    Sync = "sync"
+    Async = "async"
+
+
+class ServerBodyMode(Enum):
+    """How a generated server passes request bodies to services."""
+
+    Typed = "typed"
+    Request = "request"
+
+
+class ClientType(Enum):
+    """Client package a generation run adds to the models."""
+
+    HTTPX2 = "httpx2"
+
+
+class ClientSignatureStyle(Enum):
+    """How generated client methods declare keyword arguments."""
+
+    Explicit = "explicit"
+    Unpack = "unpack"
+
+
+class ClientBodyArguments(Enum):
+    """How generated client methods take request bodies."""
+
+    Body = "body"
+    Both = "both"
+
+
 __all__ = [
     "DEFAULT_SHARED_MODULE_NAME",
     "MAX_VERSION",
@@ -413,6 +460,9 @@ __all__ = [
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientBodyArguments",
+    "ClientSignatureStyle",
+    "ClientType",
     "CollapseRootModelsNameStrategy",
     "CustomFileHeaderMode",
     "DataModelType",
@@ -432,6 +482,10 @@ __all__ = [
     "ReadOnlyWriteOnlyModelType",
     "ReuseScope",
     "SchemaValidatorType",
+    "ServerBodyMode",
+    "ServerHandlerMode",
+    "ServerLayout",
+    "ServerType",
     "StrictTypes",
     "TargetPydanticVersion",
     "UnionMode",
