@@ -33,13 +33,8 @@ OPERATION_0: Final[OperationPlan[UploadFilesResponse]] = OperationPlan(
                 media_type='multipart/form-data',
                 kind='multipart',
                 parts=(
-                    PartPlan('files', repeated=True, file=True, required=True),
-                    PartPlan(
-                        'tags',
-                        repeated=True,
-                        required=True,
-                        codec=model_bindings.codec_0,
-                    ),
+                    PartPlan('files', repeated=True),
+                    PartPlan('tags', repeated=True, codec=model_bindings.codec_0),
                 ),
                 additional_part=PartPlan(''),
             ),
