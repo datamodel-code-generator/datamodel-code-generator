@@ -24,7 +24,6 @@ from .errors import (
     DecodeError,
     SDKError,
     add_secondary,
-    is_http_error,
     response_failure,
     too_large,
 )
@@ -203,7 +202,6 @@ class _Raw(Generic[SourceT, HandleT]):
         "_raw_source",
         "_source",
         "_state",
-        "_status_failures",
     )
 
     def __init__(  # noqa: PLR0913
@@ -218,11 +216,9 @@ class _Raw(Generic[SourceT, HandleT]):
         raw_source: SourceT,
         native: httpx2.Response,
         call: LogicalCallContext,
-        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep response metadata, status classification, limits, the decoded and raw body sources, and release."""
         self._call = call
-        self._status_failures = status_failures
         self._info = info
         self._decoder = decoder
         self._limits = limits
@@ -267,8 +263,6 @@ class _Raw(Generic[SourceT, HandleT]):
         self._state = "streaming"
 
     def _failure(self, error: Exception) -> BaseException:
-        if is_http_error(error):
-            add_secondary(error, *self._status_failures)
         failure = self._classify(error)
         failure.info = self._info
         return failure
@@ -312,8 +306,6 @@ class _Raw(Generic[SourceT, HandleT]):
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
         error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit)
-        if is_http_error(error):
-            add_secondary(error, *self._status_failures)
         return self._call.snapshot_error(error)
 
     def _unread_failure(self) -> BaseException:
@@ -336,11 +328,9 @@ class _Raw(Generic[SourceT, HandleT]):
 
 def _cleanup_failure(failure: Exception) -> SDKError:
     """Return the failure of releasing a response, which a release that already classified it keeps."""
-    return (
-        failure
-        if isinstance(failure, SDKError) and failure.reason == "cleanup_failed"
-        else SDKError(reason="cleanup_failed", cause=failure)
-    )
+    if isinstance(failure, SDKError) and failure.reason == "cleanup_failed":
+        return failure
+    return SDKError(reason="cleanup_failed", cause=failure)
 
 
 def checked(response: _Raw[SourceT, HandleT]) -> None:
@@ -411,7 +401,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         native: httpx2.Response,
         close: Callable[[], None],
         call: LogicalCallContext,
-        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -424,7 +413,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             raw_source=raw_source,
             native=native,
             call=call,
-            status_failures=status_failures,
         )
         self._close: Callable[[], None] | None = close
 
@@ -643,7 +631,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         native: httpx2.Response,
         close: Callable[[], Awaitable[None]],
         call: LogicalCallContext,
-        status_failures: tuple[Exception, ...] = (),
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and the call's deadlines."""
         super().__init__(
@@ -656,7 +643,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raw_source=raw_source,
             native=native,
             call=call,
-            status_failures=status_failures,
         )
         self._close: Callable[[], Awaitable[None]] | None = close
 

@@ -3,9 +3,9 @@
   write client/_client.py
   write client/_async_client.py
   write client/options.py
+  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
   write client/protocols/__init__.py
@@ -211,7 +211,7 @@ Each generation reports them; add them to your project, for example with `uv add
 The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
-- `_runtime/client`: `__init__.py`, `auth.py`, `auth_challenges.py`, `auth_policy.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `scopes.py`, `security.py`, `timing.py`, `urls.py`
+- `_runtime/client`: `__init__.py`, `bodies.py`, `body_sources.py`, `client.py`, `codecs.py`, `errors.py`, `events.py`, `hooks.py`, `logical.py`, `media.py`, `multipart.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `raw.py`, `responses.py`, `retry.py`, `security.py`, `timing.py`, `urls.py`
 - `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`, `wire.py`
 
 
@@ -268,7 +268,7 @@ Status errors retain the final available response. Buffered and streaming raw AP
 including retry exhaustion, rather than raising status errors. Transport and cancellation failures, native redirect
 failures included, still raise. Stream acquisition can retry; body reads never retry after handle handoff.
 After handoff, native read timeouts govern idle I/O, including explicitly configured read-phase caps. Helpers may
-set an optional session total timeout. Close an abandoned stream to release its response.
+set an optional session total timeout. Close an abandoned stream to release its response and limiter permit.
 
 ## Idempotency and replayable input
 
@@ -300,15 +300,12 @@ call running in a thread before it closes the file.
 ## Redirects and transport construction
 
 Requests are sent through the native client, with its own `auth`, event hooks, redirect setting, and framing.
-Instrument calls with the injected client's `event_hooks` or a wrapping transport: its request hooks see every
-attempt and followed redirect, its response hooks every response. An ordinary exception a hook raises ends the call
-as `APIConnectionError` with that exception as `cause`, and the call is not sent again; an interruption propagates.
 `follow_redirects` on client, view, or request options overrides the native client's choice per call; unset, an
 SDK-created client follows none and an injected one keeps its own. HTTPX2 follows redirects itself, dropping
 `Authorization` and the `Cookie` header across origins and raising its own failure past its redirect limit. A request
-that carries a credential at a position a declared security scheme names other than `Authorization`, or a signature, is
-never redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query,
-or cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
+that carries a credential at a position a declared security scheme names other than `Authorization` is never
+redirected, whatever the setting: its 3xx is the final response, `Location` included, so a key in a header, query, or
+cookie never reaches another origin. Response content codings are removed by HTTPX2: the native client's
 `Accept-Encoding`, gzip and deflate plus brotli and zstd where their decoders are installed, is sent, and a body that
 does not decode raises `DecodeError` with the reason `malformed_coding`. A streaming raw response's `iter_raw_bytes()`
 yields the body as it arrived; a buffered one keeps only its decoded body.
@@ -328,47 +325,13 @@ HTTP/2 is explicit and requires its dependency. Injected native clients retain t
 incompatible construction settings are rejected. Borrowed clients stay caller owned. Root close is idempotent and
 closes only the native client the SDK created. Request views share that root and have no close method.
 
-## Explicit authentication and signing
+## Authentication
 
-Import `AuthConfig`, credential values, providers, and signers from `client.auth`.
-`auth=UNSET` inherits, an `AuthConfig` replaces the inherited configuration as a whole, and `auth=None` disables it.
-Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
-alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
-That choice stays fixed through a call and its retries.
-
-This API declares no security scheme, so an `AuthConfig` carries only signers.
-`EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called; its async
-counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
-
-Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
-Provider contexts carry current origin/deadline/requirements, and audience is currently None.
-Providers retain their caller's lifetime. Views share the root's native HTTP client.
-Provider and signer callbacks consume the call deadline; synchronous callbacks are
-cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
-
-Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
-explicit `anonymous_schemes`; signer-only calls also need the opt-in. Raw destinations require explicit auth origins.
-Authentication and signer origin permissions are independent. Every attempt reconstructs credentials and signatures.
-Generic patches cannot change managed credential/signature names.
-
-Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
-the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
-Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
-retry counts and the original deadline still apply. Zero retries prevents recovery resends, while first
-acquisition remains allowed. These callbacks start no builtin token exchange.
-
-Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
-They receive the final method/URL/raw query/headers after credential and body framing, before sending.
-Overlapping owners fail early; signatures are rebuilt per attempt. `AuthError` with the reason
-`signing_failed` preserves callback failures without transport retry. A signer receives no body or body digest.
-
-Credential/signature values do not appear in repr. Query credentials and signatures are part of the
-request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
-their potentially sensitive messages.
-
-Basic charset overrides, resource audience metadata, and generated OAuth factories are not available yet. Providers are
-explicit.
+No operation of this API requires a security scheme, so its clients take no credentials. `auth` on `ClientOptions`, a
+view's, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and
+`auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth. Sign requests with
+an `httpx2.Auth` of your own, which reads the body natively. Credential values do not appear in repr or hook events; a
+query credential is part of the request URL, which the `httpx2` logger records at INFO level.
 
 ## Errors and cleanup
 
@@ -382,9 +345,10 @@ start of the body. `AuthError` names its `reason`, `DecodeError` a request argum
 declaration, and `ConfigurationError` a refused setting or call. Other errors' messages name only safe metadata, never
 key, header, or body values.
 
-Resource release runs in finally; secondary failures are named in the notes of the primary failure. Root close refuses
-new calls from the root and its views, closes a created native client once, and leaves borrowed clients and providers
-caller owned. Native task cancellation propagates unchanged, and user callbacks are not shielded.
+A limiter permit is acquired before opening a body and released when its response is released. Resource release runs in
+finally; secondary failures are named in the notes of the primary failure. Root close refuses new calls from the root
+and its views, closes a created native client once, and leaves borrowed clients and providers caller owned. Native task
+cancellation propagates unchanged, and user callbacks are not shielded.
 
 ## Request compression
 

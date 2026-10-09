@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime  # noqa: TC003 - Public annotations support get_type_hints().
 from typing import Final, Literal, TypeAlias, TypeGuard, get_args
 
 from typing_extensions import TypeIs
@@ -11,13 +10,10 @@ from .responses import HeadersView, ResponseInfo  # noqa: TC001 - Public annotat
 
 AuthReason: TypeAlias = Literal[
     "provider_failed",
-    "provider_closed",
-    "token_expired",
     "invalid_expiry",
     "oauth_error",
     "timeout",
     "reauthorization_required",
-    "signing_failed",
 ]
 OAuthErrorCode: TypeAlias = Literal[
     "invalid_request",
@@ -167,25 +163,9 @@ def is_transport(error: object) -> TypeGuard[APIConnectionError]:
     return isinstance(error, APIConnectionError) and not is_deadline(error)
 
 
-def is_http_error(error: object) -> TypeGuard[APIStatusError]:
-    """Return whether an error is a final 4xx or 5xx response rather than an unexpected status."""
-    return isinstance(error, APIStatusError) and error.reason != "unexpected_status"
-
-
 def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     """Return whether an error refused a call because its client or view is closing or closed."""
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
-
-
-_CALL_STATES: Final = frozenset({"client_closed", "response_consumed"})
-
-
-def is_auth_classified(error: object) -> bool:
-    """Return whether a credential or signing callback's failure is already classified.
-
-    It is when the callback raised an auth failure, or a refused setting rather than the state of a call it made.
-    """
-    return isinstance(error, AuthError) or (isinstance(error, ConfigurationError) and error.reason not in _CALL_STATES)
 
 
 def _message(body: bytes, truncated: bool) -> str:  # noqa: FBT001
@@ -288,20 +268,20 @@ def status_error(status: int) -> type[APIStatusError]:
 
 
 class AuthError(SDKError):
-    """Credential acquisition, a token exchange, or request signing failed; no credential material is kept.
+    """Credential acquisition or a token exchange failed; the error itself keeps no credential material.
 
-    An OAuth rejection keeps the token endpoint's status and its standard error code, and an expired token its expiry.
+    A `provider_failed` error's cause is the application's own exception from its credential callable or callback. An
+    OAuth rejection keeps the token endpoint's status and its standard error code.
     """
 
     reason: AuthReason
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reason: AuthReason,
         status_code: int | None = None,
         oauth_error: OAuthErrorCode | None = None,
-        expires_at: datetime | None = None,
         operation_id: str | None = None,
         cause: BaseException | None = None,
     ) -> None:
@@ -309,7 +289,6 @@ class AuthError(SDKError):
         super().__init__(reason=reason, operation_id=operation_id, cause=cause)
         self.status_code = status_code
         self.oauth_error: OAuthErrorCode | None = oauth_error
-        self.expires_at = expires_at
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("status_code", self.status_code), ("oauth_error", self.oauth_error))

@@ -1,8 +1,8 @@
-"""Native HTTP client construction, request cloning and conservative failure classification."""
+"""Native HTTP client construction and conservative failure classification."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import httpx2
 
@@ -15,14 +15,6 @@ if TYPE_CHECKING:
     from .options import ResolvedTransportOptions
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
-
-IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
-_PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
-    ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
-    ((httpx2.PoolTimeout,), "pool"),
-    ((httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError), "read"),
-    ((httpx2.WriteError, httpx2.WriteTimeout), "write"),
-)
 
 
 def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
@@ -46,15 +38,6 @@ def native_error(error: Exception) -> APIConnectionError:
     return APIConnectionError(cause=error)
 
 
-def io_phase(error: APIConnectionError) -> IOPhase:
-    """Return the I/O phase whose native failure caused a transport error, or unknown without one."""
-    cause = error.cause
-    for kinds, phase in _PHASES:
-        if isinstance(cause, kinds):
-            return phase
-    return "unknown"
-
-
 def transport_retry_reason(
     error: APIConnectionError,
 ) -> Literal["connect_error", "connect_timeout", "pool_timeout"] | None:
@@ -75,19 +58,6 @@ def request_fields(request: httpx2.Request) -> list[tuple[str, str]]:
 def wire_fields(fields: Iterable[tuple[str, str]]) -> list[tuple[bytes, bytes]]:
     """Encode header fields as UTF-8, so non-ASCII values are sent as they are given."""
     return [(name.encode(), value.encode()) for name, value in fields]
-
-
-def cloned(
-    request: httpx2.Request, *, url: str | None = None, headers: Iterable[tuple[str, str]] | None = None
-) -> httpx2.Request:
-    """Clone one native request while retaining its mode-correct stream and fixed timeout."""
-    return httpx2.Request(
-        request.method,
-        request.url if url is None else url,
-        headers=request.headers.raw if headers is None else wire_fields(headers),
-        stream=request.stream,
-        extensions=dict(request.extensions),
-    )
 
 
 def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> DecodeError:

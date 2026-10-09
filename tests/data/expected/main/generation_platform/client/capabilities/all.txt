@@ -8,33 +8,28 @@ dependencies
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
-  client/auth.py: 485
-  client/auth_challenges.py: 99
-  client/auth_policy.py: 647
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2537
+  client/client.py: 2371
   client/codecs.py: 95
   client/compression.py: 104
-  client/errors.py: 382
-  client/grants.py: 282
-  client/logical.py: 191
+  client/errors.py: 366
+  client/events.py: 480
+  client/hooks.py: 144
+  client/logical.py: 198
   client/media.py: 77
   client/multipart.py: 546
   client/multipart_responses.py: 416
-  client/native.py: 205
-  client/oauth.py: 760
+  client/native.py: 192
   client/operations.py: 835
-  client/options.py: 555
+  client/options.py: 605
   client/paths.py: 40
-  client/raw.py: 888
-  client/refresh.py: 352
-  client/responses.py: 87
-  client/retry.py: 347
-  client/scopes.py: 29
-  client/security.py: 82
+  client/raw.py: 913
+  client/responses.py: 88
+  client/retry.py: 338
+  client/security.py: 135
   client/timing.py: 121
-  client/urls.py: 85
+  client/urls.py: 80
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 55
   model_codecs/media.py: 402
@@ -43,10 +38,10 @@ copied runtime
   model_codecs/unset.py: 26
   model_codecs/wire.py: 144
   protocols/__init__.py: 4
-  protocols/cache.py: 620
+  protocols/cache.py: 622
   protocols/cache_stores.py: 97
   protocols/caches.py: 139
-  protocols/client.py: 785
+  protocols/client.py: 798
   protocols/client_options.py: 34
   protocols/errors.py: 163
   protocols/links.py: 75
@@ -70,12 +65,12 @@ copied runtime
   protocols/webhooks.py: 97
   protocols/websocket.py: 942
   protocols/writes.py: 288
-total 64 modules, 22556 lines
+total 59 modules, 20468 lines
 public files
   publication_client/__init__.py
-  publication_client/auth.py
   publication_client/bodies.py
   publication_client/errors.py
+  publication_client/hooks.py
   publication_client/model_codecs.py
   publication_client/options.py
   publication_client/protocols/__init__.py

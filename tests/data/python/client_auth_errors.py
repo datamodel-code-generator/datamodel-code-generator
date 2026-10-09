@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-from datetime import datetime, timezone
 from inspect import Parameter, signature
 from typing import TYPE_CHECKING, get_args, get_type_hints
 
@@ -13,7 +12,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-_AUTH_FIELDS = ("reason", "status_code", "oauth_error", "expires_at")
+_AUTH_FIELDS = ("reason", "status_code", "oauth_error")
 _CONFIGURATION_FIELDS = ("reason", "field_path", "source_uri", "source_pointer", "helper_id")
 
 
@@ -63,9 +62,6 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
     ):
         lines.append(f"  oauth values {values} {outcome(lambda values=values: str(errors.AuthError(**values)))}")
     lines.append(f"  reasons {get_args(errors.AuthReason)}")
-    for expiry in (None, datetime(2020, 1, 2, tzinfo=timezone.utc)):
-        error = errors.AuthError(reason="token_expired", expires_at=expiry)
-        lines.append(f"  expiry {error.reason} {error.expires_at!r} same={error.expires_at is expiry}")
 
 
 def auth_errors(package: ModuleType, lines: list[str]) -> None:

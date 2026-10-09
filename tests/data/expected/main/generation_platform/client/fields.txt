@@ -7,7 +7,6 @@ render pydantic_v2.BaseModel
   write client/options.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
   write client/protocols/__init__.py
@@ -33,7 +32,6 @@ render pydantic_v2.dataclass
   write client/options.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
   write client/protocols/__init__.py
@@ -59,7 +57,6 @@ render msgspec.Struct
   write client/options.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
   write client/protocols/__init__.py

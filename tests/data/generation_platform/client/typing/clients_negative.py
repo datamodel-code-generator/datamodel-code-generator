@@ -6,7 +6,6 @@ from collections.abc import AsyncIterator, Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
-from pets.auth import OAuthProviderOptions
 from pets.errors import (
     APIStatusError,
     APITimeoutError,
@@ -128,7 +127,6 @@ def misuse_timing(phase: TimeoutOptions) -> None:
     Clock(monotonic=0.0)  # error
     RequestOptions(clock=Clock())  # error
     ClientOptions(clock=None)  # error
-    OAuthProviderOptions(clock=object())  # error
     phase.read = 1  # error
 
 

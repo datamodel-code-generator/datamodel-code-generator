@@ -86,7 +86,6 @@ class LogicalCallContext:
         self.streaming = self.retry_blocked = self.handing_off = False
         self.attempt_count = self.sends = 0
         self.redirects_followed = 0
-        self.token_unreceived = False
 
     def remaining(self) -> float | None:
         """Return seconds until the absolute deadline, or None for an unlimited call."""

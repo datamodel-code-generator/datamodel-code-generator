@@ -18,19 +18,15 @@ if TYPE_CHECKING:
     from .options import ResolvedRetryOptions
     from .responses import HeadersView
 
-RetryReason: TypeAlias = Literal[
-    "status", "connect_timeout", "connect_error", "pool_timeout", "read_error", "auth_invalid_token"
-]
+RetryReason: TypeAlias = Literal["status", "connect_timeout", "connect_error", "pool_timeout", "read_error"]
 _StopReason: TypeAlias = Literal[
     "unknown_delivery",
     "status_not_retryable",
     "transport_not_retryable",
-    "auth_unrefreshable",
     "operation_never",
     "server_forbids_retry",
     "disabled",
     "max_retries_exhausted",
-    "auth_recovery_exhausted",
     "body_not_replayable",
     "unsafe_operation",
 ]
@@ -126,7 +122,7 @@ def status_retry_reason(status: int, retry: ResolvedRetryOptions, *, hint: bool 
 class RetryState:
     """Immutable facts at one retry decision boundary."""
 
-    failure_kind: Literal["status", "transport", "auth"]
+    failure_kind: Literal["status", "transport"]
     reason: RetryReason | None
     method: str
     retry_safety: Literal["method_default", "idempotent", "never"]
@@ -157,7 +153,6 @@ def body_replay_safe(
 
 
 _NOT_RETRYABLE: Final[dict[str, _StopReason]] = {
-    "auth": "auth_unrefreshable",
     "status": "status_not_retryable",
     "transport": "transport_not_retryable",
 }
@@ -181,8 +176,6 @@ def _policy_stop(
 def retry_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
-    *,
-    auth_recovery_used: bool = False,
 ) -> _StopReason | None:
     """Return the first failed retry gate, after termination precedence has been checked, or None to retry."""
     if state.failure_kind == "transport" and state.delivery is not Delivery.NOT_SENT:
@@ -191,8 +184,6 @@ def retry_stop(
         return stop
     if state.attempt_count >= 1 + retry.max_retries:
         return "max_retries_exhausted"
-    if state.reason == "auth_invalid_token" and auth_recovery_used:
-        return "auth_recovery_exhausted"
     return _replay_stop(state)
 
 
