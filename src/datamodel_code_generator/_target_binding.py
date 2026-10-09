@@ -1852,14 +1852,21 @@ class _SchemaLocations:
             and self.required(target, name, inherited=inherited)
         )
 
-    def properties(self, schema: _Declaration) -> dict[str, _Declaration]:
-        """Return a schema's properties in declaration order, allOf branches and references included."""
+    def properties(self, schema: _Declaration, active: set[_Declaration] | None = None) -> dict[str, _Declaration]:
+        """Return a schema's properties in declaration order, allOf branches and references included.
+
+        A schema that its own branches or references lead back to adds its properties once.
+        """
+        active = set() if active is None else active
+        if schema in active:
+            return {}
+        active.add(schema)
         node = self.at(schema)
         found: dict[str, _Declaration] = {}
         if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
-            found.update(self.properties(target))
+            found.update(self.properties(target, active))
         for index in range(len(node.all_of)):
-            found.update(self.properties(_child(schema, "allOf", str(index))))
+            found.update(self.properties(_child(schema, "allOf", str(index)), active))
         found.update((name, _child(schema, "properties", name)) for name in node.properties)
         return found
 
