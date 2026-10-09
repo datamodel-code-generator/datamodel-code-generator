@@ -13,7 +13,7 @@ copied runtime
   client/auth_policy.py: 660
   client/bodies.py: 226
   client/body_sources.py: 156
-  client/client.py: 2866
+  client/client.py: 2869
   client/codecs.py: 95
   client/compression.py: 104
   client/errors.py: 723
@@ -70,9 +70,9 @@ copied runtime
   protocols/webhook_events.py: 293
   protocols/webhook_keys.py: 59
   protocols/webhooks.py: 97
-  protocols/websocket.py: 965
+  protocols/websocket.py: 976
   protocols/writes.py: 288
-total 66 modules, 25304 lines
+total 66 modules, 25318 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py

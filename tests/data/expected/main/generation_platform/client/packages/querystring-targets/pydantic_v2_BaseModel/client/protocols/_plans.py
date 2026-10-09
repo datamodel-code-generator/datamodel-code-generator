@@ -48,7 +48,7 @@ PLAN_0: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
         end_missing=True,
         empty_string_ends=True,
     ),
-    fingerprint='a0acd218466759856a94521d2278e2d59d342cb05df7334b61fb599357716fec',
+    fingerprint='2ee6e1cbc3735d5fa5a11d02ce66af9dc4a5036911cda8425eb46181c25f46fc',
 )
 
 
@@ -69,7 +69,7 @@ PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
         end_missing=True,
         empty_string_ends=True,
     ),
-    fingerprint='bb42e633e58e724849d88dfe66f6bf603eb661438e246f9c35ed4c5b448bb613',
+    fingerprint='a1332a48c45e37431b973b0cc52898dc2c03c46e7bb776d6013932e9cbcd9960',
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='scope'),
