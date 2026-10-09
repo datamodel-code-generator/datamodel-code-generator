@@ -310,8 +310,7 @@ async def _loop_round(package: ModuleType, exchange: Exchange, provider: Any, sc
     async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
         exchange.respond(_OK, _OK)
         tasks = [asyncio.create_task(api.auth.oauth_read()) for _ in range(2)]
-        while not script.entered.is_set():
-            await asyncio.sleep(0)
+        await asyncio.to_thread(script.entered.wait, 30)
         hold.set()
         lines.append(f"  loop gathered={await asyncio.gather(*tasks)} token requests={script.sends}")
 

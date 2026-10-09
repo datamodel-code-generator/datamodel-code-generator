@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-from datetime import datetime, timezone
 from inspect import Parameter, signature
 from typing import TYPE_CHECKING, get_args, get_type_hints
 
@@ -13,7 +12,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-_AUTH_FIELDS = ("reason", "delivery_state", "phase", "status_code", "oauth_error", "expires_at", "effective_timeout")
+_AUTH_FIELDS = ("reason", "delivery_state", "phase", "status_code", "oauth_error", "effective_timeout")
 _CONFIGURATION_FIELDS = ("reason", "field_path", "source_uri", "source_pointer", "helper_id", "operation")
 
 
@@ -111,9 +110,6 @@ def _validation(errors: ModuleType, lines: list[str]) -> None:
             f"invalid ConfigurationError reason {label}",
             lambda value=value: errors.ConfigurationError(reason=value),
         )
-    for expiry in (None, datetime(2020, 1, 2, tzinfo=timezone.utc), datetime(2020, 1, 2)):
-        error = errors.AuthError(reason="invalid_expiry", expires_at=expiry)
-        lines.append(f"  expiry {error.reason} {error.expires_at!r} same={error.expires_at is expiry}")
 
 
 def auth_errors(package: ModuleType, lines: list[str]) -> None:

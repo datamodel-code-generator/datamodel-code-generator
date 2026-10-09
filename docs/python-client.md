@@ -3096,7 +3096,7 @@ Every exception a client raises derives from `SDKError`, and all of them are imp
 | `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's deadline, with the reason `deadline_exceeded` | `effective_timeout` of a phase timeout, or `deadline_at`, the absolute monotonic deadline |
 | `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated`, `retry_stop_reason` |
 | `DecodeError` | A request argument its wire form cannot carry, or a response that cannot become its declared value | `direction` (`request` or `response`), `location`, `body_bytes`, `truncated`, `media_type`, `limit`, `observed` |
-| `AuthError` | Credential acquisition or a token exchange failed | `phase`, `status_code`, `oauth_error`, `expires_at`, `effective_timeout` |
+| `AuthError` | Credential acquisition or a token exchange failed | `phase`, `status_code`, `oauth_error`, `effective_timeout` |
 
 `APIStatusError` has a subclass for each common status: `BadRequestError` (400), `AuthenticationError` (401),
 `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422),

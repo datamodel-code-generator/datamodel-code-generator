@@ -1,10 +1,10 @@
 # pets-protocols pydantic_v2.BaseModel
   family AuthError bases=('SDKError',) code=provider_failed
   signature AuthError keyword-only=True required=('reason',)
-  hints AuthError ('reason', 'phase', 'status_code', 'oauth_error', 'expires_at', 'effective_timeout', 'metadata', 'return')
-  defaults AuthError fields=(('reason', 'provider_failed'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('status_code', None), ('oauth_error', None), ('expires_at', None), ('effective_timeout', None)) common=(None, None, None, None, None, (), 0, 0.0, None)
+  hints AuthError ('reason', 'phase', 'status_code', 'oauth_error', 'effective_timeout', 'metadata', 'return')
+  defaults AuthError fields=(('reason', 'provider_failed'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('status_code', None), ('oauth_error', None), ('effective_timeout', None)) common=(None, None, None, None, None, (), 0, 0.0, None)
   metadata AuthError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True measurements=(2, 0.25, None)
-  supplied AuthError (('reason', 'provider_failed'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('status_code', 400), ('oauth_error', None), ('expires_at', None), ('effective_timeout', None))
+  supplied AuthError (('reason', 'provider_failed'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('status_code', 400), ('oauth_error', None), ('effective_timeout', None))
   safe AuthError True text="AuthError(operation_id='auth_operation', call_id='auth-call', reason='provider_failed', delivery_state='NOT_SENT', phase='validate', status_code=400)"
   undeclared AuthError.message TypeError secondary []
   undeclared AuthError.condition TypeError secondary []
@@ -58,6 +58,3 @@
   invalid ConfigurationError reason empty ! ValueError: A reason must be an SDK-defined lowercase symbol []
   invalid ConfigurationError reason none ! ValueError: A reason must be an SDK-defined lowercase symbol []
   invalid ConfigurationError reason list ! ValueError: A reason must be an SDK-defined lowercase symbol []
-  expiry invalid_expiry None same=True
-  expiry invalid_expiry datetime.datetime(2020, 1, 2, 0, 0, tzinfo=datetime.timezone.utc) same=True
-  expiry invalid_expiry datetime.datetime(2020, 1, 2, 0, 0) same=True

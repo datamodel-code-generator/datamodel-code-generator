@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime  # noqa: TC003 - Public annotations support get_type_hints().
 from enum import Enum
 from typing import ClassVar, Final, Literal, TypeAlias, TypeGuard, get_args
 
@@ -499,18 +498,16 @@ class AuthError(SDKError):
     """Credential acquisition or a token exchange failed; the error itself keeps no credential material.
 
     A `provider_failed` error's cause is the application's own exception from its credential callable or callback. An
-    OAuth rejection keeps the token endpoint's status and its standard error code, an expired token its expiry,
-    and a timeout the cap that fired.
+    OAuth rejection keeps the token endpoint's status and its standard error code, and a timeout the cap that fired.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         reason: AuthReason,
         phase: AuthPhase = "unknown",
         status_code: int | None = None,
         oauth_error: OAuthErrorCode | None = None,
-        expires_at: datetime | None = None,
         effective_timeout: float | None = None,
         **metadata: Unpack[ErrorMetadata],
     ) -> None:
@@ -527,7 +524,6 @@ class AuthError(SDKError):
         self.phase: AuthPhase = phase
         self.status_code = status_code
         self.oauth_error: OAuthErrorCode | None = oauth_error
-        self.expires_at = expires_at
         self.effective_timeout = None if effective_timeout is None else error_time(effective_timeout, "timeout")
 
     def _details(self) -> tuple[tuple[str, object], ...]:
