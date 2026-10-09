@@ -20,7 +20,7 @@ copied runtime
   client/positions.py: 79
   client/raw.py: 876
   client/responses.py: 87
-  client/retry.py: 304
+  client/retry.py: 301
   client/security.py: 94
   client/timing.py: 148
   client/urls.py: 80
@@ -30,7 +30,7 @@ copied runtime
   model_codecs/native.py: 172
   model_codecs/parameters.py: 306
   model_codecs/unset.py: 26
-total 25 modules, 7233 lines
+total 25 modules, 7230 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

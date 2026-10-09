@@ -15,6 +15,7 @@ from typing_extensions import Self
 
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
+from ._runtime.client.multipart import MULTIPART_BODIES
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import AsyncBodyInput
 from .model_codecs import JSONValue
@@ -24,7 +25,7 @@ from .responses import AsyncRawResponse
 if TYPE_CHECKING:
     from .resources.default._async import AsyncDefaultResource
 
-_DEFAULTS = ClientDefaults()
+_DEFAULTS = ClientDefaults(bodies=MULTIPART_BODIES)
 
 
 class AsyncClientView:

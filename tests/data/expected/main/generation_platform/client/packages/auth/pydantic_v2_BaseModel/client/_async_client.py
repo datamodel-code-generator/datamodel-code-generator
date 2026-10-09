@@ -17,6 +17,7 @@ from ._generated import security
 from ._runtime.client.auth import SchemeCredentials, Secret, TokenSource, UserPassword
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
+from ._runtime.client.multipart import MULTIPART_BODIES
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import AsyncBodyInput
 from .model_codecs import JSONValue
@@ -26,7 +27,10 @@ from .responses import AsyncRawResponse
 if TYPE_CHECKING:
     from .resources.auth._async import AsyncAuthResource
 
-_DEFAULTS = ClientDefaults(security_schemes=security.ROOT_SCHEMES)
+_DEFAULTS = ClientDefaults(
+    security_schemes=security.ROOT_SCHEMES,
+    bodies=MULTIPART_BODIES,
+)
 
 
 class AsyncClientView:

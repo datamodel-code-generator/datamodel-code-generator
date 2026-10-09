@@ -22,7 +22,7 @@ copied runtime
   client/positions.py: 79
   client/raw.py: 876
   client/responses.py: 87
-  client/retry.py: 304
+  client/retry.py: 301
   client/security.py: 94
   client/timing.py: 148
   client/urls.py: 80
@@ -47,7 +47,7 @@ copied runtime
   protocols/references.py: 16
   protocols/values.py: 157
   protocols/writes.py: 288
-total 42 modules, 11863 lines
+total 42 modules, 11860 lines
 public files
   publication_client/__init__.py
   publication_client/auth.py
