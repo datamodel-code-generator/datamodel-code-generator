@@ -11,6 +11,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
@@ -465,35 +466,42 @@ def _closing_connection(harness: _Harness, api: Any) -> None:
     record(lines, "ping on a closing connection", session.ping)
     record(lines, "receive on a closing connection", session.receive)
     record(lines, "iteration after the failure", lambda: list(session))
-    _closed_meanwhile(harness, api)
+    _closed_meanwhile(harness)
 
 
-def _closed_meanwhile(harness: _Harness, api: Any) -> None:
+def _closed_meanwhile(harness: _Harness) -> None:
     """End an iteration waiting in another thread when the session closes: its wait ends at its idle timeout.
 
-    The server learns that the thread sent its message before the thread waits; a close that comes first ends the
-    iteration the same way.
+    The client's clock tells when the thread's receive timed its wait, after it took the session's one receive, so the
+    close always ends a receive in progress.
     """
     lines, server = harness.lines, harness.server
-    sent = threading.Event()
+    receiver: list[int] = []
+    receiving = threading.Event()
 
-    def talk(connection: ServerConnection) -> None:
-        connection.recv()
-        sent.set()
+    def monotonic() -> float:
+        if threading.get_ident() in receiver:
+            receiving.set()
+        return time.monotonic()
 
-    (play,) = server.play(Play(talk=talk))
-    session = api.protocols.feed.text.connect(ws_options=harness.ws(idle_timeout=0.3))
-    iterated: list[object] = []
+    (play,) = server.play(Play(talk=lambda connection: connection.recv()))
+    with harness.package.Client(options=harness.client(clock=harness.options.Clock(monotonic=monotonic))) as api:
+        session = api.protocols.feed.text.connect(ws_options=harness.ws(idle_timeout=0.3))
+        iterated: list[object] = []
 
-    def iterate() -> None:
-        session.send("go")
-        iterated.extend(session)
+        def iterate() -> None:
+            session.send("go")
+            receiver.append(threading.get_ident())
+            iterated.extend(session)
 
-    thread = threading.Thread(target=iterate)
-    thread.start()
-    sent.wait(10)
-    session.close(4000, "bye")
-    thread.join(10)
+        thread = threading.Thread(target=iterate)
+        thread.start()
+        reached = receiving.wait(10)
+        session.close(4000, "bye")
+        thread.join(10)
+        if not reached or thread.is_alive():
+            msg = "the receiver did not reach its receive or did not end after the close"
+            raise RuntimeError(msg)
     lines.append(f"  iteration closed meanwhile {iterated} {session!r}")
     harness.report(play)
 
