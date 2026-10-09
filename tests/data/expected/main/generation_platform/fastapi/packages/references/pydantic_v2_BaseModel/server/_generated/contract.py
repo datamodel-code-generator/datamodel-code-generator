@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import models
 from pydantic import TypeAdapter
@@ -14,17 +14,12 @@ from pydantic import TypeAdapter
 from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1pets/get',
-    '/paths/~1pets/post',
-    '/paths/~1owners/get',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1pets/get': Sequence[Dependency],
-        '/paths/~1pets/post': Sequence[Dependency],
-        '/paths/~1owners/get': Sequence[Dependency],
+        'list_pets': Sequence[Dependency],
+        'create_pet': Sequence[Dependency],
+        'list_owners': Sequence[Dependency],
     },
     total=False,
 )
@@ -35,7 +30,6 @@ class ListPets:
 
     OPERATION: Final = OperationPlan(
         name='list_pets',
-        key='/paths/~1pets/get',
         service='service',
         keywords=('principal', 'limit', 'page', 'x_trace'),
         secured=True,
@@ -55,7 +49,6 @@ class CreatePet:
 
     OPERATION: Final = OperationPlan(
         name='create_pet',
-        key='/paths/~1pets/post',
         service='service',
         keywords=('principal', 'x_trace', 'body'),
         secured=True,
@@ -75,7 +68,6 @@ class ListOwners:
 
     OPERATION: Final = OperationPlan(
         name='list_owners',
-        key='/paths/~1owners/get',
         service='service',
         keywords=('principal', 'limit'),
         secured=True,
