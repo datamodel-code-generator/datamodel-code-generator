@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, TypeAlias, TypedDict
+from typing import Literal, TypeAlias, TypedDict
 
 from typing_extensions import NotRequired
 
@@ -37,7 +37,8 @@ LabelAlias: TypeAlias = Label
 ShortLabel: TypeAlias = str
 
 
-Anything: TypeAlias = Any
+class Anything(TypedDict):
+    pass
 
 
 class Mismatch(TypedDict):
@@ -54,6 +55,25 @@ class Named(TypedDict):
 
 class Described(Named):
     pass
+
+
+class Pet(Named):
+    age: NotRequired[int]
+
+
+class Cat(Pet):
+    pass
+
+
+class TwoPatterns(TypedDict):
+    pass
+
+
+class MismatchAlias(Mismatch):
+    pass
+
+
+ShortLabelAlias: TypeAlias = str
 
 
 FieldLabelsGetQueryPrefixParameter: TypeAlias = str

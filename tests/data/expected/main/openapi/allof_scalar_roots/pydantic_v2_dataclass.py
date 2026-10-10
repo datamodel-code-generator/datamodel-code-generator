@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
@@ -54,7 +54,9 @@ ShortLabel = TypeAliasType(
 )
 
 
-Anything = TypeAliasType("Anything", Any)
+@dataclass
+class Anything:
+    pass
 
 
 @dataclass
@@ -74,6 +76,35 @@ class Named:
 @dataclass
 class Described(Named):
     pass
+
+
+@dataclass
+class Pet(Named):
+    age: int | None = None
+
+
+@dataclass
+class Cat(Pet):
+    pass
+
+
+@dataclass
+class TwoPatterns:
+    pass
+
+
+@dataclass
+class MismatchAlias(Mismatch):
+    pass
+
+
+ShortLabelAlias = TypeAliasType(
+    "ShortLabelAlias",
+    Annotated[
+        Annotated[str, Field(min_length=1, max_length=7)],
+        Field(..., description='Another name for a label.'),
+    ],
+)
 
 
 FieldLabelsGetQueryPrefixParameter = TypeAliasType(

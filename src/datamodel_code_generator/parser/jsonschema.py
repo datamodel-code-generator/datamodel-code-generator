@@ -7457,10 +7457,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self, obj: JsonSchemaObject, path: list[str], base_classes: list[Reference]
     ) -> JsonSchemaObject | None:
         """Rewrite a named allOf whose members describe one scalar value as the schema it is without allOf."""
-        if any(SPECIAL_PATH_MARKER in element for element in path) or any(
-            not (target := self._load_inherited_schema_object(base.path)).ref
-            and self._schema_requires_model_type(target)
-            for base in base_classes
+        if (
+            any(SPECIAL_PATH_MARKER in element for element in path)
+            or any(
+                not (target := self._load_inherited_schema_object(base.path)).ref
+                and self._schema_requires_model_type(target)
+                for base in base_classes
+            )
+            or (base_classes and self._get_inherited_property_map(base_classes))
         ):
             return None
         own_schemas: list[JsonSchemaObject] = []
@@ -7492,12 +7496,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if not referenced:
                 own_schemas.append(schema)
         if (
+            sum("pattern" in schema.model_fields_set for schema in schemas) > 1
+            or (not any(schema.type for schema in schemas) and any(schema.has_constraint for schema in schemas))
+            or (merged := self._merge_value_schemas(schemas)) is None
+        ):
+            return None
+        if (
             sum(bool(schema.ref) for schema in own_schemas) == 1
             and (reference := self._merge_value_schemas(own_schemas))
             and (not reference.has_ref_with_schema_keywords or reference.is_ref_with_nullable_only)
         ):
             return reference
-        return self._merge_value_schemas(schemas)
+        return merged
 
     def parse_combined_schema(  # noqa: PLR0912
         self,

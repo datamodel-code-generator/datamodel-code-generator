@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
@@ -42,7 +42,8 @@ LabelAlias: TypeAlias = Annotated[Label, Meta(description='Another name for a la
 ShortLabel: TypeAlias = Annotated[str, Meta(max_length=9, min_length=1)]
 
 
-Anything: TypeAlias = Annotated[Any, Meta(max_length=5, min_length=1)]
+class Anything(Struct):
+    pass
 
 
 class Mismatch(Struct):
@@ -59,6 +60,27 @@ class Named(Struct):
 
 class Described(Named):
     pass
+
+
+class Pet(Named):
+    age: int | UnsetType = UNSET
+
+
+class Cat(Pet):
+    pass
+
+
+class TwoPatterns(Struct):
+    pass
+
+
+class MismatchAlias(Mismatch):
+    pass
+
+
+ShortLabelAlias: TypeAlias = Annotated[
+    str, Meta(description='Another name for a label.', max_length=7, min_length=1)
+]
 
 
 FieldLabelsGetQueryPrefixParameter: TypeAlias = Annotated[str, Meta(min_length=1)]

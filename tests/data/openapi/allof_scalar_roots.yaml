@@ -99,3 +99,25 @@ components:
       allOf:
         - $ref: "#/components/schemas/Named"
         - description: A named object with a description.
+    Pet:
+      allOf:
+        - $ref: "#/components/schemas/Named"
+        - type: object
+          properties:
+            age:
+              type: integer
+    Cat:
+      allOf:
+        - $ref: "#/components/schemas/Pet"
+    TwoPatterns:
+      allOf:
+        - type: string
+          pattern: "^a"
+        - pattern: "b$"
+    MismatchAlias:
+      allOf:
+        - $ref: "#/components/schemas/Mismatch"
+    ShortLabelAlias:
+      allOf:
+        - $ref: "#/components/schemas/LabelAlias"
+        - maxLength: 7

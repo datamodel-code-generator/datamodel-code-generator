@@ -112,7 +112,7 @@ class NestedAllOfDatatype(RootModel[constr(min_length=1)]):
 
 class RefToNestedAllOfAllOf(RootModel[constr(min_length=1, max_length=100)]):
     root: constr(min_length=1, max_length=100) = Field(
-        ..., description='Ref to nested allOf - not a root model.'
+        ..., description='Ref to nested allOf root model.'
     )
 
 

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated
 
 from pydantic import BaseModel, Field, RootModel, confloat, conint, constr
 from typing_extensions import TypeAliasType
@@ -53,8 +53,8 @@ class ShortLabel(RootModel[constr(min_length=1, max_length=9)]):
     root: constr(min_length=1, max_length=9)
 
 
-class Anything(RootModel[Any]):
-    root: Any
+class Anything(BaseModel):
+    pass
 
 
 class Mismatch(BaseModel):
@@ -72,6 +72,28 @@ class Named(BaseModel):
 
 class Described(Named):
     pass
+
+
+class Pet(Named):
+    age: int | None = None
+
+
+class Cat(Pet):
+    pass
+
+
+class TwoPatterns(BaseModel):
+    pass
+
+
+class MismatchAlias(Mismatch):
+    pass
+
+
+class ShortLabelAlias(RootModel[constr(min_length=1, max_length=7)]):
+    root: constr(min_length=1, max_length=7) = Field(
+        ..., description='Another name for a label.'
+    )
 
 
 FieldLabelsGetQueryPrefixParameter = TypeAliasType(

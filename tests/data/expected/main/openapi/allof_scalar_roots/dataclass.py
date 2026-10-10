@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
 Label: TypeAlias = str
 
@@ -39,7 +39,9 @@ LabelAlias: TypeAlias = Label
 ShortLabel: TypeAlias = str
 
 
-Anything: TypeAlias = Any
+@dataclass
+class Anything:
+    pass
 
 
 @dataclass
@@ -59,6 +61,29 @@ class Named:
 @dataclass
 class Described(Named):
     pass
+
+
+@dataclass
+class Pet(Named):
+    age: int | None = None
+
+
+@dataclass
+class Cat(Pet):
+    pass
+
+
+@dataclass
+class TwoPatterns:
+    pass
+
+
+@dataclass
+class MismatchAlias(Mismatch):
+    pass
+
+
+ShortLabelAlias: TypeAlias = str
 
 
 FieldLabelsGetQueryPrefixParameter: TypeAlias = str
