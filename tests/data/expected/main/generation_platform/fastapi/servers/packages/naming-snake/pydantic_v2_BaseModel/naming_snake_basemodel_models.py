@@ -49,3 +49,9 @@ FieldItemsPostQueryNameParameter = TypeAliasType("FieldItemsPostQueryNameParamet
 
 
 FieldItemsItemIdTagsDeletePathItemIdParameter = TypeAliasType("FieldItemsItemIdTagsDeletePathItemIdParameter", int)
+
+
+FieldPetsGetQueryFIleParameter = TypeAliasType("FieldPetsGetQueryFIleParameter", str)
+
+
+FieldPetsGetQueryFileParameter = TypeAliasType("FieldPetsGetQueryFileParameter", str)

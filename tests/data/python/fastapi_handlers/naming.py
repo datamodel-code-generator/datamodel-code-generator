@@ -32,10 +32,20 @@ def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[
         def x_1(self, **arguments: object) -> None:
             record("x_1", arguments)
 
+    class Pets(server.services.PetsService):
+        def get_pets(self, **arguments: object) -> None:
+            record("get_pets", arguments)
+
     class Close(server.services.CloseService):
         def get_health(self, **arguments: object) -> None:
             record("get_health", arguments)
 
     return {
-        "default": {"item_store": ItemStore(), "item_store_1": ItemStore1(), "untagged": Untagged(), "close": Close()}
+        "default": {
+            "item_store": ItemStore(),
+            "item_store_1": ItemStore1(),
+            "untagged": Untagged(),
+            "pets": Pets(),
+            "close": Close(),
+        }
     }

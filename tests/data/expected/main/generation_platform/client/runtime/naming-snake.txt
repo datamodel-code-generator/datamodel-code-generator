@@ -8,6 +8,9 @@
   > DELETE https://api.example.com/items/4/tags
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   delete an item's tags = None
+  > GET https://api.example.com/pets?%EF%AC%81le=a&file=b
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  list pets by two spellings of one name = None
   > GET https://api.example.com/health
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   check the health = None

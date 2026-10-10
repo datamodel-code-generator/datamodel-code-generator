@@ -644,14 +644,14 @@ is `{kind: eof}`, `{kind: sentinel, value}`, or `{kind: event_type, value}` (SSE
 Helpers reserve the arguments `pagination_options`, `poll_options`, `stream_options`,
 `ws_options`, `cache_options`, `upload_options`, `source`, `items`, and `state`. When
 an enabled helper's operation, or its `create` operation for polling and uploads, has a parameter or field argument
-with one of these names, generation fails instead of renaming it; name the argument with
-`parameter_names` or `body_field_names`:
+derived from one of these names, the argument takes the model's suffix, such as `items_1`; an explicit name of
+`parameter_names`, `body_field_names`, or `--aliases` that takes one fails generation instead of being renamed:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-
+--client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with the operation's parameter_names or body_field_names in --client-operations
 ```
 
 <!-- fmt: on -->
@@ -2647,7 +2647,7 @@ field argument or its operation keeps only `body`:
 --client-operations: The body field name of the application/json property 'id' of POST /pets names no field argument
 --client-operations: The body field name of the application/xml property 'tag' of POST /pets names no field argument
 --client-operations: The body field name of the application/json property 'absent' of POST /pets names no field argument
-/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'tag', which other arguments take
+/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'media_type', 'tag', which other arguments take
 --client-operations: The body field name of the text/plain property 'q' of POST /search names no field argument
 ```
 

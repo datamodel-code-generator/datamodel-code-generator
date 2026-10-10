@@ -22,6 +22,7 @@ def _calls(
             ("get an item", lambda: api.item_store.get_item(**item)),
             ("create an item from fields", lambda: api.item_store.get_item_1(name="q", **fields)),
             ("delete an item's tags", lambda: api.item_store_1.delete_items_by_item_id_tags(**{path: 4})),
+            ("list pets by two spellings of one name", lambda: api.pets.get_pets(file="a", file_1="b")),
             ("check the health", api.close_1.get_health),
         ):
             exchange.respond(raw_response(204))
@@ -43,7 +44,7 @@ def naming(package: ModuleType, lines: list[str]) -> None:
         "self_1": "s",
         "sessionId": "sid",
     }
-    _calls(package, lines, "itemId", item, {"name_1": "n", "itemCount": 2})
+    _calls(package, lines, "itemId", item, {"name_1": "n", "count": 2})
 
 
 def naming_snake(package: ModuleType, lines: list[str]) -> None:

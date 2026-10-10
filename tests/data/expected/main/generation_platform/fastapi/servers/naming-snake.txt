@@ -6,6 +6,8 @@ service ItemStore1Service: delete_items_by_item_id_tags
 service ItemStore1Service without its methods: TypeError
 service ItemStoreService: get_item, get_item_1
 service ItemStoreService without its methods: TypeError
+service PetsService: get_pets
+service PetsService without its methods: TypeError
 service UntaggedService: x1, x_1
 service UntaggedService without its methods: TypeError
 > GET /items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s
@@ -22,6 +24,9 @@ service UntaggedService without its methods: TypeError
 < 204 - b''
 > GET /x_1
   x_1()
+< 204 - b''
+> GET /pets?%EF%AC%81le=a&file=b
+  get_pets(file='a', file_1='b')
 < 204 - b''
 > GET /health
   get_health()

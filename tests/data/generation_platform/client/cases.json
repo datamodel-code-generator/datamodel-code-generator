@@ -821,6 +821,7 @@
   },
   "naming": {
     "input": "naming.yaml",
+    "model": {"aliases": {"NewItem.itemCount": "count", "itemCount": "flat_count"}},
     "config": {"body_arguments": "both"},
     "modules": [["client", "resources", "item_store", "_sync.py"]]
   },
@@ -1308,6 +1309,7 @@
   },
   "fields-errors": {
     "input": "fields.yaml",
+    "model": {"aliases": {"NewPet.owner": "media_type"}},
     "config": {
       "body_arguments": "both",
       "operations": [
@@ -3412,6 +3414,10 @@
     "config": {
       "protocols": "protocols/unsupported.json",
       "operations": [
+        {
+          "ref": "/paths/~1tags/get",
+          "parameter_names": [{"in_": "query", "name": "items", "python_name": "items"}]
+        },
         {
           "ref": "/paths/~1labels/get",
           "parameter_names": [

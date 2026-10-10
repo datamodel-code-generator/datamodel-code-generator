@@ -2975,6 +2975,10 @@
       },
       {
         "method": "GET",
+        "url": "/pets?%EF%AC%81le=a&file=b"
+      },
+      {
+        "method": "GET",
         "url": "/health"
       }
     ],
@@ -3015,6 +3019,10 @@
       {
         "method": "GET",
         "url": "/x_1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?%EF%AC%81le=a&file=b"
       },
       {
         "method": "GET",

@@ -43,6 +43,14 @@ paths:
         - {name: itemId, in: path, required: true, schema: {type: integer}}
       responses:
         "204": {description: Done.}
+  /pets:
+    get:
+      tags: [Ｐｅｔｓ]
+      parameters:
+        - {name: ﬁle, in: query, schema: {type: string}}
+        - {name: file, in: query, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
   /health:
     get:
       tags: [close]

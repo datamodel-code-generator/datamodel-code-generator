@@ -7,7 +7,8 @@ as a model field named after that wire name is: `--snake-case-field`, `--aliases
 the field name delimiter apply to it.
 
 A derived name never fails: in a scope that already holds it, it takes the model's duplicate suffix. An explicit name
-(a configured name or an `--aliases` entry) is a user choice and is validated, never renamed.
+(a configured name or an `--aliases` entry) is a user choice and is validated, never renamed. Names are compared in
+NFKC form, as Python compares identifiers, and derived names are written in it.
 """
 
 from __future__ import annotations
@@ -40,6 +41,10 @@ WINDOWS_DEVICES: Final = frozenset({
 })
 
 
+def _nfkc(text: str) -> str:
+    return unicodedata.normalize("NFKC", text)
+
+
 def explicit_name(value: object) -> bool:
     """Return whether an explicit name is a Python identifier: no keyword, no leading `__`, and in NFKC form."""
     return (
@@ -47,7 +52,7 @@ def explicit_name(value: object) -> bool:
         and value.isidentifier()
         and not keyword.iskeyword(value)
         and not value.startswith("__")
-        and unicodedata.normalize("NFKC", value) == value
+        and _nfkc(value) == value
     )
 
 
@@ -85,6 +90,7 @@ class NameScope:
         self._taken = {self._key(name) for name in reserved}
 
     def _key(self, name: str) -> str:
+        name = _nfkc(name)
         return name.casefold() if self._folded else name
 
     def __contains__(self, name: object) -> bool:
@@ -104,6 +110,7 @@ class NameScope:
         A field takes `name_1`, `name_2`; a class `Name1`, `Name2`, or `NameSuffix`, `NameSuffix1` with a suffix.
         """
         delimiter = "" if camel else "_"
+        name = _nfkc(name)
         candidate, count = name, 0
         while candidate in self:
             count += 1
@@ -143,19 +150,28 @@ class TargetNames:
 
     def function(self, text: str, scope: NameScope | None = None) -> str:
         """Return the snake_case name of a method, handler, resource, or module, unique in its scope."""
-        name = self._function.get_valid_name(text)
+        name = self._function.get_valid_name(_nfkc(text))
         return name if scope is None else scope.claim(name)
 
     def pascal(self, text: str, scope: NameScope | None = None) -> str:
         """Return the UpperCamel class name the models would give, unique in its scope by the model's class rule."""
-        name = self._resolver.get_valid_name(text, ignore_snake_case_field=True, upper_camel=True)
+        name = self._resolver.get_valid_name(_nfkc(text), ignore_snake_case_field=True, upper_camel=True)
         return name if scope is None else scope.claim(name, self.suffix, camel=True)
 
     def alias(self, wire_name: str) -> str | None:
         """Return the flat `--aliases` entry for a wire name, which names its argument as given."""
         return alias if isinstance(alias := self._resolver.aliases.get(wire_name), str) else None
 
+    def aliased(self, wire_name: str, name: str) -> bool:
+        """Return whether a model field took its name from a flat or a scoped `--aliases` entry for its wire name."""
+        return any(
+            value == name and (key == wire_name or key.endswith(f".{wire_name}"))
+            for key, value in self._resolver.aliases.items()
+            if isinstance(value, str)
+        )
+
     def argument(self, wire_name: str, scope: NameScope | None = None) -> str:
-        """Return the name a model field named after a wire name takes, unique in its scope."""
-        name = self._resolver.get_valid_field_name_and_alias(wire_name)[0]
+        """Return the name a model field named after a wire name takes, in NFKC form and unique in its scope."""
+        key = wire_name if wire_name in self._resolver.aliases else _nfkc(wire_name)
+        name = _nfkc(self._resolver.get_valid_field_name_and_alias(key)[0])
         return name if scope is None else scope.claim(name)

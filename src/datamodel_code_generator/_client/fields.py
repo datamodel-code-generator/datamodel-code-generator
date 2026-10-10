@@ -92,7 +92,7 @@ class _Fields:
             (media_type, item.wire_name): given
             for media_type, fields in declared
             for item in fields
-            if (given := names.pop((media_type, item.wire_name), None) or self.names.alias(item.wire_name)) is not None
+            if (given := names.pop((media_type, item.wire_name), None) or self._aliased(item)) is not None
         }
         self.problems.extend(
             _problem(
@@ -138,6 +138,10 @@ class _Fields:
             for media_type, fields in declared
         )
         return replace(spec, fields=branches, body_only=tuple(body_only))
+
+    def _aliased(self, field: ModelField) -> str | None:
+        """Return a field's model name when an `--aliases` entry gave it, which names its argument as given."""
+        return field.name if self.names.aliased(field.wire_name, field.name) else None
 
     def base(self, field: ModelField) -> str:
         """Return the name a field's argument derives from: its model field's name, or for a key, a field's name."""

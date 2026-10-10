@@ -82,7 +82,7 @@ class ItemStoreResource:
         name: str | UNSET = UNSET,
         body: models.NewItem,
         name_1: UNSET = UNSET,
-        itemCount: UNSET = UNSET,
+        count: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetItem1Response: ...
@@ -93,7 +93,7 @@ class ItemStoreResource:
         name: str | UNSET = UNSET,
         body: UNSET = UNSET,
         name_1: str,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetItem1Response: ...
@@ -103,7 +103,7 @@ class ItemStoreResource:
         name: str | UNSET = UNSET,
         body: models.NewItem | UNSET = UNSET,
         name_1: str | UNSET = UNSET,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetItem1Response:
@@ -112,7 +112,7 @@ class ItemStoreResource:
             _operations.OPERATION_1,
             (name,),
             body=body,
-            fields=(name_1, itemCount),
+            fields=(name_1, count),
             media_type=media_type,
             options=options,
         ).data
@@ -167,7 +167,7 @@ class ItemStoreWithResponse:
         name: str | UNSET = UNSET,
         body: models.NewItem,
         name_1: UNSET = UNSET,
-        itemCount: UNSET = UNSET,
+        count: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetItem1Response]: ...
@@ -178,7 +178,7 @@ class ItemStoreWithResponse:
         name: str | UNSET = UNSET,
         body: UNSET = UNSET,
         name_1: str,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetItem1Response]: ...
@@ -188,7 +188,7 @@ class ItemStoreWithResponse:
         name: str | UNSET = UNSET,
         body: models.NewItem | UNSET = UNSET,
         name_1: str | UNSET = UNSET,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetItem1Response]:
@@ -197,7 +197,7 @@ class ItemStoreWithResponse:
             _operations.OPERATION_1,
             (name,),
             body=body,
-            fields=(name_1, itemCount),
+            fields=(name_1, count),
             media_type=media_type,
             options=options,
         )
@@ -252,7 +252,7 @@ class ItemStoreWithRawResponse:
         name: str | UNSET = UNSET,
         body: models.NewItem,
         name_1: UNSET = UNSET,
-        itemCount: UNSET = UNSET,
+        count: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -263,7 +263,7 @@ class ItemStoreWithRawResponse:
         name: str | UNSET = UNSET,
         body: UNSET = UNSET,
         name_1: str,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -273,7 +273,7 @@ class ItemStoreWithRawResponse:
         name: str | UNSET = UNSET,
         body: models.NewItem | UNSET = UNSET,
         name_1: str | UNSET = UNSET,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -282,7 +282,7 @@ class ItemStoreWithRawResponse:
             _operations.OPERATION_1,
             (name,),
             body=body,
-            fields=(name_1, itemCount),
+            fields=(name_1, count),
             media_type=media_type,
             options=options,
         )
@@ -337,7 +337,7 @@ class ItemStoreWithStreamingResponse:
         name: str | UNSET = UNSET,
         body: models.NewItem,
         name_1: UNSET = UNSET,
-        itemCount: UNSET = UNSET,
+        count: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -348,7 +348,7 @@ class ItemStoreWithStreamingResponse:
         name: str | UNSET = UNSET,
         body: UNSET = UNSET,
         name_1: str,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -358,7 +358,7 @@ class ItemStoreWithStreamingResponse:
         name: str | UNSET = UNSET,
         body: models.NewItem | UNSET = UNSET,
         name_1: str | UNSET = UNSET,
-        itemCount: int | UNSET = UNSET,
+        count: int | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -367,7 +367,7 @@ class ItemStoreWithStreamingResponse:
             _operations.OPERATION_1,
             (name,),
             body=body,
-            fields=(name_1, itemCount),
+            fields=(name_1, count),
             media_type=media_type,
             options=options,
         )
