@@ -822,13 +822,7 @@
   "naming": {
     "input": "naming.yaml",
     "config": {"body_arguments": "both"},
-    "modules": [
-      ["client", "_client.py"],
-      ["client", "resources", "item_store", "_sync.py"],
-      ["client", "resources", "item_store_1", "_sync.py"],
-      ["client", "resources", "close_1", "_sync.py"],
-      ["client", "types", "item_store", "_operations.py"]
-    ]
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
   },
   "naming-snake": {
     "input": "naming.yaml",

@@ -2978,9 +2978,7 @@
         "url": "/health"
       }
     ],
-    "package_snapshots": [
-      "pydantic_v2.BaseModel"
-    ]
+    "package_snapshots": []
   },
   "naming-snake": {
     "input": "naming.yaml",
