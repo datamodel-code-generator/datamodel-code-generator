@@ -2458,6 +2458,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.__dict__[self._IMPORTS_CACHE_KEY] = imports
         return imports
 
+    def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:  # noqa: ARG002, PLR6301
+        """Render fields by assignment when ``Field()`` inside ``Annotated`` is unsafe for a forward reference.
+
+        ``positions`` maps the path of each model in the module to its order and ``index`` is this model's order.
+        The neutral model policy intentionally changes nothing. Output backends whose target mishandles such a
+        field can override this hook and return whether a field changed.
+        """
+        return False
+
     def clear_imports_cache(self) -> None:
         """Clear cached imports after import-affecting model, field, or data type mutations."""
         self.__dict__.pop(self._IMPORTS_CACHE_KEY, None)

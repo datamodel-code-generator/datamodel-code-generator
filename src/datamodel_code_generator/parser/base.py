@@ -6444,6 +6444,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         return self.__remove_overridden_models(models)
 
+    def __assign_forward_reference_fields(  # noqa: PLR6301
+        self, models: list[DataModel], *, can_retain_cache: bool
+    ) -> None:
+        """Let each model render fields by assignment when ``Field()`` inside ``Annotated`` would be unsafe.
+
+        This remains an instance method because ``snooper_to_methods`` does not preserve staticmethod descriptors
+        on parser subclasses.
+        """
+        positions = {model.path: index for index, model in enumerate(models)}
+        for index, model in enumerate(models):
+            if model.assign_forward_reference_fields(positions, index):
+                _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
     def __finalize_module_models(
         self,
         models: list[DataModel],
@@ -6469,6 +6482,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             unused_model_ids = {id(model) for model in unused_models}
             live_models = [model for model in models if id(model) not in unused_model_ids]
         self.__set_validate_default_on_fields(live_models, can_retain_cache=can_retain_cache)
+        if self.use_annotated and use_deferred_annotations:
+            self.__assign_forward_reference_fields(models, can_retain_cache=can_retain_cache)
         if not can_retain_cache:
             _clear_model_imports_cache(models)
 

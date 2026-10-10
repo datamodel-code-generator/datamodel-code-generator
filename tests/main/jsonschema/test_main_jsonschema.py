@@ -2404,6 +2404,97 @@ def test_main_alias_generator_target_pydantic_version(
         )
 
 
+@pytest.mark.parametrize("target_pydantic_version", TARGET_PYDANTIC_VERSION_CASES)
+@pytest.mark.parametrize("alias_generator", [None, "to_camel"], ids=["no-generator", "to_camel"])
+def test_main_use_annotated_forward_reference(
+    output_file: Path, alias_generator: str | None, target_pydantic_version: str | None
+) -> None:
+    """Write a field whose type is defined later as an assignment for --target-pydantic-version 2."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=(
+            f"annotated_forward_reference/{alias_generator or 'no_generator'}_{target_pydantic_version or 'unset'}.py"
+        ),
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-annotated",
+            *(["--alias-generator", alias_generator] if alias_generator else []),
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+    payload = (JSON_DATA_PATH / "annotated_forward_reference.json").read_text()
+    with _generated_model(output_file, "annotated_forward_reference", "Tree") as model:
+        assert_output(
+            model.model_validate_json(payload).model_dump_json(by_alias=True, exclude_none=True, indent=2) + "\n",
+            EXPECTED_JSON_SCHEMA_PATH / "annotated_forward_reference" / "round_trip.txt",
+        )
+
+
+def test_main_use_annotated_forward_reference_eager(output_file: Path) -> None:
+    """Keep Annotated for --target-pydantic-version 2 where annotations are evaluated eagerly."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="annotated_forward_reference/no_generator_2_eager.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-annotated",
+            "--target-pydantic-version",
+            "2",
+            "--disable-future-imports",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["unset", "2"])
+def test_main_use_annotated_forward_reference_dataclass(output_file: Path, target_pydantic_version: str | None) -> None:
+    """Write pydantic dataclass fields whose type is defined later as assignments for --target-pydantic-version 2."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"annotated_forward_reference/dataclass_{target_pydantic_version or 'unset'}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-annotated",
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+
+
+def test_main_use_annotated_forward_reference_dataclass_required_order(output_file: Path) -> None:
+    """Keep required pydantic dataclass fields before a forward-referenced field written as an assignment."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="annotated_forward_reference/dataclass_required_order_2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-annotated",
+            "--target-pydantic-version",
+            "2",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_alias_generator_target_pydantic_version_enum_only(output_file: Path) -> None:
     """Keep an enum-only module unchanged for --target-pydantic-version 2: enum members take no alias or Field."""
     run_main_and_assert(

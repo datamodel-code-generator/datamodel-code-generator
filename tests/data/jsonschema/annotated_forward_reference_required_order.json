@@ -1,0 +1,3 @@
+{"title": "Top", "type": "object", "required": ["child", "name"],
+ "properties": {"child": {"$ref": "#/definitions/Child", "description": "d"}, "name": {"type": "string"}},
+ "definitions": {"Child": {"type": "object", "properties": {"parent": {"$ref": "#"}}}}}
