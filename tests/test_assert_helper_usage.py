@@ -22,6 +22,8 @@ from tests.assert_helper_allowlists import (
     ALLOWLIST_GROUP_REASONS,
     ALLOWLISTS,
     FROZEN_EXEMPT_FILES,
+    FROZEN_UNCOVERED_FILES,
+    FROZEN_UNLINTED_FILES,
 )
 from tests.conftest import (
     HttpxGetMockFactory,
@@ -35,6 +37,11 @@ from tests.main.conftest import (
     assert_generated_model_json_validation,
     run_main_and_assert,
 )
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -207,6 +214,11 @@ FROZEN_ALLOWLIST_POLICY_MESSAGE = (
 )
 MALFORMED_ALLOWLIST_FAILURE_MESSAGE = (
     "Allowlist groups are sorted, have a reason, and every entry appears in exactly one group:"
+)
+EXCLUSION_FAILURE_MESSAGE = (
+    "The ruff extend-exclude and coverage run.omit entries under tests/api_generation/support and "
+    "tests/api_generation/scenarios match FROZEN_UNLINTED_FILES and FROZEN_UNCOVERED_FILES, which only shrink: a new "
+    "helper module is linted and covered from its first commit, and a module leaves its list when it is clean:"
 )
 EXEMPTION_FAILURE_MESSAGE = (
     f"{DIRECT_ASSERT_EXEMPT_FILES_INI} matches FROZEN_EXEMPT_FILES, which only shrinks, and every exempt file still "
@@ -1119,6 +1131,33 @@ def _exemption_problems(tests_root: Path, configured: frozenset[Path], frozen: f
     ]
 
 
+def _configured_helper_exclusions(pyproject: Path) -> tuple[frozenset[Path], frozenset[Path]]:
+    """Return the platform helper modules that pyproject.toml leaves out of ruff and out of coverage."""
+    tool = tomllib.loads(pyproject.read_text(encoding="utf-8"))["tool"]
+    roots = tuple(Path("tests") / root for root in HELPER_ROOTS if root.parts[0] == "api_generation")
+
+    def helpers(entries: Iterable[str]) -> frozenset[Path]:
+        return frozenset(
+            Path(*Path(entry).parts[1:]) for entry in entries if any(Path(entry).is_relative_to(root) for root in roots)
+        )
+
+    return helpers(tool["ruff"]["extend-exclude"]), helpers(tool["coverage"]["run"]["omit"])
+
+
+def _helper_exclusion_problems(
+    tests_root: Path, configured: frozenset[Path], frozen: frozenset[Path], list_name: str
+) -> list[str]:
+    return [
+        *(f"  tests/{path} is not in {list_name}" for path in sorted(configured - frozen)),
+        *(f"  tests/{path} left the pyproject.toml list of {list_name}" for path in sorted(frozen - configured)),
+        *(
+            f"  tests/{path} no longer exists"
+            for path in sorted(configured & frozen)
+            if not (tests_root / path).is_file()
+        ),
+    ]
+
+
 def _allowlist_entries(allowlists: Mapping[str, Mapping[str, tuple[str, ...]]] = ALLOWLISTS) -> frozenset[str]:
     return frozenset(entry for groups in allowlists.values() for entries in groups.values() for entry in entries)
 
@@ -1199,6 +1238,19 @@ def test_direct_assert_exemptions_stay_frozen(pytestconfig: pytest.Config) -> No
     if not (problems := _exemption_problems(TESTS_ROOT, _configured_exempt_files(pytestconfig), FROZEN_EXEMPT_FILES)):
         return
     pytest.fail("\n".join((EXEMPTION_FAILURE_MESSAGE, *problems)), pytrace=False)  # pragma: no cover
+
+
+def test_helper_exclusions_stay_frozen() -> None:
+    """The ruff and coverage exclusions of platform helper modules never grow and name only existing files."""
+    unlinted, uncovered = _configured_helper_exclusions(TESTS_ROOT.parent / "pyproject.toml")
+    if not (
+        problems := [
+            *_helper_exclusion_problems(TESTS_ROOT, unlinted, FROZEN_UNLINTED_FILES, "FROZEN_UNLINTED_FILES"),
+            *_helper_exclusion_problems(TESTS_ROOT, uncovered, FROZEN_UNCOVERED_FILES, "FROZEN_UNCOVERED_FILES"),
+        ]
+    ):
+        return
+    pytest.fail("\n".join((EXCLUSION_FAILURE_MESSAGE, *problems)), pytrace=False)  # pragma: no cover
 
 
 def test_modules_never_patch_the_complete_module_registry() -> None:
@@ -1938,7 +1990,7 @@ from datamodel_code_generator import GenerateConfig, _publication
 from datamodel_code_generator.parser import openapi as oa
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.data.python import reexport
-from tests.data.python.generated_packages import import_generated
+from tests.api_generation.support.generated_packages import import_generated
 
 
 def test_profiles(observer):
@@ -2429,6 +2481,37 @@ def test_exemption_problems_report_growth_removal_and_stale_files(tmp_path: Path
         f"  tests/test_old.py left {DIRECT_ASSERT_EXEMPT_FILES_INI}",
         "  tests/test_clean.py has no direct assert left",
     ]
+
+
+def test_helper_exclusion_problems_report_growth_removal_and_missing_files(tmp_path: Path) -> None:
+    """A helper exclusion list matches its frozen copy, and each listed file still exists."""
+    (tmp_path / "kept.py").write_text("", encoding="utf-8")
+    (tmp_path / "new.py").write_text("", encoding="utf-8")
+    configured = frozenset({Path("kept.py"), Path("new.py"), Path("gone.py")})
+    frozen = frozenset({Path("kept.py"), Path("gone.py"), Path("old.py")})
+
+    assert _helper_exclusion_problems(tmp_path, configured, frozen, "FROZEN") == [
+        "  tests/new.py is not in FROZEN",
+        "  tests/old.py left the pyproject.toml list of FROZEN",
+        "  tests/gone.py no longer exists",
+    ]
+
+
+def test_configured_helper_exclusions_keep_only_platform_helper_modules(tmp_path: Path) -> None:
+    """Only entries under the platform helper directories are compared with the frozen lists."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(
+        "[tool.ruff]\n"
+        'extend-exclude = ["tests/data", "tests/api_generation/support/a.py", "tests/main/b.py"]\n'
+        "[tool.coverage]\n"
+        'run.omit = ["tests/api_generation/scenarios/c.py", "tests/api_generation/test_d.py"]\n',
+        encoding="utf-8",
+    )
+
+    assert _configured_helper_exclusions(pyproject) == (
+        frozenset({Path("api_generation/support/a.py")}),
+        frozenset({Path("api_generation/scenarios/c.py")}),
+    )
 
 
 def test_guard_failure_groups_findings_by_rule(tmp_path: Path) -> None:

@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import GenerateConfig, generate
-from tests.conftest import assert_exact_directory_content, assert_output, write_generated_modules
-from tests.data.python.client_bindings import (
+from tests.api_generation.support.client_bindings import (
     CASES,
     CLIENT,
     DATA,
@@ -19,8 +18,9 @@ from tests.data.python.client_bindings import (
     client_binding_report,
     client_binding_rewrite_report,
 )
-from tests.data.python.client_generation import render_client
-from tests.data.python.fastapi_generation import in_directory
+from tests.api_generation.support.client_generation import render_client
+from tests.api_generation.support.fastapi_generation import in_directory
+from tests.conftest import assert_exact_directory_content, assert_output, write_generated_modules
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/bindings"
 BINDING_CASES = json.loads(CASES.read_text(encoding="utf-8"))

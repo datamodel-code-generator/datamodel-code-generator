@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.api_generation.support.codec_typing import codec_typing_report
 from tests.conftest import assert_output
-from tests.data.python.codec_typing import codec_typing_report
 
 EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "codecs"
 ENABLED = "DATAMODEL_CODE_GENERATOR_CODEC_TYPING_E2E"

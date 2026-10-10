@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.api_generation.support.client_publication import PROFILES, client_capability_report
 from tests.conftest import assert_output
-from tests.data.python.client_publication import PROFILES, client_capability_report
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/capabilities"
 

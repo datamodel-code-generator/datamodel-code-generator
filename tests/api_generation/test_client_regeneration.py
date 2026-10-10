@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.api_generation.support.client_generation import client_regeneration_report
 from tests.conftest import assert_output
-from tests.data.python.client_generation import client_regeneration_report
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"
 

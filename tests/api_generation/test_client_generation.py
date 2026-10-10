@@ -9,13 +9,7 @@ import pytest
 
 from datamodel_code_generator import get_version
 from datamodel_code_generator.util import get_yaml_backend
-from tests.conftest import (
-    assert_exact_directory_content,
-    assert_generated_modules_output,
-    assert_output,
-    write_generated_modules,
-)
-from tests.data.python.client_generation import (
+from tests.api_generation.support.client_generation import (
     client_api_report,
     client_config_report,
     client_documents,
@@ -24,6 +18,12 @@ from tests.data.python.client_generation import (
     client_ordinary_models,
     client_render,
     generate_client,
+)
+from tests.conftest import (
+    assert_exact_directory_content,
+    assert_generated_modules_output,
+    assert_output,
+    write_generated_modules,
 )
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"

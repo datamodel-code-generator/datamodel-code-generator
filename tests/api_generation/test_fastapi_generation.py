@@ -6,16 +6,16 @@ from pathlib import Path
 
 import pytest
 
+from tests.api_generation.support.fastapi_acceptance import fastapi_checkout_report, fastapi_scope_report
+from tests.api_generation.support.fastapi_generation import (
+    fastapi_api_report,
+    fastapi_render,
+)
 from tests.conftest import (
     assert_exact_directory_content,
     assert_generated_modules_output,
     assert_output,
     write_generated_modules,
-)
-from tests.data.python.fastapi_acceptance import fastapi_checkout_report, fastapi_scope_report
-from tests.data.python.fastapi_generation import (
-    fastapi_api_report,
-    fastapi_render,
 )
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi"

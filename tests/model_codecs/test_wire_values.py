@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tests.conftest import assert_output
-from tests.data.python.model_codec_reports import (
+from tests.api_generation.support.model_codec_reports import (
     alias_hint_report,
     media_report,
     parameter_decoding_report,
     parameter_encoding_report,
     runtime_import_report,
 )
+from tests.conftest import assert_output
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs"

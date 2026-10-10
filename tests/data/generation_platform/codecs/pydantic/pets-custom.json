@@ -1,7 +1,7 @@
 {
   "backend": "pydantic_v2.BaseModel",
   "package": "codec_pets_custom",
-  "options": {"base_class": "tests.data.python.model_codec_base.CodecBase", "use_type_alias": true},
+  "options": {"base_class": "tests.api_generation.support.model_codec_base.CodecBase", "use_type_alias": true},
   "refusal": {},
   "cases": [
     {"name": "created-client-decode-native-email", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_runtime import Exchange, raw_response, record
+from tests.api_generation.support.client_runtime import Exchange, raw_response, record
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

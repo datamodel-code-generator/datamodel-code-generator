@@ -9,12 +9,12 @@ import pytest
 
 pytest.importorskip("fastapi")
 
+from tests.api_generation.support.fastapi_charsets import text_charsets
+from tests.api_generation.support.fastapi_openapi import SCENARIOS, fastapi_openapi_report
+from tests.api_generation.support.fastapi_server import fastapi_server_report
+from tests.api_generation.support.fastapi_upstream import fastapi_upstream_report
+from tests.api_generation.support.model_codec_builtin import builtin_codec_report, builtin_codec_startup_report
 from tests.conftest import assert_generated_modules_output, assert_output
-from tests.data.python.fastapi_charsets import text_charsets
-from tests.data.python.fastapi_openapi import SCENARIOS, fastapi_openapi_report
-from tests.data.python.fastapi_server import fastapi_server_report
-from tests.data.python.fastapi_upstream import fastapi_upstream_report
-from tests.data.python.model_codec_builtin import builtin_codec_report, builtin_codec_startup_report
 from tests.main.conftest import EXPERIMENTAL_MISSING_IMPORT_WARNING
 
 DATA = Path(__file__).parents[1] / "data"

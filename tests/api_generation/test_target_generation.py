@@ -15,8 +15,8 @@ from datamodel_code_generator import _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
+from tests.api_generation.support.target_generation import SOURCE, target_render_report
 from tests.conftest import assert_output, freeze_time
-from tests.data.python.target_generation import SOURCE, target_render_report
 from tests.main.conftest import run_main_and_assert, run_main_with_args
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
