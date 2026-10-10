@@ -15,27 +15,27 @@ if TYPE_CHECKING:
 
 def selected(client: Client, pet: FieldPetsPetIdPhotoPutPathPetIdParameter, media: str) -> None:
     """Check range-only response arguments and results in synchronous views."""
-    assert_type(client.pets.photos.upload(pet_id=pet, response_media_type="image/jpeg"), UploadResponse)
-    assert_type(client.pets.photos.upload(pet_id=pet, response_media_type=media), UploadResponse)
-    assert_type(client.pets.photos.upload(pet_id=pet, response_media_type=None), UploadResponse)
+    assert_type(client.pets.photos.upload(petId=pet, response_media_type="image/jpeg"), UploadResponse)
+    assert_type(client.pets.photos.upload(petId=pet, response_media_type=media), UploadResponse)
+    assert_type(client.pets.photos.upload(petId=pet, response_media_type=None), UploadResponse)
     assert_type(
-        client.pets.photos.with_response.upload(pet_id=pet, response_media_type=media), Response[UploadResponse]
+        client.pets.photos.with_response.upload(petId=pet, response_media_type=media), Response[UploadResponse]
     )
-    assert_type(client.pets.photos.with_raw_response.upload(pet_id=pet, response_media_type=media), RawResponse)
-    with client.pets.photos.with_streaming_response.upload(pet_id=pet, response_media_type=media) as response:
+    assert_type(client.pets.photos.with_raw_response.upload(petId=pet, response_media_type=media), RawResponse)
+    with client.pets.photos.with_streaming_response.upload(petId=pet, response_media_type=media) as response:
         assert_type(response, RawResponse)
 
 
 async def selected_async(client: AsyncClient, pet: FieldPetsPetIdPhotoPutPathPetIdParameter, media: str) -> None:
     """Check range-only response arguments and results in asynchronous views."""
-    assert_type(await client.pets.photos.upload(pet_id=pet, response_media_type="image/jpeg"), UploadResponse)
-    assert_type(await client.pets.photos.upload(pet_id=pet, response_media_type=media), UploadResponse)
-    assert_type(await client.pets.photos.upload(pet_id=pet, response_media_type=None), UploadResponse)
+    assert_type(await client.pets.photos.upload(petId=pet, response_media_type="image/jpeg"), UploadResponse)
+    assert_type(await client.pets.photos.upload(petId=pet, response_media_type=media), UploadResponse)
+    assert_type(await client.pets.photos.upload(petId=pet, response_media_type=None), UploadResponse)
     assert_type(
-        await client.pets.photos.with_response.upload(pet_id=pet, response_media_type=media), Response[UploadResponse]
+        await client.pets.photos.with_response.upload(petId=pet, response_media_type=media), Response[UploadResponse]
     )
     assert_type(
-        await client.pets.photos.with_raw_response.upload(pet_id=pet, response_media_type=media), AsyncRawResponse
+        await client.pets.photos.with_raw_response.upload(petId=pet, response_media_type=media), AsyncRawResponse
     )
-    async with client.pets.photos.with_streaming_response.upload(pet_id=pet, response_media_type=media) as response:
+    async with client.pets.photos.with_streaming_response.upload(petId=pet, response_media_type=media) as response:
         assert_type(response, AsyncRawResponse)

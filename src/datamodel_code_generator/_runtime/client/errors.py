@@ -1,193 +1,71 @@
-"""Public exceptions of a generated client; their messages name only safe call metadata, never payloads."""
+"""Public exceptions of a generated client: a small hierarchy under SDKError with ordinary attributes."""
 
 from __future__ import annotations
 
-import re
-from datetime import datetime  # noqa: TC003 - Public annotations support get_type_hints().
-from enum import Enum
-from typing import ClassVar, Final, Literal, TypeAlias, TypeGuard, get_args
+from typing import Final, Literal, TypeGuard
 
-from typing_extensions import TypedDict, TypeIs, Unpack
+from typing_extensions import TypeIs
 
-from ..protocols.references import OperationRef
-from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
+from .responses import HeadersView, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
-RetryStopReason: TypeAlias = Literal[
-    "unknown_delivery",
-    "status_not_retryable",
-    "transport_not_retryable",
-    "auth_unrefreshable",
-    "operation_never",
-    "server_forbids_retry",
-    "disabled",
-    "max_retries_exhausted",
-    "auth_recovery_exhausted",
-    "body_not_replayable",
-    "unsafe_operation",
-    "server_delay_exceeds_limit",
-    "deadline_insufficient",
-    "client_closed",
-    "cancelled",
-    "decode_failure",
-    "callback_failure",
-]
-IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
-DeadlinePhase: TypeAlias = Literal[
-    "encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"
-]
-AuthPhase: TypeAlias = Literal["connect", "read", "write", "pool", "validate", "unknown"]
-AuthReason: TypeAlias = Literal[
-    "provider_failed",
-    "provider_closed",
-    "token_expired",
-    "invalid_expiry",
-    "oauth_error",
-    "timeout",
-    "reauthorization_required",
-    "signing_failed",
-]
-OAuthErrorCode: TypeAlias = Literal[
-    "invalid_request",
-    "invalid_client",
-    "invalid_grant",
-    "unauthorized_client",
-    "unsupported_grant_type",
-    "invalid_scope",
-]
-_StoreAction: TypeAlias = Literal[
-    "get",
-    "set",
-    "delete",
-]
-
-_CONDITION: Final = re.compile(r"[a-z][a-z0-9_]{0,63}")
-_ACRONYM: Final = re.compile(r"([A-Z]+)([A-Z][a-z])")
-OAUTH_ERROR_CODES: Final[tuple[str, ...]] = get_args(OAuthErrorCode)
-MIN_STATUS: Final = 100
-MAX_STATUS: Final = 599
 _SERVER_ERROR: Final = 500
-_CAMEL: Final = re.compile(r"([a-z0-9])([A-Z])")
-
-
-class DeliveryState(Enum):
-    """How far a request got: never sent, possibly sent, or answered with a response."""
-
-    NOT_SENT = "NOT_SENT"
-    MAYBE_SENT = "MAYBE_SENT"
-    RESPONSE_STARTED = "RESPONSE_STARTED"
-
-
-class _CallMetadata(TypedDict, total=False):
-    delivery_state: DeliveryState | None
-    operation_id: str | None
-    call_id: str | None
-    parent_session_id: str | None
-    cause: BaseException | None
-    secondary_errors: tuple[BaseException, ...]
-    attempt_count: int
-    elapsed: float
-    completed_result: Response[object] | None
-
-
-class ErrorMetadata(_CallMetadata, total=False):
-    """The call metadata every SDK error accepts beside its own fields."""
-
-    info: ResponseInfo | None
-
-
-def _delivery_default(metadata: _CallMetadata, state: DeliveryState) -> None:
-    """Give an error without a delivery state, whether absent or None, its constructor's default."""
-    if metadata.get("delivery_state") is None:
-        metadata["delivery_state"] = state
+_MESSAGE_PREFIX: Final = 500
 
 
 class SDKError(Exception):
-    """Base of every exception the client raises, with the identifiers and measurements of the failed call.
+    """Base of every exception the client raises.
 
-    `reason` is a stable snake_case symbol; a success that a later hook failure interrupted stays in
-    `completed_result`.
+    `reason` is a short snake_case symbol where the class has several causes; `info` holds the response metadata
+    when a response arrived, and `cause` the original failure.
     """
-
-    _reason_code: ClassVar[str | None] = None
 
     def __init__(  # noqa: PLR0913
         self,
         *,
         reason: str | None = None,
-        delivery_state: DeliveryState | None = None,
         operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
         attempt_count: int = 0,
         elapsed: float = 0.0,
-        completed_result: Response[object] | None = None,
     ) -> None:
-        """Keep the call identifiers, the response metadata when one arrived, and the original cause.
-
-        Without a delivery state, an error with a response is RESPONSE_STARTED and one without is NOT_SENT until the
-        call that publishes it gives its own.
-        """
+        """Keep the operation, the response metadata when one arrived, and the original cause."""
         super().__init__()
         self.reason = reason
-        self.delivery_state = (
-            _error_delivery(delivery_state)
-            if delivery_state is not None
-            else DeliveryState.NOT_SENT
-            if info is None
-            else DeliveryState.RESPONSE_STARTED
-        )
         self.operation_id = operation_id
-        self.call_id = call_id
-        self.parent_session_id = parent_session_id
         self.info = info
         self.cause = cause
-        self.secondary_errors = tuple(secondary_errors)
-        self.attempt_count = error_count(attempt_count, "attempt_count") if info is None else info.attempt_count
-        self.elapsed = error_time(elapsed, "elapsed") if info is None else info.elapsed
-        self.completed_result = completed_result
+        self.attempt_count = attempt_count if info is None else info.attempt_count
+        self.elapsed = elapsed if info is None else info.elapsed
 
     @property
     def request_id(self) -> str | None:
         """Return the request identifier the response carried, or None without one."""
         return None if self.info is None else self.info.request_id
 
-    @property
-    def reason_code(self) -> str:
-        """Return the class's fixed code, the stable reason, or the snake_case name of the exception class."""
-        return (
-            self._reason_code
-            or self.reason
-            or _CAMEL.sub(r"\1_\2", _ACRONYM.sub(r"\1_\2", type(self).__name__)).lower()
-        )
-
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (("operation_id", self.operation_id), ("call_id", self.call_id), ("reason", self.reason))
+        return (("operation_id", self.operation_id), ("reason", self.reason))
 
     def __str__(self) -> str:
-        """Name the class and safe call metadata only."""
+        """Name the class and its safe metadata."""
         details = ", ".join(f"{name}={value!r}" for name, value in self._details() if value is not None)
         return f"{type(self).__name__}({details})"
 
 
 def add_secondary(error: BaseException, *failures: BaseException) -> None:
-    """Keep cleanup failures beside the error that is already propagating, never in its place.
-
-    An SDK error lists them; any other error names each one in a note.
-    """
+    """Name secondary failures in the notes of the error that is already propagating, never in its place."""
     for failure in failures:
         if error is failure:
             continue
-        if isinstance(error, SDKError):
-            error.secondary_errors = (*error.secondary_errors, failure)
-            continue
-        note = f"Secondary cleanup failure: {type(failure).__name__}"
+        note = f"Secondary failure: {type(failure).__name__}"
         if _is_notes(notes := error.__dict__.get("__notes__")):
             notes.append(note)
         else:
             error.__dict__["__notes__"] = [note]
+
+
+def _is_notes(value: object) -> TypeIs[list[object]]:
+    return isinstance(value, list)
 
 
 def kept_primary(primary: BaseException, failure: BaseException) -> BaseException:
@@ -205,87 +83,15 @@ def kept_primary(primary: BaseException, failure: BaseException) -> BaseExceptio
     return primary
 
 
-def _is_notes(value: object) -> TypeIs[list[object]]:
-    return isinstance(value, list)
-
-
-def _condition(value: object) -> str:
-    if not isinstance(value, str) or not _CONDITION.fullmatch(value):
-        msg = "A reason must be an SDK-defined lowercase symbol"
-        raise ValueError(msg)
-    return value
-
-
-def error_choice(value: object, choices: tuple[str, ...], field: str) -> None:
-    """Refuse an error field value outside its declared choices."""
-    if not isinstance(value, str) or value not in choices:
-        msg = f"{field} must be one of its declared values"
-        raise ValueError(msg)
-
-
-def error_time(value: object, field: str, *, nonnegative: bool = True) -> float:
-    """Return an error field duration as a finite float, refusing booleans and values outside its range."""
-    match value:
-        case bool():
-            pass
-        case int() | float():
-            try:
-                number = float(value)
-            except OverflowError:
-                pass
-            else:
-                if -float("inf") < number < float("inf") and (not nonnegative or number >= 0):
-                    return number
-        case _:
-            pass
-    msg = f"{field} must be a finite number in its permitted range"
-    raise ValueError(msg)
-
-
-def _error_status(value: object) -> int:
-    if type(value) is not int or not MIN_STATUS <= value <= MAX_STATUS:
-        msg = "status_code must be an HTTP status code"
-        raise ValueError(msg)
-    return value
-
-
-def error_count(value: object, field: str) -> int:
-    """Return an error field count, refusing booleans and negative or non-integer values."""
-    if type(value) is not int or value < 0:
-        msg = f"{field} must be a nonnegative integer"
-        raise ValueError(msg)
-    return value
-
-
-def _error_delivery(value: object) -> DeliveryState:
-    if not isinstance(value, DeliveryState):
-        msg = "delivery_state must be a DeliveryState"
-        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
-    return value
-
-
 def is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
     """Return whether a value is a tuple or a list."""
     return isinstance(value, (tuple, list))
 
 
-def error_string(value: object, field: str, *, optional: bool = False) -> None:
-    """Refuse an error field value that is not a string, or None where optional."""
-    if isinstance(value, str) or (optional and value is None):
-        return
-    msg = f"{field} must be a string{' or None' if optional else ''}"
-    raise ValueError(msg)
-
-
-def _protocol_context(helper_id: object, operation: object) -> None:
-    error_string(helper_id, "helper_id", optional=True)
-    if operation is not None and not isinstance(operation, OperationRef):
-        msg = "operation must be an OperationRef or None"
-        raise ValueError(msg)
-
-
 class ConfigurationError(SDKError):
     """A setting, argument, or call the client refused: invalid options, a closed client, or a consumed response."""
+
+    reason: str
 
     def __init__(  # noqa: PLR0913
         self,
@@ -295,91 +101,49 @@ class ConfigurationError(SDKError):
         source_uri: str | None = None,
         source_pointer: str | None = None,
         helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        **metadata: Unpack[ErrorMetadata],
+        operation_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
     ) -> None:
         """Keep where the setting lives, which rule it broke, and the helper that refused it."""
-        _protocol_context(helper_id, operation)
-        super().__init__(reason=_condition(reason), **metadata)
-        self.reason: str = reason
+        super().__init__(reason=reason, operation_id=operation_id, info=info, cause=cause)
         self.field_path = tuple(field_path)
         self.source_uri = source_uri
         self.source_pointer = source_pointer
         self.helper_id = helper_id
-        self.operation = operation
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("field_path", ".".join(map(str, self.field_path)) or None))
 
 
 class APIConnectionError(SDKError):
-    """A classified I/O failure of the HTTP transport, with how far the request got."""
-
-    def __init__(
-        self,
-        *,
-        phase: IOPhase | DeadlinePhase = "unknown",
-        reason: str | None = None,
-        retry_stop_reason: RetryStopReason | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the delivery evidence and the phase that failed; without evidence the request may have been sent."""
-        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
-        super().__init__(reason=reason, **metadata)
-        self.phase: IOPhase | DeadlinePhase = phase
-        self.retry_stop_reason: RetryStopReason | None = retry_stop_reason
+    """The HTTP transport failed before a complete response: the original failure is the cause."""
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("delivery_state", self.delivery_state.value), ("phase", self.phase))
+        cause = self.cause
+        return (*super()._details(), ("cause", None if cause is None else type(cause).__name__))
 
 
 class APITimeoutError(APIConnectionError):
-    """An I/O phase exceeded its own timeout, or the call or stream exhausted its monotonic deadline.
+    """An I/O phase exceeded its own timeout, or the call or stream its total timeout.
 
-    A phase timeout keeps the cap that expired in `effective_timeout`; a deadline keeps its absolute monotonic
-    `deadline_at` and the reason `deadline_exceeded`.
+    `reason` is `phase_timeout` for the first and `deadline_exceeded` for the second.
     """
-
-    def __init__(
-        self,
-        *,
-        phase: IOPhase | DeadlinePhase = "unknown",
-        effective_timeout: float | None = None,
-        deadline_at: float | None = None,
-        reason: str | None = None,
-        retry_stop_reason: RetryStopReason | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the expired phase cap or deadline beside the delivery evidence."""
-        if reason == "deadline_exceeded" and deadline_at is None:
-            msg = "A deadline_exceeded timeout needs its deadline_at"
-            raise ValueError(msg)
-        super().__init__(phase=phase, reason=reason, retry_stop_reason=retry_stop_reason, **metadata)
-        self.effective_timeout = None if effective_timeout is None else error_time(effective_timeout, "timeout")
-        self.deadline_at = None if deadline_at is None else error_time(deadline_at, "deadline_at", nonnegative=False)
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("effective_timeout", self.effective_timeout))
 
 
 def is_deadline(error: object) -> TypeGuard[APITimeoutError]:
-    """Return whether an error is an exhausted call or stream deadline rather than an I/O failure."""
-    return isinstance(error, APITimeoutError) and error.deadline_at is not None
+    """Return whether an error is an exhausted total timeout rather than an I/O failure."""
+    return isinstance(error, APITimeoutError) and error.reason == "deadline_exceeded"
 
 
 def is_phase_timeout(error: object) -> TypeGuard[APITimeoutError]:
     """Return whether an error is an I/O phase that exceeded its own timeout."""
-    return isinstance(error, APITimeoutError) and error.deadline_at is None
+    return isinstance(error, APITimeoutError) and error.reason != "deadline_exceeded"
 
 
 def is_transport(error: object) -> TypeGuard[APIConnectionError]:
-    """Return whether an error is a classified I/O failure of the transport, a phase timeout included."""
+    """Return whether an error is an I/O failure of the transport, a phase timeout included."""
     return isinstance(error, APIConnectionError) and not is_deadline(error)
-
-
-def is_http_error(error: object) -> TypeGuard[APIStatusError]:
-    """Return whether an error is a final 4xx or 5xx response rather than an unexpected status."""
-    return isinstance(error, APIStatusError) and error.reason != "unexpected_status"
 
 
 def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
@@ -387,27 +151,20 @@ def is_client_closed(error: object) -> TypeGuard[ConfigurationError]:
     return isinstance(error, ConfigurationError) and error.reason == "client_closed"
 
 
-_CALL_STATES: Final = frozenset({"client_closed", "response_consumed"})
-
-
-def is_auth_classified(error: object) -> bool:
-    """Return whether a credential or signing callback's failure is already classified.
-
-    It is when the callback raised an auth failure, or a refused setting rather than the state of a call it made.
-    """
-    return isinstance(error, AuthError) or (isinstance(error, ConfigurationError) and error.reason not in _CALL_STATES)
-
-
-def is_hook_failure(error: object) -> TypeGuard[SDKError]:
-    """Return whether an error is a hook's failure, which stops the call."""
-    return type(error) is SDKError and error.reason == "hook_failed"
+def _message(body: bytes, truncated: bool) -> str:  # noqa: FBT001
+    """Return the start of an error body as text, marking where it was cut."""
+    text = body.decode("utf-8", "replace").strip()
+    if len(text) > _MESSAGE_PREFIX:
+        return f"{text[:_MESSAGE_PREFIX]}..."
+    return f"{text}..." if truncated and text else text
 
 
 class APIStatusError(SDKError):
     """A final status the operation does not declare as a success, with its bounded body.
 
     `body` is the payload decoded with the operation's declared error schema for the status, or the bounded raw bytes
-    when none is declared or it did not decode; the decode failure is then the cause.
+    when none is declared or it did not decode; the decode failure is then the cause. The message gives the status and
+    the start of the body.
     """
 
     info: ResponseInfo
@@ -420,16 +177,14 @@ class APIStatusError(SDKError):
         body_bytes: bytes = b"",
         truncated: bool = False,
         reason: str | None = None,
-        retry_stop_reason: RetryStopReason | None = None,
-        **metadata: Unpack[_CallMetadata],
+        operation_id: str | None = None,
+        cause: BaseException | None = None,
     ) -> None:
         """Keep the response metadata, the decoded or raw body, and the bounded body bytes."""
-        _delivery_default(metadata, DeliveryState.RESPONSE_STARTED)
-        super().__init__(info=info, reason=reason, **metadata)
+        super().__init__(info=info, reason=reason, operation_id=operation_id, cause=cause)
         self.body = body
         self.body_bytes = body_bytes
         self.truncated = truncated
-        self.retry_stop_reason: RetryStopReason | None = retry_stop_reason
 
     @property
     def status_code(self) -> int:
@@ -441,13 +196,10 @@ class APIStatusError(SDKError):
         """Return the final response headers."""
         return self.info.headers
 
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            ("status_code", self.info.status_code),
-            *super()._details(),
-            ("request_id", self.info.request_id),
-            ("retry_stop_reason", self.retry_stop_reason),
-        )
+    def __str__(self) -> str:
+        """Give the status and the start of the response body."""
+        message = _message(self.body_bytes, self.truncated)
+        return f"Error code: {self.info.status_code}{f' - {message}' if message else ''}"
 
 
 class BadRequestError(APIStatusError):
@@ -498,55 +250,13 @@ def status_error(status: int) -> type[APIStatusError]:
     return InternalServerError if status >= _SERVER_ERROR else _STATUS_ERRORS.get(status, APIStatusError)
 
 
-class AuthError(SDKError):
-    """Credential acquisition, a token exchange, or request signing failed; no credential material is kept.
-
-    An OAuth rejection keeps the token endpoint's status and its standard error code, an expired token its expiry,
-    and a timeout the cap that fired.
-    """
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        reason: AuthReason,
-        phase: AuthPhase = "unknown",
-        status_code: int | None = None,
-        oauth_error: OAuthErrorCode | None = None,
-        expires_at: datetime | None = None,
-        effective_timeout: float | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep why credentials failed and the phase, never the provider's descriptions or secrets."""
-        error_choice(reason, get_args(AuthReason), "reason")
-        error_choice(phase, get_args(AuthPhase), "phase")
-        if status_code is not None:
-            _error_status(status_code)
-        if oauth_error is not None:
-            error_choice(oauth_error, OAUTH_ERROR_CODES, "oauth_error")
-        _delivery_default(metadata, DeliveryState.MAYBE_SENT)
-        super().__init__(reason=reason, **metadata)
-        self.reason: AuthReason = reason
-        self.phase: AuthPhase = phase
-        self.status_code = status_code
-        self.oauth_error: OAuthErrorCode | None = oauth_error
-        self.expires_at = expires_at
-        self.effective_timeout = None if effective_timeout is None else error_time(effective_timeout, "timeout")
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (
-            *super()._details(),
-            ("delivery_state", self.delivery_state.value),
-            ("phase", self.phase),
-            ("status_code", self.status_code),
-            ("oauth_error", self.oauth_error),
-        )
-
-
 class DecodeError(SDKError):
     """A request argument its declared wire form cannot carry, or a response that cannot become its declared value.
 
     `location` names the failing argument path or header, never its value; a response keeps its bounded body.
     """
+
+    reason: str
 
     def __init__(  # noqa: PLR0913
         self,
@@ -557,48 +267,28 @@ class DecodeError(SDKError):
         body_bytes: bytes = b"",
         truncated: bool = False,
         media_type: str | None = None,
-        limit: int | None = None,
-        observed: int | None = None,
-        **metadata: Unpack[ErrorMetadata],
+        operation_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
     ) -> None:
         """Keep which rule the body broke and where, with the bounded body of a response."""
-        super().__init__(reason=_condition(reason), **metadata)
-        self.reason: str = reason
+        super().__init__(reason=reason, operation_id=operation_id, info=info, cause=cause)
         self.direction: Literal["request", "response"] = direction
         self.location = tuple(location)
         self.body_bytes = body_bytes
         self.truncated = truncated
         self.media_type = media_type
-        self.limit = limit
-        self.observed = observed
 
     def _details(self) -> tuple[tuple[str, object], ...]:
+        located = ("location", ".".join(map(str, self.location)) or None)
         if (info := self.info) is None:
-            return (*super()._details(), ("location", ".".join(map(str, self.location)) or None))
-        return (
-            ("status_code", info.status_code),
-            *super()._details(),
-            ("location", ".".join(map(str, self.location)) or None),
-            ("request_id", info.request_id),
-        )
+            return (*super()._details(), located)
+        return (("status_code", info.status_code), *super()._details(), located, ("request_id", info.request_id))
 
 
 def body_failure(reason: str, cause: BaseException | None = None) -> DecodeError:
     """Return the failure of a binary input that cannot be opened or rewound for sending."""
     return DecodeError(reason=reason, direction="request", location=("body",), cause=cause)
-
-
-def too_large(info: ResponseInfo, limit: int, observed: int, operation_id: str | None = None) -> DecodeError:
-    """Return the failure of a body larger than its buffer limit; nothing is retried."""
-    return DecodeError(
-        reason="response_too_large",
-        info=info,
-        limit=limit,
-        observed=observed,
-        operation_id=operation_id,
-        call_id=info.call_id,
-        delivery_state=DeliveryState.RESPONSE_STARTED,
-    )
 
 
 def response_failure(
@@ -610,113 +300,4 @@ def response_failure(
     media_type: str | None = None,
 ) -> DecodeError:
     """Return the decode failure of a received response, keeping its metadata and bounded body."""
-    return DecodeError(
-        reason=reason,
-        info=info,
-        body_bytes=body,
-        call_id=info.call_id,
-        cause=cause,
-        delivery_state=DeliveryState.RESPONSE_STARTED,
-        media_type=media_type,
-    )
-
-
-class ProtocolError(SDKError):
-    """Base of failures in received protocol data of a helper."""
-
-    def __init__(
-        self,
-        *,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        reason: str | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the helper context beside the shared call metadata."""
-        _protocol_context(helper_id, operation)
-        super().__init__(reason=reason, **metadata)
-        self.helper_id = helper_id
-        self.operation = operation
-
-
-class ProtocolSizeError(ProtocolError):
-    """A received record over the limit of its buffer; the oversized value never reaches the caller."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        kind: Literal[
-            "page",
-            "cursor",
-            "line",
-            "event",
-            "message",
-            "body",
-            "headers",
-            "keys",
-            "signatures",
-            "ack_buffer",
-        ],
-        limit: int,
-        observed: int,
-        unit: Literal["bytes", "items"],
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep which record overflowed, its limit, and how much arrived."""
-        super().__init__(helper_id=helper_id, operation=operation, **metadata)
-        self.kind = kind
-        self.limit = limit
-        self.observed = observed
-        self.unit = unit
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("kind", self.kind), ("limit", self.limit), ("observed", self.observed))
-
-
-class WebhookVerificationError(ProtocolError):
-    """A webhook signature or authenticated fact that verification rejected before decoding its event."""
-
-    def __init__(
-        self,
-        *,
-        condition: Literal["malformed_signature", "invalid_signature", "missing_key", "timestamp_window"],
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep only the safe rejection category and shared context, never signature or key material."""
-        error_choice(
-            condition,
-            ("malformed_signature", "invalid_signature", "missing_key", "timestamp_window"),
-            "condition",
-        )
-        super().__init__(helper_id=helper_id, operation=operation, **metadata)
-        self.condition = condition
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition))
-
-
-class ProtocolStoreError(ProtocolError):
-    """A helper store operation that failed; the original cause and entry identity remain available."""
-
-    def __init__(
-        self,
-        *,
-        action: _StoreAction,
-        entry_id: str | None = None,
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        **metadata: Unpack[ErrorMetadata],
-    ) -> None:
-        """Keep the store action and private entry identity alongside the helper context."""
-        error_choice(action, get_args(_StoreAction), "action")
-        error_string(entry_id, "entry_id", optional=True)
-        super().__init__(helper_id=helper_id, operation=operation, **metadata)
-        self.action = action
-        self.entry_id = entry_id
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("action", self.action))
+    return DecodeError(reason=reason, info=info, body_bytes=body, cause=cause, media_type=media_type)

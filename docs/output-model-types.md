@@ -86,11 +86,12 @@ run on. Pass `--target-pydantic-version 2` when the generated code must also run
 
 When the target is unset:
 
-- **Feature forms** use the newest supported forms, the same as the newest choice (`2.12`).
+- **Feature forms** use the newest supported forms, the same as `2.12`.
 - **Config key naming** is unchanged: `--allow-population-by-field-name` emits `populate_by_name=True`, as with `2`.
-  Only an explicit `2.11` or `2.12` emits `validate_by_name=True`.
+  Only an explicit `2.11`, `2.12` or `2.14` emits `validate_by_name=True`.
+- **`--use-missing-sentinel`** keeps the experimental `pydantic.experimental.missing_sentinel` import, as with `2.12`.
 
-| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
+| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
 | `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
@@ -99,12 +100,29 @@ When the target is unset:
 | `--alias-generator` field aliases (2.8+) | `alias=` on every `BaseModel` field | `alias=` only where the generated alias differs |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
+| `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
 
-| Config key naming | Unset, `2` | `2.11`, `2.12` |
+| Config key naming | Unset, `2` | `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
+
+| `--use-missing-sentinel` import | Unset, `2.12` | `2.14` |
+| --- | --- | --- |
+| `MISSING` (2.14 deprecates the experimental path) | `from pydantic.experimental.missing_sentinel import MISSING` | `from pydantic import MISSING` |
+
+With `2` and `--use-annotated`, a `BaseModel`, `RootModel` or `pydantic_v2.dataclass` field whose type names a model
+defined later in the same module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11
+cannot evaluate such an annotation while it creates the class, and then mishandles the `Field()` inside
+`Annotated[...]`: depending on the release it drops the alias and the description, ignores `validate_default`, or fails
+on a constraint. Required dataclass fields written this way move after the other required fields. Fields that reference
+only their own model or earlier models, and output without deferred annotations (`--disable-future-imports`), keep the
+`Annotated` form.
+
+For a field written this way, type checkers that read `Field()` assignments, such as pyright, take the alias as the
+constructor argument name and treat a positional default such as `Field(None, alias=...)` as a required argument. Add
+`--use-default-kwarg` to emit `Field(default=None, ...)` instead.
 
 With `2`, `--alias-generator` output names every alias in `Field(alias=...)`. Type checkers that read the alias as the
 constructor argument name, such as pyright, then expect the alias instead of the field name; at runtime

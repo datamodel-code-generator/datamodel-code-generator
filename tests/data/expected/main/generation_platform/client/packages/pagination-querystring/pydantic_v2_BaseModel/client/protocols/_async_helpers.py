@@ -7,8 +7,7 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import FieldLookupGetQuerystringFilterParameter as _dcg_type_1
-from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
+import models
 
 from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
 from .._runtime.model_codecs.media import JSONValue
@@ -21,7 +20,7 @@ from .._runtime.protocols.pagination import (
     aiterate_pages,
     aresume_pages,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from ..types.default import LookupResponse, SearchResponse
 from . import PaginationOptions, _plans
 
@@ -90,10 +89,9 @@ class AsyncSearchAllPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, SearchResponse]:
         """Fetch the first page of GET /search."""
         return await afirst_page(
@@ -102,16 +100,14 @@ class AsyncSearchAllPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
         """Return a pager over the items of GET /search; it sends nothing until it is iterated."""
         return aiterate_pages(
@@ -120,7 +116,6 @@ class AsyncSearchAllPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     async def next_page(
@@ -129,7 +124,6 @@ class AsyncSearchAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, SearchResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
@@ -138,17 +132,15 @@ class AsyncSearchAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
@@ -158,7 +150,6 @@ class AsyncSearchAllPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -172,10 +163,9 @@ class AsyncSearchFixedPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, SearchResponse]:
         """Fetch the first page of GET /search."""
         return await afirst_page(
@@ -184,16 +174,14 @@ class AsyncSearchFixedPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
         """Return a pager over the items of GET /search; it sends nothing until it is iterated."""
         return aiterate_pages(
@@ -202,7 +190,6 @@ class AsyncSearchFixedPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     async def next_page(
@@ -211,7 +198,6 @@ class AsyncSearchFixedPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, SearchResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
@@ -220,17 +206,15 @@ class AsyncSearchFixedPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
@@ -240,7 +224,6 @@ class AsyncSearchFixedPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -254,10 +237,9 @@ class AsyncSearchNextPagination:
     async def page(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, SearchResponse]:
         """Fetch the first page of GET /search."""
         return await afirst_page(
@@ -266,16 +248,14 @@ class AsyncSearchNextPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
         """Return a pager over the items of GET /search; it sends nothing until it is iterated."""
         return aiterate_pages(
@@ -284,7 +264,6 @@ class AsyncSearchNextPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     async def next_page(
@@ -293,7 +272,6 @@ class AsyncSearchNextPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, SearchResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
@@ -302,17 +280,15 @@ class AsyncSearchNextPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, SearchResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
@@ -322,7 +298,6 @@ class AsyncSearchNextPagination:
             (criteria,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -336,10 +311,9 @@ class AsyncLookupAllPagination:
     async def page(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, LookupResponse]:
         """Fetch the first page of GET /lookup."""
         return await afirst_page(
@@ -348,16 +322,14 @@ class AsyncLookupAllPagination:
             (filter,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, LookupResponse]:
         """Return a pager over the items of GET /lookup; it sends nothing until it is iterated."""
         return aiterate_pages(
@@ -366,7 +338,6 @@ class AsyncLookupAllPagination:
             (filter,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     async def next_page(
@@ -375,7 +346,6 @@ class AsyncLookupAllPagination:
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> Page[str, LookupResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return await afollowing_page(
@@ -384,17 +354,15 @@ class AsyncLookupAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         state: JSONValue,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncPager[str, LookupResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return aresume_pages(
@@ -404,5 +372,4 @@ class AsyncLookupAllPagination:
             (filter,),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )

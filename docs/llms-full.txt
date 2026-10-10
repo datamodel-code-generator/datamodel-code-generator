@@ -6005,11 +6005,12 @@ run on. Pass `--target-pydantic-version 2` when the generated code must also run
 
 When the target is unset:
 
-- **Feature forms** use the newest supported forms, the same as the newest choice (`2.12`).
+- **Feature forms** use the newest supported forms, the same as `2.12`.
 - **Config key naming** is unchanged: `--allow-population-by-field-name` emits `populate_by_name=True`, as with `2`.
-  Only an explicit `2.11` or `2.12` emits `validate_by_name=True`.
+  Only an explicit `2.11`, `2.12` or `2.14` emits `validate_by_name=True`.
+- **`--use-missing-sentinel`** keeps the experimental `pydantic.experimental.missing_sentinel` import, as with `2.12`.
 
-| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
+| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
 | `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
@@ -6018,12 +6019,29 @@ When the target is unset:
 | `--alias-generator` field aliases (2.8+) | `alias=` on every `BaseModel` field | `alias=` only where the generated alias differs |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
+| `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
 
-| Config key naming | Unset, `2` | `2.11`, `2.12` |
+| Config key naming | Unset, `2` | `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
+
+| `--use-missing-sentinel` import | Unset, `2.12` | `2.14` |
+| --- | --- | --- |
+| `MISSING` (2.14 deprecates the experimental path) | `from pydantic.experimental.missing_sentinel import MISSING` | `from pydantic import MISSING` |
+
+With `2` and `--use-annotated`, a `BaseModel`, `RootModel` or `pydantic_v2.dataclass` field whose type names a model
+defined later in the same module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11
+cannot evaluate such an annotation while it creates the class, and then mishandles the `Field()` inside
+`Annotated[...]`: depending on the release it drops the alias and the description, ignores `validate_default`, or fails
+on a constraint. Required dataclass fields written this way move after the other required fields. Fields that reference
+only their own model or earlier models, and output without deferred annotations (`--disable-future-imports`), keep the
+`Annotated` form.
+
+For a field written this way, type checkers that read `Field()` assignments, such as pyright, take the alias as the
+constructor argument name and treat a positional default such as `Field(None, alias=...)` as a required argument. Add
+`--use-default-kwarg` to emit `Field(default=None, ...)` instead.
 
 With `2`, `--alias-generator` output names every alias in `Field(alias=...)`. Type checkers that read the alias as the
 constructor argument name, such as pyright, then expect the alias instead of the field name; at runtime
@@ -11216,8 +11234,7 @@ the same run, a FastAPI server package for its operations: routers, a service Pr
 adapters for the parameter styles and media types FastAPI cannot read, authentication, and the served OpenAPI
 document. Every
 generated file is regenerated on each run. You write the business logic in your own modules, implementing the
-service Protocols, and type checkers, Python, and the package at startup check that every operation has a
-matching method.
+service Protocols, and type checkers and Python check that every operation has a matching method.
 
 Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
 Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
@@ -11263,8 +11280,25 @@ The preset supplies the model options, as in the model [quick start](getting-sta
 <!-- END AUTO-GENERATED FASTAPI QUICK START -->
 
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
-`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. For a
-document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
+`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. A method's
+docstring names its route, such as `Handle GET /pets/{petId}.`, or, with `--use-schema-description`, the
+operation's summary and description, formatted as model docstrings are, on one line with
+`--use-single-line-docstring`. An optional
+parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
+The routes declare such an input as FastAPI applications do, `T | None = None`, so FastAPI's own document shows
+its schema as `anyOf` of the type and `null`.
+Methods and router modules are named in snake case, and Protocols in PascalCase, whatever the model naming options say:
+a method after its operationId, or after its method and path without one, such as
+`get_pets_by_pet_id`. A method's arguments are named after their wire names as model fields are, so the quick start's
+preset, which turns on `--snake-case-field` for Pydantic models, names the `petId` path parameter `pet_id`; without the
+preset, pass `--snake-case-field` explicitly for snake_case arguments, or the argument keeps the wire name, `petId`.
+`--aliases` and the special-field prefix options apply to arguments too. A derived name that its namespace already
+holds takes the model's suffix, such as `id_1` for a query `id` beside a path `id`, `body_1` for a parameter named
+`body`, or `pets_1` for a second tag that also becomes `pets`. The model's `--naming-strategy` rules apply to these
+names too, with the router group as the parent of a method and the method as the parent of an argument. An explicit
+name of `--server-operation-names`, `--server-router-names`, or `--server-parameter-names` must be new and is never
+renamed.
+For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:
 
 ```python
@@ -11298,10 +11332,19 @@ uv run uvicorn app:app
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, passes its other keyword arguments, such as `lifespan` or
-`middleware`, to `FastAPI`, and checks every method when the application starts; any
-object with the right methods works, and type checkers check it where you pass it. The generated
+`middleware`, to `FastAPI`, and looks every method up when it registers the routes; any object with the right
+methods works, and type checkers check it where you pass it. Registration stops with an error for what would
+otherwise go wrong without one: a missing method (`AttributeError`), a coroutine function for an operation in the
+`sync` handler mode or a plain method for one in the `async` mode, a secured operation without a callable
+`authorize`, and an `operation_dependencies` entry that is not a sequence of `Depends(...)` (`TypeError`) or that
+names no method of the router (`ValueError`). The package does not check the arguments of a method: one whose
+signature a type checker would reject fails with Python's own error when its operation is requested. The generated
 `server/README.md` lists the operations of each service and shows how to connect an `authorize` callback and your own
 `FastAPI` application.
+
+`create_app` and `build_router` also take `prefix` and `operation_dependencies`, FastAPI dependencies of single
+operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`; `build_router` takes
+`dependencies` for all of its routes, which `create_app` passes to `FastAPI`.
 
 ## Requirements
 
@@ -11321,9 +11364,12 @@ object with the right methods works, and type checkers check it where you pass i
   `--formatters` (including its default and warning), `--custom-formatters` and `--custom-formatters-kwargs`,
   `--custom-file-header`, `--custom-file-header-path` and `--custom-file-header-mode`, `--disable-timestamp`,
   `--enable-version-header`, `--enable-command-header`, `--use-double-quotes`, `--builtin-format-line-length`,
-  `--encoding` (for the Python files; the other files are UTF-8), and the formatter settings found from `--output`.
-  The target settings have no output options of their own. `--use-type-checking-imports` does not apply to the
-  server files, because FastAPI reads their annotations at run time.
+  `--encoding` (for the Python files; the other files are UTF-8), `--use-type-checking-imports`, and the formatter
+  settings found from `--output`. The target settings have no output options of their own. As for the models, Ruff
+  moves imports only an annotation uses into `TYPE_CHECKING` blocks when `ruff-check` runs with its TC rules
+  selected and `--use-type-checking-imports` is given, since the server's Pydantic backends keep them by default. The
+  router and application modules keep their imports: they have no postponed annotations, because FastAPI reads them
+  at run time.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `--server-model-package` is its import path. The models can
@@ -11337,6 +11383,7 @@ object with the right methods works, and type checkers check it where you pass i
 `datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
 options take mappings keyed by the same operation references:
 
+<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
 from pathlib import Path
 
@@ -11353,9 +11400,9 @@ generate(
     server_output=Path("server"),
     server_package="server",
     server_model_package="models",
-    server_primary_responses={"/paths/~1pets/post": {"status_code": 201}},
 )
 ```
+<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 It publishes the models and the package together and returns `None`, like model generation. Without an `output`, it
 returns every model and server file as `GeneratedModules`, under the paths their import paths imply, such as
@@ -11364,31 +11411,6 @@ update; see [Generating a Server or Client Package](using_as_module.md#generatin
 `load_pyproject_config()` reads the server keys of `pyproject.toml`, whose paths and operation documents resolve
 against its directory. Invalid settings, bindings, and template failures raise `datamodel_code_generator.Error` with
 the message the command line prints after `Error:`. The `uv add` notice is a command-line message only.
-
-The separate entry points of `datamodel_code_generator.fastapi` take the server settings as a `FastAPIConfig`:
-
-<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
-```python
-from pathlib import Path
-
-from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
-from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
-
-generate_fastapi(
-    Path("openapi.yaml"),
-    model_config=GenerateConfig(
-        output=Path("models.py"),
-        input_file_type=InputFileType.OpenAPI,
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        preset="standard-py312-20260909",
-    ),
-    config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
-)
-```
-<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
-
-`render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
 
 ## Server options
 
@@ -11438,6 +11460,8 @@ an error before generation.
 Per-operation settings are keyed by operation reference: the JSON pointer of the path item method in the input
 document, such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, such as
 `pets.yaml#/paths/~1pets/get`. The README of the generated package lists the reference of every operation.
+These settings decide the generated code, including each method name, so they name an operation as the input
+document does; `operation_dependencies`, an argument of the generated package, names it by its method.
 
 ```toml
 [tool.datamodel-codegen.server-handler-modes]
@@ -11499,8 +11523,8 @@ The batch publishes the server packages together with the models of every job on
 nothing when a job fails or when jobs generate different models for a shared `output`; the `uv add` notice of each
 package follows the publication on stderr. `--check` compares every job as a single run does and exits with 1 when
 any of them would change. With `--output-format json`, a server job adds the generation or check payload of a single
-server run to the batch document, with file paths relative to that job's model output directory. Server jobs refuse
-`--watch`, as a single server run does.
+server run to the batch document, with file paths relative to that job's model output directory. `--all-jobs
+--watch` regenerates the batch, server jobs included, whenever an input any job read changes.
 
 ## The generated package
 
@@ -11509,7 +11533,7 @@ server run to the batch document, with file paths relative to that job's model o
 | `__init__.py`, `application.py` | `create_app`, `build_router`, and the public types |
 | `services.py` | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | Route registrations |
-| `errors.py`, `security.py` | Errors, and one FastAPI security dependency for each scheme |
+| `security.py` | One FastAPI security dependency for each scheme |
 | `_generated/`, `_runtime/` | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | Documentation and typing marker |
 
@@ -11565,6 +11589,13 @@ It compares the rendered model and server text, including the README and `py.typ
 the model and server output directories. CRLF and LF compare equally. Unrelated text files are outside this scope.
 `--check --output-format json` uses the same check payload as model generation. Checking publishes nothing.
 
+`--diff-against OLD_INPUT` renders the models and the server from both inputs without writing anything, and prints
+what changes between them with the model input diff: unified diffs labeled `(baseline input)` and `(current input)`,
+and files generated only from one of the inputs. It exits with 0 when both render the same files and 1 otherwise;
+`--output-format json` emits the model input-diff payload. `--watch` regenerates the models and the server whenever
+the input, a document it references, or a file an option names changes, as for model generation, and has the same
+limits: it needs a local `--input` and cannot be combined with `--check` or `--output-format json`.
+
 `--output-format json` publishes the files and emits the existing generation payload as one JSON document on
 stdout. Its `output` is the configured model output; `files` contains the rendered model and server text. As in
 the model payload, a file path is relative to the model output directory, which is `output` for a model directory
@@ -11593,15 +11624,38 @@ The generated models are the runtime contract. Routes declare the model types di
 `Annotated[Model, Body()]`, a URL-encoded form of a `BaseModel` is a FastAPI form model, a primary JSON response is
 `response_model=Model`, and path, query, header, and cookie parameters are `Annotated` FastAPI parameters of the
 parameter's model type. A parameter's root model or type alias is unwrapped to its type when that type alone
-validates the same, so the method receives the value; the default is the one the model declares. How strictly a
-value follows the OpenAPI document is decided by the model generation options, not by the server.
+validates the same, so the method receives the value. A default that the parameter's schema declares reaches the
+method whenever the request omits the parameter, however the model options spell the type, such as with
+`--use-annotated` or `--field-constraints`; a parameter whose type stays a root model receives that model with its
+own default. How strictly a value follows the OpenAPI document is decided by the model generation options, not by
+the server.
 
 FastAPI cannot read some inputs, so a generated adapter reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
-form-style cookies, header and path arrays, objects, enums and literals of non-string values, repeated path
-placeholders, request bodies with several media types, text and binary bodies, multipart forms, and forms of the
-`pydantic_v2.dataclass` backend. A multipart form body reaches the method as its model, with uploads read to
-`bytes`.
+cookie arrays, header and path arrays, objects, enums and literals of non-string values, strict integers,
+numbers, and booleans (`--strict-types`), repeated path placeholders, request bodies with several media types, text
+and binary bodies, multipart forms, and forms of the `pydantic_v2.dataclass` backend. A multipart form body reaches
+the method as its model, with uploads read to `bytes`.
+
+A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
+as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the
+quotes, a `;` ends the value, and the last of several cookies of one name is taken. The generated client sends such
+values as they are, too, and generation stops with an error for such a cookie whose name is not a token. An adapter that reads a single-valued cookie, for a strict integer for instance, does not
+percent-decode it either; cookie arrays and objects, one cookie for each item or property, keep the `form` style's
+percent-encoding.
+
+An adapter converts a parameter's text by the schema's type before the model validates it, and accepts fewer
+spellings than FastAPI does for a parameter it reads itself: integers and numbers as JSON writes them, so `5`, `-5`,
+`2.5`, and `1e3` but not `05`, `+1`, or `1_000`, and booleans only as `true` and `false`. Turning on
+`--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
+FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
+A parameter with JSON `content` is parsed by its model's `TypeAdapter.validate_json`, as a JSON body is, so pydantic's
+JSON rules apply: a number is read as a float first, so a `Decimal` field gets the float's value
+(`0.1000000000000000000000000001` becomes `Decimal("0.1")`) and `NaN` and `Infinity` reach a `float` field; an object
+that repeats a member keeps the last value; and text that is not JSON, or JSON past pydantic's limits such as an
+integer of thousands of digits or deep nesting, answers `422` with `json_invalid`.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
+header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
 route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
@@ -11630,19 +11684,69 @@ operation as a separate alternative, since FastAPI cannot document a requirement
 
 ## Served OpenAPI document
 
-The application serves FastAPI's own document, built from the routes and the models they declare, so routes
-added later and other routers appear in it as usual. Each generated route adds what FastAPI cannot derive from it,
-taken from the source document at generation time: `responses=` documents every declared response, through its
-model when the body is JSON, and `openapi_extra` documents the parameters, request bodies, and callbacks that
-adapters read, with schema references resolved in place (a schema that refers to itself documents the inner
-reference as `{}`). Path placeholders that are not Python identifiers, or that repeat, appear under the route's
-own placeholder names.
+`create_app` serves the source document, not one FastAPI builds: generation writes the part of it the selected
+paths use into `server/_generated/openapi.py`, and the application reads it on the first request for
+`/openapi.json` and keeps it. The document keeps the source's OpenAPI version, `info`, `servers`, `tags`, security
+schemes, webhooks, and the selected paths with all their operations as they are declared, callbacks included.
+Components stay when something kept references them, and so do the `allOf` subtypes of a kept discriminator base.
+What a reference names in another loaded document, or in a path that is left out, joins the components of the
+kind the reference's position holds, under its own name or a numbered one when the name is taken; an OpenAPI 3.0
+path item, or a media type before 3.2, has no component kind and is copied in place. References are rewritten
+relative to the document, so a schema's `$id` is left out; a reference resolves as the models resolve it,
+through `$id`, `$anchor`, and `$dynamicAnchor`. A reference that names nothing the generation loaded stays as it
+is, with a warning. A link whose `operationRef` names a path that is left
+out is left out, and so is a value without a JSON form: a YAML `!!binary` value, NaN or infinity, or a YAML alias
+that contains itself. Each of them is reported as a `DocumentationAnnotationWarning`.
+
+FastAPI's `/docs` and `/redoc` show the document, and behind a root path FastAPI adds that path as the first
+server, as it does for its own document. `create_app`'s `prefix` leads every path, and the references and link
+`operationRef`s into the paths follow them. The description settings you pass to `create_app`, `title`, `version`,
+`summary`, `description`, `terms_of_service`, `contact`, `license_info`, `servers`, `openapi_tags`, and
+`openapi_external_docs`, replace the document's, as they do in FastAPI's own; one you leave unset or empty keeps
+the document's. The document is documentation only: the generated models are what the server validates with, and
+routes added to the application later do not appear in it.
+
+`create_app(..., source_openapi=False)` serves FastAPI's own document instead, built from the routes and the
+models they declare. It describes what FastAPI derives: a parameter, header, or body that only an adapter reads
+does not appear in it. An application of your own that includes `build_router(...)` serves FastAPI's document
+too, unless it calls `serve_source_openapi(app, prefix=..., metadata=...)`, imported from the generated package,
+with the prefix the router is included under and the description settings to replace. Path placeholders that are
+not Python identifiers, or that repeat, appear in FastAPI's document under the route's own placeholder names.
+
+## Production settings
+
+The application keeps FastAPI's defaults for its documentation endpoints and for the shape of its error
+responses, with one difference: a request that fails validation answers `422` with FastAPI's `{"detail": [...]}`
+records without their `input` and `ctx`, and without pydantic's `url`, which FastAPI already leaves out: the
+response carries each record's `type`, `loc`, and `msg`, so it does not return the rejected value as such. `loc`
+and `msg` are still pydantic's and can hold text the client chose: a key of a mapping or an unexpected field in
+`loc`, a discriminator tag in `msg`, and whatever a validator of your own puts in its error message. Parameters and
+bodies that adapters read answer with the same three keys.
+
+- `create_app` registers the handler, `validation_error_handler`, through FastAPI's `exception_handlers`. Pass
+  your own `exception_handlers` to send other error bodies, for example ones without `loc` and `msg`; an entry
+  for `RequestValidationError` replaces the package's.
+- An application of your own that includes `build_router(...)` keeps FastAPI's default records, with `input` and
+  `ctx`, unless you register the handler: `app.add_exception_handler(RequestValidationError,
+  validation_error_handler)`, imported from the generated package.
+- Other errors are FastAPI's: `404` and `405` bodies, and an opaque `500` for an exception in a service method or a
+  result that fails its response model. That error goes to the server log with the values it rejected. Inputs that
+  adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`.
+- FastAPI's own document (`source_openapi=False`) describes validation errors with FastAPI's `ValidationError`
+  schema, in which `loc`, `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies
+  conform to it; the source document describes the responses the source declares.
+- `create_app(..., docs_url=None, redoc_url=None, openapi_url=None)` removes `/docs`, `/redoc`, and
+  `/openapi.json`.
+- The `server` response header is the ASGI server's, not the application's; uvicorn leaves it out with
+  `--no-server-header`.
 
 ## Templates
 
 The server templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
-as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name,
-`application.jinja2`, `router.jinja2`, `services.jinja2`, and `readme.jinja2`. A role the directory does not hold,
+as model templates do: the files of its `fastapi` directory replace the builtin roles of the same name:
+`facade.jinja2` (the package initializers), `application.jinja2`, `router.jinja2` (the routes module or each router
+module), `services.jinja2`, `contract.jinja2` (`_generated/contract.py`), `security.jinja2`, `openapi.jinja2`
+(`_generated/openapi.py`), and `readme.jinja2`. A role the directory does not hold,
 or a custom template directory without a `fastapi` directory, keeps its builtin template. The builtin templates are
 in the `_fastapi/templates` directory of the installed package; copy one to start from it. An override may include
 or import the other builtin templates.
@@ -11679,6 +11783,30 @@ datamodel-codegen \
   --server-model-package models
 ```
 
+The values a role receives can change while server generation is experimental, and a value that an older copy of a
+builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
+compare an override with the current builtin template after an upgrade. The templates write every module, class,
+function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
+Each role receives these top-level values, where `imports` is the module's import block:
+
+| Role | Values |
+| --- | --- |
+| `application.jinja2` | `imports`, `exports`, `final`, `options`, `routes`, `info`, `build_router`, `build`, `services`, `settings`, `create_app`, `arguments`, `fastapi`, `error_handlers`, `serve_source_openapi` |
+| `contract.jinja2` | `imports`, `typed_dict`, `dependencies`, `plans`, `final`, `dataclass`, `parameter_adapter`, `body_adapter`, `operation_responses` |
+| `facade.jinja2` | `module`, `docstring`, `imports`, `exports` |
+| `openapi.jinja2` | `lines` |
+| `readme.jinja2` | `title`, `package`, `model_package`, `backend`, `operations`, `services`, `protocols`, `arguments`, `schemes`, `forms`, `raw_request` |
+| `router.jinja2` | `imports`, `docstring`, `routes`, `api_router`, `wiring`, `final`, `literal`, `templated`, `builder`, `group`, `build`, `services`, `settings` |
+| `security.jinja2` | `imports`, `schemes`, `exports` |
+| `services.jinja2` | `imports`, `typevar`, `abstract`, `protocol_type`, `protocols` |
+
+`router.jinja2` receives one `route` for each operation, with its local names (`adder`, `router`, `wiring`,
+`service`, `handler`), its `lookup` of the service method, its `principal` dependency or none, its `endpoint` with
+the endpoint's `parameters` (`name`, `annotation`, `default`), the service method `call` with its `arguments`, and
+its `registration`, whose `keywords` hold the optional `add_api_route` arguments. A builtin template writes each
+parameter, argument, and route entry on its own line, and leaves the type annotations and plan values on one line for
+the formatter.
+
 A template that does not parse or render stops the run with an `Error` that names the file in the custom
 template directory and, when Jinja knows it, the line. Generation also reads the model templates of the same
 directory, so the model templates must keep the class and field names, as the requirements above describe.
@@ -11690,7 +11818,7 @@ messages in order, without codes, severity or stage labels. Model generation err
 messages, including the class-name hint and input encoding context. Unexpected exceptions print a traceback.
 Configuration, input, model, binding, planning, and template errors stop the run before publication. Warnings are
 Python `UserWarning` subclasses from `datamodel_code_generator`: `DocumentationAnnotationWarning` reports
-a documentation value the served document cannot carry. Each message starts with the output path, spelled relative
+a source value the served document cannot carry. Each message starts with the output path, spelled relative
 to the working directory when it lies inside it, so every generated package reports its own files. They respect
 `--disable-warnings` and Python warning filters, and are not returned as diagnostic records.
 
@@ -17050,6 +17178,10 @@ The `--naming-strategy parent-prefixed` flag prefixes model names with their
 parent model name when duplicates occur. For example, if both `Order` and
 `Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
 
+Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
+names, with the resource or router group as the parent of a method and the method as the parent of an argument;
+under `primary-first`, a primary name is one the root document declares.
+
 **Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming)
 
 !!! tip "Usage"
@@ -18702,13 +18834,15 @@ Target Pydantic version for generated code compatibility.
 The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
 Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
-  unchanged and keeps `populate_by_name=True` like `2`
+- **unset**: the newest supported feature forms, the same as `2.12`; config key naming is unchanged and keeps
+  `populate_by_name=True` like `2`, and `--use-missing-sentinel` keeps the experimental `MISSING` import
 - **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
   `json_schema_extra` for deprecated fields, and dictionary-key models defined first
 - **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
   `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
 - **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
+- **2.14**: The 2.12 forms, with `--use-missing-sentinel` importing `MISSING` from `pydantic` instead of the
+  `pydantic.experimental.missing_sentinel` path that Pydantic 2.14 deprecates
 
 See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.
 
@@ -25104,7 +25238,7 @@ even in multiple inheritance scenarios where two parent schemas define the same 
           ]
         },
         "RefToNestedAllOfAllOf": {
-          "description": "Ref to nested allOf - not a root model.",
+          "description": "Ref to nested allOf root model.",
           "allOf": [
             { "$ref": "#/definitions/NestedAllOfDatatype" },
             { "maxLength": 100 }
@@ -25504,7 +25638,7 @@ other properties separate.
               ]
             },
             "RefToNestedAllOfAllOf": {
-              "description": "Ref to nested allOf - not a root model.",
+              "description": "Ref to nested allOf root model.",
               "allOf": [
                 { "$ref": "#/definitions/NestedAllOfDatatype" },
                 { "maxLength": 100 }
@@ -25685,12 +25819,14 @@ other properties separate.
                 pass
 
 
-            class NestedAllOfDatatype(BaseModel):
-                pass
+            class NestedAllOfDatatype(RootModel[constr(min_length=1)]):
+                root: constr(min_length=1)
 
 
-            class RefToNestedAllOfAllOf(NestedAllOfDatatype):
-                pass
+            class RefToNestedAllOfAllOf(RootModel[constr(min_length=1, max_length=100)]):
+                root: constr(min_length=1, max_length=100) = Field(
+                    ..., description='Ref to nested allOf root model.'
+                )
 
 
             class ConstraintsOnlyDatatype(RootModel[Any]):
@@ -25854,12 +25990,14 @@ other properties separate.
                 pass
 
 
-            class NestedAllOfDatatype(BaseModel):
-                pass
+            class NestedAllOfDatatype(RootModel[constr(min_length=1)]):
+                root: constr(min_length=1)
 
 
-            class RefToNestedAllOfAllOf(NestedAllOfDatatype):
-                pass
+            class RefToNestedAllOfAllOf(RootModel[constr(min_length=1, max_length=100)]):
+                root: constr(min_length=1, max_length=100) = Field(
+                    ..., description='Ref to nested allOf root model.'
+                )
 
 
             class ConstraintsOnlyDatatype(RootModel[Any]):
@@ -41067,11 +41205,11 @@ overrides it for that operation.
     from functools import cached_property
     from typing import Literal, overload
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -41101,12 +41239,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41118,9 +41258,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41129,9 +41269,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41139,14 +41279,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -41168,12 +41310,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41185,9 +41329,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41196,9 +41340,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41206,14 +41350,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -41235,12 +41381,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41252,9 +41400,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41263,9 +41411,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41273,14 +41421,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -41302,12 +41452,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41319,9 +41471,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41330,9 +41482,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -41340,14 +41492,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -41484,33 +41638,8 @@ servers keep them.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
-            (),
-        ),
-        parameters=(
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='limit',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('cursor',),
-                ),
-                codec=model_bindings.codec_0,
-            ),
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
-                ),
-                codec=model_bindings.codec_1,
-            ),
-        ),
+        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -41518,21 +41647,8 @@ servers keep them.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),),
-            (),
-        ),
-        body=RequestBody(
-            media=(
-                BodyMedia(
-                    media_type='application/json',
-                    kind='json',
-                    codec=model_bindings.codec_3,
-                ),
-            ),
-            default='application/json',
-            required=True,
-        ),
+        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
+        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
     )
     ```
 
@@ -41645,11 +41761,11 @@ generates.
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -41679,12 +41795,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41695,12 +41813,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -41721,12 +41841,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41737,12 +41859,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -41763,12 +41887,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41779,12 +41905,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -41805,12 +41933,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -41821,12 +41951,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -41955,11 +42087,11 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListAllResponse
 
@@ -41989,12 +42121,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListAllResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -42005,12 +42139,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -42031,12 +42167,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListAllResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -42047,12 +42185,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -42073,12 +42213,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -42089,12 +42231,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -42115,12 +42259,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -42131,12 +42277,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -42257,11 +42405,11 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -42291,12 +42439,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42307,12 +42457,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -42333,12 +42485,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42349,12 +42503,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -42375,12 +42531,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42391,12 +42549,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -42417,12 +42577,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42433,12 +42595,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -42558,11 +42722,11 @@ generation prints name the package by it; the package imports its own modules re
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -42592,12 +42756,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42608,12 +42774,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -42634,12 +42802,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42650,12 +42820,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -42676,12 +42848,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42692,12 +42866,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -42718,12 +42894,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -42734,12 +42912,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -42860,7 +43040,7 @@ references name resolve against the directory of the JSON file that holds them, 
 
     from functools import cached_property
 
-    from models import Pet as _dcg_type_0
+    import models
 
     from .._runtime.client.client import ClientCore as ClientCore_1
     from .._runtime.model_codecs.media import JSONValue
@@ -42873,7 +43053,7 @@ references name resolve against the directory of the JSON file that holds them, 
         iterate_pages,
         resume_pages,
     )
-    from ..options import UNSET, RequestOptions, SessionOptions, Unset
+    from ..options import UNSET, RequestOptions
     from ..types.pets import ListPetsResponse
     from . import PaginationOptions, _plans
 
@@ -42914,12 +43094,11 @@ references name resolve against the directory of the JSON file that holds them, 
         def page(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Page[_dcg_type_0, ListPetsResponse]:
+        ) -> Page[models.Pet, ListPetsResponse]:
             """Fetch the first page of GET /pets."""
             return first_page(
                 self._core,
@@ -42927,18 +43106,16 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def iterate(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
             return iterate_pages(
                 self._core,
@@ -42946,17 +43123,15 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def next_page(
             self,
-            page: Page[_dcg_type_0, ListPetsResponse],
+            page: Page[models.Pet, ListPetsResponse],
             *,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Page[_dcg_type_0, ListPetsResponse] | None:
+        ) -> Page[models.Pet, ListPetsResponse] | None:
             """Fetch the page after a page of this helper, or return None after the last page."""
             return following_page(
                 self._core,
@@ -42964,19 +43139,17 @@ references name resolve against the directory of the JSON file that holds them, 
                 page,
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def resume(
             self,
             state: JSONValue,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
             return resume_pages(
                 self._core,
@@ -42985,7 +43158,6 @@ references name resolve against the directory of the JSON file that holds them, 
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
     ```
 
@@ -43099,11 +43271,11 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.animals import CreatePetResponse, ListPetsResponse
 
@@ -43133,12 +43305,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -43149,12 +43323,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -43175,12 +43351,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -43191,12 +43369,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -43217,12 +43397,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -43233,12 +43415,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -43259,12 +43443,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -43275,12 +43461,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -43418,33 +43606,8 @@ against the document's URL when it is read from one.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
-            (),
-        ),
-        parameters=(
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='limit',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('cursor',),
-                ),
-                codec=model_bindings.codec_0,
-            ),
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
-                ),
-                codec=model_bindings.codec_1,
-            ),
-        ),
+        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -43452,21 +43615,8 @@ against the document's URL when it is read from one.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),),
-            (),
-        ),
-        body=RequestBody(
-            media=(
-                BodyMedia(
-                    media_type='application/json',
-                    kind='json',
-                    codec=model_bindings.codec_3,
-                ),
-            ),
-            default='application/json',
-            required=True,
-        ),
+        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
+        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
     )
     ```
 
@@ -43615,8 +43765,13 @@ Declare the arguments of the operation methods (experimental).
             """The same operations, returning blocks that send each call on entry and stream its response."""
             return PetsWithStreamingResponse(self._core)
 
-        def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> ListPetsResponse:
-            """List the pets."""
+        def list_pets(
+            self,
+            **kwargs: Unpack[Operation0Arguments],
+        ) -> ListPetsResponse:
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_0,
@@ -43629,7 +43784,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_1,
@@ -43652,7 +43809,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation0Arguments],
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_0,
@@ -43665,7 +43824,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_1,
@@ -43684,8 +43845,13 @@ Declare the arguments of the operation methods (experimental).
             """Keep the client core the operations send through."""
             self._core = core
 
-        def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> RawResponse:
-            """List the pets."""
+        def list_pets(
+            self,
+            **kwargs: Unpack[Operation0Arguments],
+        ) -> RawResponse:
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute_raw(
                 _operations.OPERATION_0,
@@ -43694,8 +43860,13 @@ Declare the arguments of the operation methods (experimental).
                 response_media_type=kwargs.get('response_media_type'),
             )
 
-        def create_pet(self, **kwargs: Unpack[Operation1Arguments]) -> RawResponse:
-            """Create a pet."""
+        def create_pet(
+            self,
+            **kwargs: Unpack[Operation1Arguments],
+        ) -> RawResponse:
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute_raw(
                 _operations.OPERATION_1,
@@ -43718,7 +43889,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation0Arguments],
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.stream(
                 _operations.OPERATION_0,
@@ -43731,7 +43904,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.stream(
                 _operations.OPERATION_1,
@@ -43858,11 +44033,11 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -43892,12 +44067,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -43908,12 +44085,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -43934,12 +44113,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -43950,12 +44131,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -43976,12 +44159,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -43992,12 +44177,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -44018,12 +44205,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -44034,12 +44223,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -44169,18 +44360,20 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44188,7 +44381,10 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44305,18 +44501,20 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             request: Request,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44324,7 +44522,10 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44442,18 +44643,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44461,7 +44664,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44577,18 +44783,20 @@ methods. `--server-handler-modes` overrides it for single operations.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         async def replace_pet(
@@ -44596,7 +44804,10 @@ methods. `--server-handler-modes` overrides it for single operations.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44716,18 +44927,20 @@ table.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44735,7 +44948,10 @@ table.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44853,11 +45069,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
@@ -44865,7 +45080,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -44874,7 +45092,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             request: Request,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -44975,21 +45196,36 @@ Choose how the server package lays out its routes (experimental).
     from typing import Annotated, Final
 
     import models
-    from fastapi import APIRouter, Body, Path, Query
+    from fastapi import APIRouter, Body, Path, Query, params
     from fastapi.responses import Response
 
     from ._generated import contract
     from ._generated.contract import OperationDependencies
-    from ._runtime.server.application import Dependency, Wiring, build
+    from ._runtime.server.application import Wiring, build, checked
     from ._runtime.server.responses import dispatch
     from .services import Service
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-        list_pets_handler = wiring.handlers['list_pets']
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        service: Service = wiring.services['service']
+        list_pets_handler = checked(
+            service.list_pets,
+            'The service.list_pets method of GET /pets',
+        )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -45002,18 +45238,30 @@ Choose how the server package lays out its routes (experimental).
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-        create_pet_handler = wiring.handlers['create_pet']
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        service: Service = wiring.services['service']
+        create_pet_handler = checked(
+            service.create_pet,
+            'The service.create_pet method of POST /pets',
+        )
 
         def create_pet(
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -45026,13 +45274,19 @@ Choose how the server package lays out its routes (experimental).
             operation_id='createPet',
             tags=['pets'],
             response_description='Already there.',
-            responses={'201': {'model': models.Pet, 'description': 'Created.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
-        replace_pet_handler = wiring.handlers['replace_pet']
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        service: Service = wiring.services['service']
+        replace_pet_handler = checked(
+            service.replace_pet,
+            'The service.replace_pet method of PUT /pets/{name}',
+        )
 
         def replace_pet(
             *,
@@ -45040,7 +45294,10 @@ Choose how the server package lays out its routes (experimental).
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -45054,26 +45311,27 @@ Choose how the server package lays out its routes (experimental).
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
     LITERAL_ROUTES: Final = (
-        (contract.ListPets.OPERATION, _add_list_pets),
-        (contract.CreatePet.OPERATION, _add_create_pet),
+        ('list_pets', _add_list_pets),
+        ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
         *,
         service: Service,
-        dependencies: Sequence[Dependency] = (),
+        dependencies: Sequence[params.Depends] = (),
         operation_dependencies: OperationDependencies | None = None,
         prefix: str = "",
     ) -> APIRouter:
-        """Check the service and settings, then register every operation on a new router, literal paths first."""
+        """Register every operation on a new router, literal paths first."""
         return build(
             (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
             services={'service': service},
@@ -45196,18 +45454,20 @@ generates.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45215,7 +45475,10 @@ generates.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45332,18 +45595,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45351,7 +45616,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45468,18 +45736,20 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45487,7 +45757,10 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45603,18 +45876,20 @@ generation prints name the package by it; the package imports its own modules re
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45622,7 +45897,10 @@ generation prints name the package by it; the package imports its own modules re
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45739,18 +46017,20 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             page_size: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -45758,7 +46038,10 @@ without a file against the working directory, and against the pyproject.toml dir
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -45861,21 +46144,36 @@ without a file against the working directory, and against the pyproject.toml dir
     from typing import Annotated, Final
 
     import models
-    from fastapi import APIRouter, Body, Path, Query
+    from fastapi import APIRouter, Body, Path, Query, params
     from fastapi.responses import Response
 
     from .._generated import contract
     from .._generated.contract import OperationDependencies
-    from .._runtime.server.application import Dependency, Wiring, build
+    from .._runtime.server.application import Wiring, build, checked
     from .._runtime.server.responses import dispatch
     from ..services import PetsService
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-        list_pets_handler = wiring.handlers['list_pets']
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        pets: PetsService = wiring.services['pets']
+        list_pets_handler = checked(
+            pets.list_pets,
+            'The pets.list_pets method of GET /pets',
+        )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -45888,18 +46186,30 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-        create_pet_handler = wiring.handlers['create_pet']
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        pets: PetsService = wiring.services['pets']
+        create_pet_handler = checked(
+            pets.create_pet,
+            'The pets.create_pet method of POST /pets',
+        )
 
         def create_pet(
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -45912,13 +46222,19 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='createPet',
             tags=['pets'],
             response_description='Created.',
-            responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
-        replace_pet_handler = wiring.handlers['replace_pet']
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        pets: PetsService = wiring.services['pets']
+        replace_pet_handler = checked(
+            pets.replace_pet,
+            'The pets.replace_pet method of PUT /pets/{name}',
+        )
 
         def replace_pet(
             *,
@@ -45926,7 +46242,10 @@ without a file against the working directory, and against the pyproject.toml dir
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -45940,26 +46259,27 @@ without a file against the working directory, and against the pyproject.toml dir
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
     LITERAL_ROUTES: Final = (
-        (contract.ListPets.OPERATION, _add_list_pets),
-        (contract.CreatePet.OPERATION, _add_create_pet),
+        ('list_pets', _add_list_pets),
+        ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
         *,
         pets: PetsService,
-        dependencies: Sequence[Dependency] = (),
+        dependencies: Sequence[params.Depends] = (),
         operation_dependencies: OperationDependencies | None = None,
         prefix: str = "",
     ) -> APIRouter:
-        """Check the service and settings, then register the pets operations on a new router, literal paths first."""
+        """Register the pets operations on a new router, literal paths first."""
         return build(
             (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
             services={'pets': pets},
@@ -46082,18 +46402,20 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -46101,7 +46423,10 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -47976,6 +48301,7 @@ This page lists deprecations and scheduled breaking changes.
 | `python-api.python-version-has-type-alias` | active | python-api | `PythonVersion.has_type_alias` | 0.52.1 | TBD | - |
 | `schema.jsonschema-items-array` | active | schema | `JSON Schema Draft 2020-12 items array tuple validation` | 0.53.0 | TBD | Use prefixItems. |
 | `schema.openapi-nullable` | active | schema | `OpenAPI 3.1 nullable keyword` | 0.53.0 | TBD | Use type arrays such as type: ["string", "null"]. |
+| `dependency.python-310-runtime` | active | dependency | `Running datamodel-code-generator on Python 3.10` | 0.84.0 | 0.85.0 | Run datamodel-code-generator on Python 3.11 or newer. |
 
 ## Details
 
@@ -48184,6 +48510,20 @@ items as array tuple validation is deprecated in Draft 2020-12. Use prefixItems 
 
 nullable keyword is deprecated in OpenAPI 3.1, use type: ["string", "null"] instead.
 
+### `dependency.python-310-runtime`
+
+- **Status:** active
+- **Kind:** dependency
+- **Target:** `Running datamodel-code-generator on Python 3.10`
+- **Since:** 0.84.0
+- **Planned removal:** 0.85.0
+- **Warning category:** `FutureWarning`
+- **Replacement:** Run datamodel-code-generator on Python 3.11 or newer.
+
+Running datamodel-code-generator on Python 3.10 is deprecated and will be removed in 0.85.0; run it on Python 3.11 or newer. --target-python-version 3.10 is unaffected.
+
+Generating code for Python 3.10 with --target-python-version 3.10 is unchanged.
+
 ---
 
 # Dependency migration notices
@@ -48232,9 +48572,11 @@ output. See [Formatter behavior](formatter-behavior.md) for scope and configurat
 | Black/isort optional installation | Black or isort is explicitly selected, including through resolved configuration or a formatter-supplying preset. Not also emitted for an implicit pipeline. |
 | Old Black/isort support | A selected formatter is below its proposed future minimum, whether the pipeline was implicit or explicit. Merely having it installed does not warn. |
 | Old runtime Pydantic support | DCG generates code using Pydantic below 2.8.2 in its own runtime, even when generating dataclasses, TypedDict or msgspec models. |
+| Python 3.10 runtime | DCG itself runs on Python 3.10 and generates code through the CLI or the Python API. `--target-python-version 3.10` alone does not warn. |
 
 Each notice is registered separately as an active `FutureWarning`. The default formatter notice retains its
-original 0.52.0 history; the new notices are recorded for the planned 0.78.0 release. The registry contains the
+original 0.52.0 history; the formatter and dependency-floor notices are recorded for the planned 0.78.0 release,
+and the Python 3.10 runtime notice is recorded since 0.84.0 with removal in 0.85.0. The registry contains the
 [exact short messages](deprecations.md). Migration warnings are deduplicated within one CLI invocation, including
 batch and watch regeneration. Non-generation operations such as help, version and listings do not emit them or
 load dependency modules just to check versions. The Python API respects standard warning filters, including
@@ -48288,7 +48630,7 @@ almost nobody will be affected.
 ## Runtime Pydantic versus generated-code Pydantic
 
 The proposed 2.8.2 floor applies to **DCG's runtime**, not the environment that consumes generated code.
-`--target-pydantic-version` values such as 2, 2.11 and 2.12 remain unchanged. Raising the runtime floor alone is not
+`--target-pydantic-version` values such as 2, 2.11, 2.12 and 2.14 remain unchanged. Raising the runtime floor alone is not
 a reason to delete every existing compatibility branch.
 
 The following classification reflects the current source. Emitted code never depends on the installed Pydantic:
@@ -48301,11 +48643,11 @@ change generated output.
 | --- | --- | --- |
 | DCG configuration/internal Pydantic models | Internal runtime compatibility: validating generator configuration and constructing internal model/field objects relies on the installed Pydantic. | Keep the minimum DCG-runtime configuration and generation tests; reassess only when the actual floor changes. |
 | Dataclass alias, 2.4 boundary | Generated-code compatibility: targets before 2.4 (`2`) use the `DataModelFieldBackport` alias fallback, which emits `Field` assignments with validation and serialization aliases for non-identifier aliases. | Generate alias cases on the new DCG runtime and execute them separately on supported consumer versions before removing fallback behavior. |
-| `deprecated` / `json_schema_extra`, 2.7 boundary | Generated-code compatibility: targets before 2.7 (`2`) emit `deprecated` in `json_schema_extra`; unset, `2.11` and `2.12` emit `Field(deprecated=...)`. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
+| `deprecated` / `json_schema_extra`, 2.7 boundary | Generated-code compatibility: targets before 2.7 (`2`) emit `deprecated` in `json_schema_extra`; unset, `2.11`, `2.12` and `2.14` emit `Field(deprecated=...)`. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
 | `regex_engine`, 2.5 boundary | Generated-code compatibility: the emitter adds `python-re` for pattern syntax no pydantic-core release supports, such as lookaround and backreferences, detected statically (see [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)) for every target. Old generated models may still reject those expressions at runtime. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
-| RootModel, dictionary keys, forward references, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) sort models used as dictionary keys before their users; unset, `2.11` and `2.12` keep schema order. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
-| `StringConstraints`, 2.1 boundary | Generated-code compatibility: targets before 2.1 (`2`) emit `Annotated[str, Field(...)]` for constrained strings with `--use-annotated`; unset, `2.11` and `2.12` emit `StringConstraints`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
-| Dataclass reference aliases, 2.10 boundary | Generated-code compatibility: targets before 2.10 (`2`) emit `Alias: TypeAlias = Model` for `pydantic_v2.dataclass` aliases of models; unset, `2.11` and `2.12` emit `TypeAliasType`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
+| RootModel, dictionary keys, forward references, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) sort models used as dictionary keys before their users; unset, `2.11`, `2.12` and `2.14` keep schema order. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
+| `StringConstraints`, 2.1 boundary | Generated-code compatibility: targets before 2.1 (`2`) emit `Annotated[str, Field(...)]` for constrained strings with `--use-annotated`; unset, `2.11`, `2.12` and `2.14` emit `StringConstraints`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
+| Dataclass reference aliases, 2.10 boundary | Generated-code compatibility: targets before 2.10 (`2`) emit `Alias: TypeAlias = Model` for `pydantic_v2.dataclass` aliases of models; unset, `2.11`, `2.12` and `2.14` emit `TypeAliasType`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
 | Discriminator / Union | Both: internal schema/model construction and emitted union/discriminator annotations must agree; existing force-optional and payload cases exercise runtime-sensitive behavior. | Keep generation assertions and instantiate generated union cases on separately pinned consumer versions. |
 | `additionalProperties` | Both: schema interpretation plus emitted typed extras, recursive references and runtime validators affect consumer behavior. | Preserve schema/alias/recursive extra-property tests and verify generated validation, rather than treating all failures as DCG-runtime-only. |
 | Payload and generated-code execution | Both are currently exercised together in pinned environments: generated code is imported and validated using the same environment's Pydantic. | Split producer and consumer environments where necessary to retain old consumer coverage after raising DCG's own minimum. |
@@ -48320,6 +48662,13 @@ Future work should distinguish a minimum **producer** test running DCG from **co
 saved output in another Pydantic environment. First preserve alias, metadata, regex, recursive RootModel,
 discriminator/Union, additional-properties and payload behavior; then identify which internal-only branches can
 actually be removed. Changing target-version semantics would require a separate, explicit decision.
+
+## Running on Python 3.10
+
+Running datamodel-code-generator on Python 3.10 is deprecated in 0.84.0 and will be removed in 0.85.0, because
+Python 3.10 reached end of life in October 2026. Generation on Python 3.10 emits a `FutureWarning`; run DCG on
+Python 3.11 or newer to prepare. This concerns only the interpreter running DCG: generating code for Python 3.10
+with `--target-python-version 3.10` is unchanged.
 
 ## Follow-up changes remain separate
 
@@ -48358,8 +48707,6 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
-| `python-api.client` | python-api | `datamodel_code_generator.client and datamodel_code_generator.api_types` | 0.84.0 | - |
-| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.84.0 | - |
 
 ## Details
 
@@ -48391,7 +48738,7 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 
 HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
 
---generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --diff-against, --watch, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.generate-schema-validators`
 
@@ -48411,7 +48758,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
---generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --diff-against compares the files two inputs render, --watch regenerates after input changes, --output-format json uses the model generation, check, and input-diff payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 
@@ -48439,7 +48786,7 @@ The only currently implemented backend is 'pydantic-v2', which preserves the exi
 - **Target:** `--use-missing-sentinel`
 - **Since:** 0.66.1
 
-Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel.
+Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.
 
 The option requires Pydantic v2 BaseModel output and a target Pydantic version that supports the MISSING sentinel.
 
@@ -48532,26 +48879,6 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
-
-### `python-api.client`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.client and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package may change.
-
-generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, both to run and as model_config.target_python_version.
-
-### `python-api.fastapi-server`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The FastAPI server target is experimental; its entry points, settings, templates, generated package, and served OpenAPI document may change.
-
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to run and as model_config.target_python_version.
 
 ---
 

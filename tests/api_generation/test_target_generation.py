@@ -1,24 +1,22 @@
-"""Generate the FastAPI target through the public entry points: settings, models, and written files."""
+"""Generate the FastAPI target from the command line: check, publish, and overwrite models and the package."""
 
 from __future__ import annotations
 
 import errno
 import os
 import shutil
-import sys
 from itertools import count
 from pathlib import Path
-from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import _api_manifest, _publication
+from datamodel_code_generator import _publication, _target_documents
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
 from tests.conftest import assert_output, freeze_time
-from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
+from tests.data.python.target_generation import SOURCE, target_render_report
 from tests.main.conftest import run_main_and_assert, run_main_with_args
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
@@ -60,36 +58,39 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "python-floor",
     ],
 )
-def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render(
+    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Generate models once, plan target files, and write them like model output: overwrite, never delete."""
     expected = f"{case}.txt"
     if case.startswith("input-cycle"):
         expected = {"pyyaml": f"{case}.txt", "ryaml": f"{case}-ryaml.txt"}[get_yaml_backend()]
-    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / expected)
-
-
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
-def test_target_render_target_grammar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Reject syntax the running Python accepts but the configured target Python does not."""
-    assert_output(target_render_report("target-grammar", tmp_path, monkeypatch), EXPECTED / "target-grammar.txt")
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / expected)
 
 
 @pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")
-def test_target_render_python_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_python_runtime(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Refuse to render a target on a Python older than every target supports."""
     monkeypatch.setattr("datamodel_code_generator._api_generation._PYTHON_MINIMUM", (99, 0))
-    assert_output(target_render_report("python-runtime", tmp_path, monkeypatch), EXPECTED / "python-runtime.txt")
+    assert_output(
+        target_render_report("python-runtime", tmp_path, monkeypatch, capsys), EXPECTED / "python-runtime.txt"
+    )
 
 
-def test_target_render_timestamp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_timestamp(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Head every Python file with the configured lines and one batch timestamp, then encode it."""
     with freeze_time("2026-09-25 12:00:00"):
-        assert_output(target_render_report("format", tmp_path, monkeypatch), EXPECTED / "format.txt")
+        assert_output(target_render_report("format", tmp_path, monkeypatch, capsys), EXPECTED / "format.txt")
 
 
 def test_target_render_http(
     local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Record URL documents by origin and content, merging equal documents read from one origin."""
@@ -98,14 +99,18 @@ def test_target_render_http(
     for route, path in routes.items():
         _SchemaHandler.routes[route] = (200, {"content-type": "application/json"}, path.read_bytes())
     try:
-        assert_output(target_render_report("http", tmp_path, monkeypatch, local_http_server), EXPECTED / "http.txt")
+        assert_output(
+            target_render_report("http", tmp_path, monkeypatch, capsys, local_http_server), EXPECTED / "http.txt"
+        )
     finally:
         for route in routes:
             del _SchemaHandler.routes[route]
 
 
 @pytest.mark.abnormal_path("staging the remote reference lock fails only on an I/O error")
-def test_target_render_lock_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_lock_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Propagate a failure to stage the remote lock update after releasing the accepted sources."""
 
     def fail(*_args: object) -> None:
@@ -113,19 +118,7 @@ def test_target_render_lock_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         raise OSError(msg)
 
     monkeypatch.setattr(RemoteReferenceLock, "stage", fail)
-    assert_output(target_render_report("lock-failure", tmp_path, monkeypatch), EXPECTED / "lock-failure.txt")
-
-
-@pytest.mark.abnormal_path("os.path.relpath fails only across Windows drives")
-def test_target_render_relative_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Reject layouts whose persistent paths cannot be relative to the target root, such as other drives."""
-
-    def fail(*_args: object) -> str:
-        msg = "path is on mount 'C:', start on mount 'D:'"
-        raise ValueError(msg)
-
-    monkeypatch.setattr(_api_manifest, "os", SimpleNamespace(path=SimpleNamespace(relpath=fail)))
-    assert_output(target_render_report("relative-failure", tmp_path, monkeypatch), EXPECTED / "relative-failure.txt")
+    assert_output(target_render_report("lock-failure", tmp_path, monkeypatch, capsys), EXPECTED / "lock-failure.txt")
 
 
 def _failing(original: Callable[..., None], failures: dict[int, OSError], destination: str) -> Callable[..., None]:
@@ -140,7 +133,9 @@ def _failing(original: Callable[..., None], failures: dict[int, OSError], destin
 
 
 @pytest.mark.abnormal_path("publishing fails only on an I/O error such as a full disk")
-def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_generate_rollback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Undo the models, the package, the metadata and the lock together, and discard the staged lock update."""
     discarded: list[bool] = []
     discard, failure = RemoteReferenceLock.discard_stage, OSError("No space left on device")
@@ -155,7 +150,7 @@ def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         "_replace_source",
         _failing(_failing(_publication._replace_source, {0: failure}, "remote.lock"), {2: failure}, "models.json"),
     )
-    report = target_render_report("publish-failure", tmp_path, monkeypatch)
+    report = target_render_report("publish-failure", tmp_path, monkeypatch, capsys)
     assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "publish-failure.txt")
 
 
@@ -164,7 +159,7 @@ def test_target_generate_rollback(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 )
 @pytest.mark.abnormal_path("a rename fails with EXDEV only between filesystems, which needs a mounted output")
 def test_target_generate_mount_points(
-    case: str, mounted: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    case: str, mounted: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Write into output directories that are mount points: each file is staged inside the directory it goes to.
 
@@ -182,7 +177,7 @@ def test_target_generate_mount_points(
         replace(file, *args)
 
     monkeypatch.setattr(_publication, "_replace_source", replaced)
-    assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
+    assert_output(target_render_report(case, tmp_path, monkeypatch, capsys), EXPECTED / f"{case}.txt")
 
 
 @pytest.mark.abnormal_path("publishing a batch fails only on an I/O error such as a full disk")
@@ -219,40 +214,34 @@ def test_target_jobs_rollback(
 
 
 @pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
-def test_target_render_nested_models_symlink(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_render_nested_models_symlink(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Render models written through a symlink to the target directory without staging anything inside it.
 
     The target directory is read-only, so a private directory created there would fail the render.
     """
     assert_output(
-        target_render_report("nested-models-symlink", tmp_path, monkeypatch), EXPECTED / "nested-models-symlink.txt"
+        target_render_report("nested-models-symlink", tmp_path, monkeypatch, capsys),
+        EXPECTED / "nested-models-symlink.txt",
     )
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")
-def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_target_generate_modes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Create new files with the umask default, as model output does, while preserving replacement permissions."""
     mask = os.umask(0o027)
     try:
         assert_output(
-            target_render_report("publication-modes", tmp_path, monkeypatch), EXPECTED / "publication-modes.txt"
+            target_render_report("publication-modes", tmp_path, monkeypatch, capsys), EXPECTED / "publication-modes.txt"
         )
     finally:
         os.umask(mask)
 
 
-@pytest.mark.parametrize(
-    "case",
-    [
-        "defaults",
-        "invalid-values",
-    ],
-)
-def test_target_config(case: str) -> None:
-    """Validate the shared target settings of the public configuration, reporting every problem in field order."""
-    assert_output(target_config_report(case), EXPECTED / "configs" / f"{case}.txt")
-
-
+@pytest.mark.filterwarnings("ignore::datamodel_code_generator.DocumentationAnnotationWarning")
 def test_target_pyproject_output(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -285,12 +274,12 @@ def test_target_pyproject_output(
 def test_named_document_sanitizes_remote_urls() -> None:
     """named_document strips userinfo and query tokens from remote URLs."""
     url = "http://u:pw@127.0.0.1:8765/bad.yaml?token=SECRET#/x"
-    named = _api_manifest.named_document(url, url)
+    named = _target_documents.named_document(url, url)
     assert named == " in 'http://127.0.0.1:8765'"
     assert "u:pw" not in named
     assert "SECRET" not in named
 
-    relative_named = _api_manifest.named_document("bad.yaml", url)
+    relative_named = _target_documents.named_document("bad.yaml", url)
     assert relative_named == " in 'bad.yaml'"
     assert "u:pw" not in relative_named
     assert "SECRET" not in relative_named

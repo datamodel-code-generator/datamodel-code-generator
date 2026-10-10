@@ -60,19 +60,16 @@ _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE: Final = (
 )
 _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._api_generation",
-    "datamodel_code_generator._api_manifest",
     "datamodel_code_generator._api_types",
     "datamodel_code_generator._client",
     "datamodel_code_generator._fastapi",
     "datamodel_code_generator._target_cli",
     "datamodel_code_generator._target_config",
+    "datamodel_code_generator._target_documents",
     "datamodel_code_generator._target_format",
     "datamodel_code_generator._target_render",
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
-    "datamodel_code_generator.api_types",
-    "datamodel_code_generator.client",
-    "datamodel_code_generator.fastapi",
 })
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
@@ -1076,7 +1073,7 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
-        case ("_client" | "_fastapi" | "client" | "fastapi", *_):
+        case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:
             layer = "target"

@@ -25,6 +25,7 @@ from datamodel_code_generator import (
     load_pyproject_config,
 )
 from datamodel_code_generator.format import Formatter
+from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from tests.conftest import (
     assert_directory_content,
     assert_generated_modules_output,
@@ -241,7 +242,10 @@ def test_generate_target_errors(options: dict[str, Any], message: str, tmp_path:
 
 
 def test_generate_server_lock_overlap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Refuse a lock update inside the server output, as a lock inside the model output is refused."""
+    """Refuse a lock update inside the server output, as a lock inside the model output is refused.
+
+    A write run also refuses a lock update that another caller resolved, since it could not publish that update.
+    """
     monkeypatch.chdir(tmp_path)
     source, server = _server(tmp_path), tmp_path / "server"
     run_generate_and_assert(
@@ -254,6 +258,16 @@ def test_generate_server_lock_overlap(tmp_path: Path, monkeypatch: pytest.Monkey
         server_output=Path("server"),
         update_lock=True,
         lockfile=Path("server", "api.lock"),
+    )
+    config = GenerateConfig(**MODELS, **SERVER, output=Path("models.py"), server_output=Path("server"))
+    config.resolve_remote_lock(RemoteReferenceLock.open(tmp_path / "api.lock", update=True, locked=False))
+    run_generate_and_assert(
+        input_=source,
+        expected_error=Error,
+        expected_error_match=(
+            f"^{re.escape('--update-lock: A target run cannot publish a remote lock update that another caller owns')}$"
+        ),
+        config=config,
     )
     assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "memory-written.txt")
 
@@ -312,13 +326,16 @@ def test_generate_target_input_errors(tmp_path: Path) -> None:
     )
 
 
-def test_generate_server_warnings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Warn about documentation the served document leaves out, as the command line does."""
+@pytest.mark.parametrize("output", ["models.py", None])
+def test_generate_server_warnings(output: str | None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Warn once about documentation the served document leaves out, from the package, with or without an output."""
     monkeypatch.chdir(tmp_path)
     source = _server(tmp_path, "callbacks.yaml")
     with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("always", UserWarning)
-        generate(source, **MODELS, **SERVER, output=Path("models.py"), server_output=Path("server"))
+        warnings.simplefilter("ignore")
+        warnings.filterwarnings("default", category=DocumentationAnnotationWarning, module="datamodel_code_generator")
+        for _ in range(2):
+            generate(source, **MODELS, **SERVER, output=output, server_output=Path("server"))
     assert_output(
         "".join(
             f"{item.category.__name__}: {item.message}\n"

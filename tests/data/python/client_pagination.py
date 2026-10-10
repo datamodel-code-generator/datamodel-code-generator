@@ -140,23 +140,22 @@ class Harness:
         """Return a starting cursor of the users listing."""
         return self.argument("listUsers", "query", "cursor", wire)
 
-    def client_options(self, **settings: Any) -> Any:
-        """Return client options that retry at once, with any other settings."""
-        options = self.options
-        return options.ClientOptions(retry=options.RetryOptions(initial_delay=0, jitter="none"), **settings)
+    def client_options(self, **settings: Any) -> dict[str, Any]:
+        """Return client keywords that retry at once, with any other settings."""
+        return {"retry": self.options.RetryOptions(initial_delay=0, jitter="none"), **settings}
 
 
 def pagination(package: ModuleType, lines: list[str]) -> None:
     """Traverse, end, limit, and continue cursor pages through the synchronous and asyncio clients."""
     harness = Harness(package)
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _traversals(harness, api, exchange, lines)
         _modes(harness, api, exchange, lines)
         _pages(harness, api, exchange, lines)
         _ends(harness, api, exchange, lines)
         _data(harness, api, exchange, lines)
-        _sizes(harness, api, exchange, lines)
+        _sizes(api, exchange, lines)
         _cycles(api, exchange, lines)
         _limits(harness, api, exchange, lines)
         _targets(harness, api, exchange, lines)
@@ -291,16 +290,9 @@ def _data(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     drained(lines, "nested items", nested.iterate())
 
 
-def _sizes(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Refuse cursors and pages over their limits, and a page over a smaller response limit as any call does."""
-    options = harness.options
+def _sizes(api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Refuse a page whose content coding is broken as any call does."""
     helper = api.protocols.users.all
-    for label, settings, responder in (
-        ("response limit smaller", {"options": options.RequestOptions(max_response_bytes=10)}, users("1")),
-        ("response limit removed", {"options": options.RequestOptions(max_response_bytes=None)}, users("1")),
-    ):
-        exchange.respond(responder)
-        drained(lines, label, helper.iterate(**settings))
     exchange.respond(
         raw_response(200, b"\x1f\x8b-broken", "application/json", **{"content-encoding": "gzip"}),
     )
@@ -390,7 +382,7 @@ async def _async_pagination(harness: Harness, lines: list[str]) -> None:
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+        package.AsyncClient(http_client=native, **harness.client_options()) as api,
     ):
         helper = api.protocols.users.all
         pager = helper.iterate()
@@ -427,12 +419,6 @@ async def _async_pagination(harness: Harness, lines: list[str]) -> None:
             lines,
             "async zero items page",
             lambda: helper.page(pagination_options=protocols.PaginationOptions(max_items=0)),
-        )
-        exchange.respond(users("1"))
-        await adrained(
-            lines,
-            "async response limit smaller",
-            helper.iterate(options=harness.options.RequestOptions(max_response_bytes=10)),
         )
         closed = helper.iterate()
         await closed.aclose()

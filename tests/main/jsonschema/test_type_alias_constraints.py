@@ -43,11 +43,28 @@ def _outcome(validate: Any, adapter: TypeAdapter[Any], value: Any) -> dict[str, 
     }
 
 
+_PYDANTIC_DECIMAL_STRING_PATTERN = r"^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$"
+"""The pattern Pydantic before 2.14 adds to the string branch of a Decimal schema."""
+
+
+def _without_decimal_string_pattern(schema: Any) -> Any:
+    """Drop Pydantic's own Decimal string pattern, which Pydantic 2.14 no longer emits, from a JSON schema."""
+    if isinstance(schema, list):
+        return [_without_decimal_string_pattern(item) for item in schema]
+    if not isinstance(schema, dict):
+        return schema
+    return {
+        key: _without_decimal_string_pattern(value)
+        for key, value in schema.items()
+        if key != "pattern" or value != _PYDANTIC_DECIMAL_STRING_PATTERN
+    }
+
+
 def _constraint_report(adapters: dict[str, TypeAdapter[Any]]) -> str:
     """Validate each payload as Python and as JSON, and record the JSON schema of each alias."""
     report = {
         name: {
-            "schema": adapter.json_schema(),
+            "schema": _without_decimal_string_pattern(adapter.json_schema()),
             "values": [
                 {
                     "input": value,

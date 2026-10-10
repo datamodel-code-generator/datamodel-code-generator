@@ -9,29 +9,33 @@ import json
 import logging
 import os
 import socket
+import ssl
 import subprocess
 import sys
 import threading
-from contextlib import contextmanager
+import time
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
+import httpcore2
+import httpx2
+import pytest
+
 from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.client_runtime import argument, describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
     from types import ModuleType
 
     from websockets.sync.server import ServerConnection
 
 _JOINED: Final = json.dumps({"kind": "joined", "user": "ann"})
-_UPGRADE: Final = (
-    b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
-)
+_UPGRADE: Final = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
 _LARGE: Final = "x" * (32 * 1024 * 1024)
 _PROBLEM: Final = (("Content-Type", "application/json"),)
 _INVALID: Final = (("WWW-Authenticate", 'Bearer error="invalid_token"'),)
@@ -65,6 +69,19 @@ async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> obje
     return result
 
 
+async def aconnected(
+    lines: list[str], label: str, connecting: Callable[[], Any], use: Callable[[Any], Awaitable[object]] | None = None
+) -> None:
+    """Enter an asyncio connect's block, recording its session or its handshake's failure, and use the session there."""
+    try:
+        async with connecting() as session:
+            lines.append(f"  {label} = {_described(session)}")
+            if use is not None:
+                await use(session)
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"  {label} ! {_described(error)}")
+
+
 def _data(value: object) -> object:
     """Return a message's data as plain values, whatever its backend: a model, a dataclass, a Struct, or a dict."""
     if hasattr(value, "model_dump"):
@@ -78,7 +95,9 @@ def _data(value: object) -> object:
 
 def _message(message: Any) -> str:
     """Describe a message by its sequence, frame kind, data, and raw bytes."""
-    return f"{message.sequence} {message.frame} {type(message.data).__name__}{_data(message.data)!r} raw={message.raw!r}"
+    return (
+        f"{message.sequence} {message.frame} {type(message.data).__name__}{_data(message.data)!r} raw={message.raw!r}"
+    )
 
 
 def _chat(connection: ServerConnection) -> None:
@@ -133,24 +152,33 @@ class _Harness:
         self.package = package
         self.lines = lines
         self.server = server
-        self.options, self.protocols, self.errors, self.auth = (
-            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors", "auth")
+        self.options, self.protocols, self.errors = (
+            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors")
         )
         self.models = importlib.import_module(f"{package.__name__}_models")
 
-    def transport(self, **settings: Any) -> Any:
-        """Return transport settings that trust the fixture's certificate."""
-        return self.protocols.WebSocketTransportOptions(ssl_context=client_context(), **settings)
+    def client(self, url: str | None = None, **settings: Any) -> dict[str, Any]:
+        """Return client keywords reaching a server without retry delays."""
+        retry = self.options.RetryOptions(initial_delay=0, jitter="none")
+        return {"base_url": url or self.server.url, "retry": retry, **settings}
 
-    def client(self, url: str | None = None, *, transport: Any = None, **settings: Any) -> Any:
-        """Return client options reaching a server without retry delays, with the fixture's TLS trust."""
-        options = self.options
-        return options.ClientOptions(
-            base_url=url or self.server.url,
-            retry=options.RetryOptions(initial_delay=0, jitter="none"),
-            protocols=options.ProtocolClientOptions(websocket_transport=transport or self.transport()),
-            **settings,
-        )
+    @contextmanager
+    def api(self, url: str | None = None, *, native: Any = None, **settings: Any) -> Iterator[Any]:
+        """Yield a client reaching a server without retry delays over an HTTP client trusting the fixture's TLS."""
+        with (
+            httpx2.Client(verify=client_context(), **native or {}) as http,
+            self.package.Client(http_client=http, **self.client(url, **settings)) as api,
+        ):
+            yield api
+
+    @asynccontextmanager
+    async def async_api(self, url: str | None = None, **settings: Any) -> AsyncIterator[Any]:
+        """Yield an asyncio client reaching a server over an HTTP client trusting the fixture's TLS."""
+        async with (
+            httpx2.AsyncClient(verify=client_context()) as http,
+            self.package.AsyncClient(http_client=http, **self.client(url, **settings)) as api,
+        ):
+            yield api
 
     def room(self, value: str = "r1") -> object:
         """Return the room argument of the chat helper for a wire value."""
@@ -190,7 +218,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
     server = SocketServer()
     harness = _Harness(package, lines, server)
     try:
-        with package.Client(options=harness.client()) as api:
+        with harness.api() as api:
             _conversation(harness, api)
             _channels(harness, api)
             _refusals(harness, api)
@@ -198,7 +226,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
             _limits(harness, api)
             _closing_sessions(harness, api)
         _clocked(harness)
-        with harness.package.Client(options=harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))) as api:
+        with harness.api(bearer=_Tokens()) as api:
             _sends(harness, api)
         _hooked(harness)
         _authenticated(harness)
@@ -235,9 +263,9 @@ def _conversation(harness: _Harness, api: Any) -> None:
 
 def _decode_failure(label: str, failure: Any) -> str:
     """Report a message failure's public prefix and whether its SDK traceback still holds a larger payload."""
-    prefix = len(failure.raw_prefix)
+    prefix = len(failure.body_bytes)
     return (
-        f"  {label} ! {_described(failure)} sequence={failure.sequence} prefix={prefix} "
+        f"  {label} ! {_described(failure)} location={failure.location} prefix={prefix} "
         f"truncated={failure.truncated} cause={type(failure.cause).__name__} "
         f"retained={retained_body(failure, prefix)}"
     )
@@ -257,14 +285,10 @@ def _sends(harness: _Harness, api: Any) -> None:
         session.send(b"y" * 100000)
         lines.append(f"  whole {_message(session.receive())}")
     harness.report(play)
-    server.play(Play(talk=_closing))
-    session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1, send_timeout=1e-9))
-    record(lines, "send past its timeout", lambda: session.send(_LARGE))
-    session.close()
 
 
 def _channels(harness: _Harness, api: Any) -> None:
-    """Exchange text and bytes, ping, and compress where the helper permits it."""
+    """Exchange text and bytes, ping, and exchange typed messages."""
     lines = harness.lines
     plays = harness.server.play(Play(talk=_echo), Play(talk=_chat))
     with api.protocols.feed.text.connect() as session:
@@ -274,16 +298,11 @@ def _channels(harness: _Harness, api: Any) -> None:
         session.send("hello")
         lines.append(f"    {_message(session.receive())}")
         record(lines, "receive after a normal close", session.receive)
-    with api.protocols.rooms.chat.connect(room=harness.room(), ws_options=harness.ws(compression="deflate")) as session:
-        lines.append(f"  compressed {_message(session.receive())}")
+    with api.protocols.rooms.chat.connect(room=harness.room()) as session:
+        lines.append(f"  typed {_message(session.receive())}")
         session.send(harness.text("bye"))
         lines.extend(f"    iterated {_message(message)}" for message in session)
     harness.report(*plays)
-    record(
-        lines,
-        "compression the helper does not permit",
-        lambda: api.protocols.feed.text.connect(ws_options=harness.ws(compression="deflate")),
-    )
 
 
 def _refusals(harness: _Harness, api: Any) -> None:
@@ -310,10 +329,12 @@ def _refusals(harness: _Harness, api: Any) -> None:
             lines.extend(f"    iterated {_message(message)}" for message in session)
         harness.report(*plays)
     for label, call in (
-        ("managed header", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(headers=(("Upgrade", "h2c"),)))),
+        (
+            "managed header",
+            lambda: chat.connect(room=harness.room(), options=options.RequestOptions(extra_headers={"Upgrade": "h2c"})),
+        ),
         ("options of another type", lambda: chat.connect(room=harness.room(), ws_options=options.RequestOptions())),
         ("request options of another type", lambda: chat.connect(room=harness.room(), options=harness.ws())),
-        ("session options of another type", lambda: chat.connect(room=harness.room(), session_options=harness.ws())),
     ):
         record(lines, label, call)
 
@@ -336,7 +357,7 @@ def _decoding(harness: _Harness, api: Any) -> None:
         )
         try:
             session.receive()
-        except harness.errors.StreamDecodeError as failure:
+        except harness.errors.DecodeError as failure:
             lines.append(_decode_failure(label, failure))
         record(lines, "after the decode failure", session.receive)
         session.close()
@@ -356,10 +377,18 @@ def _limits(harness: _Harness, api: Any) -> None:
     lines, server, options = harness.lines, harness.server, harness.options
     chat = api.protocols.rooms.chat
     for label, play, arguments in (
-        ("message over the limit", Play(talk=_sending(json.dumps({"kind": "said", "text": "x" * 64}))), {"ws_options": harness.ws(max_message_bytes=32)}),
+        (
+            "message over the limit",
+            Play(talk=_sending(json.dumps({"kind": "said", "text": "x" * 64}))),
+            {"ws_options": harness.ws(max_message_bytes=32)},
+        ),
         ("idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
-        ("idle inherited", Play(), {"options": options.RequestOptions(timeout=options.TimeoutOptions(read=0.05))}),
-        ("session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
+        ("idle inherited", Play(), {"options": options.RequestOptions(timeout=httpx2.Timeout(None, read=0.05))}),
+        (
+            "session deadline",
+            Play(),
+            {"ws_options": harness.ws(idle_timeout=None, total_timeout=1.0)},
+        ),
         ("abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
         ("server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
     ):
@@ -384,18 +413,17 @@ def _clocked(harness: _Harness) -> None:
     lines, server, options = harness.lines, harness.server, harness.options
     ticks = itertools.count(step=30.0)
     frozen = options.Clock(monotonic=lambda: 100.0)
-    for label, clock, idle, session in (
+    for label, clock, idle, total in (
         ("idle on a stepped clock", options.Clock(monotonic=lambda: float(next(ticks))), 60.0, None),
         ("idle on a frozen clock", frozen, 0.05, None),
-        ("session deadline on a frozen clock", frozen, None, options.SessionOptions(total_timeout=0.05)),
+        ("session deadline on a frozen clock", frozen, None, 0.05),
     ):
         (play,) = server.play(Play())
-        with harness.package.Client(options=harness.client(clock=clock)) as api:
+        with harness.api(clock=clock) as api:
             session = api.protocols.rooms.chat.connect(
                 room=harness.room(),
                 options=options.RequestOptions(total_timeout=None),
-                ws_options=harness.ws(idle_timeout=idle),
-                session_options=session,
+                ws_options=harness.ws(idle_timeout=idle, total_timeout=total),
             )
             record(lines, label, session.receive)
         harness.report(play)
@@ -406,15 +434,15 @@ async def _async_clocked(harness: _Harness, frozen: Any) -> None:
     """End an asyncio session's wait at its deadline once as much real time passed on a frozen client clock."""
     options = harness.options
     (play,) = harness.server.play(Play())
-    async with harness.package.AsyncClient(options=harness.client(clock=frozen)) as api:
-        session = await api.protocols.rooms.chat.connect(
+    async with (
+        harness.async_api(clock=frozen) as api,
+        api.protocols.rooms.chat.connect(
             room=harness.room(),
             options=options.RequestOptions(total_timeout=None),
-            ws_options=harness.ws(idle_timeout=None),
-            session_options=options.SessionOptions(total_timeout=0.05),
-        )
+            ws_options=harness.ws(idle_timeout=None, total_timeout=0.05),
+        ) as session,
+    ):
         await arecord(harness.lines, "async session deadline on a frozen clock", session.receive)
-        await session.aclose()
     await harness.areport(play)
 
 
@@ -443,35 +471,94 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
         record(lines, label, call)
     lines.append(f"  iteration after closing {list(session)}")
     harness.report(play)
-    (play,) = server.play(Play(talk=_closing))
-    session = api.protocols.feed.text.connect()
-    harness.report(play)
-    record(lines, "send once the server closed unread", lambda: session.send("late"))
-    (play,) = server.play(Play(talk=_closing))
-    session = api.protocols.feed.text.connect()
-    harness.report(play)
-    record(lines, "ping once the server closed unread", session.ping)
+    _closing_connection(harness, api)
 
 
-class _Ends:
-    """A hook reporting each event name and outcome of the calls it observes."""
+def _closing_connection(harness: _Harness, api: Any) -> None:
+    """Refuse a send and a ping on a connection HTTPX2 already closes over a message the session has not read yet.
+
+    The server's play ends once the client's close reached it, so the connection is closing before the steps run.
+    """
+    lines, server = harness.lines, harness.server
+    (play,) = server.play(Play(talk=_sending(b"x" * 64)))
+    session = api.protocols.feed.text.connect(ws_options=harness.ws(max_message_bytes=32))
+    harness.report(play)
+    record(lines, "send on a closing connection", lambda: session.send("late"))
+    record(lines, "ping on a closing connection", session.ping)
+    record(lines, "receive on a closing connection", session.receive)
+    record(lines, "iteration after the failure", lambda: list(session))
+    _closed_meanwhile(harness)
+
+
+def _closed_meanwhile(harness: _Harness) -> None:
+    """End an iteration waiting in another thread when the session closes: its wait ends at its idle timeout.
+
+    The client's clock tells when the thread's receive timed its wait, after it took the session's one receive, so the
+    close always ends a receive in progress.
+    """
+    lines, server = harness.lines, harness.server
+    receiver: list[int] = []
+    receiving = threading.Event()
+
+    def monotonic() -> float:
+        if threading.get_ident() in receiver:
+            receiving.set()
+        return time.monotonic()
+
+    (play,) = server.play(Play(talk=lambda connection: connection.recv()))
+    with harness.api(clock=harness.options.Clock(monotonic=monotonic)) as api:
+        session = api.protocols.feed.text.connect(ws_options=harness.ws(idle_timeout=0.3))
+        iterated: list[object] = []
+
+        def iterate() -> None:
+            session.send("go")
+            receiver.append(threading.get_ident())
+            iterated.extend(session)
+
+        thread = threading.Thread(target=iterate)
+        thread.start()
+        reached = receiving.wait(10)
+        session.close(4000, "bye")
+        thread.join(10)
+        if not reached or thread.is_alive():
+            msg = "the receiver did not reach its receive or did not end after the close"
+            raise RuntimeError(msg)
+    lines.append(f"  iteration closed meanwhile {iterated} {session!r}")
+    harness.report(play)
+
+
+class _Seen:
+    """Native event hooks reporting each handshake request and response the HTTP client sends and receives."""
 
     def __init__(self, lines: list[str]) -> None:
         self.lines = lines
 
-    def on_event(self, event: Any) -> None:
-        self.lines.append(f"    hook {event.name} outcome={event.outcome} status={event.status}")
+    def request(self, request: httpx2.Request) -> None:
+        self.lines.append(f"    request hook {request.method} {request.url.path}")
+
+    def response(self, response: httpx2.Response) -> None:
+        self.lines.append(f"    response hook {response.status_code}")
+
+    def hooks(self) -> dict[str, list[Any]]:
+        """Return the hooks an HTTPX2 client runs."""
+        return {"request": [self.request], "response": [self.response]}
 
 
-class _AsyncEnds(_Ends):
-    async def on_event(self, event: Any) -> None:
-        super().on_event(event)
+class _AsyncSeen(_Seen):
+    async def request(self, request: httpx2.Request) -> None:  # ty: ignore[invalid-method-override]
+        _Seen.request(self, request)
+
+    async def response(self, response: httpx2.Response) -> None:  # ty: ignore[invalid-method-override]
+        _Seen.response(self, response)
 
 
 def _hooked(harness: _Harness) -> None:
-    """Report a session's handshake events and its end: normal, closed early, or failed."""
+    """Run the injected HTTP client's hooks for a handshake, then end its session normally, early, or failing."""
     lines, server = harness.lines, harness.server
-    with harness.package.Client(options=harness.client(hooks=(_Ends(lines),))) as api:
+    with (
+        httpx2.Client(verify=client_context(), event_hooks=_Seen(lines).hooks()) as native,
+        harness.package.Client(http_client=native, **harness.client()) as api,
+    ):
         chat = api.protocols.rooms.chat
         for label, play in (
             ("hooked normal end", Play(talk=_sending(code=1000))),
@@ -490,9 +577,12 @@ def _hooked(harness: _Harness) -> None:
 
 
 async def _async_hooked(harness: _Harness) -> None:
-    """Report an asyncio session's handshake events and its end, and a refused handshake's."""
+    """Run the injected asyncio HTTP client's hooks for an accepted handshake and a refused one."""
     lines, server = harness.lines, harness.server
-    async with harness.package.AsyncClient(options=harness.client(hooks=(_AsyncEnds(lines),))) as api:
+    async with (
+        httpx2.AsyncClient(verify=client_context(), event_hooks=_AsyncSeen(lines).hooks()) as native,
+        harness.package.AsyncClient(http_client=native, **harness.client()) as api,
+    ):
         chat = api.protocols.rooms.chat
         for label, play in (
             ("async hooked normal end", Play(talk=_sending(code=1000))),
@@ -500,65 +590,40 @@ async def _async_hooked(harness: _Harness) -> None:
         ):
             server.play(play)
             lines.append(f"  {label}")
-            session = await arecord(lines, "connect", lambda: chat.connect(room=harness.room()))
-            if session is not None:
-                await arecord(lines, "receive", session.receive)
-                await session.aclose()
+            await aconnected(
+                lines,
+                "connect",
+                lambda: chat.connect(room=harness.room()),
+                lambda session: arecord(lines, "receive", session.receive),
+            )
             await harness.areport(play)
 
 
 class _Tokens:
-    """A bearer provider that replaces its token once the server rejects the first."""
+    """A bearer credential callable that gives a new token each time it is called."""
 
-    def __init__(self, auth: ModuleType) -> None:
-        self.auth = auth
-        self.tokens = iter(("first", "second"))
-        self.current = self.next()
+    def __init__(self) -> None:
+        self.tokens = iter(("first", "second", "third"))
         self.calls: list[str] = []
 
-    def next(self) -> Any:
-        return self.auth.BearerCredential(self.auth.AccessToken(f"{next(self.tokens)}-material"), self.auth.TokenVersion())
-
-    def get(self, context: object) -> Any:
-        del context
+    def __call__(self) -> str:
         self.calls.append("get")
-        return self.current
-
-    def invalidate(self, version: object) -> None:
-        self.calls.append(f"invalidate current={version is self.current.version}")
-
-    def refresh(self, context: object) -> Any:
-        del context
-        self.calls.append("refresh")
-        self.current = self.next()
-        return self.current
-
-
-class _AsyncTokens(_Tokens):
-    async def get(self, context: object) -> Any:  # ty: ignore[invalid-method-override]
-        return super().get(context)
-
-    async def invalidate(self, version: object) -> None:  # ty: ignore[invalid-method-override]
-        super().invalidate(version)
-
-    async def refresh(self, context: object) -> Any:  # ty: ignore[invalid-method-override]
-        return super().refresh(context)
+        return f"{next(self.tokens)}-material"
 
 
 def _authenticated(harness: _Harness) -> None:
     """Authenticate each handshake, never refreshing a rejected token, and send a header parameter."""
     lines, server, options = harness.lines, harness.server, harness.options
     for label, retry in (("rejected token not refreshed", None), ("no refresh without retries", 0)):
-        tokens = _Tokens(harness.auth)
-        settings = {} if retry is None else {"retry": options.RetryOptions(max_retries=retry)}
-        client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": tokens}))
+        tokens = _Tokens()
+        settings = {} if retry is None else {"max_retries": retry}
         plays = server.play(Play(refuse=(401, _INVALID, b"")))
-        with harness.package.Client(options=client_options) as api:
+        with harness.api(bearer=tokens) as api:
             session = record(
                 lines,
                 label,
                 lambda settings=settings, api=api: api.protocols.secure.chat.connect(
-                    x_trace=harness.trace("t1"), options=options.RequestOptions(**settings)
+                    X_Trace=harness.trace("t1"), options=options.RequestOptions(**settings)
                 ),
             )
             if session is not None:
@@ -573,16 +638,15 @@ import sys
 sys.path.insert(0, sys.argv[1])
 package = importlib.import_module(sys.argv[2])
 plans = importlib.import_module(sys.argv[2] + '.protocols._plans')
-with package.Client(options=None) as client:
+with package.Client() as client:
     client.protocols.rooms.chat
-    print('library loaded before a connect=' + repr('websockets' in sys.modules))
-    connector = plans.SOCKET_0.connectors[0]()
-    print('library loaded by the native connector=' + repr('websockets' in sys.modules) + ' ' + type(connector).__name__)
+    print('WebSocket library loaded by the plans=' + repr('wsproto' in sys.modules) + ' ' + type(plans.SOCKET_0).__name__)
+    print('websockets library loaded=' + repr('websockets' in sys.modules))
 """
 
 
 def _imports(package: ModuleType, lines: list[str]) -> None:
-    """Import a WebSocket package, its plans, and a client's helpers in a fresh process, which loads no library."""
+    """Import a WebSocket package, its plans, and a client's helpers in a fresh process, which never loads websockets."""
     location = Path(str(package.__file__)).parent.parent
     completed = subprocess.run(
         [sys.executable, "-I", "-c", _IMPORT_PROBE, str(location), package.__name__],
@@ -594,19 +658,19 @@ def _imports(package: ModuleType, lines: list[str]) -> None:
 
 
 class _Captured(logging.Handler):
-    """Keep the messages of the records the WebSocket library's client loggers emit."""
+    """Keep the messages of the records the HTTP and WebSocket libraries' loggers emit."""
 
     def __init__(self) -> None:
         super().__init__(logging.DEBUG)
         self.messages: list[str] = []
 
     def emit(self, record: logging.LogRecord) -> None:
-        if record.name.startswith("websockets.client"):
+        if record.name.startswith(("httpx2", "httpcore2", "wsproto")):
             self.messages.append(record.getMessage())
 
 
 def _logged(harness: _Harness) -> None:
-    """Emit no client debug records, which would hold headers and messages, even with every logger at DEBUG."""
+    """Emit no client debug records holding credentials or messages, even with every logger at DEBUG."""
     lines, server = harness.lines, harness.server
     root, captured = logging.getLogger(), _Captured()
     level = root.level
@@ -614,8 +678,7 @@ def _logged(harness: _Harness) -> None:
     root.setLevel(logging.DEBUG)
     try:
         (play,) = server.play(Play(talk=_replying))
-        client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))
-        with harness.package.Client(options=client_options) as api:
+        with harness.api(bearer=_Tokens()) as api:
             session = api.protocols.secure.chat.connect()
             session.send(b"secret-payload")
             lines.append(f"  received with debug logging {_message(session.receive())}")
@@ -625,46 +688,107 @@ def _logged(harness: _Harness) -> None:
         root.removeHandler(captured)
         root.setLevel(level)
     secrets = [message for message in captured.messages if "secret" in message or "material" in message]
-    lines.append(f"    client debug records {len(captured.messages)} with secrets {len(secrets)}")
+    lines.append(f"    client debug records {bool(captured.messages)} with secrets {len(secrets)}")
+
+
+@contextmanager
+def _trusted() -> Iterator[None]:
+    """Let an HTTP client the SDK creates trust the fixture through the environment HTTPX2 reads, without proxies."""
+    with pytest.MonkeyPatch.context() as environment, TemporaryDirectory() as directory:
+        for key in tuple(os.environ):
+            if key.casefold() == "no_proxy":
+                environment.delenv(key)
+        environment.setenv("NO_PROXY", "*")
+        authority = Path(directory) / "ca.pem"
+        trusted = client_context().get_ca_certs(binary_form=True)
+        authority.write_text(
+            "".join(ssl.DER_cert_to_PEM_cert(certificate) for certificate in trusted), encoding="ascii"
+        )
+        environment.setenv("SSL_CERT_FILE", str(authority))
+        yield
 
 
 def _client_close(harness: _Harness) -> None:
-    """Close a client with a session open: the session stays open until it closes itself."""
+    """Close a client with sessions open: each session closes first, as its own close does, then the HTTP client."""
     lines, server = harness.lines, harness.server
-    (play,) = server.play(Play(talk=_sending(_JOINED)))
-    api = harness.package.Client(options=harness.client())
-    session = api.protocols.rooms.chat.connect(room=harness.room())
-    record(lines, "client close with a session open", api.close)
-    record(lines, "client close again", api.close)
-    lines.append(f"  received after the client closed {_message(session.receive())}")
-    session.close()
-    harness.report(play)
+    plays = server.play(Play(talk=_sending(_JOINED)), Play())
+    with _trusted():
+        api = harness.package.Client(**harness.client())
+        session = api.protocols.rooms.chat.connect(room=harness.room())
+        other = api.protocols.feed.text.connect()
+        lines.append(f"  received before the client closed {_message(session.receive())}")
+        record(lines, "client close with two sessions open", api.close)
+        record(lines, "client close again", api.close)
+        record(lines, "send after the client closed", lambda: session.send(harness.text("late")))
+        lines.append(f"  other session after the client closed {other!r}")
+    harness.report(*plays)
+    _borrowed(harness)
+
+
+class _Socketless(httpx2.HTTPTransport):
+    """An HTTP transport whose one connection replays a 101 and a binary message from memory, without a socket."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._pool = httpcore2.ConnectionPool(
+            network_backend=httpcore2.MockBackend([_UPGRADE.replace(b"{accept}", b"unchecked"), b"\x82\x02hi"])
+        )
+
+
+def _borrowed(harness: _Harness) -> None:
+    """Leave a session open past closing a client that borrowed its HTTP client, over a connection without a socket.
+
+    The caller closes the session before the HTTP client; the connection's end after its message fails the session.
+    """
+    lines = harness.lines
+    with httpx2.Client(transport=_Socketless()) as native:
+        api = harness.package.Client(http_client=native, base_url=harness.server.url)
+        session = api.protocols.feed.text.connect()
+        api.close()
+        lines.append(f"  borrowed client closed {session!r}")
+        lines.append(f"    socketless {_message(session.receive())}")
+        record(lines, "socketless end", session.receive)
+        session.close()
 
 
 def _handshakes(harness: _Harness) -> None:
-    """Classify handshakes that break the protocol, time out, or never connect."""
+    """Classify handshakes that time out, break HTTP, select another subprotocol, or never connect.
+
+    HTTPX2 checks only the 101 status of an upgrade, as its own WebSocket client does.
+    """
     lines, options = harness.lines, harness.options
-    once = options.RequestOptions(retry=options.RetryOptions(max_retries=0))
+    once = options.RequestOptions(max_retries=0)
     accept = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n"
     for label, reply, arguments in (
         ("open timeout", None, {"ws_options": harness.ws(open_timeout=1.0)}),
         ("closed before a response", b"", {}),
         ("malformed response", b"NOT-HTTP\r\n\r\n", {}),
-        ("missing upgrade", b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n", {}),
-        ("wrong accept", b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: wrong\r\n\r\n", {}),
+        (
+            "missing upgrade",
+            b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n",
+            {},
+        ),
+        (
+            "wrong accept",
+            b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: wrong\r\n\r\n",
+            {},
+        ),
         ("subprotocol not offered", accept + b"Sec-WebSocket-Protocol: other\r\n\r\n", {}),
         ("header line too long", accept + b"X-Long: " + b"x" * 9000 + b"\r\n\r\n", {}),
     ):
         peer = RawPeer(reply)
         try:
-            with harness.package.Client(options=harness.client(peer.url)) as api:
-                record(
+            with harness.api(peer.url) as api:
+                session = record(
                     lines,
                     label,
-                    lambda api=api, arguments=arguments: api.protocols.feed.text.connect(
-                        **{"options": once, **arguments}
-                    ),
+                    lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**{
+                        "options": once,
+                        **arguments,
+                    }),
                 )
+                if session is not None:
+                    session.close()
         finally:
             peer.stop()
     _deadline_open(harness, once)
@@ -672,22 +796,15 @@ def _handshakes(harness: _Harness) -> None:
         probe.bind(("127.0.0.1", 0))
         url = f"https://127.0.0.1:{probe.getsockname()[1]}"
         for retry in (1, 0):
-            with harness.package.Client(options=harness.client(url)) as api:
+            with harness.api(url) as api:
                 record(
                     lines,
                     f"refused connection retry={retry}",
                     lambda retry=retry, api=api: api.protocols.feed.text.connect(
-                        options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
+                        options=options.RequestOptions(max_retries=retry)
                     ),
                 )
-        limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            ("refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            with harness.package.Client(options=harness.client(url, **settings)) as api:
-                record(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    refused permit cleanup {limiter.usage.report}")
-    with harness.package.Client(options=harness.client(transport=harness.protocols.WebSocketTransportOptions())) as api:
+    with harness.package.Client(**harness.client()) as api:
         record(lines, "untrusted certificate", lambda: api.protocols.feed.text.connect(options=once))
 
 
@@ -695,15 +812,12 @@ def _deadline_open(harness: _Harness, once: Any) -> None:
     """Bound an open by the call's deadline, reporting whether its timeout was the remaining time, not its value."""
     lines, peer = harness.lines, RawPeer(None)
     try:
-        with harness.package.Client(options=harness.client(peer.url)) as api:
-            options = harness.options.RequestOptions(total_timeout=1.0, retry=once.retry)
+        with harness.api(peer.url) as api:
+            options = harness.options.RequestOptions(total_timeout=1.0, max_retries=once.max_retries)
             try:
                 api.protocols.feed.text.connect(options=options)
             except harness.errors.APITimeoutError as error:
-                lines.append(
-                    f"  deadline during the open ! {type(error).__name__} reason={error.reason} phase={error.phase} "
-                    f"delivery_state={error.delivery_state} remaining={0 < (error.effective_timeout or 0) <= 1.0}"
-                )
+                lines.append(f"  deadline during the open ! {type(error).__name__} reason={error.reason}")
     finally:
         peer.stop()
 
@@ -714,132 +828,73 @@ def _peers(harness: _Harness) -> None:
     peer = RawPeer(_UPGRADE)
     hangup = RawPeer(_UPGRADE, hangup=True)
     try:
-        with harness.package.Client(options=harness.client(hangup.url)) as api:
-            session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
+        with harness.api(hangup.url) as api:
+            session = api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, pong_timeout=0.1))
             record(lines, "peer hanging up during a ping", session.ping)
-            session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
+            session = api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None))
             record(lines, "peer hanging up during a whole send", lambda: session.send(_LARGE))
-        with harness.package.Client(options=harness.client(peer.url)) as api:
+        with harness.api(peer.url) as api:
             feed = api.protocols.feed.text
-            session = feed.connect(ws_options=harness.ws(pong_timeout=0.1, ping_interval=None, close_timeout=0.1))
+            session = feed.connect(ws_options=harness.ws(pong_timeout=0.1, ping_interval=None))
             record(lines, "unanswered ping", session.ping)
             record(lines, "after the unanswered ping", session.receive)
-            session = feed.connect(
-                ws_options=harness.ws(ping_interval=0.05, pong_timeout=0.05, close_timeout=0.1, idle_timeout=None)
-            )
+            session = feed.connect(ws_options=harness.ws(ping_interval=0.05, pong_timeout=0.05, idle_timeout=None))
             record(lines, "unanswered keepalive", session.receive)
     finally:
         peer.stop()
         hangup.stop()
-    _concurrent_pings(harness)
-
-
-def _concurrent_pings(harness: _Harness) -> None:
-    """Refuse a ping whose payload another ping waits for without failing the session, and give default pings unique
-    payloads; every ping still waiting ends when the peer hangs up.
-    """
-    lines, peer = harness.lines, RawPeer(_UPGRADE)
-    try:
-        with harness.package.Client(options=harness.client(peer.url)) as api:
-            session = api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
-            waiting: list[str] = []
-            threads = []
-            for count, (label, payload) in enumerate(
-                (("first ping", b"same"), ("default ping", b""), ("another default ping", b"")), start=1
-            ):
-                thread = threading.Thread(
-                    target=lambda label=label, payload=payload: record(waiting, label, lambda: session.ping(payload))
-                )
-                thread.start()
-                threads.append(thread)
-                peer.wait_records(count)
-                if count == 1:
-                    record(lines, "ping with a payload another ping waits for", lambda: session.ping(b"same"))
-            lines.append(f"    pings waiting {peer.records} {session!r}")
-            peer.release.set()
-            for thread in threads:
-                thread.join(10)
-            lines.extend(sorted(waiting))
-    finally:
-        peer.stop()
-
-
-@contextmanager
-def _environment(**values: str) -> Iterator[None]:
-    """Set environment variables for a block, restoring them afterwards."""
-    saved = {name: os.environ.get(name) for name in values}
-    os.environ.update(values)
-    try:
-        yield
-    finally:
-        for name, value in saved.items():
-            if value is None:
-                del os.environ[name]
-            else:
-                os.environ[name] = value
 
 
 def _proxies(harness: _Harness) -> None:
-    """Tunnel through an explicit or environment proxy, and report a proxy's refusal."""
+    """Tunnel through the HTTP client's proxy, and report a proxy's refusal."""
     lines, server = harness.lines, harness.server
     proxy = TunnelProxy(server.port)
-    refusing = TunnelProxy(server.port, refuse=b"HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n")
+    refusing = TunnelProxy(
+        server.port, refuse=b"HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n"
+    )
     garbled = TunnelProxy(server.port, refuse=b"NOT-HTTP\r\n\r\n")
     try:
-        for label, transport, environment in (
-            ("explicit proxy", harness.transport(proxy=proxy.url), {}),
-            ("environment proxy", harness.transport(trust_env=True), {"https_proxy": proxy.url, "no_proxy": ""}),
-        ):
-            plays = server.play(Play(talk=_echo))
-            with harness.package.Client(options=harness.client(transport=transport)) as api, _environment(**environment):
-                session = api.protocols.feed.text.connect()
-                lines.append(f"  {label} {_message(session.receive())}")
-                session.close()
-            harness.report(*plays)
+        plays = server.play(Play(talk=_echo))
+        with harness.api(native={"proxy": proxy.url}) as api:
+            session = api.protocols.feed.text.connect()
+            lines.append(f"  proxy {_message(session.receive())}")
+            session.close()
+        harness.report(*plays)
         port = str(server.port)
         lines.append(f"  proxy requests {[request.replace(port, '<port>') for request in proxy.requests]}")
+        once = harness.options.RequestOptions(max_retries=0)
         for label, broken in (("refusing proxy", refusing), ("garbled proxy", garbled)):
-            with harness.package.Client(options=harness.client(transport=harness.transport(proxy=broken.url))) as api:
-                record(lines, label, api.protocols.feed.text.connect)
+            with harness.api(native={"proxy": broken.url}) as api:
+                record(lines, label, lambda api=api: api.protocols.feed.text.connect(options=once))
             lines.append(f"  {label} requests {[request.replace(port, '<port>') for request in broken.requests]}")
-        for label, environment_proxy in (
-            ("environment proxy of another scheme", "ftp://proxy.test:21"),
-            ("environment proxy user without a password", "http://user@proxy.test:3128"),
-        ):
-            with (
-                harness.package.Client(options=harness.client(transport=harness.transport(trust_env=True))) as api,
-                _environment(https_proxy=environment_proxy, no_proxy=""),
-            ):
-                record(lines, label, api.protocols.feed.text.connect)
     finally:
         proxy.stop()
         refusing.stop()
         garbled.stop()
 
 
+async def _messages(session: Any) -> list[object]:
+    """Return the messages an asyncio iteration yields."""
+    return [message async for message in session]
+
+
 async def _async_refused(harness: _Harness) -> None:
-    """Retry an asyncio handshake refused before sending, within its session budget and permit cleanup."""
+    """Retry an asyncio handshake refused before sending, within its session budget."""
     lines = harness.lines
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         url = f"https://127.0.0.1:{probe.getsockname()[1]}"
-        limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
-        for label, settings, arguments in (
-            ("async refused connection", {}, {}),
-            ("async refused retry with failed permit release", {"limiter": limiter}, {}),
-        ):
-            async with harness.package.AsyncClient(options=harness.client(url, **settings)) as api:
-                await arecord(lines, label, lambda api=api, arguments=arguments: api.protocols.feed.text.connect(**arguments))
-        lines.append(f"    async refused permit cleanup {limiter.usage.report}")
+        async with harness.async_api(url) as api:
+            await aconnected(lines, "async refused connection", api.protocols.feed.text.connect)
 
 
 async def _async_sockets(harness: _Harness) -> None:
     """Open, use, and close sessions with asyncio, including the waits its guard stops."""
-    lines, server, options = harness.lines, harness.server, harness.options
-    async with harness.package.AsyncClient(options=harness.client()) as api:
+    lines, server = harness.lines, harness.server
+    async with harness.async_api() as api:
         chat = api.protocols.rooms.chat
         (play,) = server.play(Play(talk=_chat))
-        async with await chat.connect(room=harness.room()) as session:
+        async with chat.connect(room=harness.room()) as session:
             lines.append(f"  async connected {session.response.status_code} {session.subprotocol!r}")
             lines.append(f"    {_message(await session.receive())}")
             await session.send(harness.text("bye"))
@@ -847,58 +902,108 @@ async def _async_sockets(harness: _Harness) -> None:
                 lines.append(f"    async iterated {_message(message)}")
             await arecord(lines, "async receive after the end", session.receive)
             await arecord(lines, "async send after the end", lambda: session.send(harness.text("late")))
+        lines.append(f"    async after the block {session!r}")
         await harness.areport(play)
         (play,) = server.play(Play(talk=_echo))
-        session = await api.protocols.feed.text.connect()
-        lines.append(f"  async bytes {_message(await session.receive())}")
-        receipt = await session.ping()
-        lines.append(f"    async ping {receipt.latency >= 0}")
-        await session.send("hello")
-        lines.append(f"    {_message(await session.receive())}")
-        await session.aclose()
-        await harness.areport(play)
+        async with api.protocols.feed.text.connect() as session:
+            lines.append(f"  async bytes {_message(await session.receive())}")
+            receipt = await session.ping()
+            lines.append(f"    async ping {receipt.latency >= 0}")
+            await session.send("hello")
+            lines.append(f"    {_message(await session.receive())}")
+            await session.aclose()
+            await harness.areport(play)
         (play,) = server.play(Play())
-        session = await chat.connect(room=harness.room())
-        waiting = asyncio.create_task(session.receive())
-        await asyncio.sleep(0)
-        await arecord(lines, "async concurrent receive", session.receive)
-        await session.aclose(4000, "bye")
-        await arecord(lines, "async receive closed meanwhile", lambda: waiting)
-        await arecord(lines, "async receive after closing", session.receive)
-        lines.append(f"  async iteration after closing {[message async for message in session]}")
-        await arecord(lines, "async invalid close", lambda: session.aclose(1015))
+        async with chat.connect(room=harness.room()) as session:
+            waiting = asyncio.create_task(session.receive())
+            await asyncio.sleep(0)
+            await arecord(lines, "async concurrent receive", session.receive)
+            await session.aclose(4000, "bye")
+            await arecord(lines, "async receive closed meanwhile", lambda: waiting)
+            await arecord(lines, "async receive after closing", session.receive)
+            lines.append(f"  async iteration after closing {[message async for message in session]}")
+            await arecord(lines, "async invalid close", lambda: session.aclose(1015))
+            await harness.areport(play)
+        await _async_failures(harness, api)
+        await _async_steps(harness, api)
+    await _async_peers(harness)
+
+
+async def _async_failures(harness: _Harness, api: Any) -> None:
+    """Classify asyncio refusals and session failures; a failure leaving a connect's block leaves it as raised."""
+    lines, server = harness.lines, harness.server
+    chat = api.protocols.rooms.chat
+    for label, play, arguments in (
+        ("async refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')), {}),
+        ("async idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
+        (
+            "async session deadline",
+            Play(),
+            {"ws_options": harness.ws(idle_timeout=None, total_timeout=1.0)},
+        ),
+        ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
+        ("async server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
+    ):
+        server.play(play)
+        await aconnected(
+            lines,
+            f"{label} connect",
+            lambda arguments=arguments: chat.connect(room=harness.room(), **arguments),
+            lambda session, label=label: arecord(lines, label, session.receive),
+        )
         await harness.areport(play)
-        for label, play, arguments in (
-            ("async refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')), {}),
-            ("async decode failure", Play(talk=_sending(json_error_body("syntax").decode())), {}),
-            ("async large decode failure", Play(talk=_sending(json_error_body("large syntax").decode())), {}),
-            ("async idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
-            ("async session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
-            ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
-            ("async server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
-        ):
-            server.play(play)
-            session = await arecord(lines, f"{label} connect", lambda arguments=arguments: chat.connect(room=harness.room(), **arguments))
-            if session is not None:
-                if "decode failure" in label:
-                    try:
-                        await session.receive()
-                    except harness.errors.StreamDecodeError as failure:
-                        lines.append(_decode_failure(label, failure))
-                else:
-                    await arecord(lines, label, session.receive)
-                await session.aclose()
-            await harness.areport(play)
-        for label, step in (
-            ("async send once the server closed unread", lambda session: session.send("late")),
-            ("async ping once the server closed unread", lambda session: session.ping()),
-        ):
-            (play,) = server.play(Play(talk=_closing))
-            session = await api.protocols.feed.text.connect()
-            await harness.areport(play)
-            await arecord(lines, label, lambda step=step, session=session: step(session))
-        (play,) = server.play(Play(talk=_answering))
-        session = await api.protocols.feed.text.connect()
+    for label, text in (("async decode failure", "syntax"), ("async large decode failure", "large syntax")):
+        (play,) = server.play(Play(talk=_sending(json_error_body(text).decode())))
+        try:
+            async with chat.connect(room=harness.room()) as session:
+                await session.receive()
+        except harness.errors.DecodeError as failure:
+            lines.append(_decode_failure(f"{label} left the block", failure))
+        lines.append(f"    {label} after the block {session!r}")
+        await harness.areport(play)
+    for raised in (LookupError, SystemExit):
+        (play,) = server.play(Play())
+        try:
+            async with chat.connect(room=harness.room()) as session:
+                raise raised
+        except raised as failure:
+            lines.append(f"  async block's own failure left the block {type(failure).__name__} {session!r}")
+        await harness.areport(play)
+    (play,) = server.play(Play())
+    entered = asyncio.Event()
+
+    async def block() -> None:
+        async with chat.connect(room=harness.room()) as session:
+            entered.set()
+            await asyncio.Event().wait()
+
+    blocked = asyncio.create_task(block())
+    await entered.wait()
+    blocked.cancel()
+    cancelled = (await asyncio.gather(blocked, return_exceptions=True))[0]
+    lines.append(f"  async block cancelled by its task {type(cancelled).__name__}")
+    await harness.areport(play)
+
+
+async def _async_steps(harness: _Harness, api: Any) -> None:
+    """Refuse steps on a closing connection, and keep a session usable past a receive its task cancelled."""
+    lines, server = harness.lines, harness.server
+    (play,) = server.play(Play(talk=_sending(b"x" * 64)))
+    async with api.protocols.feed.text.connect(ws_options=harness.ws(max_message_bytes=32)) as session:
+        await harness.areport(play)
+        await arecord(lines, "async send on a closing connection", lambda: session.send("late"))
+        await arecord(lines, "async ping on a closing connection", session.ping)
+        await arecord(lines, "async receive on a closing connection", session.receive)
+        await arecord(lines, "async iteration after the failure", lambda: _messages(session))
+    (play,) = server.play(Play())
+    async with api.protocols.feed.text.connect() as session:
+        iterating = asyncio.create_task(_messages(session))
+        await asyncio.sleep(0)
+        await session.aclose(4000, "bye")
+        await arecord(lines, "async iteration closed meanwhile", lambda: iterating)
+        await harness.areport(play)
+    (play,) = server.play(Play(talk=_answering))
+    async with api.protocols.feed.text.connect() as session:
         waiting = asyncio.create_task(session.receive())
         await asyncio.sleep(0)
         waiting.cancel()
@@ -907,56 +1012,69 @@ async def _async_sockets(harness: _Harness) -> None:
         await arecord(lines, "async receive past wait_for", lambda: asyncio.wait_for(session.receive(), 0.05))
         await arecord(lines, "async send after the cancelled receives", lambda: session.send("after"))
         lines.append(f"    async received {_message(await session.receive())}")
-        await session.aclose()
-        await harness.areport(play)
-    (play,) = server.play(Play(talk=_sending(_JOINED)))
-    api = harness.package.AsyncClient(options=harness.client())
-    session = await api.protocols.rooms.chat.connect(room=harness.room())
-    waiting = asyncio.create_task(session.receive())
-    await asyncio.sleep(0)
-    await arecord(lines, "async client close with a receive waiting", api.aclose)
-    await arecord(lines, "async receive kept through the client closing", lambda: waiting)
-    await session.aclose()
     await harness.areport(play)
-    peer = RawPeer(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n")
+
+
+async def _async_peers(harness: _Harness) -> None:
+    """Close a client under an open asyncio session, fail a session at a record that fails HTTPX2's reader, and fail
+    pings and sends a raw peer never answers.
+    """
+    lines, options = harness.lines, harness.options
+    harness.server.play(Play(talk=_sending(_JOINED)))
+    with _trusted():
+        api = harness.package.AsyncClient(**harness.client())
+        async with api.protocols.rooms.chat.connect(room=harness.room()) as session:
+            lines.append(f"  async received before the client closed {_message(await session.receive())}")
+            await arecord(lines, "async client close with a session open", api.aclose)
+            await arecord(lines, "async receive after the client closed", session.receive)
+    peer = RawPeer(
+        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
+    )
     try:
-        async with harness.package.AsyncClient(options=harness.client(peer.url)) as api:
-            session = await api.protocols.feed.text.connect(ws_options=harness.ws(pong_timeout=0.1, close_timeout=0.1))
+        async with (
+            harness.async_api(peer.url) as api,
+            api.protocols.feed.text.connect(ws_options=harness.ws(pong_timeout=0.1)) as session,
+        ):
             await arecord(lines, "async unanswered ping", session.ping)
     finally:
         peer.stop()
-    waiting = RawPeer(_UPGRADE)
+    garbled = RawPeer(_UPGRADE, garbled=b"\x17\x03\x03\x00\x10" + bytes(16))
     try:
-        async with harness.package.AsyncClient(options=harness.client(waiting.url)) as api:
-            session = await api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
-            first = asyncio.create_task(session.ping(b"same"))
-            await asyncio.to_thread(waiting.wait_records, 1)
-            await arecord(lines, "async ping with a payload another ping waits for", lambda: session.ping(b"same"))
-            second = asyncio.create_task(session.ping())
-            await asyncio.to_thread(waiting.wait_records, 2)
-            third = asyncio.create_task(session.ping())
-            await asyncio.to_thread(waiting.wait_records, 3)
-            lines.append(f"    async pings waiting {waiting.records} {session!r}")
-            waiting.release.set()
-            for label, task in (("async first ping", first), ("async default ping", second), ("async another default ping", third)):
-                await arecord(lines, label, lambda task=task: task)
+        async with harness.async_api(garbled.url) as api:
+            await aconnected(
+                lines,
+                "async record failing HTTPX2's reader",
+                lambda: api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None)),
+                lambda session: session.receive(),
+            )
     finally:
-        waiting.stop()
+        garbled.stop()
     silent_pongs = RawPeer(_UPGRADE)
     try:
-        async with harness.package.AsyncClient(options=harness.client(silent_pongs.url)) as api:
-            session = await api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
-            pinging = asyncio.create_task(session.ping())
-            await asyncio.to_thread(silent_pongs.wait_records, 1)
-            pinging.cancel()
-            cancelled = (await asyncio.gather(pinging, return_exceptions=True))[0]
-            lines.append(f"  async ping cancelled by its task {type(cancelled).__name__} {session!r}")
+        async with harness.async_api(silent_pongs.url) as api:
+            async with api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None)) as session:
+                pinging = asyncio.create_task(session.ping())
+                await asyncio.to_thread(silent_pongs.wait_records, 1)
+                pinging.cancel()
+                cancelled = (await asyncio.gather(pinging, return_exceptions=True))[0]
+                lines.append(f"  async ping cancelled by its task {type(cancelled).__name__} {session!r}")
+            async with api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None)) as session:
+                sending = asyncio.create_task(session.send(_LARGE))
+                await asyncio.sleep(0)
+                sending.cancel()
+                cancelled = (await asyncio.gather(sending, return_exceptions=True))[0]
+                lines.append(f"  async send cancelled by its task {type(cancelled).__name__} {session!r}")
+                await arecord(lines, "async send after the cancelled send", lambda: session.send("late"))
     finally:
         silent_pongs.stop()
     silent = RawPeer(None)
     try:
-        async with harness.package.AsyncClient(options=harness.client(silent.url)) as api:
-            once = options.RequestOptions(retry=options.RetryOptions(max_retries=0))
-            await arecord(lines, "async open timeout", lambda: api.protocols.feed.text.connect(options=once, ws_options=harness.ws(open_timeout=1.0)))
+        async with harness.async_api(silent.url) as api:
+            once = options.RequestOptions(max_retries=0)
+            await aconnected(
+                lines,
+                "async open timeout",
+                lambda: api.protocols.feed.text.connect(options=once, ws_options=harness.ws(open_timeout=1.0)),
+            )
     finally:
         silent.stop()

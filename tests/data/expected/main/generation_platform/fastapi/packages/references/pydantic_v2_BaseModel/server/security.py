@@ -5,7 +5,10 @@
 
 from fastapi.security import APIKeyHeader, APIKeyQuery, HTTPBearer
 
-bearer_alias = HTTPBearer(scheme_name='bearer_alias', auto_error=False)
+bearer_alias = HTTPBearer(
+    scheme_name='bearer_alias',
+    auto_error=False,
+)
 
 
 library_key = APIKeyHeader(

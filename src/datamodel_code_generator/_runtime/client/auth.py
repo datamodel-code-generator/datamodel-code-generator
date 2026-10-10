@@ -1,482 +1,331 @@
-"""Immutable credentials and declarations, with explicit static and environment providers."""
+"""The credentials of a package's declared security schemes, placed on its requests by one HTTPX2 Auth per call.
+
+A credential is a fixed value, or a callable called for each request. A bearer credential may instead be a
+`TokenSource`, an SDK OAuth provider, whose token is renewed once when the resource rejects it.
+"""
 
 from __future__ import annotations
 
-import os
-from collections.abc import Mapping
-from dataclasses import dataclass, field
-from datetime import datetime
-from types import MappingProxyType
-from typing import Literal, Protocol, TypeAlias, final
+import base64
+import re
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
 
-from typing_extensions import TypeIs
+import httpx2
 
-from ..model_codecs.unset import UNSET, Unset
-from .errors import ConfigurationError
-from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
-from .scopes import scope_tuple
-from .timing import Budget
+from .errors import ConfigurationError, SDKError
+from .security import Credentials
+from .urls import request_origin
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Generator, Mapping
+
+    from .client import AsyncSend, Send
+    from .security import Placement, SecurityScheme
+    from .urls import Origin
 
 __all__ = (
-    "AccessToken",
-    "ApiKeyCredential",
-    "AsyncCredentialProvider",
-    "AsyncEnvironmentCredentialProvider",
-    "AsyncRefreshableTokenProvider",
-    "AsyncRequestSigner",
-    "AsyncStaticCredentialProvider",
-    "AsyncStaticTokenProvider",
-    "AuthConfig",
-    "BasicCredential",
-    "BearerCredential",
-    "CredentialContext",
-    "CredentialMaterial",
-    "CredentialProvider",
-    "CredentialProviderInput",
-    "EnvironmentCredentialProvider",
-    "RefreshableTokenProvider",
-    "RequestSigner",
-    "SignatureFields",
-    "SignerCapabilities",
-    "SigningInput",
-    "StaticCredentialProvider",
-    "StaticTokenProvider",
-    "TokenVersion",
+    "OAUTH_ERROR_CODES",
+    "AuthError",
+    "AuthReason",
+    "OAuthErrorCode",
+    "SchemeCredentials",
+    "Secret",
+    "TokenSource",
+    "UserPassword",
 )
 
-
-def checked_type(value: object, types: tuple[type[object], ...], path: tuple[str, ...]) -> None:
-    """Refuse an auth value of another type at its field path."""
-    if not isinstance(value, types):
-        raise ConfigurationError(field_path=path, reason="invalid_type")
-
-
-def checked_scopes(value: object, name: str) -> tuple[str, ...]:
-    """Normalize explicit scopes, refusing invalid ones at the named field."""
-    try:
-        return scope_tuple(value)
-    except ValueError:
-        raise ConfigurationError(field_path=(name,), reason="invalid_scope") from None
-
-
-def _sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
-    return isinstance(value, (tuple, list))
-
-
-def _strings(value: object, path: tuple[str, ...]) -> tuple[str, ...]:
-    if not _sequence(value):
-        raise ConfigurationError(field_path=path, reason="invalid_type")
-    result: list[str] = []
-    for item in value:
-        if not isinstance(item, str):
-            raise ConfigurationError(field_path=path, reason="invalid_type")
-        result.append(item)
-    return tuple(result)
-
-
-@final
-@dataclass(frozen=True, slots=True, eq=False)
-class TokenVersion:
-    """An identity belonging to one provider's published material, never a persistent revision."""
-
-
-@dataclass(frozen=True, slots=True)
-class AccessToken:
-    """A token with declared expiry and either unknown or confirmed granted scopes."""
-
-    value: str = field(repr=False)
-    token_type: str = field(default="Bearer", repr=False)
-    expires_at: datetime | None = field(default=None, repr=False)
-    scopes: tuple[str, ...] | None = field(default=None, repr=False)
-    audience: str | None = field(default=None, repr=False)
-
-    def __post_init__(self) -> None:
-        """Validate scalar shapes and freeze confirmed scope information without inferring grants."""
-        checked_type(self.value, (str,), ("value",))
-        checked_type(self.token_type, (str,), ("token_type",))
-        checked_type(self.expires_at, (datetime, type(None)), ("expires_at",))
-        checked_type(self.audience, (str, type(None)), ("audience",))
-        if self.scopes is not None:
-            object.__setattr__(self, "scopes", checked_scopes(self.scopes, "scopes"))
-
-
-@dataclass(frozen=True, slots=True)
-class ApiKeyCredential:
-    """An API key whose wire name and position belong to its security scheme."""
-
-    value: str = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Retain the string unchanged for the selected scheme's wire validation."""
-        checked_type(self.value, (str,), ("value",))
-
-
-@dataclass(frozen=True, slots=True)
-class BasicCredential:
-    """A username and password for explicitly selected UTF-8 HTTP Basic authentication."""
-
-    username: str = field(repr=False)
-    password: str = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Keep both strings unchanged until Basic encoding."""
-        checked_type(self.username, (str,), ("username",))
-        checked_type(self.password, (str,), ("password",))
-
-
-@dataclass(frozen=True, slots=True)
-class BearerCredential:
-    """Bearer material paired with the exact version that an attempt may invalidate."""
-
-    token: AccessToken = field(repr=False)
-    version: TokenVersion = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Require the public token and nominal version records."""
-        checked_type(self.token, (AccessToken,), ("token",))
-        checked_type(self.version, (TokenVersion,), ("version",))
-
-
-def _refresh_token(value: object) -> None:
-    if value is not None and (not isinstance(value, str) or not value):
-        raise ConfigurationError(field_path=("refresh_token",), reason="invalid_value")
-
-
-@final
-@dataclass(frozen=True, slots=True)
-class TokenSet:
-    """An access token with the refresh token that renews it; its repr omits both tokens."""
-
-    access_token: AccessToken = field(repr=False)
-    refresh_token: str | None = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Refuse other token types and empty refresh tokens."""
-        checked_type(self.access_token, (AccessToken,), ("access_token",))
-        _refresh_token(self.refresh_token)
-
-
-CredentialMaterial: TypeAlias = ApiKeyCredential | BasicCredential | BearerCredential
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class CredentialContext:
-    """The selected scheme and constraints of the current caller's resource hop."""
-
-    scheme: str = field(repr=False)
-    required_scopes: tuple[str, ...] = field(repr=False)
-    audience: str | None = field(repr=False)
-    origin: str = field(repr=False)
-    deadline: Budget | None = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Freeze requirements and retain the caller's exact deadline and cancellation references."""
-        checked_type(self.scheme, (str,), ("scheme",))
-        checked_type(self.audience, (str, type(None)), ("audience",))
-        checked_type(self.origin, (str,), ("origin",))
-        checked_type(self.deadline, (Budget, type(None)), ("deadline",))
-        object.__setattr__(self, "required_scopes", checked_scopes(self.required_scopes, "required_scopes"))
-
-
-class CredentialProvider(Protocol):
-    """A synchronous source of material for a selected security scheme."""
-
-    def get(self, context: CredentialContext) -> CredentialMaterial:
-        """Return material under this caller's constraints."""
-        ...
-
-
-class AsyncCredentialProvider(Protocol):
-    """An asynchronous source of material for a selected security scheme."""
-
-    async def get(self, context: CredentialContext) -> CredentialMaterial:
-        """Return material after one await under this caller's constraints."""
-        ...
-
-
-class RefreshableTokenProvider(CredentialProvider, Protocol):
-    """A bearer provider with explicit version invalidation and refresh capabilities."""
-
-    def get(self, context: CredentialContext) -> BearerCredential:
-        """Return the currently usable bearer material."""
-        ...
-
-    def invalidate(self, version: TokenVersion) -> None:
-        """Invalidate only this provider's currently published matching version."""
-        ...
-
-    def refresh(self, context: CredentialContext) -> BearerCredential:
-        """Return refreshed material under this caller's constraints."""
-        ...
-
-
-class AsyncRefreshableTokenProvider(AsyncCredentialProvider, Protocol):
-    """An asynchronous bearer provider with explicit invalidation and refresh capabilities."""
-
-    async def get(self, context: CredentialContext) -> BearerCredential:
-        """Return the currently usable bearer material."""
-        ...
-
-    async def invalidate(self, version: TokenVersion) -> None:
-        """Invalidate only this provider's currently published matching version."""
-        ...
-
-    async def refresh(self, context: CredentialContext) -> BearerCredential:
-        """Return refreshed material under this caller's constraints."""
-        ...
-
-
-CredentialProviderInput: TypeAlias = CredentialProvider | AsyncCredentialProvider
-
-
-@dataclass(frozen=True, slots=True)
-class SignerCapabilities:
-    """The destinations and wire fields managed by a signer."""
-
-    allowed_origins: tuple[str, ...] = field(repr=False)
-    managed_headers: tuple[str, ...] = field(repr=False)
-    managed_query: tuple[str, ...] = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Copy declared collections without choosing destinations or invoking a signer."""
-        for name in ("allowed_origins", "managed_headers", "managed_query"):
-            object.__setattr__(self, name, _strings(getattr(self, name), (name,)))
-
-
-@dataclass(frozen=True, slots=True)
-class SigningInput:
-    """The final unsigned request observed by a signer, without mutable request access."""
-
-    method: str = field(repr=False)
-    url: str = field(repr=False)
-    origin: str = field(repr=False)
-    query: bytes = field(repr=False)
-    headers: HeadersView = field(repr=False)
-    attempt_index: int = field(repr=False)
-
-
-def _signature_pairs(value: object, name: str) -> tuple[tuple[str, str], ...]:
-    if not _sequence(value):
-        raise ConfigurationError(field_path=(name,), reason="invalid_type")
-    pairs: list[tuple[str, str]] = []
-    for item in value:
-        match _strings(item, (name,)):
-            case first, second:
-                pairs.append((first, second))
-            case _:
-                raise ConfigurationError(field_path=(name,), reason="invalid_value")
-    return tuple(pairs)
-
-
-@dataclass(frozen=True, slots=True)
-class SignatureFields:
-    """Ordered signature additions whose names must be declared by the signer."""
-
-    headers: tuple[tuple[str, str], ...] = field(repr=False)
-    query: tuple[tuple[str, str], ...] = field(repr=False)
-
-    def __post_init__(self) -> None:
-        """Freeze signature pairs; the binding validates their declared names and wire safety."""
-        object.__setattr__(self, "headers", _signature_pairs(self.headers, "headers"))
-        object.__setattr__(self, "query", _signature_pairs(self.query, "query"))
-
-
-class RequestSigner(Protocol):
-    """A synchronous signer of a finalized unsigned request."""
-
-    @property
-    def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations and managed names."""
-        ...
-
-    def sign(self, request: SigningInput) -> SignatureFields:
-        """Return fresh signature additions for this request."""
-        ...
-
-
-class AsyncRequestSigner(Protocol):
-    """An asynchronous signer of a finalized unsigned request."""
-
-    @property
-    def capabilities(self) -> SignerCapabilities:
-        """Declare immutable destinations and managed names."""
-        ...
-
-    async def sign(self, request: SigningInput) -> SignatureFields:
-        """Return fresh signature additions after one await."""
-        ...
-
-
-def _mapping(value: object) -> TypeIs[Mapping[object, object]]:
-    return isinstance(value, Mapping)
-
-
-def _provider(value: object) -> TypeIs[CredentialProviderInput]:
-    return callable(getattr(value, "get", None))
-
-
-def _signer(value: object) -> TypeIs[RequestSigner | AsyncRequestSigner]:
-    return callable(getattr(value, "sign", None))
-
-
-def _credentials(value: object) -> Mapping[str, CredentialProviderInput]:
-    path = ("auth", "credentials")
-    if not _mapping(value):
-        raise ConfigurationError(field_path=path, reason="invalid_type")
-    result: dict[str, CredentialProviderInput] = {}
-    for name, provider in value.items():
-        if not isinstance(name, str) or not _provider(provider):
-            raise ConfigurationError(field_path=path, reason="invalid_type")
-        result[name] = provider
-    return MappingProxyType(result)
-
-
-def _signers(value: object) -> tuple[RequestSigner | AsyncRequestSigner, ...]:
-    path = ("auth", "signers")
-    if not _sequence(value):
-        raise ConfigurationError(field_path=path, reason="invalid_type")
-    result: list[RequestSigner | AsyncRequestSigner] = []
-    for signer in value:
-        if not _signer(signer):
-            raise ConfigurationError(field_path=path, reason="invalid_type")
-        result.append(signer)
-    return tuple(result)
-
-
-def _count(value: object, path: tuple[str, ...]) -> None:
-    if type(value) is not int or value < 0:
-        raise ConfigurationError(field_path=path, reason="out_of_range")
-
-
-@dataclass(frozen=True, slots=True)
-class AuthConfig:
-    """Explicit provider and signer configuration that replaces an inherited auth choice as a whole."""
-
-    credentials: Mapping[str, CredentialProviderInput] = field(repr=False)
-    selection: int | Unset = field(default=UNSET, kw_only=True, repr=False)
-    allowed_origins: tuple[str, ...] = field(default=(), kw_only=True, repr=False)
-    send_on_anonymous: bool = field(default=False, kw_only=True)
-    anonymous_schemes: tuple[str, ...] = field(default=(), kw_only=True, repr=False)
-    signers: tuple[RequestSigner | AsyncRequestSigner, ...] = field(default=(), kw_only=True, repr=False)
-
-    def __post_init__(self) -> None:
-        """Freeze configuration and collect owned identities without callbacks or mode conversion."""
-        credentials = _credentials(self.credentials)
-        object.__setattr__(self, "credentials", credentials)
-        object.__setattr__(self, "allowed_origins", _strings(self.allowed_origins, ("auth", "allowed_origins")))
-        object.__setattr__(self, "anonymous_schemes", _strings(self.anonymous_schemes, ("auth", "anonymous_schemes")))
-        object.__setattr__(self, "signers", _signers(self.signers))
-        if not isinstance(self.selection, Unset):
-            _count(self.selection, ("auth", "selection"))
-        checked_type(self.send_on_anonymous, (bool,), ("auth", "send_on_anonymous"))
-
-
-def _material(value: object) -> CredentialMaterial:
-    if isinstance(value, (ApiKeyCredential, BasicCredential, BearerCredential)):
+AuthReason: TypeAlias = Literal[
+    "provider_failed",
+    "invalid_expiry",
+    "oauth_error",
+    "timeout",
+    "reauthorization_required",
+]
+OAuthErrorCode: TypeAlias = Literal[
+    "invalid_request",
+    "invalid_client",
+    "invalid_grant",
+    "unauthorized_client",
+    "unsupported_grant_type",
+    "invalid_scope",
+]
+
+OAUTH_ERROR_CODES: Final[tuple[str, ...]] = get_args(OAuthErrorCode)
+Secret: TypeAlias = str | Callable[[], str]
+UserPassword: TypeAlias = tuple[str, str] | Callable[[], tuple[str, str]]
+
+_UNAUTHORIZED: Final = 401
+_CHALLENGE_ITEMS: Final = re.compile(r'(?:[^,"]|"(?:[^"\\]|\\.)*(?:"|$))+')
+_CHALLENGE: Final = re.compile(r"([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?![ \t]*=)(?:[ \t]+(.*))?", re.DOTALL)
+_INVALID_TOKEN: Final = re.compile(r'error[ \t]*=[ \t]*(?:invalid_token|"invalid_token")', re.IGNORECASE)
+_HEADER_UNSAFE: Final = re.compile(r"[\x00-\x1f\x7f]")
+_COOKIE_UNSAFE: Final = re.compile(r'[\x00-\x20\x7f";,\\]')
+
+
+class AuthError(SDKError):
+    """Credential acquisition or a token exchange failed; the error itself keeps no credential material.
+
+    A `provider_failed` error's cause is the application's own exception from its credential callable or callback. An
+    OAuth rejection keeps the token endpoint's status and its standard error code.
+    """
+
+    reason: AuthReason
+
+    def __init__(
+        self,
+        *,
+        reason: AuthReason,
+        status_code: int | None = None,
+        oauth_error: OAuthErrorCode | None = None,
+        operation_id: str | None = None,
+        cause: BaseException | None = None,
+    ) -> None:
+        """Keep why credentials failed, never the provider's descriptions or secrets."""
+        super().__init__(reason=reason, operation_id=operation_id, cause=cause)
+        self.status_code = status_code
+        self.oauth_error: OAuthErrorCode | None = oauth_error
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("status_code", self.status_code), ("oauth_error", self.oauth_error))
+
+
+class TokenSource(httpx2.Auth):
+    """A bearer token that renews itself: the base of the SDK's OAuth providers."""
+
+    def token(self, send: Send | None, stale: str | None = None) -> str:
+        """Return a usable token, requesting one through `send` when none is or `stale` is still the current one."""
+        raise NotImplementedError
+
+    async def atoken(self, send: AsyncSend | None, stale: str | None = None) -> str:
+        """Return a usable token as `token` does, awaiting the token request."""
+        raise NotImplementedError
+
+
+class SchemeCredentials(Credentials):
+    """The credentials a generated client was given, which a `SchemeAuth` places; other values are refused."""
+
+    def __init__(self, values: Mapping[str, object]) -> None:
+        """Keep the credentials given, leaving out None."""
+        super().__init__(values)
+        for name, value in self.values.items():
+            if not (isinstance(value, (str, tuple, TokenSource)) or callable(value)):
+                raise ConfigurationError(field_path=(name,), reason="invalid_type")
+
+    def auth(  # noqa: PLR0913, PLR6301
+        self,
+        placements: tuple[Placement, ...],
+        *,
+        origin: Origin | None,
+        replayable: Callable[[httpx2.Request], bool],
+        challenge_less: bool,
+        send: Send | None = None,
+        async_send: AsyncSend | None = None,
+    ) -> httpx2.Auth:
+        """Return the HTTPX2 Auth that places a call's credentials on its requests."""
+        return SchemeAuth(
+            placements,
+            origin=origin,
+            replayable=replayable,
+            challenge_less=challenge_less,
+            send=send,
+            async_send=async_send,
+        )
+
+
+def _called(value: object) -> object:
+    """Return a credential's value for this request, calling a callable credential."""
+    if not callable(value):
         return value
-    raise ConfigurationError(field_path=("material",), reason="invalid_type")
+    try:
+        return value()
+    except SDKError:
+        raise
+    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
+        raise AuthError(reason="provider_failed", cause=error) from None
 
 
-class _StaticCredentials:
-    __slots__ = ("_material",)
-
-    def __init__(self, material: CredentialMaterial) -> None:
-        self._material = _material(material)
-
-
-class StaticCredentialProvider(_StaticCredentials):
-    """A synchronous provider returning one fixed material object."""
-
-    __slots__ = ()
-
-    def get(self, context: CredentialContext) -> CredentialMaterial:
-        """Return the configured material without environment or network access."""
-        del context
-        return self._material
+def _pair(value: object) -> tuple[str, str] | None:
+    """Return a username and password pair, or None for a value of another shape."""
+    if not isinstance(value, tuple):
+        return None
+    items = cast("tuple[object, ...]", value)
+    if len(items) != 2 or not all(isinstance(item, str) for item in items):  # noqa: PLR2004
+        return None
+    return cast("tuple[str, str]", items)
 
 
-class AsyncStaticCredentialProvider(_StaticCredentials):
-    """An asynchronous provider returning one fixed material object without worker delegation."""
-
-    __slots__ = ()
-
-    async def get(self, context: CredentialContext) -> CredentialMaterial:
-        """Return the configured material without environment or network access."""
-        del context
-        return self._material
-
-
-class _StaticTokens:
-    __slots__ = ("_material",)
-
-    def __init__(self, token: AccessToken) -> None:
-        self._material = BearerCredential(token, TokenVersion())
+def _text(scheme: SecurityScheme, value: object) -> str:
+    """Return the wire text of a resolved credential, refusing a value of another type than its scheme's."""
+    if scheme.kind == "basic":
+        if (pair := _pair(value)) is None:
+            raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
+        return "Basic " + base64.b64encode(f"{pair[0]}:{pair[1]}".encode()).decode("ascii")
+    if not isinstance(value, str):
+        raise ConfigurationError(field_path=(scheme.name,), reason="invalid_type")
+    return f"Bearer {value}" if scheme.kind == "bearer" else value
 
 
-class StaticTokenProvider(_StaticTokens):
-    """A fixed synchronous bearer token with one stable version and no refresh capability."""
-
-    __slots__ = ()
-
-    def get(self, context: CredentialContext) -> BearerCredential:
-        """Return the original token and version without changing scope knowledge."""
-        del context
-        return self._material
-
-
-class AsyncStaticTokenProvider(_StaticTokens):
-    """A fixed asynchronous bearer token with one stable version and no refresh capability."""
-
-    __slots__ = ()
-
-    async def get(self, context: CredentialContext) -> BearerCredential:
-        """Return the original token and version without changing scope knowledge."""
-        del context
-        return self._material
-
-
-class _EnvironmentCredentials:
-    __slots__ = ("_kind", "_last", "_variable_name")
-
-    def __init__(self, variable_name: str, *, kind: Literal["api_key", "bearer"] = "api_key") -> None:
-        checked_type(variable_name, (str,), ("variable_name",))
-        if not variable_name or "=" in variable_name or "\0" in variable_name:
-            raise ConfigurationError(field_path=("variable_name",), reason="invalid_value")
-        match kind:
-            case "api_key" | "bearer":
-                self._kind = kind
-            case _:
-                raise ConfigurationError(field_path=("kind",), reason="invalid_value")
-        self._variable_name = variable_name
-        self._last: tuple[str, TokenVersion] | None = None
-
-    def _read(self) -> CredentialMaterial:
-        if (value := os.environ.get(self._variable_name)) is None:
-            raise ConfigurationError(field_path=("variable_name",), reason="missing_value")
-        if self._kind == "api_key":
-            return ApiKeyCredential(value)
-        if (last := self._last) is None or last[0] != value:
-            last = self._last = (value, TokenVersion())
-        return BearerCredential(AccessToken(value), last[1])
+def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
+    """Put a credential at its scheme's position, replacing any value already there."""
+    name = scheme.wire_name
+    match scheme.location:
+        case "query":
+            request.url = request.url.copy_set_param(name, text)
+            return
+        case "cookie":
+            unsafe = _COOKIE_UNSAFE.search(text) is not None
+        case _:
+            unsafe = _HEADER_UNSAFE.search(text) is not None
+    if unsafe or not text.isascii():
+        raise ConfigurationError(field_path=(scheme.name,), reason="invalid_value")
+    if scheme.location == "header":
+        request.headers[name] = text
+        return
+    kept = [
+        part
+        for value in request.headers.get_list("cookie")
+        for part in (item.strip(" \t") for item in value.split(";"))
+        if part and part.partition("=")[0].strip() != name
+    ]
+    request.headers["Cookie"] = "; ".join((*kept, f"{name}={text}"))
 
 
-class EnvironmentCredentialProvider(_EnvironmentCredentials):
-    """A synchronous provider reading one explicitly named environment variable per get."""
+def _rejected(response: httpx2.Response, request: httpx2.Request, *, challenge_less: bool) -> bool:
+    """Return whether the resource itself rejected the token: a 401 with a Bearer invalid_token challenge.
 
-    __slots__ = ()
+    A 401 without a challenge counts only for an operation that declares it so; one a redirect answered does not.
+    """
+    if response.status_code != _UNAUTHORIZED or response.request is not request:
+        return False
+    if not (values := response.headers.get_list("www-authenticate")):
+        return challenge_less
+    return any(_bearer_invalid_token(value) for value in values)
 
-    def get(self, context: CredentialContext) -> CredentialMaterial:
-        """Read the current value without inferring Basic credentials or bearer grants."""
-        del context
-        return self._read()
+
+def _bearer_invalid_token(value: str) -> bool:
+    """Return whether a WWW-Authenticate value holds a Bearer challenge whose error is invalid_token."""
+    scheme = None
+    for item in _CHALLENGE_ITEMS.findall(value):
+        text = item.strip(" \t")
+        if (start := _CHALLENGE.fullmatch(text)) is not None:
+            scheme, text = start[1].lower(), start[2] or ""
+        if scheme == "bearer" and _INVALID_TOKEN.fullmatch(text) is not None:
+            return True
+    return False
 
 
-class AsyncEnvironmentCredentialProvider(_EnvironmentCredentials):
-    """An asynchronous provider reading one explicitly named environment variable per get."""
+class SchemeAuth(httpx2.Auth):
+    """Place a call's credentials on a request to its server's origin, and renew a rejected token once.
 
-    __slots__ = ()
+    A request to another origin, such as a page a server linked elsewhere, carries none of them. A rejected request is
+    sent again only when its body can be sent again. Token requests go through `send`, without this Auth or redirects.
+    """
 
-    async def get(self, context: CredentialContext) -> CredentialMaterial:
-        """Read the current value without worker delegation or inferred bearer grants."""
-        del context
-        return self._read()
+    def __init__(  # noqa: PLR0913
+        self,
+        placements: tuple[Placement, ...],
+        *,
+        origin: Origin | None,
+        replayable: Callable[[httpx2.Request], bool],
+        challenge_less: bool,
+        send: Send | None = None,
+        async_send: AsyncSend | None = None,
+    ) -> None:
+        """Keep the placements, the origin they go to, whether a sent request replays, and the token senders."""
+        self.placements = placements
+        self.origin = origin
+        self.replayable = replayable
+        self.challenge_less = challenge_less
+        self.send = send
+        self.async_send = async_send
+
+    def _skipped(self, request: httpx2.Request) -> bool:
+        return self.origin is not None and request_origin(str(request.url)) != self.origin
+
+    def _renewing(self, response: httpx2.Response, request: httpx2.Request, tokens: dict[int, str]) -> bool:
+        return (
+            bool(tokens)
+            and _rejected(response, request, challenge_less=self.challenge_less)
+            and self.replayable(request)
+        )
+
+    def _applied(self, request: httpx2.Request, values: list[object]) -> None:
+        for (scheme, _), value in zip(self.placements, values, strict=True):
+            _place(request, scheme, _text(scheme, value))
+
+    def _values(self, request: httpx2.Request, stale: dict[int, str] | None) -> tuple[list[object], dict[int, str]]:
+        send = _timed(request, self.send)
+        values: list[object] = []
+        tokens: dict[int, str] = {}
+        for index, (_, credential) in enumerate(self.placements):
+            value = credential
+            if isinstance(credential, TokenSource):
+                value = tokens[index] = credential.token(send, None if stale is None else stale[index])
+            values.append(_called(value))
+        return values, tokens
+
+    async def _avalues(
+        self, request: httpx2.Request, stale: dict[int, str] | None
+    ) -> tuple[list[object], dict[int, str]]:
+        send = _atimed(request, self.async_send)
+        values: list[object] = []
+        tokens: dict[int, str] = {}
+        for index, (_, credential) in enumerate(self.placements):
+            value = credential
+            if isinstance(credential, TokenSource):
+                value = tokens[index] = await credential.atoken(send, None if stale is None else stale[index])
+            values.append(_called(value))
+        return values, tokens
+
+    def sync_auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        """Send the request with its credentials, and once more with a renewed token after a rejection."""
+        if self._skipped(request):
+            yield request
+            return
+        values, tokens = self._values(request, None)
+        self._applied(request, values)
+        response = yield request
+        if self._renewing(response, request, tokens):
+            response.read()
+            values, _ = self._values(request, tokens)
+            self._applied(request, values)
+            yield request
+
+    async def async_auth_flow(self, request: httpx2.Request) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
+        """Send the request with its credentials, and once more with a renewed token after a rejection."""
+        if self._skipped(request):
+            yield request
+            return
+        values, tokens = await self._avalues(request, None)
+        self._applied(request, values)
+        response = yield request
+        if self._renewing(response, request, tokens):
+            await response.aread()
+            values, _ = await self._avalues(request, tokens)
+            self._applied(request, values)
+            yield request
+
+
+def _timed(request: httpx2.Request, send: Send | None) -> Send | None:
+    """Return a sender that gives each token request the resource request's timeout."""
+    if send is None or (timeout := request.extensions.get("timeout")) is None:
+        return send
+
+    def timed(token_request: httpx2.Request) -> httpx2.Response:
+        token_request.extensions["timeout"] = timeout
+        return send(token_request)
+
+    return timed
+
+
+def _atimed(request: httpx2.Request, send: AsyncSend | None) -> AsyncSend | None:
+    """Return an asyncio sender that gives each token request the resource request's timeout."""
+    if send is None or (timeout := request.extensions.get("timeout")) is None:
+        return send
+
+    async def timed(token_request: httpx2.Request) -> httpx2.Response:
+        token_request.extensions["timeout"] = timeout
+        return await send(token_request)
+
+    return timed

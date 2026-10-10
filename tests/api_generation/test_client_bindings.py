@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import GenerateConfig, generate
-from datamodel_code_generator.fastapi import FastAPIConfig, render_fastapi
-from tests.conftest import assert_output
+from tests.conftest import assert_exact_directory_content, assert_output, write_generated_modules
 from tests.data.python.client_bindings import (
     CASES,
     CLIENT,
@@ -21,6 +20,7 @@ from tests.data.python.client_bindings import (
     client_binding_rewrite_report,
 )
 from tests.data.python.client_generation import render_client
+from tests.data.python.fastapi_generation import in_directory
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/bindings"
 BINDING_CASES = json.loads(CASES.read_text(encoding="utf-8"))
@@ -31,10 +31,15 @@ PARITY_CASES = json.loads((DATA / "generation_platform/binding/capture-parity.js
 def test_client_model_bindings(case: str, tmp_path: Path) -> None:
     """Report the models and codecs a package ships, and what each formatter edit of the models changes.
 
-    An edit the bindings cannot project drops the field's binding. Cases marked "pins" keep current behaviour that
-    #4299 (binding diagnostics never reach a package) and #4300 (conflicting allOf base order) will change.
+    The models each package ships equal the models ordinary generation writes for the same options. An edit the
+    bindings cannot project drops the field's binding. Cases marked "pins" keep current behaviour that #4299 (binding
+    diagnostics never reach a package) and #4300 (conflicting allOf base order) will change.
     """
-    assert_output(client_binding_report(case, tmp_path), EXPECTED / f"{case}.txt")
+    report, packages = client_binding_report(case, tmp_path)
+    assert_output(report, EXPECTED / f"{case}.txt")
+    for index, (models, ordinary) in enumerate(packages):
+        write_generated_modules(captured := tmp_path / "captured" / str(index), models)
+        assert_exact_directory_content(captured, ordinary)
 
 
 @pytest.mark.parametrize(
@@ -70,28 +75,26 @@ def test_capture_preserves_ordinary_model_bytes(
     )
     models = settings.get("models", "models.py")
     ordinary = tmp_path / "ordinary"
-    captured = tmp_path / "captured"
+    rendered = tmp_path / "rendered"
     generate(source, config=GenerateConfig(output=ordinary / models, **options))
-    expected = {path.relative_to(ordinary): path.read_bytes() for path in ordinary.rglob("*.py")}
+    package = "client"
     if target == "client":
-        _, modules = render_client(source, captured, backend, options, CLIENT, models=models)
-        actual = {Path(*parts): text.encode("utf-8") for parts, text in modules.items() if parts[0] != "client"}
+        _, modules = render_client(source, rendered, backend, options, CLIENT, models=models)
     else:
-        project = render_fastapi(
-            source,
-            model_config=GenerateConfig(output=captured / models, **options),
-            config=FastAPIConfig(
-                output=captured / "server",
-                package="server",
-                model_package="models",
-            ),
-        )
-        actual = {
-            artifact.path.relative_to(captured): artifact.content
-            for artifact in project.artifacts
-            if artifact.path.suffix == ".py" and not artifact.path.is_relative_to(captured / "server")
-        }
-    assert_output(f"{bool(expected) and actual == expected}\n", EXPECTED / "capture-parity.txt")
+        package = "server"
+        rendered.mkdir()
+        with in_directory(rendered):
+            modules = generate(
+                source,
+                **options,
+                generate_server="fastapi",
+                server_package="server",
+                server_model_package=Path(models).stem,
+            )
+    write_generated_modules(
+        captured := tmp_path / "captured", {parts: text for parts, text in modules.items() if parts[0] != package}
+    )
+    assert_exact_directory_content(captured, ordinary)
 
 
 @pytest.mark.abnormal_path(

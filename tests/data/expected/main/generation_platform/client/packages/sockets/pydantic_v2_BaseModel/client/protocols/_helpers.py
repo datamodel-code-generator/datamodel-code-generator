@@ -7,13 +7,12 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import ClientMessage as _dcg_type_0
-from models import ServerMessage as _dcg_type_1
+import models
 
 from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.websocket import WebSocketSession, connect_socket
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from . import WSOptions, _plans
 
 
@@ -90,11 +89,10 @@ class RoomsChatWebsocket:
         self,
         *,
         room: str,
-        since: int | Unset = UNSET,
+        since: int | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> WebSocketSession[_dcg_type_0, _dcg_type_1]:
+    ) -> WebSocketSession[models.ClientMessage, models.ServerMessage]:
         """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
@@ -102,7 +100,6 @@ class RoomsChatWebsocket:
             (room, since),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -118,7 +115,6 @@ class FeedTextWebsocket:
         *,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> WebSocketSession[str, bytes]:
         """Open the WebSocket of GET /feed/socket, returning once its handshake got a valid 101."""
         return connect_socket(
@@ -127,7 +123,6 @@ class FeedTextWebsocket:
             (),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -141,17 +136,15 @@ class SecureChatWebsocket:
     def connect(
         self,
         *,
-        x_trace: str | Unset = UNSET,
+        X_Trace: str | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> WebSocketSession[bytes, str]:
         """Open the WebSocket of GET /secure/socket, returning once its handshake got a valid 101."""
         return connect_socket(
             self._core,
             _plans.SOCKET_2,
-            (x_trace,),
+            (X_Trace,),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )

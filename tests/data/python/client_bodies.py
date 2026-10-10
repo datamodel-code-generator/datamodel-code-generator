@@ -107,7 +107,7 @@ def bodies(package: ModuleType, lines: list[str]) -> None:
             ("empty native iterable", iter(())),
         ):
             exchange.respond(raw_response(200, data["payload"].encode(), "image/png"))
-            record(lines, label, lambda body=body: api.pets.photos.upload(pet_id=_photo(package), body=body))
+            record(lines, label, lambda body=body: api.pets.photos.upload(petId=_photo(package), body=body))
         lines.append(f"  caller file open={not file.closed} offset={file.tell()}")
         closed = io.BytesIO(data["payload"].encode())
         closed.close()
@@ -122,7 +122,7 @@ def bodies(package: ModuleType, lines: list[str]) -> None:
             ("closed file", closed),
             ("async file in a sync call", AsyncReader(data["payload"].encode())),
         ):
-            record(lines, label, lambda body=body: api.pets.photos.upload(pet_id=_photo(package), body=body))
+            record(lines, label, lambda body=body: api.pets.photos.upload(petId=_photo(package), body=body))
         file.close()
         path.unlink()
     run(lambda: _async_bodies(package, data, lines))
@@ -151,13 +151,13 @@ async def _async_bodies(package: ModuleType, data: dict[str, object], lines: lis
                 ("async file read in chunks", reader),
             ):
                 exchange.respond(raw_response(200, payload, "image/png"))
-                await arecord(lines, label, lambda body=body: api.pets.photos.upload(pet_id=_photo(package), body=body))
+                await arecord(lines, label, lambda body=body: api.pets.photos.upload(petId=_photo(package), body=body))
             lines.append(f"  async file reads={reader.sizes} iterated={reader.iterated}")
             for label, body in (
                 ("async invalid input", object()),
                 ("async missing path", path.with_name("missing.bin")),
             ):
-                await arecord(lines, label, lambda body=body: api.pets.photos.upload(pet_id=_photo(package), body=body))
+                await arecord(lines, label, lambda body=body: api.pets.photos.upload(petId=_photo(package), body=body))
             lines.append(f"  async caller file open={not file.closed}")
             file.close()
         path.unlink()

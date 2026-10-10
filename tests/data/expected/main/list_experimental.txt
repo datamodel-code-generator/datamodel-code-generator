@@ -17,8 +17,6 @@ input-format.avro                      input-format  --input-file-type avro     
 input-format.mcp-tools                 input-format  --input-file-type mcp-tools                                                                                            0.60.0  -
 input-format.protobuf                  input-format  --input-file-type protobuf                                                                                             0.59.0  -
 input-format.xmlschema                 input-format  --input-file-type xmlschema                                                                                            0.59.0  -
-python-api.client                      python-api    datamodel_code_generator.client and datamodel_code_generator.api_types                                                 0.84.0  -
-python-api.fastapi-server              python-api    datamodel_code_generator.fastapi and datamodel_code_generator.api_types                                                0.84.0  -
 
 Notes:
 behavior.batch-generation-jobs:
@@ -33,9 +31,10 @@ cli-option.generate-client:
   --generate-client httpx2 generates the models at --output and a client package at --client-output;
   --client-package and --client-model-package name their import paths, and the other --client-*
   options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of
-  pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add
-  notice on stderr work as with --generate-server. generate() takes them as generate_client and the
-  client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
+  pyproject.toml, in its profiles, and in its jobs. --check, --diff-against, --watch,
+  --output-format json, and the uv add notice on stderr work as with --generate-server. generate()
+  takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run
+  and as --target-python-version.
 cli-option.generate-schema-validators:
   The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules
   such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else
@@ -45,10 +44,11 @@ cli-option.generate-server:
   --server-output; --server-package and --server-model-package name their import paths, and the
   other --server-* options configure the package. Like model options, they can be set in
   [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares
-  without writing, --output-format json uses the model generation and check payloads, and generation
-  prints a uv add command to stderr. generate() takes them as generate_server and the server_*
-  options, and returns every generated file without an output. It needs Python 3.11 or later, both
-  to run and as --target-python-version.
+  without writing, --diff-against compares the files two inputs render, --watch regenerates after
+  input changes, --output-format json uses the model generation, check, and input-diff payloads, and
+  generation prints a uv add command to stderr. generate() takes them as generate_server and the
+  server_* options, and returns every generated file without an output. It needs Python 3.11 or
+  later, both to run and as --target-python-version.
 cli-option.install-skill:
   Use --install-skill with codex or claude-code. --skill-scope selects a project or user
   installation, and --overwrite-skill safely replaces an existing regular skill directory.
@@ -86,13 +86,3 @@ input-format.protobuf:
   validation or gRPC code generation.
 input-format.xmlschema:
   The parser focuses on model generation from XSD documents, not full XML instance validation.
-python-api.client:
-  generate_client and render_client generate the models and an HTTPX2 client package from one
-  OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11
-  or later, both to run and as model_config.target_python_version.
-python-api.fastapi-server:
-  generate_fastapi and render_fastapi generate the models and a FastAPI server package from one
-  OpenAPI document with the api scope. The package declares a service Protocol for each router
-  group, builds routers from the services you implement in your own modules, and serves FastAPI's
-  own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to
-  run and as model_config.target_python_version.

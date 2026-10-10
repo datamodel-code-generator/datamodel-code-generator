@@ -13,7 +13,7 @@ paths:
         - name: Upload-Length
           in: header
           required: true
-          schema: {type: integer}
+          schema: {type: integer, maximum: 10}
         - name: Tus-Resumable
           in: header
           required: true

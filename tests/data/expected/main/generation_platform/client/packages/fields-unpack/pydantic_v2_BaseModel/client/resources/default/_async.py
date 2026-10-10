@@ -108,20 +108,15 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation0Arguments4],
     ) -> CreatePetResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -151,11 +146,13 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation1Arguments4],
     ) -> UpdatePetResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -181,11 +178,13 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> LogVisitResponse:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -196,11 +195,13 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> SetOwnerResponse:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -220,13 +221,15 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation4Arguments2],
     ) -> CreateOwnerResponse:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )).data
@@ -245,11 +248,13 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation5Arguments2],
     ) -> PutLabelsResponse:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -260,11 +265,13 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> PutPhotoResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -284,11 +291,13 @@ class AsyncDefaultResource:
         self,
         **kwargs: Unpack[Operation7Arguments2],
     ) -> ReplacePetResponse:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -327,20 +336,15 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation0Arguments4],
     ) -> Response[CreatePetResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -370,11 +374,13 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation1Arguments4],
     ) -> Response[UpdatePetResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -400,11 +406,13 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> Response[LogVisitResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -415,11 +423,13 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> Response[SetOwnerResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -439,13 +449,15 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation4Arguments2],
     ) -> Response[CreateOwnerResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -464,11 +476,13 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation5Arguments2],
     ) -> Response[PutLabelsResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -479,11 +493,13 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> Response[PutPhotoResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -503,11 +519,13 @@ class AsyncDefaultWithResponse:
         self,
         **kwargs: Unpack[Operation7Arguments2],
     ) -> Response[ReplacePetResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -546,20 +564,15 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation0Arguments4],
     ) -> AsyncRawResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -589,11 +602,13 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation1Arguments4],
     ) -> AsyncRawResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -619,11 +634,13 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> AsyncRawResponse:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -634,11 +651,13 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -658,13 +677,15 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation4Arguments2],
     ) -> AsyncRawResponse:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -683,11 +704,13 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation5Arguments2],
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -698,11 +721,13 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -722,11 +747,13 @@ class AsyncDefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation7Arguments2],
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -765,20 +792,15 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation0Arguments4],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -808,11 +830,13 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation1Arguments4],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -838,11 +862,13 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -853,11 +879,13 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -877,13 +905,15 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation4Arguments2],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -902,11 +932,13 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation5Arguments2],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -917,11 +949,13 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -941,11 +975,13 @@ class AsyncDefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation7Arguments2],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),

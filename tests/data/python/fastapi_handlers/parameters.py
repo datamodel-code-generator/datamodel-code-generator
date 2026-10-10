@@ -24,6 +24,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_sizes(self, **arguments: object) -> None:
             record("get_sizes", arguments)
 
+        def get_codes(self, **arguments: object) -> None:
+            record("get_codes", arguments)
+
         def repeat(self, **arguments: object) -> None:
             record("repeat", arguments)
 

@@ -6,27 +6,26 @@ from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from enum import Enum
+from itertools import starmap
+from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
-from datamodel_code_generator._codec_type_source import type_reason
-from datamodel_code_generator._fastapi.naming import normalize
+from datamodel_code_generator._fastapi.naming import file_stem_conflict
 from datamodel_code_generator._fastapi.routes import (
+    BUILDER_NAMES,
+    EXPORTED_NAMES,
     RouteError,
     RoutePath,
+    group_basis,
     group_key,
-    group_stem,
-    operation_name,
     placeholders,
     route_path,
-    stem_conflicts,
 )
-from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
-from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
@@ -41,6 +40,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     UnionType,
 )
+from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
 
@@ -51,21 +51,21 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
-        FinalPythonType,
         FrozenLiteral,
-        GeneratedTypeContractBatch,
         ModelFieldFacts,
         OperationContract,
         SymbolId,
+        TypeArgument,
         TypeUseBinding,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
+    from datamodel_code_generator._target_module import TypeNames
 
 ArgumentLocation: TypeAlias = Literal[
     "path", "query", "querystring", "header", "cookie", "body", "request", "principal", "media_type"
@@ -77,9 +77,8 @@ Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
-Schema: TypeAlias = "Mapping[str, WireValue]"
 
-RESERVED: Final = frozenset({"request", "principal", "body", "media_type"})
+RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 _JSON: Final = "application/json"
 _LOCATIONS: Final[dict[object, ParameterLocation]] = {
@@ -89,12 +88,23 @@ _LOCATIONS: Final[dict[object, ParameterLocation]] = {
     "header": "header",
     "cookie": "cookie",
 }
-_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "cookie"}
+_STYLES: Final[dict[str, frozenset[str]]] = {
+    "path": frozenset({"simple"}),
+    "query": frozenset({"form"}),
+    "header": frozenset({"simple"}),
+    "cookie": frozenset({"cookie", "form"}),
+}
 _APIS: Final[dict[str, NativeApi]] = {"path": "Path", "query": "Query", "header": "Header", "cookie": "Cookie"}
 _SCALAR_BUILTINS: Final = frozenset({"str", "int", "float", "bool", "bytes", "object"})
 _SCALAR_MODULES: Final = frozenset({"datetime", "decimal", "ipaddress", "pydantic", "pydantic.networks", "uuid"})
 _MODEL_IMPORTS: Final = frozenset({"BaseModel", "RootModel"})
+_STRICT_TYPES: Final = frozenset({"StrictBool", "StrictFloat", "StrictInt"})
+_STRICT_CONSTRUCTORS: Final = frozenset({"confloat", "conint"})
+_STRICT_BYTES: Final = ("pydantic", "StrictBytes")
+_STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
+_NULL: Final = LiteralScalar("none", None)
+_LITERAL_KINDS: Final = frozenset({"bool", "int", "float", "str"})
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
     "decimal_places",
@@ -108,20 +118,19 @@ _CONSTRAINTS: Final = frozenset({
     "multiple_of",
     "pattern",
 })
-_CONSTRUCTORS: Final[dict[tuple[str | None, str], str]] = {
-    (None, "bytes"): "conbytes",
-    ("decimal", "Decimal"): "condecimal",
-    (None, "float"): "confloat",
-    (None, "int"): "conint",
-    (None, "str"): "constr",
+_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str, BuiltinType | None]]] = {
+    (None, "bytes"): ("conbytes", None),
+    ("decimal", "Decimal"): ("condecimal", None),
+    (None, "float"): ("confloat", None),
+    (None, "int"): ("conint", None),
+    (None, "str"): ("constr", None),
+    ("pydantic", "StrictFloat"): ("confloat", BuiltinType("float")),
+    ("pydantic", "StrictInt"): ("conint", BuiltinType("int")),
+    ("pydantic", "StrictStr"): ("constr", BuiltinType("str")),
 }
-CONSTRAINED: Final = frozenset({
-    ("pydantic", "conbytes"),
-    ("pydantic", "condecimal"),
-    ("pydantic", "confloat"),
-    ("pydantic", "conint"),
-    ("pydantic", "constr"),
-})
+_PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
+_CONSTRAINED: Final = frozenset({"conbytes", "condecimal", "confloat", "conint", "constr"})
+_WRAPPERS: Final = frozenset({"root", "alias"})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
 _FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
 _API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
@@ -142,10 +151,29 @@ _DEFAULT_STATUS: Final = 200
 
 
 class Default(Enum):
-    """How an optional native argument behaves when the request omits it."""
+    """Whether a request must send a native argument, or the handler receives None for an absent one."""
 
     REQUIRED = "required"
     ABSENT = "absent"
+
+
+@dataclass(frozen=True, slots=True)
+class RootDefault:
+    """The default of a parameter whose type stays a root model: the model of a literal, or the model's own default."""
+
+    type: TypeView
+    literal: LiteralScalar | LiteralSequence | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MemberDefault:
+    """The default of an enum parameter: the members of its enum type that a literal, or each item of one, names."""
+
+    type: TypeView
+    literal: LiteralScalar | LiteralSequence
+
+
+ParameterDefault: TypeAlias = Default | LiteralScalar | LiteralSequence | RootDefault | MemberDefault
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -161,9 +189,9 @@ class NativeField:
 
     api: NativeApi
     alias: str
-    type: FinalPythonType
+    type: TypeView
     keywords: tuple[tuple[str, object], ...] = ()
-    default: Default | LiteralScalar | LiteralSequence = Default.REQUIRED
+    default: ParameterDefault = Default.REQUIRED
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -178,7 +206,10 @@ class MediaSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter, its wire plan, the model's type, and how the server receives it."""
+    """One effective parameter, its wire plan, the model's type, and how the server receives it.
+
+    `local` says the document that names its operation declares it, rather than a document it references.
+    """
 
     location: ParameterLocation
     wire_name: str
@@ -186,9 +217,10 @@ class ParameterSpec:
     use: TypeUseBinding | None
     plan: ParameterPlan | None
     decision: Decision
-    type: FinalPythonType | None = None
+    type: TypeView | None = None
     native: NativeField | None = None
-    default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
+    default: ParameterDefault = Default.ABSENT
+    local: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -234,6 +266,7 @@ class SchemeSpec:
     declaration: WireDeclaration
     location: str | None = None
     parameter: str | None = None
+    python_name: str = ""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -281,7 +314,7 @@ class OperationSpec:
 
     @property
     def key(self) -> str:
-        """Return the operation key: the root use-site pointer."""
+        """Return the operation reference: the root use-site pointer."""
         return self.contract.id.use_site.pointer
 
     @property
@@ -297,16 +330,12 @@ class OperationSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GroupSpec:
-    """One router group: its key, name, and operations in declaration order."""
+    """One router group: its key, name, service Protocol name, and operations in declaration order."""
 
     key: str
     stem: str
+    service: str
     operations: tuple[OperationSpec, ...]
-
-    @property
-    def service(self) -> str:
-        """Return the name of the group's service Protocol: Service after the group's PascalCase name."""
-        return "Service" if self.stem == "service" else f"{pascal(self.stem)}Service"
 
     @property
     def secured(self) -> bool:
@@ -321,7 +350,7 @@ class ServerPlan:
     operations: tuple[OperationSpec, ...]
     groups: tuple[GroupSpec, ...]
     schemes: tuple[SchemeSpec, ...]
-    info: tuple[tuple[str, WireValue], ...]
+    info: tuple[tuple[str, JSONValue], ...]
 
 
 class PlanError(Exception):
@@ -331,11 +360,6 @@ class PlanError(Exception):
         """Keep the ordered diagnostics."""
         super().__init__(diagnostics[0].message)
         self.diagnostics = tuple(diagnostics)
-
-
-def pascal(name: str) -> str:
-    """Return the PascalCase form of a finalized snake_case name."""
-    return "".join(token[0].upper() + token[1:] for token in name.split("_") if token)
 
 
 def fact(declaration: WireDeclaration, name: str) -> object:
@@ -429,14 +453,19 @@ class Planner:  # noqa: PLR0904
         request: TargetRequest,
         config: FastAPIConfig,
         wire: WirePlan,
+        types: TypeNames,
     ) -> None:
-        """Index the batch, and resolve the per-operation settings to operation keys."""
+        """Index the batch, and resolve the per-operation settings to operation keys.
+
+        `types` says which types a generated module can import.
+        """
         self.request = request
         self.config = config
         self.wire = wire
+        self.types = types
+        self.unspelled: set[TypeUseId] = set()
         self.uses = {use.id: use for use in request.batch.type_uses}
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
-        self.imports = symbol_imports(request.batch)
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
         for member in request.batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
@@ -451,6 +480,8 @@ class Planner:  # noqa: PLR0904
             for declaration in request.batch.security_schemes
         }
         self.schemes: dict[str, SchemeSpec] = {}
+        assert request.batch.names is not None
+        self.target_names = request.batch.names
         self.backend = request.model_config.output_model_type.value
         self.problems: list[Diagnostic] = []
         self.names = self.selected("operation_names", config.operation_names)
@@ -471,7 +502,7 @@ class Planner:  # noqa: PLR0904
         for selector, value in values.items():
             reference = OperationRef(pointer=selector) if isinstance(selector, str) else selector
             if (operation := self.request.resolve(reference)) is None:
-                from datamodel_code_generator._api_manifest import named_document  # noqa: PLC0415
+                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
 
                 named = named_document(reference.document, reference.document)
                 message = f"The {option} entry {reference.pointer!r}{named} {self.request.unresolved}"
@@ -486,47 +517,115 @@ class Planner:  # noqa: PLR0904
     def plan(self) -> ServerPlan:
         """Plan names, then each operation's boundaries, arguments, and route, then the router groups."""
         operations = self.request.operations
-        names = {operation.id.use_site.pointer: self.operation_name(operation) for operation in operations}
-        self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
-            for name, count in sorted(Counter(pascal(name) for name in names.values()).items())
-            if count > 1
-        )
+        names = self.operation_names(operations)
         self.raise_problems()
-        specs = tuple(self.operation(operation, names[operation.id.use_site.pointer]) for operation in operations)
+        pascals = self.target_names.claim(
+            NameScope(),
+            [
+                (self.target_names.pascal(name), _local(operation), (self.target_names.pascal(group),))
+                for operation, name, group in zip(operations, names, map(self.group_name, operations), strict=True)
+            ],
+            camel=True,
+        )
+        specs = tuple(starmap(self.operation, zip(operations, names, pascals, strict=True)))
         self.check_routes(specs)
         groups = self.groups(specs)
         self.raise_problems()
-        return ServerPlan(operations=specs, groups=groups, schemes=tuple(self.schemes.values()), info=self.info())
+        schemes = tuple(self.schemes.values())
+        bases = [self.target_names.function(scheme.name) for scheme in schemes]
+        python_names = self.target_names.claim(
+            NameScope(),
+            [
+                (base, scheme.declaration.declaration.location.document == self.request.batch.documents[0].id, ())
+                for scheme, base in zip(schemes, bases, strict=True)
+            ],
+        )
+        schemes = tuple(replace(scheme, python_name=name) for scheme, name in zip(schemes, python_names, strict=True))
+        return ServerPlan(operations=specs, groups=groups, schemes=schemes, info=self.info())
 
-    def operation_name(self, operation: OperationContract) -> str:
-        """Return an operation's explicit name, or its normalized operationId or method and path."""
-        return self.names.get(operation.id.use_site.pointer) or operation_name(operation)
+    def group_name(self, operation: OperationContract) -> str:
+        """Return the name an operation's group derives, the scope a duplicate name of the operation lives in."""
+        return self.target_names.function(group_basis(group_key(operation, single=self.config.layout == "single")))
+
+    def operation_names(self, operations: tuple[OperationContract, ...]) -> list[str]:
+        """Name each operation's handler: explicit names first, which must differ, then derived ones suffixed apart."""
+        explicit = [name for operation in operations if (name := self.names.get(operation.id.use_site.pointer))]
+        self.problems.extend(
+            _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
+            for name, count in sorted(Counter(explicit).items())
+            if count > 1
+        )
+        derived = [operation for operation in operations if operation.id.use_site.pointer not in self.names]
+        bases = [
+            self.target_names.function(operation_basis(operation.method, operation.path, operation.operation_id))
+            for operation in derived
+        ]
+        claimed = dict(
+            zip(
+                (operation.id for operation in derived),
+                self.target_names.claim(
+                    NameScope(explicit),
+                    [
+                        (base, _local(operation), (self.group_name(operation),))
+                        for operation, base in zip(derived, bases, strict=True)
+                    ],
+                ),
+                strict=True,
+            )
+        )
+        return [self.names.get(operation.id.use_site.pointer) or claimed[operation.id] for operation in operations]
 
     def groups(self, specs: tuple[OperationSpec, ...]) -> tuple[GroupSpec, ...]:
-        """Group operations by first tag in first-occurrence order, naming router files uniquely."""
+        """Group operations by first tag in first-occurrence order, naming router files and services apart.
+
+        A router name becomes a file stem and the keyword that passes the group's service to a builder: explicit
+        names must differ, also by case, from each other and from the names the package defines; derived ones are
+        suffixed apart. A Windows device name or `__init__` needs an explicit name.
+        """
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        stems = {key: self.config.router_names.get(key) or group_stem(key) for key in members}
+        scope = NameScope((*BUILDER_NAMES, *EXPORTED_NAMES), folded=True)
+        conflicts = {
+            name
+            for key in members
+            if (name := self.config.router_names.get(key)) is not None
+            and (file_stem_conflict(name) or not scope.take(name))
+        }
+        derived = [key for key in members if key not in self.config.router_names]
+        bases = [self.target_names.function(group_basis(key)) for key in derived]
+        claimed = self.target_names.claim(
+            scope, [(base, _local(members[key][0].contract), ()) for key, base in zip(derived, bases, strict=True)]
+        )
+        stems = {
+            key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
+        }
+        conflicts.update(stem for stem in stems.values() if file_stem_conflict(stem))
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
-            for stem in sorted(stem_conflicts(stems.values()))
+            for stem in sorted(conflicts)
         )
-        groups = tuple(
+        named = [key for key in members if stems[key] != "service"]
+        services = dict(
+            zip(
+                named,
+                self.target_names.claim(
+                    NameScope(),
+                    [(self.target_names.pascal(stems[key]), _local(members[key][0].contract), ()) for key in named],
+                    camel=True,
+                ),
+                strict=True,
+            )
+        )
+        return tuple(
             GroupSpec(
                 key=key,
                 stem=stems[key],
+                service=f"{services[key]}Service" if key in services else "Service",
                 operations=tuple(values),
             )
             for key, values in members.items()
         )
-        self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several router groups take the service name {name!r}")
-            for name, count in sorted(Counter(group.service for group in groups).items())
-            if count > 1
-        )
-        return groups
 
     def check_routes(self, specs: tuple[OperationSpec, ...]) -> None:
         """Reject two operations FastAPI cannot tell apart: the same method and path shape."""
@@ -537,7 +636,7 @@ class Planner:  # noqa: PLR0904
                 self.problems.append(_problem("F_ROUTE_INVALID", message, spec.contract.id.use_site))
             seen.add(key)
 
-    def operation(self, operation: OperationContract, name: str) -> OperationSpec:
+    def operation(self, operation: OperationContract, name: str, pascal: str) -> OperationSpec:
         """Plan one operation's parameters, body, responses, arguments, and route path."""
         try:
             wire_names: tuple[str, ...] | None = placeholders(operation.path)
@@ -559,13 +658,15 @@ class Planner:  # noqa: PLR0904
         responses = tuple(self.response(operation, response) for response in operation.responses)
         primary = self.primary(operation, responses)
         security = self.security(operation)
-        arguments = self.arguments(operation, parameters, body, names, secured=security is not None)
+        arguments = self.arguments(
+            operation, parameters, body, names, secured=security is not None, scopes=(self.group_name(operation), name)
+        )
         route = self.route(operation, arguments, wire_names)
         slots = {slot.wire_name: slot.slot for slot in route.slots}
         return OperationSpec(
             contract=operation,
             python_name=name,
-            pascal=pascal(name),
+            pascal=pascal,
             group=group_key(operation, single=self.config.layout == "single"),
             route=route,
             parameters=parameters,
@@ -611,16 +712,18 @@ class Planner:  # noqa: PLR0904
         else:
             self.schemes[name] = scheme
 
-    def info(self) -> tuple[tuple[str, WireValue], ...]:
+    def info(self) -> tuple[tuple[str, JSONValue], ...]:
         """Return the FastAPI settings the root document's info, tags, and servers supply, in constructor order."""
-        root = self.request.lease.borrow(SourceLocation(self.request.batch.documents[0].id, "", "declaration"))
-        sources = {"root": root, "info": root.get("info") if isinstance(root, dict) else None}
-        found: list[tuple[str, WireValue]] = []
+        root = {
+            key: found for key, value in self.request.batch.document_facts if (found := json_value(value)) is not None
+        }
+        sources = {"root": root, "info": root.get("info")}
+        found: list[tuple[str, JSONValue]] = []
         for container, key, option, kind in _INFO:
             match kind, _member(sources[container], key):
                 case ("text", str() as value) | ("object", Mapping() as value):
                     found.append((option, value))
-                case "objects", tuple() as value if all(isinstance(item, Mapping) for item in value):
+                case "objects", list() as value if all(isinstance(item, Mapping) for item in value):
                     found.append((option, value))
                 case _:
                     pass
@@ -645,8 +748,25 @@ class Planner:  # noqa: PLR0904
             return RoutePath(path=operation.path, route_path=operation.path, placeholders=wire_names, slots=())
 
     def use(self, uses: tuple[TypeUseId, ...]) -> TypeUseBinding | None:
-        """Return the first type use of a declaration."""
-        return next((self.uses[use] for use in uses if use in self.uses), None)
+        """Return the first type use of a declaration, reporting a type no generated module can import."""
+        use = next((self.uses[use] for use in uses if use in self.uses), None)
+        if (
+            use is not None
+            and use.type is not None
+            and use.id not in self.unspelled
+            and self.types.unspellable(use.type)
+        ):
+            self.unspelled.add(use.id)
+            self.problems.append(
+                Diagnostic(
+                    code="BND_TYPE_EXPRESSION_UNSUPPORTED",
+                    severity="error",
+                    stage="binding",
+                    message="The use's final type has no expression a generated module can import",
+                    source_pointer=use.id.use_site.pointer,
+                )
+            )
+        return use
 
     def bound(self, use: TypeUseBinding | None) -> TypeUseBinding | None:
         """Return a request use, reporting a schema the model generator gave no type."""
@@ -659,7 +779,6 @@ class Planner:  # noqa: PLR0904
                     severity="error",
                     stage="binding",
                     message="The use has no generated native type",
-                    source_uri=self.request.documents.root_uri,
                     source_pointer=use.id.use_site.pointer,
                 )
             )
@@ -674,9 +793,15 @@ class Planner:  # noqa: PLR0904
         use = self.bound(self.use(_uses(declaration)))
         plan = self.parameter_plans.get(operation.id, {}).get((location, name))
         value, default = self.parameter_type(use)
+        if plan is not None and plan.content_media_type is None and use is not None and self.strict_bytes(use.type):
+            message = (
+                f"The {location} parameter {name!r} of {_label(operation)} is strict bytes, which rejects the text "
+                "a parameter carries"
+            )
+            self.problems.append(_problem("F_PARAMETER_UNSUPPORTED", message, declaration.use_site))
         kind = (
             None
-            if value is None or (plan is not None and plan.kind != "string" and self.literal(value))
+            if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
             else self.kind(value)
         )
         spec = ParameterSpec(
@@ -688,6 +813,7 @@ class Planner:  # noqa: PLR0904
             decision=Decision(transport="adapter"),
             type=value,
             default=default,
+            local=declaration.declaration.location.document == operation.id.use_site.document,
         )
         if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):
             return spec
@@ -700,19 +826,22 @@ class Planner:  # noqa: PLR0904
         )
         return replace(spec, native=native, decision=replace(spec.decision, transport="fastapi_native"))
 
-    def parameter_type(
-        self, use: TypeUseBinding | None
-    ) -> tuple[FinalPythonType | None, Default | LiteralScalar | LiteralSequence]:
+    def parameter_type(self, use: TypeUseBinding | None) -> tuple[TypeView | None, ParameterDefault]:
         """Return a parameter's type and default through the root models and aliases whose type alone validates.
 
-        The parameter schema's own boolean, number, or string default comes first, since an alias carries none and a
-        referenced root model's is not the parameter's; one of an enum stays the model's.
+        The parameter schema's own default comes first when it is a boolean, number, or string, or a list of them,
+        since an alias may carry none and a referenced root model's is not the parameter's, and a declared null
+        leaves the parameter without one. A declared default does not depend on how the model spells the type: a type
+        that stays a root model takes that model, of the schema's default or with its own, an enum type its members,
+        and any other type the schema's. A default factory without such a literal stays the model's, so its root model
+        or alias is not unwrapped.
         """
-        default: Default | LiteralScalar | LiteralSequence = Default.ABSENT
+        default: ParameterDefault = Default.ABSENT
         if use is None or use.type is None:
             return None, default
         value = use.type
         seen: set[SymbolId] = set()
+        factory: TypeView | None = None
         while (
             isinstance(value, GeneratedSymbolType)
             and value.symbol not in seen
@@ -721,48 +850,64 @@ class Planner:  # noqa: PLR0904
             and (plain := self.plain(value.symbol, facts, frozenset(seen))) is not None
         ):
             seen.add(value.symbol)
+            if factory is None and facts.backend.emitted.emitted_default_kind == "factory":
+                factory = value
             value = plain
             default = _default(facts) if default is Default.ABSENT else default
-        if (
-            seen
-            and use.schema is not None
-            and (isinstance(value, LiteralType) or not self.literal(value))
-            and (literal := self.wire.default(use.schema)) is not None
-        ):
-            default = literal
+        declared = None if use.schema is None else dict(use.keywords).get("default")
+        literal = _literal(declared)
+        null = declared == _NULL
+        if null:
+            default = Default.ABSENT
+        if factory is not None and literal is None and default is Default.ABSENT:
+            value = factory
+        if isinstance(value, GeneratedSymbolType) and self.symbols[value.symbol].kind == "root":
+            wrapped = self.facts.get(value.symbol)
+            return value, RootDefault(
+                value, literal
+            ) if not null and wrapped is not None and wrapped.has_default else default
+        default = default if literal is None else literal
+        if isinstance(default, LiteralScalar | LiteralSequence) and (member := self.member(value)) is not None:
+            return value, MemberDefault(member, default)
         return value, default
 
-    def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> FinalPythonType | None:
+    def member(self, value: TypeView) -> GeneratedSymbolType | None:
+        """Return the enum type whose members a default names: the type, its one member besides None, or its item."""
+        match value:
+            case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
+                return value
+            case UnionType() if len(members := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
+                return self.member(members[0])
+            case GenericType() if value.base == BuiltinType("list") and len(value.arguments) == 1:
+                return self.member(value.arguments[0])
+            case _:
+                pass
+        return None
+
+    def plain(self, symbol: SymbolId, facts: ModelFieldFacts, seen: frozenset[SymbolId]) -> TypeView | None:
         """Return the type a root model or alias validates as: its type, a scalar with constraints as a constrained one.
 
-        Its documentation keywords are left to the parameter's own; any other keyword, a constrained container, or a
-        setting returns None.
+        A scalar that may be None is constrained the same way, so each spelling of the model gives one type. Its
+        documentation keywords are left to the parameter's own and a default factory to the default; any other
+        keyword, a constrained container, or a setting returns None.
         """
         settings = () if (model := self.symbols[symbol].facts) is None else model.configuration
         keywords = facts.backend.emitted.constructor_keywords
         constraints = tuple(item for item in keywords if item[0] in _CONSTRAINTS)
         if (
             any(setting.present for setting in settings)
-            or any(name not in _CONSTRAINTS and name not in _DOCUMENTATION for name, _ in keywords)
-            or type_reason(facts.type, self.imports) is not None
+            or any(name not in _PLAIN_KEYWORDS for name, _ in keywords)
+            or self.types.unspellable(facts.type)
         ):
             return None
         value = self.nested(facts.type, seen | {symbol})
-        if not constraints:
-            return value
-        base = (
-            (None, value.name)
-            if isinstance(value, BuiltinType)
-            else (value.import_.from_, value.import_.import_)
-            if isinstance(value, ImportedType)
-            else None
-        )
-        if (constructor := _CONSTRUCTORS.get(base)) is None:
-            return None
-        return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), constraints)
+        return _constrained(value, constraints) if constraints else value
 
-    def nested(self, value: FinalPythonType, seen: frozenset[SymbolId]) -> FinalPythonType:
-        """Return a type with each alias among its members and arguments replaced by the type it validates as."""
+    def nested(self, value: TypeView, seen: frozenset[SymbolId]) -> TypeView:
+        """Return a type with each alias among its members and arguments replaced by the type it validates as.
+
+        A tuple keeps its members, as FastAPI reads none natively.
+        """
         match value:
             case GeneratedSymbolType() if (
                 value.symbol not in seen
@@ -772,14 +917,17 @@ class Planner:  # noqa: PLR0904
             ):
                 return plain
             case GenericType():
-                return replace(value, arguments=tuple(self.nested(item, seen) for item in value.arguments))
+                fixed = value.tuple_form == "fixed"
+                arguments = value.arguments if fixed else tuple(self.nested(item, seen) for item in value.arguments)
+                return value if arguments == value.arguments else replace(value, arguments=arguments, hint=None)
             case UnionType():
-                return replace(value, members=tuple(self.nested(item, seen) for item in value.members))
+                members = tuple(self.nested(item, seen) for item in value.members)
+                return value if members == value.members else replace(value, members=members, hint=None)
             case _:
                 pass
         return value
 
-    def kind(self, value: FinalPythonType) -> ValueKind | None:
+    def kind(self, value: TypeView) -> ValueKind | None:
         """Return whether FastAPI reads a parameter type as a scalar, as a sequence of scalars, or as neither."""
         kind: ValueKind | None = None
         match value:
@@ -794,7 +942,7 @@ class Planner:  # noqa: PLR0904
                 pass
         return kind
 
-    def literal(self, value: FinalPythonType) -> bool:
+    def literal(self, value: TypeView) -> bool:
         """Return whether a type accepts only enum members or literals, which FastAPI matches against query text."""
         if isinstance(value, UnionType | GenericType):
             members = value.members if isinstance(value, UnionType) else value.arguments
@@ -803,13 +951,34 @@ class Planner:  # noqa: PLR0904
             return self.symbols[value.symbol].kind == "enum"
         return isinstance(value, LiteralType)
 
-    def scalar(self, value: FinalPythonType) -> bool:
+    def strict_bytes(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> bool:
+        """Return whether a type holds pydantic's StrictBytes, also inside its root models and aliases."""
+        match value:
+            case UnionType():
+                return any(self.strict_bytes(item, seen) for item in value.members)
+            case GenericType():
+                return any(self.strict_bytes(item, seen) for item in value.arguments)
+            case ImportedType():
+                return (value.import_.from_, value.import_.import_) == _STRICT_BYTES
+            case GeneratedSymbolType() if (
+                value.symbol not in seen and self.symbols[value.symbol].kind in _WRAPPERS and value.symbol in self.facts
+            ):
+                return self.strict_bytes(self.facts[value.symbol].type, seen | {value.symbol})
+            case _:
+                pass
+        return False
+
+    def textless(self, value: TypeView) -> bool:
+        """Return whether a type takes values FastAPI's text is not: enum members, literals, or strict scalars."""
+        return self.literal(value) or _strict(value)
+
+    def scalar(self, value: TypeView) -> bool:
         """Return whether FastAPI reads a type as one scalar value: a builtin, enum, literal, or constrained scalar."""
         match value:
             case BuiltinType():
                 return value.name in _SCALAR_BUILTINS
             case ConstructorType():
-                return (value.callable.import_.from_, value.callable.import_.import_) in CONSTRAINED
+                return value.callable.import_.import_ in _CONSTRAINED
             case ImportedType():
                 return value.import_.from_ in _SCALAR_MODULES and value.import_.import_ not in _MODEL_IMPORTS
             case GeneratedSymbolType():
@@ -818,9 +987,14 @@ class Planner:  # noqa: PLR0904
                 pass
         return isinstance(value, LiteralType)
 
-    def documentation(self, declaration: WireDeclaration, use: TypeUseBinding | None) -> Iterator[tuple[str, object]]:
+    @staticmethod
+    def documentation(declaration: WireDeclaration, use: TypeUseBinding | None) -> Iterator[tuple[str, object]]:
         """Yield a parameter's documentation keywords: its schema's title, description, deprecation, and examples."""
-        schema: Schema = {} if use is None or use.schema is None else self.wire.schema(use.schema)[1]
+        schema = {
+            key: found
+            for key, value in (() if use is None or use.schema is None else use.keywords)
+            if (found := json_value(value)) is not None
+        }
         if isinstance(title := schema.get("title"), str):
             yield "title", title
         if isinstance(description := fact(declaration, "description"), str) or isinstance(
@@ -829,7 +1003,7 @@ class Planner:  # noqa: PLR0904
             yield "description", description
         if fact(declaration, "deprecated") is True or schema.get("deprecated") is True:
             yield "deprecated", True
-        if isinstance(examples := schema.get("examples"), tuple) and examples:
+        if isinstance(examples := schema.get("examples"), list) and examples:
             yield "examples", examples
 
     def body(self, operation: OperationContract, declaration: WireDeclaration) -> BodySpec:
@@ -892,23 +1066,35 @@ class Planner:  # noqa: PLR0904
             return replace(spec, decision=Decision(transport="fastapi_native"))
         return replace(spec, form_fields=self.form_plans(use.type))
 
-    def form_plans(self, value: FinalPythonType | None) -> tuple[FieldPlan, ...]:
-        """Return the members a form adapter reads as text: each model field by wire name, repeated for a list."""
+    def form_plans(self, value: TypeView | None) -> tuple[FieldPlan, ...]:
+        """Return the members a form adapter reads as text: each model field by wire name, as the field's type says."""
         members = self.members.get(value.symbol, ()) if isinstance(value, GeneratedSymbolType) else ()
         return tuple(
-            FieldPlan(member.wire_name, repeated=self.kind(facts.type) == "sequence")
+            self.form_field(member.wire_name, facts.type)
             for member in members
             if member.wire_name is not None and (facts := member.model_facts) is not None
         )
 
-    def form_model(self, value: FinalPythonType | None) -> bool:
-        """Return whether FastAPI reads a type as a form model: a BaseModel of scalar and repeated scalar fields."""
+    def form_field(self, name: str, value: TypeView) -> FieldPlan:
+        """Return a form member's plan: repeated for a list, in the kind the model's type gives its text or items."""
+        repeated = self.kind(value) == "sequence"
+        kind = self.wire.kinds.of(value, ("items",) if repeated else ()) or "string"
+        return FieldPlan(name, kind, repeated=repeated)
+
+    def form_model(self, value: TypeView | None) -> bool:
+        """Return whether FastAPI reads a type as a form model: a BaseModel of fields FastAPI reads from text.
+
+        A field FastAPI reads is a scalar or a list of scalars whose type accepts text, so neither a strict int, float,
+        or bool nor an enum or literal of non-string values.
+        """
         return (
             self.backend == DataModelType.PydanticV2BaseModel.value
             and isinstance(value, GeneratedSymbolType)
             and self.symbols[value.symbol].kind == "model"
             and all(
-                (facts := member.model_facts) is not None and self.kind(facts.type) is not None
+                (facts := member.model_facts) is not None
+                and self.kind(facts.type) is not None
+                and not (self.textless(facts.type) and self.form_field("", facts.type).kind != "string")
                 for member in self.members.get(value.symbol, ())
             )
         )
@@ -966,7 +1152,7 @@ class Planner:  # noqa: PLR0904
         decision = _primary_decision(operation, choice.status_code, media)
         return PrimarySpec(status=choice.status_code, response=response, media=media, decision=decision)
 
-    def arguments(
+    def arguments(  # noqa: PLR0913
         self,
         operation: OperationContract,
         parameters: tuple[ParameterSpec, ...],
@@ -974,36 +1160,27 @@ class Planner:  # noqa: PLR0904
         wire_names: tuple[str, ...],
         *,
         secured: bool,
+        scopes: tuple[str, ...] = (),
     ) -> tuple[Argument, ...]:
-        """Name the handler's keywords in the fixed order, prefixing colliding names with their location."""
+        """Name the handler's keywords in the fixed order.
+
+        Explicit names, configured or `--aliases` entries, must differ from each other and from the handler's own
+        arguments; the others are named as model fields after their wire names, told apart in argument order by the
+        naming strategy, whose enclosing `scopes` are the operation's group and handler.
+        """
         names = self.parameter_names.get(operation.id.use_site.pointer, {})
         order = {name: index for index, name in enumerate(dict.fromkeys(wire_names))}
         path = sorted(
             (parameter for parameter in parameters if parameter.location == "path"),
             key=lambda parameter: order.get(parameter.wire_name, len(order)),
         )
-        candidates = [
-            _candidate(
-                names,
-                parameter.location,
-                parameter.wire_name,
-                required=parameter.required,
-                native=parameter.native,
-                parameter=parameter,
-            )
-            for parameter in (*path, *(parameter for parameter in parameters if parameter.location != "path"))
+        ordered = (*path, *(parameter for parameter in parameters if parameter.location != "path"))
+        given = [
+            names.get(f"{parameter.location}:{parameter.wire_name}") or self.alias(operation, parameter)
+            for parameter in ordered
         ]
         raw = body is not None and body.decision.transport == "raw_request"
-        if body is not None and not raw:
-            candidates.append((
-                "body",
-                True,
-                Argument(name="body", kind="body", location="body", required=body.required),
-            ))
-            if len(body.media) > 1:
-                argument = Argument(name="media_type", kind="media_type", location="media_type", required=body.required)
-                candidates.append(("media_type", True, argument))
-        known = {f"{argument.location}:{argument.wire_name}" for _, _, argument in candidates}
+        known = {f"{parameter.location}:{parameter.wire_name}" for parameter in parameters}
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
@@ -1014,25 +1191,68 @@ class Planner:  # noqa: PLR0904
             for key in names
             if key not in known
         )
-        request = (Argument(name="request", kind="request", location="request"),)
-        principal = (Argument(name="principal", kind="principal", location="principal"),)
-        arguments = (
-            *(request if raw or self.config.include_request else ()),
-            *(principal if secured else ()),
-            *_prefixed(candidates),
-        )
+        support: list[Argument] = []
+        if raw or self.config.include_request:
+            support.append(Argument(name="request", kind="request", location="request"))
+        if secured:
+            support.append(Argument(name="principal", kind="principal", location="principal"))
+        if body is not None and not raw:
+            support.append(Argument(name="body", kind="body", location="body", required=body.required))
+            if len(body.media) > 1:
+                support.append(
+                    Argument(name="media_type", kind="media_type", location="media_type", required=body.required)
+                )
         self.problems.extend(
             _problem(
                 "F_NAME_CONFLICT", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
             )
-            for name, count in sorted(Counter(argument.name for argument in arguments).items())
+            for name, count in sorted(Counter([*filter(None, given), "self", *(item.name for item in support)]).items())
             if count > 1
         )
-        return arguments
+        bases = {
+            index: self.target_names.argument(parameter.wire_name)
+            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
+            if name is None
+        }
+        claimed = dict(
+            zip(
+                bases,
+                self.target_names.claim(
+                    NameScope((*RESERVED, *filter(None, given))),
+                    [(base, ordered[index].local, scopes) for index, base in bases.items()],
+                ),
+                strict=True,
+            )
+        )
+        arguments = [
+            Argument(
+                name=name or claimed[index],
+                kind="native" if parameter.native is not None else "adapter",
+                location=parameter.location,
+                wire_name=parameter.wire_name,
+                required=parameter.required,
+                native=parameter.native,
+                parameter=parameter,
+            )
+            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
+        ]
+        bodies = [item for item in support if item.kind in {"body", "media_type"}]
+        return (*(item for item in support if item.kind in {"request", "principal"}), *arguments, *bodies)
+
+    def alias(self, operation: OperationContract, parameter: ParameterSpec) -> str | None:
+        """Return the `--aliases` entry naming a parameter's argument, which must be an identifier."""
+        if (alias := self.target_names.alias(parameter.wire_name)) is not None and not explicit_name(alias):
+            message = (
+                f"The --aliases entry {alias!r} of the {parameter.location} parameter {parameter.wire_name!r} of "
+                f"{_label(operation)} is not an identifier"
+            )
+            self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site))
+        return alias
 
 
-def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
-    return isinstance(value, Mapping)
+def _local(operation: OperationContract) -> bool:
+    """Return whether the document that names the operation's path item declares the operation itself."""
+    return operation.declaration.location.document == operation.id.use_site.document
 
 
 def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:
@@ -1083,13 +1303,42 @@ def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
     return None
 
 
-def _member(source: object, key: str) -> WireValue | None:
-    if not _is_mapping(source) or key not in source:
-        return None
+class NotJSONError(Exception):
+    """A documentation value that has no JSON form."""
+
+
+def json_literal(value: FrozenLiteral) -> JSONValue:
+    """Return a recorded literal as JSON, or raise `NotJSONError` when it has no JSON form."""
+    if isinstance(value, LiteralSequence):
+        return [json_literal(item) for item in value.items]
+    if isinstance(value, LiteralMapping) and (names := _names(value)) is not None:
+        return {name: json_literal(item) for name, (_, item) in zip(names, value.entries, strict=True)}
+    if isinstance(value, LiteralScalar) and is_json_scalar(scalar := value.value):
+        return scalar
+    raise NotJSONError
+
+
+def json_value(value: FrozenLiteral) -> JSONValue | None:
+    """Return a recorded literal as JSON, or None when it has no JSON form."""
     try:
-        return checked_wire(source[key])
-    except (TypeError, ValueError):
+        return json_literal(value)
+    except NotJSONError:
         return None
+
+
+def is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
+    """Return whether a value is a finite JSON scalar."""
+    return value is None or isinstance(value, (bool, int, str)) or (isinstance(value, float) and isfinite(value))
+
+
+def _names(value: LiteralMapping) -> list[str] | None:
+    names = [key.value for key, _ in value.entries if isinstance(key, LiteralScalar) and isinstance(key.value, str)]
+    return names if len(names) == len(value.entries) else None
+
+
+def _member(source: object, key: str) -> JSONValue | None:
+    """Return a recorded JSON member of an info source, or None when it has none."""
+    return source.get(key) if isinstance(source, dict) else None
 
 
 def _primary_decision(operation: OperationContract, status: int, media: MediaSpec | None) -> Decision:
@@ -1105,25 +1354,66 @@ def _primary_decision(operation: OperationContract, status: int, media: MediaSpe
     return Decision(transport="fastapi_native" if native else "adapter")
 
 
-def symbol_imports(batch: GeneratedTypeContractBatch) -> dict[int, str]:
-    """Return the `module:Name` import location of every emitted model symbol."""
-    return {
-        symbol.id: f"{artifact_module(symbol.artifact)}:{symbol.name}"
-        for symbol in batch.symbols
-        if symbol.artifact is not None
-    }
-
-
 def _native(plan: ParameterPlan, location: ParameterLocation, kind: ValueKind | None, *, repeated: bool) -> bool:
     """Return whether FastAPI reads a parameter's style and type natively, so no adapter reads it."""
     return (
         plan.content_media_type is None
         and kind is not None
         and kind == {"scalar": "scalar", "array": "sequence"}.get(plan.shape)
-        and _STYLES.get(location) == plan.style
+        and plan.style in _STYLES.get(location, ())
         and (kind != "sequence" or (location == "query" and plan.explode))
         and not (location == "path" and repeated)
     )
+
+
+def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], ...]) -> TypeView | None:
+    """Return a scalar with its constraints as a constrained scalar, a pydantic Strict one as a strict constrained one.
+
+    A union of one scalar and None constrains the scalar; any other type returns None.
+    """
+    scalar: BuiltinType | ImportedType | None = None
+    identity: tuple[str | None, str] = (None, "")
+    match value:
+        case UnionType() if len(scalars := [item for item in value.members if not isinstance(item, NoneType)]) == 1:
+            if (constrained := _constrained(scalars[0], constraints)) is None:
+                return None
+            members = tuple(constrained if item is scalars[0] else item for item in value.members)
+            return replace(value, members=members, hint=None)
+        case BuiltinType():
+            scalar, identity = value, (None, value.name)
+        case ImportedType():
+            scalar, identity = value, (value.import_.from_, value.import_.import_)
+        case _:
+            pass
+    if scalar is None or (found := _CONSTRUCTORS.get(identity)) is None:
+        return None
+    constructor, strict = found
+    keywords = constraints if strict is None else (*constraints, _STRICT_KEYWORD)
+    return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords, base=strict or scalar)
+
+
+def _strict(value: TypeView) -> bool:
+    """Return whether a type holds a strict int, float, or bool: a pydantic Strict type or strict constrained one."""
+    match value:
+        case UnionType():
+            return any(map(_strict, value.members))
+        case GenericType():
+            return any(map(_strict, value.arguments))
+        case ImportedType():
+            return value.import_.from_ == "pydantic" and value.import_.import_ in _STRICT_TYPES
+        case ConstructorType():
+            return _STRICT_KEYWORD in value.keywords and value.callable.import_.import_ in _STRICT_CONSTRUCTORS
+        case _:
+            pass
+    return False
+
+
+def _literal(value: FrozenLiteral | None) -> LiteralScalar | LiteralSequence | None:
+    """Return a recorded JSON boolean, number, or string, or a list of them, as a literal."""
+    if isinstance(value, LiteralSequence):
+        items = tuple(item for element in value.items if isinstance(item := _literal(element), LiteralScalar))
+        return LiteralSequence("list", items) if len(items) == len(value.items) else None
+    return value if isinstance(value, LiteralScalar) and value.kind in _LITERAL_KINDS else None
 
 
 def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequence:
@@ -1137,39 +1427,6 @@ def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequenc
         case _:
             pass
     return Default.ABSENT
-
-
-def _candidate(  # noqa: PLR0913
-    names: Mapping[str, str],
-    location: ArgumentLocation,
-    wire_name: str,
-    *,
-    required: bool,
-    native: NativeField | None,
-    parameter: ParameterSpec | None = None,
-) -> tuple[str, bool, Argument]:
-    key = f"{location}:{wire_name}"
-    name = names.get(key) or normalize(wire_name, empty="value", digit="p_")
-    argument = Argument(
-        name=name,
-        kind="native" if native is not None else "adapter",
-        location=location,
-        wire_name=wire_name,
-        required=required,
-        native=native,
-        parameter=parameter,
-    )
-    return name, key in names, argument
-
-
-def _prefixed(candidates: list[tuple[str, bool, Argument]]) -> list[Argument]:
-    counts = Counter(name for name, _, _ in candidates)
-    return [
-        replace(argument, name=f"{argument.location}_{name}")
-        if not fixed and (counts[name] > 1 or name in RESERVED)
-        else argument
-        for name, fixed, argument in candidates
-    ]
 
 
 def _slotted(argument: Argument, slots: Mapping[str, str]) -> Argument:

@@ -176,12 +176,18 @@ def target_pydantic_expected_suffix(target_pydantic_version: str | None) -> str:
     return "target_2" if target_pydantic_version == "2" else "target_2_12"
 
 
-NEWEST_TARGET_PYDANTIC_VERSION = max((target.value for target in TargetPydanticVersion), key=version.parse)
+UNSET_TARGET_PYDANTIC_VERSION = TargetPydanticVersion.V2_12.value
+"""The oldest Pydantic an unset target runs on: the newest forms, but MISSING keeps its experimental import."""
+
+EXPERIMENTAL_MISSING_IMPORT_WARNING = pytest.mark.filterwarnings(
+    "ignore:The `MISSING` sentinel is no longer experimental:DeprecationWarning"
+)
+"""Allow Pydantic 2.14's deprecation of the experimental MISSING import that targets below 2.14 generate."""
 
 
 def installed_pydantic_runs_target(target_pydantic_version: str | None) -> bool:
-    """Return whether the installed Pydantic can import code generated for the target; unset is the newest."""
-    return version.parse(PYDANTIC_VERSION) >= version.parse(target_pydantic_version or NEWEST_TARGET_PYDANTIC_VERSION)
+    """Return whether the installed Pydantic can import code generated for the target."""
+    return version.parse(PYDANTIC_VERSION) >= version.parse(target_pydantic_version or UNSET_TARGET_PYDANTIC_VERSION)
 
 
 DATA_PATH: Path = Path(__file__).parent.parent / "data"

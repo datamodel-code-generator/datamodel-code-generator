@@ -42,8 +42,14 @@ class DefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> GetRootResponse:
-        """Call GET /."""
-        return self._core.execute(_operations.OPERATION_0, (), options=options).data
+        """
+        Call GET /.
+        """
+        return self._core.execute(
+            _operations.OPERATION_0,
+            (),
+            options=options,
+        ).data
 
 
 class DefaultWithResponse:
@@ -58,8 +64,14 @@ class DefaultWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[GetRootResponse]:
-        """Call GET /."""
-        return self._core.execute(_operations.OPERATION_0, (), options=options)
+        """
+        Call GET /.
+        """
+        return self._core.execute(
+            _operations.OPERATION_0,
+            (),
+            options=options,
+        )
 
 
 class DefaultWithRawResponse:
@@ -69,9 +81,19 @@ class DefaultWithRawResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
-    def get_root(self, *, options: RequestOptions | None = None) -> RawResponse:
-        """Call GET /."""
-        return self._core.execute_raw(_operations.OPERATION_0, (), options=options)
+    def get_root(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """
+        Call GET /.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_0,
+            (),
+            options=options,
+        )
 
 
 class DefaultWithStreamingResponse:
@@ -86,5 +108,11 @@ class DefaultWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /."""
-        return self._core.stream(_operations.OPERATION_0, (), options=options)
+        """
+        Call GET /.
+        """
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (),
+            options=options,
+        )

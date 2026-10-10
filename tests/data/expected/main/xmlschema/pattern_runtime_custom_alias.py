@@ -12,7 +12,7 @@ Token = RootModel[
     Annotated[
         str,
         Field(pattern=compile_aliased('(?=\\A)(?:[A-Z]+|[0-9]+)\\Z'), title='Token'),
-    ],
+    ]
 ]
 
 

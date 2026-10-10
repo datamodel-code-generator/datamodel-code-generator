@@ -1,50 +1,38 @@
 # stale
 generate
-  returned None
 tree
   models.py
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 generate
-  returned None
 tree
   models.py
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/pets.py
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  13 runtime modules ['present']
-render
-  target=fastapi schema_version=1
-  unchanged model models.py
-  unchanged target server/__init__.py
-  unchanged target server/application.py
-  unchanged target server/routers/__init__.py
-  unchanged target server/routers/pets.py
-  unchanged target server/routers/untagged.py
-  unchanged target server/_generated/__init__.py
-  unchanged target server/_generated/contract.py
-  unchanged target server/errors.py
-  unchanged target server/services.py
-  unchanged target server/README.md
-  unchanged target server/py.typed
-  13 runtime modules ['unchanged']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
+check
+  EXTRA: server/routers/store.py (no longer generated)
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

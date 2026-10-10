@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import json
 from typing import TYPE_CHECKING, Any
 
-from tests.data.python.client_caching import _Signer
 from tests.data.python.client_pagination import (
     Harness,
     adrained,
@@ -30,7 +28,7 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
     """Restart pages using server values in a fresh session without capturing operation arguments."""
     harness = Harness(package)
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _cursors(harness, api, exchange, lines)
         _counts(api, exchange, lines)
         _urls(harness, api, exchange, lines)
@@ -41,14 +39,14 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
 
 def _cursors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     helper = api.protocols.users.all
-    arguments = {"limit": 3, "x_trace": "trace-secret", "session": "cookie-secret"}
+    arguments = {"limit": 3, "X_Trace": "trace-secret", "session": "cookie-secret"}
     pager = helper.iterate(**arguments)
     record(lines, "initial checkpoint", pager.checkpoint)
     exchange.respond(user_page("1", "2", next_cursor="a"))
     fetched(lines, "first page", lambda: next(pager.iter_pages()))
     state = pager.checkpoint()
     lines.append(f"  server value={state!r} encoded={json.dumps(state)} progress={progress(pager)}")
-    resumed = helper.resume(json.loads(json.dumps(state)), limit=2, x_trace="new-trace", session="new-cookie")
+    resumed = helper.resume(json.loads(json.dumps(state)), limit=2, X_Trace="new-trace", session="new-cookie")
     lines.append(f"  resumed progress={progress(resumed)}")
     exchange.respond(user_page("3"))
     drained(lines, "caller arguments supplied again", resumed)
@@ -152,13 +150,8 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     lines.append(f"  supplied URL checkpoint={state!r} key kept={'api_key' in state}")
     exchange.respond(user_page("3", next=f"{_SERVER}/users?cursor=a&api_key=server-secret"))
     drained(lines, "supplied URL removes echoed key", supplied)
-    auth = importlib.import_module(f"{harness.package.__name__}.auth")
-    signer = _Signer(auth)
-    signer.capabilities = dataclasses.replace(signer.capabilities, managed_query=("sig",))
-    signed = api.with_options(harness.options.RequestOptions(auth=auth.AuthConfig({}, signers=(signer,))))
-    for label, client in (("without the signer", api), ("under its signer", signed)):
-        state = client.protocols.users.follow.resume(f"{_SERVER}/users?cursor=a&sig=stale").checkpoint()
-        lines.append(f"  supplied URL {label} checkpoint={state!r} sig kept={'sig' in state}")
+    state = api.protocols.users.follow.resume(f"{_SERVER}/users?cursor=a&sig=stale").checkpoint()
+    lines.append(f"  supplied URL checkpoint={state!r} sig kept={'sig' in state}")
 
 
 def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -176,16 +169,18 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     record(lines, "required body supplied again", lambda: helper.resume(state))
 
     exchange.respond(user_page("1", next_cursor="a"))
-    pager = api.protocols.users.snapshot.iterate(x_trace="first")
+    pager = api.protocols.users.snapshot.iterate(X_Trace="first")
     exchange.responders[0] = headed_page("1", headers=(("X-Snapshot", "s1"),), next_cursor="a")
     fetched(lines, "bound first page", lambda: next(pager.iter_pages()))
     exchange.respond(headed_page("2", headers=(("X-Snapshot", "s2"),), next_cursor="b"), user_page("3"))
-    drained(lines, "caller resupplies binding", api.protocols.users.snapshot.resume(pager.checkpoint(), x_trace="s1"))
+    drained(lines, "caller resupplies binding", api.protocols.users.snapshot.resume(pager.checkpoint(), X_Trace="s1"))
     exchange.respond(user_page("4"))
     drained(lines, "literal binding on resumed first page", api.protocols.users.limited.resume("a", limit=9))
     since = harness.argument("listUsers", "query", "since", "2026-01-02")
     exchange.respond(user_page("5", next_cursor="b", since="2026-01-03"), user_page("6"))
-    drained(lines, "typed binding target keeps the caller's argument", api.protocols.users.since.resume("a", since=since))
+    drained(
+        lines, "typed binding target keeps the caller's argument", api.protocols.users.since.resume("a", since=since)
+    )
 
 
 def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:

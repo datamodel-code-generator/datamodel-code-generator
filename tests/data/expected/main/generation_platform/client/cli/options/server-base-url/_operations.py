@@ -27,33 +27,8 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     method='GET',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='limit',
-                style='form',
-                explode=True,
-                kind='integer',
-                reserved_names=('cursor',),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-                reserved_names=('limit',),
-            ),
-            codec=model_bindings.codec_1,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
 )
 
 OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -61,19 +36,6 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     method='POST',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('201', 'application/json', 'json', model_bindings.codec_4),),
-        (),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_3,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
 )

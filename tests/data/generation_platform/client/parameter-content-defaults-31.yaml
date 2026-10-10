@@ -1,0 +1,24 @@
+openapi: 3.1.1
+info:
+  title: Parameter content defaults
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /search:
+    get:
+      operationId: search
+      parameters:
+        - name: q
+          in: query
+          content:
+            application/json:
+              schema: {type: string, default: abc}
+      responses:
+        '204':
+          description: Searched.
+          headers:
+            X-Note:
+              content:
+                text/plain:
+                  schema: {type: string}

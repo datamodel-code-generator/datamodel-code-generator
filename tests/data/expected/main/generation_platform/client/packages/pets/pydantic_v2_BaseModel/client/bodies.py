@@ -8,13 +8,11 @@ from ._runtime.client.multipart import (
     AsyncBodyInput,
     AsyncMultipartBody,
     BodyInput,
-    DecodedPart,
     FieldPart,
     FilePart,
     MultipartBody,
-    MultipartData,
 )
-from ._runtime.client.operations import FormData
+from ._runtime.client.multipart_responses import DecodedPart, MultipartData
 
 __all__ = [
     'AsyncBinaryBody',
@@ -24,7 +22,6 @@ __all__ = [
     'DecodedPart',
     'FieldPart',
     'FilePart',
-    'FormData',
     'MultipartBody',
     'MultipartData',
     'SyncBinaryBody',

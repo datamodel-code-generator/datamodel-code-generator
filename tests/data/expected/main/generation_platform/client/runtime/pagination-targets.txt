@@ -11,16 +11,16 @@
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a] b''
   header cursor over the caller's ['1', '2']
-  header patch of the cursor pager ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.x-cursor') [field_path=('options', 'headers', 'x-cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header patch of the cursor page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.x-cursor') [field_path=('options', 'headers', 'x-cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query patch of a binding pager ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.limit') [field_path=('options', 'query', 'limit'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query patch of a binding page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.limit') [field_path=('options', 'query', 'limit'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query patch of the cursor pager ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.cursor') [field_path=('options', 'query', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  query patch of the cursor page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.query.cursor') [field_path=('options', 'query', 'cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  header patch of the cursor pager ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.x-cursor') [field_path=('options', 'extra_headers', 'x-cursor')] invalid_value
+  header patch of the cursor page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.x-cursor') [field_path=('options', 'extra_headers', 'x-cursor')] invalid_value
+  query patch of a binding pager ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.limit') [field_path=('options', 'extra_query', 'limit')] invalid_value
+  query patch of a binding page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.limit') [field_path=('options', 'extra_query', 'limit')] invalid_value
+  query patch of the cursor pager ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.cursor') [field_path=('options', 'extra_query', 'cursor')] invalid_value
+  query patch of the cursor page ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_query.cursor') [field_path=('options', 'extra_query', 'cursor')] invalid_value
   > GET https://api.example.com/users?extra=1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   page with another query = [1] continuation='a' status=200 attempts=1
-  next page with a header patch of the cursor ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Cursor') [field_path=('options', 'headers', 'X-Cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  next page with a header patch of the cursor ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.X-Cursor') [field_path=('options', 'extra_headers', 'X-Cursor')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a, x-other: kept] b''
   next page with another header = [2] continuation=None status=200 attempts=1
@@ -31,10 +31,10 @@
   path cursor ['1', '2']
   > GET https://api.example.com/folders/f1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  path cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  path cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', reason='value') [operation_id='listFolder', location=BodySelector(pointer='/next_cursor')] value
   > GET https://api.example.com/folders/f1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  path cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  path cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', reason='value') [operation_id='listFolder', location=BodySelector(pointer='/next_cursor')] value
   > GET https://api.example.com/users?tags=mine
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a&limit=5&code=200&tags=t1&tags=t2
@@ -44,10 +44,10 @@
   bound values ['1', '2', '3']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing first header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='x-snapshot', occurrence='single'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  missing first header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=HeaderSelector(name='x-snapshot', occurrence='single')] missing
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  missing every header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='X-Tag', occurrence='all'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] protocol_data_error
+  missing every header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=HeaderSelector(name='X-Tag', occurrence='all')] missing
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   missing values of the last page ['1']
@@ -93,4 +93,4 @@
   > POST https://api.example.com/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 108] b'{"query":"a","after":"1","size":10,"filter":{"states":["open"]},"range":{"from":"a"},"page":{"cursor":"n1"}}'
   async body next page = [2] continuation=None status=200 attempts=1
-  async header patch of the cursor ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.headers.X-Cursor') [field_path=('options', 'headers', 'X-Cursor'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  async header patch of the cursor ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options.extra_headers.X-Cursor') [field_path=('options', 'extra_headers', 'X-Cursor')] invalid_value

@@ -1,12 +1,4 @@
 # compression pydantic_v2.BaseModel
-# values
-  client gzip = 'gzip'
-  client upper = 'gzip'
-  client none = None
-  client brotli ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='compression') [field_path=('compression',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  client identity ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='compression') [field_path=('compression',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  client not a token ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='compression') [field_path=('compression',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  client type ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='compression') [field_path=('compression',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
 # inherited
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"compressed"}'
@@ -41,11 +33,11 @@
   file retried = None
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'oneshot'
-  stream once ! InternalServerError: InternalServerError(status_code=503, operation_id='putBlob', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='putBlob', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, status_code=503, body=b'', body_bytes=b'', truncated=False] internal_server_error
+  stream once ! InternalServerError: Error code: 503 [operation_id='putBlob', status_code=503, body=b'', body_bytes=b'', truncated=False]
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"n"}'
   raw view = 201
-  header conflict ! ConfigurationError: ConfigurationError(operation_id='putBlob', call_id='<call>', reason='managed', field_path='headers.Content-Encoding') [operation_id='putBlob', field_path=('headers', 'Content-Encoding'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] managed
+  header conflict ! ConfigurationError: ConfigurationError(operation_id='putBlob', reason='managed', field_path='headers.Content-Encoding') [operation_id='putBlob', field_path=('headers', 'Content-Encoding')] managed
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, content-encoding: br, content-type: application/json, content-length: 12] b'{"name":"n"}'
   header without coding = None
@@ -59,10 +51,16 @@
   > PUT https://api.example.com/blobs?moved=1
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>] gzip again b'keptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkeptkept'
   redirect keeps the body = None
-  client header conflict ! ConfigurationError: ConfigurationError(operation_id='createItem', call_id='<call>', reason='managed', field_path='headers.Content-Encoding') [operation_id='createItem', field_path=('headers', 'Content-Encoding'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] managed
+  client header conflict ! ConfigurationError: ConfigurationError(operation_id='createItem', reason='managed', field_path='headers.Content-Encoding') [operation_id='createItem', field_path=('headers', 'Content-Encoding')] managed
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 8] b'disabled'
   client disabled = None
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 13] b'view disabled'
+  view of a disabled client = None
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 13] b'call disabled'
+  call of a disabled view = None
 # signed
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>, x-signed: yes] gzip b'signed'
@@ -191,7 +189,7 @@
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"id":"c1"}'
   async inherited completed check = Outcome(value='ok')
-  async helper header conflict ! ConfigurationError: ConfigurationError(operation_id='createJob', call_id='<call>', reason='managed', field_path='headers.Content-Encoding') [operation_id='createJob', field_path=('headers', 'Content-Encoding'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] managed
+  async helper header conflict ! ConfigurationError: ConfigurationError(operation_id='createJob', reason='managed', field_path='headers.Content-Encoding') [operation_id='createJob', field_path=('headers', 'Content-Encoding')] managed
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 8] b'disabled'
   async disabled = None

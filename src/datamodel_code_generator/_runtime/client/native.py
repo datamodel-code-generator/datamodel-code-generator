@@ -1,27 +1,19 @@
-"""Native HTTP client construction, request cloning and conservative failure classification."""
+"""Native HTTP client construction and conservative failure classification."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import httpx2
 
-from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, SDKError
+from .errors import APIConnectionError, APITimeoutError, DecodeError
+from .logical import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Iterator
 
-    from .errors import IOPhase
-    from .options import ResolvedTransportOptions
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
-
-_PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
-    ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
-    ((httpx2.PoolTimeout,), "pool"),
-    ((httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError), "read"),
-    ((httpx2.WriteError, httpx2.WriteTimeout), "write"),
-)
 
 
 def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
@@ -29,45 +21,20 @@ def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
     return {"connect": phases.connect, "read": phases.read, "write": phases.write, "pool": phases.pool}
 
 
-def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> DeliveryState:
-    """Classify only by the public send boundary and native exception class."""
+def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> Delivery:
+    """Classify how far a failed send got, only by the public send boundary and native exception class."""
     if response_started:
-        return DeliveryState.RESPONSE_STARTED
+        return Delivery.RESPONSE_STARTED
     if not send_started or isinstance(error, (httpx2.ConnectError, httpx2.ConnectTimeout, httpx2.PoolTimeout)):
-        return DeliveryState.NOT_SENT
-    return DeliveryState.MAYBE_SENT
+        return Delivery.NOT_SENT
+    return Delivery.MAYBE_SENT
 
 
-def native_error(error: Exception, *, send_started: bool, response_started: bool = False) -> SDKError:
+def native_error(error: Exception) -> APIConnectionError:
     """Convert an ordinary native failure; BaseException interruptions are never intercepted."""
-    state = delivery(error, send_started=send_started, response_started=response_started)
-    phase = _phase(error)
     if isinstance(error, httpx2.TimeoutException):
-        return APITimeoutError(
-            phase=phase,
-            reason="phase_timeout",
-            effective_timeout=_expired_cap(error, phase),
-            delivery_state=state,
-            cause=error,
-        )
-    return APIConnectionError(phase=phase, delivery_state=state, cause=error)
-
-
-def _phase(error: Exception) -> IOPhase:
-    for kinds, phase in _PHASES:
-        if isinstance(error, kinds):
-            return phase
-    return "unknown"
-
-
-def _expired_cap(error: httpx2.TimeoutException, phase: IOPhase) -> float | None:
-    """Return the phase timeout the failed request carried, when the native error kept its request."""
-    try:
-        caps: object = error.request.extensions.get("timeout")
-    except RuntimeError:
-        return None
-    cap = cast("dict[str, object]", caps).get(phase) if isinstance(caps, dict) else None
-    return float(cap) if isinstance(cap, (int, float)) else None
+        return APITimeoutError(reason="phase_timeout", cause=error)
+    return APIConnectionError(cause=error)
 
 
 def transport_retry_reason(
@@ -92,25 +59,8 @@ def wire_fields(fields: Iterable[tuple[str, str]]) -> list[tuple[bytes, bytes]]:
     return [(name.encode(), value.encode()) for name, value in fields]
 
 
-def cloned(
-    request: httpx2.Request, *, url: str | None = None, headers: Iterable[tuple[str, str]] | None = None
-) -> httpx2.Request:
-    """Clone one native request while retaining its mode-correct stream and fixed timeout."""
-    return httpx2.Request(
-        request.method,
-        request.url if url is None else url,
-        headers=request.headers.raw if headers is None else wire_fields(headers),
-        stream=request.stream,
-        extensions=dict(request.extensions),
-    )
-
-
-def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> SDKError:
-    from ..protocols.errors import ProtocolDataError  # noqa: PLC0415 - Load protocol errors only on this failure.
-
-    return ProtocolDataError(
-        condition="malformed", operation_id=operation_id, call_id=info.call_id, info=info, cause=error
-    )
+def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> DecodeError:
+    return DecodeError(reason="malformed_coding", operation_id=operation_id, info=info, cause=error)
 
 
 class _Held(httpx2.SyncByteStream):
@@ -183,39 +133,11 @@ async def async_response_bytes(response: httpx2.Response) -> AsyncIterator[bytes
         yield chunk
 
 
-def native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
-    """Create an SDK-owned HTTPX2 client from resolved construction settings, refusing HTTP/2 without its extra."""
-    try:
-        return httpx2.Client(
-            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
-            proxy=transport.proxy,
-            trust_env=transport.trust_env,
-            http2=transport.http2,
-            timeout=httpx2.Timeout(600.0, connect=5.0),
-            limits=httpx2.Limits(
-                max_connections=transport.max_connections,
-                max_keepalive_connections=transport.max_keepalive_connections,
-                keepalive_expiry=transport.keepalive_expiry,
-            ),
-        )
-    except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), reason="unavailable", cause=error) from None
+def native_client() -> httpx2.Client:
+    """Create an SDK-owned HTTPX2 client: HTTPX2's defaults, with a 600 second timeout and 5 seconds to connect."""
+    return httpx2.Client(timeout=httpx2.Timeout(600.0, connect=5.0))
 
 
-def native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClient:
-    """Create an SDK-owned asyncio HTTPX2 client from resolved construction settings."""
-    try:
-        return httpx2.AsyncClient(
-            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
-            proxy=transport.proxy,
-            trust_env=transport.trust_env,
-            http2=transport.http2,
-            timeout=httpx2.Timeout(600.0, connect=5.0),
-            limits=httpx2.Limits(
-                max_connections=transport.max_connections,
-                max_keepalive_connections=transport.max_keepalive_connections,
-                keepalive_expiry=transport.keepalive_expiry,
-            ),
-        )
-    except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), reason="unavailable", cause=error) from None
+def native_async_client() -> httpx2.AsyncClient:
+    """Create an SDK-owned asyncio HTTPX2 client as `native_client` creates a synchronous one."""
+    return httpx2.AsyncClient(timeout=httpx2.Timeout(600.0, connect=5.0))

@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator import Error
-from datamodel_code_generator._api_manifest import document_identity
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
+from datamodel_code_generator._target_documents import document_identity
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -214,6 +214,7 @@ def _render(input_: _GenerationInput, config: GenerateConfig, cwd: Path, bases: 
                 config=target,
                 generator=generator,
                 models_module=True,
+                shown_root=root,
             )
         except APIGenerationError as error:
             if (staged := _staged(error, root.relative_to(cwd).as_posix())) is error:

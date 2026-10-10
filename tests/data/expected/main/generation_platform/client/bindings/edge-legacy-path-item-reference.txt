@@ -1,3 +1,30 @@
 # edge-legacy-path-item-reference
 render pydantic_v2.BaseModel default
-  diagnostic Error: /components/pathItems/Pets/get/responses/200/content/application~1json/schema/items: Array-form items is not supported
+  models.py
+  model_bindings.py
+  codec_0 models.FieldPetsGetQueryLimitParameter
+  codec_1 models.FieldPetsGetQueryHomeAddressParameter
+  codec_2 models.FieldPetsGetQueryKindParameter
+  codec_3 models.FieldPetsGetResponse
+  codec_4 models.FieldPetsGetResponse200xNextHeader
+  codec_5 models.Error
+  codec_6 models.PetForm
+  codec_7 models.Error
+  codec_8 models.FieldPetsPetIdGetPathPetIdParameter
+  codec_9 models.Pet
+  codec_10 models.Error
+  codec_11 models.FieldPetsPetIdPutPathPetIdParameter
+  codec_12 models.PetForm
+  codec_13 models.Error
+  codec_14 models.FieldFoodPostRequest
+  codec_15 models.FieldFoodPostResponse
+  codec_16 models.FieldFoodFoodIdGetPathFoodIdParameter
+  codec_17 models.FieldFoodFoodIdGetQueryMessageTextsParameter
+  codec_18 models.FieldFoodFoodIdGetResponse
+  codec_19 models.MyParamParameter
+  codec_20 models.FieldFooGetResponse
+  codec_21 models.PetForm
+  codec_22 models.FieldUserGetResponse
+  codec_23 models.FieldUserPostRequest
+  codec_24 models.FieldUsersGetResponse
+  codec_25 models.FieldUsersPostRequest

@@ -1,3 +1,10 @@
 # default-inputs
 render pydantic_v2.BaseModel default
-  diagnostic Error: /paths/~1bindings~12/post/requestBody: The use's final type has no expression a generated module can import; /paths/~1bindings~12/post/responses/200: The use's final type has no expression a generated module can import
+  models.py
+  model_bindings.py
+  codec_0 models.Defaults
+  codec_1 models.Defaults
+  codec_2 models.Child
+  codec_3 models.Child
+  codec_4 argparse.HelpFormatter._Section
+  codec_5 argparse.HelpFormatter._Section

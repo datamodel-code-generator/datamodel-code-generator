@@ -1,5 +1,4 @@
-snapshot: value=True return=True
-JSONScalar datamodel_code_generator._runtime.model_codecs.wire: bool | str | int | float | Decimal | None
-JSONValue datamodel_code_generator._runtime.model_codecs.wire: JSONScalar | list[JSONValue] | tuple[JSONValue, ...] | dict[str, JSONValue]
-WireValue datamodel_code_generator._runtime.model_codecs.wire: JSONScalar | list[WireValue] | tuple[WireValue, ...] | Mapping[str, WireValue]
-call: mappingproxy tuple json={"a":[1,null]} ascii={"a":[1,null]}
+encoded: value=True scalar=True
+JSONScalar datamodel_code_generator._runtime.model_codecs.media: bool | int | float | str | None
+JSONValue datamodel_code_generator._runtime.model_codecs.media: bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None
+call: [{"a":[1,null]},"é"]

@@ -5,13 +5,9 @@ render pydantic_v2.BaseModel
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
-  write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/default/__init__.py
   write client/resources/default/_sync.py
@@ -19,9 +15,9 @@ render pydantic_v2.BaseModel
   write client/resources/store/__init__.py
   write client/resources/store/_sync.py
   write client/resources/store/_async.py
-  write client/resources/u30e6_u30fc_u30b6_u30fc/__init__.py
-  write client/resources/u30e6_u30fc_u30b6_u30fc/_sync.py
-  write client/resources/u30e6_u30fc_u30b6_u30fc/_async.py
+  write client/resources/ユーザー/__init__.py
+  write client/resources/ユーザー/_sync.py
+  write client/resources/ユーザー/_async.py
   write client/resources/admin/__init__.py
   write client/resources/admin/_sync.py
   write client/resources/admin/_async.py
@@ -33,8 +29,8 @@ render pydantic_v2.BaseModel
   write client/types/default/_operations.py
   write client/types/store/__init__.py
   write client/types/store/_operations.py
-  write client/types/u30e6_u30fc_u30b6_u30fc/__init__.py
-  write client/types/u30e6_u30fc_u30b6_u30fc/_operations.py
+  write client/types/ユーザー/__init__.py
+  write client/types/ユーザー/_operations.py
   write client/types/admin/__init__.py
   write client/types/admin/_operations.py
   write client/types/admin/users/__init__.py

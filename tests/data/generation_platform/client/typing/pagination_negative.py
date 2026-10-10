@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from os import PathLike
+
 from pets import AsyncClient, Client
-from pets.errors import SessionLimitError
-from pets.options import SessionOptions
+from pets.options import RequestOptions
 from pets.protocols import Page, Pager
 from pets.types.users import ListUsersResponse
 from pets.model_codecs import JSONValue
@@ -17,7 +18,7 @@ async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[Use
     await async_client.protocols.users.all.iterate()  # error
     items: Pager[object, ListUsersResponse] = client.protocols.users.all.iterate()  # error
     pages: Pager[User, object] = client.protocols.users.all.iterate()  # error
-    client.protocols.users.all.iterate(pagination_options=SessionOptions())  # error
+    client.protocols.users.all.iterate(pagination_options=RequestOptions())  # error
     client.protocols.users.all.page(response_media_type="application/json")  # error
     client.protocols.users.all.next_page(client.protocols.labels.all.page())  # error
     client.protocols.users.all.next_page(page)  # error
@@ -27,12 +28,12 @@ async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[Use
     exported: bytes = async_client.protocols.users.all.iterate().checkpoint()  # error
     client.protocols.users.all.resume(b"state")  # error
     client.protocols.users.all.resume(state, cursor=5)  # error
-    client.protocols.users.all.resume(state, pagination_options=SessionOptions())  # error
+    client.protocols.users.all.resume(state, pagination_options=RequestOptions())  # error
     resumed: Pager[object, ListUsersResponse] = client.protocols.users.all.resume(state)  # error
     client.protocols.users.all.resume(page)  # error
     del items, pages, resumed, exported
 
 
-def wrong_states(client: Client, limit: SessionLimitError) -> None:
-    """Reject another helper's resume state as a pager's continuation."""
-    client.protocols.users.all.resume(limit.resume_state)  # error
+def wrong_raw_bodies(client: Client, path: PathLike[str]) -> None:
+    """Reject a raw body other than bytes in a package that declares no binary or multipart request body."""
+    client.request_raw("POST", "https://example.com/upload", body=path)  # error

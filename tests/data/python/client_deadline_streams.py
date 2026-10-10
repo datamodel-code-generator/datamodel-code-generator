@@ -1,4 +1,4 @@
-"""Exercise generated raw and streaming clients under acquisition and stream limits and task cancellation."""
+"""Exercise generated raw and streaming clients under deadlines, phase timeouts, close failures and cancellation."""
 
 from __future__ import annotations
 
@@ -77,9 +77,9 @@ class _WaitingBody(httpx2.AsyncByteStream):
 
 
 class _StoppedBody(httpx2.SyncByteStream, httpx2.AsyncByteStream):
-    """Interrupt a body after its first chunk, then fail its close with another interruption once released."""
+    """Interrupt a body after its first chunk unless it has no original failure, then fail its close once released."""
 
-    def __init__(self, original: BaseException, cleanup: BaseException | None, *, gated: bool = False) -> None:
+    def __init__(self, original: BaseException | None, cleanup: BaseException | None, *, gated: bool = False) -> None:
         self.original, self.cleanup = original, cleanup
         self.gated = gated
         self.entered = asyncio.Event() if gated else None
@@ -88,7 +88,8 @@ class _StoppedBody(httpx2.SyncByteStream, httpx2.AsyncByteStream):
 
     def __iter__(self) -> Iterator[bytes]:
         yield b"partial"
-        raise self.original
+        if self.original is not None:
+            raise self.original
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         for chunk in self:
@@ -112,32 +113,6 @@ def _answer(
     return injected(lambda _: httpx2.Response(status, headers={"content-type": "text/plain"}, stream=stream))
 
 
-class _FailingLimiter:
-    """Return a permit that fails when released, recording that cleanup never retries it."""
-
-    released = 0
-
-    def acquire(self, context: object) -> _FailingLimiter:
-        return self
-
-    def release(self) -> None:
-        self.released += 1
-        raise RuntimeError("permit release failed")
-
-
-class _AsyncFailingLimiter:
-    """Return an asynchronous permit that fails when released."""
-
-    released = 0
-
-    async def acquire(self, context: object) -> _AsyncFailingLimiter:
-        return self
-
-    async def release(self) -> None:
-        self.released += 1
-        raise RuntimeError("permit release failed")
-
-
 def deadline_streams(package: ModuleType, lines: list[str]) -> None:
     """Read generated raw handles over real TLS, then inject only interruption and same-turn race failures."""
     options = importlib.import_module(f"{package.__name__}.options")
@@ -150,19 +125,19 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
             options=options.RequestOptions(total_timeout=1),
         ) as response:
             record(lines, "stream read past the acquisition deadline", response.read)
-        for label, idle in (("default", options.UNSET), ("disabled", None)):
+        for label, timeout in (("default", options.UNSET), ("disabled", httpx2.Timeout(5.0, read=None))):
             seen: list[float | None] = []
             exchange.respond(_read_cap_failure(seen))
             with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/read-cap",
-                options=options.RequestOptions(timeout=options.TimeoutOptions(read=idle), total_timeout=None),
+                options=options.RequestOptions(timeout=timeout, total_timeout=None),
             ) as response:
                 lines.append(f"  stream read cap {label} {outcome(response.read)}")
             lines.append(f"  stream observed read cap {seen}")
         for label, settings in (
-            ("idle", options.RequestOptions(total_timeout=5, timeout=options.TimeoutOptions(read=0.2))),
-            ("read", options.RequestOptions(timeout=options.TimeoutOptions(read=0.2))),
+            ("idle", options.RequestOptions(total_timeout=5, timeout=httpx2.Timeout(5.0, read=0.2))),
+            ("read", options.RequestOptions(timeout=httpx2.Timeout(5.0, read=0.2))),
         ):
             exchange.respond(_delayed(2))
             with api.with_streaming_response.request_raw(
@@ -177,22 +152,17 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
                 lambda: api.request_raw(
                     "GET",
                     "https://example.com/buffered",
-                    options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0)),
+                    options=options.RequestOptions(total_timeout=1, max_retries=0),
                 ),
             )
         exchange.respond(raw_response(200, b'{"ready":true}', "application/json"))
         saved = api.request_raw("GET", "https://example.com/saved")
         for primary in (False, True):
-            limiter = _FailingLimiter()
-            exchange.respond(raw_response(200, b"ready", "text/plain"))
-            with api.with_streaming_response.request_raw(
-                "GET",
-                "https://example.com/release",
-                options=options.RequestOptions(limiter=limiter, max_stream_bytes=0 if primary else None),
-            ) as response:
-                read_body = (lambda: list(response.iter_bytes())) if primary else response.read
-                lines.append(f"  stream permit failure primary={primary} {outcome(read_body)}")
-            lines.append(f"  stream permit release count {limiter.released}")
+            body = _StoppedBody(httpx2.ReadError("read") if primary else None, RuntimeError("close failed"))
+            exchange.respond(_answer(body))
+            with api.with_streaming_response.request_raw("GET", "https://example.com/release") as response:
+                lines.append(f"  stream close failure primary={primary} {outcome(response.read)}")
+            lines.append(f"  stream close count {body.closes}")
     lines.append(f"  buffered survives close {saved.read()!r} {saved.json()!r} {list(saved.iter_bytes())!r}")
     _interruptions(package, lines)
     _http2(package, lines)
@@ -211,7 +181,7 @@ def _interruptions(package: ModuleType, lines: list[str]) -> None:
                 with api.with_streaming_response.request_raw(
                     "GET",
                     "https://example.com/interruption",
-                    options=options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
+                    options=options.RequestOptions(max_retries=0),
                 ) as raw:
                     if action == "iter_bytes":
                         list(raw.iter_bytes())
@@ -267,19 +237,19 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             options=options.RequestOptions(total_timeout=1),
         ) as response:
             await arecord(lines, "async stream read past the acquisition deadline", response.read)
-        for label, idle in (("default", options.UNSET), ("disabled", None)):
+        for label, timeout in (("default", options.UNSET), ("disabled", httpx2.Timeout(5.0, read=None))):
             seen: list[float | None] = []
             exchange.respond(_read_cap_failure(seen))
             async with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/read-cap",
-                options=options.RequestOptions(timeout=options.TimeoutOptions(read=idle), total_timeout=None),
+                options=options.RequestOptions(timeout=timeout, total_timeout=None),
             ) as response:
                 lines.append(f"  async stream read cap {label} {await aoutcome(response.read)}")
             lines.append(f"  async stream observed read cap {seen}")
         for label, settings in (
-            ("idle", options.RequestOptions(total_timeout=5, timeout=options.TimeoutOptions(read=0.2))),
-            ("read", options.RequestOptions(timeout=options.TimeoutOptions(read=0.2))),
+            ("idle", options.RequestOptions(total_timeout=5, timeout=httpx2.Timeout(5.0, read=0.2))),
+            ("read", options.RequestOptions(timeout=httpx2.Timeout(5.0, read=0.2))),
         ):
             exchange.respond(_delayed(2))
             async with api.with_streaming_response.request_raw(
@@ -293,7 +263,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             lambda: api.request_raw(
                 "GET",
                 "https://example.com/buffered",
-                options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0)),
+                options=options.RequestOptions(total_timeout=1, max_retries=0),
             ),
         )
         exchange.respond(_delayed(2))
@@ -314,16 +284,11 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(_answer(body, 503 if action == "raise_for_status" else 200))
             await _cancelled_read(api, options, body, action, lines)
         for primary in (False, True):
-            limiter = _AsyncFailingLimiter()
-            exchange.respond(raw_response(200, b"ready", "text/plain"))
-            async with api.with_streaming_response.request_raw(
-                "GET",
-                "https://example.com/release",
-                options=options.RequestOptions(limiter=limiter, max_stream_bytes=0 if primary else None),
-            ) as response:
-                read_body = (lambda: anext(response.iter_bytes())) if primary else response.read
-                lines.append(f"  async stream permit failure primary={primary} {await aoutcome(read_body)}")
-            lines.append(f"  async stream permit release count {limiter.released}")
+            body = _StoppedBody(httpx2.ReadError("read") if primary else None, RuntimeError("close failed"))
+            exchange.respond(_answer(body))
+            async with api.with_streaming_response.request_raw("GET", "https://example.com/release") as response:
+                lines.append(f"  async stream close failure primary={primary} {await aoutcome(response.read)}")
+            lines.append(f"  async stream close count {body.closes}")
     lines.append(
         f"  async buffered survives close {await saved.read()!r} {await saved.json()!r} {[part async for part in saved.iter_bytes()]!r}"
     )
@@ -338,7 +303,7 @@ async def _cancelled_read(api: Any, options: ModuleType, body: _WaitingBody, act
         async with api.with_streaming_response.request_raw(
             "GET",
             "https://example.com/cancel",
-            options=options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
+            options=options.RequestOptions(max_retries=0),
         ) as response:
             if action.startswith("iter_"):
                 async for _chunk in getattr(response, action)():
@@ -367,7 +332,7 @@ async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
                 async with api.with_streaming_response.request_raw(
                     "GET",
                     "https://example.com/interruption",
-                    options=options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
+                    options=options.RequestOptions(max_retries=0),
                 ) as raw:
                     if action == "iter_bytes":
                         async for _ in raw.iter_bytes():

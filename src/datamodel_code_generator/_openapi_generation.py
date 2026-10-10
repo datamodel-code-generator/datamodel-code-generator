@@ -1,64 +1,69 @@
-"""Attempt-owned source borrowing for optional OpenAPI contract consumers."""
+"""Attempt-owned source documents, whose pointers target settings name, for optional OpenAPI contract consumers."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, cast
 
-from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
+from datamodel_code_generator._generation_contract import AttemptId
 
 
-def borrow_source_member(value: dict[str, YamlValue], key: str) -> YamlValue:
-    """Read textual source keys, including integer YAML statuses, without copying the mapping."""
-    if key.isascii() and key.isdecimal() and str(number := int(key)) == key:
-        numeric = cast("dict[str | int, YamlValue]", value)
-        if number in numeric:
-            if key in value:
-                msg = "Source pointer is ambiguous between string and integer keys"
-                raise BindingCaptureError(msg)
-            return numeric[number]
-    return value[key]
+def _member(value: YamlValue, key: str) -> YamlValue:
+    """Return a list's item by index, or a mapping's member by key, its integer YAML key first."""
+    index = key == "0" or (key.isascii() and key.isdecimal() and not key.startswith("0"))
+    mapping = cast("dict[object, YamlValue]", value)
+    return (
+        value[int(key)]
+        if isinstance(value, list) and index
+        else mapping[int(key)]
+        if index and int(key) in mapping
+        else mapping[key]
+    )
 
 
 class SourceLease:
-    """Borrow only documents obtained by the model engine, until planning finishes.
+    """Hold the documents the model engine obtained until planning finishes, to check the pointers settings name.
 
-    Consumers may read borrowed nodes during planning but must project the values
-    they need before closing. This object never loads, validates, copies, or resolves
-    a document, and it is deliberately excluded from immutable contract batches.
+    Consumers learn whether a pointer names a node, never the node: what a target reads of a schema comes from the
+    contract batch. The one exception is a document a target serves as documentation, such as the source document a
+    generated server serves, which it copies from `document`. This object never loads, validates, copies, or resolves a
+    document, and it is deliberately excluded from immutable contract batches.
     """
 
     def __init__(self) -> None:
         """Create an empty lease without retaining an input or parser."""
         self._raw: list[dict[str, YamlValue]] = []
+        self._locations: list[str] = []
 
-    def register(self, document: dict[str, YamlValue]) -> None:
-        """Borrow a loaded document; its registration order is its document identity."""
+    def register(self, document: dict[str, YamlValue], location: str = "") -> None:
+        """Borrow a loaded document and where it was read from; its registration order is its document identity.
+
+        The contract batch's documents come first; the others the models' references loaded follow them.
+        """
         self._raw.append(document)
+        self._locations.append(location)
 
-    def borrow(self, location: SourceLocation) -> YamlValue:
-        """Read an original plain JSON pointer from an already borrowed document."""
-        if location.pointer and not location.pointer.startswith("/"):
-            msg = "Source locations require a plain JSON pointer"
-            raise BindingCaptureError(msg)
+    def exists(self, location: SourceLocation) -> bool:
+        """Return whether a plain JSON pointer names a node of a held document, an integer YAML key included."""
+        value: YamlValue = self._raw[location.document]
         try:
-            value: YamlValue = self._raw[location.document]
             for token in location.pointer.split("/")[1:]:
-                key = token.replace("~1", "/").replace("~0", "~")
-                index = key == "0" or (key.isascii() and key.isdecimal() and not key.startswith("0"))
-                value = (
-                    value[int(key)]
-                    if isinstance(value, list) and index
-                    else borrow_source_member(cast("dict[str, YamlValue]", value), key)
-                )
+                value = _member(value, token.replace("~1", "/").replace("~0", "~"))
         except (KeyError, IndexError, TypeError):
-            msg = "Source location does not identify an observed node"
-            raise BindingCaptureError(msg) from None
-        return value
+            return False
+        return True
+
+    def documents(self) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
+        """Return every held document and where it was read from, for a target that copies them into documentation.
+
+        Never modify them.
+        """
+        return tuple(zip(self._locations, self._raw, strict=True))
 
     def close(self) -> None:
         """Release all borrowed mappings; repeated cleanup remains harmless."""
         self._raw.clear()
+        self._locations.clear()
 
 
 class TargetGenerationSession:
@@ -73,6 +78,7 @@ class TargetGenerationSession:
         self._root_selector_document = root_selector_document
         self._next_attempt = 0
         self._candidate: BoundAttempt | None = None
+        self._model_imports: frozenset[str] = frozenset()
 
     @property
     def parser_factory(self) -> OpenAPIParserFactory:
@@ -101,6 +107,7 @@ class TargetGenerationSession:
                 model_package=self._model_package,
                 root_selector_document=self._root_selector_document,
             )
+            self._model_imports = frozenset(target.model_imports)
         except MetadataCycleError as error:
             if error.document in target._api_roots:  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
                 error.document = self._root_selector_document
@@ -130,10 +137,10 @@ class TargetGenerationSession:
         batch = self.take_accepted_batch()
         bound = cast("BoundAttempt", self._candidate)
         lease = SourceLease()
-        for _, document in bound.documents:
-            lease.register(document)
+        for location, document in bound.documents:
+            lease.register(document, location)
         self.close()
-        return ModelGenerationProduct(artifacts, allow_empty_api, batch, lease)
+        return ModelGenerationProduct(artifacts, allow_empty_api, batch, lease, self._model_imports)
 
     def close(self) -> None:
         """Release the bound candidate."""
@@ -142,12 +149,13 @@ class TargetGenerationSession:
 
 @dataclass(slots=True)
 class ModelGenerationProduct:
-    """Own completed ordinary artifacts and an accepted source lease during planning."""
+    """Own completed ordinary artifacts, the names their imports name, and an accepted source lease during planning."""
 
     artifacts: tuple[ModelArtifact, ...]
     allow_empty_api: bool
     batch: GeneratedTypeContractBatch
     source_lease: SourceLease
+    model_imports: frozenset[str]
 
     def close(self) -> None:
         """Release borrowed source mappings without invalidating frozen values or bytes."""
@@ -161,7 +169,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import OpenAPIParserFactory
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_binding import BoundAttempt, TargetApiOpenAPIParser
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, ModelArtifact, SourceLocation
+    from datamodel_code_generator._target_contract import (
+        GeneratedTypeContractBatch,
+        ModelArtifact,
+        SourceLocation,
+    )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi import OpenAPIParser

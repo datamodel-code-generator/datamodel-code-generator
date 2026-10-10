@@ -1,4 +1,4 @@
-# pagination pydantic_v2.BaseModel
+# pagination pydantic_v2.BaseModel, pydantic_v2.dataclass
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -32,67 +32,13 @@
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=1 validation error for UserPage
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='invalid_value') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=1 validation error for UserPage
 data
   Input should be a valid array [type=list_type, input_value='users', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/list_type] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=1 validation error for LoosePage
-data
-  Input should be a valid array [type=list_type, input_value='users', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/list_type] invalid_value
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/users?cursor=a
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async users ['1', '2', '3']
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/users?cursor=a
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async user pages ['[1,2]', '[3]']
-# pagination pydantic_v2.dataclass
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/users?cursor=a
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users ['1', '2', '3']
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  page = [1,2] continuation='a' status=200 attempts=1
-  > GET https://api.example.com/users?cursor=a
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  next page = [3] continuation=None status=200 attempts=1
-  > GET https://api.example.com/nested
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/nested?cursor=n
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  nested ['1']
-  > GET https://api.example.com/labels
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/labels?after=n
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  labels ['a']
-  > GET https://api.example.com/label-sets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/label-sets?after=n
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  labels ['a']
-  > GET https://api.example.com/loose
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/loose?cursor=3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose ['1']
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=1 validation error for UserPage
-data
-  Input should be a valid array [type=list_type, input_value='users', input_type=str]
-    For further information visit https://errors.pydantic.dev/<version>/v/list_type] invalid_value
-  > GET https://api.example.com/loose
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=1 validation error for LoosePage
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=1 validation error for LoosePage
 data
   Input should be a valid array [type=list_type, input_value='users', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/list_type] invalid_value
@@ -140,10 +86,10 @@ data
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=TypeError("User.__init__() missing 1 required positional argument: 'id'")] invalid_value
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='invalid_value') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=TypeError("User.__init__() missing 1 required positional argument: 'id'")] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=TypeError("User.__init__() missing 1 required positional argument: 'id'")] invalid_value
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=TypeError("User.__init__() missing 1 required positional argument: 'id'")] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -188,10 +134,10 @@ data
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=AttributeError("'str' object has no attribute 'items'")] invalid_value
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='invalid_value') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=AttributeError("'str' object has no attribute 'items'")] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=AttributeError("'str' object has no attribute 'items'")] invalid_value
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=AttributeError("'str' object has no attribute 'items'")] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a
@@ -236,10 +182,10 @@ data
   loose ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', call_id='<call>', reason='invalid_value') [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users"}', truncated=False, cause=ValidationError('Expected `array`, got `str` - at `$.data`')] invalid_value
+  users of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listUsers', reason='invalid_value') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=ValidationError('Expected `array`, got `str` - at `$.data`')] invalid_value
   > GET https://api.example.com/loose
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', call_id='<call>', reason='invalid_value') [operation_id='listLoose', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'{"data":"users","next":null}', truncated=False, cause=ValidationError('Expected `array`, got `str` - at `$.data`')] invalid_value
+  loose of another type [] ! DecodeError: DecodeError(status_code=200, operation_id='listLoose', reason='invalid_value') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=ValidationError('Expected `array`, got `str` - at `$.data`')] invalid_value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a

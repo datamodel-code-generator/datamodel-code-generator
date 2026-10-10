@@ -7,9 +7,10 @@ import importlib
 import json
 import os
 import socket
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import httpx2
 import pytest
@@ -19,7 +20,7 @@ from tests.data.python.client_runtime import Stop, arecord, argument, record, re
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Iterator
     from types import ModuleType
 
 
@@ -27,8 +28,7 @@ def _details(value: object) -> str:
     if isinstance(value, BaseException):
         info = getattr(value, "info", None)
         return (
-            f"{type(value).__name__} delivery={getattr(value, 'delivery_state', None)} "
-            f"phase={getattr(value, 'phase', None)} stop={getattr(value, 'retry_stop_reason', None)} "
+            f"{type(value).__name__} "
             f"attempts={getattr(value, 'attempt_count', None)} reason={getattr(value, 'reason', None)} "
             f"status={None if info is None else info.status_code} cause={type(getattr(value, 'cause', None)).__name__}"
         )
@@ -68,15 +68,13 @@ async def _acalled(
         return error_details(error)
 
 
-def _options(module: ModuleType, server: NativeFixture, *, certificate: bool = True) -> object:
-    return module.ClientOptions(
-        base_url=_url(server),
-        transport=module.TransportOptions(
-            ssl_context=server.verify if certificate else None,
-            http2=server.http2,
-            proxy=server.proxy_url if server.proxy else None,
-        ),
-        retry=module.RetryOptions(initial_delay=0, jitter="none"),
+def _http(server: NativeFixture, *, asynchronous: bool, certificate: bool = True) -> Any:
+    """Return an HTTP client with the fixture's authority, protocol, and proxy, ignoring the environment."""
+    return (httpx2.AsyncClient if asynchronous else httpx2.Client)(
+        verify=server.verify if certificate else True,
+        http2=server.http2,
+        proxy=server.proxy_url if server.proxy else None,
+        trust_env=False,
     )
 
 
@@ -84,6 +82,20 @@ def _url(server: NativeFixture) -> str:
     if server.proxy:
         return ("http" if server.proxy == "forward" else "https") + "://" + ("[::1]" if server.ipv6 else "origin.test")
     return server.url
+
+
+@contextmanager
+def _trusted(server: NativeFixture) -> Iterator[None]:
+    """Let an HTTP client the SDK creates trust the fixture through the environment HTTPX2 reads, without proxies."""
+    with pytest.MonkeyPatch.context() as environment, TemporaryDirectory() as directory:
+        for key in tuple(os.environ):
+            if key.casefold() == "no_proxy":
+                environment.delenv(key)
+        environment.setenv("NO_PROXY", "*")
+        authority = Path(directory) / "ca.pem"
+        authority.write_bytes(server.ca_pem)
+        environment.setenv("SSL_CERT_FILE", str(authority))
+        yield
 
 
 def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
@@ -115,12 +127,13 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
             server.extra_headers = ((b"x-duplicate", b"first"), (b"x-duplicate", b"second"), (b"x-text", b"caf\xe9"))
         if kind == "rejected-proxy":
             server.status, server.location = 407, b"https://localhost:bad/path"
-        client_options = _options(options, server, certificate="certificate" not in kind)
+        settings = {"base_url": _url(server), "retry": options.RetryOptions(initial_delay=0, jitter="none")}
+        native = _http(server, asynchronous=asynchronous, certificate="certificate" not in kind)
         try:
             if asynchronous:
 
                 async def call() -> None:
-                    async with package.AsyncClient(options=client_options) as api:
+                    async with native, package.AsyncClient(http_client=native, **settings) as api:
                         await arecord(
                             lines,
                             f"{mode} {kind}",
@@ -129,7 +142,7 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
 
                 run(call)
             else:
-                with package.Client(options=client_options) as api:
+                with native, package.Client(http_client=native, **settings) as api:
                     record(
                         lines,
                         f"{mode} {kind}",
@@ -139,119 +152,26 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
         finally:
             server.stop()
 
-    defaults = json.loads((SOURCE / "defaults.json").read_text(encoding="utf-8"))
-    environment_cases = defaults["transport_environment"] + [
-        {"name": name, "proxy": None} for name in defaults["transport_direct"]
-    ]
-    for case in environment_cases:
-        name = case["name"]
-        server = NativeFixture(proxy="forward" if case["proxy"] in {"forward", "all"} else case["proxy"])
-        peer = NativeFixture(proxy="tunnel")
-        try:
-            with pytest.MonkeyPatch.context() as environment, TemporaryDirectory() as directory:
-                for key in tuple(os.environ):
-                    if key.casefold() == "no_proxy":
-                        environment.delenv(key)
-                environment.setenv("NO_PROXY", "*")
-                transport = options.TransportOptions(ssl_context=server.verify)
-                base_url = server.url
-                if variable := case.get("variable"):
-                    environment.setenv("NO_PROXY", "")
-                    environment.setenv(variable, server.proxy_url)
-                    base_url = ("https" if case["proxy"] == "tunnel" else "http") + "://origin.test"
-                elif name.startswith("no-proxy") or name == "opt-out":
-                    environment.setenv("HTTPS_PROXY", peer.proxy_url)
-                    if name.startswith("no-proxy"):
-                        environment.delenv("NO_PROXY")
-                        environment.setenv("NO_PROXY" if name.endswith("upper") else "no_proxy", "127.0.0.1")
-                    else:
-                        environment.setenv("NO_PROXY", "")
-                        transport = options.TransportOptions(ssl_context=server.verify, trust_env=False)
-                else:
-                    ca_file = Path(directory) / "ca.pem"
-                    ca_file.write_bytes(
-                        peer.ca_pem if name in {"ca-opt-out", "ca-context", "injected"} else server.ca_pem
-                    )
-                    environment.setenv("SSL_CERT_FILE", str(ca_file))
-                    if name.startswith("ca-default"):
-                        transport = options.UNSET
-                    elif name == "ca-opt-out":
-                        transport = options.TransportOptions(trust_env=False)
-                    elif name == "injected":
-                        environment.setenv("HTTPS_PROXY", peer.proxy_url)
-                        environment.setenv("NO_PROXY", "")
-                        transport = options.UNSET
-                settings = options.ClientOptions(
-                    base_url=base_url, transport=transport, retry=options.RetryOptions(max_retries=0)
-                )
-                if asynchronous:
-
-                    async def call() -> None:
-                        async with httpx2.AsyncClient(verify=server.verify, trust_env=False) as native:
-                            async with package.AsyncClient(
-                                options=settings, **({"http_client": native} if name == "injected" else {})
-                            ) as api:
-                                await arecord(
-                                    lines,
-                                    f"{mode} environment {name}",
-                                    lambda: _acalled(api.retry.with_response.get_safe),
-                                )
-                            if name == "injected":
-                                lines.append(f"  native closed={native.is_closed}")
-
-                    run(call)
-                else:
-                    with httpx2.Client(verify=server.verify, trust_env=False) as native:
-                        with package.Client(
-                            options=settings, **({"http_client": native} if name == "injected" else {})
-                        ) as api:
-                            record(
-                                lines, f"{mode} environment {name}", lambda: _called(api.retry.with_response.get_safe)
-                            )
-                        if name == "injected":
-                            lines.append(f"  native closed={native.is_closed}")
-                lines.append(
-                    f"  origin arrivals={len(server.requests)} connects={server.connects} "
-                    f"proxy arrivals={len(peer.requests)} connects={peer.connects}"
-                )
-        finally:
-            server.stop()
-            peer.stop()
-
-    sizes = defaults["response_limits"]
+    sizes = json.loads((SOURCE / "defaults.json").read_text(encoding="utf-8"))["response_limits"]
     server = NativeFixture()
     try:
-        for layer, size in (
-            ("default", sizes["large_bytes"]),
-            *(
-                (layer, size)
-                for layer in ("client", "view", "call")
-                for size in (sizes["explicit_cap"], sizes["explicit_cap"] + 1)
-            ),
-            ("error-default", sizes["error_bytes"]),
-            ("error-explicit", sizes["error_bytes"]),
-        ):
+        for layer, size in (("default", sizes["large_bytes"]), ("error-default", sizes["error_bytes"])):
             server.body = b"x" * size
             server.status = 500 if layer.startswith("error") else 200
-            cap = options.RequestOptions(max_response_bytes=sizes["explicit_cap"])
-            settings = options.ClientOptions(
-                base_url=server.url,
-                transport=options.TransportOptions(ssl_context=server.verify),
-                retry=options.RetryOptions(max_retries=0),
-                max_response_bytes=sizes["explicit_cap"] if layer in {"client", "error-explicit"} else options.UNSET,
-            )
             for raw in (False, True):
                 before = len(server.requests)
                 if asynchronous:
 
                     async def call() -> None:
-                        async with package.AsyncClient(options=settings) as api:
-                            view = api.with_options(cap) if layer == "view" else api
+                        async with (
+                            _http(server, asynchronous=True) as native,
+                            package.AsyncClient(http_client=native, base_url=server.url, max_retries=0) as api,
+                        ):
                             operation = (
-                                view.retry.with_raw_response.get_safe if raw else view.retry.with_response.get_safe
+                                api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                             )
                             try:
-                                result = await operation(**({"options": cap} if layer == "call" else {}))
+                                result = await operation()
                                 lines.append(
                                     f"{mode} size {layer}/{size} raw={raw}: status={result.info.status_code} "
                                     f"bytes={len(result.body_bytes if raw else result.data.root)}"
@@ -261,18 +181,19 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                             except Exception as error:
                                 lines.append(
                                     f"{mode} size {layer}/{size} raw={raw}: {type(error).__name__} "
-                                    f"limit={getattr(error, 'limit', None)} "
                                     f"bytes={len(getattr(error, 'body_bytes', b''))} "
                                     f"truncated={getattr(error, 'truncated', None)}"
                                 )
 
                     run(call)
                 else:
-                    with package.Client(options=settings) as api:
-                        view = api.with_options(cap) if layer == "view" else api
-                        operation = view.retry.with_raw_response.get_safe if raw else view.retry.with_response.get_safe
+                    with (
+                        _http(server, asynchronous=False) as native,
+                        package.Client(http_client=native, base_url=server.url, max_retries=0) as api,
+                    ):
+                        operation = api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                         try:
-                            result = operation(**({"options": cap} if layer == "call" else {}))
+                            result = operation()
                             lines.append(
                                 f"{mode} size {layer}/{size} raw={raw}: status={result.info.status_code} "
                                 f"bytes={len(result.body_bytes if raw else result.data.root)}"
@@ -282,7 +203,6 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                         except Exception as error:
                             lines.append(
                                 f"{mode} size {layer}/{size} raw={raw}: {type(error).__name__} "
-                                f"limit={getattr(error, 'limit', None)} "
                                 f"bytes={len(getattr(error, 'body_bytes', b''))} "
                                 f"truncated={getattr(error, 'truncated', None)}"
                             )
@@ -291,20 +211,53 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
         server.stop()
 
 
+def _environment(package: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
+    """Let an HTTP client the SDK creates proxy through the environment HTTPX2 reads, and bypass a peer by NO_PROXY."""
+    mode = "async" if asynchronous else "sync"
+    for name, proxy, variable, bypass in (
+        ("HTTPS_PROXY tunnel", "tunnel", "HTTPS_PROXY", ""),
+        ("HTTP_PROXY forward", "forward", "HTTP_PROXY", ""),
+        ("NO_PROXY bypass", None, "HTTPS_PROXY", "127.0.0.1"),
+    ):
+        server, peer = NativeFixture(proxy=proxy), NativeFixture(proxy="tunnel")
+        base_url = server.url if proxy is None else ("https" if proxy == "tunnel" else "http") + "://origin.test"
+        try:
+            with _trusted(server), pytest.MonkeyPatch.context() as environment:
+                environment.setenv("NO_PROXY", bypass)
+                environment.setenv(variable, server.proxy_url if proxy else peer.proxy_url)
+                if asynchronous:
+
+                    async def call() -> None:
+                        async with package.AsyncClient(base_url=base_url, max_retries=0) as api:
+                            await arecord(
+                                lines,
+                                f"{mode} environment {name}",
+                                lambda: _acalled(api.retry.with_response.get_safe),
+                            )
+
+                    run(call)
+                else:
+                    with package.Client(base_url=base_url, max_retries=0) as api:
+                        record(lines, f"{mode} environment {name}", lambda: _called(api.retry.with_response.get_safe))
+            lines.append(
+                f"  origin arrivals={len(server.requests)} connects={server.connects} "
+                f"proxy arrivals={len(peer.requests)} connects={peer.connects}"
+            )
+        finally:
+            server.stop()
+            peer.stop()
+
+
 def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
     mode = "async" if asynchronous else "sync"
     errors = importlib.import_module(f"{package.__name__}.errors")
     error_details: Callable[[Exception], str] = lambda error: (
-        "APIConnectionError delivery=DeliveryState.NOT_SENT phase=connect "
-        "retry_outcome=permitted status=None cause=ConnectError"
+        "APIConnectionError retry_outcome=permitted status=None cause=ConnectError"
         if (
             type(error) is errors.APIConnectionError
-            and getattr(error, "delivery_state", None) is errors.DeliveryState.NOT_SENT
-            and getattr(error, "phase", None) == "connect"
             and getattr(error, "info", None) is None
             and type(getattr(error, "cause", None)) is httpx2.ConnectError
-            and (getattr(error, "retry_stop_reason", None), getattr(error, "attempt_count", None))
-            in (("transport_not_retryable", 1), ("max_retries_exhausted", 3))
+            and getattr(error, "attempt_count", None) in (1, 3)
         )
         else _details(error)
     )
@@ -316,11 +269,11 @@ def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asyn
             held.close()
             address = f"[{host}]" if ":" in host else host
             url = f"https://{address}:{port}"
-            settings = options.ClientOptions(base_url=url, retry=options.RetryOptions(initial_delay=0, jitter="none"))
+            settings = {"base_url": url, "retry": options.RetryOptions(initial_delay=0, jitter="none")}
             if asynchronous:
 
                 async def call() -> None:
-                    async with package.AsyncClient(options=settings) as api:
+                    async with package.AsyncClient(**settings) as api:
                         await arecord(
                             lines,
                             f"{mode} refused {host} unsafe",
@@ -329,7 +282,7 @@ def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asyn
 
                 run(call)
             else:
-                with package.Client(options=settings) as api:
+                with package.Client(**settings) as api:
                     record(
                         lines,
                         f"{mode} refused {host} unsafe",
@@ -349,18 +302,15 @@ _LOCATIONS = (
 def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
     mode = "async" if asynchronous else "sync"
     server = NativeFixture()
-    events: list[str] = []
-    client_options = options.ClientOptions(
-        base_url=server.url,
-        transport=options.TransportOptions(ssl_context=server.verify),
-        retry=options.RetryOptions(initial_delay=0, jitter="none"),
-        hooks=(_Events(events),),
-    )
+    settings = {"base_url": server.url, "retry": options.RetryOptions(initial_delay=0, jitter="none")}
     try:
         if asynchronous:
 
             async def calls() -> None:
-                async with package.AsyncClient(options=client_options) as api:
+                async with (
+                    _http(server, asynchronous=True) as native,
+                    package.AsyncClient(http_client=native, **settings) as api,
+                ):
                     for status in (301, 302, 303, 307, 308):
                         server.status = status
                         for name, location in _LOCATIONS:
@@ -368,7 +318,6 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                             for enabled in (False, True):
                                 request_options = options.RequestOptions(follow_redirects=enabled)
                                 for raw in (False, True):
-                                    events.clear()
                                     call = (
                                         api.retry.with_raw_response.get_safe
                                         if raw
@@ -379,11 +328,10 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                                         f"{mode} location {status}/{name}/{enabled}/{raw}",
                                         lambda: _acalled(lambda: call(options=request_options)),
                                     )
-                                    lines.append(f"  header events={events.count('response_headers')}")
 
             run(calls)
         else:
-            with package.Client(options=client_options) as api:
+            with _http(server, asynchronous=False) as native, package.Client(http_client=native, **settings) as api:
                 for status in (301, 302, 303, 307, 308):
                     server.status = status
                     for name, location in _LOCATIONS:
@@ -391,21 +339,18 @@ def _locations(package: ModuleType, options: ModuleType, lines: list[str], *, as
                         for enabled in (False, True):
                             request_options = options.RequestOptions(follow_redirects=enabled)
                             for raw in (False, True):
-                                events.clear()
                                 call = api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                                 record(
                                     lines,
                                     f"{mode} location {status}/{name}/{enabled}/{raw}",
                                     lambda: _called(lambda: call(options=request_options)),
                                 )
-                                lines.append(f"  header events={events.count('response_headers')}")
         lines.append(f"  {mode} location arrivals={len(server.requests)}")
     finally:
         server.stop()
 
 
 def _borrowed(package: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
-    options = importlib.import_module(f"{package.__name__}.options")
     mode = "async" if asynchronous else "sync"
     server = NativeFixture(http2=True)
     server.extra_headers = ((b"x-remove", b"wire"),)
@@ -436,10 +381,7 @@ def _borrowed(package: ModuleType, lines: list[str], *, asynchronous: bool) -> N
                         headers={"authorization": "Bearer foreign", "x-foreign": "default"},
                         params={"foreign": "query"},
                     ) as native:
-                        async with package.AsyncClient(
-                            options=options.ClientOptions(base_url=server.url),
-                            http_client=native,
-                        ) as api:
+                        async with package.AsyncClient(base_url=server.url, http_client=native) as api:
                             server.status, server.location = 200, None
                             for raw in (False, True):
                                 operation = (
@@ -470,10 +412,7 @@ def _borrowed(package: ModuleType, lines: list[str], *, asynchronous: bool) -> N
                     headers={"authorization": "Bearer foreign", "x-foreign": "default"},
                     params={"foreign": "query"},
                 ) as native:
-                    with package.Client(
-                        options=options.ClientOptions(base_url=server.url),
-                        http_client=native,
-                    ) as api:
+                    with package.Client(base_url=server.url, http_client=native) as api:
                         server.status, server.location = 200, None
                         for raw in (False, True):
                             operation = (
@@ -505,94 +444,90 @@ def native_wire(package: ModuleType, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
     for asynchronous in (False, True):
         _wire(package, options, lines, asynchronous=asynchronous)
+        _environment(package, lines, asynchronous=asynchronous)
         _refusal(package, options, lines, asynchronous=asynchronous)
         _locations(package, options, lines, asynchronous=asynchronous)
         _borrowed(package, lines, asynchronous=asynchronous)
-        _location_hooks(package, options, lines, asynchronous=asynchronous)
+        _location_hooks(package, lines, asynchronous=asynchronous)
 
 
-class _HeaderHook:
-    """Fail or cancel only after the malformed redirect's resource headers have been published."""
+class _ResponseHook:
+    """Fail or interrupt each response the injected HTTP client receives, recording the statuses it saw."""
 
-    def __init__(self, token: object, error: BaseException | None) -> None:
-        self.token = token
+    def __init__(self, error: BaseException) -> None:
         self.error = error
-        self.events: list[str] = []
+        self.statuses: list[int] = []
 
-    def on_event(self, event: object) -> None:
-        name = event.name
-        self.events.append(name)
-        if name == "response_headers":
-            if self.error is not None:
-                raise self.error
-            self.token.cancel()
+    def __call__(self, response: httpx2.Response) -> None:
+        self.statuses.append(response.status_code)
+        raise self.error
+
+    async def asynchronous(self, response: httpx2.Response) -> None:
+        self(response)
 
 
-def _location_hooks(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
-
+def _location_hooks(package: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
+    """Fail or interrupt a malformed redirect in the injected client's response hook, before HTTPX2 reads its Location."""
     mode = "async" if asynchronous else "sync"
+    errors = importlib.import_module(f"{package.__name__}.errors")
     server = NativeFixture()
     server.status, server.location = 302, _LOCATIONS[0][1]
     try:
         for error in (RuntimeError("controlled"), Stop()):
             for raw in (False, True):
-                hook = _HeaderHook(None, error)
-                settings = options.ClientOptions(
-                    base_url=server.url,
-                    transport=options.TransportOptions(ssl_context=server.verify),
-                    hooks=(hook,),
-                )
-                label = f"{mode} malformed Location header-hook {type(error).__name__} raw={raw}"
+                hook = _ResponseHook(error)
+                label = f"{mode} malformed Location response-hook {type(error).__name__} raw={raw}"
                 if asynchronous:
 
                     async def call() -> None:
-                        async with package.AsyncClient(options=settings) as api:
+                        async with (
+                            httpx2.AsyncClient(
+                                verify=server.verify, trust_env=False, event_hooks={"response": [hook.asynchronous]}
+                            ) as native,
+                            package.AsyncClient(http_client=native, base_url=server.url) as api,
+                        ):
                             operation = (
                                 api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                             )
                             try:
                                 await operation()
-                            except BaseException as failure:
+                            except (errors.SDKError, Stop) as failure:
                                 lines.append(
-                                    f"  {label}: {_details(failure)} secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]} same={failure is error}"
+                                    f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                                 )
                             else:
                                 lines.append(f"  {label}: unexpectedly returned")
 
                     run(call)
                 else:
-                    with package.Client(options=settings) as api:
+                    with (
+                        httpx2.Client(
+                            verify=server.verify, trust_env=False, event_hooks={"response": [hook]}
+                        ) as native,
+                        package.Client(http_client=native, base_url=server.url) as api,
+                    ):
                         operation = api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                         try:
                             operation()
-                        except BaseException as failure:
+                        except (errors.SDKError, Stop) as failure:
                             lines.append(
-                                f"  {label}: {_details(failure)} secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]} same={failure is error}"
+                                f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                             )
                         else:
                             lines.append(f"  {label}: unexpectedly returned")
-                lines.append(f"  header-hook events={hook.events}")
-        lines.append(f"  {mode} header-hook arrivals={len(server.requests)}")
+                lines.append(f"  response-hook statuses={hook.statuses}")
+        lines.append(f"  {mode} response-hook arrivals={len(server.requests)}")
     finally:
         server.stop()
 
 
-class _Events:
-    """Collect only event kinds, without retaining contexts or request material."""
-
-    def __init__(self, values: list[str]) -> None:
-        self.values = values
-
-    def on_event(self, event: object) -> None:
-        self.values.append(event.name)
-
-
+@pytest.mark.abnormal_path("A local peer cannot produce each kind of native send failure on demand.")
 def native_faults(package: ModuleType, lines: list[str]) -> None:
-    """Inject abnormal native send exceptions at the HTTP transport boundary, without trace events."""
+    """Inject abnormal native send exceptions at the HTTP transport boundary."""
     from unittest.mock import patch
 
     options = importlib.import_module(f"{package.__name__}.options")
-    settings = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, jitter="none"))
+    retry = options.RetryOptions(initial_delay=0, jitter="none")
     kinds = (
         httpx2.ConnectError,
         httpx2.ConnectTimeout,
@@ -631,13 +566,13 @@ def native_faults(package: ModuleType, lines: list[str]) -> None:
                     if key is None
                     else options.RequestOptions(idempotency_key=None)
                     if key == "disabled"
-                    else options.RequestOptions(idempotency_key=options.IdempotencyKey(key))
+                    else options.RequestOptions(idempotency_key=key)
                 )
                 if asynchronous:
 
                     async def exercise() -> None:
                         with patch.object(httpx2.AsyncHTTPTransport, "handle_async_request", ahandle):
-                            async with package.AsyncClient(options=settings) as api:
+                            async with package.AsyncClient(retry=retry) as api:
                                 await arecord(
                                     lines,
                                     label,
@@ -649,7 +584,7 @@ def native_faults(package: ModuleType, lines: list[str]) -> None:
                     run(exercise)
                 else:
                     with patch.object(httpx2.HTTPTransport, "handle_request", handle):
-                        with package.Client(options=settings) as api:
+                        with package.Client(retry=retry) as api:
                             record(
                                 lines,
                                 label,
@@ -661,17 +596,81 @@ def native_faults(package: ModuleType, lines: list[str]) -> None:
                 lines.append(f"  native send invocations={calls} required={expected}")
     run(lambda: _native_cancel(package, lines))
     _native_close(package, lines)
+    _phases(package, lines)
 
 
+def _phases(package: ModuleType, lines: list[str]) -> None:
+    """Observe the timeouts and redirects each request goes out with, on an SDK-owned and on an injected client."""
+    from unittest.mock import patch
+
+    options = importlib.import_module(f"{package.__name__}.options")
+    seen: list[object] = []
+
+    def answer(request: httpx2.Request) -> httpx2.Response:
+        seen.append(request.extensions["timeout"])
+        if request.url.path == "/moved":
+            return httpx2.Response(200, headers={"Content-Type": "text/plain"}, stream=httpx2.ByteStream(b"moved"))
+        return httpx2.Response(302, headers={"Location": "/moved"}, stream=httpx2.ByteStream(b""))
+
+    def handle(transport: httpx2.HTTPTransport, request: httpx2.Request) -> httpx2.Response:
+        return answer(request)
+
+    async def ahandle(transport: httpx2.AsyncHTTPTransport, request: httpx2.Request) -> httpx2.Response:
+        return answer(request)
+
+    phases = options.RequestOptions(timeout=httpx2.Timeout(1, connect=3))
+    native = {
+        "timeout": httpx2.Timeout(7, connect=2),
+        "follow_redirects": True,
+        "transport": httpx2.MockTransport(answer),
+    }
+    for label, injected, root, view, call in (
+        ("owned default", False, {}, {}, None),
+        ("owned follows when asked", False, {"follow_redirects": True}, {}, None),
+        ("owned timeout", False, {"timeout": 2.5}, {}, None),
+        ("view lifts the limits", False, {"timeout": 2.5}, {"timeout": None}, None),
+        ("call phases over the view", False, {"timeout": 2.5}, {"timeout": None}, phases),
+        ("injected keeps its own", True, {}, {}, None),
+        ("injected given a timeout", True, {"timeout": 4}, {}, None),
+        ("injected redirects declined", True, {"follow_redirects": False}, {}, None),
+        ("injected view redirects declined", True, {}, {"follow_redirects": False}, None),
+    ):
+        seen.clear()
+        with (
+            patch.object(httpx2.HTTPTransport, "handle_request", handle),
+            httpx2.Client(**native) if injected else nullcontext() as http,
+            package.Client(http_client=http, **root) as api,
+        ):
+            record(
+                lines,
+                f"sync {label}",
+                lambda: _called(lambda: api.with_options(**view).retry.with_response.get_safe(options=call)),
+            )
+        lines.append(f"    phases={seen}")
+        seen.clear()
+
+        async def exercise() -> None:
+            async with (
+                httpx2.AsyncClient(**native) if injected else nullcontext() as http,
+                package.AsyncClient(http_client=http, **root) as api,
+            ):
+                await arecord(
+                    lines,
+                    f"async {label}",
+                    lambda: _acalled(lambda: api.with_options(**view).retry.with_response.get_safe(options=call)),
+                )
+
+        with patch.object(httpx2.AsyncHTTPTransport, "handle_async_request", ahandle):
+            run(exercise)
+        lines.append(f"    phases={seen}")
+
+
+@pytest.mark.abnormal_path("A failing close of the transport the SDK owns cannot be produced with a real connection.")
 def _native_close(package: ModuleType, lines: list[str]) -> None:
     """Preserve a primary failure while the native owned client's close fails after release."""
     from unittest.mock import patch
 
-    options = importlib.import_module(f"{package.__name__}.options")
     server = NativeFixture()
-    settings = options.ClientOptions(
-        base_url=server.url, transport=options.TransportOptions(ssl_context=server.verify, trust_env=False)
-    )
     closed = 0
     original = httpx2.HTTPTransport.close
 
@@ -682,9 +681,9 @@ def _native_close(package: ModuleType, lines: list[str]) -> None:
         raise RuntimeError("native close failed")
 
     try:
-        with patch.object(httpx2.HTTPTransport, "close", close):
+        with _trusted(server), patch.object(httpx2.HTTPTransport, "close", close):
             try:
-                with package.Client(options=settings) as api:
+                with package.Client(base_url=server.url) as api:
                     api.retry.get_safe()
                     raise ValueError("primary failure")
             except ValueError as error:
@@ -693,12 +692,14 @@ def _native_close(package: ModuleType, lines: list[str]) -> None:
                 )
             api.close()
             lines.append(f"  owned sync native closes={closed}")
-        run(lambda: _native_async_close(package, lines, settings))
+        with _trusted(server):
+            run(lambda: _native_async_close(package, lines, server.url))
     finally:
         server.stop()
 
 
-async def _native_async_close(package: ModuleType, lines: list[str], settings: object) -> None:
+@pytest.mark.abnormal_path("A failing close of the transport the SDK owns cannot be produced with a real connection.")
+async def _native_async_close(package: ModuleType, lines: list[str], base_url: str) -> None:
     """Keep task cancellation primary beside an owned native asynchronous close failure."""
     from unittest.mock import patch
 
@@ -712,7 +713,7 @@ async def _native_async_close(package: ModuleType, lines: list[str], settings: o
         raise RuntimeError("native close failed")
 
     async def body() -> None:
-        async with package.AsyncClient(options=settings) as api:
+        async with package.AsyncClient(base_url=base_url) as api:
             await api.retry.get_safe()
             task = asyncio.current_task()
             task.cancel()
@@ -731,7 +732,6 @@ async def _native_async_close(package: ModuleType, lines: list[str], settings: o
 
 async def _native_cancel(package: ModuleType, lines: list[str]) -> None:
     """Cancel an actual TLS call in the native response hook and retain caller cancellation."""
-    options = importlib.import_module(f"{package.__name__}.options")
     server = NativeFixture()
     reached, release = asyncio.Event(), asyncio.Event()
 
@@ -743,10 +743,8 @@ async def _native_cancel(package: ModuleType, lines: list[str]) -> None:
         async with httpx2.AsyncClient(
             verify=server.verify, trust_env=False, event_hooks={"response": [response]}
         ) as native:
-            async with package.AsyncClient(
-                http_client=native, options=options.ClientOptions(base_url=server.url)
-            ) as api:
-                view = api.with_options(options.RequestOptions())
+            async with package.AsyncClient(http_client=native, base_url=server.url) as api:
+                view = api.with_options()
                 pending = asyncio.create_task(view.retry.get_safe())
                 await asyncio.wait_for(reached.wait(), 5)
                 pending.cancel()
@@ -766,7 +764,6 @@ async def _native_cancel(package: ModuleType, lines: list[str]) -> None:
 
 def native_codec_backends(package: ModuleType, lines: list[str]) -> None:
     """Decode and send fixed pet models through each backend over actual sync and async TLS calls."""
-    options = importlib.import_module(f"{package.__name__}.options")
     trace = argument(package, "listPets", "header", "X-Trace", "trace")
     body = request_body(package, "createPet", "application/json", {"name": "dog", "tag": "a"})
     for asynchronous in (False, True):
@@ -778,8 +775,11 @@ def native_codec_backends(package: ModuleType, lines: list[str]) -> None:
             if asynchronous:
 
                 async def call() -> None:
-                    async with package.AsyncClient(options=_options(options, server)) as api:
-                        await arecord(lines, f"{mode} native decode", lambda: api.pets.list_pets(x_trace=trace))
+                    async with (
+                        _http(server, asynchronous=True) as native,
+                        package.AsyncClient(http_client=native, base_url=server.url) as api,
+                    ):
+                        await arecord(lines, f"{mode} native decode", lambda: api.pets.list_pets(X_Trace=trace))
                         server.status, server.body = 201, b'{"id":2,"name":"dog","tag":"a"}'
                         await arecord(
                             lines,
@@ -789,8 +789,11 @@ def native_codec_backends(package: ModuleType, lines: list[str]) -> None:
 
                 run(call)
             else:
-                with package.Client(options=_options(options, server)) as api:
-                    record(lines, f"{mode} native decode", lambda: api.pets.list_pets(x_trace=trace))
+                with (
+                    _http(server, asynchronous=False) as native,
+                    package.Client(http_client=native, base_url=server.url) as api,
+                ):
+                    record(lines, f"{mode} native decode", lambda: api.pets.list_pets(X_Trace=trace))
                     server.status, server.body = 201, b'{"id":2,"name":"dog","tag":"a"}'
                     record(
                         lines,

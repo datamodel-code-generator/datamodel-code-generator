@@ -11,14 +11,10 @@ import models
 
 from .._runtime.model_codecs.native import MsgspecCodec
 
-codec_0: Final[MsgspecCodec[models.FieldOrdersOrderIdGetPathOrderIdParameter]] = MsgspecCodec(
-    models.FieldOrdersOrderIdGetPathOrderIdParameter,
-)
+codec_0: Final[MsgspecCodec[models.FieldOrdersOrderIdGetPathOrderIdParameter]] = MsgspecCodec(models.FieldOrdersOrderIdGetPathOrderIdParameter)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request path orderId)."""
 
-codec_1: Final[MsgspecCodec[models.FieldOrdersOrderIdGetQueryViewParameter]] = MsgspecCodec(
-    models.FieldOrdersOrderIdGetQueryViewParameter,
-)
+codec_1: Final[MsgspecCodec[models.FieldOrdersOrderIdGetQueryViewParameter]] = MsgspecCodec(models.FieldOrdersOrderIdGetQueryViewParameter)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request query view)."""
 
 codec_2: Final[MsgspecCodec[models.Order]] = MsgspecCodec(models.Order)

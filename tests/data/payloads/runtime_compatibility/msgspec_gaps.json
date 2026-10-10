@@ -71,14 +71,6 @@
     "valid": {},
     "error": "Can only set `pattern` on a str type"
   },
-  "jsonschema/numeric_allof_types/null_template.json": {
-    "valid": null,
-    "error": "Can only set `ge` on a numeric type"
-  },
-  "jsonschema/root_alias_constraints/null_numeric.json": {
-    "valid": null,
-    "error": "Can only set `ge` on a numeric type"
-  },
   "jsonschema/root_alias_constraints/null_pattern.json": {
     "valid": null,
     "error": "Can only set `pattern` on a str type"

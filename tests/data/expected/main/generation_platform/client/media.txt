@@ -5,13 +5,10 @@ render pydantic_v2.BaseModel
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/forms/__init__.py
   write client/resources/forms/_sync.py
@@ -42,13 +39,10 @@ render typing.TypedDict
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/forms/__init__.py
   write client/resources/forms/_sync.py

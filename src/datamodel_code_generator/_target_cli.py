@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
-from datamodel_code_generator._api_manifest import shown
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._target_documents import shown
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 _OK: Final = 0
 _DIFF: Final = 1
 _ERROR: Final = 2
-_CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 
 
 def run_target(  # noqa: PLR0913, PLR0917
@@ -85,8 +84,8 @@ def _run(  # noqa: PLR0913, PLR0917
     from datamodel_code_generator._target_selection import target_of  # noqa: PLC0415
 
     lockfile = _target_lockfile(config, pyproject_path)
-    if flags := [flag for name, flag in _CONFLICTS if getattr(config, name)]:
-        raise _refused(flags, _selector(config))
+    if config.input_model:
+        raise _refused(_selector(config))
     generator, target = target_of(config, partial(_base, config, namespace, pyproject_path))
     effective = _target_settings(config, args, lockfile)
     if batch is not None:
@@ -98,6 +97,17 @@ def _run(  # noqa: PLR0913, PLR0917
         project = render_target(source, model_config=effective, config=target, generator=generator)
         comparison = _compare_target(project, config.output, target.output, config.encoding)
         _write_comparison_output(comparison, namespace.output_format)
+        return _DIFF if comparison.differences else _OK
+    if config.diff_against is not None:
+        effective = effective.model_copy(update={"input_filename": "<input>"})
+        baseline = plan_target(config.diff_against, model_config=effective, config=target, generator=generator)
+        current = plan_target(
+            source, model_config=effective, config=target, generator=generator, timestamp=baseline.timestamp
+        )
+        comparison = _compare_target(
+            current.project, config.output, target.output, config.encoding, baseline=baseline.project
+        )
+        _write_comparison_output(comparison, namespace.output_format, kind="input-diff")
         return _DIFF if comparison.differences else _OK
     json_output = namespace.output_format == "json"
     if batch is not None:
@@ -185,10 +195,18 @@ def _nested(models: Path, target: Path) -> dict[str, tuple[Path, Path]]:
     return {}
 
 
-def _compare_target(project: GeneratedProject, models: Path, target: Path, encoding: str) -> OutputComparison:
+def _compare_target(
+    project: GeneratedProject,
+    models: Path,
+    target: Path,
+    encoding: str,
+    *,
+    baseline: GeneratedProject | None = None,
+) -> OutputComparison:
     """Compare rendered text and Python output roots through the model comparison path.
 
-    Labels stay relative to the working directory; each difference names its file like the generation payload.
+    Labels stay relative to the working directory; each difference names its file like the generation payload. With
+    a `baseline` rendered from another input, the comparison is an input diff against its files instead of the output.
     """
     from tempfile import TemporaryDirectory  # noqa: PLC0415
 
@@ -204,8 +222,13 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
     base, cwd = _payload_base(project, models), Path.cwd()
     with TemporaryDirectory(prefix="datamodel-codegen-check-") as directory:
         staging = Path(directory)
+        baseline_root = None if baseline is None else staging / "baseline"
+        for artifact in () if baseline is None else baseline.artifacts:
+            (staged := _existing(artifact.path, baseline_root)).parent.mkdir(parents=True, exist_ok=True)
+            staged.write_bytes(artifact.content)
+        rendered = [*project.artifacts, *(() if baseline is None else baseline.artifacts)]
         for kind, output, is_directory in (("model", models, base == models), ("target", target, True)):
-            if not is_directory and not any(artifact.kind == kind for artifact in project.artifacts):
+            if not is_directory and not any(artifact.kind == kind for artifact in rendered):
                 continue
             if kind in nested:
                 continue
@@ -230,10 +253,11 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
                 try:
                     compared = _compare_generated_outputs(
                         generated,
-                        actual,
+                        _existing(actual, baseline_root),
                         codec,
                         OutputComparisonOptions(
                             is_directory_output=directory_output,
+                            input_diff=baseline is not None,
                             single_file_display_path=_shown(actual),
                             directory_display_path=_shown(actual),
                         ),
@@ -250,14 +274,22 @@ def _compare_target(project: GeneratedProject, models: Path, target: Path, encod
     return OutputComparison(differences=differences, content="".join(contents))
 
 
+def _existing(path: Path, baseline_root: Path | None) -> Path:
+    """Return the file an output path is compared with: itself, or the baseline file staged for it.
+
+    A baseline root mirrors the filesystem, so every output path, inside the working directory or not, has its place.
+    """
+    return path if baseline_root is None else baseline_root.joinpath(*Path.cwd().joinpath(path).parts[1:])
+
+
 def _next_step(target: TargetConfig, dependencies: tuple[str, ...]) -> str:
     """Return the uv command that adds the generated package's runtime dependencies."""
     arguments = " ".join(f'"{dependency}"' for dependency in dependencies)
     return f"Add the runtime dependencies of {target.package} to your project:\n  uv add {arguments}"
 
 
-def _refused(flags: list[str], selector: str) -> APIGenerationError:
-    return APIGenerationError(tuple(_conflict(f"{selector} cannot be used with {flag}") for flag in flags))
+def _refused(selector: str) -> APIGenerationError:
+    return APIGenerationError((_conflict(f"{selector} cannot be used with --input-model"),))
 
 
 def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field: str) -> Path:

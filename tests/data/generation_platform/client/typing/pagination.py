@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
-from pets.errors import PaginationCycleError, SessionLimitError
-from pets.options import RequestOptions, SessionOptions
+from pets.errors import ProtocolDataError, SessionLimitError
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncPager,
     Page,
@@ -26,9 +26,8 @@ def pages(client: Client, query: UserQuery) -> None:
     """Yield typed items and pages, and continue a page with the same types."""
     helper = client.protocols.users.all
     pager = helper.iterate(
-        pagination_options=PaginationOptions(max_items=10),
+        pagination_options=PaginationOptions(max_items=10, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(pager, Pager[User, ListUsersResponse])
     items: Iterator[User] = pager
@@ -59,14 +58,13 @@ def checkpoints(client: Client) -> None:
     try:
         for user in pager:
             assert_type(user, User)
-    except (SessionLimitError, PaginationCycleError):
+    except (SessionLimitError, ProtocolDataError):
         state = pager.checkpoint()
         assert_type(state, JSONValue)
         resumed = helper.resume(
             state,
-            pagination_options=PaginationOptions(max_items=10),
+            pagination_options=PaginationOptions(max_items=10, total_timeout=30),
             options=RequestOptions(),
-            session_options=SessionOptions(total_timeout=30),
         )
         assert_type(resumed, Pager[User, ListUsersResponse])
     labels = client.protocols.labels.all

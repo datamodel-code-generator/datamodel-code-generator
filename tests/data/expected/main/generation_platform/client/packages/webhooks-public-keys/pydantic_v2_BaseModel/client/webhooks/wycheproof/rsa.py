@@ -3,8 +3,7 @@
 
 """Verify the signed deliveries of one webhook helper, then decode their events.
 
-The helper is wycheproof.rsa, whose deliveries are signed with RSA-PSS with SHA-256,
-MGF1 with SHA-256, and a 32-byte salt.
+The helper is wycheproof.rsa, whose deliveries are signed with RSA-PSS with SHA-256, MGF1 with SHA-256, and a 32-byte salt.
 """
 
 from __future__ import annotations
@@ -13,7 +12,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Final
 
-from models import Count as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.protocols.public_keys import RSA_PSS_SHA256, RSAPSSKey
@@ -25,10 +24,13 @@ from ..._runtime.protocols.verification import (
 from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
-__all__ = ["verify", "verify_async"]
+__all__ = [
+    'verify',
+    'verify_async',
+]
 
 
-_PLAN: Final[WebhookPlan[_dcg_type_0, RSAPSSKey]] = WebhookPlan(
+_PLAN: Final[WebhookPlan[models.Count, RSAPSSKey]] = WebhookPlan(
     helper_id='wycheproof.rsa',
     kind='rsa-pss-sha256',
     algorithm=RSA_PSS_SHA256,
@@ -46,13 +48,19 @@ def verify(
     *,
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0]:
+) -> VerifiedWebhook[models.Count]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        headers,
+        keys,
+        now=now,
+        options=options,
+    )
 
 
 async def verify_async(
@@ -62,11 +70,10 @@ async def verify_async(
     *,
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0]:
+) -> VerifiedWebhook[models.Count]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,

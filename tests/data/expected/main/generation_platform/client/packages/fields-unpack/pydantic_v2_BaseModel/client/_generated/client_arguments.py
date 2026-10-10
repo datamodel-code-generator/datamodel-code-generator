@@ -5,37 +5,29 @@
 
 from __future__ import annotations
 
-from datetime import date as _dcg_type_3
+from datetime import date
 from typing import Final, Literal
 
-from models import FieldOwnersPostRequest as _dcg_type_7
-from models import Kind as _dcg_type_2
-from models import Labels as _dcg_type_8
-from models import NewPet as _dcg_type_0
-from models import Owner as _dcg_type_4
-from models import Pet as _dcg_type_9
-from models import PetForm as _dcg_type_1
-from models import PetPatch as _dcg_type_5
-from models import Visit as _dcg_type_6
+import models
 from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
 from ..bodies import AsyncMultipartBody, MultipartBody
 from ..model_codecs import JSONValue
-from ..options import RequestOptions, Unset
+from ..options import UNSET, RequestOptions
 
 
 class Operation0Arguments(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    tag: NotRequired[str | Unset]
-    body: _dcg_type_0
-    name: NotRequired[Unset]
-    kind: NotRequired[Unset]
-    pet_tag: NotRequired[Unset]
-    birth_date: NotRequired[Unset]
-    owner: NotRequired[Unset]
-    secret: NotRequired[Unset]
+    tag: NotRequired[str | UNSET]
+    body: models.NewPet
+    name: NotRequired[UNSET]
+    kind: NotRequired[UNSET]
+    pet_tag: NotRequired[UNSET]
+    birthDate: NotRequired[UNSET]
+    owner: NotRequired[UNSET]
+    secret: NotRequired[UNSET]
     media_type: Literal['application/json']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -44,14 +36,14 @@ class Operation0Arguments(TypedDict):
 class Operation0Arguments1(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    tag: NotRequired[str | Unset]
-    body: _dcg_type_1
-    name: NotRequired[Unset]
-    kind: NotRequired[Unset]
-    pet_tag: NotRequired[Unset]
-    birth_date: NotRequired[Unset]
-    owner: NotRequired[Unset]
-    secret: NotRequired[Unset]
+    tag: NotRequired[str | UNSET]
+    body: models.PetForm
+    name: NotRequired[UNSET]
+    kind: NotRequired[UNSET]
+    pet_tag: NotRequired[UNSET]
+    birthDate: NotRequired[UNSET]
+    owner: NotRequired[UNSET]
+    secret: NotRequired[UNSET]
     media_type: Literal['application/x-www-form-urlencoded']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -60,14 +52,14 @@ class Operation0Arguments1(TypedDict):
 class Operation0Arguments2(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    tag: NotRequired[str | Unset]
-    body: NotRequired[Unset]
+    tag: NotRequired[str | UNSET]
+    body: NotRequired[UNSET]
     name: str
-    kind: _dcg_type_2
-    pet_tag: NotRequired[str | None | Unset]
-    birth_date: NotRequired[_dcg_type_3 | Unset]
-    owner: NotRequired[_dcg_type_4 | Unset]
-    secret: NotRequired[str | Unset]
+    kind: models.Kind
+    pet_tag: NotRequired[str | None | UNSET]
+    birthDate: NotRequired[date | UNSET]
+    owner: NotRequired[models.Owner | UNSET]
+    secret: NotRequired[str | UNSET]
     media_type: Literal['application/json']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -76,14 +68,14 @@ class Operation0Arguments2(TypedDict):
 class Operation0Arguments3(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    tag: NotRequired[str | Unset]
-    body: NotRequired[Unset]
+    tag: NotRequired[str | UNSET]
+    body: NotRequired[UNSET]
     name: str
-    kind: NotRequired[Unset]
-    pet_tag: NotRequired[str | Unset]
-    birth_date: NotRequired[Unset]
-    owner: NotRequired[Unset]
-    secret: NotRequired[Unset]
+    kind: NotRequired[UNSET]
+    pet_tag: NotRequired[str | UNSET]
+    birthDate: NotRequired[UNSET]
+    owner: NotRequired[UNSET]
+    secret: NotRequired[UNSET]
     media_type: Literal['application/x-www-form-urlencoded']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -92,14 +84,14 @@ class Operation0Arguments3(TypedDict):
 class Operation0Arguments4(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    tag: NotRequired[str | Unset]
-    body: NotRequired[_dcg_type_0 | _dcg_type_1 | Unset]
-    name: NotRequired[str | Unset]
-    kind: NotRequired[_dcg_type_2 | Unset]
-    pet_tag: NotRequired[str | None | Unset]
-    birth_date: NotRequired[_dcg_type_3 | Unset]
-    owner: NotRequired[_dcg_type_4 | Unset]
-    secret: NotRequired[str | Unset]
+    tag: NotRequired[str | UNSET]
+    body: NotRequired[models.NewPet | models.PetForm | UNSET]
+    name: NotRequired[str | UNSET]
+    kind: NotRequired[models.Kind | UNSET]
+    pet_tag: NotRequired[str | None | UNSET]
+    birthDate: NotRequired[date | UNSET]
+    owner: NotRequired[models.Owner | UNSET]
+    secret: NotRequired[str | UNSET]
     media_type: NotRequired[Literal['application/json', 'application/x-www-form-urlencoded'] | None]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -108,10 +100,10 @@ class Operation0Arguments4(TypedDict):
 class Operation1Arguments(TypedDict):
     """The keyword arguments of one signature of update_pet."""
 
-    pet_id: int
-    body: _dcg_type_5
-    name: NotRequired[Unset]
-    tag: NotRequired[Unset]
+    petId: int
+    body: models.PetPatch
+    name: NotRequired[UNSET]
+    tag: NotRequired[UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -119,10 +111,10 @@ class Operation1Arguments(TypedDict):
 class Operation1Arguments1(TypedDict):
     """The keyword arguments of one signature of update_pet."""
 
-    pet_id: int
-    body: NotRequired[Unset]
+    petId: int
+    body: NotRequired[UNSET]
     name: str
-    tag: NotRequired[str | None | Unset]
+    tag: NotRequired[str | None | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -130,9 +122,9 @@ class Operation1Arguments1(TypedDict):
 class Operation1Arguments2(TypedDict):
     """The keyword arguments of one signature of update_pet."""
 
-    pet_id: int
-    body: NotRequired[Unset]
-    name: NotRequired[str | Unset]
+    petId: int
+    body: NotRequired[UNSET]
+    name: NotRequired[str | UNSET]
     tag: str | None
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -141,10 +133,10 @@ class Operation1Arguments2(TypedDict):
 class Operation1Arguments3(TypedDict):
     """The keyword arguments of one signature of update_pet."""
 
-    pet_id: int
-    body: NotRequired[Unset]
-    name: NotRequired[Unset]
-    tag: NotRequired[Unset]
+    petId: int
+    body: NotRequired[UNSET]
+    name: NotRequired[UNSET]
+    tag: NotRequired[UNSET]
     media_type: NotRequired[None]
     options: NotRequired[RequestOptions | None]
 
@@ -152,10 +144,10 @@ class Operation1Arguments3(TypedDict):
 class Operation1Arguments4(TypedDict):
     """The keyword arguments of one signature of update_pet."""
 
-    pet_id: int
-    body: NotRequired[_dcg_type_5 | Unset]
-    name: NotRequired[str | Unset]
-    tag: NotRequired[str | None | Unset]
+    petId: int
+    body: NotRequired[models.PetPatch | UNSET]
+    name: NotRequired[str | UNSET]
+    tag: NotRequired[str | None | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -163,10 +155,10 @@ class Operation1Arguments4(TypedDict):
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of log_visit."""
 
-    pet_id: int
-    body: _dcg_type_6
-    note: NotRequired[Unset]
-    visit_options: NotRequired[Unset]
+    petId: int
+    body: models.Visit
+    note: NotRequired[UNSET]
+    visit_options: NotRequired[UNSET]
     media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
@@ -174,10 +166,10 @@ class Operation2Arguments(TypedDict):
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of log_visit."""
 
-    pet_id: int
+    petId: int
     body: str
-    note: NotRequired[Unset]
-    visit_options: NotRequired[Unset]
+    note: NotRequired[UNSET]
+    visit_options: NotRequired[UNSET]
     media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
@@ -185,10 +177,10 @@ class Operation2Arguments1(TypedDict):
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of log_visit."""
 
-    pet_id: int
-    body: NotRequired[Unset]
-    note: NotRequired[str | Unset]
-    visit_options: NotRequired[list[str] | Unset]
+    petId: int
+    body: NotRequired[UNSET]
+    note: NotRequired[str | UNSET]
+    visit_options: NotRequired[list[str] | UNSET]
     media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
@@ -196,10 +188,10 @@ class Operation2Arguments2(TypedDict):
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of log_visit."""
 
-    pet_id: int
-    body: NotRequired[_dcg_type_6 | str | Unset]
-    note: NotRequired[str | Unset]
-    visit_options: NotRequired[list[str] | Unset]
+    petId: int
+    body: NotRequired[models.Visit | str | UNSET]
+    note: NotRequired[str | UNSET]
+    visit_options: NotRequired[list[str] | UNSET]
     media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -207,8 +199,8 @@ class Operation2Arguments3(TypedDict):
 class Operation3Arguments(TypedDict):
     """The keyword arguments of one signature of set_owner."""
 
-    pet_id: int
-    body: NotRequired[_dcg_type_4 | Unset]
+    petId: int
+    body: NotRequired[models.Owner | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -216,9 +208,9 @@ class Operation3Arguments(TypedDict):
 class Operation4Arguments(TypedDict):
     """The keyword arguments of one signature of create_owner."""
 
-    body: _dcg_type_7
-    email: NotRequired[Unset]
-    nick_name: NotRequired[Unset]
+    body: models.FieldOwnersPostRequest
+    email: NotRequired[UNSET]
+    nickName: NotRequired[UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -226,9 +218,9 @@ class Operation4Arguments(TypedDict):
 class Operation4Arguments1(TypedDict):
     """The keyword arguments of one signature of create_owner."""
 
-    body: NotRequired[Unset]
+    body: NotRequired[UNSET]
     email: str
-    nick_name: NotRequired[str | Unset]
+    nickName: NotRequired[str | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -236,9 +228,9 @@ class Operation4Arguments1(TypedDict):
 class Operation4Arguments2(TypedDict):
     """The keyword arguments of one signature of create_owner."""
 
-    body: NotRequired[_dcg_type_7 | Unset]
-    email: NotRequired[str | Unset]
-    nick_name: NotRequired[str | Unset]
+    body: NotRequired[models.FieldOwnersPostRequest | UNSET]
+    email: NotRequired[str | UNSET]
+    nickName: NotRequired[str | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -246,9 +238,9 @@ class Operation4Arguments2(TypedDict):
 class Operation5Arguments(TypedDict):
     """The keyword arguments of one signature of put_labels."""
 
-    pet_id: int
-    body: _dcg_type_8
-    size: NotRequired[Unset]
+    petId: int
+    body: models.Labels
+    size: NotRequired[UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -256,9 +248,9 @@ class Operation5Arguments(TypedDict):
 class Operation5Arguments1(TypedDict):
     """The keyword arguments of one signature of put_labels."""
 
-    pet_id: int
-    body: NotRequired[Unset]
-    size: NotRequired[str | Unset]
+    petId: int
+    body: NotRequired[UNSET]
+    size: NotRequired[str | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -266,9 +258,9 @@ class Operation5Arguments1(TypedDict):
 class Operation5Arguments2(TypedDict):
     """The keyword arguments of one signature of put_labels."""
 
-    pet_id: int
-    body: NotRequired[_dcg_type_8 | Unset]
-    size: NotRequired[str | Unset]
+    petId: int
+    body: NotRequired[models.Labels | UNSET]
+    size: NotRequired[str | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -276,7 +268,7 @@ class Operation5Arguments2(TypedDict):
 class Operation6Arguments(TypedDict):
     """The keyword arguments of one signature of put_photo."""
 
-    pet_id: int
+    petId: int
     body: MultipartBody[str | JSONValue]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
@@ -285,7 +277,7 @@ class Operation6Arguments(TypedDict):
 class Operation6Arguments1(TypedDict):
     """The keyword arguments of one signature of put_photo."""
 
-    pet_id: int
+    petId: int
     body: AsyncMultipartBody[str | JSONValue]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
@@ -294,10 +286,10 @@ class Operation6Arguments1(TypedDict):
 class Operation7Arguments(TypedDict):
     """The keyword arguments of one signature of replace_pet."""
 
-    pet_id: int
-    body: _dcg_type_9
-    name: NotRequired[Unset]
-    tag: NotRequired[Unset]
+    petId: int
+    body: models.Pet
+    name: NotRequired[UNSET]
+    tag: NotRequired[UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -305,10 +297,10 @@ class Operation7Arguments(TypedDict):
 class Operation7Arguments1(TypedDict):
     """The keyword arguments of one signature of replace_pet."""
 
-    pet_id: int
-    body: NotRequired[Unset]
+    petId: int
+    body: NotRequired[UNSET]
     name: str
-    tag: NotRequired[str | None | Unset]
+    tag: NotRequired[str | None | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -316,77 +308,65 @@ class Operation7Arguments1(TypedDict):
 class Operation7Arguments2(TypedDict):
     """The keyword arguments of one signature of replace_pet."""
 
-    pet_id: int
-    body: NotRequired[_dcg_type_9 | Unset]
-    name: NotRequired[str | Unset]
-    tag: NotRequired[str | None | Unset]
+    petId: int
+    body: NotRequired[models.Pet | UNSET]
+    name: NotRequired[str | UNSET]
+    tag: NotRequired[str | None | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 KEYWORDS_0: Final = Keywords(
     'create_pet',
-    (
-        'tag',
-        'body',
-        'name',
-        'kind',
-        'pet_tag',
-        'birth_date',
-        'owner',
-        'secret',
-        'media_type',
-        'response_media_type',
-        'options',
-    ),
+    ('tag', 'body', 'name', 'kind', 'pet_tag', 'birthDate', 'owner', 'secret', 'media_type', 'response_media_type', 'options'),
     (),
 )
 
 
 KEYWORDS_1: Final = Keywords(
     'update_pet',
-    ('pet_id', 'body', 'name', 'tag', 'media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'body', 'name', 'tag', 'media_type', 'options'),
+    ('petId',),
 )
 
 
 KEYWORDS_2: Final = Keywords(
     'log_visit',
-    ('pet_id', 'body', 'note', 'visit_options', 'media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'body', 'note', 'visit_options', 'media_type', 'options'),
+    ('petId',),
 )
 
 
 KEYWORDS_3: Final = Keywords(
     'set_owner',
-    ('pet_id', 'body', 'media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'body', 'media_type', 'options'),
+    ('petId',),
 )
 
 
 KEYWORDS_4: Final = Keywords(
     'create_owner',
-    ('body', 'email', 'nick_name', 'media_type', 'options'),
+    ('body', 'email', 'nickName', 'media_type', 'options'),
     (),
 )
 
 
 KEYWORDS_5: Final = Keywords(
     'put_labels',
-    ('pet_id', 'body', 'size', 'media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'body', 'size', 'media_type', 'options'),
+    ('petId',),
 )
 
 
 KEYWORDS_6: Final = Keywords(
     'put_photo',
-    ('pet_id', 'body', 'media_type', 'options'),
-    ('pet_id', 'body'),
+    ('petId', 'body', 'media_type', 'options'),
+    ('petId', 'body'),
 )
 
 
 KEYWORDS_7: Final = Keywords(
     'replace_pet',
-    ('pet_id', 'body', 'name', 'tag', 'media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'body', 'name', 'tag', 'media_type', 'options'),
+    ('petId',),
 )

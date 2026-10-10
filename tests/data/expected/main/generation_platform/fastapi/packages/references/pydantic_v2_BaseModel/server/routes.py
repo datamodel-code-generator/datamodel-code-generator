@@ -7,15 +7,14 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import models
-from fastapi import APIRouter, Body, Depends, Header, Query, Security
+from fastapi import APIRouter, Body, Depends, Header, Query, Security, params
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import Field
 
 from . import security
 from ._generated import contract
 from ._generated.contract import OperationDependencies
-from ._runtime.server.application import Dependency, Wiring, build
-from ._runtime.server.requests import absent, present
+from ._runtime.server.application import Wiring, build, checked
 from ._runtime.server.responses import dispatch
 from ._runtime.server.security import (
     AsyncAuthorize,
@@ -26,8 +25,17 @@ from ._runtime.server.security import (
 from .services import Service
 
 
-def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-    list_pets_handler = wiring.handlers['list_pets']
+def _add_list_pets(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    service: Service[object] = wiring.services['service']
+    list_pets_handler = checked(
+        service.list_pets,
+        'The service.list_pets method of GET /pets',
+    )
+
+    list_pets_authorize = wiring.authorizer()
 
     async def list_pets_principal(
         *,
@@ -36,30 +44,23 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         return await authenticate(
             ((('bearer_alias', ()),),),
             {'bearer_alias': bearer_alias},
-            wiring.authorize,
+            list_pets_authorize,
             'Bearer',
         )
 
     def list_pets(
         *,
         principal: Annotated[object, Depends(list_pets_principal)],
-        limit: Annotated[int, Field(ge=1), Query(
-            alias='limit',
-            default_factory=absent,
-        )],
-        page: Annotated[int, Field(ge=1), Query(alias='page', default_factory=absent)],
-        x_trace: Annotated[str, Header(
-            alias='X-Trace',
-            convert_underscores=False,
-            default_factory=absent,
-        )],
+        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='limit')] = None,
+        page: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='page')] = None,
+        X_Trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
     ) -> object:
         return dispatch(
             list_pets_handler(
                 principal=principal,
-                limit=present(limit),
-                page=present(page),
-                x_trace=present(x_trace),
+                limit=limit,
+                page=page,
+                X_Trace=X_Trace,
             ),
             contract.ListPets.RESPONSES,
         )
@@ -74,13 +75,21 @@ def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='listPets',
         response_description='The pets.',
-        responses={'200': {'headers': {'X-Total': {'schema': {'type': 'integer'}}}}},
-        dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+        dependencies=wiring.dependencies.get('list_pets'),
     )
 
 
-def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-    create_pet_handler = wiring.handlers['create_pet']
+def _add_create_pet(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    service: Service[object] = wiring.services['service']
+    create_pet_handler = checked(
+        service.create_pet,
+        'The service.create_pet method of POST /pets',
+    )
+
+    create_pet_authorize = wiring.authorizer()
 
     async def create_pet_principal(
         *,
@@ -89,24 +98,20 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         return await authenticate(
             ((('library_key', ()),),),
             {'library_key': library_key},
-            wiring.authorize,
+            create_pet_authorize,
             'APIKey',
         )
 
     def create_pet(
         *,
         principal: Annotated[object, Depends(create_pet_principal)],
-        x_trace: Annotated[str, Header(
-            alias='X-Trace',
-            convert_underscores=False,
-            default_factory=absent,
-        )],
+        X_Trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
         body: Annotated[models.Pet, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
             create_pet_handler(
                 principal=principal,
-                x_trace=present(x_trace),
+                X_Trace=X_Trace,
                 body=body,
             ),
             contract.CreatePet.RESPONSES,
@@ -122,53 +127,21 @@ def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='createPet',
         response_description='Created.',
-        responses={
-            '201': {
-                'links': {
-                    'pets': {'operationId': 'listPets', 'description': 'The pets.'},
-                    'owners': {
-                        'operationId': 'listOwners',
-                        'description': 'The owners.',
-                    },
-                    'metadata': {
-                        'operationId': 'listPets',
-                        'description': 'The pets of a document that only this link loads.',
-                    },
-                },
-            },
-        },
-        openapi_extra={
-            'callbacks': {
-                'created': {
-                    '{$request.body#/url}': {
-                        'post': {
-                            'requestBody': {
-                                'required': True,
-                                'content': {
-                                    'application/json': {
-                                        'schema': {
-                                            'type': 'object',
-                                            'required': ['id', 'name'],
-                                            'properties': {
-                                                'id': {'type': 'integer'},
-                                                'name': {'type': 'string'},
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                            'responses': {'204': {'description': 'Received.'}},
-                        },
-                    },
-                },
-            },
-        },
-        dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+        dependencies=wiring.dependencies.get('create_pet'),
     )
 
 
-def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
-    list_owners_handler = wiring.handlers['list_owners']
+def _add_list_owners(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    service: Service[object] = wiring.services['service']
+    list_owners_handler = checked(
+        service.list_owners,
+        'The service.list_owners method of GET /owners',
+    )
+
+    list_owners_authorize = wiring.authorizer()
 
     async def list_owners_principal(
         *,
@@ -177,20 +150,20 @@ def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
         return await authenticate(
             ((('metadata_key', ()),),),
             {'metadata_key': metadata_key},
-            wiring.authorize,
+            list_owners_authorize,
             'APIKey',
         )
 
     def list_owners(
         *,
         principal: Annotated[object, Depends(list_owners_principal)],
-        limit: Annotated[int, Field(ge=1), Query(
-            alias='limit',
-            default_factory=absent,
-        )],
+        limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='limit')] = None,
     ) -> object:
         return dispatch(
-            list_owners_handler(principal=principal, limit=present(limit)),
+            list_owners_handler(
+                principal=principal,
+                limit=limit,
+            ),
             contract.ListOwners.RESPONSES,
         )
 
@@ -204,14 +177,14 @@ def _add_list_owners(router: APIRouter, wiring: Wiring) -> None:
         response_model_exclude_unset=True,
         operation_id='listOwners',
         response_description='The owners.',
-        dependencies=wiring.dependencies.get('/paths/~1owners/get'),
+        dependencies=wiring.dependencies.get('list_owners'),
     )
 
 
 LITERAL_ROUTES: Final = (
-    (contract.ListPets.OPERATION, _add_list_pets),
-    (contract.CreatePet.OPERATION, _add_create_pet),
-    (contract.ListOwners.OPERATION, _add_list_owners),
+    ('list_pets', _add_list_pets),
+    ('create_pet', _add_create_pet),
+    ('list_owners', _add_list_owners),
 )
 TEMPLATED_ROUTES: Final = ()
 
@@ -220,11 +193,11 @@ def build_router(
     *,
     service: Service[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
-    dependencies: Sequence[Dependency] = (),
+    dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
 ) -> APIRouter:
-    """Check the service and settings, then register every operation on a new router, literal paths first."""
+    """Register every operation on a new router, literal paths first."""
     return build(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={'service': service},

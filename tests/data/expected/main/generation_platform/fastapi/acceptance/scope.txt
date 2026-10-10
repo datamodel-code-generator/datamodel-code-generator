@@ -1,10 +1,4 @@
 ordinary run without a target: generate str, exit 0, target modules []
-primitive generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-primitive render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-empty generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-empty render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-unselected generate: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-unselected render: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 primitive check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 empty check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 unselected check: exit 2 Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
@@ -15,8 +9,8 @@ empty generate() memory: Error: --output-model-type: The fastapi target does not
 unselected generate() output: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 unselected generate() memory: Error: --output-model-type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 empty sentinel: Error: `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`
-primitive generate() memory: 21 files
-empty generate() memory: 20 files
-unselected generate() memory: 20 files
+primitive generate() memory: 15 files
+empty generate() memory: 14 files
+unselected generate() memory: 14 files
 imported []
 written []

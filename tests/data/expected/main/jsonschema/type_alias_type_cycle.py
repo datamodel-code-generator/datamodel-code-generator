@@ -3,7 +3,7 @@
 
 from typing_extensions import TypeAliasType
 
-A = TypeAliasType("A", list["B"])
+A = TypeAliasType("A", "list[B]")
 
 
 B = TypeAliasType("B", list[A])

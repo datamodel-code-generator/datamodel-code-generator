@@ -11,7 +11,6 @@ from typing import Protocol
 import models
 from fastapi.responses import Response
 
-from ._runtime.model_codecs.unset import Unset
 from ._runtime.server.responses import HTTPResult
 
 
@@ -22,13 +21,19 @@ class PetsService(Protocol):
     def list_pets(
         self,
         *,
-        limit: int | Unset,
-        cursor: str | Unset,
-    ) -> models.Pets | HTTPResult[models.Pets] | Response: ...
+        limit: int | None,
+        cursor: str | None,
+    ) -> models.Pets | HTTPResult[models.Pets] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
         self,
         *,
         body: models.NewPet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """

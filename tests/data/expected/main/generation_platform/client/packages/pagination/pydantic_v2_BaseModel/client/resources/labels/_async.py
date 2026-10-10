@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.labels import ListLabelSetsResponse, ListLabelsResponse
 
@@ -41,11 +41,13 @@ class AsyncLabelsResource:
     async def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelsResponse:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return (await self._core.execute(
             _operations.OPERATION_4,
             (after,),
@@ -56,11 +58,13 @@ class AsyncLabelsResource:
     async def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelSetsResponse:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return (await self._core.execute(
             _operations.OPERATION_5,
             (after,),
@@ -79,11 +83,13 @@ class AsyncLabelsWithResponse:
     async def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelsResponse]:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return await self._core.execute(
             _operations.OPERATION_4,
             (after,),
@@ -94,11 +100,13 @@ class AsyncLabelsWithResponse:
     async def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelSetsResponse]:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return await self._core.execute(
             _operations.OPERATION_5,
             (after,),
@@ -117,11 +125,13 @@ class AsyncLabelsWithRawResponse:
     async def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (after,),
@@ -132,11 +142,13 @@ class AsyncLabelsWithRawResponse:
     async def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_5,
             (after,),
@@ -155,11 +167,13 @@ class AsyncLabelsWithStreamingResponse:
     def list_labels(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (after,),
@@ -170,11 +184,13 @@ class AsyncLabelsWithStreamingResponse:
     def list_label_sets(
         self,
         *,
-        after: str | Unset = UNSET,
+        after: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (after,),

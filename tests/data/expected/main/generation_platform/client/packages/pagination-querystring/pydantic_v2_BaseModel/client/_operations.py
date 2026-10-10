@@ -26,22 +26,8 @@ OPERATION_0: Final[OperationPlan[SearchResponse]] = OperationPlan(
     method='GET',
     path='/search',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_1),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='querystring',
-                name='criteria',
-                content_media_type='application/x-www-form-urlencoded',
-                fields=(FieldPlan('term', 'string'), FieldPlan('page', 'integer')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_1),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='querystring', name='criteria', content_media_type='application/x-www-form-urlencoded', fields=(FieldPlan('term', 'string'), FieldPlan('page', 'integer')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_0),),
 )
 
 OPERATION_1: Final[OperationPlan[LookupResponse]] = OperationPlan(
@@ -49,18 +35,6 @@ OPERATION_1: Final[OperationPlan[LookupResponse]] = OperationPlan(
     method='GET',
     path='/lookup',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_4),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='querystring',
-                name='filter',
-                content_media_type='application/json',
-            ),
-            codec=model_bindings.codec_3,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_4),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='querystring', name='filter', content_media_type='application/json'), codec=model_bindings.codec_3),),
 )

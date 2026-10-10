@@ -3,59 +3,59 @@ pyright pets and pagination.py: clean
 ty pets and pagination.py: clean
 pagination_negative.py 18 marked lines
 mypy pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
-  16 call-overload
-  17 misc
-  18 assignment
+  17 call-overload
+  18 misc
   19 assignment
-  20 arg-type
-  21 call-arg
-  22 arg-type
+  20 assignment
+  21 arg-type
+  22 call-arg
   23 arg-type
-  24 misc
-  25 attr-defined
-  26 misc
-  27 assignment
-  28 arg-type
+  24 arg-type
+  25 misc
+  26 attr-defined
+  27 misc
+  28 assignment
   29 arg-type
   30 arg-type
-  31 assignment
-  32 arg-type
-  38 arg-type
+  31 arg-type
+  32 assignment
+  33 arg-type
+  39 arg-type
 pyright pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
-  16 reportArgumentType
-  17 reportGeneralTypeIssues
-  18 reportAssignmentType
+  17 reportArgumentType
+  18 reportGeneralTypeIssues
   19 reportAssignmentType
-  20 reportArgumentType
-  21 reportCallIssue
-  22 reportArgumentType
+  20 reportAssignmentType
+  21 reportArgumentType
+  22 reportCallIssue
   23 reportArgumentType
-  24 reportAttributeAccessIssue
+  24 reportArgumentType
   25 reportAttributeAccessIssue
-  26 reportGeneralTypeIssues
-  27 reportAssignmentType
-  28 reportArgumentType
+  26 reportAttributeAccessIssue
+  27 reportGeneralTypeIssues
+  28 reportAssignmentType
   29 reportArgumentType
   30 reportArgumentType
-  31 reportAssignmentType
-  32 reportArgumentType
-  38 reportArgumentType
+  31 reportArgumentType
+  32 reportAssignmentType
+  33 reportArgumentType
+  39 reportArgumentType
 ty pagination_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
-  16 invalid-argument-type
-  17 invalid-await
-  18 invalid-assignment
+  17 invalid-argument-type
+  18 invalid-await
   19 invalid-assignment
-  20 invalid-argument-type
-  21 unknown-argument
-  22 invalid-argument-type
+  20 invalid-assignment
+  21 invalid-argument-type
+  22 unknown-argument
   23 invalid-argument-type
-  24 invalid-assignment
-  25 unresolved-attribute
-  26 invalid-await
-  27 invalid-assignment
-  28 invalid-argument-type
+  24 invalid-argument-type
+  25 invalid-assignment
+  26 unresolved-attribute
+  27 invalid-await
+  28 invalid-assignment
   29 invalid-argument-type
   30 invalid-argument-type
-  31 invalid-assignment
-  32 invalid-argument-type
-  38 invalid-argument-type
+  31 invalid-argument-type
+  32 invalid-assignment
+  33 invalid-argument-type
+  39 invalid-argument-type

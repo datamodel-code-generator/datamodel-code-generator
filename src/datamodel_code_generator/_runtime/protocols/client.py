@@ -21,69 +21,42 @@ from ..client.client import (
     build_request,
     decode_response,
     delivery_state,
-    encode_parameter_value,
     request_body,
-    request_decode_error,
     strip_credentials,
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
-from ..client.errors import (
-    APIConnectionError,
-    ConfigurationError,
-    DeliveryState,
-    too_large,
-)
-from ..client.logical import LogicalCallContext
-from ..client.native import request_fields
-from ..client.operations import request_errors
-from ..client.options import HeaderPatch, IdempotencyKey, QueryPatch, RequestOptions, Settings
-from ..client.raw import AsyncRawResponse, RawResponse, arefused, refused
+from ..client.logical import Delivery, LogicalCallContext, run_sync
+from ..client.native import native_timeout, request_fields, wire_fields
+from ..client.positions import secret_names
+from ..client.raw import AsyncRawResponse, RawResponse, refuse, released
 from ..client.responses import HeadersView, Response
 from ..client.retry import RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, request_origin, strip_query
-from ..model_codecs.unset import UNSET, Unset
-from .client_options import ClientOptions
+from ..model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Sequence
-    from typing import Protocol
+    from collections.abc import Callable, Iterable, Sequence
 
+    from ..client.errors import APIConnectionError
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan, ParameterSpec, ResponseDecoder
+    from ..client.options import RequestOptions, Settings
+    from ..client.positions import CredentialPosition
     from ..client.responses import ResponseInfo
     from ..client.retry import RetryDelay
-    from ..client.security import SecuritySchemeEntry
     from ..client.timing import Budget
     from ..client.urls import Origin
     from ..model_codecs.media import JSONValue
-    from .options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
-    from .references import OperationRef
+    from .options import HelperSettings
 
 _NOT_MODIFIED = 304
 _SWITCHING = 101
-_UNAUTHORIZED = 401
-
-
-if TYPE_CHECKING:
-
-    class _PagePlan(Protocol):
-        """The identity of a protocol helper and of the operation its pages call."""
-
-        @property
-        def helper_id(self) -> str:
-            """The helper's dotted name."""
-            raise NotImplementedError
-
-        @property
-        def operation(self) -> OperationRef:
-            """The reference of the operation the helper calls."""
-            raise NotImplementedError
 
 
 def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
-    """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
+    """Return whether an argument carries credentials: a credential header or a scheme's query field.
 
     Exploded form and deepObject query parameters send only their property names or bracketed names, including
     additional properties. Other query serializers retain the declaration name as their emitted field.
@@ -92,8 +65,6 @@ def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], quer
     name = plan.name
     secret = False
     match plan.location:
-        case "cookie":
-            secret = True
         case "header":
             secret = name.lower() in headers
         case "query":
@@ -116,24 +87,12 @@ def _secret(spec: ParameterSpec, value: JSONValue, headers: frozenset[str], quer
     return secret
 
 
-def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ConfigurationError:
-    return ConfigurationError(
-        field_path=path, reason="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
-    )
-
-
 def _page(
     decoder: ResponseDecoder[T],
     info: ResponseInfo,
     body: ReceivedBody,
-    call: Call,
 ) -> tuple[T, JSONValue, bytes]:
-    """Return a page's value, wire value, and body, or raise the error of a page or response over its size limit."""
-    settings = call.settings
-    if body.overflow:
-        limit = settings.max_response_bytes
-        assert limit is not None
-        raise too_large(info, limit, body.size)
+    """Return a page's value, wire value, and body, or raise the failure of a page that does not decode."""
     if (problem := body.problem) is not None and body.success:
         raise problem
     content = body.content
@@ -141,35 +100,70 @@ def _page(
     return data, wire, content
 
 
-def stored_value(operation: OperationPlan[T], info: ResponseInfo, body: bytes, settings: Settings) -> T:
-    """Decode a stored success body as a call's decoder decodes a received one, under the call's settings."""
-    received = ReceivedBody(settings.max_response_bytes, success=True)
+def stored_value(operation: OperationPlan[T], info: ResponseInfo, body: bytes) -> T:
+    """Decode a stored success body as a call's decoder decodes a received one."""
+    received = ReceivedBody(success=True)
     received.add(body)
-    return decode_response(operation.responses, info, received, settings, operation.operation_id).data
+    return decode_response(operation.responses, info, received, operation.operation_id).data
+
+
+@dataclass(frozen=True, slots=True)
+class CacheIdentity:
+    """Whom a cache fetch asks as: its URL with any query credentials, and the values of the headers that tell it.
+
+    The headers are the credential headers and every header added or changed on the way to the network, by lowercase
+    name in order, each with its values, none for a header the request lacks. `authenticated` tells whether the request
+    carries credentials, and `authorized` whether an Auth ran on it.
+    """
+
+    url: str
+    headers: tuple[tuple[str, tuple[str, ...]], ...]
+    authenticated: bool
+    authorized: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class CacheRequest:
     """What a cache fetch keys and sends, prepared once before its call.
 
-    `credentials` identifies the credentials the request carries, None for none; `foreign_auth` tells that a view or
-    the call replaced the client's own auth; `credential_headers` are the lowercase names of the headers credentials
-    travel in, which the auth may add after the cache looked the request up.
+    `call` places the request's credentials as its send does. `credential_headers` are the lowercase names of the
+    headers credentials travel in, and `credential_queries` the query fields of the package's security schemes.
     """
 
     settings: Settings
     request: httpx2.Request
-    url: str
-    credentials: object
-    partition: str | None
-    foreign_auth: bool
+    call: Call
     credential_headers: frozenset[str]
+    credential_queries: frozenset[str]
 
+    def identity(
+        self, sent: httpx2.Request, base: httpx2.Request | None = None, *, authorized: bool = False
+    ) -> CacheIdentity:
+        """Return the identity of a request as it is sent, against the one it was built from, by default this one."""
+        before, after = base or self.request, sent.headers
+        given = {name.lower() for name, _ in (*request_fields(before), *request_fields(sent))}
+        names = self.credential_headers.union(
+            name for name in given if before.headers.get_list(name) != after.get_list(name)
+        )
+        headers = tuple((name, tuple(after.get_list(name))) for name in sorted(names))
+        url = absolute_target(str(sent.url)).url
+        queries = self.credential_queries
+        authenticated = (
+            any(values for _, values in headers)
+            or sent.url != before.url
+            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
+        )
+        return CacheIdentity(url, headers, authenticated, authorized)
 
-def _grant_identity(provider: object) -> tuple[str | None, tuple[str, ...]] | None:
-    """Return the audience and requested scopes an OAuth token provider of the SDK declares, or None for any other."""
-    identity = getattr(provider, "grant_identity", None)
-    return cast("tuple[str | None, tuple[str, ...]]", identity()) if callable(identity) else None
+    def unsent(self) -> httpx2.Request:
+        """Return a copy of the bodiless request, with the call's timeout, for an Auth to place credentials on."""
+        request = self.request
+        return httpx2.Request(
+            request.method,
+            request.url,
+            headers=wire_fields(request_fields(request)),
+            extensions={"timeout": native_timeout(self.call.timeout())},
+        )
 
 
 class _SessionCall(Call):
@@ -202,28 +196,20 @@ class _SessionCall(Call):
         self.url = str(request.url)
         return request
 
-    def followed_query(self, schemes: tuple[SecuritySchemeEntry, ...]) -> frozenset[str]:
+    @staticmethod
+    def followed_query(schemes: tuple[CredentialPosition, ...]) -> frozenset[str]:
         """Return the query fields a followed URL is sent and saved without, whatever its origin.
 
-        They are the positions of the package's declared security schemes and the fields the call's auth places, which
-        the auth adds again itself.
+        They are the positions of the package's declared security schemes, where the call's credentials go again.
         """
-        from ..client.security import secret_names  # ruff: ignore[import-outside-top-level] - Only a followed URL needs the schemes.
-
-        query = secret_names(schemes)[1]
-        return query if (auth := self.auth) is None else query | auth.bound.managed_query
-
-    def restart(self, original: httpx2.Request) -> None:
-        """Begin the next resource candidate at the original URL."""
-        self.url = str(original.url)
-        super().restart(original)
+        return secret_names(schemes)[1]
 
 
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
 
-    The cap is the least of the open timeout and the connect, read, and write timeouts, bounded by the deadline, so a
-    cap the deadline binds ends the call with its deadline APITimeoutError. WebSockets have no pool.
+    The cap is the least of the open timeout and the connect, read, write, and pool timeouts, bounded by the deadline,
+    so a cap the deadline binds ends the call with its deadline APITimeoutError. A handshake is never redirected.
     """
 
     handshake = True
@@ -245,11 +231,22 @@ class _SocketCall(_SessionCall):
         configured = self.settings.timeout
         limits = [
             value
-            for value in (self.open_timeout, configured.connect, configured.read, configured.write, self.remaining())
+            for value in (
+                self.open_timeout,
+                configured.connect,
+                configured.read,
+                configured.write,
+                configured.pool,
+                self.remaining(),
+            )
             if value is not None
         ]
         cap = min(limits) if limits else None
-        return ResolvedTimeoutOptions(connect=cap, read=cap, write=cap, pool=None)
+        return ResolvedTimeoutOptions(connect=cap, read=cap, write=cap, pool=cap)
+
+    def follow(self, outgoing: httpx2.Request, schemes: tuple[CredentialPosition, ...]) -> bool:  # noqa: ARG002, PLR6301
+        """Never follow a redirect of the handshake: a refused upgrade is terminal."""
+        return False
 
     def retry(
         self,
@@ -259,18 +256,9 @@ class _SocketCall(_SessionCall):
         replayable: bool,
     ) -> RetryDelay | None:
         """Retry only a handshake proven unsent; a received refusal or an uncertain open stays terminal."""
-        if info is None and error is not None and error.delivery_state is DeliveryState.NOT_SENT:
+        if info is None and error is not None and self.furthest() is Delivery.NOT_SENT:
             return super().retry(info, error, replayable=replayable)
-        self.check("send")
-        self.stop_reason = (
-            "callback_failure"
-            if self.retry_blocked
-            else "auth_unrefreshable"
-            if info is not None and info.status_code == _UNAUTHORIZED
-            else "status_not_retryable"
-            if info is not None
-            else "transport_not_retryable"
-        )
+        self.check()
         return None
 
 
@@ -298,21 +286,43 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         """Bind a stream's child call to its helper session before native execution."""
         return _SessionCall(self._call_settings(options, operation.operation_id), operation, session)
 
-    def fixes_key(self, options: RequestOptions | None) -> bool:
-        """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
-        return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
+    def fixed_key(
+        self, options: RequestOptions | None, operations: Iterable[OperationPlan[object] | None]
+    ) -> tuple[str, ...] | None:
+        """Return where a call fixes an idempotency key of the operations, or None.
 
-    def patches(self, options: RequestOptions | None) -> tuple[tuple[HeaderPatch, ...], tuple[QueryPatch, ...]]:
-        """Return the header and query patches of a call's effective options: the client's, a view's, and its own."""
-        settings = self._call_settings(options, None)
-        return settings.headers, settings.query
+        It is the call's own key, or a header of a declared key's name that the call's extra headers or the client's
+        or a view's default headers send.
+        """
+        if options is not None and isinstance(options.idempotency_key, str):
+            return ("options", "idempotency_key")
+        names = {plan.idempotency.header_name.lower() for plan in operations if plan and plan.idempotency}
+        return self.named(options, lambda name, value: value is not None and name.lower() in names) if names else None
+
+    def named(
+        self, options: RequestOptions | None, matches: Callable[[str, str | None], bool], *, query: bool = False
+    ) -> tuple[str, ...] | None:
+        """Return the field path of the first header, or query name, of a call's layers that matches, or None.
+
+        The call's own extra ones come first, then the default ones the client and its views merged, except those the
+        call's own replace or remove.
+        """
+        call = None if options is None else options.extra_query if query else options.extra_headers
+        fold = str if query else str.lower
+        replaced: set[str] = set()
+        for name, value in () if call is None else call.items():
+            if matches(name, value):
+                return ("options", "extra_query" if query else "extra_headers", name)
+            replaced.add(fold(name))
+        for name, value in self._settings.query if query else self._settings.headers:
+            if fold(name) not in replaced and matches(name, value):
+                return ("default_query" if query else "default_headers", name)
+        return None
 
     @staticmethod
     def reconnects_after(error: APIConnectionError) -> bool:
         """Allow reconnection after native read failures."""
-        return error.phase == "read" and isinstance(
-            error.cause, (httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError)
-        )
+        return isinstance(error.cause, (httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError))
 
     def waiting(
         self, options: RequestOptions | None, session: OperationSession, operation_id: str | None
@@ -344,44 +354,36 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
         assert not isinstance(planned, str)
         return planned.backoff_cap, planned.delay
 
-    def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
-        """Return the defaults the client's protocol settings give one helper, or None."""
-        if (protocols := self.protocol_options()) is None or isinstance(defaults := protocols.defaults, Unset):
-            return None
-        return defaults.get(name)
+    def _helpers(self) -> HelperSettings:
+        """Return the helper settings of the client's root."""
+        return cast("HelperSettings", self._shared.protocols)
 
-    def protocol_options(self) -> ProtocolClientOptions | None:
-        """Return the client's protocol settings, or None."""
-        options = self._shared.options
-        if options is None or not isinstance(options, ClientOptions) or isinstance(options.protocols, Unset):
-            return None
-        return options.protocols
+    def helper_defaults(self, name: str) -> object:
+        """Return the options the client's `helper_defaults` give one helper, or None."""
+        return self._helpers().defaults.get(name)
 
-    def owned_connector(self, native: Callable[[], object]) -> object:
-        """Return the WebSocket connector shared by the root and its views, creating it only on use."""
-        if (connector := self._shared.socket_connector) is None:
-            connector = self._shared.socket_connector = native()
-        return connector
+    def cache_store(self, name: str, create: Callable[[], object]) -> object:
+        """Return the store the client lends a cache helper, or else the one store its root creates with `create`.
 
-    def cache_store(self, name: str) -> object:
-        """Return the cache store the client's protocol settings lend a helper, or None without one."""
-        if (protocols := self.protocol_options()) is None or isinstance(stores := protocols.cache_stores, Unset):
-            return None
-        return stores.get(name)
+        The root creates it at the first fetch of a helper no store is lent to; its views and its other such helpers
+        share it, and another client never does.
+        """
+        helpers = self._helpers()
+        if (store := helpers.cache_stores.get(name)) is None and (store := helpers.created.get("")) is None:
+            store = helpers.created.setdefault("", create())
+        return store
 
     def cache_request(
         self, operation: OperationPlan[object], arguments: tuple[object, ...], options: RequestOptions | None
     ) -> CacheRequest:
-        """Return what a cache fetch keys and sends: its settings, its request before auth, and its credentials.
+        """Return what a cache fetch keys and sends: its settings, its request before auth, and its call.
 
-        A fetch on a closed client or past its deadline is refused first, as a call is. The URL is the request's own
-        as the client interprets it. The credentials are, for each credential the auth binds, its scheme, kind, and
-        required scopes and the audience and requested scopes of an SDK token provider, and each signer's declared
-        capabilities; they are None for a request that carries no credential, from the auth or from a credential
-        header, a cookie, or a security scheme's header or query field.
+        A fetch on a closed client or past its deadline is refused first, as a call is, and so is a required operation
+        that no credentials authenticate.
         """
         settings = self._call_settings(options, operation.operation_id)
-        self._admitted(LogicalCallContext(settings, operation.operation_id))
+        call = Call(settings, operation)
+        self._admitted(call)
         request, _ = self._prepare(
             operation,
             arguments,
@@ -390,174 +392,44 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             media_type=None,
             options=options,
             accept=operation.responses.accept,
-            narrowed=False,
         )
-        partition = None if (security := self._security_context()) is None else security.credential_partition
-        url = absolute_target(str(request.url)).url
-        bound = self._bound(operation, settings.auth)
-        from ..client.security import secret_names  # ruff: ignore[import-outside-top-level] - Only a cache fetch needs the schemes.
-
-        names, queries = secret_names(self._shared.security_schemes)
-        credential: object = None
-        if bound is not None:
-            names = names.union(bound.managed_headers, ("cookie",) if bound.managed_cookies else ())
-            credential = (
-                tuple(
-                    (item.scheme.name, item.scheme.kind, item.required_scopes, _grant_identity(item.provider))
-                    for item in bound.credentials
-                ),
-                tuple(
-                    (
-                        tuple(sorted(capabilities.allowed_origins)),
-                        tuple(sorted(capabilities.managed_headers)),
-                        tuple(sorted(capabilities.managed_query)),
-                    )
-                    for capabilities in (signer.capabilities for signer in bound.signers)
-                ),
-            )
-        elif any(name.lower() in names for name, _ in request_fields(request)) or any(
-            unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair
-        ):
-            credential = ((), ())
-        foreign = bound is not None and settings.auth is not self._shared.root_auth
-        return CacheRequest(settings, request, url, credential, partition, foreign, names)
-
-    def _security_context(self) -> ProtocolSecurityContext | None:
-        """Return the client's protocol security context, or None without one."""
-        if (protocols := self.protocol_options()) is None or isinstance(security := protocols.security, Unset):
-            return None
-        return security
+        if operation.security is not None:
+            self._bind_auth(call)
+        headers, queries = self._secret_positions()
+        return CacheRequest(settings, request, call, headers, queries)
 
     def follow_origins(self, operation: OperationPlan[object], options: RequestOptions | None) -> frozenset[Origin]:
-        """Return the origins a helper may follow a server's URLs to: its server's and those its security allows."""
+        """Return the origins a helper may follow a server's URLs to: its server's and the `allowed_origins`."""
         origins = {request_origin(self._base(operation, self._call_settings(options, operation.operation_id)))}
-        if (context := self._security_context()) is not None:
-            origins.update((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)
+        origins.update((origin.scheme, origin.host, origin.port) for origin in self._helpers().allowed_origins)
         return frozenset(origins)
 
-    def follow_query(self, operation: OperationPlan[object], options: RequestOptions | None) -> frozenset[str]:
+    def follow_query(self) -> frozenset[str]:
         """Return the query fields a followed URL a caller gives is kept and sent without, as a server's is."""
-        return self._secret_positions(operation, options)[1]
+        return self._secret_positions()[1]
 
-    def _secret_positions(
-        self, operation: OperationPlan[object] | None, options: RequestOptions | None
-    ) -> tuple[frozenset[str], frozenset[str]]:
-        """Return catalog and configured signer credential positions without acquiring credentials."""
-        from ..client.security import secret_names  # ruff: ignore[import-outside-top-level]
+    def _secret_positions(self) -> tuple[frozenset[str], frozenset[str]]:
+        """Return the header and query positions of the package's declared security schemes and credential headers."""
+        return secret_names(self._shared.security_schemes)
 
-        headers, query = secret_names(self._shared.security_schemes)
-        auth = self._call_settings(options, None if operation is None else operation.operation_id).auth
-        if auth is not None:
-            for signer in auth.signers:
-                capabilities = signer.capabilities
-                headers |= frozenset(name.lower() for name in capabilities.managed_headers)
-                query |= frozenset(capabilities.managed_query)
-        return headers, query
-
-    def unsaved_argument(
-        self, operation: OperationPlan[object], saved: Sequence[JSONValue | Unset]
+    def credential_argument(
+        self, operation: OperationPlan[object], written: Sequence[JSONValue | UNSET]
     ) -> tuple[str, str] | None:
-        """Return the location and name of the first given argument a checkpoint never saves, or None.
+        """Return the location and name of the first written argument that carries credentials, or None.
 
-        It is a cookie, a header the client treats as a credential, a query parameter at the position of a declared
-        security scheme, or a querystring whose value has a field at such a position.
+        It is a header the client treats as a credential, a query parameter at the position of a declared security
+        scheme, or a querystring whose value has a field at such a position; generation already refuses a write to a
+        cookie or to a fixed credential name, so these are the fields a server value names at run time.
         """
-        headers, queries = self._secret_positions(operation, None)
+        headers, queries = self._secret_positions()
         return next(
             (
                 (spec.plan.location, spec.plan.name)
-                for spec, value in zip(operation.parameters, saved, strict=True)
-                if not isinstance(value, Unset) and _secret(spec, value, headers, queries)
+                for spec, value in zip(operation.parameters, written, strict=True)
+                if value is not UNSET and _secret(spec, value, headers, queries)
             ),
             None,
         )
-
-    def saved_request(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
-        self,
-        plan: _PagePlan,
-        operation: OperationPlan[object],
-        arguments: tuple[object, ...],
-        body: object,
-        media_type: str | None,
-        options: RequestOptions | None,
-    ) -> tuple[tuple[JSONValue | Unset, ...], tuple[JSONValue, str, str | None] | None]:
-        """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
-
-        They are encoded and checked as the call's first request encodes them; a body sent as a concrete media type
-        other than its declared one also gives the type sent. An argument `unsaved_argument` names is never saved, so a
-        call giving one cannot be checkpointed.
-        """
-        self._call_settings(options, operation.operation_id)
-        saved = tuple(
-            value if isinstance(value, Unset) else encode_parameter_value(operation, spec, partial(spec.dump, value))
-            for spec, value in zip(operation.parameters, arguments, strict=True)
-        )
-        if (unsaved := self.unsaved_argument(operation, saved)) is not None:
-            raise _unsaved(plan, ("arguments", *unsaved))
-        request = operation.body
-        if request is None or isinstance(body, Unset):
-            return saved, None
-        media, sent = request.selected(operation.operation_id, media_type)
-        try:
-            wire = media.dump(body)
-        except request_errors(media.codec) as error:
-            raise request_decode_error(operation, ("body",), error) from None
-        return saved, (wire, media.media_type, None if sent == media.media_type else sent)
-
-    @staticmethod
-    def restored_request(
-        operation: OperationPlan[object],
-        arguments: tuple[JSONValue | Unset, ...],
-        body: tuple[JSONValue, str, str | None] | None,
-    ) -> tuple[tuple[object, ...], object, str | None]:
-        """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
-
-        Each value is validated against its schema and built into its native value, and a concrete media type is
-        selected as a call's is; a value that does not fit, or a concrete type that selects another declared media,
-        raises a request DecodeError.
-        """
-        restored = tuple(
-            value
-            if isinstance(value, Unset)
-            else encode_parameter_value(operation, spec, partial(spec.restored, value))
-            for spec, value in zip(operation.parameters, arguments, strict=True)
-        )
-        if body is None or (request := operation.body) is None:
-            return restored, UNSET, None
-        wire, declared, concrete = body
-        media_type = declared if concrete is None else concrete
-        if (media := request.selected(operation.operation_id, media_type)[0]).media_type != declared:
-            raise request_decode_error(operation, ("body",))
-        try:
-            return restored, media.restored(wire), media_type
-        except request_errors(media.codec) as error:
-            raise request_decode_error(operation, ("body",), error) from None
-
-    def checked_page(
-        self,
-        operation: OperationPlan[object],
-        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        media_type: str | None,
-        options: RequestOptions | None,
-    ) -> tuple[str, HeadersView]:
-        """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises.
-
-        The URL and headers it would send are returned, every patch applied.
-        """
-        arguments, body, url = request()
-        settings = self._call_settings(options, operation.operation_id)
-        prepared = self._prepare(
-            operation,
-            arguments,
-            settings,
-            body=body,
-            media_type=media_type,
-            options=options,
-            accept=None,
-            narrowed=False,
-            url=url,
-        )[0]
-        return str(prepared.url), HeadersView(request_fields(prepared))
 
     def _page_request(
         self,
@@ -584,7 +456,6 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             media_type=media_type,
             options=options,
             accept=call.decoder.accept,
-            narrowed=False,
             url=url,
         )
         if read_request is not None:
@@ -599,6 +470,152 @@ class _ProtocolCore(Core[AdapterT, HandleT]):
             headers = HeadersView(items)
         return build_request(method=prepared.method, url=url, headers=headers, body=request_body(prepared)), deferred
 
+    async def _execute_page(  # ruff: ignore[too-many-arguments]
+        self,
+        operation: OperationPlan[T],
+        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
+        build: Callable[[T, JSONValue, bytes, ResponseInfo, str, frozenset[str]], R],
+        *,
+        body: object,
+        media_type: str | None,
+        options: RequestOptions | None,
+        session: OperationSession,
+        read_request: Callable[[str, HeadersView], None] | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
+    ) -> R:
+        """Execute one page of a helper session as a child logical call, building what the page's response gives.
+
+        The page uses the ordinary response limit. Its arguments, body, and any URL a server gave are taken when
+        the call prepares; `body` is the caller's. What the
+        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
+        fields a followed URL is without.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        call = _SessionCall(settings, operation, session)
+        self._admitted(call)
+        decoder = call.decoder = operation.responses
+        prepare = partial(self._page_request, call, request, media_type, options, read_request)
+
+        async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = await self._read(response, info, decoder, call)
+
+            data, wire, content = _page(decoder, info, received)
+            url = str(response.url) if response.history else call.url
+            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
+
+            return Response(data=data, info=info), result
+
+        try:
+            _, result = await self._run(call, body, prepare, receive)
+
+        except BaseException as error:  # ruff: ignore[blind-except]
+            failure = call.stopped(error)
+            if failed is not None:
+                failed(failure, delivery_state(call))
+            raise failure from failure.__cause__
+        else:
+            return result
+
+    async def _execute_cached(
+        self,
+        operation: OperationPlan[T],
+        request: httpx2.Request,
+        settings: Settings,
+        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
+    ) -> R:
+        """Send a cache fetch's prepared request as one logical call, building what its response gives.
+
+        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
+        operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
+        the response answered a redirect, and the request it answered as its Auth sent it.
+        """
+        call = Call(settings, operation)
+        self._admitted(call)
+        decoder = call.decoder = operation.responses
+
+        async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = await self._read(response, info, decoder, call)
+
+            redirected = call.redirects_followed > 0
+            return (
+                not_modified(info, redirected, response.request)
+                if info.status_code == _NOT_MODIFIED
+                else modified(
+                    decode_response(decoder, info, received, call.operation_id),
+                    received.content,
+                    redirected,
+                    response.request,
+                )
+            )
+
+        try:
+            _, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
+
+        except BaseException as error:  # ruff: ignore[blind-except]
+            failure = call.stopped(error)
+            raise failure from failure.__cause__
+        else:
+            return result
+
+    async def _open_socket(  # ruff: ignore[too-many-arguments]
+        self,
+        operation: OperationPlan[object],
+        arguments: tuple[object, ...],
+        upgrade: Mapping[str, str],
+        *,
+        options: RequestOptions | None,
+        session: OperationSession,
+        open_timeout: float | None,
+        check: Callable[[HeadersView], None],
+        accept: Callable[[ResponseInfo], None],
+    ) -> tuple[HandleT, LogicalCallContext, httpx2.Response]:
+        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session.
+
+        The headers prepared pass the check before the upgrade headers join them and anything is sent. A 101 the accept
+        check passes is handed over as a streaming handle, with the call whose deadline bounds it and the native
+        response whose network stream the session takes; any other response raises the call's typed failure.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        call = _SocketCall(settings, operation, session, open_timeout)
+        self._admitted(call)
+        call.decoder = operation.responses
+        result: HandleT | None = None
+        opened: list[httpx2.Response] = []
+
+        def prepare() -> tuple[httpx2.Request, object]:
+            request, deferred = self._prepare(
+                operation,
+                arguments,
+                call.settings,
+                body=UNSET,
+                media_type=None,
+                options=options,
+                accept=None,
+                checked=check,
+            )
+            request.headers.update(upgrade)
+            return request, deferred
+
+        async def receive(response: httpx2.Response, info: ResponseInfo) -> HandleT:
+            opened.append(response)
+            return await self._raw_response(response, info, call, stream=True)
+
+        try:
+            result = await self._run(call, UNSET, prepare, receive)
+
+            if result.info.status_code != _SWITCHING:
+                await refuse(result)
+            accept(result.info)
+            call.handoff()
+        except BaseException as error:  # ruff: ignore[blind-except]
+            failure = call.stopped(error)
+            if result is not None:
+                await released(result, failure)
+            raise failure from failure.__cause__
+        else:
+            return result, call, opened[-1]
+
 
 class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore):
     """Run declared helpers through the shared native HTTP client."""
@@ -609,6 +626,11 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
     def from_client(cls, core: NativeClientCore) -> ClientCore:
         """Bind the declared helpers to the ordinary client's shared resources and option view."""
         return core.helper_view(cls)
+
+    @property
+    def sockets(self) -> set[Callable[[], None]]:
+        """Return the closes of the WebSocket sessions open on the HTTP client, which closing its creator runs first."""
+        return self._shared.sockets
 
     def execute_page(  # ruff: ignore[too-many-arguments]
         self,
@@ -621,149 +643,82 @@ class ClientCore(_ProtocolCore["httpx2.Client", "RawResponse"], NativeClientCore
         options: RequestOptions | None,
         session: OperationSession,
         read_request: Callable[[str, HeadersView], None] | None = None,
-        failed: Callable[[BaseException, DeliveryState], None] | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
     ) -> R:
-        """Execute one page of a helper session as a child logical call, building what the page's response gives.
+        """Execute one page of a helper session as a child logical call, building what the page's response gives."""
+        return run_sync(
+            self._execute_page(
+                operation,
+                request,
+                build,
+                body=body,
+                media_type=media_type,
+                options=options,
+                session=session,
+                read_request=read_request,
+                failed=failed,
+            )
+        )
 
-        The page uses the ordinary response limit. Its arguments, body, and any URL a server gave are taken when
-        the call prepares; `body` is the caller's. What the
-        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
-        fields a followed URL is without.
+    def cache_identity(self, prepared: CacheRequest) -> CacheIdentity:
+        """Return a cache fetch's identity: its request as the call's Auth gives it to be sent first, sending nothing.
+
+        The Auth is the call's own, its credentials', or else the HTTP client's. Its flow runs on a copy of the request
+        and is closed at its first request; the Auth's failure is the call's.
         """
-        settings = self._call_settings(options, operation.operation_id)
-        call = _SessionCall(settings, operation, session)
-        events = call.events = self._started(call, operation.path)
-        decoder = call.decoder = operation.responses
-        prepare = partial(self._page_request, call, request, media_type, options, read_request)
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
-            received = self._read(response, info, decoder, call)
-
-            data, wire, content = _page(decoder, info, received, call)
-            url = str(response.url) if response.history else call.url
-            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
-
-            return Response(data=data, info=info), result
-
-        try:
-            completed, result = self._run(call, body, prepare, receive)
-
-            if events is not None:
-                events.finish(completed)
-
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if failed is not None:
-                failed(failure, delivery_state(call))
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
-        else:
-            return result
+        call, request = prepared.call, prepared.unsent()
+        client = self._shared.http_client
+        auth = call.native_auth(
+            self._shared.credentials, source=None, send=partial(client.send, auth=None, follow_redirects=False)
+        )
+        if (auth := client.auth if auth is UNSET else auth) is not None:
+            flow = auth.sync_auth_flow(request)
+            try:
+                request = next(flow)
+            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
+                failure = self._classified(error, call)
+                raise failure from failure.__cause__
+            finally:
+                flow.close()
+        return prepared.identity(request, authorized=auth is not None)
 
     def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         operation: OperationPlan[T],
         request: httpx2.Request,
         settings: Settings,
-        modified: Callable[[Response[T], bytes, bool], tuple[Response[T], R]],
-        not_modified: Callable[[ResponseInfo, bool], tuple[Response[T], R]],
+        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
         options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
     ) -> R:
-        """Send a cache fetch's prepared request as one logical call, building what its response gives.
-
-        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
-        operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
-        the response answered a redirect.
-        """
-        call = Call(settings, operation)
-        events = call.events = self._started(call, operation.path)
-        decoder = call.decoder = operation.responses
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
-            received = self._read(response, info, decoder, call)
-
-            return (
-                not_modified(info, call.redirects_followed > 0)
-                if info.status_code == _NOT_MODIFIED
-                else modified(
-                    decode_response(decoder, info, received, call.settings, call.operation_id),
-                    received.content,
-                    call.redirects_followed > 0,
-                )
-            )
-
-        try:
-            completed, result = self._run(call, UNSET, lambda: (request, UNSET), receive)
-
-            if events is not None:
-                events.finish(completed)
-
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
-        else:
-            return result
+        """Send a cache fetch's prepared request as one logical call, building what its response gives."""
+        return run_sync(self._execute_cached(operation, request, settings, modified, not_modified))
 
     def open_socket(  # ruff: ignore[too-many-arguments]
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
-        opener: Callable[[httpx2.Request, LogicalCallContext], httpx2.Response],
+        upgrade: Mapping[str, str],
         *,
         options: RequestOptions | None,
         session: OperationSession,
         open_timeout: float | None,
         check: Callable[[HeadersView], None],
-    ) -> tuple[RawResponse, LogicalCallContext]:
-        """Open a WebSocket helper's handshake through its adapter, as one child call of the helper's session.
-
-        The headers prepared pass the check before anything is sent. The 101 is handed over as a streaming handle,
-        whose close closes the connection, with the call whose deadline bounds it; any other response raises the call's
-        typed failure.
-        """
-        settings = self._call_settings(options, operation.operation_id)
-        call = _SocketCall(settings, operation, session, open_timeout)
-        events = call.events = self._started(call, operation.path)
-        call.decoder = operation.responses
-        result: RawResponse | None = None
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            return self._prepare(
+        accept: Callable[[ResponseInfo], None],
+    ) -> tuple[RawResponse, LogicalCallContext, httpx2.Response]:
+        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session."""
+        return run_sync(
+            self._open_socket(
                 operation,
                 arguments,
-                call.settings,
-                body=UNSET,
-                media_type=None,
+                upgrade,
                 options=options,
-                accept=None,
-                narrowed=False,
-                checked=check,
+                session=session,
+                open_timeout=open_timeout,
+                check=check,
+                accept=accept,
             )
-
-        def receive(response: httpx2.Response, info: ResponseInfo) -> RawResponse:
-            return self._raw_response(response, info, call, stream=True)
-
-        try:
-            result = self._run(call, UNSET, prepare, receive, opener)
-
-            if result.info.status_code != _SWITCHING:
-                refused(result)
-            if events is not None:
-                events.finish(UNSET, handed_off=True)
-
-            call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if result is not None:
-                result.discard(failure)
-            if events is not None:
-                events.ended(failure)
-            raise failure from None
-        else:
-            return result, call
+        )
 
 
 class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], NativeAsyncClientCore):
@@ -787,141 +742,71 @@ class AsyncClientCore(_ProtocolCore["httpx2.AsyncClient", "AsyncRawResponse"], N
         options: RequestOptions | None,
         session: OperationSession,
         read_request: Callable[[str, HeadersView], None] | None = None,
-        failed: Callable[[BaseException, DeliveryState], None] | None = None,
+        failed: Callable[[BaseException, Delivery], None] | None = None,
     ) -> R:
-        """Execute one page of a helper session as a child logical call, building what the page's response gives.
+        """Execute one page of a helper session as a child logical call, building what the page's response gives."""
+        return await self._execute_page(
+            operation,
+            request,
+            build,
+            body=body,
+            media_type=media_type,
+            options=options,
+            session=session,
+            read_request=read_request,
+            failed=failed,
+        )
 
-        The page uses the ordinary response limit. Its arguments, body, and any URL a server gave are taken when
-        the call prepares; `body` is the caller's. What the
-        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
-        fields a followed URL is without.
-        """
-        settings = self._call_settings(options, operation.operation_id)
-        call = _SessionCall(settings, operation, session)
-        events = call.events = await self._started(call, operation.path)
-        decoder = call.decoder = operation.responses
-        prepare = partial(self._page_request, call, request, media_type, options, read_request)
-
-        async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
-            received = await self._read(response, info, decoder, call)
-
-            data, wire, content = _page(decoder, info, received, call)
-            url = str(response.url) if response.history else call.url
-            result = build(data, wire, content, info, url, call.followed_query(self._shared.security_schemes))
-
-            return Response(data=data, info=info), result
-
-        try:
-            completed, result = await self._run(call, body, prepare, receive)
-
-            if events is not None:
-                await events.afinish(completed)
-
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if failed is not None:
-                failed(failure, delivery_state(call))
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
-        else:
-            return result
+    async def acache_identity(self, prepared: CacheRequest) -> CacheIdentity:
+        """Return a cache fetch's identity with asyncio, as the synchronous core does."""
+        call, request = prepared.call, prepared.unsent()
+        client = self._shared.http_client
+        auth = call.native_auth(
+            self._shared.credentials, source=None, async_send=partial(client.send, auth=None, follow_redirects=False)
+        )
+        if (auth := client.auth if auth is UNSET else auth) is not None:
+            flow = auth.async_auth_flow(request)
+            try:
+                request = await anext(flow)
+            except Exception as error:  # noqa: BLE001 - A failing Auth fails the call, as its send would.
+                failure = self._classified(error, call)
+                raise failure from failure.__cause__
+            finally:
+                await flow.aclose()
+        return prepared.identity(request, authorized=auth is not None)
 
     async def execute_cached(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         operation: OperationPlan[T],
         request: httpx2.Request,
         settings: Settings,
-        modified: Callable[[Response[T], bytes, bool], tuple[Response[T], R]],
-        not_modified: Callable[[ResponseInfo, bool], tuple[Response[T], R]],
+        modified: Callable[[Response[T], bytes, bool, httpx2.Request], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo, bool, httpx2.Request], tuple[Response[T], R]],
         options: RequestOptions | None,  # ruff: ignore[unused-method-argument]
     ) -> R:
-        """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives.
-
-        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
-        operation's calls decode it and given to `modified` with its body after content decoding. Both learn whether
-        the response answered a redirect.
-        """
-        call = Call(settings, operation)
-        events = call.events = await self._started(call, operation.path)
-        decoder = call.decoder = operation.responses
-
-        async def receive(response: httpx2.Response, info: ResponseInfo) -> tuple[Response[T], R]:
-            received = await self._read(response, info, decoder, call)
-
-            return (
-                not_modified(info, call.redirects_followed > 0)
-                if info.status_code == _NOT_MODIFIED
-                else modified(
-                    decode_response(decoder, info, received, call.settings, call.operation_id),
-                    received.content,
-                    call.redirects_followed > 0,
-                )
-            )
-
-        try:
-            completed, result = await self._run(call, UNSET, lambda: (request, UNSET), receive)
-
-            if events is not None:
-                await events.afinish(completed)
-
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
-        else:
-            return result
+        """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives."""
+        return await self._execute_cached(operation, request, settings, modified, not_modified)
 
     async def open_socket(  # ruff: ignore[too-many-arguments]
         self,
         operation: OperationPlan[object],
         arguments: tuple[object, ...],
-        opener: Callable[[httpx2.Request, LogicalCallContext], Awaitable[httpx2.Response]],
+        upgrade: Mapping[str, str],
         *,
         options: RequestOptions | None,
         session: OperationSession,
         open_timeout: float | None,
         check: Callable[[HeadersView], None],
-    ) -> tuple[AsyncRawResponse, LogicalCallContext]:
-        """Open a WebSocket helper's handshake with asyncio, as the synchronous core does."""
-        settings = self._call_settings(options, operation.operation_id)
-        call = _SocketCall(settings, operation, session, open_timeout)
-        events = call.events = await self._started(call, operation.path)
-        call.decoder = operation.responses
-        result: AsyncRawResponse | None = None
-
-        def prepare() -> tuple[httpx2.Request, object]:
-            return self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=UNSET,
-                media_type=None,
-                options=options,
-                accept=None,
-                narrowed=False,
-                checked=check,
-            )
-
-        async def receive(response: httpx2.Response, info: ResponseInfo) -> AsyncRawResponse:
-            return await self._raw_response(response, info, call, stream=True)
-
-        try:
-            result = await self._run(call, UNSET, prepare, receive, opener)
-
-            if result.info.status_code != _SWITCHING:
-                await arefused(result)
-            if events is not None:
-                await events.afinish(UNSET, handed_off=True)
-
-            call.handoff()
-        except BaseException as error:  # ruff: ignore[blind-except]
-            failure = call.stopped(error)
-            if result is not None:
-                await result.discard(failure)
-            if events is not None:
-                await events.aended(failure)
-            raise failure from None
-        else:
-            return result, call
+        accept: Callable[[ResponseInfo], None],
+    ) -> tuple[AsyncRawResponse, LogicalCallContext, httpx2.Response]:
+        """Send a WebSocket helper's handshake through the HTTP client, as one child call of the helper's session."""
+        return await self._open_socket(
+            operation,
+            arguments,
+            upgrade,
+            options=options,
+            session=session,
+            open_timeout=open_timeout,
+            check=check,
+            accept=accept,
+        )

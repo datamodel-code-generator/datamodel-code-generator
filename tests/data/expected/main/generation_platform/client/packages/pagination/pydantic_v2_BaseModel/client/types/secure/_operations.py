@@ -7,6 +7,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import UserPage as _dcg_type_0
+import models
 
-ListSecureUsersResponse: TypeAlias = _dcg_type_0
+ListSecureUsersResponse: TypeAlias = models.UserPage

@@ -1,4 +1,4 @@
 create-server-decode: native Tally(name='votes', yes=3, no=1) set=['name', 'no', 'yes'] json={"name":"votes","yes":3,"no":1}
-create-server-decode-invalid-extra: HTTP 422 {"detail":[{"type":"int_parsing","loc":["body","yes"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"three"}]}
+create-server-decode-invalid-extra: HTTP 422 {"detail":[{"type":"int_parsing","loc":["body","yes"],"msg":"Input should be a valid integer, unable to parse string as an integer"}]}
 created-server-encode: native Tally(name='votes', yes=3, no=1) set=['name', 'no', 'yes'] json={"name":"votes","yes":3,"no":1}
 created-server-snapshot: native Tally(name='votes', yes=3, no=1) set=['name', 'no', 'yes'] json={"name":"votes","yes":3,"no":1}

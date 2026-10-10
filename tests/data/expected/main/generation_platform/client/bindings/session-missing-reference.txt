@@ -1,61 +1,101 @@
 # session-missing-reference
 render pydantic_v2.BaseModel api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render pydantic_v2.BaseModel api-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render pydantic_v2.BaseModel paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render pydantic_v2.BaseModel schemas-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render pydantic_v2.dataclass api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render pydantic_v2.dataclass api-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render pydantic_v2.dataclass paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render pydantic_v2.dataclass schemas-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render dataclasses.dataclass api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render dataclasses.dataclass api-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render dataclasses.dataclass paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render dataclasses.dataclass schemas-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render typing.TypedDict api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render typing.TypedDict api-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render typing.TypedDict paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render typing.TypedDict schemas-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render msgspec.Struct api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render msgspec.Struct api-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any
 render msgspec.Struct paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Missing
 render msgspec.Struct schemas-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic Error: /paths/~1missing/post/requestBody/content/application~1json/schema/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 Any

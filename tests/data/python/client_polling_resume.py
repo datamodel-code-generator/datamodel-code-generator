@@ -43,9 +43,8 @@ def _failure(call: Callable[[], object]) -> Any:
 
 
 def _kept(lines: list[str], label: str, error: Any, handle: Any) -> Any:
-    """Report a failure and whether it carries a checkpoint, returning the handle's own checkpoint."""
-    carried = getattr(error, "resume_state", None) is not None
-    lines.append(f"  {label} ! {type(error).__name__} carries a checkpoint={carried}")
+    """Report a failure, returning the handle's own checkpoint."""
+    lines.append(f"  {label} ! {type(error).__name__}")
     return handle.checkpoint()
 
 
@@ -58,7 +57,7 @@ def polling_resume(package: ModuleType, lines: list[str]) -> None:
     """Checkpoint, resume, and cancel long-running operations through the synchronous and asyncio clients."""
     harness = Polling(package)
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _pending(harness, api, exchange, lines)
         _settled(harness, api, exchange, lines)
         _errors(harness, api, exchange, lines)
@@ -87,7 +86,7 @@ def _clocked(harness: Polling, lines: list[str]) -> None:
     settings = harness.client_options(clock=harness.options.Clock(time=wall))
     body = harness.body
     lines.append("checkpoints on the client clock")
-    with exchange.client() as native, harness.package.Client(http_client=native, options=settings) as api:
+    with exchange.client() as native, harness.package.Client(http_client=native, **settings) as api:
         tracked = api.protocols.jobs.tracked
         exchange.respond(_tracked("queued", 202, expires="Thursday, 01-Jan-99 00:00:00 GMT"))
         state = tracked.start(body=body).checkpoint()
@@ -155,7 +154,7 @@ def _settled(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
         handle = helper.start(body=body)
         step(lines, f"{status} wait", handle.wait)
         step(lines, f"{status} checkpoint", handle.checkpoint)
-    once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
+    once = harness.request(max_retries=0)
     exchange.respond(job("queued", 202), job("done"), json_response(500, {}))
     handle = helper.start(body=body, options=once)
     step(lines, "failed fetch", handle.wait)
@@ -227,7 +226,7 @@ def _refusals(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
     step(
         lines,
         "resumed with a patched written header",
-        lambda: helper.resume(state, options=harness.request(headers=[("X-Trace", "mine")])),
+        lambda: helper.resume(state, options=harness.request(extra_headers={"X-Trace": "mine"})),
     )
     step(lines, "resumed with poll options of another type", lambda: helper.resume(state, poll_options=1))
 
@@ -320,6 +319,7 @@ def _expiries(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
         ("fraction in UTC", "2999-01-01T00:00:00.1Z"),
         ("fraction past microseconds", "2999-01-01T00:00:00.123456789Z"),
         ("HTTP date", "Tue, 01 Jan 2999 00:00:00 GMT"),
+        ("HTTP date with an offset", "Tue, 01 Jan 2999 09:00:00 +0900"),
         ("leap second", "2998-12-31T23:59:60Z"),
         ("leap second with a fraction and an offset", "2999-01-01T08:59:60.5+09:00"),
     ):
@@ -348,7 +348,7 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as native,
-        harness.package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+        harness.package.AsyncClient(http_client=native, **harness.client_options()) as api,
     ):
         helper = api.protocols.jobs.run
         body = harness.body
@@ -361,7 +361,7 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         lines.append(f"  resumed {resumed!r}")
         exchange.respond(job("done"), report(3))
         await astep(lines, "resumed wait", resumed.wait)
-        once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
+        once = harness.request(max_retries=0)
         exchange.respond(job("queued", 202), job("done"), json_response(500, {}))
         handle = await helper.start(body=body, options=once)
         await astep(lines, "failed fetch", handle.wait)

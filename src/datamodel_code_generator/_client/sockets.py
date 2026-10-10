@@ -24,12 +24,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import SourceLocation
 
 __all__ = ("DEPENDENCY", "SocketSpec", "plan_sockets", "socket_uses")
 
-DEPENDENCY: Final = "websockets>=17.1"
+DEPENDENCY: Final = "httpx2[ws]>=2.13.0"
 _JSON: Final = "application/json"
 _DIRECTIONS: Final = ("send", "receive")
 
@@ -112,7 +111,7 @@ class _Sockets(_Streams):
 
 
 def socket_uses(
-    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest, wire: WirePlan
+    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest
 ) -> tuple[tuple[SocketSpec, ...], tuple[TypeUseBinding, ...], dict[str, list[Diagnostic]]]:
     """Check every enabled WebSocket helper before its codecs are planned, returning the helpers, uses, and problems.
 
@@ -120,7 +119,7 @@ def socket_uses(
     """
     if protocols is None or not any(helper.enabled and helper.kind == "websocket" for helper in protocols.helpers):
         return (), (), {}
-    sockets = _Sockets(protocols, request, wire)
+    sockets = _Sockets(protocols, request)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[SocketSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

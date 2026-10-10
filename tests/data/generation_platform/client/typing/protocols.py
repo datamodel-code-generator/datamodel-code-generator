@@ -1,29 +1,19 @@
-"""Preserve protocol records, options, resume state, and error payload types through the public contracts."""
+"""Preserve protocol records, options, and error payload types through the public contracts."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Literal
 
-from pets.errors import (
-    OperationCancelledError,
-    OperationFailedError,
-    PaginationCycleError,
-    PollWaitLimitError,
-    ProtocolDataError,
-    ResumeStateError,
-    SessionLimitError,
-    StreamRemoteError,
-    StreamResumeExhaustedError,
-)
+from pets import AsyncClient, Client
+from pets.errors import ConfigurationError, ProtocolDataError, SessionLimitError, StreamInterruptedError
 from pets.model_codecs import JSONValue
-from pets.options import UNSET, ClientOptions, ProtocolClientOptions, SessionOptions, Unset
+from pets.options import UNSET
 from pets.protocols import (
-    AsyncCacheStore,
+    AsyncMemoryCacheStore,
     BodySelector,
     BodyTarget,
     CacheOptions,
-    CacheStore,
     HeaderSelector,
     Origin,
     PaginationOptions,
@@ -31,18 +21,14 @@ from pets.protocols import (
     PollOptions,
     PollSnapshot,
     ProgressKey,
-    ProtocolDefaults,
     ProtocolProgress,
-    ProtocolSecurityContext,
     QuerystringTarget,
     RequestTarget,
-    ResumeState,
     Selector,
     StatusSelector,
     StreamOptions,
     UploadOptions,
     WSOptions,
-    import_state,
 )
 from pets.responses import ResponseInfo
 from pets_models import Pet
@@ -78,88 +64,47 @@ def accepts_snapshot(snapshot: PollSnapshot[object]) -> None:
     assert_type(snapshot.data, object)
 
 
-def options(origin: Origin) -> ClientOptions:
-    """Expose each option field type and construct client-level protocol settings."""
-    pagination = PaginationOptions(max_pages=None, max_items=0)
-    assert_type(pagination.max_items, int | Unset | None)
-    assert_type(pagination.max_pages, int | Unset | None)
-    polling = PollOptions(interval=0.5, max_wait=None)
-    assert_type(polling.interval, float | Unset)
-    assert_type(polling.max_wait, float | Unset | None)
-    stream = StreamOptions(reconnect=True, max_reconnects=0, idle_timeout=UNSET)
-    assert_type(stream.reconnect, bool | Unset)
-    assert_type(stream.max_reconnect_wait, float | Unset | None)
-    security = ProtocolSecurityContext(credential_partition="tenant", allowed_origins=(origin,))
-    assert_type(security.allowed_origins, tuple[Origin, ...])
-    defaults = ProtocolDefaults(session=SessionOptions(total_timeout=30), options=pagination)
-    assert_type(
-        defaults.options,
-        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset,
-    )
-    protocols = ProtocolClientOptions(security=security, defaults={"users.all": defaults, "jobs": ProtocolDefaults()})
-    assert_type(protocols.security, ProtocolSecurityContext | Unset | None)
-    assert_type(protocols.defaults, Mapping[str, ProtocolDefaults] | Unset)
-    assert_type(protocols.cache_stores, Mapping[str, CacheStore | AsyncCacheStore] | Unset)
-    client = ClientOptions(protocols=protocols)
-    assert_type(client.protocols, ProtocolClientOptions | Unset | None)
-    return ClientOptions(protocols=None)
+def options() -> Client:
+    """Expose each option field type and construct clients with helper defaults and lent stores."""
+    pagination = PaginationOptions(max_pages=None, max_items=0, total_timeout=30)
+    assert_type(pagination.max_items, int | UNSET | None)
+    assert_type(pagination.max_pages, int | UNSET | None)
+    assert_type(pagination.total_timeout, float | UNSET | None)
+    polling = PollOptions(interval=0.5, max_wait=None, total_timeout=None)
+    assert_type(polling.interval, float | UNSET)
+    assert_type(polling.max_wait, float | UNSET | None)
+    stream = StreamOptions(reconnect=True, max_reconnects=0, idle_timeout=UNSET, total_timeout=0)
+    assert_type(stream.reconnect, bool | UNSET)
+    assert_type(stream.max_reconnect_wait, float | UNSET | None)
+    assert_type(UploadOptions(total_timeout=30).total_timeout, float | UNSET | None)
+    assert_type(WSOptions(total_timeout=30).total_timeout, float | UNSET | None)
+    defaults: Mapping[str, PaginationOptions | PollOptions | StreamOptions | CacheOptions] = {
+        "pages.all": pagination,
+        "jobs.run": polling,
+        "events.watch": stream,
+        "jobs.cached": CacheOptions(max_ttl=60),
+    }
+    AsyncClient(helper_defaults=None, cache_stores={"jobs.cached": AsyncMemoryCacheStore()})
+    return Client(helper_defaults=defaults, cache_stores=None)
 
 
-def resume(state: ResumeState) -> ResumeState:
-    """Export opaque state as bytes and import it back as the same opaque type."""
-    exported = state.export()
-    assert_type(exported, bytes)
-    restored = import_state(exported)
-    assert_type(restored, ResumeState)
-    return ResumeState(helper="helper", state={"page": [1, 2]})
-
-
-def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
-    """Keep typed references, but widen bare catches to object without Any."""
-    failure = OperationFailedError[Pet](snapshot=snapshot)
-    assert_type(failure.snapshot.data, Pet)
-    text_failure = OperationFailedError[str](
-        snapshot=PollSnapshot(state="failed", terminal=True, data="reason", response=snapshot.response)
-    )
-    assert_type(text_failure.snapshot, PollSnapshot[str])
-    remote = StreamRemoteError[Pet](event_type="error", data=snapshot.data, sequence=1)
-    assert_type(remote.data, Pet)
-    limit = SessionLimitError(kind="pages", limit=10, progress={"pages": 10}, resume_state=state)
+def errors(snapshot: PollSnapshot[Pet]) -> None:
+    """Keep the helper errors' fields, with received data as object, never Any."""
+    failure = ProtocolDataError(reason="operation_failed", data=snapshot.data, info=snapshot.response)
+    assert_type(failure.data, object)
+    assert_type(failure.reason, str)
+    limit = SessionLimitError(reason="pages", limit=10, progress={"pages": 10})
     assert_type(limit.progress, Mapping[ProgressKey, int])
-    assert_type(limit.resume_state, ResumeState | None)
-    exhausted = StreamResumeExhaustedError(kind="reconnects", limit=5, progress={"reconnects": 5})
-    assert_type(exhausted.kind, Literal["pages", "items", "polls", "reconnects", "parts"])
-    cycle = PaginationCycleError(page_index=2, first_seen_page_index=0, location=BodySelector(pointer="/next"))
+    assert_type(limit.limit, float)
+    wait = SessionLimitError(reason="wait", limit=60, required_wait=120)
+    assert_type(wait.required_wait, float | None)
+    cycle = ProtocolDataError(reason="pagination_cycle", location=BodySelector(pointer="/next"))
     assert_type(cycle.location, Selector | RequestTarget | None)
-    wait = PollWaitLimitError(kind="wait", required_wait=120, limit=60)
-    assert_type(wait.required_wait, float)
+    interrupted = StreamInterruptedError(reason="eof", sequence=3)
+    assert_type(interrupted.sequence, int)
     try:
-        raise failure
-    except OperationFailedError as caught:
-        failed(caught)
-    try:
-        raise remote
-    except StreamRemoteError as caught_remote:
-        remote_event(caught_remote)
-    try:
-        raise ResumeStateError(condition="expired")  # ruff: ignore[raise-within-try] - Exercise exception type narrowing.
+        raise ConfigurationError(field_path=("state",), reason="expired")  # ruff: ignore[raise-within-try] - Exercise exception type narrowing.
     except ProtocolDataError as data_error:
         assert_type(data_error.location, Selector | RequestTarget | None)
-    except ResumeStateError as resume_error:
-        assert_type(
-            resume_error.condition,
-            Literal["version", "fingerprint", "expired", "malformed"],
-        )
-
-
-def failed(error: OperationFailedError, cancelled: OperationCancelledError | None = None) -> None:
-    """Widen the payload of an unparameterized failure to object, never Any."""
-    assert_type(error.snapshot, PollSnapshot[object])
-    assert_type(error.snapshot.data, object)
-    if cancelled is not None:
-        assert_type(cancelled.snapshot.data, object)
-
-
-def remote_event(error: StreamRemoteError) -> None:
-    """Widen the data of an unparameterized error event to object, never Any."""
-    assert_type(error.data, object)
+    except ConfigurationError as resume_error:
+        assert_type(resume_error.reason, str)

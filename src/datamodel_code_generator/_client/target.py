@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Final, cast
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
@@ -30,6 +29,7 @@ from datamodel_code_generator._client.plan import (
 from datamodel_code_generator._client.polling import plan_polling
 from datamodel_code_generator._client.protocol_plan import (
     helper_metadata,
+    helper_operations,
     helper_problems,
     plan_protocols,
 )
@@ -46,9 +46,15 @@ from datamodel_code_generator._client.webhooks import (
     webhook_files,
     webhook_uses,
 )
-from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
-from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
+from datamodel_code_generator._target_contract import (
+    GeneratedEnumMember,
+    GeneratedSymbolType,
+    GenericType,
+    UnionType,
+)
+from datamodel_code_generator._target_documents import canonical_bytes, sha256
+from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_render import model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
@@ -58,22 +64,23 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
-    from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecBackend
+    from datamodel_code_generator._client.codec_plan import CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import OperationSpec
     from datamodel_code_generator._client.sockets import SocketSpec
-    from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
-        SourceLocation,
+        ModelFieldFacts,
+        SymbolId,
         TypeUseBinding,
-        TypeUseId,
+        TypeView,
     )
 
-DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
+HTTPX2: Final = "httpx2>=2.13.0"
+DEPENDENCIES: Final = ("typing-extensions>=4.16",)
 PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.BaseModel": (PYDANTIC,),
@@ -112,36 +119,38 @@ class ClientTarget:
         protocols = plan_protocols(request, config.protocols, self.protocol_base or request.cwd)
         wire = _wire(request, request.batch)
         facts = ModelFacts(request.batch)
+        helping = helper_operations(protocols)
         try:
-            plan = Planner(request, config, wire, facts).plan()
+            plan = Planner(request, config, wire, facts, helping).plan()
         except PlanError as error:
-            raise APIGenerationError(
-                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics),
-                option_prefix=OPTION_PREFIX,
-            ) from None
+            raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
         events, hooked = webhook_uses(protocols, request)
         received = frozenset(event.use.id for spec in events for event in spec.events)
-        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request, wire)
-        opened, messages, socket_problems = socket_uses(protocols, plan, request, wire)
+        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
+        opened, messages, socket_problems = socket_uses(protocols, plan, request)
         uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
         batch = request.batch
         if parts := (*part_uses(plan), *stream_events, *messages):
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-        if parts or events:
-            wire = _wire(request, batch, parts, received)
-        codecs = plan_client_codecs(batch, wire, backend, uses, facts)
+        types = TypeNames(
+            batch,
+            exact=bool(request.model_config.use_exact_imports),
+            overrides=request.model_config.import_overrides,
+        )
+        codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+            raise APIGenerationError(tuple(map(_diagnostic, problems)))
         coded = frozenset(item.use for item in codecs.uses)
-        plan, named = plan_fields(plan, facts, coded)
-        pages, checked = plan_pagination(protocols, plan, facts, coded, wire, request)
-        polls, polled = plan_polling(protocols, plan, facts, coded, wire, request)
-        caches, cached = plan_caches(protocols, plan, facts, coded, wire, request)
-        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, wire, request)
+        assert batch.names is not None
+        plan, named = plan_fields(plan, facts, coded, batch.names, helping)
+        pages, checked = plan_pagination(protocols, plan, facts, coded, request)
+        polls, polled = plan_polling(protocols, plan, facts, coded, request)
+        caches, cached = plan_caches(protocols, plan, facts, coded, request)
+        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, facts, coded, wire, request, stream_problems)
+        streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
         sockets = plan_sockets(opened, socket_problems)
         webhooks = plan_webhooks(events, codecs, hooked)
         if refused := (
@@ -160,26 +169,19 @@ class ClientTarget:
                 },
             ),
         ):
-            raise APIGenerationError(
-                tuple(
-                    replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
-                    for item in refused
-                ),
-                option_prefix=OPTION_PREFIX,
-            )
-        data = _HelperDigests(request, codecs, wire)
+            raise APIGenerationError(refused, option_prefix=OPTION_PREFIX)
+        data = _HelperDigests(request, types, facts)
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
-        fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
         dependencies = (
+            WEBSOCKETS if sockets else HTTPX2,
             *DEPENDENCIES,
-            *((WEBSOCKETS,) if sockets else ()),
             *BACKEND_DEPENDENCIES.get(backend, ()),
             *webhook_dependencies(webhooks),
-            *model_dependencies(request.models),
+            *model_dependencies(request.model_imports),
         )
         renderer = ClientRenderer(
             config=config,
@@ -191,61 +193,50 @@ class ClientTarget:
             streams=streams,
             sockets=sockets,
             fingerprints=fingerprints,
-            webhooks=partial(webhook_files, webhooks, dict(codecs.imports)),
+            webhooks=partial(webhook_files, webhooks, types),
             signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
             backend=backend,
+            types=types,
             dependencies=dependencies,
-            templates=ClientTemplates.custom(request.model_config, request.target_id, request.cwd),
+            templates=ClientTemplates.custom(request.model_config, request.cwd),
+            use_schema_description=request.model_config.use_schema_description,
+            use_single_line_docstring=request.model_config.use_single_line_docstring,
         )
         return TargetRender(files=renderer.files(), dependencies=dependencies)
 
 
-def _wire(
-    request: TargetRequest,
-    batch: GeneratedTypeContractBatch,
-    parts: tuple[TypeUseBinding, ...] = (),
-    received: frozenset[TypeUseId] = frozenset(),
-) -> WirePlan:
-    """Plan the wire of the selected operations' uses, the parts they send, and the webhook events they receive.
-
-    Forms get their member plans.
-    """
+def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan:
+    """Plan the parameters and headers of the selected operations, with the member plans of their forms."""
     return plan_wire(
         batch,
-        request.lease,
         [
             *(use for operation in request.operations for use in operation_uses(operation)),
             *encoding_header_uses(request),
-            *(part.id for part in parts),
-            *received,
         ],
         operations=frozenset(operation.id for operation in request.operations),
-        documents=request.documents.pointers,
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
     )
 
 
-def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
+def _diagnostic(item: CodecDiagnostic) -> Diagnostic:
     return Diagnostic(
         code=item.code,
         severity="error",
         stage="binding",
         message=item.message,
-        source_uri=request.documents.root_uri,
         source_pointer=item.source.pointer,
-        target_id=request.target_id,
     )
 
 
 class _HelperDigests:
     """Digest each rendered helper's contract closure."""
 
-    def __init__(self, request: TargetRequest, codecs: ClientCodecs, wire: WirePlan) -> None:
-        """Index the import locations of the generated symbols."""
+    def __init__(self, request: TargetRequest, types: TypeNames, facts: ModelFacts) -> None:
+        """Spell types by the full paths of their names."""
         self.request = request
-        self.wire = wire
-        self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
+        self.facts = facts
+        self.spelling = TargetModule(types, qualified=True)
 
     def fingerprint(self, spec: PaginationSpec, settings: JSONValue) -> str:
         """Return the digest of a helper's contract closure: its signature and settings, operation, schema, and page.
@@ -260,7 +251,7 @@ class _HelperDigests:
             "body": None
             if body is None
             else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "item": self.spelling.static(spec.item),
+            "item": self.spelled(spec.item),
             "page": self.type(spec.page),
             "settings": settings,
         }
@@ -323,35 +314,6 @@ class _HelperDigests:
             "type_uses": [self.contract(event.use) for event in events],
         })
 
-    def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
-        """Return the digest of a stream helper's contract closure: its signature, settings, operations, and schemas.
-
-        Each event and error use contributes its type and contract, so a changed schema changes the digest, and a helper
-        reopening its stream with another operation adds that operation.
-        """
-        operation, helper = spec.operation, spec.helper
-        body = operation.body
-        signature = {
-            "name": helper.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
-            "body": None
-            if body is None
-            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
-            "events": [(key, self.type(use)) for key, use in spec.events],
-            "errors": [(key, self.type(use)) for key, use in spec.errors],
-            "settings": settings,
-        }
-        return _digest({
-            "kind": helper.kind,
-            "signatures": [signature],
-            "operations": [
-                self.request.documents.operation(item.contract.id)
-                for item in (operation, *(() if spec.reopen is None or spec.own else (spec.reopen,)))
-            ],
-            "schemas": list(spec.schemas),
-            "type_uses": [self.contract(use) for use in spec.uses],
-        })
-
     def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
         """Return the digest of a WebSocket helper's contract closure: its signature, settings, operation, and schemas.
 
@@ -373,13 +335,87 @@ class _HelperDigests:
             "type_uses": [self.contract(use) for use in spec.uses],
         })
 
+    def spelled(self, value: TypeView) -> str:
+        """Return a type's canonical spelling: its containers and unions by structure, its leaves as models spell them.
+
+        The model options that only style annotations, such as the union operator, leave the spelling unchanged, so a
+        regenerated package with the same contract keeps its fingerprints.
+        """
+        match value:
+            case GenericType():
+                arguments = ", ".join(self.spelled(item) for item in value.arguments)
+                base = self.spelled(value.base)
+                return f"{base}[{arguments or '()'}]" if arguments or value.tuple_form == "fixed" else base
+            case UnionType():
+                return " | ".join(self.spelled(member) for member in value.members)
+            case _:
+                pass
+        return self.spelling.hint(value)
+
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
-        return None if use is None or use.type is None else self.spelling.static(use.type)
+        return None if use is None or use.type is None else self.spelled(use.type)
 
     def contract(self, use: TypeUseBinding) -> object:
-        """Return a retained helper use's normalized schema at its site."""
-        return self.wire.schema(cast("SourceLocation", use.schema))[1]
+        """Return a retained helper use's contract: its type, and the values or fields of every model type it reaches.
+
+        The models are those its type names, then those their fields' types name, through recursion. A field gives its
+        wire name, member kind, exclusion, requiredness, nullability, direction, type and emitted default, so a schema
+        change that changes any reached model changes the digest.
+        """
+        pending = list(() if use.type is None else _named(use.type))
+        models: dict[str, object] = {}
+        while pending:
+            symbol = pending.pop()
+            if (name := self.spelling.symbol(symbol)) in models:
+                continue
+            found, members = self.facts.symbols[symbol], self.facts.members.get(symbol, ())
+            models[name] = {
+                "kind": found.kind,
+                "values": [None if value is None else repr(value.value) for value in found.values],
+                "fields": [
+                    [member.wire_name, member.member_kind, member.exclusion, *self.field(member.model_facts)]
+                    for member in members
+                ],
+            }
+            pending.extend(
+                symbol for member in members if member.model_facts for symbol in _named(member.model_facts.type)
+            )
+        return {"type": self.type(use), "models": models}
+
+    def field(self, facts: ModelFieldFacts | None) -> tuple[object, ...]:
+        """Return a model field's contract facts: requiredness, nullability, direction, type and default."""
+        return (
+            ()
+            if facts is None
+            else (
+                facts.required,
+                facts.nullable,
+                facts.read_only,
+                facts.write_only,
+                self.spelled(facts.type),
+                facts.backend.emitted.emitted_default_kind,
+                repr(facts.backend.emitted.emitted_default_value),
+            )
+        )
+
+
+def _named(value: TypeView) -> tuple[SymbolId, ...]:
+    """Return the generated symbols a type names, through its members, arguments, metadata base and enum literals."""
+    nested: tuple[TypeView, ...] = (
+        *getattr(value, "members", ()),
+        *getattr(value, "arguments", ()),
+        *((value.base,) if isinstance(value, GenericType) else ()),
+        *(
+            GeneratedSymbolType(item.symbol)
+            for item in getattr(value, "values", ())
+            if isinstance(item, GeneratedEnumMember)
+        ),
+    )
+    return (
+        *((value.symbol,) if isinstance(value, GeneratedSymbolType) else ()),
+        *(symbol for item in nested for symbol in _named(item)),
+    )
 
 
 def _digest(value: object) -> str:
@@ -400,4 +436,4 @@ def _projection(value: object) -> JSONValue:
         return [_projection(item) for item in value]
     if _is_mapping(value):
         return {str(key): _projection(item) for key, item in value.items()}
-    return checked_scalar(value)
+    return cast("JSONValue", value)

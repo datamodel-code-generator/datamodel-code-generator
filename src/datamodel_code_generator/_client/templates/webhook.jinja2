@@ -1,0 +1,87 @@
+{%- macro signature(function) -%}
+{% if function.coroutine %}async {% endif %}def {{ function.name }}(
+{%- for parameter in function.positional %}
+    {{ parameter.name }}: {{ parameter.annotation }},
+{%- endfor %}
+    *,
+{%- for parameter in function.keywords %}
+    {{ parameter.name }}: {{ parameter.annotation }}{% if parameter.default %} = {{ parameter.default }}{% endif %},
+{%- endfor %}
+) -> {{ function.returns }}:
+{%- endmacro -%}
+{%- macro call(function) -%}
+return {% if function.coroutine %}await {% endif %}{{ function.function }}(
+{%- for argument in function.arguments %}
+        {% if argument.keyword %}{{ argument.keyword }}={% endif %}{{ argument.value }},
+{%- endfor %}
+    )
+{%- endmacro -%}
+{%- if kind == "none" -%}
+"""Decode the unsigned deliveries of one webhook helper.
+
+The helper is {{ name }}, whose deliveries carry no signature:
+nothing authenticates who sent one, that its body is unchanged, or that it is not a replay,
+so treat every event as untrusted input.
+"""
+{%- elif kind == "adapter" -%}
+"""Verify the deliveries of one webhook helper with the caller's verifier, then decode their events.
+
+The helper is {{ name }}, whose deliveries are verified by the Verifier the caller passes,
+which must authenticate the whole raw body and every fact it returns.
+"""
+{%- else -%}
+"""Verify the signed deliveries of one webhook helper, then decode their events.
+
+The helper is {{ name }}, whose deliveries are signed with {{ algorithm }}.
+"""
+{%- endif %}
+
+from __future__ import annotations
+
+{{ imports }}
+
+
+__all__ = [
+{%- for name in exports %}
+    {{ name | repr }},
+{%- endfor %}
+]
+{%- if typevar %}
+
+
+K = {{ typevar }}("K")
+{%- endif %}
+
+
+{{ plan.name }}: {{ plan.annotation }} = {{ plan.constructor }}(
+{%- for argument in plan.arguments %}
+    {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+)
+{%- for function in functions %}
+
+
+{{ signature(function) }}
+{%- if kind == "none" %}
+    """Decode a delivery's event without authenticating it.
+
+    Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,
+    and no duplicate information is returned: treat the event as untrusted input.
+    Of options, only max_body_bytes applies.
+    """
+{%- else %}
+    """Verify a delivery{% if kind == "adapter" %} with verifier{% endif %} and decode its event.
+{% if kind == "adapter" %}
+    The verifier is called once, synchronously in both functions,
+    and must authenticate the whole raw body and every fact it returns;
+    a result that is not a VerifiedSignature, lacks a fact this helper requires, returns one it does not declare,
+    or has a naive timestamp raises ConfigurationError before decoding.
+{%- endif %}
+{%- if timestamp %}
+    Deliveries outside the timestamp window are rejected.
+{%- endif %}
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
+    """
+{%- endif %}
+    {{ call(function) }}
+{%- endfor %}

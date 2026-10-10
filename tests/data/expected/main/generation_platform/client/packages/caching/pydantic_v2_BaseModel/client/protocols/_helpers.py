@@ -11,7 +11,7 @@ from .._runtime.client.client import ClientCore as ClientCore_1
 from .._runtime.protocols.cache import fetch
 from .._runtime.protocols.caches import CacheResult
 from .._runtime.protocols.client import ClientCore
-from ..options import UNSET, RequestOptions, Unset
+from ..options import UNSET, RequestOptions
 from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
 from ..types.users import GetUserResponse, ListUsersResponse
@@ -100,9 +100,9 @@ class UsersProfileCache:
     def fetch(
         self,
         *,
-        fields: str | Unset = UNSET,
-        accept_language: str | Unset = UNSET,
-        user_id: int,
+        fields: str | UNSET = UNSET,
+        Accept_Language: str | UNSET = UNSET,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -110,7 +110,7 @@ class UsersProfileCache:
         return fetch(
             self._core,
             _plans.PLAN_0,
-            (fields, accept_language, user_id),
+            (fields, Accept_Language, userId),
             cache_options=cache_options,
             options=options,
         )
@@ -126,9 +126,9 @@ class UsersDatedCache:
     def fetch(
         self,
         *,
-        fields: str | Unset = UNSET,
-        accept_language: str | Unset = UNSET,
-        user_id: int,
+        fields: str | UNSET = UNSET,
+        Accept_Language: str | UNSET = UNSET,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -136,7 +136,7 @@ class UsersDatedCache:
         return fetch(
             self._core,
             _plans.PLAN_1,
-            (fields, accept_language, user_id),
+            (fields, Accept_Language, userId),
             cache_options=cache_options,
             options=options,
         )
@@ -152,8 +152,8 @@ class UsersListingCache:
     def fetch(
         self,
         *,
-        page: int | Unset = UNSET,
-        role: list[str] | Unset = UNSET,
+        page: int | UNSET = UNSET,
+        role: list[str] | UNSET = UNSET,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[ListUsersResponse]:
@@ -201,7 +201,7 @@ class SecureProfileCache:
     def fetch(
         self,
         *,
-        user_id: int,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:
@@ -209,7 +209,7 @@ class SecureProfileCache:
         return fetch(
             self._core,
             _plans.PLAN_4,
-            (user_id,),
+            (userId,),
             cache_options=cache_options,
             options=options,
         )

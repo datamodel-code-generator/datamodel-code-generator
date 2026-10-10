@@ -1,0 +1,133 @@
+# strict-annotated
+serve pydantic_v2.BaseModel
+service UntaggedService: get_values, post_form, upload
+service UntaggedService without its methods: TypeError
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
+< 204 - b''
+> GET /values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4
+  get_values(id=5, count=12, bounded=3, score=2.5, flag=True, name='n', label='ab', counts=[1, 2], names=['a', 'b'], page=2, size=3, maybe=4, X_Trace=7, X_Tag='t', blob=None, visits=None)
+< 204 - b''
+> GET /values/x
+< 422 application/json [{"type": "int_type", "loc": ["path", "id"]}]
+> GET /values/5?count=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "count"]}]
+> GET /values/5?count=1.5
+< 422 application/json [{"type": "int_type", "loc": ["query", "count"]}]
+> GET /values/5?bounded=-1
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "bounded"]}]
+> GET /values/5?score=x
+< 422 application/json [{"type": "float_type", "loc": ["query", "score"]}]
+> GET /values/5?flag=maybe
+< 422 application/json [{"type": "bool_type", "loc": ["query", "flag"]}]
+> GET /values/5?label=a
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "label"]}]
+> GET /values/5?counts=1&counts=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "counts", 1]}]
+> GET /values/5?page=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "page"]}]
+> GET /values/5?size=0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "size"]}]
+> GET /values/5?maybe=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "maybe"]}]
+> GET /values/5
+< 422 application/json [{"type": "int_type", "loc": ["header", "X-Trace"]}]
+> GET /values/5?blob=abc&size=3
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob=b'abc', visits=None)
+< 204 - b''
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=3)
+< 204 - b''
+> GET /values/5
+< 422 application/json [{"type": "int_type", "loc": ["cookie", "visits"]}]
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=2)
+< 204 - b''
+> GET /values/5?count=1&count=2
+  get_values(id=5, count=2, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
+< 204 - b''
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=1, X_Tag=None, blob=None, visits=None)
+< 204 - b''
+> POST /forms
+  post_form(Form(count=2, score=2.5, flag=True, name='n', counts=[1, 2]))
+< 204 - b''
+> POST /forms
+  post_form(Form(count=3, score=None, flag=None, name=None, counts=None))
+< 204 - b''
+> POST /forms
+< 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}, {"type": "int_type", "loc": ["body", "counts", 1]}]
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'file body', count=2, score=2.5, flag=True, note='n', counts=[1, 2]))
+< 204 - b''
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'file body', count=3, score=None, flag=None, note=None, counts=None))
+< 204 - b''
+> POST /uploads
+< 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}]
+serve pydantic_v2.dataclass
+service UntaggedService: get_values, post_form, upload
+service UntaggedService without its methods: TypeError
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
+< 204 - b''
+> GET /values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4
+  get_values(id=5, count=12, bounded=3, score=2.5, flag=True, name='n', label='ab', counts=[1, 2], names=['a', 'b'], page=2, size=3, maybe=4, X_Trace=7, X_Tag='t', blob=None, visits=None)
+< 204 - b''
+> GET /values/x
+< 422 application/json [{"type": "int_type", "loc": ["path", "id"]}]
+> GET /values/5?count=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "count"]}]
+> GET /values/5?count=1.5
+< 422 application/json [{"type": "int_type", "loc": ["query", "count"]}]
+> GET /values/5?bounded=-1
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "bounded"]}]
+> GET /values/5?score=x
+< 422 application/json [{"type": "float_type", "loc": ["query", "score"]}]
+> GET /values/5?flag=maybe
+< 422 application/json [{"type": "bool_type", "loc": ["query", "flag"]}]
+> GET /values/5?label=a
+< 422 application/json [{"type": "string_too_short", "loc": ["query", "label"]}]
+> GET /values/5?counts=1&counts=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "counts", 1]}]
+> GET /values/5?page=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "page"]}]
+> GET /values/5?size=0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["query", "size"]}]
+> GET /values/5?maybe=x
+< 422 application/json [{"type": "int_type", "loc": ["query", "maybe"]}]
+> GET /values/5
+< 422 application/json [{"type": "int_type", "loc": ["header", "X-Trace"]}]
+> GET /values/5?blob=abc&size=3
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob=b'abc', visits=None)
+< 204 - b''
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=3)
+< 204 - b''
+> GET /values/5
+< 422 application/json [{"type": "int_type", "loc": ["cookie", "visits"]}]
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=2)
+< 204 - b''
+> GET /values/5?count=1&count=2
+  get_values(id=5, count=2, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
+< 204 - b''
+> GET /values/5
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=1, X_Tag=None, blob=None, visits=None)
+< 204 - b''
+> POST /forms
+  post_form(Form(count=2, score=2.5, flag=True, name='n', counts=[1, 2]))
+< 204 - b''
+> POST /forms
+  post_form(Form(count=3, score=None, flag=None, name=None, counts=None))
+< 204 - b''
+> POST /forms
+< 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}, {"type": "int_type", "loc": ["body", "counts", 1]}]
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'file body', count=2, score=2.5, flag=True, note='n', counts=[1, 2]))
+< 204 - b''
+> POST /uploads
+  upload(FieldUploadsPostRequest(file=b'file body', count=3, score=None, flag=None, note=None, counts=None))
+< 204 - b''
+> POST /uploads
+< 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}]

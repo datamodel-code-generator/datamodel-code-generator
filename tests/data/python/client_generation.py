@@ -12,10 +12,9 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
 from functools import partial
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, TypeAlias, get_type_hints
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
-from datamodel_code_generator import client as public_client
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._client.config import (
@@ -36,23 +35,10 @@ from tests.data.python.client_protocol_records import RECORDS
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-    from datamodel_code_generator._api_generation import TargetRender, TargetRequest
     from datamodel_code_generator._api_types import GeneratedArtifact, GeneratedProject
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
-_DEFERRED_MODULES = (
-    "datamodel_code_generator._api_generation",
-    "datamodel_code_generator._client.target",
-    "datamodel_code_generator.json_config",
-)
-_PUBLIC_NAMES_PROBE = (
-    "import json, sys\n"
-    "import datamodel_code_generator.client as client\n"
-    "for name in client.__all__:\n"
-    "    getattr(client, name)\n"
-    "print(json.dumps([name for name in sys.argv[1:] if name in sys.modules]))\n"
-)
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
@@ -95,6 +81,20 @@ def _operation(value: object) -> object:
             "idempotency": IdempotencyMetadata(**idempotency) if isinstance(idempotency, dict) else idempotency,
         })
     return ClientOperationConfig(**converted)
+
+
+FORMATTER_FAILURE = "Ruff command failed"
+
+
+def formatter_refusal(error: RuntimeError) -> str:
+    """Report a formatter that refused the generated files by its failure and the rule codes it left unfixed.
+
+    Any other `RuntimeError` is a renderer bug, so it propagates instead of being recorded as a refusal.
+    """
+    if not str(error).startswith(FORMATTER_FAILURE):
+        raise error
+    codes = sorted(set(re.findall(r"\b[A-Z]+[0-9]{3}\b", str(error).partition("\n")[2])))
+    return f"{type(error).__name__}: {str(error).partition(':')[0]} ({', '.join(codes)})"
 
 
 def _working_directory(case: dict[str, Any], root: Path) -> AbstractContextManager[object]:
@@ -150,6 +150,47 @@ def model_config(output: Path, backend: str, options: Mapping[str, Any]) -> Gene
     })
 
 
+def _operation_option(value: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """Spell a fixture operation as the reference and settings that the --client-operations JSON keys it by."""
+    ref = value["ref"]
+    key = ref if isinstance(ref, str) else f"{ref.get('document') or ''}#{ref['pointer']}"
+    settings = {name: item for name, item in value.items() if name != "ref"}
+    if "parameter_names" in settings:
+        settings["parameter_names"] = {
+            f"{item['in_']}:{item['name']}": item["python_name"] for item in settings["parameter_names"]
+        }
+    if "body_field_names" in settings:
+        names: dict[str, dict[str, str]] = {}
+        for item in settings["body_field_names"]:
+            names.setdefault(item["media_type"], {})[item["name"]] = item["python_name"]
+        settings["body_field_names"] = names
+    return key, settings
+
+
+def client_options(values: Mapping[str, Any], root: Path, package: str) -> dict[str, Any]:
+    """Spell fixture client settings as the client options of generate() for a package and its `<package>_models`.
+
+    A helper file under the root is passed as the JSON object it holds, as client_generate_options passes it.
+    """
+    options: dict[str, Any] = {
+        "generate_client": "httpx2",
+        "client_output": root / package,
+        "client_package": package,
+        "client_model_package": f"{package}_models",
+    }
+    for key, value in values.items():
+        match key:
+            case "protocols":
+                options["client_protocols"] = json.loads((root / value).read_text(encoding="utf-8"))
+            case "resource_names":
+                options["client_resource_names"] = {item["tag"]: item["namespace"] for item in value}
+            case "operations":
+                options["client_operations"] = dict(map(_operation_option, value))
+            case _:
+                options[f"client_{key}"] = value
+    return options
+
+
 def generate_client(
     source: Path,
     root: Path,
@@ -158,14 +199,15 @@ def generate_client(
     model: Mapping[str, Any] | None = None,
     config: Mapping[str, Any] | None = None,
 ) -> None:
-    """Generate a client package and its `<package>_models` module under a root, from fixture option values."""
-    generate_target(
+    """Generate a client package and its `<package>_models` module under a root through generate().
+
+    The model and client settings are fixture option values.
+    """
+    generate(
         source,
-        model_config=model_config(root / f"{package}_models.py", backend, model or {}),
-        config=client_config(
-            {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
+        config=model_config(
+            root / f"{package}_models.py", backend, {**(model or {}), **client_options(config or {}, root, package)}
         ),
-        generator=ClientTarget(),
     )
 
 
@@ -179,12 +221,13 @@ def client_render_call(
 ) -> Callable[[], GeneratedProject]:
     """Prepare a client render of a package and its `<package>_models` module, building configurations up front."""
     return partial(
-        public_client.render_client,
+        render_target,
         source,
         model_config=model_config(root / f"{package}_models.py", backend, model or {}),
         config=client_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
         ),
+        generator=ClientTarget(),
     )
 
 
@@ -240,6 +283,8 @@ def _render(
             files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
             lines.append(f"  files {[path for path in files if path not in kept]}")
         return lines
+    except RuntimeError as error:
+        return [f"  {formatter_refusal(error)}"]
     lines: list[str] = []
     for artifact in project.artifacts:
         path = (root / artifact.path).relative_to(root)
@@ -257,22 +302,6 @@ def _render(
     return lines
 
 
-class _BindingDiagnosticsTarget(ClientTarget):
-    """Render a client package and keep the binding diagnostics of the batch it renders from."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.binding_diagnostics: list[str] = []
-
-    def render(self, request: TargetRequest) -> TargetRender:
-        """Keep the batch's binding diagnostics, then render as the client target does."""
-        self.binding_diagnostics = [
-            " ".join(["binding", item.code, *(f"{key}={value}" for key, value in item.details)])
-            for item in request.batch.diagnostics
-        ]
-        return super().render(request)
-
-
 def render_client(
     source: Path,
     root: Path,
@@ -281,29 +310,26 @@ def render_client(
     config: Mapping[str, Any],
     *,
     models: str = "models.py",
-    binding_diagnostics: bool = False,
 ) -> tuple[list[str], Modules]:
-    """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules.
+    """Render a document's client package under a root, returning the refusal and the Python modules.
 
-    The models go to the module or package path models names under the root. With binding_diagnostics, the
-    diagnostics also hold those of the model binding batch, which no package shows.
+    The models go to the module or package path models names under the root.
     """
-    target = _BindingDiagnosticsTarget()
     try:
         project = render_target(
             source,
             model_config=model_config(root / models, backend, model),
             config=client_config(dict(config), root),
-            generator=target,
+            generator=ClientTarget(),
         )
     except Error as error:
-        return [f"Error: {error}", *(target.binding_diagnostics if binding_diagnostics else ())], {}
+        return [f"Error: {error}"], {}
     modules: Modules = {
         path.parts: artifact_text(artifact)
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
-    return target.binding_diagnostics if binding_diagnostics else [], modules
+    return [], modules
 
 
 def _rendered(case: dict[str, Any], root: Path) -> dict[str, bytes]:
@@ -417,46 +443,31 @@ def client_cli_modules(case_name: str, root: Path) -> tuple[str, Modules]:
 
 
 def client_api_report(root: Path) -> str:
-    """Resolve the entry points' annotations, then render, generate twice, and generate over an edited file.
+    """Generate a client through generate(): without an output, then twice into it, then over an edited file.
 
-    The helpers are a JSON object whose documents resolve against the working directory, and the helper records
-    load from the public module on first use: a fresh interpreter that reads every public name imports neither the
-    JSON option schemas nor the generation modules.
+    The helpers are a JSON object whose documents resolve against the working directory.
     """
-    import subprocess
-    import sys
-
-    import datamodel_code_generator.client as client_api
-    from datamodel_code_generator._client import protocols
-
-    hints = {"input_": client_api.GenerationInput, "model_config": GenerateConfig, "config": ClientGenerationConfig}
-    functions = (
-        (client_api.generate_client, type(None)),
-        (client_api.render_client, client_api.GeneratedProject),
-    )
-    lines = [
-        f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
-        for function, result in functions
-    ]
-    lines.append(f"records {client_api.PaginationHelper is protocols.PaginationHelper}")
-    probe = subprocess.run(
-        [sys.executable, "-c", _PUBLIC_NAMES_PROBE, *_DEFERRED_MODULES], capture_output=True, text=True, check=True
-    )
-    lines.append(f"reading every public name imports {json.loads(probe.stdout)} of {list(_DEFERRED_MODULES)}")
-    try:
-        client_api.Missing  # ruff: ignore[useless-expression]
-    except AttributeError as error:
-        lines.append(f"AttributeError: {error}")
     source = shutil.copy2(SOURCE / "cli" / "options.yaml", root / "api.yaml")
     helpers = json.loads((SOURCE / "cli" / "protocols.json").read_text(encoding="utf-8"))
     helpers["pets.all"]["operation"] = {"pointer": "/paths/~1pets/get", "document": "api.yaml"}
-    model = model_config(root / "models.py", "pydantic_v2.BaseModel", {})
-    config = client_config({"protocols": {"raw": helpers}}, root)
+    options: dict[str, Any] = {
+        "input_file_type": "openapi",
+        "target_python_version": "3.11",
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType.PydanticV2BaseModel,
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+        "generate_client": "httpx2",
+        "client_output": root / PACKAGE,
+        "client_package": PACKAGE,
+        "client_model_package": "models",
+        "client_protocols": helpers,
+    }
     with _working_directory({"cwd": True}, root):
-        project = client_api.render_client(source, model_config=model, config=config)
-        lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
+        returned = generate(source, **options)
+        lines = [f"returned without an output {sorted('/'.join(parts) for parts in returned if '_runtime' not in parts)}"]
         for _ in range(2):
-            result = client_api.generate_client(source, model_config=model, config=config)
+            result = generate(source, output=root / "models.py", **options)
             files = sorted(
                 path.relative_to(root).as_posix()
                 for path in root.rglob("*")
@@ -467,27 +478,23 @@ def client_api_report(root: Path) -> str:
         owned.write_text("# edited\n", encoding="utf-8")
         with warnings.catch_warnings(record=True) as recorded:
             warnings.simplefilter("always", UserWarning)
-            result = client_api.generate_client(source, model_config=model, config=config)
+            result = generate(source, output=root / "models.py", **options)
     restored = owned.read_bytes() == original
     lines.append(f"generate returned {result}; edited file restored {restored}; warnings {len(recorded)}")
     return "\n".join(lines) + "\n"
 
 
-def client_model_parity_report(case_name: str, root: Path, rendered: dict[str, Modules]) -> str:
-    """Report whether ordinary generation matches each backend's already-rendered model bytes."""
+def client_ordinary_models(case_name: str, root: Path) -> dict[str, Path]:
+    """Generate each backend's models of a case the ordinary way, returning the directory of each backend's models."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
-    matches: list[bool] = []
+    directories: dict[str, Path] = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
-        attempt = root / (name := backend.replace(".", "_"))
+        attempt = directories[backend.replace(".", "_")] = root / backend.replace(".", "_")
         attempt.mkdir(parents=True)
         source = _prepare_input(case, attempt)
         with _working_directory(case, attempt):
             generate(source, config=model_config(attempt / "models.py", backend, case.get("model", {})))
-        ordinary = {path.relative_to(attempt).parts: path.read_bytes() for path in attempt.rglob("*.py")}
-        encoding = case.get("model", {}).get("encoding", "utf-8")
-        target = {parts: content.encode(encoding) for parts, content in rendered.get(name, {}).items()}
-        matches.append(bool(ordinary) and ordinary == target)
-    return f"{bool(matches) and all(matches)}\n"
+    return directories
 
 
 def cyclic_input_failure(error: Exception, *, source: str, pointer: str, location: tuple[int, int]) -> str:
@@ -631,24 +638,15 @@ def client_input_report(case_name: str, root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def client_documentation_report(case_name: str, root: Path, *, builtin_sources: bool = False) -> str:
-    """Report generated Markdown and packaging files for a finalized client selection.
+def client_documents(case_name: str, root: Path, *, builtin_sources: bool = False) -> dict[str, str]:
+    """Render a finalized client selection and return its generated Markdown and packaging files by path.
 
     With builtin_sources, the files render from a copy of the builtin client templates, as in `client_render`.
     """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     documents: dict[str, str] = {}
-    lines = _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents, builtin_sources=builtin_sources)
-    return (
-        "\n"
-        .join((
-            *lines,
-            *(f"\n# artifact {path}\n{content}" for path, content in documents.items()),
-        ))
-        .replace(root.resolve().as_posix(), "<root>")
-        .rstrip("\n")
-        + "\n"
-    )
+    _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents, builtin_sources=builtin_sources)
+    return documents
 
 
 def _setting(value: object, root: Path) -> str:

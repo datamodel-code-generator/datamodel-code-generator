@@ -5,40 +5,39 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Final, Literal
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from ..model_codecs.unset import Unset
-from .errors import ConfigurationError, DeliveryState, RetryStopReason
+from ..model_codecs.unset import UNSET
+from .errors import ConfigurationError
+from .logical import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from .hooks import RetryReason
     from .options import ResolvedRetryOptions
     from .responses import HeadersView
 
+RetryReason: TypeAlias = Literal["status", "connect_timeout", "connect_error", "pool_timeout", "read_error"]
+_StopReason: TypeAlias = Literal[
+    "unknown_delivery",
+    "status_not_retryable",
+    "transport_not_retryable",
+    "operation_never",
+    "server_forbids_retry",
+    "disabled",
+    "max_retries_exhausted",
+    "body_not_replayable",
+    "unsafe_operation",
+]
 _ASCII_WHITESPACE: Final = " \t\r\n\f\v"
 _SAFE_METHODS: Final = frozenset({"GET", "HEAD", "OPTIONS", "PUT", "DELETE"})
 _AUTH_STATUSES: Final = frozenset({401, 403, 407})
 _ERROR_STATUS_MIN: Final = 400
 _ERROR_STATUS_MAX: Final = 599
-_MONTHS: Final = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-_DAY_NAME: Final = r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)"
-_LONG_DAY_NAME: Final = r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)"
-_MONTH: Final = r"(?P<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
-_TIME: Final = r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})"
-_HTTP_DATES: Final = tuple(
-    re.compile(pattern)
-    for pattern in (
-        rf"{_DAY_NAME}, (?P<day>[0-9]{{2}}) {_MONTH} (?P<year>[0-9]{{4}}) {_TIME} GMT",
-        rf"{_LONG_DAY_NAME}, (?P<day>[0-9]{{2}})-{_MONTH}-(?P<year>[0-9]{{2}}) {_TIME} GMT",
-        rf"{_DAY_NAME} {_MONTH} (?P<day>[0-9]{{2}}| [0-9]) {_TIME} (?P<year>[0-9]{{4}})",
-    )
-)
+_RFC850_YEAR: Final = re.compile(r"[A-Za-z]+, *[0-9]{1,2}-[A-Za-z]+-(?P<year>[0-9]{2})[ \t]")
 _YEAR_WINDOW: Final = 50
-_SHORT_YEAR_LENGTH: Final = 2
-_LEAP_SECOND: Final = 60
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,8 +58,8 @@ class RetryHeaders:
 EMPTY_RETRY_HEADERS: Final = RetryHeaders(None, None)
 
 
-def _header(value: str | Unset | None, declared: str | None, name: str) -> str | None:
-    if isinstance(value, Unset):
+def _header(value: str | UNSET | None, declared: str | None, name: str) -> str | None:
+    if value is UNSET:
         return declared
     if value is not None and (declared is None or value.lower() != declared.lower()):
         raise ConfigurationError(field_path=("retry", name), reason="invalid_value")
@@ -110,12 +109,12 @@ def status_retry_reason(status: int, retry: ResolvedRetryOptions, *, hint: bool 
 class RetryState:
     """Immutable facts at one retry decision boundary."""
 
-    failure_kind: Literal["status", "transport", "auth"]
+    failure_kind: Literal["status", "transport"]
     reason: RetryReason | None
     method: str
     retry_safety: Literal["method_default", "idempotent", "never"]
     idempotency: IdempotencyPlan | None
-    delivery_state: DeliveryState
+    delivery: Delivery
     delivered_before: bool
     attempt_count: int
     body_replayable: bool
@@ -140,8 +139,7 @@ def body_replay_safe(
     return retry_safety != "never" and replay_safe(method, retry_safety, idempotency)
 
 
-_NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
-    "auth": "auth_unrefreshable",
+_NOT_RETRYABLE: Final[dict[str, _StopReason]] = {
     "status": "status_not_retryable",
     "transport": "transport_not_retryable",
 }
@@ -150,7 +148,7 @@ _NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
 def _policy_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
-) -> RetryStopReason | None:
+) -> _StopReason | None:
     if state.reason is None or (state.reason == "pool_timeout" and not retry.retry_on_pool_timeout):
         return _NOT_RETRYABLE[state.failure_kind]
     if state.retry_safety == "never":
@@ -165,32 +163,24 @@ def _policy_stop(
 def retry_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
-    *,
-    auth_recovery_used: bool = False,
-) -> RetryStopReason | None:
-    """Return the first failed retry gate, after termination precedence has been checked."""
-    if state.failure_kind == "transport" and state.delivery_state is not DeliveryState.NOT_SENT:
+) -> _StopReason | None:
+    """Return the first failed retry gate, after termination precedence has been checked, or None to retry."""
+    if state.failure_kind == "transport" and state.delivery is not Delivery.NOT_SENT:
         return "unknown_delivery"
     if (stop := _policy_stop(state, retry)) is not None:
         return stop
     if state.attempt_count >= 1 + retry.max_retries:
         return "max_retries_exhausted"
-    if state.reason == "auth_invalid_token" and auth_recovery_used:
-        return "auth_recovery_exhausted"
     return _replay_stop(state)
 
 
-def _replay_stop(state: RetryState) -> RetryStopReason | None:
+def _replay_stop(state: RetryState) -> _StopReason | None:
     """Return why the request cannot be sent again: its body or its safety."""
     if not state.body_replayable:
         return "body_not_replayable"
     if not (
         replay_safe(state.method, state.retry_safety, state.idempotency)
-        or (
-            state.failure_kind == "transport"
-            and state.delivery_state is DeliveryState.NOT_SENT
-            and not state.delivered_before
-        )
+        or (state.failure_kind == "transport" and state.delivery is Delivery.NOT_SENT and not state.delivered_before)
     ):
         return "unsafe_operation"
     return None
@@ -212,41 +202,32 @@ def _integer(value: str) -> float | None:
 
 
 def http_date(value: str, received_wall_time: float) -> datetime | None:
-    """Return the UTC time an HTTP date gives, a leap second being the second after it, or None for another value.
+    """Return the UTC time of an HTTP date, read as the standard library reads RFC 5322 dates, or None for another one.
 
-    A two-digit year is the latest that is at most 50 years after the receipt wall time. An impossible date raises
-    ValueError, and one past the last representable time OverflowError.
+    A date without a zone, or with an unknown one, is UTC. The two-digit year of an RFC 850 date is the one within the
+    50 years after the receipt wall time, or else the most recent past one, as RFC 9110 reads it.
     """
-    matched = next((matched for pattern in _HTTP_DATES if (matched := pattern.fullmatch(value)) is not None), None)
-    if matched is None:
-        return None
-    year = int(matched["year"])
-    month, day = _MONTHS.index(matched["month"]) + 1, int(matched["day"])
-    hour, minute, second = int(matched["hour"]), int(matched["minute"]), int(matched["second"])
-    if second > _LEAP_SECOND:
-        return None
-    if len(matched["year"]) == _SHORT_YEAR_LENGTH:
+    try:
+        parsed = parsedate_to_datetime(value)
+        date = parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+        if (matched := _RFC850_YEAR.match(value)) is None:
+            return date
         received = datetime.fromtimestamp(received_wall_time, timezone.utc)
-        year += received.year // 100 * 100
-        if (year, month, day, hour, minute, second) > (
-            received.year + _YEAR_WINDOW,
-            received.month,
-            received.day,
-            received.hour,
-            received.minute,
-            received.second,
-        ):
+        limit = (received.year + _YEAR_WINDOW, *received.utctimetuple()[1:6])
+        rest = date.utctimetuple()[1:6]
+        year = received.year // 100 * 100 + int(matched["year"])
+        if (year, *rest) > limit:
             year -= 100
-    date = datetime(year, month, day, hour, minute, min(second, _LEAP_SECOND - 1), tzinfo=timezone.utc)
-    return date + timedelta(seconds=second == _LEAP_SECOND)
+        elif (year + 100, *rest) <= limit:
+            year += 100
+        return date.replace(year=year)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
 
 
 def http_timestamp(value: str, received_wall_time: float) -> float | None:
     """Return the POSIX time of an HTTP date within ASCII whitespace, or None for no date or an impossible one."""
-    try:
-        date = http_date(value.strip(_ASCII_WHITESPACE), received_wall_time)
-    except (ValueError, OverflowError, OSError):
-        return None
+    date = http_date(value.strip(_ASCII_WHITESPACE), received_wall_time)
     return None if date is None else date.timestamp()
 
 
@@ -290,7 +271,7 @@ def header_delay(headers: HeadersView, name: str, received_wall_time: float) -> 
 
 @dataclass(frozen=True, slots=True)
 class RetryDelay:
-    """One chosen backoff cap and absolute wait target, retained across cleanup and hooks."""
+    """One chosen backoff cap and absolute wait target, retained across cleanup."""
 
     reason: RetryReason
     backoff_cap: float

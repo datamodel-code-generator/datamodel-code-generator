@@ -1,37 +1,17 @@
-"""Per-call native inputs and temporary multipart composition."""
+"""Per-call native inputs of the binary bodies a package declares, bound once and opened for each attempt."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Final, cast
 
 from .bodies import BinarySource, is_async_binary_input, is_binary_input, is_file_input
 from .errors import DecodeError
 from .logical import in_thread
-from .multipart import AsyncMultipartAttempt, MultipartAttempt, MultipartSource, is_file_part, is_multipart
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable
 
-    from .bodies import AsyncContent, EncodedAttempt, SyncContent
-
-
-@dataclass(frozen=True, slots=True)
-class RequestCoding:
-    """A declared request content coding."""
-
-    token: str
-    attempt: Callable[[EncodedAttempt, Callable[[], None]], EncodedAttempt]
-    source: Callable[[BodySource], BodySource]
-
-
-def _inputs(body: object) -> Iterator[object]:
-    if is_multipart(body):
-        for part in body.parts:
-            if is_file_part(part):
-                yield part.content
-    else:
-        yield body
+    from .content import AsyncContent, BodyEntry, SyncContent
 
 
 class BodyBindings:
@@ -69,26 +49,14 @@ class BodyBindings:
         return self.close()
 
 
-def capture_body(body: object) -> BodyBindings | None:
-    """Capture file offsets without consuming other request values."""
-    bindings: BodyBindings | None = None
-    for item in _inputs(body):
-        if is_file_input(item):
-            if bindings is None:
-                bindings = BodyBindings()
-            bindings.bind(item)
-    return bindings
+class BoundBody:
+    """A call's native input, or the inputs of a body built of several, and any coding."""
 
+    __slots__ = ("_aencode", "_bindings", "_encode", "_pieces")
 
-class BodySource:
-    """A call's native inputs with optional multipart framing and compression."""
-
-    __slots__ = ("_aencode", "_bindings", "_encode", "_multipart", "_pieces")
-
-    def __init__(self, pieces: list[bytes | BinarySource], bindings: BodyBindings, *, multipart: bool) -> None:
+    def __init__(self, pieces: list[bytes | BinarySource], bindings: BodyBindings) -> None:
         self._pieces = pieces
         self._bindings = bindings
-        self._multipart = multipart
         self._encode: Callable[[SyncContent], SyncContent] | None = None
         self._aencode: Callable[[AsyncContent], AsyncContent] | None = None
 
@@ -99,25 +67,27 @@ class BodySource:
 
     def encoded(
         self, encode: Callable[[SyncContent], SyncContent], aencode: Callable[[AsyncContent], AsyncContent]
-    ) -> BodySource:
+    ) -> BoundBody:
         """Apply a declared streaming coding to each attempt."""
         self._encode, self._aencode = encode, aencode
         return self
 
+    def attempt(self) -> SyncContent:
+        """Open the input for one synchronous attempt."""
+        return cast("BinarySource", self._pieces[0]).open()
+
+    async def aattempt(self) -> AsyncContent:
+        """Open the input for one asynchronous attempt."""
+        return await cast("BinarySource", self._pieces[0]).aopen()
+
     def open(self) -> SyncContent:
         """Prepare one synchronous native stream."""
-        pieces: list[bytes | SyncContent] = [
-            piece if isinstance(piece, bytes) else piece.open() for piece in self._pieces
-        ]
-        attempt = MultipartAttempt(pieces) if self._multipart else cast("SyncContent", pieces[0])
+        attempt = self.attempt()
         return self._encode(attempt) if self._encode is not None else attempt
 
     async def aopen(self) -> AsyncContent:
         """Prepare one asynchronous native stream."""
-        pieces: list[bytes | AsyncContent] = [
-            piece if isinstance(piece, bytes) else await piece.aopen() for piece in self._pieces
-        ]
-        attempt = AsyncMultipartAttempt(pieces) if self._multipart else cast("AsyncContent", pieces[0])
+        attempt = await self.aattempt()
         return self._aencode(attempt) if self._aencode is not None else attempt
 
     def close(self) -> list[OSError]:
@@ -129,15 +99,36 @@ class BodySource:
         return await self._bindings.aclose()
 
 
-def bind_body(content: object, *, entry: BodyBindings | None = None, asynchronous: bool = False) -> BodySource:
-    """Bind the encoded layout without buffering native streams."""
-    bindings = BodyBindings() if entry is None else entry
-    inputs: Iterable[object]
-    if isinstance(content, MultipartSource):
-        inputs = content.ainputs() if asynchronous else content.inputs()
-    else:
-        inputs = (content,)
-    pieces = [
-        piece if isinstance(piece, bytes) else bindings.bind(piece, asynchronous=asynchronous) for piece in inputs
-    ]
-    return BodySource(pieces, bindings, multipart=isinstance(content, MultipartSource))
+class BinaryBodies:
+    """Bind the binary bodies of a package: bytes, a binary file, a path, or an iterable of bytes."""
+
+    __slots__ = ()
+
+    @staticmethod
+    def inputs(body: object) -> Iterable[object]:
+        """Return the native inputs of a body whose file offsets the call captures at entry."""
+        return (body,)
+
+    def capture(self, body: object) -> BodyBindings | None:
+        """Capture file offsets without consuming other request values."""
+        bindings: BodyBindings | None = None
+        for item in self.inputs(body):
+            if is_file_input(item):
+                if bindings is None:
+                    bindings = BodyBindings()
+                bindings.bind(item)
+        return bindings
+
+    @staticmethod
+    def bind(content: object, entry: BodyEntry | None, *, asynchronous: bool) -> BoundBody:
+        """Bind a native input without buffering native streams."""
+        bindings = BodyBindings() if entry is None else cast("BodyBindings", entry)
+        return BoundBody([bindings.bind(content, asynchronous=asynchronous)], bindings)
+
+    @staticmethod
+    def raw(body: object) -> tuple[object, str | None]:
+        """Return a raw call's binary body as it is sent, without a media type of its own."""
+        return body, None
+
+
+BINARY_BODIES: Final = BinaryBodies()

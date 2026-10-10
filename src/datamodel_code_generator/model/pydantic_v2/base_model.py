@@ -72,6 +72,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_MISSING,
     IMPORT_MODEL_VALIDATOR,
     IMPORT_MULTIPLE_OF,
+    IMPORT_PYDANTIC_MISSING,
     IMPORT_STRING_CONSTRAINTS,
     IMPORT_TYPE_ADAPTER,
     IMPORT_VALIDATION_INFO,
@@ -79,10 +80,13 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
+    PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
+    PYDANTIC_V2_MISSING_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
     model_target_supports,
+    target_supports,
 )
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
@@ -825,7 +829,11 @@ class DataModelField(_PydanticBaseDataModelField):
             ):
                 data["serialization_alias"] = serialization_alias
 
-        if self.serialization_alias is not None and (self.serialization_alias != self.name or has_alias):
+        if self.serialization_alias is not None and (
+            self.serialization_alias != self.name
+            or has_alias
+            or self._alias_generator_renames(self.serialization_alias)
+        ):
             data["serialization_alias"] = self.serialization_alias
 
         if self.use_serialization_alias and "alias" in data:
@@ -901,6 +909,13 @@ class DataModelField(_PydanticBaseDataModelField):
             return False
         return bool(self.parent.extra_template_data.get(_NO_ALIAS_INTERNAL_KEY))
 
+    def _missing_sentinel_import(self) -> Import:
+        """Import MISSING from pydantic for an explicit 2.14+ target; an unset target keeps the experimental path."""
+        target = None if self.parent is None else self.parent.extra_template_data.get("target_pydantic_version")
+        if target is not None and target_supports(target, PYDANTIC_V2_MISSING_MINIMUM):
+            return IMPORT_PYDANTIC_MISSING
+        return IMPORT_MISSING
+
     def _has_discriminator_in_data_type(self) -> bool:
         """Check if any nested DataType has a discriminator."""
         if not self.data_type.discriminator and not self.data_type.data_types and self.data_type.dict_key is None:
@@ -913,7 +928,7 @@ class DataModelField(_PydanticBaseDataModelField):
         base_imports = super().imports
         extra_imports: list[Import] = []
         if self.use_missing_sentinel_default:
-            extra_imports.append(IMPORT_MISSING)
+            extra_imports.append(self._missing_sentinel_import())
             if not self._use_union_operator and IMPORT_UNION not in base_imports:
                 extra_imports.append(IMPORT_UNION)
         if self.is_class_var:
@@ -932,7 +947,7 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
-_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
+_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr", "bytes", "StrictBytes"})
 _UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
 _REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
 _REGEX_TOKEN: re.Pattern[str] = re.compile(
@@ -1092,6 +1107,28 @@ def _construct_parser_simple_field(**data: Unpack[_ParserSimpleFieldData]) -> Da
 # directly on the hot path. External subclasses intentionally use normal
 # Pydantic construction unless they declare their own constructor.
 DataModelField.PARSER_CONSTRUCTOR = _construct_parser_simple_field
+
+
+def assign_forward_reference_fields(model: DataModel, positions: Mapping[str, int], index: int) -> bool:
+    """Write fields that name a later model by assignment when the target predates Pydantic 2.11.
+
+    A deferred annotation naming a model defined later in the module cannot be evaluated while the class is
+    created, and older Pydantic then mishandles the ``Field()`` inside ``Annotated``: it drops aliases and
+    descriptions, ignores ``validate_default`` or fails on constraints. A self reference can be evaluated, so
+    it is not a forward reference here. ``positions`` maps each model path in the module to its order and
+    ``index`` is the order of ``model``; the result tells whether a field changed.
+    """
+    if model_target_supports(model, PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM):
+        return False
+    changed = False
+    for field in model.fields:
+        if field.use_annotated and any(
+            (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
+            for data_type in field.data_type.all_data_types
+        ):
+            field.use_annotated = False
+            changed = True
+    return changed
 
 
 def has_lookaround_pattern(
@@ -2109,6 +2146,10 @@ class BaseModel(BaseModelBase):
         if _is_internal_schema_runtime_validation(runtime_validation) and runtime_validation:
             return runtime_validation
         return None
+
+    def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
+        """Leave ``Annotated`` for fields that name a later model when the target predates Pydantic 2.11."""
+        return assign_forward_reference_fields(self, positions, index)
 
     def _prepare_schema_runtime_validation_config(self) -> None:
         """Prepare Pydantic config required by schema-derived runtime validators."""

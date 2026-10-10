@@ -10,14 +10,12 @@ from __future__ import annotations
 import zlib
 from typing import TYPE_CHECKING, Final
 
-from .bodies import CHUNK, EncodedAttempt
-from .body_sources import RequestCoding
+from .content import CHUNK, EncodedAttempt, RequestCoding
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator
 
-    from .bodies import AsyncContent, SyncContent
-    from .body_sources import BodySource
+    from .content import AsyncContent, BodySource, SyncContent
 
 _LEVEL: Final = 6
 _WBITS: Final = 16 + zlib.MAX_WBITS

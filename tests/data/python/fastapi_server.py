@@ -15,11 +15,11 @@ from fastapi import FastAPI
 from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
-from datamodel_code_generator import DataModelType, GenerateConfig
+from datamodel_code_generator import DataModelType, generate
 from datamodel_code_generator.enums import OpenAPIScope
-from datamodel_code_generator.fastapi import generate_fastapi
 from datamodel_code_generator.format import Formatter
-from tests.data.python.fastapi_generation import SOURCE, fastapi_config
+from tests.data.python.client_generation import formatter_refusal
+from tests.data.python.fastapi_generation import SOURCE, server_options
 from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -36,27 +36,26 @@ def _models(case: dict[str, Any], package: str) -> str:
 
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
     for name in case.get("files", ()):
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SOURCE / name, root / name)
     model = case.get("model", {})
     if isinstance(directory := model.get("custom_template_dir"), str):
         model = {**model, "custom_template_dir": SOURCE / directory}
     models = _models(case, package)
-    generate_fastapi(
+    generate(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
-        model_config=GenerateConfig(
-            output=root / f"{models.replace('.', '/')}{'' if case.get('modular') else '.py'}",
-            input_file_type="openapi",
-            target_python_version="3.11",
-            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            output_model_type=DataModelType(backend),
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
+        **{
+            "output": root / f"{models.replace('.', '/')}{'' if case.get('modular') else '.py'}",
+            "input_file_type": "openapi",
+            "target_python_version": "3.11",
+            "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+            "output_model_type": DataModelType(backend),
+            "disable_timestamp": True,
+            "formatters": [Formatter.BUILTIN],
             **model,
-        ),
-        config=fastapi_config(
-            {"output": package, "package": package, "model_package": models, **case.get("config", {})},
-            root,
-        ),
+        },
+        **server_options(case, package, models),
+        server_output=root / package,
     )
 
 
@@ -91,9 +90,7 @@ class _WithoutRawPath:
         await self.app(scope, receive, send)
 
 
-def _exchange(
-    client: TestClient, request: dict[str, Any], calls: list[str], lines: list[str], errors: tuple[type[Exception], ...]
-) -> None:
+def _exchange(client: TestClient, request: dict[str, Any], calls: list[str], lines: list[str]) -> None:
     if (location := request.get("openapi")) is not None:
         path, method, status = location
         document = client.app.app.openapi()
@@ -117,9 +114,6 @@ def _exchange(
     except ResponseValidationError as error:
         lines.extend(f"  {call}" for call in calls)
         lines.append(f"< ResponseValidationError: {[item['msg'] for item in error.errors()]}")
-    except errors as error:
-        lines.extend(f"  {call}" for call in calls)
-        lines.append(f"< {type(error).__name__}: {error}")
     except Exception as error:  # noqa: BLE001
         lines.extend(f"  {call}" for call in calls)
         lines.append(f"< raised {type(error).__name__}: {error}")
@@ -141,8 +135,10 @@ def _exchange(
 
 
 def _errors(response: Any) -> str:
-    """Show each validation error by its type and location; the messages follow the installed pydantic-core."""
-    return json.dumps([{key: error[key] for key in ("type", "loc")} for error in response.json()["detail"]])
+    """Show each validation error without its message, which follows the installed pydantic-core."""
+    return json.dumps([
+        {key: value for key, value in error.items() if key != "msg"} for error in response.json()["detail"]
+    ])
 
 
 def _interfaces(server: ModuleType) -> Iterator[str]:
@@ -157,10 +153,10 @@ def _interfaces(server: ModuleType) -> Iterator[str]:
                 yield f"service {name} without its methods: TypeError"
 
 
-def _build(label: str, build: Callable[[], object], errors: tuple[type[Exception], ...]) -> str:
+def _build(label: str, build: Callable[[], object]) -> str:
     try:
         build()
-    except errors as error:
+    except (AttributeError, TypeError, ValueError) as error:
         return f"build {label}: {type(error).__name__}: {error}"
     return f"build {label}: ok"
 
@@ -205,7 +201,11 @@ def fastapi_server_report(
         lines.append(f"serve {backend}")
         if (previous := case.get("previous")) is not None:
             _generate({**case, "input": previous}, backend, root, package)
-        _generate(case, backend, root, package)
+        try:
+            _generate(case, backend, root, package)
+        except RuntimeError as error:
+            lines.append(f"  {formatter_refusal(error)}")
+            continue
         packages[backend.replace(".", "_")] = _generated(root, package, package_snapshots)
         try:
             server, models = _import(package, _models(case, package))
@@ -214,19 +214,16 @@ def fastapi_server_report(
             sets = services.services(server, models, calls)
             settings = services.settings(server, models, calls) if hasattr(services, "settings") else {}
             built = services.applications(server, sets) if hasattr(services, "applications") else {}
-            errors = (server.HandlerConfigurationError, server.AuthConfigurationError)
-            lines.extend(
-                _build(name, partial(server.build_router, **sets[name]), errors) for name in case.get("builds", ())
-            )
+            lines.extend(_build(name, partial(server.build_router, **sets[name])) for name in case.get("builds", ()))
             if hasattr(services, "builds"):
-                lines.extend(_build(label, build, errors) for label, build in services.builds(server, models, calls))
+                lines.extend(_build(label, build) for label, build in services.builds(server, models, calls))
             for app_case in case.get("apps", [{"set": "default", "requests": case.get("requests", [])}]):
                 if "apps" in case:
                     lines.append(f"app {app_case['set']}")
                 app = _serve(server, app_case, sets, settings, built, lines)
                 with TestClient(_WithoutRawPath(app)) as client:
                     for request in app_case.get("requests", ()):
-                        _exchange(client, request, calls, lines, errors)
+                        _exchange(client, request, calls, lines)
             lines.extend(
                 f"stale {name}: file {(root / package / name).is_file()}; imported "
                 f"{'.'.join((package, *Path(name).with_suffix('').parts)) in sys.modules}"

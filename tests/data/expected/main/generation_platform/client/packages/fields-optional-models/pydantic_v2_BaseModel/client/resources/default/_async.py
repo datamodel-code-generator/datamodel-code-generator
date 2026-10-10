@@ -6,25 +6,17 @@
 from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
-from datetime import date as _dcg_type_3
+from datetime import date
 from functools import cached_property
 from typing import Literal, overload
 
-from models import FieldOwnersPostRequest as _dcg_type_7
-from models import Kind as _dcg_type_2
-from models import Labels as _dcg_type_8
-from models import NewPet as _dcg_type_0
-from models import Owner as _dcg_type_4
-from models import Pet as _dcg_type_9
-from models import PetForm as _dcg_type_1
-from models import PetPatch as _dcg_type_5
-from models import Visit as _dcg_type_6
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody
 from ...model_codecs import JSONValue
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.default import (
     CreateOwnerResponse,
@@ -64,14 +56,14 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -80,14 +72,14 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_1,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.PetForm,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -96,14 +88,14 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -112,14 +104,14 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: str | Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: str | UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -127,24 +119,26 @@ class AsyncDefaultResource:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet | models.PetForm | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -154,10 +148,10 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.PetPatch,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
@@ -165,10 +159,10 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
         name: str,
-        tag: str | None | Unset = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
@@ -176,9 +170,9 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
         tag: str | None,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -187,27 +181,29 @@ class AsyncDefaultResource:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse: ...
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.PetPatch | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -218,10 +214,10 @@ class AsyncDefaultResource:
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        petId: int,
+        body: models.Visit,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> LogVisitResponse: ...
@@ -229,10 +225,10 @@ class AsyncDefaultResource:
     async def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> LogVisitResponse: ...
@@ -240,27 +236,29 @@ class AsyncDefaultResource:
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> LogVisitResponse: ...
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6 | str | Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: models.Visit | str | UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> LogVisitResponse:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return (await self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -270,15 +268,17 @@ class AsyncDefaultResource:
     async def set_owner(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_4 | Unset = UNSET,
+        petId: int,
+        body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SetOwnerResponse:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return (await self._core.execute(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -288,9 +288,9 @@ class AsyncDefaultResource:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_7,
-        email: Unset = UNSET,
-        nick_name: Unset = UNSET,
+        body: models.FieldOwnersPostRequest,
+        email: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse: ...
@@ -298,27 +298,29 @@ class AsyncDefaultResource:
     async def create_owner(
         self,
         *,
-        body: Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse: ...
     async def create_owner(
         self,
         *,
-        body: _dcg_type_7 | Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return (await self._core.execute(
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         )).data
@@ -327,9 +329,9 @@ class AsyncDefaultResource:
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8,
-        size: Unset = UNSET,
+        petId: int,
+        body: models.Labels,
+        size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse: ...
@@ -337,25 +339,27 @@ class AsyncDefaultResource:
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse: ...
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: models.Labels | UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return (await self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -365,15 +369,17 @@ class AsyncDefaultResource:
     async def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutPhotoResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return (await self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -383,10 +389,10 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.Pet,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplacePetResponse: ...
@@ -394,27 +400,29 @@ class AsyncDefaultResource:
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplacePetResponse: ...
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.Pet | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplacePetResponse:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return (await self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -433,14 +441,14 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -449,14 +457,14 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_1,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.PetForm,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -465,14 +473,14 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -481,14 +489,14 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: str | Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: str | UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -496,24 +504,26 @@ class AsyncDefaultWithResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet | models.PetForm | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -523,10 +533,10 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.PetPatch,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]: ...
@@ -534,10 +544,10 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
         name: str,
-        tag: str | None | Unset = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]: ...
@@ -545,9 +555,9 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
         tag: str | None,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -556,27 +566,29 @@ class AsyncDefaultWithResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]: ...
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.PetPatch | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return await self._core.execute(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -587,10 +599,10 @@ class AsyncDefaultWithResponse:
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        petId: int,
+        body: models.Visit,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]: ...
@@ -598,10 +610,10 @@ class AsyncDefaultWithResponse:
     async def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]: ...
@@ -609,27 +621,29 @@ class AsyncDefaultWithResponse:
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]: ...
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6 | str | Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: models.Visit | str | UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return await self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -639,15 +653,17 @@ class AsyncDefaultWithResponse:
     async def set_owner(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_4 | Unset = UNSET,
+        petId: int,
+        body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SetOwnerResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return await self._core.execute(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -657,9 +673,9 @@ class AsyncDefaultWithResponse:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_7,
-        email: Unset = UNSET,
-        nick_name: Unset = UNSET,
+        body: models.FieldOwnersPostRequest,
+        email: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]: ...
@@ -667,27 +683,29 @@ class AsyncDefaultWithResponse:
     async def create_owner(
         self,
         *,
-        body: Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]: ...
     async def create_owner(
         self,
         *,
-        body: _dcg_type_7 | Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return await self._core.execute(
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         )
@@ -696,9 +714,9 @@ class AsyncDefaultWithResponse:
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8,
-        size: Unset = UNSET,
+        petId: int,
+        body: models.Labels,
+        size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]: ...
@@ -706,25 +724,27 @@ class AsyncDefaultWithResponse:
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]: ...
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: models.Labels | UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return await self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -734,15 +754,17 @@ class AsyncDefaultWithResponse:
     async def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutPhotoResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return await self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -752,10 +774,10 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.Pet,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplacePetResponse]: ...
@@ -763,27 +785,29 @@ class AsyncDefaultWithResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplacePetResponse]: ...
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.Pet | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplacePetResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return await self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -802,14 +826,14 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -818,14 +842,14 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_1,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.PetForm,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -834,14 +858,14 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -850,14 +874,14 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: str | Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: str | UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -865,24 +889,26 @@ class AsyncDefaultWithRawResponse:
     async def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet | models.PetForm | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -892,10 +918,10 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.PetPatch,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -903,10 +929,10 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
         name: str,
-        tag: str | None | Unset = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -914,9 +940,9 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
         tag: str | None,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -925,27 +951,29 @@ class AsyncDefaultWithRawResponse:
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.PetPatch | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -956,10 +984,10 @@ class AsyncDefaultWithRawResponse:
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        petId: int,
+        body: models.Visit,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -967,10 +995,10 @@ class AsyncDefaultWithRawResponse:
     async def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -978,27 +1006,29 @@ class AsyncDefaultWithRawResponse:
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6 | str | Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: models.Visit | str | UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -1008,15 +1038,17 @@ class AsyncDefaultWithRawResponse:
     async def set_owner(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_4 | Unset = UNSET,
+        petId: int,
+        body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1026,9 +1058,9 @@ class AsyncDefaultWithRawResponse:
     async def create_owner(
         self,
         *,
-        body: _dcg_type_7,
-        email: Unset = UNSET,
-        nick_name: Unset = UNSET,
+        body: models.FieldOwnersPostRequest,
+        email: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -1036,27 +1068,29 @@ class AsyncDefaultWithRawResponse:
     async def create_owner(
         self,
         *,
-        body: Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def create_owner(
         self,
         *,
-        body: _dcg_type_7 | Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         )
@@ -1065,9 +1099,9 @@ class AsyncDefaultWithRawResponse:
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8,
-        size: Unset = UNSET,
+        petId: int,
+        body: models.Labels,
+        size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -1075,25 +1109,27 @@ class AsyncDefaultWithRawResponse:
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: models.Labels | UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -1103,15 +1139,17 @@ class AsyncDefaultWithRawResponse:
     async def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1121,10 +1159,10 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.Pet,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
@@ -1132,27 +1170,29 @@ class AsyncDefaultWithRawResponse:
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.Pet | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -1171,14 +1211,14 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -1187,14 +1227,14 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_1,
-        name: Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.PetForm,
+        name: UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -1203,14 +1243,14 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -1219,14 +1259,14 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: Unset = UNSET,
-        pet_tag: str | Unset = UNSET,
-        birth_date: Unset = UNSET,
-        owner: Unset = UNSET,
-        secret: Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: UNSET = UNSET,
+        pet_tag: str | UNSET = UNSET,
+        birthDate: UNSET = UNSET,
+        owner: UNSET = UNSET,
+        secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -1234,24 +1274,26 @@ class AsyncDefaultWithStreamingResponse:
     def create_pet(
         self,
         *,
-        tag: str | Unset = UNSET,
-        body: _dcg_type_0 | _dcg_type_1 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        kind: _dcg_type_2 | Unset = UNSET,
-        pet_tag: str | None | Unset = UNSET,
-        birth_date: _dcg_type_3 | Unset = UNSET,
-        owner: _dcg_type_4 | Unset = UNSET,
-        secret: str | Unset = UNSET,
+        tag: str | UNSET = UNSET,
+        body: models.NewPet | models.PetForm | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        kind: models.Kind | UNSET = UNSET,
+        pet_tag: str | None | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
+        owner: models.Owner | UNSET = UNSET,
+        secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -1261,10 +1303,10 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.PetPatch,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1272,10 +1314,10 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
         name: str,
-        tag: str | None | Unset = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1283,9 +1325,9 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
         tag: str | None,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -1294,27 +1336,29 @@ class AsyncDefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def update_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_5 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.PetPatch | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -1325,10 +1369,10 @@ class AsyncDefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        petId: int,
+        body: models.Visit,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1336,10 +1380,10 @@ class AsyncDefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
-        note: Unset = UNSET,
-        visit_options: Unset = UNSET,
+        note: UNSET = UNSET,
+        visit_options: UNSET = UNSET,
         media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1347,27 +1391,29 @@ class AsyncDefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def log_visit(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_6 | str | Unset = UNSET,
-        note: str | Unset = UNSET,
-        visit_options: list[str] | Unset = UNSET,
+        petId: int,
+        body: models.Visit | str | UNSET = UNSET,
+        note: str | UNSET = UNSET,
+        visit_options: list[str] | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -1377,15 +1423,17 @@ class AsyncDefaultWithStreamingResponse:
     def set_owner(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_4 | Unset = UNSET,
+        petId: int,
+        body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1395,9 +1443,9 @@ class AsyncDefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: _dcg_type_7,
-        email: Unset = UNSET,
-        nick_name: Unset = UNSET,
+        body: models.FieldOwnersPostRequest,
+        email: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1405,27 +1453,29 @@ class AsyncDefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def create_owner(
         self,
         *,
-        body: _dcg_type_7 | Unset = UNSET,
-        email: str | Unset = UNSET,
-        nick_name: str | Unset = UNSET,
+        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        email: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         )
@@ -1434,9 +1484,9 @@ class AsyncDefaultWithStreamingResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8,
-        size: Unset = UNSET,
+        petId: int,
+        body: models.Labels,
+        size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1444,25 +1494,27 @@ class AsyncDefaultWithStreamingResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def put_labels(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_8 | Unset = UNSET,
-        size: str | Unset = UNSET,
+        petId: int,
+        body: models.Labels | UNSET = UNSET,
+        size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -1472,15 +1524,17 @@ class AsyncDefaultWithStreamingResponse:
     def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1490,10 +1544,10 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9,
-        name: Unset = UNSET,
-        tag: Unset = UNSET,
+        petId: int,
+        body: models.Pet,
+        name: UNSET = UNSET,
+        tag: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
@@ -1501,27 +1555,29 @@ class AsyncDefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def replace_pet(
         self,
         *,
-        pet_id: int,
-        body: _dcg_type_9 | Unset = UNSET,
-        name: str | Unset = UNSET,
-        tag: str | None | Unset = UNSET,
+        petId: int,
+        body: models.Pet | UNSET = UNSET,
+        name: str | UNSET = UNSET,
+        tag: str | None | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,

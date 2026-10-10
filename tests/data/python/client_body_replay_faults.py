@@ -29,20 +29,17 @@ class _Positionless(io.BytesIO):
 
 
 class _RewindFailure(io.BytesIO):
-    """A file that becomes unseekable after the public call captures its position."""
+    """A file that becomes unseekable once the public call measured it, seeking to its end and back."""
 
     def __init__(self, content: bytes) -> None:
         super().__init__(content)
-        self.armed = False
+        self.seeks = 0
 
     def seek(self, offset: int, whence: int = 0, /) -> int:
-        if self.armed:
+        self.seeks += 1
+        if self.seeks > 2:
             raise OSError("rewind failed")
         return super().seek(offset, whence)
-
-    def on_event(self, event: Any) -> None:
-        if event.name == "call_start":
-            self.armed = True
 
 
 class _ReadFailure(io.BytesIO):
@@ -109,7 +106,7 @@ def _opening(paths: tuple[Path, ...], files: list[Any], make: Callable[[], objec
 
 
 def _closed(lines: list[str], label: str, error: Exception | None, files: list[_Unclosable]) -> None:
-    secondary = [type(item).__name__ for item in getattr(error, "secondary_errors", ())]
+    secondary = list(getattr(error, "__notes__", ()))
     lines.append(f"  {label} returned" if error is None else f"  {label} ! {describe(error)}")
     lines.append(f"    secondary={secondary} closed={[file.closed for file in files]}")
     files.clear()
@@ -120,16 +117,15 @@ _STORED: Final = raw_response(200, b"ok", "text/plain")
 
 
 @pytest.mark.abnormal_path("A close failure of a file the SDK opened cannot be produced with a real file portably.")
-def _close_faults(package: ModuleType, options: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
+def _close_faults(package: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
     """Keep a failed call's error primary, close every opened path, and report a close failure after a success."""
     bodies = importlib.import_module(f"{package.__name__}.bodies")
     path, files = _PATHS[0], []
     parts = bodies.MultipartBody(tuple(bodies.FilePart(item.stem, item) for item in _PATHS))
-    config = options.ClientOptions(retry=options.RetryOptions(max_retries=0))
     exchange = Exchange([])
     with (
         exchange.client() as native,
-        package.Client(http_client=native, options=config) as api,
+        package.Client(http_client=native, max_retries=0) as api,
         pytest.MonkeyPatch.context() as fault,
     ):
         fault.setattr(Path, "open", _opening(_PATHS, files, lambda: _Unclosable(data["payload"].encode())))
@@ -162,11 +158,10 @@ def _close_faults(package: ModuleType, options: ModuleType, data: dict[str, Any]
 
 
 @pytest.mark.abnormal_path("A close failure of a file the SDK opened cannot be produced with a real file portably.")
-async def _async_close_faults(package: ModuleType, options: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
+async def _async_close_faults(package: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
     path, files = _PATHS[0], []
-    config = options.ClientOptions(retry=options.RetryOptions(max_retries=0))
     exchange = Exchange([])
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, max_retries=0) as api:
         with pytest.MonkeyPatch.context() as fault:
             fault.setattr(Path, "open", _opening(_PATHS, [], lambda: _Positionless(data["payload"].encode())))
             exchange.respond(lambda request: raw_response(200, request.content, "text/plain")(request))
@@ -271,7 +266,6 @@ async def _async_thread_faults(package: ModuleType, data: dict[str, Any], lines:
 )
 def body_replay_faults(package: ModuleType, lines: list[str]) -> None:
     """Preserve caller ownership and stop before sending when rewinding fails."""
-    options = importlib.import_module(f"{package.__name__}.options")
     data = json.loads(_DATA.read_text())
     exchange = Exchange([])
     with exchange.client() as native, package.Client(http_client=native) as api:
@@ -281,11 +275,7 @@ def body_replay_faults(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"    caller positionless file open={not file.closed}")
         file.close()
         file = _RewindFailure(data["payload"].encode())
-        record(
-            lines,
-            "rewind failure before send",
-            lambda: api.request_raw("POST", data["url"], body=file, options=options.RequestOptions(hooks=(file,))),
-        )
+        record(lines, "rewind failure before send", lambda: api.request_raw("POST", data["url"], body=file))
         lines.append(f"    rewind failure caller file open={not file.closed}")
         file.close()
         file = _ReadFailure(data["payload"].encode())
@@ -293,13 +283,13 @@ def body_replay_faults(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"    read failure caller file open={not file.closed}")
         file.close()
         record(lines, "invalid raw binary input", lambda: api.request_raw("POST", data["url"], body=object()))
-    _close_faults(package, options, data, lines)
-    run(lambda: _async_faults(package, options, data, lines))
-    run(lambda: _async_close_faults(package, options, data, lines))
+    _close_faults(package, data, lines)
+    run(lambda: _async_faults(package, data, lines))
+    run(lambda: _async_close_faults(package, data, lines))
     run(lambda: _async_thread_faults(package, data, lines))
 
 
-async def _async_faults(package: ModuleType, options: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
+async def _async_faults(package: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
     exchange = Exchange([])
     async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
         file = _Positionless(data["payload"].encode())
@@ -312,10 +302,6 @@ async def _async_faults(package: ModuleType, options: ModuleType, data: dict[str
         await arecord(lines, "async positionless file", call)
         file.close()
         file = _RewindFailure(data["payload"].encode())
-        await arecord(
-            lines,
-            "async rewind failure",
-            lambda: api.request_raw("POST", data["url"], body=file, options=options.RequestOptions(hooks=(file,))),
-        )
+        await arecord(lines, "async rewind failure", lambda: api.request_raw("POST", data["url"], body=file))
         lines.append(f"    async failed caller file open={not file.closed}")
         file.close()

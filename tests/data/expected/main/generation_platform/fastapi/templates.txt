@@ -1,39 +1,19 @@
 # templates
 render pydantic_v2.BaseModel
-  write models.py
-  write server/__init__.py
-  write server/application.py
-  write server/routers/__init__.py
-  write server/routers/pets.py
-  write server/routers/store.py
-  write server/_generated/__init__.py
-  write server/_generated/contract.py
-  write server/errors.py
-  write server/services.py
-  write server/README.md
-  write server/_runtime/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/__init__.py (copied runtime)
-  write server/_runtime/model_codecs/errors.py (copied runtime)
-  write server/_runtime/model_codecs/media.py (copied runtime)
-  write server/_runtime/model_codecs/parameters.py (copied runtime)
-  write server/_runtime/model_codecs/unset.py (copied runtime)
-  write server/_runtime/model_codecs/wire.py (copied runtime)
-  write server/_runtime/server/__init__.py (copied runtime)
-  write server/_runtime/server/application.py (copied runtime)
-  write server/_runtime/server/errors.py (copied runtime)
-  write server/_runtime/server/requests.py (copied runtime)
-  write server/_runtime/server/responses.py (copied runtime)
-  write server/_runtime/server/security.py (copied runtime)
-  write server/py.typed
-  file server/README.md
-    | # Pets
-    |
-    | Ask the platform team before changing the API document; regenerate the package instead of editing it.
-    |
-    | - `GET /pets` is handled by `PetsService.list_pets`
-    | - `POST /pets` is handled by `PetsService.create_pet`
-    | - `GET /pets/mine` is handled by `PetsService.list_my_pets`
-    | - `GET /pets/{petId}` is handled by `PetsService.get_pet`
-    | - `DELETE /pets/{petId}` is handled by `PetsService.delete_pet`
-    | - `GET /store/inventory` is handled by `StoreService.get_inventory`
-  file server/py.typed
+  models.py
+  server/__init__.py
+  server/application.py
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/openapi.py
+  server/services.py
+  server/README.md
+  server/_runtime/__init__.py (copied runtime)
+  server/_runtime/server/__init__.py (copied runtime)
+  server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/openapi.py (copied runtime)
+  server/_runtime/server/responses.py (copied runtime)
+  server/py.typed

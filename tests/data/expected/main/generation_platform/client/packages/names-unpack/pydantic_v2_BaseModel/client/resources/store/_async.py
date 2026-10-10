@@ -43,16 +43,13 @@ class AsyncStoreResource:
         self,
         **kwargs: Unpack[Operation1Arguments],
     ) -> GetFilesByFileNameByExtResponse:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         KEYWORDS_1.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_1,
-            (
-                kwargs['file_name'],
-                kwargs['ext'],
-                kwargs.get('class_', 'full'),
-                kwargs.get('two_factor', 'off'),
-            ),
+            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
             options=kwargs.get('options'),
         )).data
 
@@ -68,16 +65,13 @@ class AsyncStoreWithResponse:
         self,
         **kwargs: Unpack[Operation1Arguments],
     ) -> Response[GetFilesByFileNameByExtResponse]:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         KEYWORDS_1.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_1,
-            (
-                kwargs['file_name'],
-                kwargs['ext'],
-                kwargs.get('class_', 'full'),
-                kwargs.get('two_factor', 'off'),
-            ),
+            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
             options=kwargs.get('options'),
         )
 
@@ -93,16 +87,13 @@ class AsyncStoreWithRawResponse:
         self,
         **kwargs: Unpack[Operation1Arguments],
     ) -> AsyncRawResponse:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         KEYWORDS_1.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_1,
-            (
-                kwargs['file_name'],
-                kwargs['ext'],
-                kwargs.get('class_', 'full'),
-                kwargs.get('two_factor', 'off'),
-            ),
+            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
             options=kwargs.get('options'),
         )
 
@@ -118,15 +109,12 @@ class AsyncStoreWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation1Arguments],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,
-            (
-                kwargs['file_name'],
-                kwargs['ext'],
-                kwargs.get('class_', 'full'),
-                kwargs.get('two_factor', 'off'),
-            ),
+            (kwargs['fileName'], kwargs['ext'], kwargs.get('class_', 'full'), kwargs.get('two_factor', 'off')),
             options=kwargs.get('options'),
         )

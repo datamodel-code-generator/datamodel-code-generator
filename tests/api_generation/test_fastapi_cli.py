@@ -59,6 +59,7 @@ CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
 LAYOUT_ERRORS = json.loads((CLI / "layout-errors.json").read_text(encoding="utf-8"))
+MODEL_DEPENDENCIES = json.loads((CLI / "model-dependencies.json").read_text(encoding="utf-8"))
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -159,6 +160,31 @@ def test_fastapi_cli_generate(
         expected_file=PACKAGE / "models.py",
     )
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
+
+
+@pytest.mark.parametrize("case_name", MODEL_DEPENDENCIES)
+def test_fastapi_cli_model_dependencies(
+    case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print the requirements of the optional libraries that the import statements of the models name.
+
+    Import-like text elsewhere in a model file, such as a docstring header, names no requirement. The models are
+    compared, not run: they import optional libraries that a test environment need not hold.
+    """
+    monkeypatch.chdir(tmp_path)
+    expected = EXPECTED / "cli" / "model-dependencies"
+    run_main_and_assert(
+        input_path=Path("contacts.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
+        copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
+        capsys=capsys,
+        expected_stderr=(expected / f"{case_name}.txt").read_text(encoding="utf-8"),
+        assert_func=assert_file_content,
+        expected_file=expected / f"{case_name}.py",
+        skip_code_validation=True,
+    )
 
 
 @pytest.mark.parametrize("case_name", ["unchanged", "models-in-package", "package-in-models"])
@@ -1027,8 +1053,8 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
 @pytest.mark.parametrize(
     ("arguments", "stderr"),
     [
-        (["--watch", "--output-format", "json"], f"{CONFLICT} --watch\n"),
-        (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n"),
+        (["--watch", "--output-format", "json"], "Error: --output-format json cannot be used with --watch\n"),
+        (["--diff-against", "pets.yaml", "--check"], "Error: --diff-against and --check cannot be used together\n"),
         (
             ["--update-lock", "--lockfile", "server/api.lock"],
             "Remote lock for 'command' ({lock}) overlaps server output for 'command': {server}\n",
@@ -1043,7 +1069,7 @@ def test_fastapi_cli_conflicts(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the target cannot honor, and a remote lock inside the server output, before writing anything."""
+    """Refuse the model mode conflicts, and a remote lock inside the server output, before writing anything."""
     monkeypatch.chdir(tmp_path)
     root = tmp_path.resolve()
     run_main_and_assert(
@@ -1060,6 +1086,42 @@ def test_fastapi_cli_conflicts(
     assert_output(
         (tmp_path / "pyproject.toml").read_text(encoding="utf-8"),
         EXPECTED / "cli" / "kept" / "pyproject-target.toml.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    ("case", "baseline", "expected_exit"),
+    [("unchanged", "pets.yaml", Exit.OK), ("changed", "pets-baseline.yaml", Exit.DIFF)],
+    ids=["unchanged", "changed"],
+)
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
+def test_fastapi_cli_input_diff(
+    case: str,
+    baseline: str,
+    expected_exit: Exit,
+    structured: bool,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compare the models and the server two inputs render through the model input diff, writing nothing.
+
+    The baseline changes a model, a parameter description, and the operation tags, so files change, and a router
+    is generated only from each input.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    shutil.copy2(CLI / "pets-baseline.yaml", tmp_path / "pets-baseline.yaml")
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--diff-against", baseline, *(["--output-format", "json"] if structured else [])),
+        expected_exit=expected_exit,
+        capsys=capsys,
+        assert_no_stderr=True,
+        expected_stdout_path=EXPECTED / "cli" / "input-diff" / f"{case}.{'json' if structured else 'txt'}",
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
     )
 
 
@@ -1104,6 +1166,22 @@ def test_fastapi_cli_layout_errors(
     )
     written = sorted(path.name for path in tmp_path.iterdir() if path.name != source)
     assert_output(f"{capsys.readouterr().err}written {written}\n", EXPECTED / "cli" / "layout-errors" / f"{name}.txt")
+
+
+def test_fastapi_cli_model_and_form_dependencies(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print the requirements the models add to the server's, such as the email, ULID, and --use-pendulum types."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("contacts.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--use-pendulum"),
+        copy_files=[(SOURCE / "install" / "contacts.yaml", tmp_path / "contacts.yaml")],
+        skip_code_validation=True,
+    )
+    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "model-dependencies.txt")
 
 
 def test_fastapi_cli_nested_models_example(
@@ -1338,7 +1416,11 @@ def test_fastapi_cli_job_lockfile(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], "Error: --generate-server cannot be used with --watch\n"),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--watch", "--check"],
+            "Error: --watch and --check cannot be used together\n",
+        ),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--server-layout", "single"],
