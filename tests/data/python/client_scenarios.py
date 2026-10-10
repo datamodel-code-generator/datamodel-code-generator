@@ -65,6 +65,7 @@ from tests.data.python.client_retry_policy import retry_policy
 from tests.data.python.client_runtime import (
     Exchange,
     abroken,
+    agreeing_backends,
     arecord,
     argument,
     broken,
@@ -934,12 +935,13 @@ def client_runtime_report(name: str, root: Path) -> str:
     Pydantic version in its error links is left out.
     """
     case, backends, scenario = SCENARIOS[name]
-    reports = []
+    reports: dict[str, str] = {}
     for backend in backends:
         try:
-            reports.append(generated(case, backend, root / backend.replace(".", "_"), scenario))
+            report = generated(case, backend, root / backend.replace(".", "_"), scenario)
         except Error as error:
             if name != "webhook-backends" or "needs a declared discriminator" not in str(error):
                 raise
-            reports.append(f"# {case} {backend}\n  generation {error}\n")
-    return _sorted_validation_errors(_PYDANTIC_DOCS.sub("errors.pydantic.dev/<version>/", "".join(reports)))
+            report = f"# {case} {backend}\n  generation {error}\n"
+        reports[backend] = _sorted_validation_errors(_PYDANTIC_DOCS.sub("errors.pydantic.dev/<version>/", report))
+    return agreeing_backends(reports)

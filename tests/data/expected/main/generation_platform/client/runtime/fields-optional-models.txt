@@ -1,17 +1,4 @@
-# fields-optional-models pydantic_v2.BaseModel
-  > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 2] b'{}'
-  create giving nothing = Pet(id=1, name='Mimi', tag=None)
-  > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'{"name":"Mimi"}'
-  create without its kind = Pet(id=1, name='Mimi', tag=None)
-  > POST https://api.example.com/owners
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  create an owner giving nothing = None
-  > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
-  create from its required fields = Pet(id=1, name='Mimi', tag=None)
-# fields-optional-models dataclasses.dataclass
+# fields-optional-models pydantic_v2.BaseModel, dataclasses.dataclass
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 2] b'{}'
   create giving nothing = Pet(id=1, name='Mimi', tag=None)
