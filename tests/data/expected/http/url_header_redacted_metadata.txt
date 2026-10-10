@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Pet",
+      "name": "Pet",
+      "module": "",
+      "source_ref": "http://localhost/pet.json#",
+      "source_path": [],
+      "title": "Pet",
+      "fields": [
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "int | None",
+          "required": false
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "tag",
+          "alias": "tag",
+          "original_name": "tag",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

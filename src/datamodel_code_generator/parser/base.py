@@ -71,6 +71,7 @@ from datamodel_code_generator._source import (
     _read_parser_source_data_from_path,
 )
 from datamodel_code_generator._template_data import copy_extra_template_data
+from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import DefaultValueType, StrictTypes, _is_pydantic_version_at_least
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
@@ -7007,7 +7008,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module: ModulePath,
         source_reference_paths: Mapping[DataModel, str],
     ) -> GeneratedModelMetadata:
-        source_ref = source_reference_paths[model]
+        document, delimiter, pointer = source_reference_paths[model].partition("#")
+        source_ref = f"{redact_url(document)}{delimiter}{pointer}"
         title = model.extra_template_data.get("title")
         return {
             "class_name": model.class_name,
