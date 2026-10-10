@@ -102,7 +102,7 @@ The only currently implemented backend is 'pydantic-v2', which preserves the exi
 - **Target:** `--use-missing-sentinel`
 - **Since:** 0.66.1
 
-Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel.
+Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.
 
 The option requires Pydantic v2 BaseModel output and a target Pydantic version that supports the MISSING sentinel.
 

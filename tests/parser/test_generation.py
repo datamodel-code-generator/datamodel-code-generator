@@ -559,8 +559,14 @@ def test_generation_store_records_nested_and_dict_key_roles() -> None:
 
 @pytest.mark.parametrize(
     "target_pydantic_version",
-    [None, TargetPydanticVersion.V2, TargetPydanticVersion.V2_11, TargetPydanticVersion.V2_12],
-    ids=["unset", "2", "2.11", "2.12"],
+    [
+        None,
+        TargetPydanticVersion.V2,
+        TargetPydanticVersion.V2_11,
+        TargetPydanticVersion.V2_12,
+        TargetPydanticVersion.V2_14,
+    ],
+    ids=["unset", "2", "2.11", "2.12", "2.14"],
 )
 @pytest.mark.parametrize(
     ("model_type", "builtin_pydantic_model"),

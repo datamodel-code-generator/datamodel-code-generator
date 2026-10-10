@@ -5471,13 +5471,15 @@ Target Pydantic version for generated code compatibility.
 The `--target-pydantic-version` flag chooses the oldest Pydantic the generated code must run on.
 Output never depends on the Pydantic installed with datamodel-code-generator.
 
-- **unset**: the newest supported feature forms, the same as the newest choice (`2.12`); config key naming is
-  unchanged and keeps `populate_by_name=True` like `2`
+- **unset**: the newest supported feature forms, the same as `2.12`; config key naming is unchanged and keeps
+  `populate_by_name=True` like `2`, and `--use-missing-sentinel` keeps the experimental `MISSING` import
 - **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
   `json_schema_extra` for deprecated fields, and dictionary-key models defined first
 - **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
   `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
 - **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
+- **2.14**: The 2.12 forms, with `--use-missing-sentinel` importing `MISSING` from `pydantic` instead of the
+  `pydantic.experimental.missing_sentinel` path that Pydantic 2.14 deprecates
 
 See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.
 

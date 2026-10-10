@@ -98,6 +98,7 @@
     "pydantic200:ubuntu-24.04:/:",
     "pydantic20:ubuntu-24.04:/:",
     "pydantic213:ubuntu-24.04:/:",
+    "pydantic214:ubuntu-24.04:/:",
     "pydantic25:ubuntu-24.04:/:",
     "typing-nocov-e2e:ubuntu-24.04:1/5:",
     "typing-nocov-e2e:ubuntu-24.04:2/5:",
@@ -105,9 +106,9 @@
     "typing-nocov-e2e:ubuntu-24.04:4/5:",
     "typing-nocov-e2e:ubuntu-24.04:5/5:"
   ],
-  "coverage_count": 41,
+  "coverage_count": 42,
   "coverage_needs_only_producers": true,
-  "coverage_unique": 41,
+  "coverage_unique": 42,
   "exclude_only_without_coverage": true,
   "exclude_tests": [
     "tests/main/test_payload_validation.py"
@@ -124,7 +125,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 95,
+  "job_count": 96,
   "permissions": {
     "contents": "read"
   },

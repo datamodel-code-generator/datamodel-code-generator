@@ -65,7 +65,7 @@
   {
     "id": "cli-option.use-missing-sentinel",
     "kind": "cli-option",
-    "message": "Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel.",
+    "message": "Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.",
     "note": "The option requires Pydantic v2 BaseModel output and a target Pydantic version that supports the MISSING sentinel.",
     "since_version": "0.66.1",
     "target": "--use-missing-sentinel",
