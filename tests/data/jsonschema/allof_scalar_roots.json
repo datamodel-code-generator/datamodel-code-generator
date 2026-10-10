@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Label",
+  "allOf": [
+    true,
+    {
+      "type": "string"
+    },
+    {
+      "minLength": 1
+    }
+  ],
+  "$defs": {
+    "Count": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "minimum": 1
+        }
+      ]
+    },
+    "Enabled": {
+      "type": "boolean",
+      "allOf": [
+        {
+          "description": "Whether the label is shown."
+        }
+      ]
+    }
+  }
+}

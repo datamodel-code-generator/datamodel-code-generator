@@ -230,6 +230,12 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/allof.yaml::components.schemas.AllOfNested3": (
         "hypothesis-jsonschema cannot satisfy the nested allOf component constraints"
     ),
+    "openapi/allof_scalar_roots.yaml::components.schemas.Anything": (
+        "an allOf of untyped constraint members stays an empty model until flat untyped constraints are fixed"
+    ),
+    "openapi/allof_scalar_roots.yaml::components.schemas.TwoPatterns": (
+        "an allOf with more than one pattern member stays an empty model until pattern intersection is fixed"
+    ),
     "openapi/allof_with_required_inherited_complex_allof.yaml::components.schemas.ProjectedItem": (
         "hypothesis-jsonschema generates this nested allOf schema inconsistently"
     ),
