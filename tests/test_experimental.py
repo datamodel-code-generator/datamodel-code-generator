@@ -54,14 +54,14 @@ def test_experimental_table_output_includes_registered_features() -> None:
     assert "input-format.avro" in output
     assert "--input-file-type xmlschema" in output
     assert "Notes:" in output
-    assert "datamodel-code-generator[http] remains the stable HTTPX backend and is not deprecated" in compact_output
-    assert "datamodel-code-generator[httpx2] is experimental" in compact_output
+    assert "`datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated" in compact_output
+    assert "`datamodel-code-generator[httpx2]` is experimental" in compact_output
     assert "The default HTTP backend policy is auto" in compact_output
     assert "stable httpx is selected when its client module is installed, including when both pairs are installed" in (
         compact_output
     )
     assert "experimental httpx2 is selected only when that module is absent" in compact_output
-    assert "HTTPBackend.HTTPX2 to require the experimental pair" in compact_output
+    assert "`HTTPBackend.HTTPX2` to require the experimental pair" in compact_output
     assert "Explicit selections and paired dependency errors do not fall back" in compact_output
     assert "The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests" in compact_output
 

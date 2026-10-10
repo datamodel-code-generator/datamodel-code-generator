@@ -484,8 +484,10 @@ readOnly/writeOnly resolution works with local and file reference types:
 
 ## Limitations
 
-OpenAPI input is used for model generation. It does not generate HTTP clients, server handlers, route definitions, or
-runtime request dispatch logic. Full OpenAPI document validation is outside the generation path unless you explicitly
+OpenAPI input is used for model generation. Without the experimental `--generate-server fastapi` or
+`--generate-client httpx2` options, it does not generate HTTP clients, server handlers, route definitions, or runtime
+request dispatch logic; with them, it also generates a [FastAPI server package](fastapi-server.md) or a
+[Python client package](python-client.md) on top of the models. Full OpenAPI document validation is outside the generation path unless you explicitly
 enable validation-related options.
 
 ---

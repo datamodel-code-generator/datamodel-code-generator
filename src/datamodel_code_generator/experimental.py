@@ -82,11 +82,11 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         message="The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.",
         since_version="0.71.1",
         note=(
-            "datamodel-code-generator[http] remains the stable HTTPX backend and is not deprecated; "
-            "datamodel-code-generator[httpx2] is experimental. The default HTTP backend policy is auto: stable "
+            "`datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; "
+            "`datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable "
             "httpx is selected when its client module is installed, including when both pairs are installed, and "
-            "experimental httpx2 is selected only when that module is absent. Use --http-backend httpx2 or "
-            "HTTPBackend.HTTPX2 to require the experimental pair. Explicit selections and paired dependency "
+            "experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or "
+            "`HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency "
             "errors do not fall back."
         ),
     ),
@@ -102,13 +102,13 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         ),
         since_version="0.84.0",
         note=(
-            "--generate-client httpx2 generates the models at --output and a client package at --client-output; "
-            "--client-package and --client-model-package name their import paths, and the other --client-* options "
-            "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
-            "pyproject.toml, in its profiles, and in its jobs. --check, --diff-against, --watch, --output-format "
-            "json, and the uv add notice on stderr work as with --generate-server. generate() takes them as "
-            "generate_client and the client_* options. It needs Python 3.11 or later, both to run and as "
-            "--target-python-version."
+            "`--generate-client httpx2` generates the models at `--output` and a client package at "
+            "`--client-output`; `--client-package` and `--client-model-package` name their import paths, and the "
+            "other `--client-*` options configure the package. Like model options, they can be set in "
+            "`[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check`, "
+            "`--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with "
+            "`--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options. It needs "
+            "Python 3.11 or later, both to run and as `--target-python-version`."
         ),
     ),
     "cli-option.generate-schema-validators": ExperimentalFeature(
@@ -137,14 +137,15 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         ),
         since_version="0.84.0",
         note=(
-            "--generate-server fastapi generates the models at --output and a server package at --server-output; "
-            "--server-package and --server-model-package name their import paths, and the other --server-* options "
-            "configure the package. Like model options, they can be set in [tool.datamodel-codegen] of "
-            "pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --diff-against "
-            "compares the files two inputs render, --watch regenerates after input changes, --output-format json "
-            "uses the model generation, check, and input-diff payloads, and generation prints a uv add command to "
-            "stderr. generate() takes them as generate_server and the server_* options, and returns every generated "
-            "file without an output. It needs Python 3.11 or later, both to run and as --target-python-version."
+            "`--generate-server fastapi` generates the models at `--output` and a server package at "
+            "`--server-output`; `--server-package` and `--server-model-package` name their import paths, and the "
+            "other `--server-*` options configure the package. Like model options, they can be set in "
+            "`[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check` compares "
+            "without writing, `--diff-against` compares the files two inputs render, `--watch` regenerates after "
+            "input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and "
+            "generation prints a `uv add` command to stderr. `generate()` takes them as `generate_server` and the "
+            "`server_*` options, and returns every generated file without an output. It needs Python 3.11 or later, "
+            "both to run and as `--target-python-version`."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(

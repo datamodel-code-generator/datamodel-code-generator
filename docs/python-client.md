@@ -54,7 +54,9 @@ argument `petId` and an `X-Request-Id` header `X_Request_Id`, as in `client.pets
 model fields too, behind their aliases. A derived name that its namespace already holds takes the model's suffix, such
 as `get_pet_1` for a second `get_pet`, `id_1` for a query `id` beside a path `id`, or `options_1` for a parameter
 named after a call option. The model's `--naming-strategy` rules apply to these names too, with the resource as the
-parent of a method and the method as the parent of an argument. An explicit name, a `name`, `parameter_names`,
+parent of a method and the method as the parent of an argument, and its `--duplicate-name-suffix` (the `model` entry,
+or `default`) tells apart a derived class name, such as an operation's PascalCase name, as it does a model class;
+method and argument names keep the number. An explicit name, a `name`, `parameter_names`,
 `body_field_names` or `--client-resource-names` entry or an `--aliases` entry, must be a new Python identifier and is
 never renamed.
 
@@ -198,6 +200,31 @@ select the TC rules, to introspect the annotations at run time. Custom
 templates and custom formatters must keep the class and field names of the models: the client binds each operation
 to the names in the generated model graph and does not read the rendered model source.
 
+## Servers and base URLs
+
+Each operation sends to its effective OpenAPI `servers`, those of the operation, its path item, or the document. By
+default a call uses the first of them with the default of every server variable. A relative server URL resolves
+against `--client-server-base-url`, or against the document's own URL when it was read over HTTP or HTTPS. An
+operation without servers uses `--client-default-base-url`; without one, generation fails, for a `GET /pets` with
+`Error: /paths/~1pets/get: A server of GET /pets does not resolve to an absolute http or https URL`.
+
+```python
+from pets import Client
+from pets.options import RequestOptions, ServerSelection
+
+client = Client(server=ServerSelection(index=0, variables={"region": "eu"}))
+staging = client.with_options(base_url="https://staging.example.com/v1")
+pets = client.pets.list_pets(options=RequestOptions(base_url="http://localhost:8000"))
+```
+
+`server=ServerSelection(index=, variables=)` picks another declared server by position and supplies its variables;
+`base_url=` replaces the servers with one URL. `Client`, `with_options`, and `RequestOptions` take the same two
+keywords, and the nearest one given wins: a call's over its view's, a view's over the client's, so a view's `server`
+also replaces the client's `base_url`. Giving both on one of them raises `ConfigurationError` with the reason
+`conflicts_with_server`. An index the operation does not declare raises `ConfigurationError` with `out_of_range`, a
+variable it does not declare `undeclared`, and a value outside a variable's `enum` `not_allowed`, when the call is
+made.
+
 ## Model conversion
 
 The generated models determine validation and conversion. Text in parameters, response headers, forms and text parts
@@ -208,7 +235,12 @@ such text is a decoding error, like text that cannot become a `Decimal`, date or
 still constructed without added schema validation. Repeated undeclared members keep their last value.
 
 The generated `model_codecs` module exports `UNSET` and `JSONValue`. Parameter parsing records and wire
-validation errors are implementation details.
+validation errors are implementation details. `UNSET`, also exported from `pkg.options`, is a
+`typing_extensions.Sentinel` ([PEP 661](https://peps.python.org/pep-0661/)), not an `Enum` member: it marks an
+omitted value, distinct from `None`, and is both the default and its own type, as in `limit: int | UNSET = UNSET`;
+test for it with `is UNSET`. A type checker must support PEP 661 sentinels to accept these annotations: mypy 2.4 or
+later (mypy 2.3 reports `valid-type`), or Pyright and ty, which the generated packages are checked with in strict
+mode.
 
 ## Webhook contracts
 
@@ -247,7 +279,8 @@ synchronous verifier contract applies to asynchronous consumers. [Adapter signat
 a generated helper calls a verifier and checks its result.
 
 `WebhookOptions` has the fields below. Every constructor default is `UNSET`, imported from `pkg.options`;
-the effective values are the standalone verification defaults. `ResolvedWebhookOptions` has the same fields with
+the effective values are the defaults in the table below, which the
+[webhook verification helpers](#verification-order-and-limits) apply. `ResolvedWebhookOptions` has the same fields with
 `UNSET` removed and every argument required. Both types are exported from `pkg.protocols`.
 `ResolvedWebhookOptions` records limits already validated and resolved by the consuming helper. Helpers must
 validate `WebhookOptions` before constructing this record and passing it to an application verifier.
@@ -294,8 +327,8 @@ polling, stream, WebSocket, cache, or upload helper; see [client helper settings
 execution loads when `client.protocols`
 is first used; ordinary operations share the same native HTTP client. Exceptions come from `pkg.errors`, each with the
 helper that raises it. These imports need no HTTP library and start no threads. A client that uses no helper settings
-loads none of these definitions: `pkg.errors` loads them the first time one of its names is used. The
-helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
+loads none of these definitions: `pkg.errors` loads them the first time one of its names is used. Constructing a
+record or option sends nothing.
 
 ### Selectors, targets, and origins
 
@@ -391,7 +424,7 @@ client = Client(helper_defaults={"users.all": PaginationOptions(max_pages=10, to
 
 | Setting | Type | Meaning |
 |---|---|---|
-| `helper_defaults` | `Mapping[str, HelperOptions] \| None`, default `None` | The options of each helper, by helper name: `PaginationOptions`, `PollOptions`, `StreamOptions`, `CacheOptions`, `WSOptions`, or `UploadOptions`, of the helper's kind. The mapping is copied |
+| `helper_defaults` | `Mapping[str, HelperOptions] \| None`, default `None`, where `HelperOptions` stands for the union of the six option classes and is not importable | The options of each helper, by helper name: `PaginationOptions`, `PollOptions`, `StreamOptions`, `CacheOptions`, `WSOptions`, or `UploadOptions`, of the helper's kind, each imported from `pkg.protocols`. The mapping is copied |
 | `cache_stores` | `Mapping[str, CacheStore] \| None` (`AsyncCacheStore` on `AsyncClient`), default `None` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied and keeps each store's identity; the client borrows the stores and never closes them |
 | `allowed_origins` | `Sequence[Origin] \| None`, default `None` | The origins beyond the server's that a next-URL or Link pagination helper may follow a URL to; an origin listed twice counts once |
 
@@ -408,8 +441,8 @@ values. Besides the fields below, each accepts `helper_id`, `operation`, `operat
 | Exception | Fields |
 |---|---|
 | `ProtocolDataError` | `reason: str = 'value'`, `location: Selector \| RequestTarget \| None = None`, `data: object = None` |
-| `SessionLimitError` | `reason: Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'wait', 'deadline']`, `limit: float`, `progress: ProtocolProgress`, `required_wait: float \| None = None` |
-| `StreamInterruptedError` | `reason: Literal['eof', 'transport']`, `sequence: int`, the last record delivered |
+| `SessionLimitError` | `reason: str`, one of `pages`, `items`, `polls`, `reconnects`, `parts`, `wait`, and `deadline`; `limit: float`, `progress: ProtocolProgress \| None = None`, kept as a read-only copy; `required_wait: float \| None = None` |
+| `StreamInterruptedError` | `reason: str`, `eof` or `transport`; `sequence: int`, the last record delivered |
 | `WebSocketClosedError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
 
 `ProtocolDataError` has the `reason` `missing`, `null`, `type`, `value`, `malformed`, `inconsistent`, or `too_large` for
@@ -436,8 +469,8 @@ attributes explicitly.
 ## Protocol helper configuration
 
 Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, and resumable upload helpers of an API are declared
-in a helper configuration, which the client target reads through its `protocols` setting. The helpers are still being
-implemented: generation validates every helper and resolves its references against the selected API. An enabled
+in a helper configuration, which the client target reads through its `protocols` setting. Generation validates every
+helper and resolves its references against the selected API. An enabled
 pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled polling helper the
 [polling helper](#polling-helpers), an enabled `offset` upload helper the
 [upload helper](#upload-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON
@@ -613,7 +646,7 @@ without case, the operation's own querystring, or its request body. An operation
 | `pagination` | `operation`, `items` (a body selector), `item_schema`, `continuation` | `bindings` (`[]`), such as a snapshot token each request carries |
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
-| `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
+| `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `enabled` (`true`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | None |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`); see [cache helpers](#cache-helpers) |
 | `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
@@ -2057,7 +2090,6 @@ async with AsyncClient() as client, client.protocols.rooms.chat.connect(room="lo
     "kind": "websocket",
     "operation": "/paths/~1rooms~1{room}~1socket/get",
     "subprotocols": ["chat.v2", "chat.v1"],
-    "compression": true,
     "send": {"codec": "json", "schema": {"pointer": "/components/schemas/ClientMessage"}},
     "receive": {"codec": "json", "schema": {"pointer": "/components/schemas/ServerMessage"}}
   }
@@ -2069,8 +2101,8 @@ is sent as compact UTF-8 JSON and received through the schema's codec, `codec: u
 `codec: bytes`. `frame` is `text` or `binary`; it defaults to `text` for JSON and UTF-8 messages and to `binary` for
 bytes, and only JSON messages may choose. `S` is the send schema's argument type, its model type `T`, or `str` or
 `bytes`, and `R` the received type; a union schema carries several message types. `subprotocols` lists the offered
-subprotocols in order (`[]` by default). `compression` is still accepted and has no effect: HTTPX2 WebSockets do not
-negotiate `permessage-deflate`.
+subprotocols in order (`[]` by default). `enabled` defaults to `true`; a disabled helper generates nothing, as for every
+helper kind. HTTPX2 WebSockets do not negotiate `permessage-deflate`, so the helper has no compression setting.
 
 `WebSocketSession`, `AsyncWebSocketSession`, `Message`, `PingReceipt`, and `WSOptions` are imported from
 `pkg.protocols`, and the WebSocket exceptions from `pkg.errors`. Sessions run on `httpx2.websockets`, so generation
@@ -3124,7 +3156,7 @@ place.
 | `APIConnectionError` | A classified I/O failure of the transport, with the native failure as `cause`; the reason is `None` for a transport failure, `delivery_unknown` when a WebSocket send or an upload append or completion may have reached the server and is never sent again, and `negotiation_failed` for a WebSocket 101 that selected no offered subprotocol | None |
 | `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's total timeout, with the reason `deadline_exceeded` | None |
 | `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated` |
-| `DecodeError` | A request argument its wire form cannot carry, or a response, stream event, record, or message that cannot become its declared value | `direction` (`request` or `response`), `location`, `body_bytes`, `truncated`, `media_type`, `limit`, `observed` |
+| `DecodeError` | A request argument its wire form cannot carry, or a response, stream event, record, or message that cannot become its declared value | `direction` (`request` or `response`), `location`, `body_bytes`, `truncated`, `media_type` |
 | `AuthError` | Credential acquisition or a token exchange failed; exported only by a package whose operations take credentials | `reason`, `status_code`, `oauth_error` |
 
 `APIStatusError` has a subclass for each common status: `BadRequestError` (400), `AuthenticationError` (401),
@@ -3140,9 +3172,8 @@ A request `DecodeError` has the reason `unencodable`, with the argument's path a
 `body_not_replayable` at the `location` `("body",)`. A response `DecodeError` has the reason `invalid_syntax`,
 `invalid_value` when the model or schema refuses the value, `unexpected_media_type` with the response's `media_type`,
 `forbidden_body`, `missing_body`, `invalid_framing`, `invalid_header` with the `location` `("header", name)`,
-`malformed_coding` for a body whose content coding does not decode, or `response_too_large` with its `limit` and
-`observed` size. A stream event, NDJSON record, or WebSocket message that does not decode has the reason `missing`,
-`null`, `type`, `value`, or `malformed`, the `location` `("event", sequence)` or `("message", sequence)` with a pointer
+or `malformed_coding` for a body whose content coding does not decode. A stream event, NDJSON record, or WebSocket
+message that does not decode has the reason `missing`, `null`, `type`, `value`, or `malformed`, the `location` `("event", sequence)` or `("message", sequence)` with a pointer
 where a member is at fault, and at most 64 KiB of it as `body_bytes`. `AuthError` has the reason `provider_failed`, `invalid_expiry`, `oauth_error`, `timeout`, or `reauthorization_required`.
 It keeps no credential material or provider description itself; the `cause` of `provider_failed` is the application's
 own exception from its credential callable or token callback.
@@ -3184,7 +3215,7 @@ impossible date, such as one with a leap second, is ignored. The two-digit year 
 is at most 50 years after receipt, as RFC 9110 reads it; a year below 100 in another form is read as 1969 to 2068.
 Without a valid hint, bounded exponential backoff applies. Retry waits consume the same logical budget as sending and
 decoding. `RetryOptions(respect_retry_after=False)` is an explicit application policy override, disclosed in every
-generated README; it is never silently embedded in generated defaults.
+generated README, `pkg/_generated_docs/README.md`; it is never silently embedded in generated defaults.
 
 ```python
 from pets import Client

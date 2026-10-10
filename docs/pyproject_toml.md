@@ -121,7 +121,10 @@ rebuild individual jobs. A failed cycle keeps the last published outputs and
 continues watching both prior and newly discovered dependencies for recovery.
 
 A job whose settings select `generate-server` also generates the FastAPI server
-package, and such jobs can share one models `output`; see [Batch jobs](fastapi-server.md#batch-jobs).
+package, and a job whose settings select `generate-client` also generates the Python
+client package; such jobs can share one models `output`; see [Batch jobs](fastapi-server.md#batch-jobs).
+Server and client generation are experimental; see [FastAPI Server Generation](fastapi-server.md) and
+[Python Client Generation](python-client.md).
 
 ## 🎯 Configuration Priority
 

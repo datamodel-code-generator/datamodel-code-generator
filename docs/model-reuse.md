@@ -476,4 +476,4 @@ This pattern is ideal when:
 - [CLI Reference: `--collapse-root-models`](cli-reference/model-customization.md#collapse-root-models)
 - [CLI Reference: `--use-type-alias`](cli-reference/typing-customization.md#use-type-alias)
 - [Root Models and Type Aliases](root-model-and-type-alias.md)
-- [FAQ: Performance](faq.md#-performance)
+- [FAQ: Performance](faq.md#performance)

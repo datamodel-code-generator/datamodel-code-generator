@@ -145,13 +145,15 @@ operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`
   moves imports only an annotation uses into `TYPE_CHECKING` blocks when `ruff-check` runs with its TC rules
   selected and `--use-type-checking-imports` is given, since the server's Pydantic backends keep them by default. The
   router and application modules keep their imports: they have no postponed annotations, because FastAPI reads them
-  at run time.
+  at run time. As for the models, `typing.get_type_hints` on a generated class or function whose annotations name a
+  moved import then raises `NameError`: pass `--no-use-type-checking-imports`, or do not select the TC rules, to
+  introspect the annotations at run time.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `--server-model-package` is its import path. The models can
   live inside the server package, and the server package inside a models directory; see
   [The generated package](#the-generated-package).
-- The generated package needs FastAPI 0.141 and the other requirements it lists.
+- The generated package needs `fastapi>=0.141.1` and the other requirements of the printed `uv add` command.
 
 ## Python API
 
@@ -200,16 +202,21 @@ work for them as well. See [Target Generation Options](cli-reference/target-gene
 | `--server-output` | required | Directory of the generated package |
 | `--server-package` | required | Import path of the generated package |
 | `--server-model-package` | required | Import path of the models `--output` generates |
-| `--server-layout` | `routers` | One router module per tag, or `single` for one `routes.py` |
+| `--server-layout` | `routers` | One router module per group, or `single` for one `routes.py` |
 | `--server-handler-mode` | `sync` | `async` makes service methods coroutine functions |
 | `--server-handler-modes` | none | The handler mode of single operations, over `--server-handler-mode` |
-| `--server-include-request` | off | Pass the Starlette `Request` to every service method |
-| `--server-body-mode` | `typed` | `request` passes the raw `Request` instead of a validated body |
+| `--server-include-request` | off | Pass the Starlette request to every service method as the keyword `request: Request` |
+| `--server-body-mode` | `typed` | `request` passes the raw request, as the keyword `request: Request`, instead of a validated body |
 | `--server-body-modes` | none | The body mode of single operations, over `--server-body-mode` |
 | `--server-primary-responses` | inferred | The response a bare return value takes: `status_code` and an optional `media_type` |
 | `--server-operation-names` | inferred | Service method names of single operations |
-| `--server-router-names` | inferred | Group keys, such as `tag:pets`, to group names: router modules, service arguments, and `<Name>Service` Protocols |
+| `--server-router-names` | inferred | Group keys, such as `tag:pets` or `untagged`, to group names: router modules, service arguments, and `<Name>Service` Protocols |
 | `--server-parameter-names` | inferred | Method argument names of single operations, keyed by location and name such as `query:limit` |
+
+Operations are grouped by their first tag, under the key `tag:<tag>`, and operations without a tag under the key
+`untagged`, which makes the `untagged` router module, the `UntaggedService` Protocol, and the `untagged=` argument of
+`create_app` and `build_router`. With `--server-layout single`, every operation is in the group `all`: one
+`routes.py`, one `Service` Protocol, and the argument `service=`.
 
 `--server-handler-modes`, `--server-body-modes`, `--server-primary-responses`, `--server-operation-names`,
 `--server-router-names`, and `--server-parameter-names` take a JSON object, inline or as the path of a JSON file, as
@@ -309,7 +316,7 @@ server run to the batch document, with file paths relative to that job's model o
 | `__init__.py`, `application.py` | `create_app`, `build_router`, and the public types |
 | `services.py` | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | Route registrations |
-| `security.py` | One FastAPI security dependency for each scheme |
+| `security.py` | One FastAPI security dependency for each scheme, only when a selected operation uses a security scheme |
 | `_generated/`, `_runtime/` | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | Documentation and typing marker |
 
@@ -432,6 +439,10 @@ that repeats a member keeps the last value; and text that is not JSON, or JSON p
 integer of thousands of digits or deep nesting, answers `422` with `json_invalid`.
 A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
+A path, query, header, or cookie parameter whose schema mixes scalar kinds keeps every member when one of them is a
+string, such as `int | str` for `type: [integer, string]`. Without a string member, such as `type: [integer, boolean]`,
+and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops with
+`A parameter value needs one unambiguous scalar kind`.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
 route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
@@ -453,9 +464,15 @@ key and for the `Authorization` header OAuth2 and OpenID Connect read, `HTTPBasi
 `create_app` and `build_router` of a package with secured operations take an
 `authorize(requirement_sets, credentials)` callback, which may be a coroutine function. Each secured operation calls
 it once with its security requirement sets whose every scheme presented a credential, in declaration order, and the
-credentials by scheme name; the handler receives the principal it returns, and it rejects a request by raising
-`HTTPException`. A request that presents no complete requirement set answers `401`, unless the operation also
-accepts no credentials, in which case the handler receives `None`. FastAPI's document lists each scheme of an
+credentials by scheme name; the handler receives the principal it returns as the keyword argument
+`principal: PrincipalT_contra`, and it rejects a request by raising `HTTPException`. A request that presents no
+complete requirement set answers `401`, unless the operation also accepts no credentials, in which case the handler
+receives `None`, typed `PrincipalT_contra | None`. A service Protocol with secured operations is generic,
+`PetsService(Protocol[PrincipalT_contra])`, so `create_app(pets=..., authorize=...)` ties the principal type of the
+services to the return type of `authorize`. The package exports the callback types `Authorize` and
+`AsyncAuthorize`, `Callable[[RequirementSets, Credentials], P]` and the same returning `Awaitable[P]`, with
+`RequirementSets`, a tuple of requirement sets, each a tuple of `(scheme name, scopes)` pairs, and `Credentials`,
+`Mapping[str, object]`. FastAPI's document lists each scheme of an
 operation as a separate alternative, since FastAPI cannot document a requirement that combines several schemes.
 
 ## Served OpenAPI document
