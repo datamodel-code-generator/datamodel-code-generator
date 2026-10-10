@@ -1,4 +1,6 @@
 # type-checking-imports
+render pydantic_v2.BaseModel
+  RuntimeError: Ruff command failed with exit code 1 (TC001, TC002, TC003)
 render msgspec.Struct
   write models.py
   write client/__init__.py

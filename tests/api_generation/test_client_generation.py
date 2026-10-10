@@ -140,6 +140,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "templates-invalid",
         "type-checking-imports",
         "type-checking-imports-on",
+        "type-checking-imports-off",
         "templates-not-found",
         "api-scope-required",
         "output-required",

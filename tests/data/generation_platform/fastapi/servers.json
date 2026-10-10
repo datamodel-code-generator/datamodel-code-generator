@@ -333,6 +333,41 @@
       }
     ]
   },
+  "pets-type-checking-default": {
+    "input": "pets.yaml",
+    "files": [
+      "type-checking/pyproject.toml"
+    ],
+    "services": "pets",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking"
+    }
+  },
+  "pets-type-checking-off": {
+    "input": "pets.yaml",
+    "files": [
+      "type-checking/pyproject.toml"
+    ],
+    "services": "pets",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": false
+    }
+  },
   "parameters": {
     "input": "server-parameters.yaml",
     "services": "parameters",
