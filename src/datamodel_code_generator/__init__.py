@@ -1572,28 +1572,39 @@ def _write_results_to_output(  # noqa: PLR0913
 
         warn_shadowed_modules(modules)
 
+    prepared_modules: list[tuple[Path, bytes]] = []
     for path, (body, future_imports, filename) in modules.items():
+        effective_header = _format_file_header(header_prefix, header_suffix, filename)
+        if has_custom_file_header and body:
+            content = (
+                _build_module_content(
+                    body,
+                    effective_header,
+                    has_custom_file_header=True,
+                    future_imports=future_imports,
+                )
+                + "\n"
+            )
+        else:
+            parts = [effective_header]
+            if body:
+                parts.append("\n\n")
+                parts.append(body.rstrip())
+            parts.append("\n")
+            content = "".join(parts)
+
+        try:
+            encoded_bytes = content.encode(config.encoding)
+        except (UnicodeEncodeError, LookupError) as e:
+            raise Error(f"Unable to encode output using encoding {config.encoding!r}: {e}") from e
+
+        prepared_modules.append((path, encoded_bytes))
+
+    for path, encoded_bytes in prepared_modules:
         if not path.parent.exists():
             path.parent.mkdir(parents=True)
-
-        effective_header = _format_file_header(header_prefix, header_suffix, filename)
-        with path.open("wt", encoding=config.encoding) as file:
-            if has_custom_file_header and body:
-                file.write(
-                    _build_module_content(
-                        body,
-                        effective_header,
-                        has_custom_file_header=True,
-                        future_imports=future_imports,
-                    )
-                    + "\n"
-                )
-            else:
-                file.write(effective_header)
-                if body:
-                    file.write("\n\n")
-                    file.write(body.rstrip())
-                file.write("\n")
+        with path.open("wb") as file:
+            file.write(encoded_bytes)
 
 
 def _format_deferred_output(

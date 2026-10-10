@@ -2968,6 +2968,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     except UnicodeDecodeError as e:
         print(f"Unable to decode input using encoding {config.encoding!r}: {e}", file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
+    except (UnicodeEncodeError, LookupError) as e:
+        print(f"Unable to encode output using encoding {config.encoding!r}: {e}", file=sys.stderr)  # noqa: T201
+        return cleanup_and_return(Exit.ERROR)
     except Error as e:
         print(str(e), file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)

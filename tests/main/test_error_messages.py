@@ -33,6 +33,7 @@ from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import assert_output, assert_warnings_contain, create_assert_file_content
 from tests.main.conftest import (
     DATA_PATH,
+    JSON_SCHEMA_DATA_PATH,
     InputFileTypeLiteral,
     run_generate_file_and_assert,
     run_main_and_assert,
@@ -1580,3 +1581,45 @@ def test_parser_internal_missing_file_keeps_traceback(
         expected_stderr_contains=TRACEBACK_HEADER,
         output_should_not_exist=True,
     )
+
+
+def test_output_encoding_error_clean_message_and_no_corrupted_file(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Non-encodable output produces clean error message without traceback and does not write corrupt file."""
+    output_file = tmp_path / "output.py"
+    run_main_with_args(
+        [
+            "--input",
+            str(JSON_SCHEMA_DATA_PATH / "simple_string.json"),
+            "--output",
+            str(output_file),
+            "--encoding",
+            "latin-1",
+            "--custom-file-header",
+            "# 漢 unicode header",
+        ],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="Unable to encode output using encoding 'latin-1':",
+    )
+    captured = capsys.readouterr()
+    assert TRACEBACK_HEADER not in captured.err
+    assert not output_file.exists()
+
+
+def test_generate_output_encoding_error_raises_error(
+    tmp_path: Path,
+) -> None:
+    """generate() raises Error when output encoding fails."""
+    output_file = tmp_path / "output.py"
+    with pytest.raises(Error, match="Unable to encode output using encoding 'latin-1'"):
+        generate(
+            JSON_SCHEMA_DATA_PATH / "simple_string.json",
+            input_file_type=InputFileType.JsonSchema,
+            output=output_file,
+            encoding="latin-1",
+            custom_file_header="# 漢 unicode header",
+        )
+    assert not output_file.exists()

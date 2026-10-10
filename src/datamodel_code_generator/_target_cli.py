@@ -286,6 +286,8 @@ def _failure(error: Exception, *, encoding: str = "utf-8") -> None:
         message = f"{error} You have to set `--class-name` option"
     elif isinstance(error, UnicodeDecodeError):
         message = f"Unable to decode input using encoding {encoding!r}: {error}"
+    elif isinstance(error, (UnicodeEncodeError, LookupError)):
+        message = f"Unable to encode output using encoding {encoding!r}: {error}"
     elif not isinstance(error, (Error, OSError)):
         from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 
