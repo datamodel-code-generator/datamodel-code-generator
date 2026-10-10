@@ -138,6 +138,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "templates-helpers",
         "templates-webhooks",
         "templates-invalid",
+        "type-checking-imports",
+        "type-checking-imports-on",
         "templates-not-found",
         "api-scope-required",
         "output-required",
@@ -372,7 +374,7 @@ def test_client_config(case: str, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("case", "options"),
+    ("case", "options", "module"),
     [
         (
             "header-quotes",
@@ -382,17 +384,41 @@ def test_client_config(case: str, tmp_path: Path) -> None:
                 "enable_version_header": True,
                 "use_double_quotes": True,
             },
+            ("resources", "pets", "__init__.py"),
         ),
-        ("encoding", {"encoding": "latin-1", "custom_file_header": "# -*- coding: latin-1 -*-\n# Café"}),
-        ("formatters", {"formatters": ["ruff-format"]}),
+        (
+            "encoding",
+            {"encoding": "latin-1", "custom_file_header": "# -*- coding: latin-1 -*-\n# Café"},
+            ("resources", "pets", "__init__.py"),
+        ),
+        ("formatters", {"formatters": ["ruff-format"]}, ("resources", "pets", "__init__.py")),
+        ("builtin-line-length", {"builtin_format_line_length": 100}, ("_operations.py",)),
+        (
+            "black-isort",
+            {"formatters": ["black", "isort"], "use_double_quotes": True, "wrap_string_literal": True},
+            ("_operations.py",),
+        ),
+        (
+            "ruff-line-length",
+            {"formatters": ["ruff-check", "ruff-format"], "settings_path": SOURCE / "line-length"},
+            ("_operations.py",),
+        ),
+        (
+            "custom-formatter",
+            {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
+            ("_operations.py",),
+        ),
     ],
 )
-def test_client_output_options(case: str, options: dict[str, object], tmp_path: Path) -> None:
-    """Head, format, and encode the client files with the model output options, exactly like the models."""
+def test_client_output_options(case: str, options: dict[str, object], module: tuple[str, ...], tmp_path: Path) -> None:
+    """Head, format, and encode the client files with the model output options, exactly like the models.
+
+    The formatters and their settings lay out the plan values the templates leave on one line.
+    """
     source = shutil.copy2(SOURCE / "pets.yaml", tmp_path / "pets.yaml")
     generate_client(source, tmp_path, "client", "pydantic_v2.BaseModel", model=options)
     encoding = str(options.get("encoding", "utf-8"))
-    text = (tmp_path / "client" / "resources" / "pets" / "__init__.py").read_bytes().decode(encoding)
+    text = (tmp_path / "client").joinpath(*module).read_bytes().decode(encoding)
     assert_output(
         text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
         EXPECTED / "output-options" / f"{case}.py",

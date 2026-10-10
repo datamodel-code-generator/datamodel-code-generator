@@ -824,6 +824,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
+    "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), pets),
+    "type-checking-imports-on": ("type-checking-imports-on", ("pydantic_v2.BaseModel",), pets),
     "auth-errors": ("auth", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),

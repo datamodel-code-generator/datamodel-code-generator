@@ -188,8 +188,11 @@ as given, including the generation timestamp, which `disable_timestamp` leaves o
 formatted, and encoded like the model files, by the same model settings: `formatters`, `custom_formatters` and
 `custom_formatters_kwargs`, `custom_file_header`, `custom_file_header_path` and `custom_file_header_mode`,
 `disable_timestamp`, `enable_version_header`, `enable_command_header`, `use_double_quotes`,
-`builtin_format_line_length`, `encoding` (for the Python files; the other files are UTF-8), and `settings_path`;
-`use_type_checking_imports` does not apply to the client files, whose annotations are read at run time. Custom
+`builtin_format_line_length`, `encoding` (for the Python files; the other files are UTF-8), `settings_path`, and
+`use_type_checking_imports`. As for the models, Ruff moves imports only an annotation uses into `TYPE_CHECKING`
+blocks when `ruff-check` runs with its TC rules selected and `use_type_checking_imports` allows it: by default for
+the dataclass, TypedDict, and msgspec backends, and with `use_type_checking_imports` for the Pydantic ones; the
+client reads no annotation at run time. Custom
 templates and custom formatters must keep the class and field names of the models: the client binds each operation
 to the names in the generated model graph and does not read the rendered model source.
 

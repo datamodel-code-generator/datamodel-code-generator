@@ -11,12 +11,13 @@ from datamodel_code_generator._client.facade import statement
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import call, display
+from datamodel_code_generator._target_templates import templated
 
 if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecKind, Shape
     from datamodel_code_generator._target_contract import TypeUseId
     from datamodel_code_generator._target_module import TypeNames
-    from datamodel_code_generator._target_templates import Role
+    from datamodel_code_generator._target_templates import Templated
 
 _CODECS: Final[dict[CodecKind, str]] = {
     "pydantic": "PydanticCodec",
@@ -47,9 +48,9 @@ class UseAccessors:
 
 @dataclass(frozen=True, slots=True)
 class RenderedBindings:
-    """The source of `_generated/model_bindings.py` and the accessors of every planned use."""
+    """The `_generated/model_bindings.py` module and the accessors of every planned use."""
 
-    source: str
+    source: Templated
     uses: tuple[UseAccessors, ...]
 
 
@@ -102,7 +103,7 @@ class _Renderer:
             return self.call("Choice", kinds, *((repr(shape.tag), tags) if shape.tag is not None else ()))
         return "None"
 
-    def render(self, role: Role) -> RenderedBindings:
+    def render(self) -> RenderedBindings:
         codecs = sorted({_CODECS[use.kind] for use in self.plan.uses if use.kind != "stdlib"})
         models: list[ModelEntry] = []
         annotation = ""
@@ -143,7 +144,9 @@ class _Renderer:
             for module, names in (("native", codecs), ("stdlib", sorted(self.stdlib)))
             if names
         ]
-        source = role("model_bindings.jinja2", model_bindings_template.render)(
+        source = templated(
+            "model_bindings.jinja2",
+            model_bindings_template.render,
             imports=self.module.imports(),
             codec_imports=imports,
             models_annotation=annotation,
@@ -153,6 +156,6 @@ class _Renderer:
         return RenderedBindings(source, tuple(accessors))
 
 
-def render_model_bindings(plan: ClientCodecs, types: TypeNames, role: Role) -> RenderedBindings:
-    """Render one native codec per selected use and the stdlib models its conversions reach, through the role."""
-    return _Renderer(plan, types).render(role)
+def render_model_bindings(plan: ClientCodecs, types: TypeNames) -> RenderedBindings:
+    """Render one native codec per selected use and the stdlib models its conversions reach."""
+    return _Renderer(plan, types).render()

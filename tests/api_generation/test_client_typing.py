@@ -143,13 +143,15 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
         "type-spellings-legacy",
         "naming",
         "naming-snake",
+        "type-checking-imports-on",
     ],
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
-    """Check helper target and naming packages.
+    """Check helper target, naming, and type-checking import packages.
 
     The helper target packages write each kind of request target, bindings, positions, and followed URLs.
     The naming packages check methods and arguments named by the model's naming rules, with their suffixes.
+    The type-checking import package imports the names its annotations alone use only for type checkers.
     """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")

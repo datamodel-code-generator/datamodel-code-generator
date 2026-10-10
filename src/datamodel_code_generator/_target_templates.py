@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import PurePosixPath
 from types import MappingProxyType
@@ -20,6 +21,24 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import GenerateConfig
 
 Role: TypeAlias = Callable[..., Callable[..., str]]
+
+
+@dataclass(frozen=True, slots=True)
+class Templated:
+    """A generated module as its role renders it: the role, the role's compiled builtin renderer, and its values."""
+
+    role: str
+    compiled: Callable[..., str]
+    values: Mapping[str, object]
+
+    def render(self, role: Role) -> str:
+        """Render the module through a target's roles: a custom template directory's override, or the builtin."""
+        return role(self.role, self.compiled)(**self.values)
+
+
+def templated(role: str, compiled: Callable[..., str], **values: object) -> Templated:
+    """Return the module a role renders from these values."""
+    return Templated(role, compiled, values)
 
 
 class TemplateOverlay:

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client._compiled_templates import webhook as webhook_template
-from datamodel_code_generator._client.facade import render_facade, statement
+from datamodel_code_generator._client.facade import facade_module, statement
 from datamodel_code_generator._client.naming import folded
 from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.render import Function
@@ -22,6 +22,7 @@ from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId, SourceLocation
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import Keyword, Parameter, Plan, call
+from datamodel_code_generator._target_templates import templated
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
     from datamodel_code_generator._target_module import TypeNames
-    from datamodel_code_generator._target_templates import Role
+    from datamodel_code_generator._target_templates import Templated
 
 __all__ = (
     "WebhookEvent",
@@ -226,14 +227,12 @@ class _Webhooks:
         specs: tuple[WebhookSpec, ...],
         types: TypeNames,
         accessors: Mapping[TypeUseId, UseAccessors],
-        role: Role,
     ) -> None:
         self.specs = specs
         self.types = types
         self.accessors = accessors
-        self.role = role
 
-    def files(self) -> tuple[tuple[PurePosixPath, str], ...]:
+    def files(self) -> tuple[tuple[PurePosixPath, Templated], ...]:
         """Return the package's webhook files, nothing without helpers, and a keys module only for builtin kinds."""
         if not self.specs:
             return ()
@@ -247,13 +246,12 @@ class _Webhooks:
         root = packages.pop(PurePosixPath("webhooks"))
         keys = self.keys()
         return (
-            (PurePosixPath("webhooks", "__init__.py"), render_facade(self.role, "webhooks", _ROOTS[frozenset(root)])),
+            (PurePosixPath("webhooks", "__init__.py"), facade_module("webhooks", _ROOTS[frozenset(root)])),
             *(() if keys is None else ((PurePosixPath("webhooks", "keys.py"), keys),)),
             *(
                 (
                     package / "__init__.py",
-                    render_facade(
-                        self.role,
+                    facade_module(
                         ".".join(package.parts),
                         f"The {'.'.join(package.parts[1:])} webhook {_KINDS[frozenset(kinds)]}.",
                     ),
@@ -266,7 +264,7 @@ class _Webhooks:
             ),
         )
 
-    def keys(self) -> str | None:
+    def keys(self) -> Templated | None:
         """Return the keys module, which imports the key class of each selected builtin kind only, or None for none."""
         modules: dict[str, set[str]] = {}
         for spec in self.specs:
@@ -274,8 +272,7 @@ class _Webhooks:
                 modules.setdefault(algorithm.key_module, set()).add(algorithm.key)
         if not modules:
             return None
-        return render_facade(
-            self.role,
+        return facade_module(
             "webhooks.keys",
             "The key types of this package's webhook signatures.",
             imports=(statement(f"..{module}", sorted(names)) for module, names in sorted(modules.items())),
@@ -334,7 +331,7 @@ class _Webhooks:
         values = (Keyword("helper_id", repr(helper.name)), *entries, Keyword("event", decoder))
         return key, Plan("_PLAN", annotation, plan, values)
 
-    def module(self, spec: WebhookSpec) -> str:
+    def module(self, spec: WebhookSpec) -> Templated:
         """Return a helper's module: its plan and its sync and asyncio verify functions, or its decode function."""
         helper = spec.helper
         signature = helper.tree["signature"]
@@ -351,7 +348,9 @@ class _Webhooks:
         else:
             typevar = module.name("typing", "TypeVar") if kind == "adapter" else ""
             functions = tuple(self.function(module, event, key, asynchronous=mode) for mode in (False, True))
-        return self.role("webhook.jinja2", webhook_template.render)(
+        return templated(
+            "webhook.jinja2",
+            webhook_template.render,
             kind=kind if kind in {"none", "adapter"} else "builtin",
             name=helper.name,
             algorithm="" if key is None else _algorithm(signature).display,
@@ -423,10 +422,6 @@ def webhook_files(
     specs: tuple[WebhookSpec, ...],
     types: TypeNames,
     accessors: Mapping[TypeUseId, UseAccessors],
-    role: Role,
-) -> tuple[tuple[PurePosixPath, str], ...]:
-    """Return the path and text of every webhook file of a package, nothing without webhook helpers.
-
-    The modules render through the package's template roles.
-    """
-    return _Webhooks(specs, types, accessors, role).files()
+) -> tuple[tuple[PurePosixPath, Templated], ...]:
+    """Return the path and module of every webhook file of a package, nothing without webhook helpers."""
+    return _Webhooks(specs, types, accessors).files()

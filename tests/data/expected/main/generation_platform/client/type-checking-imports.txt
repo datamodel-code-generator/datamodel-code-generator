@@ -1,0 +1,30 @@
+# type-checking-imports
+render msgspec.Struct
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/errors.py
+  write client/responses.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/resources/__init__.py
+  write client/resources/pets/__init__.py
+  write client/resources/pets/_sync.py
+  write client/resources/pets/_async.py
+  write client/resources/pets/photos/__init__.py
+  write client/resources/pets/photos/_sync.py
+  write client/resources/pets/photos/_async.py
+  write client/types/__init__.py
+  write client/types/pets/__init__.py
+  write client/types/pets/_operations.py
+  write client/types/pets/photos/__init__.py
+  write client/types/pets/photos/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'msgspec>=0.21.1']
