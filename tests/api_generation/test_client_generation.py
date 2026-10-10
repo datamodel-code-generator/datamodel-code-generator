@@ -11,6 +11,7 @@ from datamodel_code_generator import get_version
 from datamodel_code_generator.util import get_yaml_backend
 from tests.api_generation.support.client_generation import (
     client_api_report,
+    client_config_report,
     client_documents,
     client_input_report,
     client_ordinary_models,
@@ -18,7 +19,6 @@ from tests.api_generation.support.client_generation import (
     client_tree,
     generate_client,
 )
-from tests.api_generation.support.client_protocol_records import client_config_report
 from tests.conftest import (
     assert_exact_directory_content,
     assert_generated_modules_output,
@@ -383,7 +383,7 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:
-    """Construct the client settings from Python values or a target file, reporting every invalid value."""
+    """Generate a client with client option values, and build the settings only Python records hold."""
     assert_output(client_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
 
 
