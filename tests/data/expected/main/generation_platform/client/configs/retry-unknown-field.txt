@@ -1,1 +1,2 @@
-TypeError: IdempotencyMetadata.__init__() got an unexpected keyword argument 'secret'
+generate()
+  Error: --client-operations['/paths/~1pets/post'].runtime.idempotency has no key 'secret'

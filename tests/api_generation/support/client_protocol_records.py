@@ -7,7 +7,6 @@ and returns the files of a run without an output, so these cases reach the coord
 
 from __future__ import annotations
 
-import json
 from dataclasses import fields, replace
 from functools import reduce
 from pathlib import Path, PurePosixPath
@@ -17,7 +16,6 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._api_generation import generate_target
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
 from datamodel_code_generator._client.config import (
-    BodyFieldName,
     ClientGenerationConfig,
     ClientOperationConfig,
     IdempotencyMetadata,
@@ -73,7 +71,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator import GenerateConfig
     from datamodel_code_generator._client.protocols import Source
 
-CONFIGS = Path(__file__).parents[2] / "data" / "generation_platform" / "client" / "configs.json"
 
 USERS = "/paths/~1users/get"
 USER = SchemaRef(pointer="/components/schemas/User")
@@ -466,10 +463,6 @@ def _operation(value: dict[str, Any]) -> ClientOperationConfig:
         converted["parameter_names"] = tuple(
             ParameterName(**item) if isinstance(item, dict) else item for item in names
         )
-    if isinstance(body_fields := value.get("body_field_names"), list):
-        converted["body_field_names"] = tuple(
-            BodyFieldName(**item) if isinstance(item, dict) else item for item in body_fields
-        )
     if isinstance(runtime := value.get("runtime"), dict):
         statuses = runtime.get("success_statuses", ())
         encodings = runtime.get("accepted_content_encodings", ())
@@ -525,13 +518,10 @@ def _setting(value: object, root: Path) -> str:
     return repr(value)
 
 
-def client_config_report(case_name: str, root: Path) -> str:
-    """Construct one client configuration from Python values and report it or its diagnostics."""
-    case = json.loads(CONFIGS.read_text(encoding="utf-8"))[case_name]
+def client_records_report(values: Mapping[str, Any], root: Path) -> str:
+    """Construct client settings from Python records and report them or their diagnostics."""
     try:
-        config = client_config(case, root)
+        config = client_config(values, root)
     except Error as error:
-        return f"Error: {error}\n"
-    except TypeError as error:
-        return f"TypeError: {error}\n"
-    return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
+        return f"Error: {error}"
+    return "\n".join(f"{item.name}={_setting(getattr(config, item.name), root)}" for item in fields(config))
