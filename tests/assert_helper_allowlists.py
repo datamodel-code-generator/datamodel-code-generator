@@ -71,6 +71,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "data-logic:tests/data/python/core_special_field_prefix_generate.py",
         "data-logic:tests/data/python/generation_session_inputs.py",
     ),
+    "observation-stubs": ("normal-path-mock:tests/data/python/client_native.py::_phases",),
     "runtime-tables": (
         "private-import:tests/data/generation_platform/codecs/typing/annotations.py",
         "private-import:tests/data/generation_platform/codecs/typing/codecs.py",
@@ -1439,6 +1440,10 @@ ALLOWLIST_GROUP_REASONS = {
     "model-test-drivers": (
         "Drivers that model tests in tests/main run in a subprocess or import as inputs, kept with the model test "
         "fixtures."
+    ),
+    "observation-stubs": (
+        "An SDK-owned client builds its own transport, so only a replaced send of that transport sees the timeouts and "
+        "redirect settings each request goes out with."
     ),
     "runtime-tables": (
         "Combinatorial wire-rule tables, the official JSON Schema suite, and the codec type-check probes exercise "

@@ -599,7 +599,6 @@ def native_faults(package: ModuleType, lines: list[str]) -> None:
     _phases(package, lines)
 
 
-@pytest.mark.abnormal_path("Only a replaced send of the transport an SDK-owned client builds sees its timeouts.")
 def _phases(package: ModuleType, lines: list[str]) -> None:
     """Observe the timeouts and redirects each request goes out with, on an SDK-owned and on an injected client."""
     from unittest.mock import patch
