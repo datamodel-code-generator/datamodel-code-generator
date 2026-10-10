@@ -14,7 +14,7 @@ PROFILES = json.loads((SOURCE / "publication" / "profiles.json").read_text(encod
 
 
 def client_capability_report(profile: str, root: Path) -> str:
-    """List the public files and the physical lines of each copied-runtime module one profile writes."""
+    """List the public files and copied-runtime modules one profile writes, with line counts only for `minimal`."""
     case = PROFILES[profile]
     backend = case.get("backend", "pydantic_v2.BaseModel")
     runtime: dict[str, int] = {}
@@ -28,12 +28,13 @@ def client_capability_report(profile: str, root: Path) -> str:
             )
         elif all(not part.startswith("_") or part == "__init__.py" for part in path.parts):
             public.append(path.as_posix())
+    counted = profile == "minimal"
     return "\n".join([
         f"# {profile}",
         f"backend {backend}",
         "copied runtime",
-        *(f"  {path}: {lines}" for path, lines in sorted(runtime.items())),
-        f"total {len(runtime)} modules, {sum(runtime.values())} lines",
+        *(f"  {path}: {lines}" if counted else f"  {path}" for path, lines in sorted(runtime.items())),
+        f"total {len(runtime)} modules, {sum(runtime.values())} lines" if counted else f"total {len(runtime)} modules",
         "public files",
         *(f"  {path}" for path in sorted(public)),
         "",
