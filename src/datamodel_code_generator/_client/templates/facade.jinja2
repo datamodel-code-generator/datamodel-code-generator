@@ -23,9 +23,7 @@ if TYPE_CHECKING:
 
 class {{ item.name }}({{ item.base }}):
     """{{ item.docstring }}"""
-{%- if item.attributes %}
-{% endif %}
-{%- for attribute in item.attributes %}
+{% for attribute in item.attributes %}
     {{ attribute.name }} = {{ attribute.value }}
 {%- endfor %}
 {%- endfor %}

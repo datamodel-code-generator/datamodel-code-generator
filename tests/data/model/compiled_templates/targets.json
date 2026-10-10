@@ -56,21 +56,6 @@
                   "value": "()"
                 }
               ]
-            },
-            {
-              "name": "KEYWORDS_1",
-              "annotation": "Final",
-              "constructor": "Keywords",
-              "arguments": [
-                {
-                  "keyword": "method",
-                  "value": "'get_pet'"
-                },
-                {
-                  "keyword": "names",
-                  "value": "('petId',)"
-                }
-              ]
             }
           ]
         }
@@ -297,12 +282,6 @@
                   "value": "('read',)"
                 }
               ]
-            },
-            {
-              "name": "Bare",
-              "base": "object",
-              "docstring": "No attributes.",
-              "attributes": []
             }
           ],
           "exports": [
@@ -402,17 +381,6 @@
                 {
                   "keyword": "servers",
                   "value": "_SERVERS_0"
-                }
-              ]
-            },
-            {
-              "name": "OPERATION_1",
-              "annotation": "Final[OperationPlan[None]]",
-              "constructor": "OperationPlan",
-              "arguments": [
-                {
-                  "keyword": "",
-                  "value": "'positional'"
                 }
               ]
             }
@@ -1414,21 +1382,6 @@
                 {
                   "keyword": "alternatives",
                   "value": "((),)"
-                }
-              ]
-            },
-            {
-              "name": "OPERATION_1",
-              "annotation": "Final",
-              "constructor": "SecurityBinding",
-              "arguments": [
-                {
-                  "keyword": "",
-                  "value": "(_SCHEME_1,)"
-                },
-                {
-                  "keyword": "",
-                  "value": "()"
                 }
               ]
             }

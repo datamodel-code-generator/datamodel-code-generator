@@ -26,12 +26,6 @@ KEYWORDS_0: Final = Keywords(
     (),
 )
 
-
-KEYWORDS_1: Final = Keywords(
-    method='get_pet',
-    names=('petId',),
-)
-
 === arguments.jinja2 / empty
 """The keyword arguments 日本 that unpacked operation methods take."""
 
@@ -317,10 +311,6 @@ class PetsClientCredentials(ClientCredentials):
     scopes = ('read',)
 
 
-class Bare(object):
-    """No attributes."""
-
-
 __all__ = [
     'APIStatusError',
     'AsyncClient',
@@ -383,10 +373,6 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     operation_id='listPets',
     method='GET',
     servers=_SERVERS_0,
-)
-
-OPERATION_1: Final[OperationPlan[None]] = OperationPlan(
-    'positional',
 )
 
 === operations.jinja2 / empty
@@ -1732,12 +1718,6 @@ ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
 OPERATION_0: Final = SecurityBinding(
     schemes=(_SCHEME_0,),
     alternatives=((),),
-)
-
-
-OPERATION_1: Final = SecurityBinding(
-    (_SCHEME_1,),
-    (),
 )
 
 === security.jinja2 / empty
