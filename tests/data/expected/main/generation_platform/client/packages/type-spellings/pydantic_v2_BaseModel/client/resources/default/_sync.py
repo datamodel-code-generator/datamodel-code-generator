@@ -70,7 +70,9 @@ class DefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /cats."""
+        """
+        Call POST /cats.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -117,7 +119,9 @@ class DefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[RawResponse]:
-        """Call POST /cats."""
+        """
+        Call POST /cats.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -164,7 +168,9 @@ class DefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse_1:
-        """Call POST /cats."""
+        """
+        Call POST /cats.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -211,7 +217,9 @@ class DefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse_1]:
-        """Call POST /cats."""
+        """
+        Call POST /cats.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (),

@@ -26,27 +26,6 @@ OPERATION_0: Final[OperationPlan[SendPartsResponse]] = OperationPlan(
     method='POST',
     path='/parts',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            object_branch(
-                '200',
-                'multipart/form-data',
-                model_bindings.codec_1,
-                (PartPlan('name', 'string'),),
-            ),
-        ),
-        (),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='multipart/form-data',
-                kind='multipart',
-                codec=model_bindings.codec_0,
-                form=MultipartForm(members=True),
-            ),
-        ),
-        default='multipart/form-data',
-        required=True,
-    ),
+    responses=ResponseDecoder((object_branch('200', 'multipart/form-data', model_bindings.codec_1, (PartPlan('name', 'string'),)),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_0, form=MultipartForm(members=True)),), default='multipart/form-data', required=True),
 )

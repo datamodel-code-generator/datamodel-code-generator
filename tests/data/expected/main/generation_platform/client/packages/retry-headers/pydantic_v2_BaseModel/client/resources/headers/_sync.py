@@ -56,7 +56,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ParameterResponse:
-        """Call POST /parameter."""
+        """
+        Call POST /parameter.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (X_Request_Key,),
@@ -70,7 +72,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ApiKeyResponse:
-        """Call POST /api-key."""
+        """
+        Call POST /api-key.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -84,7 +88,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> BearerResponse:
-        """Call POST /bearer."""
+        """
+        Call POST /bearer.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -98,7 +104,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> OauthResponse:
-        """Call POST /oauth."""
+        """
+        Call POST /oauth.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -112,7 +120,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> OpenidResponse:
-        """Call POST /openid."""
+        """
+        Call POST /openid.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -126,7 +136,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieResponse:
-        """Call POST /cookie."""
+        """
+        Call POST /cookie.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -140,7 +152,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> QueryResponse:
-        """Call POST /query."""
+        """
+        Call POST /query.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -154,7 +168,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> IgnoredResponse:
-        """Call POST /ignored."""
+        """
+        Call POST /ignored.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -169,7 +185,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> DirectionResponse:
-        """Call POST /direction."""
+        """
+        Call POST /direction.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (X_Retry_Control,),
@@ -183,7 +201,9 @@ class HeadersResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> UnusedResponse:
-        """Call POST /unused."""
+        """
+        Call POST /unused.
+        """
         return self._core.execute(
             _operations.OPERATION_9,
             (),
@@ -206,7 +226,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ParameterResponse]:
-        """Call POST /parameter."""
+        """
+        Call POST /parameter.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (X_Request_Key,),
@@ -220,7 +242,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ApiKeyResponse]:
-        """Call POST /api-key."""
+        """
+        Call POST /api-key.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -234,7 +258,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[BearerResponse]:
-        """Call POST /bearer."""
+        """
+        Call POST /bearer.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -248,7 +274,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OauthResponse]:
-        """Call POST /oauth."""
+        """
+        Call POST /oauth.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -262,7 +290,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OpenidResponse]:
-        """Call POST /openid."""
+        """
+        Call POST /openid.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -276,7 +306,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieResponse]:
-        """Call POST /cookie."""
+        """
+        Call POST /cookie.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -290,7 +322,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[QueryResponse]:
-        """Call POST /query."""
+        """
+        Call POST /query.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -304,7 +338,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[IgnoredResponse]:
-        """Call POST /ignored."""
+        """
+        Call POST /ignored.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -319,7 +355,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[DirectionResponse]:
-        """Call POST /direction."""
+        """
+        Call POST /direction.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (X_Retry_Control,),
@@ -333,7 +371,9 @@ class HeadersWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UnusedResponse]:
-        """Call POST /unused."""
+        """
+        Call POST /unused.
+        """
         return self._core.execute(
             _operations.OPERATION_9,
             (),
@@ -356,7 +396,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /parameter."""
+        """
+        Call POST /parameter.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (X_Request_Key,),
@@ -370,7 +412,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /api-key."""
+        """
+        Call POST /api-key.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -384,7 +428,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /bearer."""
+        """
+        Call POST /bearer.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -398,7 +444,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /oauth."""
+        """
+        Call POST /oauth.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (),
@@ -412,7 +460,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /openid."""
+        """
+        Call POST /openid.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -426,7 +476,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /cookie."""
+        """
+        Call POST /cookie.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
             (),
@@ -440,7 +492,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /query."""
+        """
+        Call POST /query.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_6,
             (),
@@ -454,7 +508,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /ignored."""
+        """
+        Call POST /ignored.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_7,
             (),
@@ -469,7 +525,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /direction."""
+        """
+        Call POST /direction.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_8,
             (X_Retry_Control,),
@@ -483,7 +541,9 @@ class HeadersWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /unused."""
+        """
+        Call POST /unused.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_9,
             (),
@@ -506,7 +566,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /parameter."""
+        """
+        Call POST /parameter.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (X_Request_Key,),
@@ -520,7 +582,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /api-key."""
+        """
+        Call POST /api-key.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -534,7 +598,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /bearer."""
+        """
+        Call POST /bearer.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (),
@@ -548,7 +614,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /oauth."""
+        """
+        Call POST /oauth.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (),
@@ -562,7 +630,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /openid."""
+        """
+        Call POST /openid.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),
@@ -576,7 +646,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /cookie."""
+        """
+        Call POST /cookie.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (),
@@ -590,7 +662,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /query."""
+        """
+        Call POST /query.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (),
@@ -604,7 +678,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /ignored."""
+        """
+        Call POST /ignored.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (),
@@ -619,7 +695,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /direction."""
+        """
+        Call POST /direction.
+        """
         return self._core.stream(
             _operations.OPERATION_8,
             (X_Retry_Control,),
@@ -633,7 +711,9 @@ class HeadersWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /unused."""
+        """
+        Call POST /unused.
+        """
         return self._core.stream(
             _operations.OPERATION_9,
             (),

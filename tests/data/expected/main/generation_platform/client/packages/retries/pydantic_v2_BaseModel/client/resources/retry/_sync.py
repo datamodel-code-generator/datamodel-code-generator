@@ -55,7 +55,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetSafeResponse:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -71,7 +73,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostUnsafeResponse:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -89,7 +93,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostIdempotentResponse:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -107,7 +113,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostKeyedResponse:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -125,7 +133,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostKeyOnlyResponse:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -141,7 +151,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetNeverResponse:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -157,7 +169,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostNeverResponse:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -173,7 +187,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetVendorResponse:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -187,7 +203,9 @@ class RetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetKeyedSafeResponse:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -209,7 +227,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetSafeResponse]:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -225,7 +245,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostUnsafeResponse]:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -243,7 +265,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostIdempotentResponse]:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -261,7 +285,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostKeyedResponse]:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -279,7 +305,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostKeyOnlyResponse]:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -295,7 +323,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetNeverResponse]:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -311,7 +341,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostNeverResponse]:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -327,7 +359,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetVendorResponse]:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -341,7 +375,9 @@ class RetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetKeyedSafeResponse]:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -363,7 +399,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -379,7 +417,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -397,7 +437,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -415,7 +457,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (),
@@ -433,7 +477,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -449,7 +495,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
             (),
@@ -465,7 +513,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_6,
             (),
@@ -481,7 +531,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_7,
             (),
@@ -495,7 +547,9 @@ class RetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_8,
             (),
@@ -517,7 +571,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (),
@@ -533,7 +589,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -551,7 +609,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (),
@@ -569,7 +629,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (),
@@ -587,7 +649,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),
@@ -603,7 +667,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (),
@@ -619,7 +685,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (),
@@ -635,7 +703,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (),
@@ -649,7 +719,9 @@ class RetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return self._core.stream(
             _operations.OPERATION_8,
             (),

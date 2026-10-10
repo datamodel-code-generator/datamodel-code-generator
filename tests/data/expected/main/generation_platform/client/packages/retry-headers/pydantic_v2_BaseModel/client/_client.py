@@ -25,7 +25,9 @@ from .responses import RawResponse
 if TYPE_CHECKING:
     from .resources.headers._sync import HeadersResource
 
-_DEFAULTS = ClientDefaults(security_schemes=security.ROOT_SCHEMES)
+_DEFAULTS = ClientDefaults(
+    security_schemes=security.ROOT_SCHEMES,
+)
 
 
 class ClientView:
@@ -132,16 +134,14 @@ class Client(ClientView):
             auth=auth,
             clock=clock,
             http_client=http_client,
-            credentials=SchemeCredentials(
-                {
-                    "headerKey": header_key,
-                    "bearer": bearer,
-                    "oauth": oauth,
-                    "openid": openid,
-                    "cookieKey": cookie_key,
-                    "queryKey": query_key,
-                },
-            ),
+            credentials=SchemeCredentials({
+                "headerKey": header_key,
+                "bearer": bearer,
+                "oauth": oauth,
+                "openid": openid,
+                "cookieKey": cookie_key,
+                "queryKey": query_key,
+            }),
         )
 
     def close(self) -> None:

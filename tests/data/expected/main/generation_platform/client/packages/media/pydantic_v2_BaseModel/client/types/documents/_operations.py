@@ -26,32 +26,7 @@ ReadDocumentResponse: TypeAlias = models.Draft
 _READ_DOCUMENT_HEADERS: Final[ResponseHeaders[models.Draft, UNSET]] = ResponseHeaders(
     'readDocument',
     frozenset({'200'}),
-    (
-        (
-            'X-Draft',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Draft',
-                            style='simple',
-                            shape='object',
-                            fields=(
-                                FieldPlan('id', 'integer'),
-                                FieldPlan('title', 'string'),
-                                FieldPlan('secret', 'string'),
-                            ),
-                            additional=FieldPlan('', 'string'),
-                        ),
-                        codec=model_bindings.codec_17,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Draft', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Draft', style='simple', shape='object', fields=(FieldPlan('id', 'integer'), FieldPlan('title', 'string'), FieldPlan('secret', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_17, missing=optional_header)),)),),
 )
 
 

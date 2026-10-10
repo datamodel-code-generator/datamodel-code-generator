@@ -43,7 +43,9 @@ class DefaultResource:
         petId: str,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
-        """Call GET /pets/{petId}."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (petId,),
@@ -56,7 +58,9 @@ class DefaultResource:
         petId: str,
         options: RequestOptions | None = None,
     ) -> GetPet1Response:
-        """Call GET /pets/{petId}/copy."""
+        """
+        Call GET /pets/{petId}/copy.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (petId,),
@@ -69,7 +73,9 @@ class DefaultResource:
         petId: str,
         options: RequestOptions | None = None,
     ) -> GetPet2Response:
-        """Call GET /pets/{petId}/again."""
+        """
+        Call GET /pets/{petId}/again.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (petId,),
@@ -90,8 +96,14 @@ class DefaultWithResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]:
-        """Call GET /pets/{petId}."""
-        return self._core.execute(_operations.OPERATION_0, (petId,), options=options)
+        """
+        Call GET /pets/{petId}.
+        """
+        return self._core.execute(
+            _operations.OPERATION_0,
+            (petId,),
+            options=options,
+        )
 
     def get_pet_1(
         self,
@@ -99,8 +111,14 @@ class DefaultWithResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> Response[GetPet1Response]:
-        """Call GET /pets/{petId}/copy."""
-        return self._core.execute(_operations.OPERATION_1, (petId,), options=options)
+        """
+        Call GET /pets/{petId}/copy.
+        """
+        return self._core.execute(
+            _operations.OPERATION_1,
+            (petId,),
+            options=options,
+        )
 
     def get_pet_(
         self,
@@ -108,8 +126,14 @@ class DefaultWithResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> Response[GetPet2Response]:
-        """Call GET /pets/{petId}/again."""
-        return self._core.execute(_operations.OPERATION_2, (petId,), options=options)
+        """
+        Call GET /pets/{petId}/again.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (petId,),
+            options=options,
+        )
 
 
 class DefaultWithRawResponse:
@@ -125,7 +149,9 @@ class DefaultWithRawResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /pets/{petId}."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (petId,),
@@ -138,7 +164,9 @@ class DefaultWithRawResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /pets/{petId}/copy."""
+        """
+        Call GET /pets/{petId}/copy.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (petId,),
@@ -151,7 +179,9 @@ class DefaultWithRawResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /pets/{petId}/again."""
+        """
+        Call GET /pets/{petId}/again.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (petId,),
@@ -172,8 +202,14 @@ class DefaultWithStreamingResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /pets/{petId}."""
-        return self._core.stream(_operations.OPERATION_0, (petId,), options=options)
+        """
+        Call GET /pets/{petId}.
+        """
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (petId,),
+            options=options,
+        )
 
     def get_pet_1(
         self,
@@ -181,8 +217,14 @@ class DefaultWithStreamingResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /pets/{petId}/copy."""
-        return self._core.stream(_operations.OPERATION_1, (petId,), options=options)
+        """
+        Call GET /pets/{petId}/copy.
+        """
+        return self._core.stream(
+            _operations.OPERATION_1,
+            (petId,),
+            options=options,
+        )
 
     def get_pet_(
         self,
@@ -190,5 +232,11 @@ class DefaultWithStreamingResponse:
         petId: str,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /pets/{petId}/again."""
-        return self._core.stream(_operations.OPERATION_2, (petId,), options=options)
+        """
+        Call GET /pets/{petId}/again.
+        """
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (petId,),
+            options=options,
+        )

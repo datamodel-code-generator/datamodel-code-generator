@@ -47,7 +47,9 @@ class DefaultResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchResponse:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (criteria,),
@@ -62,7 +64,9 @@ class DefaultResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> LookupResponse:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (filter,),
@@ -85,7 +89,9 @@ class DefaultWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (criteria,),
@@ -100,7 +106,9 @@ class DefaultWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LookupResponse]:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (filter,),
@@ -123,7 +131,9 @@ class DefaultWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (criteria,),
@@ -138,7 +148,9 @@ class DefaultWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (filter,),
@@ -161,7 +173,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (criteria,),
@@ -176,7 +190,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (filter,),

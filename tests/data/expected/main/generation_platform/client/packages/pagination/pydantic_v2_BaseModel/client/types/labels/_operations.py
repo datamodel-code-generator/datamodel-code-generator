@@ -21,25 +21,7 @@ ListLabelsResponse: TypeAlias = models.FieldLabelsGetResponse
 _LIST_LABELS_HEADERS: Final[ResponseHeaders[models.FieldLabelsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabels',
     frozenset({'200'}),
-    (
-        (
-            'X-Next',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Next',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_15,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_15, missing=optional_header)),)),),
 )
 
 
@@ -58,25 +40,7 @@ ListLabelSetsResponse: TypeAlias = models.LabelList
 _LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[models.FieldLabelSetsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabelSets',
     frozenset({'200'}),
-    (
-        (
-            'X-Next',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Next',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_18,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_18, missing=optional_header)),)),),
 )
 
 

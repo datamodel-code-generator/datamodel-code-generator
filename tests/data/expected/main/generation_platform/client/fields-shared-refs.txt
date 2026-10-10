@@ -79,7 +79,9 @@ class AsyncDefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -132,7 +134,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -185,7 +189,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -238,7 +244,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (),
@@ -325,7 +333,9 @@ class DefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateSharedResponse:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -378,7 +388,9 @@ class DefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateSharedResponse]:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -431,7 +443,9 @@ class DefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -484,7 +498,9 @@ class DefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /shared."""
+        """
+        Call POST /shared.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (),

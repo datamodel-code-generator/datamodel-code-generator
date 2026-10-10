@@ -28,7 +28,9 @@ if TYPE_CHECKING:
     from .resources.files._sync import FilesResource
     from .resources.forms._sync import FormsResource
 
-_DEFAULTS = ClientDefaults(bodies=MULTIPART_BODIES)
+_DEFAULTS = ClientDefaults(
+    bodies=MULTIPART_BODIES,
+)
 
 
 class ClientView:

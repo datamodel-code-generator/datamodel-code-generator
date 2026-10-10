@@ -28,12 +28,7 @@ if TYPE_CHECKING:
     from .resources.status._sync import StatusResource
 
 _DEFAULTS = ClientDefaults(
-    helpers=(
-        ('events.messages', 'sse'),
-        ('events.typed', 'sse'),
-        ('events.tagged', 'sse'),
-        ('feed.all', 'sse'),
-    ),
+    helpers=(('events.messages', 'sse'), ('events.typed', 'sse'), ('events.tagged', 'sse'), ('feed.all', 'sse')),
 )
 
 

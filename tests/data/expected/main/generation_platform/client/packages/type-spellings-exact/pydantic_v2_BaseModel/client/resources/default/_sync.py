@@ -57,7 +57,9 @@ class DefaultResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (cursor, id),
@@ -73,7 +75,9 @@ class DefaultResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AdoptPetResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -91,7 +95,9 @@ class DefaultResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutFieldResponse:
-        """Call PUT /fields."""
+        """
+        Call PUT /fields.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -108,7 +114,9 @@ class DefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostReasonResponse:
-        """Call POST /reasons."""
+        """
+        Call POST /reasons.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -124,7 +132,9 @@ class DefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PatchReasonResponse:
-        """Call PATCH /reasons."""
+        """
+        Call PATCH /reasons.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -149,7 +159,9 @@ class DefaultWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response_1[ListPetsResponse]:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (cursor, id),
@@ -165,7 +177,9 @@ class DefaultWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response_1[AdoptPetResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -183,7 +197,9 @@ class DefaultWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response_1[PutFieldResponse]:
-        """Call PUT /fields."""
+        """
+        Call PUT /fields.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -200,7 +216,9 @@ class DefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response_1[PostReasonResponse]:
-        """Call POST /reasons."""
+        """
+        Call POST /reasons.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -216,7 +234,9 @@ class DefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response_1[PatchReasonResponse]:
-        """Call PATCH /reasons."""
+        """
+        Call PATCH /reasons.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -241,7 +261,9 @@ class DefaultWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (cursor, id),
@@ -257,7 +279,9 @@ class DefaultWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -275,7 +299,9 @@ class DefaultWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call PUT /fields."""
+        """
+        Call PUT /fields.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -292,7 +318,9 @@ class DefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /reasons."""
+        """
+        Call POST /reasons.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (),
@@ -308,7 +336,9 @@ class DefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call PATCH /reasons."""
+        """
+        Call PATCH /reasons.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -333,7 +363,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (cursor, id),
@@ -349,7 +381,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -367,7 +401,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /fields."""
+        """
+        Call PUT /fields.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (),
@@ -384,7 +420,9 @@ class DefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /reasons."""
+        """
+        Call POST /reasons.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (),
@@ -400,7 +438,9 @@ class DefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PATCH /reasons."""
+        """
+        Call PATCH /reasons.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),

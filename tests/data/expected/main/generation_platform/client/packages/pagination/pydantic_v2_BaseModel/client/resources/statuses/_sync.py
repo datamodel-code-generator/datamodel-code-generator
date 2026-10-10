@@ -45,7 +45,9 @@ class StatusesResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListStatusesResponse:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (code,),
@@ -68,7 +70,9 @@ class StatusesWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListStatusesResponse]:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (code,),
@@ -91,7 +95,9 @@ class StatusesWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_7,
             (code,),
@@ -114,7 +120,9 @@ class StatusesWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (code,),

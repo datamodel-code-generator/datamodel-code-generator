@@ -157,7 +157,9 @@ class AsyncFilesResource:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return (await self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -190,7 +192,9 @@ class AsyncFilesResource:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return (await self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -323,7 +327,9 @@ class AsyncFilesWithResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return await self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -356,7 +362,9 @@ class AsyncFilesWithResponse:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return await self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -408,7 +416,9 @@ class AsyncFilesWithRawResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_13,
             (),
@@ -441,7 +451,9 @@ class AsyncFilesWithRawResponse:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_14,
             (),
@@ -493,7 +505,9 @@ class AsyncFilesWithStreamingResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return self._core.stream(
             _operations.OPERATION_13,
             (),
@@ -526,7 +540,9 @@ class AsyncFilesWithStreamingResponse:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return self._core.stream(
             _operations.OPERATION_14,
             (),

@@ -45,7 +45,9 @@ class DefaultResource:
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
-        """Call GET /pets/{petId}."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (petId, page, offset),
@@ -68,7 +70,9 @@ class DefaultWithResponse:
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]:
-        """Call GET /pets/{petId}."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (petId, page, offset),
@@ -91,7 +95,9 @@ class DefaultWithRawResponse:
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /pets/{petId}."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (petId, page, offset),
@@ -114,7 +120,9 @@ class DefaultWithStreamingResponse:
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /pets/{petId}."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (petId, page, offset),

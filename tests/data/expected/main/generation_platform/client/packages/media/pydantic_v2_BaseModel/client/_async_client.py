@@ -28,7 +28,9 @@ if TYPE_CHECKING:
     from .resources.files._async import AsyncFilesResource
     from .resources.forms._async import AsyncFormsResource
 
-_DEFAULTS = ClientDefaults(bodies=MULTIPART_BODIES)
+_DEFAULTS = ClientDefaults(
+    bodies=MULTIPART_BODIES,
+)
 
 
 class AsyncClientView:

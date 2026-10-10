@@ -43,8 +43,14 @@ class DefaultResource:
         q: str = 'abc',
         options: RequestOptions | None = None,
     ) -> SearchResponse:
-        """Call GET /search."""
-        return self._core.execute(_operations.OPERATION_0, (q,), options=options).data
+        """
+        Call GET /search.
+        """
+        return self._core.execute(
+            _operations.OPERATION_0,
+            (q,),
+            options=options,
+        ).data
 
 
 class DefaultWithResponse:
@@ -60,8 +66,14 @@ class DefaultWithResponse:
         q: str = 'abc',
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
-        """Call GET /search."""
-        return self._core.execute(_operations.OPERATION_0, (q,), options=options)
+        """
+        Call GET /search.
+        """
+        return self._core.execute(
+            _operations.OPERATION_0,
+            (q,),
+            options=options,
+        )
 
 
 class DefaultWithRawResponse:
@@ -77,8 +89,14 @@ class DefaultWithRawResponse:
         q: str = 'abc',
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /search."""
-        return self._core.execute_raw(_operations.OPERATION_0, (q,), options=options)
+        """
+        Call GET /search.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_0,
+            (q,),
+            options=options,
+        )
 
 
 class DefaultWithStreamingResponse:
@@ -94,5 +112,11 @@ class DefaultWithStreamingResponse:
         q: str = 'abc',
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /search."""
-        return self._core.stream(_operations.OPERATION_0, (q,), options=options)
+        """
+        Call GET /search.
+        """
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (q,),
+            options=options,
+        )

@@ -12,4 +12,7 @@ from .._runtime.client.security import SecurityBinding, SecuritySchemeEntry
 ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = ()
 
 
-OPERATION_0: Final = SecurityBinding(schemes=(), alternatives=())
+OPERATION_0: Final = SecurityBinding(
+    schemes=(),
+    alternatives=(),
+)

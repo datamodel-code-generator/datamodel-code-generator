@@ -46,7 +46,9 @@ class StoreResource:
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> GetFilesByFileNameByExtResponse:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (fileName, ext, class_, two_factor),
@@ -70,7 +72,9 @@ class StoreWithResponse:
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> Response[GetFilesByFileNameByExtResponse]:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (fileName, ext, class_, two_factor),
@@ -94,7 +98,9 @@ class StoreWithRawResponse:
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (fileName, ext, class_, two_factor),
@@ -118,7 +124,9 @@ class StoreWithStreamingResponse:
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (fileName, ext, class_, two_factor),

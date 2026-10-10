@@ -48,7 +48,9 @@ class OrdersResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (orderId, view),
@@ -72,7 +74,9 @@ class OrdersWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (orderId, view),
@@ -96,7 +100,9 @@ class OrdersWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (orderId, view),
@@ -120,7 +126,9 @@ class OrdersWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (orderId, view),

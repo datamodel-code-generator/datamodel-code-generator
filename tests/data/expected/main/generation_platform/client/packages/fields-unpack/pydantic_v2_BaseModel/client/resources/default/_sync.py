@@ -108,20 +108,15 @@ class DefaultResource:
         self,
         **kwargs: Unpack[Operation0Arguments4],
     ) -> CreatePetResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birthDate', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -151,7 +146,9 @@ class DefaultResource:
         self,
         **kwargs: Unpack[Operation1Arguments4],
     ) -> UpdatePetResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
@@ -181,7 +178,9 @@ class DefaultResource:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> LogVisitResponse:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
@@ -192,8 +191,13 @@ class DefaultResource:
             options=kwargs.get('options'),
         ).data
 
-    def set_owner(self, **kwargs: Unpack[Operation3Arguments]) -> SetOwnerResponse:
-        """Call PUT /pets/{petId}/owner."""
+    def set_owner(
+        self,
+        **kwargs: Unpack[Operation3Arguments],
+    ) -> SetOwnerResponse:
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_3,
@@ -217,7 +221,9 @@ class DefaultResource:
         self,
         **kwargs: Unpack[Operation4Arguments2],
     ) -> CreateOwnerResponse:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_4,
@@ -242,7 +248,9 @@ class DefaultResource:
         self,
         **kwargs: Unpack[Operation5Arguments2],
     ) -> PutLabelsResponse:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
@@ -253,8 +261,13 @@ class DefaultResource:
             options=kwargs.get('options'),
         ).data
 
-    def put_photo(self, **kwargs: Unpack[Operation6Arguments]) -> PutPhotoResponse:
-        """Call PUT /pets/{petId}/photo."""
+    def put_photo(
+        self,
+        **kwargs: Unpack[Operation6Arguments],
+    ) -> PutPhotoResponse:
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_6,
@@ -278,7 +291,9 @@ class DefaultResource:
         self,
         **kwargs: Unpack[Operation7Arguments2],
     ) -> ReplacePetResponse:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
@@ -321,20 +336,15 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation0Arguments4],
     ) -> Response[CreatePetResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birthDate', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -364,7 +374,9 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation1Arguments4],
     ) -> Response[UpdatePetResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
@@ -394,7 +406,9 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> Response[LogVisitResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
@@ -409,7 +423,9 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> Response[SetOwnerResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_3,
@@ -433,7 +449,9 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation4Arguments2],
     ) -> Response[CreateOwnerResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_4,
@@ -458,7 +476,9 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation5Arguments2],
     ) -> Response[PutLabelsResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
@@ -473,7 +493,9 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation6Arguments],
     ) -> Response[PutPhotoResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_6,
@@ -497,7 +519,9 @@ class DefaultWithResponse:
         self,
         **kwargs: Unpack[Operation7Arguments2],
     ) -> Response[ReplacePetResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
@@ -517,7 +541,10 @@ class DefaultWithRawResponse:
         self._core = core
 
     @overload
-    def create_pet(self, **kwargs: Unpack[Operation0Arguments]) -> RawResponse: ...
+    def create_pet(
+        self,
+        **kwargs: Unpack[Operation0Arguments],
+    ) -> RawResponse: ...
     @overload
     def create_pet(
         self,
@@ -533,28 +560,29 @@ class DefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation0Arguments3],
     ) -> RawResponse: ...
-    def create_pet(self, **kwargs: Unpack[Operation0Arguments4]) -> RawResponse:
-        """Call POST /pets."""
+    def create_pet(
+        self,
+        **kwargs: Unpack[Operation0Arguments4],
+    ) -> RawResponse:
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birthDate', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
 
     @overload
-    def update_pet(self, **kwargs: Unpack[Operation1Arguments]) -> RawResponse: ...
+    def update_pet(
+        self,
+        **kwargs: Unpack[Operation1Arguments],
+    ) -> RawResponse: ...
     @overload
     def update_pet(
         self,
@@ -570,8 +598,13 @@ class DefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation1Arguments3],
     ) -> RawResponse: ...
-    def update_pet(self, **kwargs: Unpack[Operation1Arguments4]) -> RawResponse:
-        """Call PATCH /pets/{petId}."""
+    def update_pet(
+        self,
+        **kwargs: Unpack[Operation1Arguments4],
+    ) -> RawResponse:
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_1,
@@ -583,13 +616,27 @@ class DefaultWithRawResponse:
         )
 
     @overload
-    def log_visit(self, **kwargs: Unpack[Operation2Arguments]) -> RawResponse: ...
+    def log_visit(
+        self,
+        **kwargs: Unpack[Operation2Arguments],
+    ) -> RawResponse: ...
     @overload
-    def log_visit(self, **kwargs: Unpack[Operation2Arguments1]) -> RawResponse: ...
+    def log_visit(
+        self,
+        **kwargs: Unpack[Operation2Arguments1],
+    ) -> RawResponse: ...
     @overload
-    def log_visit(self, **kwargs: Unpack[Operation2Arguments2]) -> RawResponse: ...
-    def log_visit(self, **kwargs: Unpack[Operation2Arguments3]) -> RawResponse:
-        """Call POST /pets/{petId}/visits."""
+    def log_visit(
+        self,
+        **kwargs: Unpack[Operation2Arguments2],
+    ) -> RawResponse: ...
+    def log_visit(
+        self,
+        **kwargs: Unpack[Operation2Arguments3],
+    ) -> RawResponse:
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_2,
@@ -600,8 +647,13 @@ class DefaultWithRawResponse:
             options=kwargs.get('options'),
         )
 
-    def set_owner(self, **kwargs: Unpack[Operation3Arguments]) -> RawResponse:
-        """Call PUT /pets/{petId}/owner."""
+    def set_owner(
+        self,
+        **kwargs: Unpack[Operation3Arguments],
+    ) -> RawResponse:
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_3,
@@ -621,8 +673,13 @@ class DefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation4Arguments1],
     ) -> RawResponse: ...
-    def create_owner(self, **kwargs: Unpack[Operation4Arguments2]) -> RawResponse:
-        """Call POST /owners."""
+    def create_owner(
+        self,
+        **kwargs: Unpack[Operation4Arguments2],
+    ) -> RawResponse:
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_4,
@@ -634,14 +691,22 @@ class DefaultWithRawResponse:
         )
 
     @overload
-    def put_labels(self, **kwargs: Unpack[Operation5Arguments]) -> RawResponse: ...
+    def put_labels(
+        self,
+        **kwargs: Unpack[Operation5Arguments],
+    ) -> RawResponse: ...
     @overload
     def put_labels(
         self,
         **kwargs: Unpack[Operation5Arguments1],
     ) -> RawResponse: ...
-    def put_labels(self, **kwargs: Unpack[Operation5Arguments2]) -> RawResponse:
-        """Call PUT /pets/{petId}/labels."""
+    def put_labels(
+        self,
+        **kwargs: Unpack[Operation5Arguments2],
+    ) -> RawResponse:
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_5,
@@ -652,8 +717,13 @@ class DefaultWithRawResponse:
             options=kwargs.get('options'),
         )
 
-    def put_photo(self, **kwargs: Unpack[Operation6Arguments]) -> RawResponse:
-        """Call PUT /pets/{petId}/photo."""
+    def put_photo(
+        self,
+        **kwargs: Unpack[Operation6Arguments],
+    ) -> RawResponse:
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_6,
@@ -673,8 +743,13 @@ class DefaultWithRawResponse:
         self,
         **kwargs: Unpack[Operation7Arguments1],
     ) -> RawResponse: ...
-    def replace_pet(self, **kwargs: Unpack[Operation7Arguments2]) -> RawResponse:
-        """Call PUT /pets/{petId}/records."""
+    def replace_pet(
+        self,
+        **kwargs: Unpack[Operation7Arguments2],
+    ) -> RawResponse:
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_7,
@@ -717,20 +792,15 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation0Arguments4],
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_0,
             (kwargs.get('tag', UNSET),),
             body=kwargs.get('body', UNSET),
-            fields=(
-                kwargs.get('name', UNSET),
-                kwargs.get('kind', UNSET),
-                kwargs.get('pet_tag', UNSET),
-                kwargs.get('birthDate', UNSET),
-                kwargs.get('owner', UNSET),
-                kwargs.get('secret', UNSET),
-            ),
+            fields=(kwargs.get('name', UNSET), kwargs.get('kind', UNSET), kwargs.get('pet_tag', UNSET), kwargs.get('birthDate', UNSET), kwargs.get('owner', UNSET), kwargs.get('secret', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
@@ -760,7 +830,9 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation1Arguments4],
     ) -> AbstractContextManager[RawResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,
@@ -790,7 +862,9 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         KEYWORDS_2.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_2,
@@ -805,7 +879,9 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         KEYWORDS_3.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_3,
@@ -829,7 +905,9 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation4Arguments2],
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         KEYWORDS_4.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_4,
@@ -854,7 +932,9 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation5Arguments2],
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,
@@ -869,7 +949,9 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation6Arguments],
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_6.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_6,
@@ -893,7 +975,9 @@ class DefaultWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation7Arguments2],
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,

@@ -42,7 +42,9 @@ class AsyncユーザーResource:
         *,
         options: RequestOptions | None = None,
     ) -> HttpGetUsersResponse:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return (await self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -62,8 +64,14 @@ class AsyncユーザーWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[HttpGetUsersResponse]:
-        """Call GET /users."""
-        return await self._core.execute(_operations.OPERATION_2, (), options=options)
+        """
+        Call GET /users.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
 
 class AsyncユーザーWithRawResponse:
@@ -78,7 +86,9 @@ class AsyncユーザーWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -98,5 +108,11 @@ class AsyncユーザーWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /users."""
-        return self._core.stream(_operations.OPERATION_2, (), options=options)
+        """
+        Call GET /users.
+        """
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )

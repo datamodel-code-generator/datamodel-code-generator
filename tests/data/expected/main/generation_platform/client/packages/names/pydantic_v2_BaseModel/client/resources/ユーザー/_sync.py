@@ -42,8 +42,14 @@ class ユーザーResource:
         *,
         options: RequestOptions | None = None,
     ) -> HttpGetUsersResponse:
-        """Call GET /users."""
-        return self._core.execute(_operations.OPERATION_2, (), options=options).data
+        """
+        Call GET /users.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        ).data
 
 
 class ユーザーWithResponse:
@@ -58,8 +64,14 @@ class ユーザーWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[HttpGetUsersResponse]:
-        """Call GET /users."""
-        return self._core.execute(_operations.OPERATION_2, (), options=options)
+        """
+        Call GET /users.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
 
 class ユーザーWithRawResponse:
@@ -74,8 +86,14 @@ class ユーザーWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /users."""
-        return self._core.execute_raw(_operations.OPERATION_2, (), options=options)
+        """
+        Call GET /users.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
 
 class ユーザーWithStreamingResponse:
@@ -90,5 +108,11 @@ class ユーザーWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /users."""
-        return self._core.stream(_operations.OPERATION_2, (), options=options)
+        """
+        Call GET /users.
+        """
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )

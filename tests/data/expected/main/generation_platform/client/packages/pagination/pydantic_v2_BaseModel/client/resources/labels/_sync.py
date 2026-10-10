@@ -45,7 +45,9 @@ class LabelsResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelsResponse:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (after,),
@@ -60,7 +62,9 @@ class LabelsResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLabelSetsResponse:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (after,),
@@ -83,7 +87,9 @@ class LabelsWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelsResponse]:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (after,),
@@ -98,7 +104,9 @@ class LabelsWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLabelSetsResponse]:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (after,),
@@ -121,7 +129,9 @@ class LabelsWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_4,
             (after,),
@@ -136,7 +146,9 @@ class LabelsWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
             (after,),
@@ -159,7 +171,9 @@ class LabelsWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /labels."""
+        """
+        Call GET /labels.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (after,),
@@ -174,7 +188,9 @@ class LabelsWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /label-sets."""
+        """
+        Call GET /label-sets.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (after,),
