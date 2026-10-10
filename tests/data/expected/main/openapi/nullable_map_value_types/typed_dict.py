@@ -52,6 +52,10 @@ class Board(TypedDict):
     plain: NotRequired[dict[str, int]]
     nullable_array: NotRequired[list[int] | None]
     untyped: NotRequired[dict[str, Any] | None]
+    fixed: NotRequired[dict[str, int]]
+
+
+FieldScoresGetQueryPlayersParameter: TypeAlias = dict[str, Player] | None
 
 
 FieldScoresPostRequest: TypeAlias = dict[str, int] | None

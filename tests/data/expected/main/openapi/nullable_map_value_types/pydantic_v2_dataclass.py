@@ -58,6 +58,10 @@ class Board:
     plain: dict[str, int] | None = None
     nullable_array: list[int] | None = None
     untyped: dict[str, Any] | None = None
+    fixed: dict[str, int] = None
+
+
+FieldScoresGetQueryPlayersParameter = TypeAliasType("FieldScoresGetQueryPlayersParameter", dict[str, Player] | None)
 
 
 FieldScoresPostRequest = TypeAliasType("FieldScoresPostRequest", dict[str, int] | None)

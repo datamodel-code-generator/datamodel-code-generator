@@ -3211,6 +3211,28 @@ def test_main_openapi_nullable_map_value_types(output_file: Path, expected_file:
     )
 
 
+def test_main_openapi_nullable_map_value_types_parameters_scope(output_file: Path) -> None:
+    """Load the components a nullable map parameter references when only paths and parameters are in scope."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_map_value_types.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="nullable_map_value_types/parameters_scope.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--openapi-scopes",
+            "paths",
+            "parameters",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_ref_nullable_strict_nullable(output_file: Path) -> None:
     """Test that nullable attribute from $ref schema is propagated."""
     run_main_and_assert(

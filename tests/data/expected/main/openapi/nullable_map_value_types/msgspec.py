@@ -55,6 +55,10 @@ class Board(Struct):
     plain: dict[str, int] | UnsetType = UNSET
     nullable_array: list[int] | None | UnsetType = UNSET
     untyped: dict[str, Any] | None | UnsetType = UNSET
+    fixed: dict[str, int] | None | UnsetType = UNSET
+
+
+FieldScoresGetQueryPlayersParameter: TypeAlias = dict[str, Player] | None
 
 
 FieldScoresPostRequest: TypeAlias = dict[str, int] | None

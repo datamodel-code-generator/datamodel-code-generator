@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from pydantic import BaseModel, RootModel, constr
+from typing_extensions import TypeAliasType
 
 
 class Player(BaseModel):
@@ -60,6 +61,10 @@ class Board(BaseModel):
     plain: Dict[str, int] | None = None
     nullable_array: List[int] | None = None
     untyped: Dict[str, Any] | None = None
+    fixed: Dict[str, int] = None
+
+
+FieldScoresGetQueryPlayersParameter = TypeAliasType("FieldScoresGetQueryPlayersParameter", Dict[str, Player] | None)
 
 
 class FieldScoresPostRequest(RootModel[Dict[str, int] | None]):

@@ -7,6 +7,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from pydantic import BaseModel, RootModel, constr
+from typing_extensions import TypeAliasType
 
 
 class Player(BaseModel):
@@ -61,6 +62,10 @@ class Board(BaseModel):
     plain: Mapping[str, int] | None = None
     nullable_array: Sequence[int] | None = None
     untyped: Mapping[str, Any] | None = None
+    fixed: Mapping[str, int] = None
+
+
+FieldScoresGetQueryPlayersParameter = TypeAliasType("FieldScoresGetQueryPlayersParameter", Mapping[str, Player] | None)
 
 
 class FieldScoresPostRequest(RootModel[Mapping[str, int] | None]):

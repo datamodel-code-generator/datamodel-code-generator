@@ -4,6 +4,18 @@ info:
   version: "1.0"
 paths:
   /scores:
+    get:
+      operationId: listScores
+      parameters:
+        - name: players
+          in: query
+          schema:
+            type: [object, "null"]
+            additionalProperties:
+              $ref: "#/components/schemas/Player"
+      responses:
+        "200":
+          description: The scores.
     post:
       operationId: replaceScores
       requestBody:
@@ -104,3 +116,9 @@ components:
         untyped:
           type: [object, "null"]
           additionalProperties: true
+        fixed:
+          type: [object, "null"]
+          additionalProperties:
+            type: integer
+          const:
+            x: 1

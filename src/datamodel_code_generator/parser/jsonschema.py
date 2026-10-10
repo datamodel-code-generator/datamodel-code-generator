@@ -782,6 +782,7 @@ def _nullable_map_value_schema(obj: JsonSchemaObject) -> JsonSchemaObject | None
         and "object" in obj.type
         and not obj.has_multiple_types
         and isinstance(obj.additionalProperties, JsonSchemaObject)
+        and "const" not in obj.extras
         else None
     )
 
