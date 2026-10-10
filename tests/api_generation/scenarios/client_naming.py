@@ -92,9 +92,21 @@ def naming_full_path(package: ModuleType, lines: list[str]) -> None:
 
 
 def naming_primary_first(package: ModuleType, lines: list[str]) -> None:
-    """Give the names the document spells as written their own names first: the operationId `get_item` and `itemId_1`.
+    """Give names declared in the root document their names before those another document declares, as models do.
 
-    The other duplicates are then numbered past them.
+    The external query `cursor` comes first and still takes `cursor_1`, and the operation of the external path item
+    takes `list_items_1` beside the local `list_items` declared after it.
     """
-    item = {**_GET, "itemId_2": 2, "itemId_3": 3, **_CALL_OPTIONS, "itemId_1": 5}
-    _calls(package, lines, ("get_item_1", "get_item"), item, {"name_1": "n", "itemCount": 2})
+    exchange = Exchange(lines)
+    api: Any
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for label, call in (
+            (
+                "get an item by an external and a local cursor",
+                lambda: api.items.get_item(itemId=1, cursor_1="q", cursor="h"),
+            ),
+            ("list the local items", lambda: api.items.list_items(limit=1, limit_1=2)),
+            ("list the shared items", lambda: api.items.list_items_1(limit=3)),
+        ):
+            exchange.respond(raw_response(204))
+            record(lines, label, call)

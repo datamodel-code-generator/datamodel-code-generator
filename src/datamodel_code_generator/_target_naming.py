@@ -110,7 +110,7 @@ class NameScope:
 
 
 Candidate: TypeAlias = tuple[str, bool, tuple[str, ...]]
-"""A derived name to claim: the name, whether the document gives it as written, and its enclosing scopes' names."""
+"""A derived name to claim: the name, whether the root document declares it, and its enclosing scopes' names."""
 
 
 class TargetNames:
@@ -158,18 +158,16 @@ class TargetNames:
         """Claim derived names in their scope, in order, telling a name the scope already holds apart as models do.
 
         `numbered` suffixes it; `parent-prefixed` first prefixes it with its innermost enclosing scope, `full-path`
-        with every enclosing scope; `primary-first` first gives each name the document spells as written that the
-        scope does not hold yet its own name, then suffixes the others in order.
+        with every enclosing scope; `primary-first` claims the names declared in the root document before those
+        another document declares, as models claim primary definitions before external ones.
         A class takes the duplicate class suffix.
         """
-        names = [""] * len(candidates)
+        order: Iterable[int] = range(len(candidates))
         if self.strategy is NamingStrategy.PrimaryFirst:
-            for index, (name, primary, _) in enumerate(candidates):
-                if primary and scope.take(name):
-                    names[index] = name
-        for index, (name, _, path) in enumerate(candidates):
-            if names[index]:
-                continue
+            order = sorted(order, key=lambda index: not candidates[index][1])
+        names = [""] * len(candidates)
+        for index in order:
+            name, _, path = candidates[index]
             base = name
             if path and base in scope and self.strategy in _PREFIXED:
                 parts = path[-1:] if self.strategy is NamingStrategy.ParentPrefixed else path

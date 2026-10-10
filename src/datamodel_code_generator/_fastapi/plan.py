@@ -206,7 +206,10 @@ class MediaSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter, its wire plan, the model's type, and how the server receives it."""
+    """One effective parameter, its wire plan, the model's type, and how the server receives it.
+
+    `local` says the document that names its operation declares it, rather than a document it references.
+    """
 
     location: ParameterLocation
     wire_name: str
@@ -217,6 +220,7 @@ class ParameterSpec:
     type: TypeView | None = None
     native: NativeField | None = None
     default: ParameterDefault = Default.ABSENT
+    local: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -518,7 +522,7 @@ class Planner:  # noqa: PLR0904
         pascals = self.target_names.claim(
             NameScope(),
             [
-                (self.target_names.pascal(name), _primary(operation, name), (self.target_names.pascal(group),))
+                (self.target_names.pascal(name), _local(operation), (self.target_names.pascal(group),))
                 for operation, name, group in zip(operations, names, map(self.group_name, operations), strict=True)
             ],
             camel=True,
@@ -530,7 +534,11 @@ class Planner:  # noqa: PLR0904
         schemes = tuple(self.schemes.values())
         bases = [self.target_names.function(scheme.name) for scheme in schemes]
         python_names = self.target_names.claim(
-            NameScope(), [(base, base == scheme.name, ()) for scheme, base in zip(schemes, bases, strict=True)]
+            NameScope(),
+            [
+                (base, scheme.declaration.declaration.location.document == self.request.batch.documents[0].id, ())
+                for scheme, base in zip(schemes, bases, strict=True)
+            ],
         )
         schemes = tuple(replace(scheme, python_name=name) for scheme, name in zip(schemes, python_names, strict=True))
         return ServerPlan(operations=specs, groups=groups, schemes=schemes, info=self.info())
@@ -558,7 +566,7 @@ class Planner:  # noqa: PLR0904
                 self.target_names.claim(
                     NameScope(explicit),
                     [
-                        (base, _primary(operation, base), (self.group_name(operation),))
+                        (base, _local(operation), (self.group_name(operation),))
                         for operation, base in zip(derived, bases, strict=True)
                     ],
                 ),
@@ -587,7 +595,7 @@ class Planner:  # noqa: PLR0904
         derived = [key for key in members if key not in self.config.router_names]
         bases = [self.target_names.function(group_basis(key)) for key in derived]
         claimed = self.target_names.claim(
-            scope, [(base, base == group_basis(key), ()) for key, base in zip(derived, bases, strict=True)]
+            scope, [(base, _local(members[key][0].contract), ()) for key, base in zip(derived, bases, strict=True)]
         )
         stems = {
             key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
@@ -603,7 +611,7 @@ class Planner:  # noqa: PLR0904
                 named,
                 self.target_names.claim(
                     NameScope(),
-                    [(self.target_names.pascal(stems[key]), stems[key] == group_basis(key), ()) for key in named],
+                    [(self.target_names.pascal(stems[key]), _local(members[key][0].contract), ()) for key in named],
                     camel=True,
                 ),
                 strict=True,
@@ -805,6 +813,7 @@ class Planner:  # noqa: PLR0904
             decision=Decision(transport="adapter"),
             type=value,
             default=default,
+            local=declaration.declaration.location.document == operation.id.use_site.document,
         )
         if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):
             return spec
@@ -1210,7 +1219,7 @@ class Planner:  # noqa: PLR0904
                 bases,
                 self.target_names.claim(
                     NameScope((*RESERVED, *filter(None, given))),
-                    [(base, base == ordered[index].wire_name, scopes) for index, base in bases.items()],
+                    [(base, ordered[index].local, scopes) for index, base in bases.items()],
                 ),
                 strict=True,
             )
@@ -1241,11 +1250,9 @@ class Planner:  # noqa: PLR0904
         return alias
 
 
-def _primary(operation: OperationContract, name: str) -> bool:
-    """Return whether a handler takes its operation's operationId as written."""
-    return operation.explicit_operation_id and name == operation_basis(
-        operation.method, operation.path, operation.operation_id
-    )
+def _local(operation: OperationContract) -> bool:
+    """Return whether the document that names the operation's path item declares the operation itself."""
+    return operation.declaration.location.document == operation.id.use_site.document
 
 
 def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:

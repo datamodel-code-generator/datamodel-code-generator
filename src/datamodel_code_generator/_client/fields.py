@@ -127,7 +127,7 @@ class _Fields:
         derived = dict(
             zip(
                 pending,
-                self.names.claim(scope, [(base, base == wire, spec.scopes) for wire, base in pending.items()]),
+                self.names.claim(scope, [(base, _local(spec), spec.scopes) for base in pending.values()]),
                 strict=True,
             )
         )
@@ -155,6 +155,12 @@ class _Fields:
     def base(self, field: ModelField) -> str:
         """Return the name a field's argument derives from: its model field's name, or for a key, a field's name."""
         return field.name if explicit_name(field.name) else self.names.argument(field.wire_name)
+
+
+def _local(spec: OperationSpec) -> bool:
+    """Return whether the document that names the operation declares its request body."""
+    body = spec.contract.request_body
+    return body is not None and body.declaration.location.document == spec.contract.id.use_site.document
 
 
 def plan_fields(

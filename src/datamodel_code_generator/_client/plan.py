@@ -535,7 +535,7 @@ class Planner:
         bases = [self.names.function(tag) for tag in first]
         names = self.names.claim(
             NameScope(RESERVED_MEMBERS, folded=True),
-            [(base, base == tag, ()) for tag, base in zip(first, bases, strict=True)],
+            [(base, _local(operation), ()) for operation, base in zip(first.values(), bases, strict=True)],
         )
         for (tag, operation), namespace in zip(first.items(), names, strict=True):
             if namespace.casefold() in WINDOWS_DEVICES:
@@ -584,9 +584,7 @@ class Planner:
             claimed = dict(
                 zip(
                     (spec.index for spec in derived),
-                    self.names.claim(
-                        scope, [(spec.name, _primary(spec.contract, spec.name), parts) for spec in derived]
-                    ),
+                    self.names.claim(scope, [(spec.name, _local(spec.contract), parts) for spec in derived]),
                     strict=True,
                 )
             )
@@ -595,7 +593,7 @@ class Planner:
             pascals = self.names.claim(
                 NameScope(),
                 [
-                    (self.names.pascal(name), _primary(spec.contract, spec.name), prefix)
+                    (self.names.pascal(name), _local(spec.contract), prefix)
                     for spec, name in zip(operations, methods, strict=True)
                 ],
                 camel=True,
@@ -640,8 +638,15 @@ class Planner:
         for name in (*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())):
             scope.take(name)
         bases = {index: self.names.argument(item[2]) for index, item in enumerate(declared) if item[4] is None}
-        derived = self.names.claim(scope, [(base, base == declared[index][2], path) for index, base in bases.items()])
-        claimed = dict(zip(bases, derived, strict=True))
+        claimed = dict(
+            zip(
+                bases,
+                self.names.claim(
+                    scope, [(base, _declared_by(declared[index][0], operation), path) for index, base in bases.items()]
+                ),
+                strict=True,
+            )
+        )
         specs: list[ParameterSpec] = []
         for index, (declaration, location, wire_name, plan, given) in enumerate(declared):
             python_name = given or claimed[index]
@@ -1113,11 +1118,14 @@ class Planner:
         )
 
 
-def _primary(operation: OperationContract, name: str) -> bool:
-    """Return whether a method takes its operation's operationId as written."""
-    return operation.explicit_operation_id and name == operation_basis(
-        operation.method, operation.path, operation.operation_id
-    )
+def _declared_by(declaration: WireDeclaration, operation: OperationContract) -> bool:
+    """Return whether the document that names an operation's path item declares one of its declarations."""
+    return declaration.declaration.location.document == operation.id.use_site.document
+
+
+def _local(operation: OperationContract) -> bool:
+    """Return whether the document that names the operation's path item declares the operation itself."""
+    return operation.declaration.location.document == operation.id.use_site.document
 
 
 def _parts_of(namespace: str) -> list[str]:

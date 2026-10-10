@@ -1,28 +1,13 @@
 # naming-primary-first
 serve pydantic_v2.BaseModel
-service CloseService: get_health
-service CloseService without its methods: TypeError
-service ItemStore1Service: delete_items_by_item_id_tags
-service ItemStore1Service without its methods: TypeError
-service ItemStoreService: get_item, get_item_1
-service ItemStoreService without its methods: TypeError
-service UntaggedService: x1, x_1
-service UntaggedService without its methods: TypeError
-> GET /items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5
-  get_item_1(itemId=1, itemId_2=2, itemId_3=3, X_Request_Id='rid', page_size_=10, field_2fa='t', class_='c', request_1='r', body_1='b', self_1='s', sessionId='sid', itemId_1=5)
+service ItemsService: get_item, list_items, list_items_1
+service ItemsService without its methods: TypeError
+> GET /items/1?cursor=q
+  get_item(itemId=1, cursor_1='q', cursor='h')
 < 204 - b''
-> POST /items?name=q
-  get_item(name='q', body=NewItem(name='n', itemCount=2))
+> GET /items?limit=2
+  list_items(limit=1, limit_1=2)
 < 204 - b''
-> DELETE /items/4/tags
-  delete_items_by_item_id_tags(itemId=4)
-< 204 - b''
-> GET /x1
-  x1()
-< 204 - b''
-> GET /x_1
-  x_1()
-< 204 - b''
-> GET /health
-  get_health()
+> GET /shared?limit=3
+  list_items_1(limit=3)
 < 204 - b''

@@ -167,6 +167,7 @@ class SecurityPlanner:
             if item.use_site.document == root or scheme.name not in self.declarations:
                 self.declarations[scheme.name] = item
         self.root = tuple(self.catalogues.get(root, {}).values())
+        self.root_document = root
         self.problems = problems
         assert batch.names is not None
         self.names = batch.names
@@ -185,7 +186,8 @@ class SecurityPlanner:
             for item in alternative
         }
         bases = {name: self.names.function(name) for name in used}
-        arguments = self.names.claim(NameScope(_ARGUMENTS), [(base, base == name, ()) for name, base in bases.items()])
+        local = {name: self.declarations[name].declaration.location.document == self.root_document for name in used}
+        arguments = self.names.claim(NameScope(_ARGUMENTS), [(base, local[name], ()) for name, base in bases.items()])
         flows = {name: _flows(self.declarations[name]) for name in used}
         provided = [(name, argument) for name, argument in zip(used, arguments, strict=True) if _provided(flows[name])]
         prefixes = dict(
@@ -193,7 +195,7 @@ class SecurityPlanner:
                 (name for name, _ in provided),
                 self.names.claim(
                     NameScope(),
-                    [(self.names.pascal(argument), bases[name] == name, ()) for name, argument in provided],
+                    [(self.names.pascal(argument), local[name], ()) for name, argument in provided],
                     camel=True,
                 ),
                 strict=True,

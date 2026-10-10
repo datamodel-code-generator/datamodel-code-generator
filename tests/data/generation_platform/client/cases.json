@@ -844,9 +844,9 @@
     "modules": false
   },
   "naming-primary-first": {
-    "input": "naming.yaml",
+    "input": "naming-refs.yaml",
+    "references": ["naming-refs-shared.yaml"],
     "model": {"naming_strategy": "primary-first"},
-    "config": {"body_arguments": "both"},
     "modules": false
   },
   "method-collisions": {
