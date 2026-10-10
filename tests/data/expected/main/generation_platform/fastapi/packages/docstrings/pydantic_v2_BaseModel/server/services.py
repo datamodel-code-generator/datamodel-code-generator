@@ -37,6 +37,6 @@ class Service(Protocol):
     def delete_note(
         self,
         *,
-        note_id: int,
+        noteId: int,
     ) -> None | HTTPResult[None] | Response:
         """Handle DELETE /notes/{noteId}."""

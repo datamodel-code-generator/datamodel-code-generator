@@ -21,18 +21,18 @@ from .._runtime.server.responses import Declared, OperationResponses
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'get__pets_pet_id': Sequence[params.Depends]
+        'get_pets_by_pet_id': Sequence[params.Depends]
     },
     total=False,
 )
 
 
-class GetPetsPetId:
-    """Plans of the get__pets_pet_id operation."""
+class GetPetsByPetId:
+    """Plans of the get_pets_by_pet_id operation."""
 
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
-        """The adapter parameters of get__pets_pet_id."""
+        """The adapter parameters of get_pets_by_pet_id."""
 
         filter: plan_oas31_models.Filter | None
         coords: plan_oas31_models.Coords | None

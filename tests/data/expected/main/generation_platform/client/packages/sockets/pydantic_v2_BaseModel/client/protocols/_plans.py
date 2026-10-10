@@ -40,7 +40,7 @@ SOCKET_2: Final[ChannelPlan[bytes, str]] = ChannelPlan(
     helper_id='secure.chat',
     operation=OperationRef(pointer='/paths/~1secure~1socket/get'),
     call=_operations.OPERATION_2,
-    fingerprint='45412b08e8d5cea1499baa4e4532dc1e295a6ca43ad43f92864aebd9fe3b5993',
+    fingerprint='ef4a607504efe4b145df765218ff13254608e98d9776677a4bb0e507b79fb950',
     send_codec='bytes',
     send_frame='binary',
     receive_codec='utf8',

@@ -64,7 +64,7 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     fetched(lines, "query start next page", lambda: listing.offsets.next_page(first))
     numbered = harness.argument("listUsers", "header", "X-Page", 5)
     exchange.respond(users("1", **{"X-Has-More": "true"}), users("2", **{"X-Has-More": "false"}))
-    drained(lines, "header start", listing.by_header.iterate(x_page=numbered))
+    drained(lines, "header start", listing.by_header.iterate(X_Page=numbered))
     exchange.respond(user_page("1", total=45), user_page("2", total=45))
     body = _search(harness, {"query": "a", "window": {"start": 30}})
     drained(lines, "body start", api.protocols.searches.all.iterate(body=body))

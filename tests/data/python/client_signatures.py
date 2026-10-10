@@ -72,20 +72,20 @@ def signatures(package: ModuleType, lines: list[str]) -> None:
     with package.Client(http_client=http) as api:
         _introspection(api, lines, "")
         exchange.respond(json_response(200, []), json_response(200, []), json_response(200, {"id": 3, "name": "fox"}))
-        record(lines, "list", lambda: api.pets.list_pets(x_trace=trace))
-        known = {"x_trace": trace, "options": options.RequestOptions(extra_headers={"X-Call": "1"})}
+        record(lines, "list", lambda: api.pets.list_pets(X_Trace=trace))
+        known = {"X_Trace": trace, "options": options.RequestOptions(extra_headers={"X-Call": "1"})}
         record(lines, "list forwarding a mapping of known keys", lambda: api.pets.list_pets(**known))
         record(
             lines,
             "get with its narrowed response media",
-            lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json"),
+            lambda: api.pets.get_pet(petId=pet, response_media_type="application/json"),
         )
         for label, call in (
-            ("list with an unknown keyword", lambda: api.pets.list_pets(x_trace=trace, color="red")),
+            ("list with an unknown keyword", lambda: api.pets.list_pets(X_Trace=trace, color="red")),
             ("list without its required keyword", lambda: api.pets.list_pets()),
             (
                 "raw list with an unknown keyword",
-                lambda: api.pets.with_raw_response.list_pets(x_trace=trace, color="red"),
+                lambda: api.pets.with_raw_response.list_pets(X_Trace=trace, color="red"),
             ),
             ("streaming list without its required keyword", lambda: api.pets.with_streaming_response.list_pets()),
         ):
@@ -101,8 +101,8 @@ async def _async_signatures(package: ModuleType, lines: list[str], trace: object
     async with package.AsyncClient(http_client=http) as api:
         _introspection(api, lines, "async ")
         exchange.respond(json_response(200, []))
-        lines.append(f"  async list = {await api.pets.list_pets(x_trace=trace)!r}")
-        for label, keywords in (("an unknown keyword", {"x_trace": trace, "color": "red"}), ("no keyword", {})):
+        lines.append(f"  async list = {await api.pets.list_pets(X_Trace=trace)!r}")
+        for label, keywords in (("an unknown keyword", {"X_Trace": trace, "color": "red"}), ("no keyword", {})):
             sent = len(exchange.lines)
             try:
                 pending = api.pets.list_pets(**keywords)

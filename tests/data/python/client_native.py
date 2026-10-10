@@ -775,7 +775,7 @@ def native_codec_backends(package: ModuleType, lines: list[str]) -> None:
                         _http(server, asynchronous=True) as native,
                         package.AsyncClient(http_client=native, base_url=server.url) as api,
                     ):
-                        await arecord(lines, f"{mode} native decode", lambda: api.pets.list_pets(x_trace=trace))
+                        await arecord(lines, f"{mode} native decode", lambda: api.pets.list_pets(X_Trace=trace))
                         server.status, server.body = 201, b'{"id":2,"name":"dog","tag":"a"}'
                         await arecord(
                             lines,
@@ -789,7 +789,7 @@ def native_codec_backends(package: ModuleType, lines: list[str]) -> None:
                     _http(server, asynchronous=False) as native,
                     package.Client(http_client=native, base_url=server.url) as api,
                 ):
-                    record(lines, f"{mode} native decode", lambda: api.pets.list_pets(x_trace=trace))
+                    record(lines, f"{mode} native decode", lambda: api.pets.list_pets(X_Trace=trace))
                     server.status, server.body = 201, b'{"id":2,"name":"dog","tag":"a"}'
                     record(
                         lines,

@@ -319,7 +319,7 @@ def client_copied_runtime_report(root: Path) -> str:
         exchange = Exchange([])
         exchange.respond(json_response(200, {"id": 7, "name": "copied"}))
         with exchange.client(trust_env=False) as native, package.Client(http_client=native) as api:
-            pet = api.pets.get_pet(pet_id=7)
+            pet = api.pets.get_pet(petId=7)
             lines.append(f"  response {pet.id} {pet.name}")
             server = exchange.server
         runtime = [

@@ -227,7 +227,7 @@ class AuthResource:
         *,
         theme: str,
         page: int,
-        x_trace: str,
+        X_Trace: str,
         filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -235,7 +235,7 @@ class AuthResource:
         """Call GET /api-key/cookie-parameters."""
         return self._core.execute(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         ).data
@@ -619,7 +619,7 @@ class AuthWithResponse:
         *,
         theme: str,
         page: int,
-        x_trace: str,
+        X_Trace: str,
         filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -627,7 +627,7 @@ class AuthWithResponse:
         """Call GET /api-key/cookie-parameters."""
         return self._core.execute(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         )
@@ -1011,7 +1011,7 @@ class AuthWithRawResponse:
         *,
         theme: str,
         page: int,
-        x_trace: str,
+        X_Trace: str,
         filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1019,7 +1019,7 @@ class AuthWithRawResponse:
         """Call GET /api-key/cookie-parameters."""
         return self._core.execute_raw(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         )
@@ -1403,7 +1403,7 @@ class AuthWithStreamingResponse:
         *,
         theme: str,
         page: int,
-        x_trace: str,
+        X_Trace: str,
         filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
@@ -1411,7 +1411,7 @@ class AuthWithStreamingResponse:
         """Call GET /api-key/cookie-parameters."""
         return self._core.stream(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         )

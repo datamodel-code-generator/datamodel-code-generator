@@ -232,12 +232,12 @@ def _sync_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, 
 
     def typed_decode() -> str:
         exchange.respond(json_response(200, {"id": "x", "name": 1}))
-        return outcome(lambda: api.pets.get_pet(pet_id=pet))
+        return outcome(lambda: api.pets.get_pet(petId=pet))
 
     def retried() -> str:
         exchange.respond(raw_response(503, b"down", "text/plain"), json_response(200, _PET))
         call = options.RequestOptions(max_retries=1, retry=options.RetryOptions(initial_delay=0, jitter="none"))
-        return outcome(lambda: api.pets.get_pet(pet_id=pet, options=call))
+        return outcome(lambda: api.pets.get_pet(petId=pet, options=call))
 
     def read_timeout() -> str:
         gate = threading.Event()
@@ -366,12 +366,12 @@ def _async_cases(
 
     async def typed_decode() -> str:
         exchange.respond(json_response(200, {"id": "x", "name": 1}))
-        return await aoutcome(lambda: api.pets.get_pet(pet_id=pet))
+        return await aoutcome(lambda: api.pets.get_pet(petId=pet))
 
     async def retried() -> str:
         exchange.respond(raw_response(503, b"down", "text/plain"), json_response(200, _PET))
         call = options.RequestOptions(max_retries=1, retry=options.RetryOptions(initial_delay=0, jitter="none"))
-        return await aoutcome(lambda: api.pets.get_pet(pet_id=pet, options=call))
+        return await aoutcome(lambda: api.pets.get_pet(petId=pet, options=call))
 
     async def cancelled() -> str:
         gate, started = threading.Event(), asyncio.Event()

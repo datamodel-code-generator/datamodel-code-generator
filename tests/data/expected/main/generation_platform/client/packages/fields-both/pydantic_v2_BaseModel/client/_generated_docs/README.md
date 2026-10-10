@@ -36,7 +36,7 @@ arguments of its fields, unless an operation's `body_arguments` is `body`.
 ## Operations
 
 - `default.create_pet`: `POST /pets`, body arguments `both`
-  - `application/json`: `body=` or the fields `name` (required), `kind` (required), `pet_tag`, `birth_date`, `owner`, `secret`
+  - `application/json`: `body=` or the fields `name` (required), `kind` (required), `pet_tag`, `birthDate`, `owner`, `secret`
   - `application/x-www-form-urlencoded`: `body=` or the fields `name` (required), `pet_tag`
 - `default.update_pet`: `PATCH /pets/{petId}`, body arguments `both`
   - `application/json`: `body=` or the fields `name`, `tag`
@@ -45,7 +45,7 @@ arguments of its fields, unless an operation's `body_arguments` is `body`.
   - `text/plain`: `body=` only, since only JSON and URL-encoded form bodies have field arguments
 - `default.set_owner`: `PUT /pets/{petId}/owner`, `body=` only (`application/json`)
 - `default.create_owner`: `POST /owners`, body arguments `both`
-  - `application/json`: `body=` or the fields `email` (required), `nick_name`
+  - `application/json`: `body=` or the fields `email` (required), `nickName`
 - `default.put_labels`: `PUT /pets/{petId}/labels`, body arguments `both`
   - `application/json`: `body=` or the fields `size`
 - `default.put_photo`: `PUT /pets/{petId}/photo`, body arguments `both`

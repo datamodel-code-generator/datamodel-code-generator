@@ -92,7 +92,7 @@ def _sent(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> 
                 name="Mimi",
                 kind=kind,
                 pet_tag=None,
-                birth_date=context.birth(),
+                birthDate=context.birth(),
                 owner=owner,
                 secret="s",
                 media_type=_JSON,
@@ -117,10 +117,10 @@ def _sent(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> 
     ):
         _exchanged(exchange, lines, label, call, json_response(201, _CREATED))
     for label, call in (
-        ("log a visit giving nothing of a required body", lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), media_type=_JSON)),
-        ("log a visit with renamed options", lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), visit_options=["a"], media_type=_JSON)),
-        ("log a visit as text", lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), body="n", media_type=_TEXT)),
-        ("set an owner, which takes only a body", lambda: pets.set_owner(pet_id=context.pet_id("OwnerPut"), body=owner)),
+        ("log a visit giving nothing of a required body", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), media_type=_JSON)),
+        ("log a visit with renamed options", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), visit_options=["a"], media_type=_JSON)),
+        ("log a visit as text", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), body="n", media_type=_TEXT)),
+        ("set an owner, which takes only a body", lambda: pets.set_owner(petId=context.pet_id("OwnerPut"), body=owner)),
         ("create an owner from fields of a body that may be null", lambda: pets.create_owner(email="e")),
         ("create a null owner", lambda: pets.create_owner(body=context.no_owner())),
     ):
@@ -139,9 +139,9 @@ def _refused(context: _Fields, api: Any, exchange: Exchange, lines: list[str]) -
         ("a field of another media", lambda: pets.create_pet(name="Mimi", kind=kind, media_type=_FORM)),
         ("fields without a media type", lambda: pets.create_pet(name="Mimi", kind=kind)),
         ("nothing without a media type", lambda: pets.create_pet()),
-        ("fields for text", lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), note="n", media_type=_TEXT)),
-        ("fields of an undeclared media", lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), note="n", media_type="application/xml")),
-        ("a body field of a body-only operation", lambda: pets.set_owner(pet_id=context.pet_id("OwnerPut"), email="e")),
+        ("fields for text", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), note="n", media_type=_TEXT)),
+        ("fields of an undeclared media", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), note="n", media_type="application/xml")),
+        ("a body field of a body-only operation", lambda: pets.set_owner(petId=context.pet_id("OwnerPut"), email="e")),
         ("an owner giving nothing", lambda: pets.create_owner()),
         ("a null owner and fields", lambda: pets.create_owner(body=context.no_owner(), email="e")),
         (
@@ -162,11 +162,11 @@ def _refused(context: _Fields, api: Any, exchange: Exchange, lines: list[str]) -
 def _optional(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send nothing for an optional body the call omits, and never an empty object for a media type alone."""
     for label, call in (
-        ("update giving nothing", lambda: pets.update_pet(pet_id=context.pet_id("Patch"))),
-        ("update a name", lambda: pets.update_pet(pet_id=context.pet_id("Patch"), name="n")),
-        ("update a null tag", lambda: pets.update_pet(pet_id=context.pet_id("Patch"), tag=None)),
-        ("update naming only a media type", lambda: pets.update_pet(pet_id=context.pet_id("Patch"), media_type=_JSON)),
-        ("log a visit naming only text", lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), media_type=_TEXT)),
+        ("update giving nothing", lambda: pets.update_pet(petId=context.pet_id("Patch"))),
+        ("update a name", lambda: pets.update_pet(petId=context.pet_id("Patch"), name="n")),
+        ("update a null tag", lambda: pets.update_pet(petId=context.pet_id("Patch"), tag=None)),
+        ("update naming only a media type", lambda: pets.update_pet(petId=context.pet_id("Patch"), media_type=_JSON)),
+        ("log a visit naming only text", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), media_type=_TEXT)),
     ):
         _exchanged(exchange, lines, label, call, raw_response(204))
 
@@ -215,7 +215,7 @@ def _constructed(context: _Fields, pets: Any, exchange: Exchange, lines: list[st
         exchange,
         lines,
         "log a visit giving nothing",
-        lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), media_type=_JSON),
+        lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), media_type=_JSON),
         raw_response(204),
     )
 

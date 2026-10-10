@@ -150,14 +150,14 @@ class AsyncDocumentsResource:
         *,
         id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
-        x_mode: str | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadDocumentResponse:
         """Call GET /documents/{id}."""
         return (await self._core.execute(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -330,14 +330,14 @@ class AsyncDocumentsWithResponse:
         *,
         id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
-        x_mode: str | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadDocumentResponse]:
         """Call GET /documents/{id}."""
         return await self._core.execute(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )
@@ -456,14 +456,14 @@ class AsyncDocumentsWithRawResponse:
         *,
         id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
-        x_mode: str | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /documents/{id}."""
         return await self._core.execute_raw(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )
@@ -582,14 +582,14 @@ class AsyncDocumentsWithStreamingResponse:
         *,
         id: models.FieldDocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
-        x_mode: str | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /documents/{id}."""
         return self._core.stream(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )

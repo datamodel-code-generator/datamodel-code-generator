@@ -89,11 +89,11 @@ def _add_delete_note(
 
     def delete_note(
         *,
-        note_id: Annotated[int, Path(alias='noteId')],
+        noteId: Annotated[int, Path(alias='noteId')],
     ) -> object:
         return dispatch(
             delete_note_handler(
-                note_id=note_id,
+                noteId=noteId,
             ),
             contract.DeleteNote.RESPONSES,
         )

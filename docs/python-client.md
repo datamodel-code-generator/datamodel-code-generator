@@ -44,6 +44,20 @@ datamodel-codegen \
   --client-model-package models
 ```
 
+Methods, resource namespaces, and modules are named in snake case, and classes in PascalCase, whatever the model
+naming options say: a method after its operationId, or after its method and path without one, such as
+`get_pets_by_pet_id` for `GET /pets/{petId}`, and a resource after its operation's first tag. Arguments are named
+after their wire names as model fields are, so `--snake-case-field`, `--aliases`, `--special-field-name-prefix`,
+`--remove-special-field-name-prefix`, and `--original-field-name-delimiter` apply to them: a `petId` parameter is the
+argument `petId` and an `X-Request-Id` header `X_Request_Id`, as in `client.pets.get_pet(petId=1)`. Pass
+`--snake-case-field` (`snake-case-field = true`) explicitly for snake_case arguments such as `pet_id`; it renames the
+model fields too, behind their aliases. A derived name that its namespace already holds takes the model's suffix, such
+as `get_pet_1` for a second `get_pet`, `id_1` for a query `id` beside a path `id`, or `options_1` for a parameter
+named after a call option. The model's `--naming-strategy` rules apply to these names too, with the resource as the
+parent of a method and the method as the parent of an argument. An explicit name, a `name`, `parameter_names`,
+`body_field_names` or `--client-resource-names` entry or an `--aliases` entry, must be a new Python identifier and is
+never renamed.
+
 Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your
 project. `--check` compares without writing and prints the differences as for models, and `--output-format json`
 emits the model generation and check payloads, as with `--generate-server`. `--diff-against` and `--watch` also work
@@ -632,15 +646,14 @@ is `{kind: eof}`, `{kind: sentinel, value}`, or `{kind: event_type, value}` (SSE
 Helpers reserve the arguments `pagination_options`, `poll_options`, `stream_options`,
 `ws_options`, `cache_options`, `upload_options`, `source`, `items`, and `state`. When
 an enabled helper's operation, or its `create` operation for polling and uploads, has a parameter or field argument
-with one of these names, generation fails instead of renaming it; name the argument with
-`parameter_names` or `body_field_names`:
+derived from one of these names, the argument takes the model's suffix, such as `items_1`; an explicit name of
+`parameter_names`, `body_field_names`, or `--aliases` that takes one fails generation instead of being renamed:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.diagnostics -->
 <!-- fmt: off -->
 
 ```text
 --client-protocols['tags.all']: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with the operation's parameter_names or body_field_names in --client-operations
---client-protocols['jobs.run']: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with the operation's parameter_names or body_field_names in --client-operations
 ```
 
 <!-- fmt: on -->
@@ -692,7 +705,7 @@ body as keywords, never field arguments, then `pagination_options` and `options`
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[models.User, ListUsersResponse]:
@@ -700,7 +713,7 @@ body as keywords, never field arguments, then `pagination_options` and `options`
         return first_page(
             self._core,
             _plans.PLAN_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             pagination_options=pagination_options,
             options=options,
         )
@@ -1369,8 +1382,8 @@ keywords, never field arguments, without the parameter the helper writes the con
         self,
         source: UploadSource,
         *,
-        tus_resumable: str,
-        x_name: str | UNSET = UNSET,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
     ) -> UploadHandle[None]:
@@ -1379,7 +1392,7 @@ keywords, never field arguments, without the parameter the helper writes the con
             self._core,
             _plans.PLAN_0,
             source,
-            (tus_resumable, x_name),
+            (Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
         )
@@ -1598,7 +1611,7 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
         self,
         *,
         topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
+        Last_Event_ID: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Message]:
@@ -1606,7 +1619,7 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
         return open_events(
             self._core,
             _plans.STREAM_0,
-            (topic, last_event_id),
+            (topic, Last_Event_ID),
             stream_options=stream_options,
             options=options,
         )
@@ -2204,8 +2217,8 @@ With asyncio, `fetch` is a coroutine:
         self,
         *,
         fields: str | UNSET = UNSET,
-        accept_language: str | UNSET = UNSET,
-        user_id: int,
+        Accept_Language: str | UNSET = UNSET,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -2213,7 +2226,7 @@ With asyncio, `fetch` is a coroutine:
         return fetch(
             self._core,
             _plans.PLAN_0,
-            (fields, accept_language, user_id),
+            (fields, Accept_Language, userId),
             cache_options=cache_options,
             options=options,
         )
@@ -2377,7 +2390,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> models.Pet: ...
@@ -2385,7 +2398,7 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> models.Pet: ...
@@ -2393,21 +2406,21 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> models.FieldPetsPetIdGetResponse: ...
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
         """Show one pet."""
         return self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         ).data
@@ -2438,7 +2451,7 @@ Every overload and the implementation take `**kwargs` typed by a TypedDict of th
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         ).data
@@ -2459,7 +2472,7 @@ TypedDict with the keys you forward. The module also holds the list of keywords 
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: NotRequired[None]
     options: NotRequired[RequestOptions | None]
 
@@ -2467,7 +2480,7 @@ class Operation2Arguments(TypedDict):
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
@@ -2475,7 +2488,7 @@ class Operation2Arguments1(TypedDict):
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
@@ -2483,15 +2496,15 @@ class Operation2Arguments2(TypedDict):
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 KEYWORDS_2: Final = Keywords(
     'get_pet',
-    ('pet_id', 'response_media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'response_media_type', 'options'),
+    ('petId',),
 )
 ```
 
@@ -2507,7 +2520,7 @@ from typing_extensions import NotRequired, TypedDict
 
 
 class ListArguments(TypedDict):
-    x_trace: FieldPetsGetHeaderXTraceParameter
+    X_Trace: FieldPetsGetHeaderXTraceParameter
     options: NotRequired[RequestOptions | None]
 
 
@@ -2534,17 +2547,17 @@ The binding differences, as the tests of this repository record them for the sam
 
 ```text
 # explicit
-plain get_pet (pet_id:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY) unbound (self:POSITIONAL_OR_KEYWORD, pet_id:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY)
-  keywords pet_id!, response_media_type, options coroutine False
-async plain get_pet (pet_id:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY) unbound (self:POSITIONAL_OR_KEYWORD, pet_id:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY)
-  keywords pet_id!, response_media_type, options coroutine True
+plain get_pet (petId:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY) unbound (self:POSITIONAL_OR_KEYWORD, petId:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY)
+  keywords petId!, response_media_type, options coroutine False
+async plain get_pet (petId:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY) unbound (self:POSITIONAL_OR_KEYWORD, petId:KEYWORD_ONLY, response_media_type:KEYWORD_ONLY, options:KEYWORD_ONLY)
+  keywords petId!, response_media_type, options coroutine True
 async list with an unknown keyword ! TypeError when called, sent False
 async list with no keyword ! TypeError when called, sent False
 # unpack
 plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-  keywords pet_id!, response_media_type, options coroutine False
+  keywords petId!, response_media_type, options coroutine False
 async plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-  keywords pet_id!, response_media_type, options coroutine True
+  keywords petId!, response_media_type, options coroutine True
 async list with an unknown keyword ! TypeError when awaited, sent False
 async list with no keyword ! TypeError when awaited, sent False
 ```
@@ -2621,12 +2634,13 @@ Structs alike. Other bodies keep only `body`: unions of objects, arrays and scal
 bodies and form-data sent as parts, bodies whose model cannot hold a request, such as one with a required read-only
 member. Extra keys, a null body, and an empty object also need `body`, and a nested object is given as its own model.
 
-Each field argument is named by the snake case of its wire property, and a read-only member has none.
+Each field argument takes its model field's name, as the model naming options give it, or for a key that is no
+identifier the name such a field would take, and a read-only member has none. A field whose name a parameter, a
+call option such as `body` or `options`, or another field takes is suffixed, such as `name_1`.
 `body_field_names` names one field of one media type instead, without changing the model or the wire property. Fields
-of different media types may share a name. Generation fails when a field would take the name
-of a parameter or of another field of the same media type, a reserved name such as `body` or `options`, or no valid
-identifier, and when a body field name names no field argument or its operation keeps only
-`body`:
+of different media types may share a name. Generation fails when a body field name or an `--aliases` entry takes the
+name of a parameter, a call option, or another field of the same media type, and when a body field name names no
+field argument or its operation keeps only `body`:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.body-fields.diagnostics -->
 <!-- fmt: off -->
@@ -2635,9 +2649,7 @@ identifier, and when a body field name names no field argument or its operation 
 --client-operations: The body field name of the application/json property 'id' of POST /pets names no field argument
 --client-operations: The body field name of the application/xml property 'tag' of POST /pets names no field argument
 --client-operations: The body field name of the application/json property 'absent' of POST /pets names no field argument
-/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'kind', 'tag'; name them with the operation's body_field_names in --client-operations
-/paths/~1pets/post: The application/x-www-form-urlencoded body fields of POST /pets cannot take the argument names 'tag'; name them with the operation's body_field_names in --client-operations
-/paths/~1pets~1{petId}~1visits/post: The application/json body fields of POST /pets/{petId}/visits cannot take the argument names 'options'; name them with the operation's body_field_names in --client-operations
+/paths/~1pets/post: The application/json body fields of POST /pets cannot take the argument names 'media_type', 'tag', which other arguments take
 --client-operations: The body field name of the text/plain property 'q' of POST /search names no field argument
 ```
 
@@ -2660,7 +2672,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -2671,7 +2683,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str,
         tag: str | None | UNSET = UNSET,
@@ -2682,7 +2694,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None,
@@ -2693,7 +2705,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -2703,7 +2715,7 @@ overload for each field, which that overload requires, and one that takes nothin
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -2713,7 +2725,7 @@ overload for each field, which that overload requires, and one that takes nothin
         """Call PATCH /pets/{petId}."""
         return self._core.execute(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -3335,9 +3347,9 @@ into SDK requests; its `Accept-Encoding` is.
 Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`
 take one keyword argument per security scheme an operation requires, named after the scheme in snake case; a package
 whose operations have no credentialed security alternative takes no credentials, copies no credential runtime, and
-exports no `AuthError`. A
-scheme whose argument would be empty, `options`, `http_client`, `self`, or another scheme's, or whose OAuth
-provider classes would take another scheme's PascalCase prefix, fails generation with `E_RESERVED_NAME`.
+exports no `AuthError`. An argument whose name another constructor argument or scheme takes is suffixed, such as
+`timeout_1` for a scheme named `timeout`, and so is the PascalCase prefix of OAuth provider classes that another
+scheme's prefix takes, as model class names are.
 
 These examples assume a generated API with a `bearer` scheme, a `header_key` API key scheme, and an `oauth` OAuth 2
 scheme with client credentials and authorization code flows, and an `auth` resource containing `bearer` and

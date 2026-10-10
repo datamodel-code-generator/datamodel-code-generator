@@ -29,6 +29,7 @@ from datamodel_code_generator._client.plan import (
 from datamodel_code_generator._client.polling import plan_polling
 from datamodel_code_generator._client.protocol_plan import (
     helper_metadata,
+    helper_operations,
     helper_problems,
     plan_protocols,
 )
@@ -118,8 +119,9 @@ class ClientTarget:
         protocols = plan_protocols(request, config.protocols, self.protocol_base or request.cwd)
         wire = _wire(request, request.batch)
         facts = ModelFacts(request.batch)
+        helping = helper_operations(protocols)
         try:
-            plan = Planner(request, config, wire, facts).plan()
+            plan = Planner(request, config, wire, facts, helping).plan()
         except PlanError as error:
             raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
         events, hooked = webhook_uses(protocols, request)
@@ -140,7 +142,8 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(map(_diagnostic, problems)))
         coded = frozenset(item.use for item in codecs.uses)
-        plan, named = plan_fields(plan, facts, coded)
+        assert batch.names is not None
+        plan, named = plan_fields(plan, facts, coded, batch.names, helping)
         pages, checked = plan_pagination(protocols, plan, facts, coded, request)
         polls, polled = plan_polling(protocols, plan, facts, coded, request)
         caches, cached = plan_caches(protocols, plan, facts, coded, request)

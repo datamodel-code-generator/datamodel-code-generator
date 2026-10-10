@@ -59,7 +59,7 @@ def sockets(
         feed.send("a")
         for item in feed:
             assert_type(item.data, bytes)
-    with client.protocols.secure.chat.connect(x_trace=trace) as secure:
+    with client.protocols.secure.chat.connect(X_Trace=trace) as secure:
         secure.send(b"a")
         assert_type(secure.receive().data, str)
     del messages, widened

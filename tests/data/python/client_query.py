@@ -24,16 +24,16 @@ def query(package: ModuleType, lines: list[str]) -> None:
     pets = json_response(200, [], **{"X-Rate": "1"})
     with package.Client(http_client=http, default_query={"api-version": "1", "limit": "9"}) as api:
         exchange.respond(pets, pets, pets, pets)
-        record(lines, "client query under the parameters", lambda: api.pets.list_pets(x_trace=trace, limit=limit))
+        record(lines, "client query under the parameters", lambda: api.pets.list_pets(X_Trace=trace, limit=limit))
         view = api.with_options(default_query={"api-version": None, "trace id": "a b/c"})
-        record(lines, "view query", lambda: view.pets.list_pets(x_trace=trace, labels=labels))
+        record(lines, "view query", lambda: view.pets.list_pets(X_Trace=trace, labels=labels))
         nested = view.with_options(default_query={"trace id": "nested", "API-VERSION": "2"})
-        record(lines, "nested view query by case", lambda: nested.pets.list_pets(x_trace=trace))
+        record(lines, "nested view query by case", lambda: nested.pets.list_pets(X_Trace=trace))
         call = options.RequestOptions(extra_query={"limit": "7", "tags": None, "x": "1", "Limit": "8"})
         record(
             lines,
             "call query over the parameters",
-            lambda: view.pets.list_pets(x_trace=trace, limit=limit, labels=labels, options=call),
+            lambda: view.pets.list_pets(X_Trace=trace, limit=limit, labels=labels, options=call),
         )
         exchange.respond(raw_response(200, b"ok", "text/plain"))
         raw = options.RequestOptions(extra_query={"a": None, "trace id": "new"})
@@ -49,7 +49,7 @@ async def _async_query(package: ModuleType, lines: list[str]) -> None:
     api: Any
     async with package.AsyncClient(http_client=http, default_query={"api-version": "1"}) as api:
         exchange.respond(json_response(200, [], **{"X-Rate": "1"}), raw_response(200, b"ok", "text/plain"))
-        await arecord(lines, "async client query", lambda: api.pets.list_pets(x_trace=trace))
+        await arecord(lines, "async client query", lambda: api.pets.list_pets(X_Trace=trace))
 
         async def raw_call() -> bytes:
             return (await api.request_raw("GET", "https://raw.example.com/items")).body_bytes

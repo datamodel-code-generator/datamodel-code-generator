@@ -20,18 +20,18 @@ class Counted(PetsService[User]):
 
 
 class Required(UntaggedService[User]):
-    async def get_maybe(self, *, principal: User, query_principal: str | None) -> None:  # error
-        del principal, query_principal
+    async def get_maybe(self, *, principal: User, principal_1: str | None) -> None:  # error
+        del principal, principal_1
 
 
 class Blocking(UntaggedService[User]):
-    def get_maybe(self, *, principal: User | None, query_principal: str | None) -> None:  # error
-        del principal, query_principal
+    def get_maybe(self, *, principal: User | None, principal_1: str | None) -> None:  # error
+        del principal, principal_1
 
 
 class Hurried(UntaggedService[User]):
-    async def put_pet(self, *, principal: User, pet_id: int) -> None:  # error
-        del principal, pet_id
+    async def put_pet(self, *, principal: User, petId: int) -> None:  # error
+        del principal, petId
 
 
 class Anonymous(UntaggedService[User]):

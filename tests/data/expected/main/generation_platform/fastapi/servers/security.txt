@@ -59,33 +59,33 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=None)
+  get_maybe(principal=None, principal_1=None)
 < 204 - b''
 > GET /maybe?principal=x
   global /maybe
   authorize [(('bearer', ()),)]
     credentials ['bearer=tok']
-  get_maybe(principal='user-bearer', query_principal='x')
+  get_maybe(principal='user-bearer', principal_1='x')
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=None)
+  get_maybe(principal=None, principal_1=None)
 < 204 - b''
 > GET /maybe
   global /maybe
-  get_maybe(principal=None, query_principal=None)
+  get_maybe(principal=None, principal_1=None)
 < 204 - b''
 > PUT /pets/1
   global /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),)]
     credentials ['oauth=Bearer tok']
-  put_pet(principal='user-oauth', pet_id=1)
+  put_pet(principal='user-oauth', petId=1)
 < 204 - b''
 > PUT /pets/1?key=k
   global /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),), (('query_key', ()), ('basic', ()))]
     credentials ['basic=user', 'oauth=Basic dXNlcjpwdw==', 'query_key=k']
-  put_pet(principal='user-oauth', pet_id=1)
+  put_pet(principal='user-oauth', petId=1)
 < 204 - b''
 > PUT /pets/1?key=k
   global /pets/1
@@ -99,7 +99,7 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
   global /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),)]
     credentials ['oauth=Bearer a']
-  put_pet(principal='user-oauth', pet_id=1)
+  put_pet(principal='user-oauth', petId=1)
 < 204 - b''
 > GET /session
   global /session

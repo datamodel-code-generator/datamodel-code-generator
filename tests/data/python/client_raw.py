@@ -167,7 +167,7 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
     errors, options, _, types = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
-    kept = raw.get_pet(pet_id=pet)
+    kept = raw.get_pet(petId=pet)
     lines.append(f"  saved {_saved(kept)}")
     pieces = list(kept.iter_bytes())
     lines.append(f"    read {kept.read()!r} text {kept.text()!r} json {kept.json()!r} pieces {pieces}")
@@ -176,33 +176,33 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
     with kept as same:
         lines.append(f"    closed twice {same.read() == _PET} {same.raise_for_status()} {same is kept}")
     exchange.respond(_gzip(200, _PET, 7))
-    lines.append(f"  saved gzip {_saved(raw.get_pet(pet_id=pet))}")
+    lines.append(f"  saved gzip {_saved(raw.get_pet(petId=pet))}")
     exchange.respond(_streamed(200, (bytes(70000),), "application/octet-stream"))
-    large = raw.get_pet(pet_id=pet)
+    large = raw.get_pet(petId=pet)
     lines.append(f"  saved pieces {[len(piece) for piece in large.iter_bytes()]}")
     trace = argument(package, "listPets", "header", "X-Trace", "t")
     exchange.respond(_streamed(418, (_ERROR,), headers={"x-request-id": "r-1"}))
-    listed = raw.list_pets(x_trace=trace)
+    listed = raw.list_pets(X_Trace=trace)
     lines.append(f"  saved error {_saved(listed)} {listed.info.request_id}")
     record(lines, "saved error status", listed.raise_for_status)
     record(lines, "saved error status again", listed.raise_for_status)
     exchange.respond(_streamed(500, _LONG_ERROR, "text/plain"))
     once = options.RequestOptions(max_retries=0)
-    lines.append(f"  saved truncated status {_prefix(raw.get_pet(pet_id=pet, options=once).raise_for_status)}")
+    lines.append(f"  saved truncated status {_prefix(raw.get_pet(petId=pet, options=once).raise_for_status)}")
     exchange.respond(_streamed(302, (), "text/plain", headers={"location": "https://api.example.com/v1/pets/4"}))
-    record(lines, "saved redirect status", raw.get_pet(pet_id=pet).raise_for_status)
+    record(lines, "saved redirect status", raw.get_pet(petId=pet).raise_for_status)
     for label, content, media in (
         ("undecodable text", b"\xff\xfe", "text/plain; charset=utf-8"),
         ("latin-1 text", "café".encode("latin-1"), "text/plain; charset=latin-1"),
         ("invalid json", b"{", _JSON),
     ):
         exchange.respond(_streamed(200, (content,), media))
-        received = raw.get_pet(pet_id=pet)
+        received = raw.get_pet(petId=pet)
         record(lines, f"saved {label} text", received.text)
         record(lines, f"saved {label} json", received.json)
     body = json_error_body("integer limit")
     exchange.respond(_streamed(200, (body,)))
-    received = raw.get_pet(pet_id=pet)
+    received = raw.get_pet(petId=pet)
     try:
         received.json()
     except errors.DecodeError as error:
@@ -218,14 +218,14 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
         ("connect", failing(httpx2.ConnectError)),
     ):
         exchange.respond(responder)
-        record(lines, f"saved {label}", lambda: raw.get_pet(pet_id=pet, options=once))
+        record(lines, f"saved {label}", lambda: raw.get_pet(petId=pet, options=once))
 
 
 def _streaming(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Read a streaming body once: by iterating it, or into memory first, and refuse any second reading."""
     pet, streaming = _pet(package), api.pets.with_streaming_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         lines.append(f"  streamed {list(response.iter_bytes())} status {response.raise_for_status()}")
         for label, action in (
             ("read", response.read),
@@ -237,37 +237,37 @@ def _streaming(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         ):
             record(lines, f"consumed {label}", action)
     exchange.respond(_gzip(200, _PET, 7))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         record(lines, "unread body_bytes", lambda: response.body_bytes)
         lines.append(f"  read first {response.read()!r} {_saved(response)}")
         record(lines, "raw bytes after a read", lambda: list(response.iter_raw_bytes()))
     exchange.respond(_gzip(200, _PET, 7))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         lines.append(f"  streamed coded {list(response.iter_raw_bytes())}")
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:15], _PET[15:])))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         chunks = response.iter_bytes()
         lines.append(f"  streamed first {next(chunks)!r}")
         record(lines, "streaming read", response.read)
         response.close()
         record(lines, "closed read", response.read)
     exchange.respond(_large(1600))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         lines.append(f"  streamed 100 MiB {sum(len(chunk) for chunk in response.iter_bytes())}")
     exchange.respond(_streamed(200, (_PET[:8],), fail=True))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         received: list[bytes] = []
         record(lines, "streamed broken", lambda: received.extend(response.iter_bytes()))
         lines.append(f"    passed {received}")
         record(lines, "streamed broken read", response.read)
     exchange.respond(_streamed(200, (_PET,)))
     try:
-        with streaming.get_pet(pet_id=pet) as response:
+        with streaming.get_pet(petId=pet) as response:
             raise Stop
     except Stop:
         record(lines, "stopped block read", response.read)
     exchange.respond(*(failing(httpx2.ConnectError) for _ in range(3)))
-    record(lines, "streaming connect", lambda: _entered(streaming.get_pet(pet_id=pet)))
+    record(lines, "streaming connect", lambda: _entered(streaming.get_pet(petId=pet)))
 
 
 def _entered(manager: Any) -> object:
@@ -281,7 +281,7 @@ def _status(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     pet, streaming = _pet(package), api.pets.with_streaming_response
     once = options.RequestOptions(max_retries=0)
     exchange.respond(_streamed(500, _LONG_ERROR, "text/plain"))
-    with streaming.get_pet(pet_id=pet, options=once) as response:
+    with streaming.get_pet(petId=pet, options=once) as response:
         lines.append(f"  streaming truncated status {_prefix(response.raise_for_status)}")
         record(lines, "streaming truncated read", response.read)
     for label, responder in (
@@ -291,13 +291,13 @@ def _status(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     ):
         exchange.respond(responder)
         try:
-            with streaming.get_pet(pet_id=pet, options=once) as response:
+            with streaming.get_pet(petId=pet, options=once) as response:
                 record(lines, f"streaming {label} status", response.raise_for_status)
                 record(lines, f"streaming {label} read", response.read)
         except errors.APIConnectionError as error:
             lines.append(f"  streaming {label} acquisition {type(error).__name__}")
     exchange.respond(_streamed(404, (b"miss", b"ing"), "text/plain"))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         next(response.iter_raw_bytes())
         record(lines, "partly read status", response.raise_for_status)
 
@@ -308,9 +308,9 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     target, raced = directory / "pet.json", directory / "raced.json"
     sink = io.BytesIO()
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])), _streamed(200, (_PET[:8], _PET[8:])))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         response.stream_to(sink)
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         response.stream_to(target)
     plain = directory / "plain.json"
     plain.write_bytes(b"")
@@ -319,28 +319,28 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     lines.append(f"  downloaded {sink.getvalue()!r} open {not sink.closed} {target.read_bytes()!r} {_files(directory)}")
     lines.append(f"  downloaded with the permissions of a new file {permissions}")
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"[]",)), _streamed(200, (b"{", b"}"), fail=True))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         lines.append(f"  existing {outcome(lambda: response.stream_to(target))} then read {response.read()!r}")
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         response.stream_to(str(target), overwrite=True)
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         lines.append(f"  overwrite broken {outcome(lambda: response.stream_to(target, overwrite=True))}")
     lines.append(f"  kept {target.read_bytes()!r} {_files(directory)}")
     exchange.respond(_streamed(200, (b"{", b"}"), action=lambda: raced.write_bytes(b"first")))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         lines.append(f"  raced {outcome(lambda: response.stream_to(raced))}")
     lines.append(f"  raced kept {raced.read_bytes()!r} {_files(directory)}")
     writing: list[int] = []
     exchange.respond(_streamed(200, (b"{", b"}"), action=lambda: writing.extend(_modes(directory))))
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         response.stream_to(directory / "private.json")
     lines.append(f"  downloading readable by its owner alone {bool(writing) and all(map(_private, writing))}")
     failed = directory / "failed.json"
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
-    with streaming.get_pet(pet_id=pet) as response, pytest.MonkeyPatch.context() as fault:
+    with streaming.get_pet(petId=pet) as response, pytest.MonkeyPatch.context() as fault:
         fault.setattr(os, "link", _broken_link)
         lines.append(f"  move failed {outcome(lambda: response.stream_to(failed))} {_files(directory)}")
-    with streaming.get_pet(pet_id=pet) as response:
+    with streaming.get_pet(petId=pet) as response:
         response.stream_to(failed)
     lines.append(f"  moved again {failed.read_bytes()!r} {_files(directory)}")
 
@@ -385,24 +385,24 @@ def _handles(package: ModuleType, lines: list[str]) -> None:
     exchange.respond(_streamed(200, (_PET,), _JSON), _streamed(200, (_PET[:5], _PET[5:]), _JSON))
     with exchange.client() as native, package.Client(http_client=native) as api:
         pet = _pet(package)
-        saved = api.pets.with_raw_response.get_pet(pet_id=pet)
+        saved = api.pets.with_raw_response.get_pet(petId=pet)
         view = api.with_options()
-        with view.pets.with_streaming_response.get_pet(pet_id=pet) as held:
+        with view.pets.with_streaming_response.get_pet(petId=pet) as held:
             api.close()
             lines.append(f"  borrowed native closed={native.is_closed}")
             record(lines, "held response after SDK close", held.read)
-            record(lines, "closed root refuses new calls", lambda: api.pets.get_pet(pet_id=pet))
+            record(lines, "closed root refuses new calls", lambda: api.pets.get_pet(petId=pet))
         lines.append(f"  saved after close={saved.read()!r}")
         api.close()
 
 
 def _read_in_block(api: Any, pet: object) -> object:
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as response:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as response:
         return response.read()
 
 
 def _switch_in_block(api: Any, pet: object) -> object:
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as response:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as response:
         next(response.iter_bytes())
         return response.read()
 
@@ -424,7 +424,7 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
     errors, options, _, _ = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
-    kept = await raw.get_pet(pet_id=pet)
+    kept = await raw.get_pet(petId=pet)
     pieces = [piece async for piece in kept.iter_bytes()]
     lines.append(
         f"  async saved {_saved(kept)} {await kept.read()!r} {await kept.text()!r} {await kept.json()!r} {pieces}"
@@ -434,14 +434,14 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
     async with kept as same:
         lines.append(f"    closed twice {await same.raise_for_status()} {same is kept}")
     exchange.respond(_gzip(200, _PET, 7))
-    lines.append(f"  async saved gzip {_saved(await raw.get_pet(pet_id=pet))}")
+    lines.append(f"  async saved gzip {_saved(await raw.get_pet(petId=pet))}")
     exchange.respond(_streamed(500, _LONG_ERROR, "text/plain"))
     once = options.RequestOptions(max_retries=0)
-    failed = await raw.get_pet(pet_id=pet, options=once)
+    failed = await raw.get_pet(petId=pet, options=once)
     lines.append(f"  async saved status {await _aprefix(failed.raise_for_status)}")
     body = json_error_body("integer limit")
     exchange.respond(_streamed(200, (body,)))
-    received = await raw.get_pet(pet_id=pet)
+    received = await raw.get_pet(petId=pet)
     try:
         await received.json()
     except errors.DecodeError as error:
@@ -457,7 +457,7 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
         ("connect", failing(httpx2.ConnectError)),
     ):
         exchange.respond(responder)
-        await arecord(lines, f"async saved {label}", lambda: raw.get_pet(pet_id=pet, options=once))
+        await arecord(lines, f"async saved {label}", lambda: raw.get_pet(petId=pet, options=once))
 
 
 async def _async_streaming(
@@ -466,22 +466,22 @@ async def _async_streaming(
     errors, options, _, _ = _modules(package)
     pet, streaming = _pet(package), api.pets.with_streaming_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         lines.append(f"  async streamed {[chunk async for chunk in response.iter_bytes()]}")
         for label, action in (("read", response.read), ("text", response.text), ("json", response.json)):
             await arecord(lines, f"async consumed {label}", action)
         record(lines, "async consumed iter_raw_bytes", response.iter_raw_bytes)
     exchange.respond(_gzip(200, _PET, 7), _gzip(200, _PET, 7))
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         lines.append(f"  async read first {await response.read()!r} {_saved(response)}")
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         lines.append(f"  async streamed coded {[chunk async for chunk in response.iter_raw_bytes()]}")
     exchange.respond(_streamed(200, (_PET[:8],), fail=True))
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         await arecord(lines, "async streamed broken", lambda: _alist(response.iter_bytes()))
     once = options.RequestOptions(max_retries=0)
     exchange.respond(_streamed(500, _LONG_ERROR, "text/plain"))
-    async with streaming.get_pet(pet_id=pet, options=once) as response:
+    async with streaming.get_pet(petId=pet, options=once) as response:
         lines.append(f"  async streaming truncated status {await _aprefix(response.raise_for_status)}")
     for label, responder in (
         ("error", _streamed(404, (b"miss", b"ing"), "text/plain")),
@@ -490,17 +490,17 @@ async def _async_streaming(
     ):
         exchange.respond(responder)
         try:
-            async with streaming.get_pet(pet_id=pet, options=once) as response:
+            async with streaming.get_pet(petId=pet, options=once) as response:
                 await arecord(lines, f"async streaming {label} status", response.raise_for_status)
         except errors.APIConnectionError as error:
             lines.append(f"  async streaming {label} acquisition {type(error).__name__}")
     exchange.respond(_streamed(404, (b"miss", b"ing"), "text/plain"))
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         await anext(response.iter_raw_bytes())
         await arecord(lines, "async partly read status", response.raise_for_status)
     exchange.respond(_streamed(200, (_PET,)))
     try:
-        async with streaming.get_pet(pet_id=pet) as response:
+        async with streaming.get_pet(petId=pet) as response:
             raise Stop
     except Stop:
         await arecord(lines, "async stopped block read", response.read)
@@ -520,28 +520,28 @@ async def _async_download(streaming: Any, pet: object, exchange: Exchange, lines
         _streamed(200, (b"{", b"}"), fail=True),
         _streamed(200, (b"{", b"}"), action=lambda: raced.write_bytes(b"first")),
     )
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         await response.stream_to(sink)
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         await response.stream_to(target)
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         lines.append(f"  async existing {await aoutcome(lambda: response.stream_to(target))} {await response.read()!r}")
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         lines.append(f"  async overwrite broken {await aoutcome(lambda: response.stream_to(target, overwrite=True))}")
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         lines.append(f"  async raced {await aoutcome(lambda: response.stream_to(raced))}")
     lines.append(
         f"  async downloaded {sink.getvalue()!r} {target.read_bytes()!r} {raced.read_bytes()!r} {_files(directory)}"
     )
     failed = directory / "failed.json"
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         with pytest.MonkeyPatch.context() as fault:
             fault.setattr(os, "link", _broken_link)
             lines.append(
                 f"  async move failed {await aoutcome(lambda: response.stream_to(failed))} {_files(directory)}"
             )
-    async with streaming.get_pet(pet_id=pet) as response:
+    async with streaming.get_pet(petId=pet) as response:
         await response.stream_to(failed)
     lines.append(f"  async moved again {failed.read_bytes()!r} {_files(directory)}")
 
@@ -561,23 +561,23 @@ async def _async_handles(package: ModuleType, lines: list[str]) -> None:
     exchange.respond(_streamed(200, (_PET,), _JSON), _streamed(200, (_PET[:5], _PET[5:]), _JSON))
     async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
         pet = _pet(package)
-        saved = await api.pets.with_raw_response.get_pet(pet_id=pet)
+        saved = await api.pets.with_raw_response.get_pet(petId=pet)
         view = api.with_options()
-        async with view.pets.with_streaming_response.get_pet(pet_id=pet) as held:
+        async with view.pets.with_streaming_response.get_pet(petId=pet) as held:
             await api.aclose()
             lines.append(f"  async borrowed native closed={native.is_closed}")
             await arecord(lines, "async held response after SDK close", held.read)
-            await arecord(lines, "async closed root refuses new calls", lambda: api.pets.get_pet(pet_id=pet))
+            await arecord(lines, "async closed root refuses new calls", lambda: api.pets.get_pet(petId=pet))
         lines.append(f"  async saved after close={await saved.read()!r}")
         await api.aclose()
 
 
 async def _aread_in_block(api: Any, pet: object) -> object:
-    async with api.pets.with_streaming_response.get_pet(pet_id=pet) as response:
+    async with api.pets.with_streaming_response.get_pet(petId=pet) as response:
         return await response.read()
 
 
 async def _aswitch_in_block(api: Any, pet: object) -> object:
-    async with api.pets.with_streaming_response.get_pet(pet_id=pet) as response:
+    async with api.pets.with_streaming_response.get_pet(petId=pet) as response:
         await anext(response.iter_bytes())
         return await response.read()

@@ -1,0 +1,13 @@
+# naming-primary-first
+serve pydantic_v2.BaseModel
+service ItemsService: get_item, list_items, list_items_1
+service ItemsService without its methods: TypeError
+> GET /items/1?cursor=q
+  get_item(itemId=1, cursor_1='q', cursor='h')
+< 204 - b''
+> GET /items?limit=2
+  list_items(limit=1, limit_1=2)
+< 204 - b''
+> GET /shared?limit=3
+  list_items_1(limit=3)
+< 204 - b''

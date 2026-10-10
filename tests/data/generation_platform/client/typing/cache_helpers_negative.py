@@ -17,11 +17,11 @@ async def wrong_fetches(
 ) -> None:
     """Reject each misuse of a cache helper or its results."""
     helper = client.protocols.users.profile
-    unawaited: CacheResult[GetUserResponse] = async_client.protocols.users.profile.fetch(user_id=user)  # error
-    helper.fetch(user_id=b"three")  # error
-    helper.fetch(user_id=user, cache_options=RetryOptions())  # error
-    helper.fetch(user_id=user, session_options=RetryOptions())  # error
+    unawaited: CacheResult[GetUserResponse] = async_client.protocols.users.profile.fetch(userId=user)  # error
+    helper.fetch(userId=b"three")  # error
+    helper.fetch(userId=user, cache_options=RetryOptions())  # error
+    helper.fetch(userId=user, session_options=RetryOptions())  # error
     helper.fetch()  # error
-    listing: CacheResult[ListUsersResponse] = helper.fetch(user_id=user)  # error
+    listing: CacheResult[ListUsersResponse] = helper.fetch(userId=user)  # error
     result.source = "network"  # error
     del unawaited, listing

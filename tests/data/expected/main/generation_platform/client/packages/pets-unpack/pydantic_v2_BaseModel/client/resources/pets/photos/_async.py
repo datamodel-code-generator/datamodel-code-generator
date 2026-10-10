@@ -48,7 +48,7 @@ class AsyncPetsPhotosResource:
         KEYWORDS_5.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -71,7 +71,7 @@ class AsyncPetsPhotosWithResponse:
         KEYWORDS_5.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -94,7 +94,7 @@ class AsyncPetsPhotosWithRawResponse:
         KEYWORDS_5.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -117,7 +117,7 @@ class AsyncPetsPhotosWithStreamingResponse:
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),

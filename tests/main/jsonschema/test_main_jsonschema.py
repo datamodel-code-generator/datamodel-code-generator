@@ -16280,7 +16280,11 @@ def test_main_root_model_config_frozen(output_file: Path) -> None:
 
 The `--naming-strategy parent-prefixed` flag prefixes model names with their
 parent model name when duplicates occur. For example, if both `Order` and
-`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.""",
+`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
+
+Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
+names, with the resource or router group as the parent of a method and the method as the parent of an argument;
+under `primary-first`, a primary name is one the root document declares.""",
     input_schema="jsonschema/naming_strategy/input.json",
     cli_args=["--naming-strategy", "parent-prefixed"],
     golden_output="main/jsonschema/naming_strategy/parent_prefixed/output.py",

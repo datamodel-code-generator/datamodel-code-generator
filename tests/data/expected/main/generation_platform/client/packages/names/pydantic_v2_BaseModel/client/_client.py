@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .resources.admin._sync import AdminResource
     from .resources.default._sync import DefaultResource
     from .resources.store._sync import StoreResource
-    from .resources.u30e6_u30fc_u30b6_u30fc._sync import U30e6U30fcU30b6U30fcResource
+    from .resources.ユーザー._sync import ユーザーResource
 
 _DEFAULTS = ClientDefaults()
 
@@ -100,11 +100,11 @@ class ClientView:
         return StoreResource(self._core)
 
     @cached_property
-    def u30e6_u30fc_u30b6_u30fc(self) -> U30e6U30fcU30b6U30fcResource:
-        """The u30e6_u30fc_u30b6_u30fc operations."""
-        from .resources.u30e6_u30fc_u30b6_u30fc._sync import U30e6U30fcU30b6U30fcResource
+    def ユーザー(self) -> ユーザーResource:
+        """The ユーザー operations."""
+        from .resources.ユーザー._sync import ユーザーResource
 
-        return U30e6U30fcU30b6U30fcResource(self._core)
+        return ユーザーResource(self._core)
 
     @cached_property
     def admin(self) -> AdminResource:

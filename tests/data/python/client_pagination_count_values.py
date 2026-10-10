@@ -132,7 +132,7 @@ def _default_calls(harness: Harness, api: Any) -> Iterator[tuple[str, str, Any, 
     options = harness.options
     for location, name, keyword, helper_name, first in (
         ("query", "offset", "offset", "offsets", 40),
-        ("header", "X-Page", "x_page", "by_header", 5),
+        ("header", "X-Page", "X_Page", "by_header", 5),
     ):
         default, extra = (
             ("default_query", "extra_query") if location == "query" else ("default_headers", "extra_headers")

@@ -4,4 +4,4 @@ check
 check
   Error: The --server-primary-responses entry '/paths/~1pets/get' in '<root>/spec/other.yaml' selects no root path operation
 check
-  Error: Several operation names become 'CreatePet'
+  Error: Several operation names become 'create_pet'

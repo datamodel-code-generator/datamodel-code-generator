@@ -82,7 +82,7 @@ class AsyncEventsMessagesSse:
         self,
         *,
         topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
+        Last_Event_ID: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncEventStream[models.Message]:
@@ -90,7 +90,7 @@ class AsyncEventsMessagesSse:
         return await aopen_events(
             self._core,
             _plans.STREAM_0,
-            (topic, last_event_id),
+            (topic, Last_Event_ID),
             stream_options=stream_options,
             options=options,
         )
@@ -107,7 +107,7 @@ class AsyncEventsTypedSse:
         self,
         *,
         topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
+        Last_Event_ID: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncEventStream[models.Created | models.Deleted | UnknownEvent]:
@@ -115,7 +115,7 @@ class AsyncEventsTypedSse:
         return await aopen_events(
             self._core,
             _plans.STREAM_1,
-            (topic, last_event_id),
+            (topic, Last_Event_ID),
             stream_options=stream_options,
             options=options,
         )
@@ -132,7 +132,7 @@ class AsyncEventsTaggedSse:
         self,
         *,
         topic: str | UNSET = UNSET,
-        last_event_id: str | UNSET = UNSET,
+        Last_Event_ID: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncEventStream[models.Created | models.Deleted]:
@@ -140,7 +140,7 @@ class AsyncEventsTaggedSse:
         return await aopen_events(
             self._core,
             _plans.STREAM_2,
-            (topic, last_event_id),
+            (topic, Last_Event_ID),
             stream_options=stream_options,
             options=options,
         )

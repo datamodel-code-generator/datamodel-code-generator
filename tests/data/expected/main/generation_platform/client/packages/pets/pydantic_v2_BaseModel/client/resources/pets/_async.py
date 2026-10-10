@@ -60,7 +60,7 @@ class AsyncPetsResource:
         *,
         limit: int | UNSET = UNSET,
         labels: list[str] | UNSET = UNSET,
-        x_trace: str,
+        X_Trace: str,
         session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -68,7 +68,7 @@ class AsyncPetsResource:
         """List every pet."""
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (limit, labels, x_trace, session),
+            (limit, labels, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -113,7 +113,7 @@ class AsyncPetsResource:
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> models.Pet: ...
@@ -121,7 +121,7 @@ class AsyncPetsResource:
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> models.Pet: ...
@@ -129,21 +129,21 @@ class AsyncPetsResource:
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> models.FieldPetsPetIdGetResponse: ...
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
         """Show one pet."""
         return (await self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -151,33 +151,33 @@ class AsyncPetsResource:
     async def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> DeletePetsByPetIdResponse:
         """Call DELETE /pets/{petId}."""
         return (await self._core.execute(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             options=options,
         )).data
 
     async def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> HeadPetResponse:
         """Call HEAD /pets/{petId}."""
         return (await self._core.execute(
             _operations.OPERATION_4,
-            (pet_id,),
+            (petId,),
             options=options,
         )).data
 
     async def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -185,7 +185,7 @@ class AsyncPetsResource:
         """Call POST /pets/{petId}/files."""
         return (await self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -194,14 +194,14 @@ class AsyncPetsResource:
     async def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadFilesResponse:
         """Call GET /pets/{petId}/files."""
         return (await self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -219,7 +219,7 @@ class AsyncPetsWithResponse:
         *,
         limit: int | UNSET = UNSET,
         labels: list[str] | UNSET = UNSET,
-        x_trace: str,
+        X_Trace: str,
         session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -227,7 +227,7 @@ class AsyncPetsWithResponse:
         """List every pet."""
         return await self._core.execute(
             _operations.OPERATION_0,
-            (limit, labels, x_trace, session),
+            (limit, labels, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
         )
@@ -272,7 +272,7 @@ class AsyncPetsWithResponse:
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[models.Pet]: ...
@@ -280,7 +280,7 @@ class AsyncPetsWithResponse:
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
     ) -> Response[models.Pet]: ...
@@ -288,21 +288,21 @@ class AsyncPetsWithResponse:
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
     ) -> Response[models.FieldPetsPetIdGetResponse]: ...
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]:
         """Show one pet."""
         return await self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -310,33 +310,33 @@ class AsyncPetsWithResponse:
     async def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> Response[DeletePetsByPetIdResponse]:
         """Call DELETE /pets/{petId}."""
         return await self._core.execute(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             options=options,
         )
 
     async def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> Response[HeadPetResponse]:
         """Call HEAD /pets/{petId}."""
         return await self._core.execute(
             _operations.OPERATION_4,
-            (pet_id,),
+            (petId,),
             options=options,
         )
 
     async def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -344,7 +344,7 @@ class AsyncPetsWithResponse:
         """Call POST /pets/{petId}/files."""
         return await self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -353,14 +353,14 @@ class AsyncPetsWithResponse:
     async def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadFilesResponse]:
         """Call GET /pets/{petId}/files."""
         return await self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -378,7 +378,7 @@ class AsyncPetsWithRawResponse:
         *,
         limit: int | UNSET = UNSET,
         labels: list[str] | UNSET = UNSET,
-        x_trace: str,
+        X_Trace: str,
         session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -386,7 +386,7 @@ class AsyncPetsWithRawResponse:
         """List every pet."""
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (limit, labels, x_trace, session),
+            (limit, labels, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
         )
@@ -430,14 +430,14 @@ class AsyncPetsWithRawResponse:
     async def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Show one pet."""
         return await self._core.execute_raw(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -445,33 +445,33 @@ class AsyncPetsWithRawResponse:
     async def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call DELETE /pets/{petId}."""
         return await self._core.execute_raw(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             options=options,
         )
 
     async def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call HEAD /pets/{petId}."""
         return await self._core.execute_raw(
             _operations.OPERATION_4,
-            (pet_id,),
+            (petId,),
             options=options,
         )
 
     async def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -479,7 +479,7 @@ class AsyncPetsWithRawResponse:
         """Call POST /pets/{petId}/files."""
         return await self._core.execute_raw(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -488,14 +488,14 @@ class AsyncPetsWithRawResponse:
     async def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /pets/{petId}/files."""
         return await self._core.execute_raw(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -513,7 +513,7 @@ class AsyncPetsWithStreamingResponse:
         *,
         limit: int | UNSET = UNSET,
         labels: list[str] | UNSET = UNSET,
-        x_trace: str,
+        X_Trace: str,
         session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -521,7 +521,7 @@ class AsyncPetsWithStreamingResponse:
         """List every pet."""
         return self._core.stream(
             _operations.OPERATION_0,
-            (limit, labels, x_trace, session),
+            (limit, labels, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
         )
@@ -565,14 +565,14 @@ class AsyncPetsWithStreamingResponse:
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Show one pet."""
         return self._core.stream(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -580,25 +580,25 @@ class AsyncPetsWithStreamingResponse:
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call DELETE /pets/{petId}."""
-        return self._core.stream(_operations.OPERATION_3, (pet_id,), options=options)
+        return self._core.stream(_operations.OPERATION_3, (petId,), options=options)
 
     def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call HEAD /pets/{petId}."""
-        return self._core.stream(_operations.OPERATION_4, (pet_id,), options=options)
+        return self._core.stream(_operations.OPERATION_4, (petId,), options=options)
 
     def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: AsyncMultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -606,7 +606,7 @@ class AsyncPetsWithStreamingResponse:
         """Call POST /pets/{petId}/files."""
         return self._core.stream(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -615,14 +615,14 @@ class AsyncPetsWithStreamingResponse:
     def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /pets/{petId}/files."""
         return self._core.stream(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
         )

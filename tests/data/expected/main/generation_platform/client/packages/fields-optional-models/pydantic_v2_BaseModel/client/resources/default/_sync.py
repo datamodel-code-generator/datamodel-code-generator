@@ -61,7 +61,7 @@ class DefaultResource:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -77,7 +77,7 @@ class DefaultResource:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -93,7 +93,7 @@ class DefaultResource:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -109,7 +109,7 @@ class DefaultResource:
         name: str | UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: str | UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -124,7 +124,7 @@ class DefaultResource:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
@@ -136,7 +136,7 @@ class DefaultResource:
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -146,7 +146,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -157,7 +157,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str,
         tag: str | None | UNSET = UNSET,
@@ -168,7 +168,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None,
@@ -179,7 +179,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -189,7 +189,7 @@ class DefaultResource:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -199,7 +199,7 @@ class DefaultResource:
         """Call PATCH /pets/{petId}."""
         return self._core.execute(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -210,7 +210,7 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -221,7 +221,7 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -232,7 +232,7 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -242,7 +242,7 @@ class DefaultResource:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit | str | UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -252,7 +252,7 @@ class DefaultResource:
         """Call POST /pets/{petId}/visits."""
         return self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -262,7 +262,7 @@ class DefaultResource:
     def set_owner(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -270,7 +270,7 @@ class DefaultResource:
         """Call PUT /pets/{petId}/owner."""
         return self._core.execute(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -282,7 +282,7 @@ class DefaultResource:
         *,
         body: models.FieldOwnersPostRequest,
         email: UNSET = UNSET,
-        nick_name: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse: ...
@@ -292,7 +292,7 @@ class DefaultResource:
         *,
         body: UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse: ...
@@ -301,7 +301,7 @@ class DefaultResource:
         *,
         body: models.FieldOwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse:
@@ -310,7 +310,7 @@ class DefaultResource:
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         ).data
@@ -319,7 +319,7 @@ class DefaultResource:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels,
         size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -329,7 +329,7 @@ class DefaultResource:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -338,7 +338,7 @@ class DefaultResource:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels | UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -347,7 +347,7 @@ class DefaultResource:
         """Call PUT /pets/{petId}/labels."""
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -357,7 +357,7 @@ class DefaultResource:
     def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -365,7 +365,7 @@ class DefaultResource:
         """Call PUT /pets/{petId}/photo."""
         return self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -375,7 +375,7 @@ class DefaultResource:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -386,7 +386,7 @@ class DefaultResource:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -396,7 +396,7 @@ class DefaultResource:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -406,7 +406,7 @@ class DefaultResource:
         """Call PUT /pets/{petId}/records."""
         return self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -430,7 +430,7 @@ class DefaultWithResponse:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -446,7 +446,7 @@ class DefaultWithResponse:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -462,7 +462,7 @@ class DefaultWithResponse:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -478,7 +478,7 @@ class DefaultWithResponse:
         name: str | UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: str | UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -493,7 +493,7 @@ class DefaultWithResponse:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
@@ -505,7 +505,7 @@ class DefaultWithResponse:
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -515,7 +515,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -526,7 +526,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str,
         tag: str | None | UNSET = UNSET,
@@ -537,7 +537,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None,
@@ -548,7 +548,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -558,7 +558,7 @@ class DefaultWithResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -568,7 +568,7 @@ class DefaultWithResponse:
         """Call PATCH /pets/{petId}."""
         return self._core.execute(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -579,7 +579,7 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -590,7 +590,7 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -601,7 +601,7 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -611,7 +611,7 @@ class DefaultWithResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit | str | UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -621,7 +621,7 @@ class DefaultWithResponse:
         """Call POST /pets/{petId}/visits."""
         return self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -631,7 +631,7 @@ class DefaultWithResponse:
     def set_owner(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -639,7 +639,7 @@ class DefaultWithResponse:
         """Call PUT /pets/{petId}/owner."""
         return self._core.execute(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -651,7 +651,7 @@ class DefaultWithResponse:
         *,
         body: models.FieldOwnersPostRequest,
         email: UNSET = UNSET,
-        nick_name: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]: ...
@@ -661,7 +661,7 @@ class DefaultWithResponse:
         *,
         body: UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]: ...
@@ -670,7 +670,7 @@ class DefaultWithResponse:
         *,
         body: models.FieldOwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]:
@@ -679,7 +679,7 @@ class DefaultWithResponse:
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         )
@@ -688,7 +688,7 @@ class DefaultWithResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels,
         size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -698,7 +698,7 @@ class DefaultWithResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -707,7 +707,7 @@ class DefaultWithResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels | UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -716,7 +716,7 @@ class DefaultWithResponse:
         """Call PUT /pets/{petId}/labels."""
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -726,7 +726,7 @@ class DefaultWithResponse:
     def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -734,7 +734,7 @@ class DefaultWithResponse:
         """Call PUT /pets/{petId}/photo."""
         return self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -744,7 +744,7 @@ class DefaultWithResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -755,7 +755,7 @@ class DefaultWithResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -765,7 +765,7 @@ class DefaultWithResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -775,7 +775,7 @@ class DefaultWithResponse:
         """Call PUT /pets/{petId}/records."""
         return self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -799,7 +799,7 @@ class DefaultWithRawResponse:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -815,7 +815,7 @@ class DefaultWithRawResponse:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -831,7 +831,7 @@ class DefaultWithRawResponse:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -847,7 +847,7 @@ class DefaultWithRawResponse:
         name: str | UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: str | UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -862,7 +862,7 @@ class DefaultWithRawResponse:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
@@ -874,7 +874,7 @@ class DefaultWithRawResponse:
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -884,7 +884,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -895,7 +895,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str,
         tag: str | None | UNSET = UNSET,
@@ -906,7 +906,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None,
@@ -917,7 +917,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -927,7 +927,7 @@ class DefaultWithRawResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -937,7 +937,7 @@ class DefaultWithRawResponse:
         """Call PATCH /pets/{petId}."""
         return self._core.execute_raw(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -948,7 +948,7 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -959,7 +959,7 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -970,7 +970,7 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -980,7 +980,7 @@ class DefaultWithRawResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit | str | UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -990,7 +990,7 @@ class DefaultWithRawResponse:
         """Call POST /pets/{petId}/visits."""
         return self._core.execute_raw(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -1000,7 +1000,7 @@ class DefaultWithRawResponse:
     def set_owner(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -1008,7 +1008,7 @@ class DefaultWithRawResponse:
         """Call PUT /pets/{petId}/owner."""
         return self._core.execute_raw(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1020,7 +1020,7 @@ class DefaultWithRawResponse:
         *,
         body: models.FieldOwnersPostRequest,
         email: UNSET = UNSET,
-        nick_name: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -1030,7 +1030,7 @@ class DefaultWithRawResponse:
         *,
         body: UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
@@ -1039,7 +1039,7 @@ class DefaultWithRawResponse:
         *,
         body: models.FieldOwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1048,7 +1048,7 @@ class DefaultWithRawResponse:
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         )
@@ -1057,7 +1057,7 @@ class DefaultWithRawResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels,
         size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1067,7 +1067,7 @@ class DefaultWithRawResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1076,7 +1076,7 @@ class DefaultWithRawResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels | UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1085,7 +1085,7 @@ class DefaultWithRawResponse:
         """Call PUT /pets/{petId}/labels."""
         return self._core.execute_raw(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -1095,7 +1095,7 @@ class DefaultWithRawResponse:
     def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -1103,7 +1103,7 @@ class DefaultWithRawResponse:
         """Call PUT /pets/{petId}/photo."""
         return self._core.execute_raw(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1113,7 +1113,7 @@ class DefaultWithRawResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -1124,7 +1124,7 @@ class DefaultWithRawResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -1134,7 +1134,7 @@ class DefaultWithRawResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -1144,7 +1144,7 @@ class DefaultWithRawResponse:
         """Call PUT /pets/{petId}/records."""
         return self._core.execute_raw(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -1168,7 +1168,7 @@ class DefaultWithStreamingResponse:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -1184,7 +1184,7 @@ class DefaultWithStreamingResponse:
         name: UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -1200,7 +1200,7 @@ class DefaultWithStreamingResponse:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json'],
@@ -1216,7 +1216,7 @@ class DefaultWithStreamingResponse:
         name: str | UNSET = UNSET,
         kind: UNSET = UNSET,
         pet_tag: str | UNSET = UNSET,
-        birth_date: UNSET = UNSET,
+        birthDate: UNSET = UNSET,
         owner: UNSET = UNSET,
         secret: UNSET = UNSET,
         media_type: Literal['application/x-www-form-urlencoded'],
@@ -1231,7 +1231,7 @@ class DefaultWithStreamingResponse:
         name: str | UNSET = UNSET,
         kind: models.Kind | UNSET = UNSET,
         pet_tag: str | None | UNSET = UNSET,
-        birth_date: date | UNSET = UNSET,
+        birthDate: date | UNSET = UNSET,
         owner: models.Owner | UNSET = UNSET,
         secret: str | UNSET = UNSET,
         media_type: Literal['application/json', 'application/x-www-form-urlencoded'] | None = None,
@@ -1243,7 +1243,7 @@ class DefaultWithStreamingResponse:
             _operations.OPERATION_0,
             (tag,),
             body=body,
-            fields=(name, kind, pet_tag, birth_date, owner, secret),
+            fields=(name, kind, pet_tag, birthDate, owner, secret),
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
@@ -1253,7 +1253,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -1264,7 +1264,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str,
         tag: str | None | UNSET = UNSET,
@@ -1275,7 +1275,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None,
@@ -1286,7 +1286,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -1296,7 +1296,7 @@ class DefaultWithStreamingResponse:
     def update_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.PetPatch | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -1306,7 +1306,7 @@ class DefaultWithStreamingResponse:
         """Call PATCH /pets/{petId}."""
         return self._core.stream(
             _operations.OPERATION_1,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,
@@ -1317,7 +1317,7 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -1328,7 +1328,7 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: str,
         note: UNSET = UNSET,
         visit_options: UNSET = UNSET,
@@ -1339,7 +1339,7 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -1349,7 +1349,7 @@ class DefaultWithStreamingResponse:
     def log_visit(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Visit | str | UNSET = UNSET,
         note: str | UNSET = UNSET,
         visit_options: list[str] | UNSET = UNSET,
@@ -1359,7 +1359,7 @@ class DefaultWithStreamingResponse:
         """Call POST /pets/{petId}/visits."""
         return self._core.stream(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(note, visit_options),
             media_type=media_type,
@@ -1369,7 +1369,7 @@ class DefaultWithStreamingResponse:
     def set_owner(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Owner | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -1377,7 +1377,7 @@ class DefaultWithStreamingResponse:
         """Call PUT /pets/{petId}/owner."""
         return self._core.stream(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1389,7 +1389,7 @@ class DefaultWithStreamingResponse:
         *,
         body: models.FieldOwnersPostRequest,
         email: UNSET = UNSET,
-        nick_name: UNSET = UNSET,
+        nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -1399,7 +1399,7 @@ class DefaultWithStreamingResponse:
         *,
         body: UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
@@ -1408,7 +1408,7 @@ class DefaultWithStreamingResponse:
         *,
         body: models.FieldOwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
-        nick_name: str | UNSET = UNSET,
+        nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
@@ -1417,7 +1417,7 @@ class DefaultWithStreamingResponse:
             _operations.OPERATION_4,
             (),
             body=body,
-            fields=(email, nick_name),
+            fields=(email, nickName),
             media_type=media_type,
             options=options,
         )
@@ -1426,7 +1426,7 @@ class DefaultWithStreamingResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels,
         size: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1436,7 +1436,7 @@ class DefaultWithStreamingResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1445,7 +1445,7 @@ class DefaultWithStreamingResponse:
     def put_labels(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Labels | UNSET = UNSET,
         size: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1454,7 +1454,7 @@ class DefaultWithStreamingResponse:
         """Call PUT /pets/{petId}/labels."""
         return self._core.stream(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(size,),
             media_type=media_type,
@@ -1464,7 +1464,7 @@ class DefaultWithStreamingResponse:
     def put_photo(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | JSONValue],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
@@ -1472,7 +1472,7 @@ class DefaultWithStreamingResponse:
         """Call PUT /pets/{petId}/photo."""
         return self._core.stream(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -1482,7 +1482,7 @@ class DefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet,
         name: UNSET = UNSET,
         tag: UNSET = UNSET,
@@ -1493,7 +1493,7 @@ class DefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -1503,7 +1503,7 @@ class DefaultWithStreamingResponse:
     def replace_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: models.Pet | UNSET = UNSET,
         name: str | UNSET = UNSET,
         tag: str | None | UNSET = UNSET,
@@ -1513,7 +1513,7 @@ class DefaultWithStreamingResponse:
         """Call PUT /pets/{petId}/records."""
         return self._core.stream(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             body=body,
             fields=(name, tag),
             media_type=media_type,

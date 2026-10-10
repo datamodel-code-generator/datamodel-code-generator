@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._target_naming import TargetNames
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.types import DataType
 
@@ -558,6 +559,16 @@ class OperationContract:
     callbacks: tuple[WireDeclaration, ...]
     ignored: tuple[IgnoredDeclaration, ...]
 
+    @property
+    def operation_id(self) -> str | None:
+        """Return the operationId the operation declares as a nonempty string, or None."""
+        if not self.explicit_operation_id:
+            return None
+        value = next((item for key, item in self.facts if key == "operationId"), None)
+        return (
+            value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) and value.value else None
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class GeneratedTypeContractBatch:
@@ -565,7 +576,7 @@ class GeneratedTypeContractBatch:
 
     `document_facts` are the OpenAPI version, info, tags and servers the root document declares. `hint_type` is the
     model generator's configured type class, which composes model types as the models spell them, and `hint_imports`
-    the names its spellings write as they are.
+    the names its spellings write as they are. `names` names generated API code with the models' naming options.
     """
 
     attempt: AttemptId
@@ -581,6 +592,7 @@ class GeneratedTypeContractBatch:
     document_facts: tuple[tuple[str, FrozenLiteral], ...] = ()
     hint_type: type[DataType] | None = None
     hint_imports: tuple[Import, ...] = ()
+    names: TargetNames | None = None
 
     @property
     def openapi(self) -> str:

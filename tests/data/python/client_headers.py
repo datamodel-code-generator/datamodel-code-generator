@@ -61,13 +61,13 @@ def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType,
     session = argument(package, "listPets", "cookie", "session", "s1")
     pets = json_response(200, [], **{"X-Rate": "1"})
     exchange.respond(pets)
-    record(lines, "client headers", lambda: api.pets.list_pets(x_trace=trace))
+    record(lines, "client headers", lambda: api.pets.list_pets(X_Trace=trace))
     view = api.with_options(default_headers={"x-client": None, "X-View": "v1", "X-Trace": "view"})
     exchange.respond(pets)
-    record(lines, "view headers under the parameters", lambda: view.pets.list_pets(x_trace=trace, session=session))
+    record(lines, "view headers under the parameters", lambda: view.pets.list_pets(X_Trace=trace, session=session))
     nested = view.with_options(default_headers={"x-view": "v2", "USER-AGENT": "nested/1"})
     exchange.respond(pets)
-    record(lines, "nested view headers", lambda: nested.pets.list_pets(x_trace=trace))
+    record(lines, "nested view headers", lambda: nested.pets.list_pets(X_Trace=trace))
     call = options.RequestOptions(
         extra_headers={"x-trace": "call", "Cookie": None, "X-View": None, "Accept": "application/json"}
     )
@@ -75,7 +75,7 @@ def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType,
     record(
         lines,
         "call headers over the parameters",
-        lambda: view.pets.list_pets(x_trace=trace, session=session, options=call),
+        lambda: view.pets.list_pets(X_Trace=trace, session=session, options=call),
     )
 
 
@@ -107,13 +107,13 @@ def _framing(  # noqa: PLR0913, PLR0917
         (
             "media type of no body",
             lambda: api.pets.get_pet(
-                pet_id=pet, options=options.RequestOptions(extra_headers={"Content-Type": "text/plain"})
+                petId=pet, options=options.RequestOptions(extra_headers={"Content-Type": "text/plain"})
             ),
         ),
         (
             "narrowed Accept replaced",
             lambda: api.pets.get_pet(
-                pet_id=pet,
+                petId=pet,
                 response_media_type="application/json",
                 options=options.RequestOptions(extra_headers={"Accept": "*/*"}),
             ),
@@ -121,7 +121,7 @@ def _framing(  # noqa: PLR0913, PLR0917
         (
             "narrowed Accept removed",
             lambda: api.pets.get_pet(
-                pet_id=pet,
+                petId=pet,
                 response_media_type="application/json",
                 options=options.RequestOptions(extra_headers={"Accept": None}),
             ),
@@ -193,7 +193,7 @@ def _unsendable(package: ModuleType, lines: list[str], options: ModuleType) -> N
     exchange, waits = Exchange(lines), []
     split = options.RequestOptions(extra_headers={"X-A": "a\r\nb"})
     with exchange.client() as http, package.Client(http_client=http, clock=options.Clock(sleep=waits.append)) as api:
-        record(lines, "header value on two lines", lambda: api.pets.get_pet(pet_id=pet, options=split))
+        record(lines, "header value on two lines", lambda: api.pets.get_pet(petId=pet, options=split))
     lines.append(f"  header value on two lines retry waits {waits}")
 
 
@@ -208,7 +208,7 @@ async def _async_headers(package: ModuleType, lines: list[str]) -> None:
             lines,
             "async call headers",
             lambda: api.pets.get_pet(
-                pet_id=pet, options=options.RequestOptions(extra_headers={"X-Call": "1", "x-client": None})
+                petId=pet, options=options.RequestOptions(extra_headers={"X-Call": "1", "x-client": None})
             ),
         )
         exchange.respond(raw_response(200, b"ok", "text/plain"))

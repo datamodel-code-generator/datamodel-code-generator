@@ -42,13 +42,13 @@ def misuse(
     photo: FieldPetsPetIdPhotoPutPathPetIdParameter,
 ) -> None:
     client.pets.list_pets()  # error
-    client.pets.list_pets(x_trace=trace, limit=None)  # error
+    client.pets.list_pets(X_Trace=trace, limit=None)  # error
     client.pets.create_pet(body=body, media_type="text/csv")  # error
-    client.pets.get_pet(pet_id=pet, response_media_type="image/png")  # error
-    response = client.pets.with_response.list_pets(x_trace=trace)
+    client.pets.get_pet(petId=pet, response_media_type="image/png")  # error
+    response = client.pets.with_response.list_pets(X_Trace=trace)
     decode_list_pets_header(response.info, name="X-Other")  # error
-    client.pets.photos.upload(pet_id=photo, body="text")  # error
-    client.pets.delete_pets_by_pet_id(pet_id=pet, options="fast")  # error
+    client.pets.photos.upload(petId=photo, body="text")  # error
+    client.pets.delete_pets_by_pet_id(petId=pet, options="fast")  # error
 
 
 def misuse_transports(client: Client, adapter: object) -> None:
@@ -61,16 +61,16 @@ def misuse_transports(client: Client, adapter: object) -> None:
 
 
 def misuse_raw(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
-    client.pets.with_raw_response.get_pet(pet_id=pet, response_media_type="image/png")  # error
-    streamed: RawResponse = client.pets.with_streaming_response.get_pet(pet_id=pet)  # error
+    client.pets.with_raw_response.get_pet(petId=pet, response_media_type="image/png")  # error
+    streamed: RawResponse = client.pets.with_streaming_response.get_pet(petId=pet)  # error
     del streamed
     client.request_raw("POST", "https://example.com", body="text")  # error
     client.with_streaming_response.request_raw("GET")  # error
 
 
 async def misuse_raw_async(client: AsyncClient, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
-    await client.pets.with_streaming_response.get_pet(pet_id=pet)  # error
-    saved = await client.pets.with_raw_response.get_pet(pet_id=pet)
+    await client.pets.with_streaming_response.get_pet(petId=pet)  # error
+    saved = await client.pets.with_raw_response.get_pet(petId=pet)
     chunks: Iterator[bytes] = saved.iter_bytes()  # error
     del chunks
 
@@ -81,9 +81,9 @@ async def misuse_bodies(
     async def chunks() -> AsyncIterator[bytes]:
         yield b"a"
 
-    client.pets.photos.upload(pet_id=photo, body=chunks())  # error
-    client.pets.photos.upload(pet_id=photo, body="file.bin")  # error
-    await aclient.pets.photos.upload(pet_id=photo, body=["text"])  # error
+    client.pets.photos.upload(petId=photo, body=chunks())  # error
+    client.pets.photos.upload(petId=photo, body="file.bin")  # error
+    await aclient.pets.photos.upload(petId=photo, body=["text"])  # error
 
 
 def misuse_multipart(
@@ -103,9 +103,9 @@ def misuse_multipart(
     FieldPart[str]("a", 1)  # error
     parts: MultipartBody[str] = MultipartBody[int](())  # error
     del parts
-    client.pets.attach_files(pet_id=pet, body=MultipartBody((FieldPart("note", 1), FilePart("file", b"x"))))  # error
-    client.pets.attach_files(pet_id=pet, body=MultipartBody[str](()))  # error
-    narrowed: MultipartData[str] = client.pets.read_files(pet_id=files)  # error
+    client.pets.attach_files(petId=pet, body=MultipartBody((FieldPart("note", 1), FilePart("file", b"x"))))  # error
+    client.pets.attach_files(petId=pet, body=MultipartBody[str](()))  # error
+    narrowed: MultipartData[str] = client.pets.read_files(petId=files)  # error
     del narrowed
 
 

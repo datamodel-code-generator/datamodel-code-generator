@@ -161,7 +161,7 @@
 +        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
          tags: Annotated[list[str] | None, Query(alias='tags')] = None,
          kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(alias='kind')] = None,
-         x_request_id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
+         X_Request_Id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
 --- server/services.py (baseline input)
 +++ server/services.py (current input)
 @@ -73,13 +73,13 @@

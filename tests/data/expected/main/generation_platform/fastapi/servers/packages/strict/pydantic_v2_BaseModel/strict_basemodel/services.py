@@ -34,8 +34,8 @@ class UntaggedService(Protocol):
         page: StrictInt,
         size: int,
         maybe: StrictInt | None,
-        x_trace: StrictInt | None,
-        x_tag: StrictStr | None,
+        X_Trace: StrictInt | None,
+        X_Tag: StrictStr | None,
         blob: bytes | None,
         visits: StrictInt | None,
     ) -> None | HTTPResult[None] | Response:

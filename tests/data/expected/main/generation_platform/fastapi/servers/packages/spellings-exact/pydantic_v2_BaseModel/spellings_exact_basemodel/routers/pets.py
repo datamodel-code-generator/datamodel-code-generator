@@ -217,7 +217,7 @@ def _add_get_pet(
 
     def get_pet(
         *,
-        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
+        petId: Annotated[int, Field(ge=1), Path(alias='petId')],
         limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit')] = 10,
         code: Annotated[Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]], Query(alias='code')] = None,
         codes: Annotated[Optional[List[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(alias='codes')] = None,
@@ -228,7 +228,7 @@ def _add_get_pet(
     ) -> object:
         return dispatch(
             get_pet_handler(
-                pet_id=pet_id,
+                petId=petId,
                 limit=limit,
                 code=code,
                 codes=codes,

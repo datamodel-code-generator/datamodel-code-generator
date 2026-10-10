@@ -6,22 +6,23 @@ from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from enum import Enum
+from itertools import starmap
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
-from datamodel_code_generator._fastapi.naming import normalize
+from datamodel_code_generator._fastapi.naming import file_stem_conflict
 from datamodel_code_generator._fastapi.routes import (
+    BUILDER_NAMES,
+    EXPORTED_NAMES,
     RouteError,
     RoutePath,
+    group_basis,
     group_key,
-    group_stem,
-    operation_name,
     placeholders,
     route_path,
-    stem_conflicts,
 )
 from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
@@ -39,6 +40,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     UnionType,
 )
+from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
 
@@ -76,7 +78,7 @@ NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Cookie"]
 ValueKind: TypeAlias = Literal["scalar", "sequence"]
 SettingT = TypeVar("SettingT")
 
-RESERVED: Final = frozenset({"request", "principal", "body", "media_type"})
+RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 _JSON: Final = "application/json"
 _LOCATIONS: Final[dict[object, ParameterLocation]] = {
@@ -204,7 +206,10 @@ class MediaSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter, its wire plan, the model's type, and how the server receives it."""
+    """One effective parameter, its wire plan, the model's type, and how the server receives it.
+
+    `local` says the document that names its operation declares it, rather than a document it references.
+    """
 
     location: ParameterLocation
     wire_name: str
@@ -215,6 +220,7 @@ class ParameterSpec:
     type: TypeView | None = None
     native: NativeField | None = None
     default: ParameterDefault = Default.ABSENT
+    local: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -260,6 +266,7 @@ class SchemeSpec:
     declaration: WireDeclaration
     location: str | None = None
     parameter: str | None = None
+    python_name: str = ""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -323,16 +330,12 @@ class OperationSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GroupSpec:
-    """One router group: its key, name, and operations in declaration order."""
+    """One router group: its key, name, service Protocol name, and operations in declaration order."""
 
     key: str
     stem: str
+    service: str
     operations: tuple[OperationSpec, ...]
-
-    @property
-    def service(self) -> str:
-        """Return the name of the group's service Protocol: Service after the group's PascalCase name."""
-        return "Service" if self.stem == "service" else f"{pascal(self.stem)}Service"
 
     @property
     def secured(self) -> bool:
@@ -357,11 +360,6 @@ class PlanError(Exception):
         """Keep the ordered diagnostics."""
         super().__init__(diagnostics[0].message)
         self.diagnostics = tuple(diagnostics)
-
-
-def pascal(name: str) -> str:
-    """Return the PascalCase form of a finalized snake_case name."""
-    return "".join(token[0].upper() + token[1:] for token in name.split("_") if token)
 
 
 def fact(declaration: WireDeclaration, name: str) -> object:
@@ -482,6 +480,8 @@ class Planner:  # noqa: PLR0904
             for declaration in request.batch.security_schemes
         }
         self.schemes: dict[str, SchemeSpec] = {}
+        assert request.batch.names is not None
+        self.target_names = request.batch.names
         self.backend = request.model_config.output_model_type.value
         self.problems: list[Diagnostic] = []
         self.names = self.selected("operation_names", config.operation_names)
@@ -517,47 +517,115 @@ class Planner:  # noqa: PLR0904
     def plan(self) -> ServerPlan:
         """Plan names, then each operation's boundaries, arguments, and route, then the router groups."""
         operations = self.request.operations
-        names = {operation.id.use_site.pointer: self.operation_name(operation) for operation in operations}
-        self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
-            for name, count in sorted(Counter(pascal(name) for name in names.values()).items())
-            if count > 1
-        )
+        names = self.operation_names(operations)
         self.raise_problems()
-        specs = tuple(self.operation(operation, names[operation.id.use_site.pointer]) for operation in operations)
+        pascals = self.target_names.claim(
+            NameScope(),
+            [
+                (self.target_names.pascal(name), _local(operation), (self.target_names.pascal(group),))
+                for operation, name, group in zip(operations, names, map(self.group_name, operations), strict=True)
+            ],
+            camel=True,
+        )
+        specs = tuple(starmap(self.operation, zip(operations, names, pascals, strict=True)))
         self.check_routes(specs)
         groups = self.groups(specs)
         self.raise_problems()
-        return ServerPlan(operations=specs, groups=groups, schemes=tuple(self.schemes.values()), info=self.info())
+        schemes = tuple(self.schemes.values())
+        bases = [self.target_names.function(scheme.name) for scheme in schemes]
+        python_names = self.target_names.claim(
+            NameScope(),
+            [
+                (base, scheme.declaration.declaration.location.document == self.request.batch.documents[0].id, ())
+                for scheme, base in zip(schemes, bases, strict=True)
+            ],
+        )
+        schemes = tuple(replace(scheme, python_name=name) for scheme, name in zip(schemes, python_names, strict=True))
+        return ServerPlan(operations=specs, groups=groups, schemes=schemes, info=self.info())
 
-    def operation_name(self, operation: OperationContract) -> str:
-        """Return an operation's explicit name, or its normalized operationId or method and path."""
-        return self.names.get(operation.id.use_site.pointer) or operation_name(operation)
+    def group_name(self, operation: OperationContract) -> str:
+        """Return the name an operation's group derives, the scope a duplicate name of the operation lives in."""
+        return self.target_names.function(group_basis(group_key(operation, single=self.config.layout == "single")))
+
+    def operation_names(self, operations: tuple[OperationContract, ...]) -> list[str]:
+        """Name each operation's handler: explicit names first, which must differ, then derived ones suffixed apart."""
+        explicit = [name for operation in operations if (name := self.names.get(operation.id.use_site.pointer))]
+        self.problems.extend(
+            _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
+            for name, count in sorted(Counter(explicit).items())
+            if count > 1
+        )
+        derived = [operation for operation in operations if operation.id.use_site.pointer not in self.names]
+        bases = [
+            self.target_names.function(operation_basis(operation.method, operation.path, operation.operation_id))
+            for operation in derived
+        ]
+        claimed = dict(
+            zip(
+                (operation.id for operation in derived),
+                self.target_names.claim(
+                    NameScope(explicit),
+                    [
+                        (base, _local(operation), (self.group_name(operation),))
+                        for operation, base in zip(derived, bases, strict=True)
+                    ],
+                ),
+                strict=True,
+            )
+        )
+        return [self.names.get(operation.id.use_site.pointer) or claimed[operation.id] for operation in operations]
 
     def groups(self, specs: tuple[OperationSpec, ...]) -> tuple[GroupSpec, ...]:
-        """Group operations by first tag in first-occurrence order, naming router files uniquely."""
+        """Group operations by first tag in first-occurrence order, naming router files and services apart.
+
+        A router name becomes a file stem and the keyword that passes the group's service to a builder: explicit
+        names must differ, also by case, from each other and from the names the package defines; derived ones are
+        suffixed apart. A Windows device name or `__init__` needs an explicit name.
+        """
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        stems = {key: self.config.router_names.get(key) or group_stem(key) for key in members}
+        scope = NameScope((*BUILDER_NAMES, *EXPORTED_NAMES), folded=True)
+        conflicts = {
+            name
+            for key in members
+            if (name := self.config.router_names.get(key)) is not None
+            and (file_stem_conflict(name) or not scope.take(name))
+        }
+        derived = [key for key in members if key not in self.config.router_names]
+        bases = [self.target_names.function(group_basis(key)) for key in derived]
+        claimed = self.target_names.claim(
+            scope, [(base, _local(members[key][0].contract), ()) for key, base in zip(derived, bases, strict=True)]
+        )
+        stems = {
+            key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
+        }
+        conflicts.update(stem for stem in stems.values() if file_stem_conflict(stem))
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
-            for stem in sorted(stem_conflicts(stems.values()))
+            for stem in sorted(conflicts)
         )
-        groups = tuple(
+        named = [key for key in members if stems[key] != "service"]
+        services = dict(
+            zip(
+                named,
+                self.target_names.claim(
+                    NameScope(),
+                    [(self.target_names.pascal(stems[key]), _local(members[key][0].contract), ()) for key in named],
+                    camel=True,
+                ),
+                strict=True,
+            )
+        )
+        return tuple(
             GroupSpec(
                 key=key,
                 stem=stems[key],
+                service=f"{services[key]}Service" if key in services else "Service",
                 operations=tuple(values),
             )
             for key, values in members.items()
         )
-        self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several router groups take the service name {name!r}")
-            for name, count in sorted(Counter(group.service for group in groups).items())
-            if count > 1
-        )
-        return groups
 
     def check_routes(self, specs: tuple[OperationSpec, ...]) -> None:
         """Reject two operations FastAPI cannot tell apart: the same method and path shape."""
@@ -568,7 +636,7 @@ class Planner:  # noqa: PLR0904
                 self.problems.append(_problem("F_ROUTE_INVALID", message, spec.contract.id.use_site))
             seen.add(key)
 
-    def operation(self, operation: OperationContract, name: str) -> OperationSpec:
+    def operation(self, operation: OperationContract, name: str, pascal: str) -> OperationSpec:
         """Plan one operation's parameters, body, responses, arguments, and route path."""
         try:
             wire_names: tuple[str, ...] | None = placeholders(operation.path)
@@ -590,13 +658,15 @@ class Planner:  # noqa: PLR0904
         responses = tuple(self.response(operation, response) for response in operation.responses)
         primary = self.primary(operation, responses)
         security = self.security(operation)
-        arguments = self.arguments(operation, parameters, body, names, secured=security is not None)
+        arguments = self.arguments(
+            operation, parameters, body, names, secured=security is not None, scopes=(self.group_name(operation), name)
+        )
         route = self.route(operation, arguments, wire_names)
         slots = {slot.wire_name: slot.slot for slot in route.slots}
         return OperationSpec(
             contract=operation,
             python_name=name,
-            pascal=pascal(name),
+            pascal=pascal,
             group=group_key(operation, single=self.config.layout == "single"),
             route=route,
             parameters=parameters,
@@ -743,6 +813,7 @@ class Planner:  # noqa: PLR0904
             decision=Decision(transport="adapter"),
             type=value,
             default=default,
+            local=declaration.declaration.location.document == operation.id.use_site.document,
         )
         if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):
             return spec
@@ -1081,7 +1152,7 @@ class Planner:  # noqa: PLR0904
         decision = _primary_decision(operation, choice.status_code, media)
         return PrimarySpec(status=choice.status_code, response=response, media=media, decision=decision)
 
-    def arguments(
+    def arguments(  # noqa: PLR0913
         self,
         operation: OperationContract,
         parameters: tuple[ParameterSpec, ...],
@@ -1089,36 +1160,27 @@ class Planner:  # noqa: PLR0904
         wire_names: tuple[str, ...],
         *,
         secured: bool,
+        scopes: tuple[str, ...] = (),
     ) -> tuple[Argument, ...]:
-        """Name the handler's keywords in the fixed order, prefixing colliding names with their location."""
+        """Name the handler's keywords in the fixed order.
+
+        Explicit names, configured or `--aliases` entries, must differ from each other and from the handler's own
+        arguments; the others are named as model fields after their wire names, told apart in argument order by the
+        naming strategy, whose enclosing `scopes` are the operation's group and handler.
+        """
         names = self.parameter_names.get(operation.id.use_site.pointer, {})
         order = {name: index for index, name in enumerate(dict.fromkeys(wire_names))}
         path = sorted(
             (parameter for parameter in parameters if parameter.location == "path"),
             key=lambda parameter: order.get(parameter.wire_name, len(order)),
         )
-        candidates = [
-            _candidate(
-                names,
-                parameter.location,
-                parameter.wire_name,
-                required=parameter.required,
-                native=parameter.native,
-                parameter=parameter,
-            )
-            for parameter in (*path, *(parameter for parameter in parameters if parameter.location != "path"))
+        ordered = (*path, *(parameter for parameter in parameters if parameter.location != "path"))
+        given = [
+            names.get(f"{parameter.location}:{parameter.wire_name}") or self.alias(operation, parameter)
+            for parameter in ordered
         ]
         raw = body is not None and body.decision.transport == "raw_request"
-        if body is not None and not raw:
-            candidates.append((
-                "body",
-                True,
-                Argument(name="body", kind="body", location="body", required=body.required),
-            ))
-            if len(body.media) > 1:
-                argument = Argument(name="media_type", kind="media_type", location="media_type", required=body.required)
-                candidates.append(("media_type", True, argument))
-        known = {f"{argument.location}:{argument.wire_name}" for _, _, argument in candidates}
+        known = {f"{parameter.location}:{parameter.wire_name}" for parameter in parameters}
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
@@ -1129,21 +1191,68 @@ class Planner:  # noqa: PLR0904
             for key in names
             if key not in known
         )
-        request = (Argument(name="request", kind="request", location="request"),)
-        principal = (Argument(name="principal", kind="principal", location="principal"),)
-        arguments = (
-            *(request if raw or self.config.include_request else ()),
-            *(principal if secured else ()),
-            *_prefixed(candidates),
-        )
+        support: list[Argument] = []
+        if raw or self.config.include_request:
+            support.append(Argument(name="request", kind="request", location="request"))
+        if secured:
+            support.append(Argument(name="principal", kind="principal", location="principal"))
+        if body is not None and not raw:
+            support.append(Argument(name="body", kind="body", location="body", required=body.required))
+            if len(body.media) > 1:
+                support.append(
+                    Argument(name="media_type", kind="media_type", location="media_type", required=body.required)
+                )
         self.problems.extend(
             _problem(
                 "F_NAME_CONFLICT", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
             )
-            for name, count in sorted(Counter(argument.name for argument in arguments).items())
+            for name, count in sorted(Counter([*filter(None, given), "self", *(item.name for item in support)]).items())
             if count > 1
         )
-        return arguments
+        bases = {
+            index: self.target_names.argument(parameter.wire_name)
+            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
+            if name is None
+        }
+        claimed = dict(
+            zip(
+                bases,
+                self.target_names.claim(
+                    NameScope((*RESERVED, *filter(None, given))),
+                    [(base, ordered[index].local, scopes) for index, base in bases.items()],
+                ),
+                strict=True,
+            )
+        )
+        arguments = [
+            Argument(
+                name=name or claimed[index],
+                kind="native" if parameter.native is not None else "adapter",
+                location=parameter.location,
+                wire_name=parameter.wire_name,
+                required=parameter.required,
+                native=parameter.native,
+                parameter=parameter,
+            )
+            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
+        ]
+        bodies = [item for item in support if item.kind in {"body", "media_type"}]
+        return (*(item for item in support if item.kind in {"request", "principal"}), *arguments, *bodies)
+
+    def alias(self, operation: OperationContract, parameter: ParameterSpec) -> str | None:
+        """Return the `--aliases` entry naming a parameter's argument, which must be an identifier."""
+        if (alias := self.target_names.alias(parameter.wire_name)) is not None and not explicit_name(alias):
+            message = (
+                f"The --aliases entry {alias!r} of the {parameter.location} parameter {parameter.wire_name!r} of "
+                f"{_label(operation)} is not an identifier"
+            )
+            self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site))
+        return alias
+
+
+def _local(operation: OperationContract) -> bool:
+    """Return whether the document that names the operation's path item declares the operation itself."""
+    return operation.declaration.location.document == operation.id.use_site.document
 
 
 def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:
@@ -1318,39 +1427,6 @@ def _default(facts: ModelFieldFacts) -> Default | LiteralScalar | LiteralSequenc
         case _:
             pass
     return Default.ABSENT
-
-
-def _candidate(  # noqa: PLR0913
-    names: Mapping[str, str],
-    location: ArgumentLocation,
-    wire_name: str,
-    *,
-    required: bool,
-    native: NativeField | None,
-    parameter: ParameterSpec | None = None,
-) -> tuple[str, bool, Argument]:
-    key = f"{location}:{wire_name}"
-    name = names.get(key) or normalize(wire_name, empty="value", digit="p_")
-    argument = Argument(
-        name=name,
-        kind="native" if native is not None else "adapter",
-        location=location,
-        wire_name=wire_name,
-        required=required,
-        native=native,
-        parameter=parameter,
-    )
-    return name, key in names, argument
-
-
-def _prefixed(candidates: list[tuple[str, bool, Argument]]) -> list[Argument]:
-    counts = Counter(name for name, _, _ in candidates)
-    return [
-        replace(argument, name=f"{argument.location}_{name}")
-        if not fixed and (counts[name] > 1 or name in RESERVED)
-        else argument
-        for name, fixed, argument in candidates
-    ]
 
 
 def _slotted(argument: Argument, slots: Mapping[str, str]) -> Argument:

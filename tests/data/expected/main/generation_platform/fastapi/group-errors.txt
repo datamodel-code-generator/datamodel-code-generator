@@ -1,3 +1,3 @@
 # group-errors
 render pydantic_v2.BaseModel
-  Error: Several router groups or reserved names take 'nul'; Several router groups or reserved names take 'pets'; Several router groups or reserved names take 'validation_error_handler'; Several router groups take the service name 'PetsService'
+  Error: Several router groups or reserved names take 'nul'

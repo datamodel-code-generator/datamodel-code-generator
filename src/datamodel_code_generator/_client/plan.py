@@ -15,14 +15,7 @@ from typing_extensions import TypeIs
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.model_facts import ALIASES
-from datamodel_code_generator._client.naming import (
-    RESERVED_ARGUMENTS,
-    RESERVED_MEMBERS,
-    WINDOWS_DEVICES,
-    method_name,
-    pascal,
-    snake,
-)
+from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
@@ -41,9 +34,10 @@ from datamodel_code_generator._target_contract import (
     TypeUseBinding,
     UnionType,
 )
+from datamodel_code_generator._target_naming import WINDOWS_DEVICES, NameScope, explicit_name, operation_basis
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Container, Iterable, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._client.config import (
@@ -64,6 +58,7 @@ if TYPE_CHECKING:
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
+        OperationId,
         SourceDocumentId,
         TypeUseId,
         TypeView,
@@ -215,7 +210,8 @@ class FieldBranch:
 class OperationSpec:
     """Everything the renderer needs for one selected operation.
 
-    `body_only` pairs each body media type of a 'both' operation that has no field arguments with the reason.
+    `body_only` pairs each body media type of a 'both' operation that has no field arguments with the reason, and
+    `scopes` names the scopes its arguments live in for the naming strategy: its resource and its derived method name.
     """
 
     contract: OperationContract
@@ -243,6 +239,7 @@ class OperationSpec:
     security: SecurityBinding | None = None
     auth_challenge_less_401: bool = False
     accepted_content_encodings: tuple[str, ...] = ()
+    scopes: tuple[str, ...] = ()
 
     @property
     def head(self) -> bool:
@@ -262,16 +259,12 @@ class ResourceSpec:
     namespace: str
     operations: tuple[OperationSpec, ...]
     children: tuple[str, ...]
+    pascal: str
 
     @property
     def parts(self) -> tuple[str, ...]:
         """Return the namespace's dotted parts."""
         return tuple(self.namespace.split("."))
-
-    @property
-    def pascal(self) -> str:
-        """Return the PascalCase name of the namespace, which its resource classes start with."""
-        return "".join(pascal(part) for part in self.parts)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -358,9 +351,20 @@ class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
     def __init__(
-        self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan, facts: ModelFacts
+        self,
+        request: TargetRequest,
+        config: ClientGenerationConfig,
+        wire: WirePlan,
+        facts: ModelFacts,
+        helpers: Container[OperationId] = (),
     ) -> None:
-        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys."""
+        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys.
+
+        `helpers` are the operations a sending helper calls, whose methods also take the helper's own arguments.
+        """
+        assert request.batch.names is not None
+        self.names = request.batch.names
+        self.helpers = helpers
         self.request = request
         self.config = config
         self.wire = wire
@@ -376,6 +380,7 @@ class Planner:
         self.security = SecurityPlanner(request.batch, self.problems)
         self.settings = self.resolved()
         self.raise_problems()
+        self.namespaces = self.tag_namespaces()
 
     @cached_property
     def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
@@ -407,7 +412,7 @@ class Planner:
 
     def plan(self) -> ClientPlan:
         """Plan each selected operation, then its resource namespaces and the names they must keep apart."""
-        specs = tuple(starmap(self.operation, enumerate(self.request.operations)))
+        specs = self.named(tuple(starmap(self.operation, enumerate(self.request.operations))))
         self.raise_problems()
         resources = self.resources(specs)
         credentials = self.security.credentials(spec.security for spec in specs)
@@ -420,7 +425,9 @@ class Planner:
         """Plan one operation's names, arguments, media, responses, and servers."""
         setting = self.settings.get(operation.id.use_site.pointer)
         name = self.method(operation, setting)
-        parameters = self.parameters(operation, setting)
+        resource = self.resource(operation, setting)
+        scopes = (*resource.split("."), name)
+        parameters = self.parameters(operation, setting, scopes)
         body = None if operation.request_body is None else self.body(operation, operation.request_body, setting)
         runtime = None if setting is None else setting.runtime
         security = self.security.binding(operation)
@@ -442,9 +449,9 @@ class Planner:
         return OperationSpec(
             contract=operation,
             index=index,
-            resource=self.resource(operation, setting),
+            resource=resource,
             name=name,
-            pascal=pascal(name),
+            pascal="",
             operation_id=operation_id if isinstance(operation_id, str) and operation_id else None,
             parameters=parameters,
             body=body,
@@ -463,6 +470,7 @@ class Planner:
             security=security,
             auth_challenge_less_401=False if runtime is None else runtime.auth_challenge_less_401,
             accepted_content_encodings=() if runtime is None else runtime.accepted_content_encodings,
+            scopes=scopes,
         )
 
     def _idempotency_header(
@@ -498,50 +506,150 @@ class Planner:
             )
 
     def resource(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
-        """Return the operation's resource namespace: explicit, its first tag's mapped or snake name, or default."""
+        """Return the operation's resource namespace: explicit, its first tag's mapped or derived name, or default.
+
+        Each other tag derives a new name beside the clients' members; a Windows device name needs an explicit one.
+        """
         if setting is not None and setting.resource is not None:
             return setting.resource
         if not (tags := _tags(operation)):
             return "default"
         if (mapped := self.resource_names.get(tags[0])) is not None:
             return mapped
-        namespace = snake(tags[0])
-        if not namespace or namespace in RESERVED_MEMBERS | WINDOWS_DEVICES:
-            message = f"The tag {tags[0]!r} of {_label(operation)} needs an explicit resource name"
-            self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
-        return namespace
+        return self.namespaces[tags[0]]
+
+    def tag_namespaces(self) -> dict[str, str]:
+        """Name the resource of each first tag that no setting names, apart from the clients' members and each other.
+
+        A Windows device name needs an explicit one.
+        """
+        first: dict[str, OperationContract] = {}
+        for operation in self.request.operations:
+            setting = self.settings.get(operation.id.use_site.pointer)
+            if (
+                (setting is None or setting.resource is None)
+                and (tags := _tags(operation))
+                and tags[0] not in self.resource_names
+            ):
+                first.setdefault(tags[0], operation)
+        bases = [self.names.function(tag) for tag in first]
+        names = self.names.claim(
+            NameScope(RESERVED_MEMBERS, folded=True),
+            [(base, _local(operation), ()) for operation, base in zip(first.values(), bases, strict=True)],
+        )
+        for (tag, operation), namespace in zip(first.items(), names, strict=True):
+            if namespace.casefold() in WINDOWS_DEVICES:
+                message = f"The tag {tag!r} of {_label(operation)} needs an explicit resource name"
+                self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
+        return dict(zip(first, names, strict=True))
 
     def method(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
-        """Return the operation's method name: explicit, its operationId in snake case, or its method and path."""
-        operation_id = next((_plain(item) for key, item in operation.facts if key == "operationId"), None)
-        if setting is not None and setting.name is not None:
-            name = setting.name
-        elif isinstance(operation_id, str) and operation_id:
-            name = snake(operation_id)
-        else:
-            name = method_name(operation.method, operation.path)
-        if not name or name in RESERVED_MEMBERS:
-            message = f"{_label(operation)} needs an explicit method name instead of {name!r}"
+        """Return the operation's method name: explicit, or derived from its operationId or its method and path.
+
+        The resource names derived names apart; an explicit name must not be a member the resource defines.
+        """
+        if setting is None or (name := setting.name) is None:
+            return self.names.function(operation_basis(operation.method, operation.path, operation.operation_id))
+        if name in RESERVED_MEMBERS:
+            message = f"The method name {name!r} of {_label(operation)} is reserved"
             self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return name
 
+    def _explicit_method(self, operation: OperationContract) -> bool:
+        """Return whether the operation's settings name its method."""
+        return (setting := self.settings.get(operation.id.use_site.pointer)) is not None and setting.name is not None
+
+    def named(self, specs: tuple[OperationSpec, ...]) -> tuple[OperationSpec, ...]:
+        """Name each resource's methods apart and give each its PascalCase type name.
+
+        A resource holds its members and child namespaces, then explicit method names, which must be new, then
+        derived ones, suffixed in operation order; their type names are suffixed by the model's class rule.
+        """
+        members: dict[str, list[OperationSpec]] = {}
+        for spec in specs:
+            members.setdefault(spec.resource, []).append(spec)
+        namespaces = {".".join(parts[:size]) for parts in map(_parts_of, members) for size in range(1, len(parts) + 1)}
+        named = list(specs)
+        for namespace, operations in members.items():
+            scope = NameScope(child.rpartition(".")[2] for child in namespaces if child.rpartition(".")[0] == namespace)
+            explicit = {spec.index for spec in operations if self._explicit_method(spec.contract)}
+            for spec in operations:
+                if spec.index in explicit and not scope.take(spec.name):
+                    message = f"The resource {namespace!r} takes the name {spec.name!r} twice"
+                    self.problems.append(_problem("E_NAME_COLLISION", message))
+            for name in RESERVED_MEMBERS:
+                scope.take(name)
+            parts = tuple(namespace.split("."))
+            derived = [spec for spec in operations if spec.index not in explicit]
+            claimed = dict(
+                zip(
+                    (spec.index for spec in derived),
+                    self.names.claim(scope, [(spec.name, _local(spec.contract), parts) for spec in derived]),
+                    strict=True,
+                )
+            )
+            methods = [claimed.get(spec.index, spec.name) for spec in operations]
+            prefix = ("".join(map(self.names.pascal, parts)),)
+            pascals = self.names.claim(
+                NameScope(),
+                [
+                    (self.names.pascal(name), _local(spec.contract), prefix)
+                    for spec, name in zip(operations, methods, strict=True)
+                ],
+                camel=True,
+            )
+            for spec, name, pascal in zip(operations, methods, pascals, strict=True):
+                named[spec.index] = replace(spec, name=name, pascal=pascal)
+        return tuple(named)
+
     def parameters(
-        self, operation: OperationContract, setting: ClientOperationConfig | None
+        self, operation: OperationContract, setting: ClientOperationConfig | None, path: tuple[str, ...]
     ) -> tuple[ParameterSpec, ...]:
-        """Plan the effective parameters in order and name their arguments."""
+        """Plan the effective parameters in order and name their arguments.
+
+        Explicit names, configured or `--aliases` entries, are taken first and must be new identifiers; the other
+        arguments are named as model fields after their wire names, then suffixed apart from the method's own
+        arguments, a helper's when a helper calls the operation, and each other in declaration order.
+        """
         names = () if setting is None else setting.parameter_names
         explicit = {(item.in_, item.name): item.python_name for item in names}
         plans = self.parameter_plans.get(operation.id, {})
-        specs: list[ParameterSpec] = []
+        declared: list[tuple[WireDeclaration, ParameterLocation, str, ParameterPlan, str | None]] = []
+        scope = NameScope()
         for declaration in operation.parameters:
             location = _LOCATIONS[fact(declaration, "in")]
             wire_name = declaration.name or ""
             if (plan := plans.get((location, wire_name))) is None:
                 continue
-            python_name = explicit.pop((location, wire_name), None) or snake(wire_name)
-            if not python_name or python_name in RESERVED_ARGUMENTS:
-                message = f"The {location} parameter {wire_name!r} of {_label(operation)} needs an explicit python_name"
+            given = explicit.pop((location, wire_name), None) or self._alias(
+                operation, declaration, location, wire_name
+            )
+            declared.append((declaration, location, wire_name, plan, given))
+            if given is None:
+                continue
+            if given in RESERVED_ARGUMENTS:
+                message = (
+                    f"The {location} parameter {wire_name!r} of {_label(operation)} cannot take the name {given!r}"
+                )
                 self.problems.append(_problem("E_RESERVED_NAME", message, declaration.use_site))
+            elif not scope.take(given):
+                message = f"The arguments of {_label(operation)} take {given!r} twice"
+                self.problems.append(_problem("E_NAME_COLLISION", message, operation.id.use_site))
+        for name in (*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())):
+            scope.take(name)
+        bases = {index: self.names.argument(item[2]) for index, item in enumerate(declared) if item[4] is None}
+        claimed = dict(
+            zip(
+                bases,
+                self.names.claim(
+                    scope, [(base, _declared_by(declared[index][0], operation), path) for index, base in bases.items()]
+                ),
+                strict=True,
+            )
+        )
+        specs: list[ParameterSpec] = []
+        for index, (declaration, location, wire_name, plan, given) in enumerate(declared):
+            python_name = given or claimed[index]
             required = fact(declaration, "required") is True
             use = self.use(_uses(declaration))
             argument = None if use is None or use.type is None else self.facts.argument(use.type)
@@ -568,14 +676,7 @@ class Planner:
             )
             for location, name in explicit
         )
-        self.problems.extend(
-            _problem(
-                "E_NAME_COLLISION", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
-            )
-            for name, count in sorted(Counter(spec.python_name for spec in specs).items())
-            if count > 1
-        )
-        declared = {spec.wire_name for spec in specs if spec.location == "path"}
+        paths = {spec.wire_name for spec in specs if spec.location == "path"}
         self.problems.extend(
             _problem(
                 "E_METADATA_REQUIRED",
@@ -583,9 +684,21 @@ class Planner:
                 operation.id.use_site,
             )
             for placeholder in dict.fromkeys(_PLACEHOLDER.findall(operation.path))
-            if placeholder not in declared
+            if placeholder not in paths
         )
         return tuple(specs)
+
+    def _alias(
+        self, operation: OperationContract, declaration: WireDeclaration, location: str, wire_name: str
+    ) -> str | None:
+        """Return the `--aliases` entry naming a parameter's argument, which must be an identifier."""
+        if (alias := self.names.alias(wire_name)) is not None and not explicit_name(alias):
+            message = (
+                f"The --aliases entry {alias!r} of the {location} parameter {wire_name!r} of {_label(operation)} "
+                "is not an identifier"
+            )
+            self.problems.append(_problem("E_CONFIG_VALUE", message, declaration.use_site))
+        return alias
 
     def use(self, uses: tuple[TypeUseId, ...]) -> TypeUseBinding | None:
         """Return the first type use of a declaration."""
@@ -982,28 +1095,41 @@ class Planner:
         for namespace in members:
             if "." in namespace:
                 children[namespace.rpartition(".")[0]].append(namespace)
-        resources = tuple(
-            ResourceSpec(namespace=namespace, operations=tuple(operations), children=tuple(children[namespace]))
+        folded: dict[str, list[str]] = {}
+        for namespace in members:
+            folded.setdefault(namespace.casefold(), []).append(namespace)
+        self.problems.extend(
+            _problem(
+                "E_NAME_COLLISION",
+                f"The resource namespaces {', '.join(map(repr, spellings))} differ only by case, which their "
+                "directories cannot; name them explicitly",
+            )
+            for spellings in folded.values()
+            if len(spellings) > 1
+        )
+        return tuple(
+            ResourceSpec(
+                namespace=namespace,
+                operations=tuple(operations),
+                children=tuple(children[namespace]),
+                pascal="".join(self.names.pascal(part) for part in namespace.split(".")),
+            )
             for namespace, operations in members.items()
         )
-        for resource in resources:
-            self.check_names(resource)
-        return resources
 
-    def check_names(self, resource: ResourceSpec) -> None:
-        """Reject methods that take one name twice, a child resource's name, or one PascalCase type name twice."""
-        taken = [spec.name for spec in resource.operations]
-        taken.extend(child.rpartition(".")[2] for child in resource.children)
-        self.problems.extend(
-            _problem("E_NAME_COLLISION", f"The resource {resource.namespace!r} takes the name {name!r} twice")
-            for name, count in sorted(Counter(taken).items())
-            if count > 1
-        )
-        self.problems.extend(
-            _problem("E_NAME_COLLISION", f"Several methods of the resource {resource.namespace!r} become {name!r}")
-            for name, count in sorted(Counter(spec.pascal for spec in resource.operations).items())
-            if count > 1
-        )
+
+def _declared_by(declaration: WireDeclaration, operation: OperationContract) -> bool:
+    """Return whether the document that names an operation's path item declares one of its declarations."""
+    return declaration.declaration.location.document == operation.id.use_site.document
+
+
+def _local(operation: OperationContract) -> bool:
+    """Return whether the document that names the operation's path item declares the operation itself."""
+    return operation.declaration.location.document == operation.id.use_site.document
+
+
+def _parts_of(namespace: str) -> list[str]:
+    return namespace.split(".")
 
 
 def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralScalar | None:

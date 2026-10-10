@@ -48,7 +48,7 @@ class AsyncStoreResource:
         return (await self._core.execute(
             _operations.OPERATION_1,
             (
-                kwargs['file_name'],
+                kwargs['fileName'],
                 kwargs['ext'],
                 kwargs.get('class_', 'full'),
                 kwargs.get('two_factor', 'off'),
@@ -73,7 +73,7 @@ class AsyncStoreWithResponse:
         return await self._core.execute(
             _operations.OPERATION_1,
             (
-                kwargs['file_name'],
+                kwargs['fileName'],
                 kwargs['ext'],
                 kwargs.get('class_', 'full'),
                 kwargs.get('two_factor', 'off'),
@@ -98,7 +98,7 @@ class AsyncStoreWithRawResponse:
         return await self._core.execute_raw(
             _operations.OPERATION_1,
             (
-                kwargs['file_name'],
+                kwargs['fileName'],
                 kwargs['ext'],
                 kwargs.get('class_', 'full'),
                 kwargs.get('two_factor', 'off'),
@@ -123,7 +123,7 @@ class AsyncStoreWithStreamingResponse:
         return self._core.stream(
             _operations.OPERATION_1,
             (
-                kwargs['file_name'],
+                kwargs['fileName'],
                 kwargs['ext'],
                 kwargs.get('class_', 'full'),
                 kwargs.get('two_factor', 'off'),

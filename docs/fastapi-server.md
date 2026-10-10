@@ -63,6 +63,17 @@ operation's summary and description, formatted as model docstrings are, on one l
 parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
 The routes declare such an input as FastAPI applications do, `T | None = None`, so FastAPI's own document shows
 its schema as `anyOf` of the type and `null`.
+Methods and router modules are named in snake case, and Protocols in PascalCase, whatever the model naming options say:
+a method after its operationId, or after its method and path without one, such as
+`get_pets_by_pet_id`. A method's arguments are named after their wire names as model fields are, so the quick start's
+preset, which turns on `--snake-case-field` for Pydantic models, names the `petId` path parameter `pet_id`; without the
+preset, pass `--snake-case-field` explicitly for snake_case arguments, or the argument keeps the wire name, `petId`.
+`--aliases` and the special-field prefix options apply to arguments too. A derived name that its namespace already
+holds takes the model's suffix, such as `id_1` for a query `id` beside a path `id`, `body_1` for a parameter named
+`body`, or `pets_1` for a second tag that also becomes `pets`. The model's `--naming-strategy` rules apply to these
+names too, with the router group as the parent of a method and the method as the parent of an argument. An explicit
+name of `--server-operation-names`, `--server-router-names`, or `--server-parameter-names` must be new and is never
+renamed.
 For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:
 

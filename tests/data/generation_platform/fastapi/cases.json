@@ -93,7 +93,13 @@
     "input": "route-errors.yaml"
   },
   "name-errors": {
-    "input": "name-errors.yaml"
+    "input": "name-errors.yaml",
+    "config": {
+      "server_operation_names": {
+        "/paths/~1one/get": "x1",
+        "/paths/~1two/get": "x1"
+      }
+    }
   },
   "group-errors": {
     "input": "group-errors.yaml",
@@ -245,6 +251,12 @@
   },
   "argument-errors": {
     "input": "argument-errors.yaml",
+    "model": {
+      "aliases": {
+        "sort": "sort by",
+        "me": "self"
+      }
+    },
     "config": {
       "server_include_request": true,
       "server_parameter_names": {

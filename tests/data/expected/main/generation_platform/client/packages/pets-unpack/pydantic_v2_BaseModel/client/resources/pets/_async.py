@@ -87,7 +87,7 @@ class AsyncPetsResource:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -142,7 +142,7 @@ class AsyncPetsResource:
         KEYWORDS_2.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )).data
@@ -155,7 +155,7 @@ class AsyncPetsResource:
         KEYWORDS_3.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )).data
 
@@ -167,7 +167,7 @@ class AsyncPetsResource:
         KEYWORDS_4.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )).data
 
@@ -179,7 +179,7 @@ class AsyncPetsResource:
         KEYWORDS_6.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -193,7 +193,7 @@ class AsyncPetsResource:
         KEYWORDS_7.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )).data
@@ -217,7 +217,7 @@ class AsyncPetsWithResponse:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -272,7 +272,7 @@ class AsyncPetsWithResponse:
         KEYWORDS_2.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -285,7 +285,7 @@ class AsyncPetsWithResponse:
         KEYWORDS_3.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -297,7 +297,7 @@ class AsyncPetsWithResponse:
         KEYWORDS_4.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -309,7 +309,7 @@ class AsyncPetsWithResponse:
         KEYWORDS_6.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -323,7 +323,7 @@ class AsyncPetsWithResponse:
         KEYWORDS_7.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -347,7 +347,7 @@ class AsyncPetsWithRawResponse:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -387,7 +387,7 @@ class AsyncPetsWithRawResponse:
         KEYWORDS_2.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -400,7 +400,7 @@ class AsyncPetsWithRawResponse:
         KEYWORDS_3.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -412,7 +412,7 @@ class AsyncPetsWithRawResponse:
         KEYWORDS_4.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -424,7 +424,7 @@ class AsyncPetsWithRawResponse:
         KEYWORDS_6.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -438,7 +438,7 @@ class AsyncPetsWithRawResponse:
         KEYWORDS_7.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -462,7 +462,7 @@ class AsyncPetsWithStreamingResponse:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -502,7 +502,7 @@ class AsyncPetsWithStreamingResponse:
         KEYWORDS_2.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -515,7 +515,7 @@ class AsyncPetsWithStreamingResponse:
         KEYWORDS_3.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -527,7 +527,7 @@ class AsyncPetsWithStreamingResponse:
         KEYWORDS_4.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -539,7 +539,7 @@ class AsyncPetsWithStreamingResponse:
         KEYWORDS_6.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -553,7 +553,7 @@ class AsyncPetsWithStreamingResponse:
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )

@@ -49,26 +49,26 @@ class AsyncDefaultResource:
     async def inherited(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> InheritedResponse:
         """Call POST /inherited."""
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )).data
 
     async def explicit(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> ExplicitResponse:
         """Call POST /explicit."""
         return (await self._core.execute(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )).data
 
@@ -155,26 +155,26 @@ class AsyncDefaultWithResponse:
     async def inherited(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[InheritedResponse]:
         """Call POST /inherited."""
         return await self._core.execute(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     async def explicit(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[ExplicitResponse]:
         """Call POST /explicit."""
         return await self._core.execute(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -237,26 +237,26 @@ class AsyncDefaultWithRawResponse:
     async def inherited(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /inherited."""
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     async def explicit(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /explicit."""
         return await self._core.execute_raw(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -343,26 +343,26 @@ class AsyncDefaultWithStreamingResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /inherited."""
         return self._core.stream(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     def explicit(
         self,
         *,
-        x_idempotency: str | UNSET = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /explicit."""
         return self._core.stream(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 

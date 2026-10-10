@@ -20,7 +20,7 @@ class Operation0Arguments(TypedDict):
 
     limit: NotRequired[int | UNSET]
     labels: NotRequired[list[str] | UNSET]
-    x_trace: str
+    X_Trace: str
     session: NotRequired[str | UNSET]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -56,7 +56,7 @@ class Operation1Arguments2(TypedDict):
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: NotRequired[None]
     options: NotRequired[RequestOptions | None]
 
@@ -64,7 +64,7 @@ class Operation2Arguments(TypedDict):
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: Literal['application/json']
     options: NotRequired[RequestOptions | None]
 
@@ -72,7 +72,7 @@ class Operation2Arguments1(TypedDict):
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: Literal['text/plain']
     options: NotRequired[RequestOptions | None]
 
@@ -80,7 +80,7 @@ class Operation2Arguments2(TypedDict):
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
-    pet_id: int
+    petId: int
     response_media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     options: NotRequired[RequestOptions | None]
 
@@ -88,21 +88,21 @@ class Operation2Arguments3(TypedDict):
 class Operation3Arguments(TypedDict):
     """The keyword arguments of one signature of delete_pets_by_pet_id."""
 
-    pet_id: int
+    petId: int
     options: NotRequired[RequestOptions | None]
 
 
 class Operation4Arguments(TypedDict):
     """The keyword arguments of one signature of head_pet."""
 
-    pet_id: int
+    petId: int
     options: NotRequired[RequestOptions | None]
 
 
 class Operation5Arguments(TypedDict):
     """The keyword arguments of one signature of upload."""
 
-    pet_id: int
+    petId: int
     body: NotRequired[SyncBinaryBody | UNSET]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
@@ -112,7 +112,7 @@ class Operation5Arguments(TypedDict):
 class Operation5Arguments1(TypedDict):
     """The keyword arguments of one signature of upload."""
 
-    pet_id: int
+    petId: int
     body: NotRequired[AsyncBinaryBody | UNSET]
     media_type: NotRequired[Literal['application/octet-stream'] | None]
     response_media_type: NotRequired[str | None]
@@ -122,7 +122,7 @@ class Operation5Arguments1(TypedDict):
 class Operation6Arguments(TypedDict):
     """The keyword arguments of one signature of attach_files."""
 
-    pet_id: int
+    petId: int
     body: MultipartBody[str | list[str]]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
@@ -131,7 +131,7 @@ class Operation6Arguments(TypedDict):
 class Operation6Arguments1(TypedDict):
     """The keyword arguments of one signature of attach_files."""
 
-    pet_id: int
+    petId: int
     body: AsyncMultipartBody[str | list[str]]
     media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
@@ -140,15 +140,15 @@ class Operation6Arguments1(TypedDict):
 class Operation7Arguments(TypedDict):
     """The keyword arguments of one signature of read_files."""
 
-    pet_id: int
+    petId: int
     response_media_type: NotRequired[Literal['multipart/form-data'] | None]
     options: NotRequired[RequestOptions | None]
 
 
 KEYWORDS_0: Final = Keywords(
     'list_pets',
-    ('limit', 'labels', 'x_trace', 'session', 'response_media_type', 'options'),
-    ('x_trace',),
+    ('limit', 'labels', 'X_Trace', 'session', 'response_media_type', 'options'),
+    ('X_Trace',),
 )
 
 
@@ -161,37 +161,33 @@ KEYWORDS_1: Final = Keywords(
 
 KEYWORDS_2: Final = Keywords(
     'get_pet',
-    ('pet_id', 'response_media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'response_media_type', 'options'),
+    ('petId',),
 )
 
 
-KEYWORDS_3: Final = Keywords(
-    'delete_pets_by_pet_id',
-    ('pet_id', 'options'),
-    ('pet_id',),
-)
+KEYWORDS_3: Final = Keywords('delete_pets_by_pet_id', ('petId', 'options'), ('petId',))
 
 
-KEYWORDS_4: Final = Keywords('head_pet', ('pet_id', 'options'), ('pet_id',))
+KEYWORDS_4: Final = Keywords('head_pet', ('petId', 'options'), ('petId',))
 
 
 KEYWORDS_5: Final = Keywords(
     'upload',
-    ('pet_id', 'body', 'media_type', 'response_media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'body', 'media_type', 'response_media_type', 'options'),
+    ('petId',),
 )
 
 
 KEYWORDS_6: Final = Keywords(
     'attach_files',
-    ('pet_id', 'body', 'media_type', 'options'),
-    ('pet_id', 'body'),
+    ('petId', 'body', 'media_type', 'options'),
+    ('petId', 'body'),
 )
 
 
 KEYWORDS_7: Final = Keywords(
     'read_files',
-    ('pet_id', 'response_media_type', 'options'),
-    ('pet_id',),
+    ('petId', 'response_media_type', 'options'),
+    ('petId',),
 )

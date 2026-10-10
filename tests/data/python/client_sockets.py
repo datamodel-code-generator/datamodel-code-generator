@@ -623,7 +623,7 @@ def _authenticated(harness: _Harness) -> None:
                 lines,
                 label,
                 lambda settings=settings, api=api: api.protocols.secure.chat.connect(
-                    x_trace=harness.trace("t1"), options=options.RequestOptions(**settings)
+                    X_Trace=harness.trace("t1"), options=options.RequestOptions(**settings)
                 ),
             )
             if session is not None:

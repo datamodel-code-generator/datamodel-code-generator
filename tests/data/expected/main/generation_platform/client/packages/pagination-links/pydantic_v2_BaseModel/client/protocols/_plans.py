@@ -42,7 +42,7 @@ PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
     continuation=NextUrlPlan(read=BodySelector(pointer='/next'), end_missing=True),
-    fingerprint='b3ced3c8292018dd0fd37f9fa57da77729bf83bf94e2a527d9049fd41d5d581c',
+    fingerprint='207fb6936c244ab15e4994860f5069612bbbf587db1393c7be02dcdf29e5b02b',
 )
 
 
@@ -62,7 +62,7 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
         end_null=True,
         end_values=('',),
     ),
-    fingerprint='30d9264ec4ab84049260a50bc48ea8c8fd0c3513b711afa4a65de8e84951cdc2',
+    fingerprint='f98a55b470f3297dd859973c93b0ef37a5c2a2a1483a82e201271cc13262c782',
 )
 
 
@@ -81,7 +81,7 @@ PLAN_2: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
         read=BodySelector(pointer='/loose_next'),
         end_missing=True,
     ),
-    fingerprint='39bb515bec9f2d8af088ab0072677b24c716df5e6d3d9c622c546a1b47e3e48b',
+    fingerprint='37b3513ed21c686913c4fc154c4eee9abbc9d2bb02682d057eda72c3fba5074c',
 )
 
 
@@ -97,7 +97,7 @@ PLAN_3: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
     continuation=NextUrlPlan(read=HeaderSelector(name='X-Next'), end_missing=True),
-    fingerprint='e2667eeef3132709009fd07a73137bf1b661091be35d61e701c3b53836068c3d',
+    fingerprint='a4ad889b4c020ca28abdc1d3d2ddd758ff8a2eed92e4d930cd2cf11ed1292f07',
 )
 
 
@@ -113,7 +113,7 @@ PLAN_4: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_4,
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='link'),
-    fingerprint='2442b4a146118472db05bbb3469dcf5c35859cbd1a08f3caf12775120a9e86ff',
+    fingerprint='9bd3c77001d863d5155b43909648318e159c533435a80834f46f398e72984afd',
 )
 
 
@@ -129,7 +129,7 @@ PLAN_5: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_5,
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='Link'),
-    fingerprint='36043abd2b7304cf62abf53f7e05fbb5f06e9627c8fed3338733f4f9e30356f9',
+    fingerprint='fcaf455582ce93514dc045ae559a743e69dcbfbf7b6ef617acae3ed58f391182',
     bindings=(
         PageBinding(
             target=ParameterTarget(location='header', name='X-Trace'),
@@ -152,7 +152,7 @@ PLAN_6: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_6,
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='Link', rel='https://example.com/rel/More'),
-    fingerprint='2840ef11569f1aaabd5ace9a731c3119aea6e8d3616eacb3d92f59620805b88e',
+    fingerprint='ffcd74507e4eec09a83ab3647a350771cbf5a500f4f832d09606a532afae52a7',
 )
 
 

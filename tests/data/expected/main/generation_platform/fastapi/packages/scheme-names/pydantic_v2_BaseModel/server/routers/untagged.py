@@ -41,11 +41,11 @@ def _add_get_keys(
         api_key: Annotated[str | None, Security(security.api_key)],
         api_key_1: Annotated[str | None, Security(security.api_key_1)],
         wiring: Annotated[HTTPBasicCredentials | None, Security(security.wiring)],
-        h_o_n: Annotated[object, Security(security.h_o_n)],
+        h___o_n: Annotated[object, Security(security.h___o_n)],
     ) -> object:
         return await authenticate(
             ((('api-key', ()),), (('api_key', ()),), (('wiring', ()),), (('h"""o\\N', ()),)),
-            {'api-key': api_key, 'api_key': api_key_1, 'wiring': wiring, 'h"""o\\N': h_o_n},
+            {'api-key': api_key, 'api_key': api_key_1, 'wiring': wiring, 'h"""o\\N': h___o_n},
             get_keys_authorize,
             'APIKey, Basic',
         )

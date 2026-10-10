@@ -43,7 +43,7 @@ class AsyncOrdersResource:
     async def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -51,7 +51,7 @@ class AsyncOrdersResource:
         """Call GET /orders/{orderId}."""
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -67,7 +67,7 @@ class AsyncOrdersWithResponse:
     async def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -75,7 +75,7 @@ class AsyncOrdersWithResponse:
         """Call GET /orders/{orderId}."""
         return await self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -91,7 +91,7 @@ class AsyncOrdersWithRawResponse:
     async def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -99,7 +99,7 @@ class AsyncOrdersWithRawResponse:
         """Call GET /orders/{orderId}."""
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -115,7 +115,7 @@ class AsyncOrdersWithStreamingResponse:
     def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -123,7 +123,7 @@ class AsyncOrdersWithStreamingResponse:
         """Call GET /orders/{orderId}."""
         return self._core.stream(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )

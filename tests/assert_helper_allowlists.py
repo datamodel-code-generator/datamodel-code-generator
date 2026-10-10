@@ -43,6 +43,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "data-logic:tests/data/python/fastapi_handlers/forms.py",
         "data-logic:tests/data/python/fastapi_handlers/kinds.py",
         "data-logic:tests/data/python/fastapi_handlers/locals.py",
+        "data-logic:tests/data/python/fastapi_handlers/naming.py",
         "data-logic:tests/data/python/fastapi_handlers/parameters.py",
         "data-logic:tests/data/python/fastapi_handlers/pets.py",
         "data-logic:tests/data/python/fastapi_handlers/responses.py",

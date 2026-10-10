@@ -16,7 +16,7 @@ from datamodel_code_generator._client._compiled_templates import resource as res
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.codec_render import render_model_bindings, render_model_codecs
-from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, VIEW_KEYWORDS, helper_classes, pascal
+from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, VIEW_KEYWORDS, helper_classes
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.runtime import (
@@ -33,6 +33,7 @@ from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import field_plan, items, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role
+from datamodel_code_generator.reference import snake_to_upper_camel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -165,7 +166,7 @@ def _auth(credentials: tuple[CredentialSpec, ...]) -> str | None:
     if not any(credential.flows for credential in credentials):
         return None
     classes = [
-        (f"{pascal(credential.name)}{base}", base, label, credential.name, url)
+        (f"{credential.prefix}{base}", base, label, credential.name, url)
         for credential in credentials
         for flow, url in credential.flows
         if url is not None
@@ -628,7 +629,7 @@ def _resume_method(
 
 def _handle(spec: PollingSpec, prefix: str) -> str:
     """Return the name of a polling helper's own handle class, after its dotted name's PascalCase parts."""
-    return f"{prefix}{''.join(map(pascal, spec.helper.name.split('.')))}Handle"
+    return f"{prefix}{''.join(map(snake_to_upper_camel, spec.helper.name.split('.')))}Handle"
 
 
 def _summary(spec: OperationSpec) -> str:
@@ -1205,9 +1206,10 @@ class _Resources(_Typing):
             )
             for _, attribute, name, doc in views
         ]
+        pascals = {item.namespace: item.pascal for item in self.plan.resources}
         for child in resource.children:
             name = child.rpartition(".")[2]
-            class_name = f"{prefix}{''.join(pascal(part) for part in child.split('.'))}Resource"
+            class_name = f"{prefix}{pascals[child]}Resource"
             alias = module.name(f".{name}._{_mode(asynchronous=asynchronous)}", class_name)
             members.append(
                 f"    @{cached}\n    def {name}(self) -> {alias}:\n"
@@ -2427,7 +2429,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         cached = module.name("functools", "cached_property")
         sections: list[str] = []
         for parts, children in nodes.items():
-            name = f"{prefix}{''.join(map(pascal, parts))}Protocols" if parts else root
+            name = f"{prefix}{''.join(map(snake_to_upper_camel, parts))}Protocols" if parts else root
             members = [
                 f"    @{cached}\n    def {attribute}(self) -> {child}:\n"
                 f'        """The {dotted} {kinds.get(child, "protocol helpers")}."""\n'

@@ -43,7 +43,7 @@ class OrdersResource:
     def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -51,7 +51,7 @@ class OrdersResource:
         """Call GET /orders/{orderId}."""
         return self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         ).data
@@ -67,7 +67,7 @@ class OrdersWithResponse:
     def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -75,7 +75,7 @@ class OrdersWithResponse:
         """Call GET /orders/{orderId}."""
         return self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -91,7 +91,7 @@ class OrdersWithRawResponse:
     def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -99,7 +99,7 @@ class OrdersWithRawResponse:
         """Call GET /orders/{orderId}."""
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -115,7 +115,7 @@ class OrdersWithStreamingResponse:
     def get_order(
         self,
         *,
-        order_id: int,
+        orderId: int,
         view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -123,7 +123,7 @@ class OrdersWithStreamingResponse:
         """Call GET /orders/{orderId}."""
         return self._core.stream(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )

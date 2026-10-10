@@ -34,7 +34,7 @@ def _add_list_pets(
         limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
         tags: Annotated[list[str] | None, Query(alias='tags')] = None,
         kind: Annotated[pets_dataclass_models.FieldPetsGetQueryKindParameter | None, Query(alias='kind')] = None,
-        x_request_id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
+        X_Request_Id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
         since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
     ) -> object:
@@ -43,7 +43,7 @@ def _add_list_pets(
                 limit=limit,
                 tags=tags,
                 kind=kind,
-                x_request_id=x_request_id,
+                X_Request_Id=X_Request_Id,
                 since=since,
                 session=session,
             ),
@@ -144,11 +144,11 @@ def _add_get_pet(
 
     def get_pet(
         *,
-        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
+        petId: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
             get_pet_handler(
-                pet_id=pet_id,
+                petId=petId,
             ),
             contract.GetPet.RESPONSES,
         )
@@ -180,11 +180,11 @@ def _add_delete_pet(
 
     def delete_pet(
         *,
-        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
+        petId: Annotated[int, Field(ge=1), Path(alias='petId')],
     ) -> object:
         return dispatch(
             delete_pet_handler(
-                pet_id=pet_id,
+                petId=petId,
             ),
             contract.DeletePet.RESPONSES,
         )

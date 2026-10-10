@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocols import Helper, Link, ProtocolConfiguration
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
-    from datamodel_code_generator._target_contract import OperationContract
+    from datamodel_code_generator._target_contract import OperationContract, OperationId
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -147,12 +147,22 @@ def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> 
     return None if present else f"{_label(operation)} has no {location} parameter {name!r}"
 
 
+def helper_operations(protocols: Protocols | None) -> frozenset[OperationId]:
+    """Return the operations an enabled sending helper calls, whose methods also take the helper's arguments."""
+    if protocols is None:
+        return frozenset()
+    return frozenset(
+        protocols.operations[helper.links[0].ref].id for helper in protocols.helpers if helper.enabled and helper.links
+    )
+
+
 def helper_problems(
     protocols: Protocols | None, plan: ClientPlan, checked: Mapping[str, list[Diagnostic]]
 ) -> Iterator[Diagnostic]:
-    """Refuse enabled helpers whose entry operation takes a reserved argument or whose name gives a taken class name.
+    """Refuse enabled helpers whose entry operation names an argument as the helper's or whose name gives a taken class.
 
-    Webhook helpers send nothing, so neither applies to them. Then report each enabled helper's own problems in
+    Only an explicit name can take a helper's argument: the planner names the others apart. Webhook helpers send
+    nothing, so neither applies to them. Then report each enabled helper's own problems in
     declaration order; every kind an enabled helper can have is checked, since validation refuses the later kinds.
     """
     if protocols is None:

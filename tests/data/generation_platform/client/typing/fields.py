@@ -49,15 +49,15 @@ def update(
     owner: Owner,
 ) -> None:
     pets = client.default
-    pets.update_pet(pet_id=pet)
-    pets.update_pet(pet_id=pet, name="n")
-    pets.update_pet(pet_id=pet, tag=None)
-    pets.update_pet(pet_id=pet, name="n", tag="t", media_type="application/json")
-    pets.log_visit(pet_id=visit, media_type="application/json")
-    pets.log_visit(pet_id=visit, note="n", visit_options=["a"], media_type="application/json")
-    pets.log_visit(pet_id=visit, body="n", media_type="text/plain")
-    pets.set_owner(pet_id=owner_id, body=owner)
-    pets.create_owner(email="e", nick_name="n")
+    pets.update_pet(petId=pet)
+    pets.update_pet(petId=pet, name="n")
+    pets.update_pet(petId=pet, tag=None)
+    pets.update_pet(petId=pet, name="n", tag="t", media_type="application/json")
+    pets.log_visit(petId=visit, media_type="application/json")
+    pets.log_visit(petId=visit, note="n", visit_options=["a"], media_type="application/json")
+    pets.log_visit(petId=visit, body="n", media_type="text/plain")
+    pets.set_owner(petId=owner_id, body=owner)
+    pets.create_owner(email="e", nickName="n")
 
 
 async def create_async(client: AsyncClient, kind: Kind) -> None:

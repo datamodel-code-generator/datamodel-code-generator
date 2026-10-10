@@ -27,7 +27,7 @@ class Service(Protocol[PrincipalT_contra]):
         principal: PrincipalT_contra,
         limit: int | None,
         page: int | None,
-        x_trace: str | None,
+        X_Trace: str | None,
     ) -> models.PetsResponse | HTTPResult[models.PetsResponse] | Response:
         """
         Handle GET /pets.
@@ -38,7 +38,7 @@ class Service(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-        x_trace: str | None,
+        X_Trace: str | None,
         body: models.Pet,
     ) -> models.Pet | HTTPResult[models.Pet] | Response:
         """

@@ -20,7 +20,7 @@ from .types.admin import CreateAdminUserResponse
 from .types.admin.users import ListAdminUsersResponse
 from .types.default import GetRootResponse
 from .types.store import GetFilesByFileNameByExtResponse
-from .types.u30e6_u30fc_u30b6_u30fc import HttpGetUsersResponse
+from .types.ユーザー import HttpGetUsersResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://names.example.com'),)
 

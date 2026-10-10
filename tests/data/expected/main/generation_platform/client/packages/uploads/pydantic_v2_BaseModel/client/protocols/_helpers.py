@@ -63,8 +63,8 @@ class FilesUploadResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: str,
-        x_name: str | UNSET = UNSET,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
     ) -> UploadHandle[None]:
@@ -73,7 +73,7 @@ class FilesUploadResumableUpload:
             self._core,
             _plans.PLAN_0,
             source,
-            (tus_resumable, x_name),
+            (Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
         )
@@ -108,8 +108,8 @@ class FilesFinishResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: str,
-        x_name: str | UNSET = UNSET,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
     ) -> UploadHandle[CompleteFileResponse]:
@@ -118,7 +118,7 @@ class FilesFinishResumableUpload:
             self._core,
             _plans.PLAN_1,
             source,
-            (tus_resumable, x_name),
+            (Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
         )
@@ -153,9 +153,9 @@ class FilesPutResumableUpload:
         self,
         source: UploadSource,
         *,
-        upload_length: int,
-        tus_resumable: str,
-        x_name: str | UNSET = UNSET,
+        Upload_Length: int,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
     ) -> UploadHandle[None]:
@@ -164,7 +164,7 @@ class FilesPutResumableUpload:
             self._core,
             _plans.PLAN_2,
             source,
-            (upload_length, tus_resumable, x_name),
+            (Upload_Length, Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
         )

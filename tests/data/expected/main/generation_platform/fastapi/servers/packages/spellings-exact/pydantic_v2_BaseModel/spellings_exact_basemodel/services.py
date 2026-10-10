@@ -92,7 +92,7 @@ class PetsService(Protocol):
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         limit: int,
         code: Optional[str],
         codes: Optional[List[str]],
