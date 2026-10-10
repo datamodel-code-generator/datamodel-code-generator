@@ -838,7 +838,7 @@ def _format_file_header(
     """Format a per-file header, skipping all work for replace mode."""
     if header_suffix is None:
         return header_prefix
-    safe_filename = filename.replace("\n", " ").replace("\r", " ") if filename else ""
+    safe_filename = redact_url(filename).replace("\n", " ").replace("\r", " ") if filename else ""
     return f"{header_prefix}{safe_filename}{header_suffix}"
 
 

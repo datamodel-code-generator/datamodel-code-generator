@@ -519,6 +519,40 @@ def test_get_http_response_uses_pinned_backend_with_real_local_http(
     assert schema_response.text == '{"type":"object"}'
 
 
+@pytest.mark.parametrize("joined", [False, True], ids=("url-argument", "url-equals"))
+def test_cli_header_names_the_url_without_credentials_or_query(
+    mocker: MockerFixture,
+    local_http_server: str,
+    tmp_path: Path,
+    joined: bool,
+) -> None:
+    """Name a fetched input in the generated header, command and metadata without userinfo, query or fragment."""
+    mocker.stopall()
+    url = f"http://user:secret@{local_http_server.removeprefix('http://')}/pet.json?token=SECRET#/x"
+    output = tmp_path / "output.py"
+    metadata = tmp_path / "metadata.json"
+
+    def normalize(text: str) -> str:
+        return text.replace(local_http_server, "http://localhost").replace(str(tmp_path), "<tmp>")
+
+    run_main_with_args([
+        *([f"--url={url}"] if joined else ["--url", url]),
+        "--output",
+        str(output),
+        "--input-file-type",
+        "jsonschema",
+        "--allow-private-network",
+        "--disable-timestamp",
+        "--enable-command-header",
+        "--emit-model-metadata",
+        str(metadata),
+        "--formatters",
+        "builtin",
+    ])
+    assert_http_e2e_file(output, f"url_header_redacted{'_equals' if joined else ''}.py", transform=normalize)
+    assert_http_e2e_file(metadata, "url_header_redacted_metadata.txt", transform=normalize)
+
+
 def test_cli_fetches_external_schema_with_selected_backend(
     mocker: MockerFixture,
     local_http_server: str,
