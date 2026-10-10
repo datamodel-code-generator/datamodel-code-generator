@@ -45,6 +45,9 @@ FieldItemsItemIdGetQuerySelfParameter = TypeAliasType("FieldItemsItemIdGetQueryS
 FieldItemsItemIdGetCookieSessionIdParameter = TypeAliasType("FieldItemsItemIdGetCookieSessionIdParameter", str)
 
 
+FieldItemsItemIdGetQueryItemId1Parameter = TypeAliasType("FieldItemsItemIdGetQueryItemId1Parameter", int)
+
+
 FieldItemsPostQueryNameParameter = TypeAliasType("FieldItemsPostQueryNameParameter", str)
 
 

@@ -19,6 +19,7 @@ paths:
         - {name: body, in: query, schema: {type: string}}
         - {name: self, in: query, schema: {type: string}}
         - {name: sessionId, in: cookie, schema: {type: string}}
+        - {name: itemId_1, in: query, schema: {type: integer}}
       responses:
         "204": {description: Done.}
   /items:

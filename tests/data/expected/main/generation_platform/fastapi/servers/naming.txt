@@ -8,8 +8,8 @@ service ItemStoreService: get_item, get_item_1
 service ItemStoreService without its methods: TypeError
 service UntaggedService: x1, x_1
 service UntaggedService without its methods: TypeError
-> GET /items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s
-  get_item(itemId=1, itemId_1=2, itemId_2=3, X_Request_Id='rid', page_size_=10, field_2fa='t', class_='c', request_1='r', body_1='b', self_1='s', sessionId='sid')
+> GET /items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5
+  get_item(itemId=1, itemId_1=2, itemId_2=3, X_Request_Id='rid', page_size_=10, field_2fa='t', class_='c', request_1='r', body_1='b', self_1='s', sessionId='sid', itemId_1_1=5)
 < 204 - b''
 > POST /items?name=q
   get_item_1(name='q', body=NewItem(name='n', itemCount=2))

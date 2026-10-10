@@ -18,7 +18,8 @@ _GET: Final = {
     "class_": "c",
     "sessionId": "sid",
 }
-_NUMBERED: Final = {**_GET, "itemId_1": 2, "itemId_2": 3, "options_1": "o", "body_1": "b", "self_1": "s"}
+_CALL_OPTIONS: Final = {"options_1": "o", "body_1": "b", "self_1": "s"}
+_NUMBERED: Final = {**_GET, "itemId_1": 2, "itemId_2": 3, **_CALL_OPTIONS, "itemId_1_1": 5}
 _REPEATED: Final = (("itemId", 2), ("itemId", 3), ("options", "o"), ("body", "b"), ("self", "s"))
 
 
@@ -47,7 +48,7 @@ def _calls(
 
 def _prefixed(prefix: str) -> dict[str, object]:
     """Return the arguments of the item operation whose duplicates take a prefix, then a number, as models do."""
-    item = dict(_GET)
+    item: dict[str, object] = {**_GET, "itemId_1": 5}
     for wire, value in _REPEATED:
         name = f"{prefix}_{wire}"
         item[f"{name}_1" if name in item else name] = value
@@ -73,6 +74,7 @@ def naming_snake(package: ModuleType, lines: list[str]) -> None:
         "body_1": "b",
         "self_1": "s",
         "session_id": "sid",
+        "item_id_1_1": 5,
     }
     _calls(package, lines, ("get_item", "get_item_1"), item, {"name_1": "n", "item_count": 2}, "item_id")
 
@@ -90,5 +92,9 @@ def naming_full_path(package: ModuleType, lines: list[str]) -> None:
 
 
 def naming_primary_first(package: ModuleType, lines: list[str]) -> None:
-    """Give the names the document spells as written their clean names first: the operationId `get_item`."""
-    _calls(package, lines, ("get_item_1", "get_item"), _NUMBERED, {"name_1": "n", "itemCount": 2})
+    """Give the names the document spells as written their own names first: the operationId `get_item` and `itemId_1`.
+
+    The other duplicates are then numbered past them.
+    """
+    item = {**_GET, "itemId_2": 2, "itemId_3": 3, **_CALL_OPTIONS, "itemId_1": 5}
+    _calls(package, lines, ("get_item_1", "get_item"), item, {"name_1": "n", "itemCount": 2})

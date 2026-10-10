@@ -158,19 +158,23 @@ class TargetNames:
         """Claim derived names in their scope, in order, telling a name the scope already holds apart as models do.
 
         `numbered` suffixes it; `parent-prefixed` first prefixes it with its innermost enclosing scope, `full-path`
-        with every enclosing scope; `primary-first` claims the names the document gives as written before the others.
+        with every enclosing scope; `primary-first` first gives each name the document spells as written that the
+        scope does not hold yet its own name, then suffixes the others in order.
         A class takes the duplicate class suffix.
         """
-        order: Iterable[int] = range(len(candidates))
-        if self.strategy is NamingStrategy.PrimaryFirst:
-            order = sorted(order, key=lambda index: not candidates[index][1])
         names = [""] * len(candidates)
-        for index in order:
-            name, _, path = candidates[index]
-            if path and name in scope and self.strategy in _PREFIXED:
+        if self.strategy is NamingStrategy.PrimaryFirst:
+            for index, (name, primary, _) in enumerate(candidates):
+                if primary and scope.take(name):
+                    names[index] = name
+        for index, (name, _, path) in enumerate(candidates):
+            if names[index]:
+                continue
+            base = name
+            if path and base in scope and self.strategy in _PREFIXED:
                 parts = path[-1:] if self.strategy is NamingStrategy.ParentPrefixed else path
-                name = ("" if camel else "_").join((*parts, name))
-            names[index] = scope.claim(name, self.suffix if camel else None, camel=camel)
+                base = ("" if camel else "_").join((*parts, base))
+            names[index] = scope.claim(base, self.suffix if camel else None, camel=camel)
         return names
 
     def alias(self, wire_name: str) -> str | None:

@@ -53,7 +53,10 @@ argument `petId` and an `X-Request-Id` header `X_Request_Id`, as in `client.pets
 `--snake-case-field` (`snake-case-field = true`) explicitly for snake_case arguments such as `pet_id`; it renames the
 model fields too, behind their aliases. A derived name that its namespace already holds takes the model's suffix, such
 as `get_pet_1` for a second `get_pet`, `id_1` for a query `id` beside a path `id`, or `options_1` for a parameter
-named after a call option, or the prefix `--naming-strategy` gives it, as for models. An explicit name, a `name`,
+named after a call option, or the prefix `--naming-strategy` gives it, as for models: under `primary-first` a name
+the document spells as written keeps it whoever declares it first, so with `--snake-case-field` a wire `pet_id` keeps
+`pet_id` and a `petId` beside it becomes `pet_id_1`, and under `parent-prefixed` and `full-path` a resource, which has
+no enclosing scope, is still numbered. An explicit name, a `name`,
 `parameter_names`, `body_field_names` or `--client-resource-names` entry or an `--aliases` entry, must be a new Python
 identifier and is never renamed.
 

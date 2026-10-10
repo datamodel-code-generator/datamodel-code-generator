@@ -54,6 +54,7 @@ class ItemStoreResource:
         body_1: str | UNSET = UNSET,
         self_1: str | UNSET = UNSET,
         sessionId: str | UNSET = UNSET,
+        itemId_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> GetItemResponse:
         """Call GET /items/{itemId}."""
@@ -71,6 +72,7 @@ class ItemStoreResource:
                 body_1,
                 self_1,
                 sessionId,
+                itemId_1_1,
             ),
             options=options,
         ).data
@@ -139,6 +141,7 @@ class ItemStoreWithResponse:
         body_1: str | UNSET = UNSET,
         self_1: str | UNSET = UNSET,
         sessionId: str | UNSET = UNSET,
+        itemId_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[GetItemResponse]:
         """Call GET /items/{itemId}."""
@@ -156,6 +159,7 @@ class ItemStoreWithResponse:
                 body_1,
                 self_1,
                 sessionId,
+                itemId_1_1,
             ),
             options=options,
         )
@@ -224,6 +228,7 @@ class ItemStoreWithRawResponse:
         body_1: str | UNSET = UNSET,
         self_1: str | UNSET = UNSET,
         sessionId: str | UNSET = UNSET,
+        itemId_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /items/{itemId}."""
@@ -241,6 +246,7 @@ class ItemStoreWithRawResponse:
                 body_1,
                 self_1,
                 sessionId,
+                itemId_1_1,
             ),
             options=options,
         )
@@ -309,6 +315,7 @@ class ItemStoreWithStreamingResponse:
         body_1: str | UNSET = UNSET,
         self_1: str | UNSET = UNSET,
         sessionId: str | UNSET = UNSET,
+        itemId_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /items/{itemId}."""
@@ -326,6 +333,7 @@ class ItemStoreWithStreamingResponse:
                 body_1,
                 self_1,
                 sessionId,
+                itemId_1_1,
             ),
             options=options,
         )

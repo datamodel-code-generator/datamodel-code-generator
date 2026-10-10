@@ -2946,7 +2946,7 @@
     "requests": [
       {
         "method": "GET",
-        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5",
         "headers": {
           "itemId": "3",
           "X-Request-Id": "rid",
@@ -2989,7 +2989,7 @@
     "requests": [
       {
         "method": "GET",
-        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5",
         "headers": {
           "itemId": "3",
           "X-Request-Id": "rid",
@@ -3032,7 +3032,7 @@
     "requests": [
       {
         "method": "GET",
-        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5",
         "headers": {
           "itemId": "3",
           "X-Request-Id": "rid",
@@ -3075,7 +3075,7 @@
     "requests": [
       {
         "method": "GET",
-        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5",
         "headers": {
           "itemId": "3",
           "X-Request-Id": "rid",
@@ -3118,7 +3118,7 @@
     "requests": [
       {
         "method": "GET",
-        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5",
         "headers": {
           "itemId": "3",
           "X-Request-Id": "rid",
