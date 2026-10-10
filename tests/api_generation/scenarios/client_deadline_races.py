@@ -379,8 +379,7 @@ async def _async_race(
         api = package.AsyncClient(http_client=native, total_timeout=1.0, clock=options.Clock(monotonic=clock))
         caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/race")))
         await arecord(lines, f"async {label}", lambda: caller)
-        for closer in closers:
-            await closer
+        await asyncio.gather(*closers)
         await api.aclose()
     record(lines, f"async {label} resources", lambda: (transport.sent, transport.body.closed))
 
