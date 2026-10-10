@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import py_compile
+import re
 import shutil
 import sys
 import warnings
@@ -38,6 +39,7 @@ from tests.main.conftest import (
     run_main_and_assert,
     run_main_with_args,
 )
+from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -1487,27 +1489,145 @@ def test_external_ref_transport_type_error_is_not_misclassified(monkeypatch: pyt
 
 
 @pytest.mark.parametrize(
-    ("url", "body"),
+    ("url", "body", "shown"),
     [
-        ("https://example.com/truncated.json", "{"),
-        ("https://example.com/truncated.yaml", "schema: ["),
+        ("https://example.com/truncated.json", "{", "https://example.com/truncated.json"),
+        ("https://example.com/truncated.yaml", "schema: [", "https://example.com/truncated.yaml"),
+        (
+            "https://user:secret@example.com:8443/v1/truncated.json?token=SECRET#/x",
+            "{",
+            "https://example.com:8443/v1/truncated.json",
+        ),
     ],
-    ids=("json", "yaml"),
+    ids=("json", "yaml", "credentials"),
 )
 def test_malformed_remote_ref_body_has_format_and_url_context(
     url: str,
     body: str,
+    shown: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Translate malformed fetched bodies at the decoder boundary with their URL."""
+    """Translate malformed fetched bodies at the decoder boundary with their URL, without its secrets."""
     parser = JsonSchemaParser("")
     monkeypatch.setattr(parser, "_get_text_from_url", lambda _: body)
 
     with pytest.raises(
         InvalidFileFormatError,
-        match=rf"Invalid file format for jsonschema at {url}",
+        match=rf"^Invalid file format for jsonschema at {re.escape(shown)}: ",
     ):
         parser._get_ref_body_from_url(url)
+
+
+@pytest.mark.parametrize(
+    ("url", "expected_stderr"),
+    [
+        (
+            "http://user:secret@127.0.0.1:8765/v1/bad.yaml?token=SECRET#/x",
+            (
+                "Blocked unsafe URL host: 127.0.0.1\n"
+                "Reason: the host resolves to a non-public address. Resolved IPs: 127.0.0.1.\n"
+                "datamodel-code-generator blocks local, private, link-local, reserved, and otherwise non-public "
+                "network targets by default to reduce SSRF risk.\n"
+                "URL: http://127.0.0.1:8765/v1/bad.yaml\n"
+                "If this is a trusted internal schema endpoint, pass --allow-private-network "
+                "or set allow_private_network=True when using the Python API.\n"
+            ),
+        ),
+        (
+            "ftp://user:secret@example.com/schema.json?token=SECRET",
+            "Unsupported URL scheme. Supported: http, https, file. --input=ftp://example.com/schema.json\n",
+        ),
+        (
+            "https://user:secret@[bad/schema.json?token=SECRET",
+            "Invalid URL: https://[bad/schema.json: Invalid IPv6 URL\n",
+        ),
+    ],
+    ids=("blocked-host", "unsupported-scheme", "malformed"),
+)
+def test_remote_url_errors_omit_credentials_and_query(
+    url: str,
+    expected_stderr: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Name a rejected remote input by its scheme, host, port and path only."""
+    run_main_with_args(
+        ["--url", url, "--input-file-type", "jsonschema", "--output", str(tmp_path / "model.py")],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+    )
+
+
+def test_remote_fetch_errors_omit_credentials_and_query(
+    local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Name a failed fetch by the URL without its userinfo, query or fragment."""
+    origin = local_http_server.removeprefix("http://")
+    run_main_with_args(
+        [
+            "--url",
+            f"http://user:secret@{origin}/missing.json?token=SECRET#/x",
+            "--input-file-type",
+            "jsonschema",
+            "--allow-private-network",
+            "--output",
+            str(tmp_path / "model.py"),
+        ],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"HTTP 404 error fetching {local_http_server}/missing.json\n",
+    )
+
+
+@pytest.mark.parametrize("strict_refs", [False, True], ids=("warning", "strict"))
+def test_remote_dangling_ref_omits_credentials_and_query(
+    local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    strict_refs: bool,
+) -> None:
+    """Name the remote document of a dangling reference without its userinfo or query."""
+    origin = local_http_server.removeprefix("http://")
+    _SchemaHandler.routes["/remote.json"] = (200, {"content-type": "application/json"}, b'{"definitions": {}}')
+    root = tmp_path / "root.json"
+    root.write_text(
+        json.dumps({
+            "type": "object",
+            "properties": {"a": {"$ref": f"http://user:secret@{origin}/remote.json?token=SECRET#/definitions/Missing"}},
+        }),
+        encoding="utf-8",
+    )
+    try:
+        if strict_refs:
+            run_main_and_assert(
+                input_path=root,
+                output_path=tmp_path / "model.py",
+                input_file_type="jsonschema",
+                extra_args=["--allow-remote-refs", "--allow-private-network", "--strict-refs"],
+                expected_exit=Exit.ERROR,
+                capsys=capsys,
+                expected_stderr_contains=(
+                    f"Unresolved local $ref targets:\n- {local_http_server}/remote.json: #/definitions/Missing\n"
+                ),
+            )
+        else:
+            with pytest.warns(
+                DanglingRefWarning,
+                match=(
+                    rf"^Unresolved local \$ref '#/definitions/Missing' in {re.escape(local_http_server)}/remote\.json: "
+                ),
+            ):
+                run_main_and_assert(
+                    input_path=root,
+                    input_file_type="jsonschema",
+                    extra_args=["--allow-remote-refs", "--allow-private-network"],
+                    output_path=tmp_path / "model.py",
+                )
+    finally:
+        del _SchemaHandler.routes["/remote.json"]
 
 
 @pytest.mark.parametrize(

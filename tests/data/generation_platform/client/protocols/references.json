@@ -95,6 +95,22 @@
     "item_schema": {"pointer": "/components/schemas/User"},
     "continuation": {"kind": "link", "header": "Link"}
   },
+  "users.remote": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": {"pointer": "/paths/~1users/get", "document": "https://user:secret@schemas.example:8443/v1/helpers.yaml?token=SECRET#frag"},
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
+  "users.remote_bracket": {
+    "kind": "pagination",
+    "enabled": false,
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User", "document": "https://user:secret@[bad/helpers.yaml?token=SECRET"},
+    "continuation": {"kind": "link", "header": "Link"}
+  },
   "users.null": {
     "kind": "pagination",
     "enabled": false,

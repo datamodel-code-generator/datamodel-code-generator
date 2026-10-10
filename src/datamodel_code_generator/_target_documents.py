@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
@@ -75,7 +76,7 @@ def named_document(written: str | None, identity: str | None) -> str:
         return ""
     parts = urlsplit(identity or written)
     if parts.scheme != "file":
-        return f" in {written!r}"
+        return f" in {redact_url(written)!r}"
     file = Path(url2pathname(parts.path)).as_posix()
     return f" in {file!r}" if written == identity or Path(written).as_posix() == file else f" in {written!r} ({file})"
 

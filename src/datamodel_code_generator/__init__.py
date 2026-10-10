@@ -60,6 +60,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._source import (
     _read_parser_source_data_from_path as _read_parser_source_data_from_path,
 )
+from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
@@ -652,7 +653,7 @@ class InvalidFileFormatError(Error):
         self.input_file_type = input_file_type
         self.source = source
         error_detail = f"{type(original_error).__name__}: {original_error}"
-        source_detail = f" at {source}" if source is not None else ""
+        source_detail = f" at {redact_url(str(source))}" if source is not None else ""
         if input_file_type is not None:
             message = f"Invalid file format for {input_file_type.value}{source_detail}: {error_detail}"
         else:
