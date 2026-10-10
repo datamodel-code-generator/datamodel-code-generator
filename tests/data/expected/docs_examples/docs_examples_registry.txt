@@ -1,3 +1,4 @@
+fastapi-server.nested-models.command: fastapi-server.md
 openapi.quick-start.schema: openapi.md
 openapi.quick-start.output: openapi.md
 openapi.read-only-write-only.schema: openapi.md
@@ -10,7 +11,7 @@ model-reuse.use-type-alias.output: model-reuse.md
 cli-reference.base-options.input-model.example: base-options.md
 cli-reference.model-customization.base-class-map.example: model-customization.md
 cli-reference.template-customization.custom-template-dir.example: template-customization.md
-python-client.protocols.toml: python-client.md
+python-client.protocols.pyproject: python-client.md
 python-client.protocols.json: python-client.md
 python-client.protocols.diagnostics: python-client.md
 python-client.pagination.helper: python-client.md
@@ -48,7 +49,7 @@ python-client.signature-style.explicit: python-client.md
 python-client.signature-style.unpack: python-client.md
 python-client.signature-style.records: python-client.md
 python-client.signature-style.binding: python-client.md
-python-client.body-fields.toml: python-client.md
+python-client.body-fields.pyproject: python-client.md
 python-client.body-fields.diagnostics: python-client.md
 python-client.body-fields.overloads: python-client.md
 python-client.body-fields.refusals: python-client.md

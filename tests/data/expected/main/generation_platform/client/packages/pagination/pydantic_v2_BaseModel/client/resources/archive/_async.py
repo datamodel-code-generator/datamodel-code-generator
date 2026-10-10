@@ -45,7 +45,9 @@ class AsyncArchiveResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListArchiveResponse:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_6,
             (cursor,),
@@ -68,7 +70,9 @@ class AsyncArchiveWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListArchiveResponse]:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return await self._core.execute(
             _operations.OPERATION_6,
             (cursor,),
@@ -91,7 +95,9 @@ class AsyncArchiveWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_6,
             (cursor,),
@@ -114,7 +120,9 @@ class AsyncArchiveWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (cursor,),

@@ -1,5 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE config resource_names: resource_names must be a tuple of ResourceName records
-  E_CONFIG_VALUE config operations: operations must be a tuple of ClientOperationConfig records
-  E_CONFIG_VALUE config default_base_url: default_base_url must be an absolute http or https URL without userinfo, query, or fragment
-  E_CONFIG_VALUE config server_base_url: server_base_url must be an absolute http or https URL without userinfo, query, or fragment
+Error: --client-resource-names must be a tuple of ResourceName records; --client-operations must be a tuple of ClientOperationConfig records; --client-signature-style must be 'explicit' or 'unpack'; --client-body-arguments must be 'body' or 'both'; --client-default-base-url must be an absolute http or https URL without userinfo, query, or fragment; --client-server-base-url must be an absolute http or https URL without userinfo, query, or fragment

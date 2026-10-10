@@ -1,84 +1,599 @@
 # native-boundaries pydantic_v2.BaseModel
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Entry
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False, cause=1 validation error for Entry
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 05 = FieldValuesGetResponse204XCountHeader(root=5)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count +1 = FieldValuesGetResponse204XCountHeader(root=1)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 1.0 = FieldValuesGetResponse204XCountHeader(root=1)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=1 validation error for FieldValuesGetResponse204XCountHeader
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag TRUE = FieldValuesGetResponse204XFlagHeader(root=True)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag false = FieldValuesGetResponse204XFlagHeader(root=False)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts 05,+1,1.0 = FieldValuesGetResponse204XCountsHeader(root=[5, 1, 1])
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=extra = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=first,unknown=last = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Closed value=known,unknown=extra ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Closed') [operation_id='getValues', location=('header', 'X-Closed'), body_bytes=b'', truncated=False, cause=1 validation error for ClosedEntry
+unknown
+  Extra inputs are not permitted [type=extra_forbidden, input_value='extra', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/extra_forbidden] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 2.2 = <FieldValuesGetResponse204XRatioHeader.number_2_2: 2.2>
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValidationError['enum']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 2.2 = FieldValuesGetResponse204XScoreHeader(root=2.2)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 1e999 = FieldValuesGetResponse204XScoreHeader(root=inf)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError['float_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError['int_parsing', 'int_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag yes = FieldValuesGetResponse204XFlagHeader(root=True)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValidationError['datetime_from_date_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValidationError['uuid_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount 1.50 = FieldValuesGetResponse204XAmountHeader(root=Decimal('1.50'))
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=ValidationError['decimal_parsing']
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '05'} = Numbers(count=5, score=None, active=None)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '05'} = Numbers(count=5, score=None, active=None)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'score': '1_000'} = Numbers(count=None, score=1000.0, active=None)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'score': '1_000'} = Numbers(count=None, score=1000.0, active=None)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'active': 'True'} = Numbers(count=None, score=None, active=True)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'active': 'True'} = Numbers(count=None, score=None, active=True)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async native X-Count = FieldValuesGetResponse204XCountHeader(root=1)
+  async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries pydantic_v2.dataclass
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=1 validation error for Entry
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False, cause=1 validation error for Entry
   Invalid JSON: key must be a string at line 1 column 2 [type=json_invalid, input_value=b'{broken', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 05 = 5
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count +1 = 1
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 1.0 = 1
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=1 validation error for int
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag TRUE = True
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag false = False
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts 05,+1,1.0 = [5, 1, 1]
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=extra = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=first,unknown=last = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Closed value=known,unknown=extra ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Closed') [operation_id='getValues', location=('header', 'X-Closed'), body_bytes=b'', truncated=False, cause=1 validation error for ClosedEntry
+unknown
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value='extra', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/unexpected_keyword_argument] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 2.2 = <FieldValuesGetResponse204XRatioHeader.number_2_2: 2.2>
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValidationError['enum']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 2.2 = 2.2
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 1e999 = inf
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError['float_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError['int_parsing', 'int_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag yes = True
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValidationError['datetime_from_date_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValidationError['uuid_parsing']
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount 1.50 = Decimal('1.50')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=ValidationError['decimal_parsing']
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '05'} = Numbers(count=5, score=None, active=None)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '05'} = Numbers(count=5, score=None, active=None)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'score': '1_000'} = Numbers(count=None, score=1000.0, active=None)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'score': '1_000'} = Numbers(count=None, score=1000.0, active=None)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'active': 'True'} = Numbers(count=None, score=None, active=True)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'active': 'True'} = Numbers(count=None, score=None, active=True)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async native X-Count = 1
+  async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries dataclasses.dataclass
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '+1'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '1.0'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag TRUE ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), body_bytes=b'', truncated=False, cause=ValueError("Invalid boolean literal: 'TRUE'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag false = False
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=extra = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=first,unknown=last = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Closed value=known,unknown=extra = ClosedEntry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 2.2 = <FieldValuesGetResponse204XRatioHeader.number_2_2: 2.2>
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 0.5 = <FieldValuesGetResponse204XRatioHeader.number_0_5: 0.5>
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValueError("Invalid number literal: '２.２'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 2.2 = 2.2
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 1e999 = inf
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValueError("Invalid number literal: '１２.３'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '١٢'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '１２'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValueError("Invalid integer literal: '١'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValueError("Invalid boolean literal: 'yes'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValueError("Invalid isoformat string: 'yesterday'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValueError('badly formed hexadecimal UUID string')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount 1.50 = Decimal('1.50')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=InvalidOperation([<class 'decimal.ConversionSyntax'>])
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '+1'")] invalid_header
+  async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries typing.TypedDict
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = {'value': 'last'}
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False, cause=JSONDecodeError('Expecting property name enclosed in double quotes: line 1 column 2 (char 1)')] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '+1'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '1.0'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: 'many'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag TRUE ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Flag') [operation_id='getValues', location=('header', 'X-Flag'), body_bytes=b'', truncated=False, cause=ValueError("Invalid boolean literal: 'TRUE'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag false = False
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '05'")] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=extra = {'value': 'known', 'unknown': 'extra'}
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=first,unknown=last = {'value': 'known', 'unknown': 'last'}
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Closed value=known,unknown=extra = {'value': 'known', 'unknown': 'extra'}
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 2.2 = 2.2
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 0.5 = 0.5
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValueError("Invalid number literal: '２.２'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 2.2 = 2.2
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 1e999 = inf
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValueError("Invalid number literal: '１２.３'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '١٢'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '１２'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValueError("Invalid integer literal: '١'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValueError("Invalid boolean literal: 'yes'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValueError("Invalid isoformat string: 'yesterday'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValueError('badly formed hexadecimal UUID string')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount 1.50 = Decimal('1.50')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=InvalidOperation([<class 'decimal.ConversionSyntax'>])
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '5', 'score': '1.5', 'active': 'true'} = {'count': 5, 'score': 1.5, 'active': True}
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '5', 'score': '1.5', 'active': 'true'} = {'count': 5, 'score': 1.5, 'active': True}
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '05'} ! DecodeError invalid_value cause=ValueError("Invalid integer literal: '05'")
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'score': '1_000'} ! DecodeError invalid_value cause=ValueError("Invalid number literal: '1_000'")
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'active': 'True'} ! DecodeError invalid_value cause=ValueError("Invalid boolean literal: 'True'")
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValueError("Invalid integer literal: '+1'")] invalid_header
+  async native X-Entry = {'value': 'known', 'unknown': 'extra'}
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None
 # native-boundaries msgspec.Struct
+  public codec exports ['JSONValue', 'UNSET']
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   duplicate JSON keys = Entry(value='last')
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False, cause=DecodeError('JSON is malformed: object keys must be strings (byte 1)')] invalid_header
+  malformed JSON ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False, cause=DecodeError('JSON is malformed: object keys must be strings (byte 1)')] invalid_header
   missing optional JSON header = UNSET
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', call_id='<call>', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, body_bytes=b'', truncated=False] invalid_header
+  missing required header ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Value') [operation_id='getValues', location=('header', 'X-Value'), body_bytes=b'', truncated=False] invalid_header
   missing optional JSON header = UNSET
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 05 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count +1 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count 1.0 = 1
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count many ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag TRUE = True
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag false = False
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts 05,+1,1.0 ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Counts') [operation_id='getValues', location=('header', 'X-Counts'), body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str` - at `$[0]`')] invalid_header
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=extra = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Entry value=known,unknown=first,unknown=last = Entry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Closed value=known,unknown=extra = ClosedEntry(value='known')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 2.2 ! TypeError None cause=None
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio 0.5 ! TypeError None cause=None
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Ratio ２.２ ! TypeError None cause=None
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 2.2 = 2.2
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score 1e999 = inf
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValidationError
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-When yesterday ! DecodeError invalid_header header.X-When cause=ValidationError
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Id not-a-uuid ! DecodeError invalid_header header.X-Id cause=ValidationError
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount 1.50 = Decimal('1.50')
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  native X-Amount abc ! DecodeError invalid_header header.X-Amount cause=ValidationError
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'count': '05'} ! DecodeError invalid_value cause=ValidationError
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'count': '05'} ! DecodeError invalid_value cause=ValidationError
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'score': '1_000'} ! DecodeError invalid_value cause=ValidationError
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'score': '1_000'} ! DecodeError invalid_value cause=ValidationError
+  > GET https://api.example.com/form
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  native form {'active': 'True'} = Numbers(count=UNSET, score=UNSET, active=True)
+  > GET https://api.example.com/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  native parts {'active': 'True'} = Numbers(count=UNSET, score=UNSET, active=True)
+  > GET https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async native X-Count ! DecodeError: DecodeError(status_code=204, operation_id='getValues', reason='invalid_header', location='header.X-Count') [operation_id='getValues', location=('header', 'X-Count'), body_bytes=b'', truncated=False, cause=ValidationError('Expected `int`, got `str`')] invalid_header
+  async native X-Entry = Entry(value='known')
   > POST https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 17] b'{"value":"saved"}'
   nullable model from fields = None

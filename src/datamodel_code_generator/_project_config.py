@@ -128,11 +128,15 @@ _PYPROJECT_RELATIVE_PATH_FIELDS = frozenset({
     "lockfile",
     "output",
     "server_output",
+    "client_output",
 })
 
 _PYPROJECT_JSON_CONFIG_FIELDS = frozenset({
     "aliases",
     "base_class_map",
+    "client_operations",
+    "client_protocols",
+    "client_resource_names",
     "custom_formatters_kwargs",
     "default_values",
     "duplicate_name_suffix",
@@ -252,4 +256,25 @@ def load_pyproject_config(
         if (name := _GENERATE_FIELD_NAMES.get(field, field)) in fields
     }
     values.update(explicit)
-    return GenerateConfig.model_validate(values)
+    loaded = GenerateConfig.model_validate(values)
+    if bases := {
+        field: _document_base(value, cast("Path", pyproject_path).parent)
+        for field, value in options.items()
+        if field in _PYPROJECT_JSON_CONFIG_FIELDS and field.startswith(("server_", "client_"))
+    }:
+        loaded._target_document_bases = bases  # noqa: SLF001
+    return loaded
+
+
+def _document_base(value: Any, directory: Path) -> Path:
+    """Return the directory the documents a target setting names resolve against, as on the command line.
+
+    A setting read from a JSON file resolves against that file's directory, inline JSON and tables against the
+    pyproject.toml directory.
+    """
+    if isinstance(value, str | Path):
+        from datamodel_code_generator.json_config import _json_file  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+
+        if (file := _json_file(value)) is not None:
+            return (directory / file).parent
+    return directory

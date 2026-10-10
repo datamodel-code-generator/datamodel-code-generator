@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info: {title: Relative import override, version: "1.0"}
+paths:
+  /days:
+    post:
+      operationId: postDay
+      parameters:
+        - {name: since, in: query, schema: {type: string, x-python-type: datetime.date}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Day"}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Day: {type: string, x-python-import: {module: datetime, name: date}}

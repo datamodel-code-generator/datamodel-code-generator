@@ -1,14 +1,15 @@
-"""Deadline, cancellation, and session-limit values and the option checks shared by options and protocol helpers."""
+"""Budget, cancellation, and clock values and the option checks shared by options and protocol helpers."""
 
 from __future__ import annotations
 
 import math
 import time as _time
-from collections.abc import Callable  # noqa: TC003 - Public annotations support get_type_hints().
+from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
+from sys import float_info
 from typing import Final, final
 
-from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
 
@@ -45,6 +46,32 @@ def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ..
         raise ConfigurationError(field_path=path, reason="invalid_type")
 
 
+def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:
+    """Validate a positive integer, or a nonnegative one, at a public configuration boundary."""
+    if type(value) is not int or value < (0 if allow_zero else 1):
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
+
+
+def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
+    """Validate a finite duration in seconds, excluding booleans, that is positive or, if allowed, zero."""
+    match value:
+        case bool():
+            pass
+        case int() | float() if 0 <= value <= float_info.max and (allow_zero or value > 0):
+            return
+        case _:
+            pass
+    raise ConfigurationError(field_path=(name,), reason="invalid_value")
+
+
+def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...]) -> None:
+    """Validate each set limit by its (name, duration, nullable, allow_zero) rule; None only where nullable."""
+    for name, duration, nullable, allow_zero in rules:
+        if (value := getattr(options, name)) is UNSET or (nullable and value is None):
+            continue
+        (checked_seconds if duration else positive_count)(value, name, allow_zero=allow_zero)
+
+
 def _random() -> float:
     """Return a uniform float in [0, 1), loading the random source only once a full jitter needs a value."""
     from secrets import randbits  # noqa: PLC0415
@@ -52,24 +79,34 @@ def _random() -> float:
     return randbits(53) / (1 << 53)
 
 
+async def _asleep(duration: float) -> None:
+    """Wait on the running event loop, loading the async library only once an asyncio client waits."""
+    import anyio  # noqa: PLC0415
+
+    await anyio.sleep(duration)
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Clock:
-    """The time and jitter sources of a client, an OAuth provider or flow, and a deadline; the system's by default.
+    """The time, jitter, and wait sources of a client, an OAuth provider or flow, the system's by default.
 
     monotonic returns seconds on one never-decreasing scale, which measures every elapsed time, expiry, and wait. time
     returns POSIX wall-clock seconds, read only to place a wall-clock instant on that scale. random returns a float in
-    [0, 1) for full-jitter backoff. A wait ends once this clock reaches its target or once the real time it measured
-    when it began has passed, so a fake clock that should skip a wait advances itself. Hashing ignores the sources.
+    [0, 1) for full-jitter backoff. sleep waits the seconds given in a synchronous client, and asleep returns the
+    awaitable an asyncio client waits on, through which every retry, poll, and reconnection wait passes. Hashing ignores
+    the sources.
     """
 
     monotonic: Callable[[], float] = field(default=_time.monotonic, hash=False)
     time: Callable[[], float] = field(default=_time.time, hash=False)
     random: Callable[[], float] = field(default=_random, hash=False)
+    sleep: Callable[[float], None] = field(default=_time.sleep, hash=False)
+    asleep: Callable[[float], Awaitable[None]] = field(default=_asleep, hash=False)
 
     def __post_init__(self) -> None:
         """Refuse a source that cannot be called."""
-        for name in ("monotonic", "time", "random"):
+        for name in ("monotonic", "time", "random", "sleep", "asleep"):
             if not callable(getattr(self, name)):
                 raise ConfigurationError(field_path=("clock", name), reason="invalid_type")
 
@@ -77,68 +114,21 @@ class Clock:
 SYSTEM_CLOCK: Final = Clock()
 
 
-@dataclass(frozen=True, slots=True, init=False)
-class Deadline:
-    """An immutable absolute deadline on a clock's monotonic scale, created with Deadline.after(seconds)."""
+@dataclass(frozen=True, slots=True)
+class Budget:
+    """A private monotonic bound passed between calls of one operation."""
 
-    _at: float
-    _clock: Clock = field(repr=False, hash=False)
+    at: float
+    clock: Clock = field(repr=False)
 
-    def __init__(self) -> None:
-        """Require the relative factory so a wall-clock timestamp cannot become a deadline."""
-        msg = "Use Deadline.after(seconds) to create a deadline"
-        raise TypeError(msg)
-
-    @staticmethod
-    def after(seconds: float, *, clock: Clock | None = None) -> Deadline:
-        """Create a deadline that expires after finite, nonnegative seconds on the clock, the system's by default."""
-        if clock is None:
-            clock = SYSTEM_CLOCK
-        else:
-            checked_instance(clock, (Clock,), ("clock",))
-        return absolute_deadline(clock.monotonic() + _seconds(seconds, ("deadline",)), clock=clock)
-
-    @property
-    def at(self) -> float:
-        """Return the absolute expiry in seconds on the monotonic scale of the deadline's clock."""
-        return self._at
-
-    @property
-    def clock(self) -> Clock:
-        """Return the clock the deadline was created on, whose monotonic scale its expiry is on."""
-        return self._clock
+    @classmethod
+    def after(cls, duration: float, *, clock: Clock) -> Budget:
+        """Start a relative budget on its owner's clock."""
+        return cls(clock.monotonic() + duration, clock)
 
     def remaining(self) -> float:
-        """Return the time left in seconds on the deadline's clock, or zero once the deadline has expired."""
-        return max(0.0, self._at - self._clock.monotonic())
-
-
-def absolute_deadline(at: float, *, clock: Clock) -> Deadline:
-    """Build the private absolute deadline on a clock's scale used when a call or stream resolves its budget."""
-    value = object.__new__(Deadline)
-    object.__setattr__(value, "_at", at)  # noqa: PLC2801 - Initialize the frozen value without a public constructor.
-    object.__setattr__(value, "_clock", clock)  # noqa: PLC2801
-    return value
-
-
-def on_clock(deadline: Deadline, clock: Clock) -> Deadline:
-    """Return the deadline on the clock's scale: itself when made on that Clock, or moved by its remaining time."""
-    if deadline.clock is clock:
-        return deadline
-    return absolute_deadline(clock.monotonic() + deadline.remaining(), clock=clock)
-
-
-def real_end(seconds: float) -> float:
-    """Return the real monotonic time by which a wait of seconds, measured on a clock as it begins, ends."""
-    return _time.monotonic() + seconds
-
-
-def wait_left(left: float, end: float) -> float:
-    """Return how long a wait lasts: until its clock has no time left or real time reaches the wait's end.
-
-    A NaN read from the clock stays NaN, which every wait treats as no time left.
-    """
-    return min(left, end - _time.monotonic())
+        """Return the nonnegative time left."""
+        return max(0.0, self.at - self.clock.monotonic())
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -149,20 +139,3 @@ class ResolvedTimeoutOptions:
     read: float | None
     write: float | None
     pool: float | None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SessionOptions:
-    """Limits of a session spanning several requests: UNSET keeps the session's default and None removes that limit.
-
-    The session ends at the earlier of its total timeout, counted from its start, and its absolute deadline.
-    """
-
-    total_timeout: float | Unset | None = UNSET
-    deadline: Deadline | Unset | None = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse booleans, negative or nonfinite durations, and deadlines of other types."""
-        if (timeout := self.total_timeout) is not None and not isinstance(timeout, Unset):
-            object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))
-        checked_instance(self.deadline, (Deadline, Unset, type(None)), ("session_options", "deadline"))

@@ -5,81 +5,36 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ._runtime.client.errors import (
     APIConnectionError,
     APIStatusError,
     APITimeoutError,
     AuthenticationError,
-    AuthError,
-    AuthReason,
     BadRequestError,
     ConfigurationError,
     ConflictError,
     DecodeError,
-    DecompressionLimitError,
-    DeliveryState,
     InternalServerError,
-    IOPhase,
     NotFoundError,
     PermissionDeniedError,
-    ProtocolError,
-    ProtocolSizeError,
-    ProtocolStoreError,
     RateLimitError,
-    RetryStopReason,
     SDKError,
     UnprocessableEntityError,
-    UnsupportedContentCodingError,
 )
-
-if TYPE_CHECKING:
-    from ._runtime.protocols.errors import ProtocolDataError
 
 __all__ = [
     'APIConnectionError',
     'APIStatusError',
     'APITimeoutError',
-    'AuthError',
-    'AuthReason',
     'AuthenticationError',
     'BadRequestError',
     'ConfigurationError',
     'ConflictError',
     'DecodeError',
-    'DecompressionLimitError',
-    'DeliveryState',
-    'IOPhase',
     'InternalServerError',
     'NotFoundError',
     'PermissionDeniedError',
-    'ProtocolDataError',
-    'ProtocolError',
-    'ProtocolSizeError',
-    'ProtocolStoreError',
     'RateLimitError',
-    'RetryStopReason',
     'SDKError',
     'UnprocessableEntityError',
-    'UnsupportedContentCodingError',
 ]
-_PROTOCOL_ERRORS = frozenset({
-    'ProtocolDataError',
-})
-
-
-def __getattr__(name: str) -> object:
-    """Load the protocol helper exceptions only when one of their classes is requested."""
-    if name in _PROTOCOL_ERRORS:
-        from ._runtime.protocols import errors
-
-        value = globals()[name] = getattr(errors, name)
-        return value
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
-
-
-def __dir__() -> list[str]:
-    """List the module's names, including the protocol helper exceptions loaded on first use."""
-    return sorted({*globals(), *__all__})

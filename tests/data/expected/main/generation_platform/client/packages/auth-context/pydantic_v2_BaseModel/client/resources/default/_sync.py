@@ -10,7 +10,7 @@ from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.default import (
     ActualHeaderResponse,
@@ -49,26 +49,30 @@ class DefaultResource:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> InheritedResponse:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         ).data
 
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> ExplicitResponse:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         ).data
 
@@ -77,48 +81,84 @@ class DefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> AliasedQueryResponse:
-        """Call POST /aliased-query."""
-        return self._core.execute(_operations.OPERATION_2, (), options=options).data
+        """
+        Call POST /aliased-query.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        ).data
 
     def actual_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> ActualHeaderResponse:
-        """Call POST /actual-header."""
-        return self._core.execute(_operations.OPERATION_3, (), options=options).data
+        """
+        Call POST /actual-header.
+        """
+        return self._core.execute(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        ).data
 
     def aliased_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AliasedHeaderResponse:
-        """Call POST /aliased-header."""
-        return self._core.execute(_operations.OPERATION_4, (), options=options).data
+        """
+        Call POST /aliased-header.
+        """
+        return self._core.execute(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        ).data
 
     def external_inherited(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> ExternalInheritedResponse:
-        """Call POST /external-inherited."""
-        return self._core.execute(_operations.OPERATION_5, (), options=options).data
+        """
+        Call POST /external-inherited.
+        """
+        return self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+        ).data
 
     def external_explicit(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> ExternalExplicitResponse:
-        """Call POST /external-explicit."""
-        return self._core.execute(_operations.OPERATION_6, (), options=options).data
+        """
+        Call POST /external-explicit.
+        """
+        return self._core.execute(
+            _operations.OPERATION_6,
+            (),
+            options=options,
+        ).data
 
     def external_query(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> ExternalQueryResponse:
-        """Call POST /external-query."""
-        return self._core.execute(_operations.OPERATION_7, (), options=options).data
+        """
+        Call POST /external-query.
+        """
+        return self._core.execute(
+            _operations.OPERATION_7,
+            (),
+            options=options,
+        ).data
 
 
 class DefaultWithResponse:
@@ -131,26 +171,30 @@ class DefaultWithResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[InheritedResponse]:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[ExplicitResponse]:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -159,48 +203,84 @@ class DefaultWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[AliasedQueryResponse]:
-        """Call POST /aliased-query."""
-        return self._core.execute(_operations.OPERATION_2, (), options=options)
+        """
+        Call POST /aliased-query.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
     def actual_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ActualHeaderResponse]:
-        """Call POST /actual-header."""
-        return self._core.execute(_operations.OPERATION_3, (), options=options)
+        """
+        Call POST /actual-header.
+        """
+        return self._core.execute(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
 
     def aliased_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[AliasedHeaderResponse]:
-        """Call POST /aliased-header."""
-        return self._core.execute(_operations.OPERATION_4, (), options=options)
+        """
+        Call POST /aliased-header.
+        """
+        return self._core.execute(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        )
 
     def external_inherited(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ExternalInheritedResponse]:
-        """Call POST /external-inherited."""
-        return self._core.execute(_operations.OPERATION_5, (), options=options)
+        """
+        Call POST /external-inherited.
+        """
+        return self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+        )
 
     def external_explicit(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ExternalExplicitResponse]:
-        """Call POST /external-explicit."""
-        return self._core.execute(_operations.OPERATION_6, (), options=options)
+        """
+        Call POST /external-explicit.
+        """
+        return self._core.execute(
+            _operations.OPERATION_6,
+            (),
+            options=options,
+        )
 
     def external_query(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ExternalQueryResponse]:
-        """Call POST /external-query."""
-        return self._core.execute(_operations.OPERATION_7, (), options=options)
+        """
+        Call POST /external-query.
+        """
+        return self._core.execute(
+            _operations.OPERATION_7,
+            (),
+            options=options,
+        )
 
 
 class DefaultWithRawResponse:
@@ -213,26 +293,30 @@ class DefaultWithRawResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -241,48 +325,84 @@ class DefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /aliased-query."""
-        return self._core.execute_raw(_operations.OPERATION_2, (), options=options)
+        """
+        Call POST /aliased-query.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
     def actual_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /actual-header."""
-        return self._core.execute_raw(_operations.OPERATION_3, (), options=options)
+        """
+        Call POST /actual-header.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
 
     def aliased_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /aliased-header."""
-        return self._core.execute_raw(_operations.OPERATION_4, (), options=options)
+        """
+        Call POST /aliased-header.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        )
 
     def external_inherited(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /external-inherited."""
-        return self._core.execute_raw(_operations.OPERATION_5, (), options=options)
+        """
+        Call POST /external-inherited.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+        )
 
     def external_explicit(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /external-explicit."""
-        return self._core.execute_raw(_operations.OPERATION_6, (), options=options)
+        """
+        Call POST /external-explicit.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_6,
+            (),
+            options=options,
+        )
 
     def external_query(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /external-query."""
-        return self._core.execute_raw(_operations.OPERATION_7, (), options=options)
+        """
+        Call POST /external-query.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_7,
+            (),
+            options=options,
+        )
 
 
 class DefaultWithStreamingResponse:
@@ -295,26 +415,30 @@ class DefaultWithStreamingResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -323,45 +447,81 @@ class DefaultWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /aliased-query."""
-        return self._core.stream(_operations.OPERATION_2, (), options=options)
+        """
+        Call POST /aliased-query.
+        """
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
     def actual_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /actual-header."""
-        return self._core.stream(_operations.OPERATION_3, (), options=options)
+        """
+        Call POST /actual-header.
+        """
+        return self._core.stream(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
 
     def aliased_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /aliased-header."""
-        return self._core.stream(_operations.OPERATION_4, (), options=options)
+        """
+        Call POST /aliased-header.
+        """
+        return self._core.stream(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        )
 
     def external_inherited(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /external-inherited."""
-        return self._core.stream(_operations.OPERATION_5, (), options=options)
+        """
+        Call POST /external-inherited.
+        """
+        return self._core.stream(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+        )
 
     def external_explicit(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /external-explicit."""
-        return self._core.stream(_operations.OPERATION_6, (), options=options)
+        """
+        Call POST /external-explicit.
+        """
+        return self._core.stream(
+            _operations.OPERATION_6,
+            (),
+            options=options,
+        )
 
     def external_query(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /external-query."""
-        return self._core.stream(_operations.OPERATION_7, (), options=options)
+        """
+        Call POST /external-query.
+        """
+        return self._core.stream(
+            _operations.OPERATION_7,
+            (),
+            options=options,
+        )

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from pets.options import ClientOptions, RequestOptions
+from pets import Client
+from pets.options import RequestOptions
 
 
-def wrong_codings() -> None:
+def wrong_codings(client: Client) -> None:
     """Reject each mistyped coding."""
-    ClientOptions(compression=5)  # error
-    ClientOptions(compression="br")  # error
+    Client(compression=5)  # error
+    Client(compression="br")  # error
     RequestOptions(compression="gzip")  # error
+    client.with_options(compression=None)  # error

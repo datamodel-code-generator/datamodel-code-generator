@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import Order as _dcg_type_0
-from models import Problem as _dcg_type_1
+import models
 
-GetOrderResponse: TypeAlias = _dcg_type_0 | _dcg_type_1
+GetOrderResponse: TypeAlias = models.Order | models.Problem

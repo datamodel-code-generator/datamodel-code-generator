@@ -26,4 +26,4 @@ class AppClient(Client):
 
     def retire(self, pet_id: int) -> None:
         """Archive one pet."""
-        self.archive.archive_pet(pet_id=pet_id)
+        self.archive.archive_pet(petId=pet_id)

@@ -11,92 +11,68 @@ import models
 
 from .._runtime.model_codecs.native import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldParameterPostHeaderXRequestKeyParameter]] = PydanticCodec(
-    models.FieldParameterPostHeaderXRequestKeyParameter,
-)
+codec_0: Final[PydanticCodec[models.FieldParameterPostHeaderXRequestKeyParameter]] = PydanticCodec(models.FieldParameterPostHeaderXRequestKeyParameter)
 """Codec of /paths/~1parameter/post parameter (request header X-Request-Key)."""
 
 codec_1: Final[PydanticCodec[models.FieldParameterPostResponse]] = PydanticCodec(models.FieldParameterPostResponse)
 """Codec of /paths/~1parameter/post response_body (response 200 text/plain)."""
 
-codec_2: Final[PydanticCodec[models.FieldParameterPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldParameterPostResponse200XIdempotencyHeader,
-)
+codec_2: Final[PydanticCodec[models.FieldParameterPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldParameterPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1parameter/post response_header (response X-Idempotency 200)."""
 
 codec_3: Final[PydanticCodec[models.FieldApiKeyPostResponse]] = PydanticCodec(models.FieldApiKeyPostResponse)
 """Codec of /paths/~1api-key/post response_body (response 200 text/plain)."""
 
-codec_4: Final[PydanticCodec[models.FieldApiKeyPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldApiKeyPostResponse200XIdempotencyHeader,
-)
+codec_4: Final[PydanticCodec[models.FieldApiKeyPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldApiKeyPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1api-key/post response_header (response X-Idempotency 200)."""
 
 codec_5: Final[PydanticCodec[models.FieldBearerPostResponse]] = PydanticCodec(models.FieldBearerPostResponse)
 """Codec of /paths/~1bearer/post response_body (response 200 text/plain)."""
 
-codec_6: Final[PydanticCodec[models.FieldBearerPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldBearerPostResponse200XIdempotencyHeader,
-)
+codec_6: Final[PydanticCodec[models.FieldBearerPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldBearerPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1bearer/post response_header (response X-Idempotency 200)."""
 
 codec_7: Final[PydanticCodec[models.FieldOauthPostResponse]] = PydanticCodec(models.FieldOauthPostResponse)
 """Codec of /paths/~1oauth/post response_body (response 200 text/plain)."""
 
-codec_8: Final[PydanticCodec[models.FieldOauthPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldOauthPostResponse200XIdempotencyHeader,
-)
+codec_8: Final[PydanticCodec[models.FieldOauthPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldOauthPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1oauth/post response_header (response X-Idempotency 200)."""
 
 codec_9: Final[PydanticCodec[models.FieldOpenidPostResponse]] = PydanticCodec(models.FieldOpenidPostResponse)
 """Codec of /paths/~1openid/post response_body (response 200 text/plain)."""
 
-codec_10: Final[PydanticCodec[models.FieldOpenidPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldOpenidPostResponse200XIdempotencyHeader,
-)
+codec_10: Final[PydanticCodec[models.FieldOpenidPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldOpenidPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1openid/post response_header (response X-Idempotency 200)."""
 
 codec_11: Final[PydanticCodec[models.FieldCookiePostResponse]] = PydanticCodec(models.FieldCookiePostResponse)
 """Codec of /paths/~1cookie/post response_body (response 200 text/plain)."""
 
-codec_12: Final[PydanticCodec[models.FieldCookiePostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldCookiePostResponse200XIdempotencyHeader,
-)
+codec_12: Final[PydanticCodec[models.FieldCookiePostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldCookiePostResponse200XIdempotencyHeader)
 """Codec of /paths/~1cookie/post response_header (response X-Idempotency 200)."""
 
 codec_13: Final[PydanticCodec[models.FieldQueryPostResponse]] = PydanticCodec(models.FieldQueryPostResponse)
 """Codec of /paths/~1query/post response_body (response 200 text/plain)."""
 
-codec_14: Final[PydanticCodec[models.FieldQueryPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldQueryPostResponse200XIdempotencyHeader,
-)
+codec_14: Final[PydanticCodec[models.FieldQueryPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldQueryPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1query/post response_header (response X-Idempotency 200)."""
 
 codec_15: Final[PydanticCodec[models.FieldIgnoredPostResponse]] = PydanticCodec(models.FieldIgnoredPostResponse)
 """Codec of /paths/~1ignored/post response_body (response 200 text/plain)."""
 
-codec_16: Final[PydanticCodec[models.FieldIgnoredPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldIgnoredPostResponse200XIdempotencyHeader,
-)
+codec_16: Final[PydanticCodec[models.FieldIgnoredPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldIgnoredPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1ignored/post response_header (response X-Idempotency 200)."""
 
-codec_17: Final[PydanticCodec[models.FieldDirectionPostHeaderXRetryControlParameter]] = PydanticCodec(
-    models.FieldDirectionPostHeaderXRetryControlParameter,
-)
+codec_17: Final[PydanticCodec[models.FieldDirectionPostHeaderXRetryControlParameter]] = PydanticCodec(models.FieldDirectionPostHeaderXRetryControlParameter)
 """Codec of /paths/~1direction/post parameter (request header X-Retry-Control)."""
 
 codec_18: Final[PydanticCodec[models.FieldDirectionPostResponse]] = PydanticCodec(models.FieldDirectionPostResponse)
 """Codec of /paths/~1direction/post response_body (response 200 text/plain)."""
 
-codec_19: Final[PydanticCodec[models.FieldDirectionPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldDirectionPostResponse200XIdempotencyHeader,
-)
+codec_19: Final[PydanticCodec[models.FieldDirectionPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldDirectionPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1direction/post response_header (response X-Idempotency 200)."""
 
 codec_20: Final[PydanticCodec[models.FieldUnusedPostResponse]] = PydanticCodec(models.FieldUnusedPostResponse)
 """Codec of /paths/~1unused/post response_body (response 200 text/plain)."""
 
-codec_21: Final[PydanticCodec[models.FieldUnusedPostResponse200XIdempotencyHeader]] = PydanticCodec(
-    models.FieldUnusedPostResponse200XIdempotencyHeader,
-)
+codec_21: Final[PydanticCodec[models.FieldUnusedPostResponse200XIdempotencyHeader]] = PydanticCodec(models.FieldUnusedPostResponse200XIdempotencyHeader)
 """Codec of /paths/~1unused/post response_header (response X-Idempotency 200)."""

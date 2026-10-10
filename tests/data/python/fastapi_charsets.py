@@ -24,7 +24,7 @@ def text_charsets(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     monkeypatch.syspath_prepend(str(root))
     for backend in ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"):
         package = f"charsets_{backend.rpartition('.')[2].lower()}"
-        _generate({"input": "http-charsets.json", "config": {"layout": "single"}}, backend, root, package)
+        _generate({"input": "http-charsets.json", "config": {"server_layout": "single"}}, backend, root, package)
         try:
             server = import_generated(package)
 

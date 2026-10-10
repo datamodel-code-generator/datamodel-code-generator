@@ -1,0 +1,597 @@
+# fastapi-document
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bodies",
+    "version": "1.0"
+  },
+  "paths": {
+    "/json": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Json",
+        "operationId": "postJson",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/optional": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Optional",
+        "operationId": "postOptional",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Item"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/nullable": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Nullable",
+        "operationId": "postNullable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldJsonNullablePostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/envelope": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Envelope",
+        "operationId": "postEnvelope",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Account"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/json/many": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Many",
+        "operationId": "postMany",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    },
+    "/text": {
+      "post": {
+        "tags": [
+          "raw"
+        ],
+        "summary": "Post Text",
+        "operationId": "postText",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    },
+    "/binary": {
+      "put": {
+        "tags": [
+          "raw"
+        ],
+        "summary": "Put Binary",
+        "operationId": "putBinary",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    },
+    "/raw": {
+      "post": {
+        "tags": [
+          "raw"
+        ],
+        "summary": "Post Raw",
+        "operationId": "postRaw",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    },
+    "/form": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Form",
+        "operationId": "postForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormPostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/form/optional": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Optional Form",
+        "operationId": "postOptionalForm",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    },
+    "/form/either": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Either Form",
+        "operationId": "postEitherForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormEitherPostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/form/nested": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Nested Form",
+        "operationId": "postNestedForm",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    },
+    "/form/closed": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Closed Form",
+        "operationId": "postClosedForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormClosedPostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/form/choice": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Choice Form",
+        "operationId": "postChoiceForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldFormChoicePostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Upload",
+        "operationId": "upload",
+        "responses": {
+          "204": {
+            "description": "Done."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Account": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Account"
+      },
+      "FieldFormChoicePostRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "FieldFormChoicePostRequest"
+      },
+      "FieldFormClosedPostRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FieldFormClosedPostRequest"
+      },
+      "FieldFormEitherPostRequest": {
+        "properties": {
+          "either": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Either"
+          },
+          "items": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "title": "FieldFormEitherPostRequest"
+      },
+      "FieldFormPostRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Name"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count",
+            "default": 1
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "FieldFormPostRequest"
+      },
+      "FieldJsonNullablePostRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "FieldJsonNullablePostRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Item": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "Item"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

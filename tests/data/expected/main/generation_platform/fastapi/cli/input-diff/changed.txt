@@ -1,0 +1,230 @@
+--- models.py (baseline input)
++++ models.py (current input)
+@@ -15,7 +15,6 @@
+     id: int
+     name: str
+     tag: str | None
+-    age: int | None = None
+ 
+ 
+ class NewPet(BaseModel):
+@@ -68,5 +67,5 @@
+ )
+ 
+ 
+-class FieldOwnersGetResponse(RootModel[list[str]]):
+-    root: list[str]
++class FieldStoreInventoryGetResponse(RootModel[dict[str, int]]):
++    root: dict[str, int]
+--- server/_generated/contract.py (baseline input)
++++ server/_generated/contract.py (current input)
+@@ -21,7 +21,7 @@
+         'list_my_pets': Sequence[params.Depends],
+         'get_pet': Sequence[params.Depends],
+         'delete_pet': Sequence[params.Depends],
+-        'list_owners': Sequence[params.Depends],
++        'get_inventory': Sequence[params.Depends],
+     },
+     total=False,
+ )
+@@ -68,9 +68,9 @@
+     )
+ 
+ 
+-class ListOwners:
+-    """Plans of the list_owners operation."""
++class GetInventory:
++    """Plans of the get_inventory operation."""
+ 
+     RESPONSES: Final = OperationResponses(
+-        responses={'200': Declared(media_type='application/json', model=models.FieldOwnersGetResponse)},
++        responses={'200': Declared(media_type='application/json', model=models.FieldStoreInventoryGetResponse)},
+     )
+--- server/_generated/openapi.py (baseline input)
++++ server/_generated/openapi.py (current input)
+@@ -33,7 +33,7 @@
+     '     {\n'
+     '      "name": "limit",\n'
+     '      "in": "query",\n'
+-    '      "description": "Page size of a listing.",\n'
++    '      "description": "Page size.",\n'
+     '      "schema": {\n'
+     '       "type": "integer",\n'
+     '       "format": "int32",\n'
+@@ -230,21 +230,21 @@
+     '    }\n'
+     '   }\n'
+     '  },\n'
+-    '  "/owners": {\n'
++    '  "/store/inventory": {\n'
+     '   "get": {\n'
+-    '    "operationId": "listOwners",\n'
+-    '    "tags": [\n'
+-    '     "owners"\n'
++    '    "operationId": "getInventory",\n'
++    '    "tags": [\n'
++    '     "store"\n'
+     '    ],\n'
+     '    "responses": {\n'
+     '     "200": {\n'
+-    '      "description": "The owners.",\n'
+-    '      "content": {\n'
+-    '       "application/json": {\n'
+-    '        "schema": {\n'
+-    '         "type": "array",\n'
+-    '         "items": {\n'
+-    '          "type": "string"\n'
++    '      "description": "Counts by status.",\n'
++    '      "content": {\n'
++    '       "application/json": {\n'
++    '        "schema": {\n'
++    '         "type": "object",\n'
++    '         "additionalProperties": {\n'
++    '          "type": "integer"\n'
+     '         }\n'
+     '        }\n'
+     '       }\n'
+@@ -275,9 +275,6 @@
+     '       "string",\n'
+     '       "null"\n'
+     '      ]\n'
+-    '     },\n'
+-    '     "age": {\n'
+-    '      "type": "integer"\n'
+     '     }\n'
+     '    }\n'
+     '   },\n'
+--- server/application.py (baseline input)
++++ server/application.py (current input)
+@@ -11,14 +11,14 @@
+ from ._generated.contract import OperationDependencies
+ from ._generated.openapi import serve_source_openapi
+ from ._runtime.server.application import build, error_handlers, validation_error_handler
+-from .routers import owners, pets
+-from .services import OwnersService, PetsService
++from .routers import pets, store
++from .services import PetsService, StoreService
+ 
+ ROUTES: Final = (
+     *pets.LITERAL_ROUTES,
+-    *owners.LITERAL_ROUTES,
++    *store.LITERAL_ROUTES,
+     *pets.TEMPLATED_ROUTES,
+-    *owners.TEMPLATED_ROUTES,
++    *store.TEMPLATED_ROUTES,
+ )
+ INFO: Final[dict[str, Any]] = {'title': 'Pets', 'version': '1.0'}
+ 
+@@ -26,7 +26,7 @@
+ def build_router(
+     *,
+     pets: PetsService,
+-    owners: OwnersService,
++    store: StoreService,
+     dependencies: Sequence[params.Depends] = (),
+     operation_dependencies: OperationDependencies | None = None,
+     prefix: str = "",
+@@ -34,7 +34,7 @@
+     """Register every operation on a new router, literal paths first."""
+     return build(
+         ROUTES,
+-        services={'pets': pets, 'owners': owners},
++        services={'pets': pets, 'store': store},
+         dependencies=dependencies,
+         operation_dependencies=operation_dependencies,
+         prefix=prefix,
+@@ -44,7 +44,7 @@
+ def create_app(
+     *,
+     pets: PetsService,
+-    owners: OwnersService,
++    store: StoreService,
+     operation_dependencies: OperationDependencies | None = None,
+     prefix: str = "",
+     source_openapi: bool = True,
+@@ -60,7 +60,7 @@
+     app.include_router(
+         build_router(
+             pets=pets,
+-            owners=owners,
++            store=store,
+             operation_dependencies=operation_dependencies,
+             prefix=prefix,
+         )
+--- server/routers/pets.py (baseline input)
++++ server/routers/pets.py (current input)
+@@ -31,7 +31,7 @@
+ 
+     def list_pets(
+         *,
+-        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size of a listing.')] = 20,
++        limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
+         tags: Annotated[list[str] | None, Query(alias='tags')] = None,
+         kind: Annotated[models.FieldPetsGetQueryKindParameter | None, Query(alias='kind')] = None,
+         X_Request_Id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
+--- server/services.py (baseline input)
++++ server/services.py (current input)
+@@ -73,13 +73,13 @@
+         """
+ 
+ 
+-class OwnersService(Protocol):
+-    """Implement the owners operations: subclass this Protocol, or give an object its methods."""
++class StoreService(Protocol):
++    """Implement the store operations: subclass this Protocol, or give an object its methods."""
+ 
+     @abstractmethod
+-    def list_owners(
++    def get_inventory(
+         self,
+-    ) -> models.FieldOwnersGetResponse | HTTPResult[models.FieldOwnersGetResponse] | Response:
++    ) -> models.FieldStoreInventoryGetResponse | HTTPResult[models.FieldStoreInventoryGetResponse] | Response:
+         """
+-        Handle GET /owners.
++        Handle GET /store/inventory.
+         """
+ADDED: server/routers/store.py (generated only from current input)
+REMOVED: server/routers/owners.py (generated only from baseline input)
+--- server/README.md (baseline input)
++++ server/README.md (current input)
+@@ -17,7 +17,7 @@
+ | `PetsService` | `list_my_pets` | GET | `/pets/mine` | `/paths/~1pets~1mine/get` |
+ | `PetsService` | `get_pet` | GET | `/pets/{petId}` | `/paths/~1pets~1{petId}/get` |
+ | `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
+-| `OwnersService` | `list_owners` | GET | `/owners` | `/paths/~1owners/get` |
++| `StoreService` | `get_inventory` | GET | `/store/inventory` | `/paths/~1store~1inventory/get` |
+ 
+ `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
+ 
+@@ -31,18 +31,18 @@
+ 
+ ```python
+ from server import create_app
+-from server.services import PetsService, OwnersService
++from server.services import PetsService, StoreService
+ 
+ 
+ class Pets(PetsService):
+     """Implement `list_pets`, `create_pet`, `list_my_pets`, `get_pet`, and `delete_pet`."""
+ 
+ 
+-class Owners(OwnersService):
+-    """Implement `list_owners`."""
++class Store(StoreService):
++    """Implement `get_inventory`."""
+ 
+ 
+-app = create_app(pets=Pets(), owners=Owners())
++app = create_app(pets=Pets(), store=Store())
+ ```
+ 
+ Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
+@@ -55,7 +55,7 @@
+ from server import build_router
+ 
+ app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+-app.include_router(build_router(pets=Pets(), owners=Owners()))
++app.include_router(build_router(pets=Pets(), store=Store()))
+ ```
+ 
+ ## Served OpenAPI document

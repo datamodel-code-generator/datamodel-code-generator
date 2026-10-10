@@ -18,18 +18,7 @@ MODELS: Final[dict[type, Model]] = {
     models.Owner: Model((Field('email', 'email'), Field('nickName', 'nickName')), True),
     models.Labels: Model((Field('size', 'size'),), True),
     models.Pet: Model((Field('id', 'id'), Field('name', 'name'), Field('tag', 'tag')), True),
-    models.NewPet: Model(
-        (
-            Field('name', 'name'),
-            Field('kind', 'kind'),
-            Field('tag', 'tag'),
-            Field('birthDate', 'birthDate'),
-            Field('owner', 'owner', models.Owner),
-            Field('id', 'id'),
-            Field('secret', 'secret'),
-        ),
-        True,
-    ),
+    models.NewPet: Model((Field('name', 'name'), Field('kind', 'kind'), Field('tag', 'tag'), Field('birthDate', 'birthDate'), Field('owner', 'owner', models.Owner), Field('id', 'id'), Field('secret', 'secret')), True),
 }
 
 codec_0: Final[StdlibCodec[models.FieldPetsPostQueryTagParameter]] = StdlibCodec(None, MODELS)

@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import Address as _dcg_type_0
+import models
 
-StoreFileResponse: TypeAlias = _dcg_type_0 | bytes | None
+StoreFileResponse: TypeAlias = models.Address | bytes | None
 
 
 ReplaceFileResponse: TypeAlias = None

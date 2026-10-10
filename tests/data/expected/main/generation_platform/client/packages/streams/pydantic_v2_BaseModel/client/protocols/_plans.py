@@ -7,9 +7,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import Created as _dcg_type_1
-from models import Deleted as _dcg_type_2
-from models import Message as _dcg_type_0
+import models
 
 from .. import _operations
 from .._generated import model_bindings
@@ -17,22 +15,20 @@ from .._runtime.protocols.records import BodySelector
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.streams import EventPlan, UnknownEvent, unknown_event
 
-STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_0: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='events.messages',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='914106c102ca637c5c092ef60704b6e6f4f12f8a96f0edef41e6b1d2c8c898cc',
     event=model_bindings.codec_7,
 )
 
 
-STREAM_1: Final[EventPlan[_dcg_type_1 | _dcg_type_2 | UnknownEvent]] = EventPlan(
+STREAM_1: Final[EventPlan[models.Created | models.Deleted | UnknownEvent]] = EventPlan(
     helper_id='events.typed',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='3d0cd2a5b57b3bb77d6af60ffc0314a99fb1867c2a4642495ccf282ff5f55fbc',
     routes=(('created', model_bindings.codec_8), ('deleted', model_bindings.codec_9)),
     unknown=unknown_event,
     errors=(('error', model_bindings.codec_10),),
@@ -41,12 +37,11 @@ STREAM_1: Final[EventPlan[_dcg_type_1 | _dcg_type_2 | UnknownEvent]] = EventPlan
 )
 
 
-STREAM_2: Final[EventPlan[_dcg_type_1 | _dcg_type_2]] = EventPlan(
+STREAM_2: Final[EventPlan[models.Created | models.Deleted]] = EventPlan(
     helper_id='events.tagged',
     operation=OperationRef(pointer='/paths/~1events/get'),
     call=_operations.OPERATION_0,
     media='text/event-stream',
-    fingerprint='7b288e639b494089becf0e91b950f62a3e2227d8fb306782d04cb7d30f77db1d',
     routes=(('created', model_bindings.codec_8), ('deleted', model_bindings.codec_9)),
     discriminator=BodySelector(pointer='/type'),
     errors=(('failed', model_bindings.codec_11),),
@@ -55,12 +50,11 @@ STREAM_2: Final[EventPlan[_dcg_type_1 | _dcg_type_2]] = EventPlan(
 )
 
 
-STREAM_3: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_3: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='feed.all',
     operation=OperationRef(pointer='/paths/~1feed/post'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='5854fc8301e5ee84922ab5821414c233ac4c5eb9eafb799beaf3445d3b6b204c',
     event=model_bindings.codec_12,
     completion='sentinel',
     terminal='[DONE]',

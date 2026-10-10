@@ -7,14 +7,15 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from .._runtime.client.client import AsyncClientCore
-from .._runtime.protocols.resume import ResumeState
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.model_codecs.media import JSONValue
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.uploads import (
     AsyncUploadHandle,
     aresume_upload,
     astart_upload,
 )
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from ..types.files import CompleteFileResponse
 from . import UploadOptions, UploadSource, _plans
 
@@ -22,9 +23,9 @@ from . import UploadOptions, UploadSource, _plans
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def files(self) -> AsyncFilesProtocols:
@@ -66,31 +67,28 @@ class AsyncFilesUploadResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return await astart_upload(
             self._core,
             _plans.PLAN_0,
             source,
-            (tus_resumable, x_name),
+            (Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     async def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return await aresume_upload(
@@ -100,7 +98,6 @@ class AsyncFilesUploadResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -115,31 +112,28 @@ class AsyncFilesFinishResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[CompleteFileResponse]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return await astart_upload(
             self._core,
             _plans.PLAN_1,
             source,
-            (tus_resumable, x_name),
+            (Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     async def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[CompleteFileResponse]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return await aresume_upload(
@@ -149,7 +143,6 @@ class AsyncFilesFinishResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -164,32 +157,29 @@ class AsyncFilesPutResumableUpload:
         self,
         source: UploadSource,
         *,
-        upload_length: int,
-        tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        Upload_Length: int,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return await astart_upload(
             self._core,
             _plans.PLAN_2,
             source,
-            (upload_length, tus_resumable, x_name),
+            (Upload_Length, Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     async def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> AsyncUploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return await aresume_upload(
@@ -199,5 +189,4 @@ class AsyncFilesPutResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )

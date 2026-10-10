@@ -10,7 +10,7 @@ from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.default import (
     ActualHeaderResponse,
@@ -49,26 +49,30 @@ class AsyncDefaultResource:
     async def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> InheritedResponse:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )).data
 
     async def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> ExplicitResponse:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return (await self._core.execute(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )).data
 
@@ -77,7 +81,9 @@ class AsyncDefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> AliasedQueryResponse:
-        """Call POST /aliased-query."""
+        """
+        Call POST /aliased-query.
+        """
         return (await self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -89,7 +95,9 @@ class AsyncDefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> ActualHeaderResponse:
-        """Call POST /actual-header."""
+        """
+        Call POST /actual-header.
+        """
         return (await self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -101,7 +109,9 @@ class AsyncDefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> AliasedHeaderResponse:
-        """Call POST /aliased-header."""
+        """
+        Call POST /aliased-header.
+        """
         return (await self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -113,7 +123,9 @@ class AsyncDefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> ExternalInheritedResponse:
-        """Call POST /external-inherited."""
+        """
+        Call POST /external-inherited.
+        """
         return (await self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -125,7 +137,9 @@ class AsyncDefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> ExternalExplicitResponse:
-        """Call POST /external-explicit."""
+        """
+        Call POST /external-explicit.
+        """
         return (await self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -137,7 +151,9 @@ class AsyncDefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> ExternalQueryResponse:
-        """Call POST /external-query."""
+        """
+        Call POST /external-query.
+        """
         return (await self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -155,26 +171,30 @@ class AsyncDefaultWithResponse:
     async def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[InheritedResponse]:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     async def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[ExplicitResponse]:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return await self._core.execute(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -183,48 +203,84 @@ class AsyncDefaultWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[AliasedQueryResponse]:
-        """Call POST /aliased-query."""
-        return await self._core.execute(_operations.OPERATION_2, (), options=options)
+        """
+        Call POST /aliased-query.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
     async def actual_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ActualHeaderResponse]:
-        """Call POST /actual-header."""
-        return await self._core.execute(_operations.OPERATION_3, (), options=options)
+        """
+        Call POST /actual-header.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
 
     async def aliased_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[AliasedHeaderResponse]:
-        """Call POST /aliased-header."""
-        return await self._core.execute(_operations.OPERATION_4, (), options=options)
+        """
+        Call POST /aliased-header.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        )
 
     async def external_inherited(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ExternalInheritedResponse]:
-        """Call POST /external-inherited."""
-        return await self._core.execute(_operations.OPERATION_5, (), options=options)
+        """
+        Call POST /external-inherited.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+        )
 
     async def external_explicit(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ExternalExplicitResponse]:
-        """Call POST /external-explicit."""
-        return await self._core.execute(_operations.OPERATION_6, (), options=options)
+        """
+        Call POST /external-explicit.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_6,
+            (),
+            options=options,
+        )
 
     async def external_query(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> Response[ExternalQueryResponse]:
-        """Call POST /external-query."""
-        return await self._core.execute(_operations.OPERATION_7, (), options=options)
+        """
+        Call POST /external-query.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_7,
+            (),
+            options=options,
+        )
 
 
 class AsyncDefaultWithRawResponse:
@@ -237,26 +293,30 @@ class AsyncDefaultWithRawResponse:
     async def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     async def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -265,7 +325,9 @@ class AsyncDefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /aliased-query."""
+        """
+        Call POST /aliased-query.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -277,7 +339,9 @@ class AsyncDefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /actual-header."""
+        """
+        Call POST /actual-header.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_3,
             (),
@@ -289,7 +353,9 @@ class AsyncDefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /aliased-header."""
+        """
+        Call POST /aliased-header.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -301,7 +367,9 @@ class AsyncDefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /external-inherited."""
+        """
+        Call POST /external-inherited.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_5,
             (),
@@ -313,7 +381,9 @@ class AsyncDefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /external-explicit."""
+        """
+        Call POST /external-explicit.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_6,
             (),
@@ -325,7 +395,9 @@ class AsyncDefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /external-query."""
+        """
+        Call POST /external-query.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_7,
             (),
@@ -343,26 +415,30 @@ class AsyncDefaultWithStreamingResponse:
     def inherited(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /inherited."""
+        """
+        Call POST /inherited.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
     def explicit(
         self,
         *,
-        x_idempotency: str | Unset = UNSET,
+        X_Idempotency: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /explicit."""
+        """
+        Call POST /explicit.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
-            (x_idempotency,),
+            (X_Idempotency,),
             options=options,
         )
 
@@ -371,45 +447,81 @@ class AsyncDefaultWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /aliased-query."""
-        return self._core.stream(_operations.OPERATION_2, (), options=options)
+        """
+        Call POST /aliased-query.
+        """
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+        )
 
     def actual_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /actual-header."""
-        return self._core.stream(_operations.OPERATION_3, (), options=options)
+        """
+        Call POST /actual-header.
+        """
+        return self._core.stream(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
 
     def aliased_header(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /aliased-header."""
-        return self._core.stream(_operations.OPERATION_4, (), options=options)
+        """
+        Call POST /aliased-header.
+        """
+        return self._core.stream(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        )
 
     def external_inherited(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /external-inherited."""
-        return self._core.stream(_operations.OPERATION_5, (), options=options)
+        """
+        Call POST /external-inherited.
+        """
+        return self._core.stream(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+        )
 
     def external_explicit(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /external-explicit."""
-        return self._core.stream(_operations.OPERATION_6, (), options=options)
+        """
+        Call POST /external-explicit.
+        """
+        return self._core.stream(
+            _operations.OPERATION_6,
+            (),
+            options=options,
+        )
 
     def external_query(
         self,
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /external-query."""
-        return self._core.stream(_operations.OPERATION_7, (), options=options)
+        """
+        Call POST /external-query.
+        """
+        return self._core.stream(
+            _operations.OPERATION_7,
+            (),
+            options=options,
+        )

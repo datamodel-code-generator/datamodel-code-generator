@@ -9,11 +9,11 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldOrdersOrderIdGetQueryViewParameter as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.orders import GetOrderResponse
 
@@ -43,15 +43,17 @@ class AsyncOrdersResource:
     async def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -67,15 +69,17 @@ class AsyncOrdersWithResponse:
     async def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -91,15 +95,17 @@ class AsyncOrdersWithRawResponse:
     async def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -115,15 +121,17 @@ class AsyncOrdersWithStreamingResponse:
     def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )

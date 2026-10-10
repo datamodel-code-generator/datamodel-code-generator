@@ -1,53 +1,116 @@
-"""Call identities, absolute deadlines and cooperative boundaries for native HTTP calls."""
+"""Call delivery state and an optional monotonic budget across native HTTP attempts.
+
+Both clients run one call flow, written as asyncio code: the asyncio client awaits it, and the synchronous client runs
+it with `run_sync`, its I/O blocking inside awaits that never suspend.
+"""
 
 from __future__ import annotations
 
-from dataclasses import replace
-from time import sleep
-from typing import TYPE_CHECKING, Final, TypeVar
-from uuid import uuid4
+from enum import Enum
+from functools import partial
+from typing import TYPE_CHECKING, Final, Generic, TypeVar
 
 import anyio
 
-from .errors import (
-    APIConnectionError,
-    APITimeoutError,
-    AuthError,
-    DeadlinePhase,
-    DeliveryState,
-    SDKError,
-    kept_primary,
-)
-from .timing import ResolvedTimeoutOptions, absolute_deadline, on_clock, real_end, wait_left
+from .errors import APITimeoutError, SDKError, add_secondary, kept_primary
+from .timing import Budget, ResolvedTimeoutOptions
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Coroutine, Generator
 
     from .options import Settings
-    from .timing import Clock, Deadline
+    from .timing import Clock
 
-T = TypeVar("T")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
+T = TypeVar("T")
 
-_REACHED: Final = (DeliveryState.NOT_SENT, DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED)
-_PHASES: Final = {"connect": 0, "read": 1, "write": 2, "pool": 3}
+
+class Delivery(Enum):
+    """How far a send got, which only retry and helper decisions read: never sent, possibly sent, or answered."""
+
+    NOT_SENT = "NOT_SENT"
+    MAYBE_SENT = "MAYBE_SENT"
+    RESPONSE_STARTED = "RESPONSE_STARTED"
+
+
+_REACHED: Final = (Delivery.NOT_SENT, Delivery.MAYBE_SENT, Delivery.RESPONSE_STARTED)
+
+
+def run_sync(flow: Coroutine[object, None, T]) -> T:
+    """Run a call flow both clients share for the synchronous client, whose I/O blocks inside each await.
+
+    No await of the synchronous client suspends, so the flow ends in its first step, without an event loop.
+    """
+    try:
+        flow.send(None)
+    except StopIteration as finished:
+        result: T = finished.value
+        return result
+    flow.close()  # pragma: no cover
+    message = "a synchronous primitive suspended"  # pragma: no cover
+    raise AssertionError(message)
+
+
+class Ready(Generic[T]):
+    """Present a generator to the shared flow as an asynchronous iterator whose steps never suspend."""
+
+    __slots__ = ("_items",)
+
+    def __init__(self, items: Generator[T, None, None]) -> None:
+        self._items = items
+
+    def __aiter__(self) -> Ready[T]:
+        return self
+
+    async def __anext__(self) -> T:
+        try:
+            return next(self._items)
+        except StopIteration:
+            raise StopAsyncIteration from None
+
+    async def aclose(self) -> None:
+        """Stop iterating, closing the generator."""
+        self._items.close()
+
+
+async def in_thread(function: Callable[..., T], *arguments: object) -> T:
+    """Run a blocking file call in a thread and return or raise only once it has finished.
+
+    A cancelled caller still waits for the running call, so a file is never closed, moved or removed under it; the
+    first cancellation then propagates, with a failure of that call beside it. The call is an executor future, not a
+    task, so cancelling every task of the loop cannot end the wait early.
+    """
+    import asyncio  # noqa: PLC0415 - Only an asyncio call that opens a path reaches a thread.
+
+    work = asyncio.get_running_loop().run_in_executor(None, partial(function, *arguments))
+    cancelled: asyncio.CancelledError | None = None
+    while not work.done():
+        try:
+            if cancelled is None:
+                await asyncio.wait((work,))
+            else:
+                with anyio.CancelScope(shield=True):
+                    await asyncio.wait((work,))
+        except asyncio.CancelledError as error:  # noqa: PERF203 - Every cancellation waits for the same call.
+            cancelled = cancelled or error
+    if cancelled is None:
+        return work.result()
+    if (failure := work.exception()) is not None:
+        add_secondary(cancelled, failure)
+    raise cancelled
 
 
 class OperationSession:
-    """The identity and earliest absolute deadline shared by a helper's calls."""
+    """The earliest absolute deadline and send count shared by a helper's calls."""
 
-    def __init__(self, *, total_timeout: float | None, deadline: Deadline | None, clock: Clock) -> None:
+    def __init__(self, *, total_timeout: float | None, clock: Clock) -> None:
         self.started = clock.monotonic()
-        self.session_id = str(uuid4())
-        deadline = None if deadline is None else on_clock(deadline, clock)
-        if total_timeout is not None and (deadline is None or self.started + total_timeout < deadline.at):
-            deadline = absolute_deadline(self.started + total_timeout, clock=clock)
-        self.deadline: Deadline | None = deadline
+        self.deadline: Budget | None = None if total_timeout is None else Budget(self.started + total_timeout, clock)
         self.sends = 0
 
 
 class LogicalCallContext:
-    """Keep one call's clock, identity and deadline without owning its task or resources."""
+    """Keep one call's clock and deadline without owning its task or resources."""
 
     session: OperationSession | None = None
 
@@ -56,29 +119,19 @@ class LogicalCallContext:
         self.monotonic = settings.clock.monotonic
         self.started = self.monotonic()
         self.operation_id = operation_id
-        self.call_id = str(uuid4())
-        deadline = None if settings.deadline is None else on_clock(settings.deadline, settings.clock)
-        if settings.total_timeout is not None:
-            at = self.started + settings.total_timeout
-            if deadline is None or at < deadline.at:
-                deadline = absolute_deadline(at, clock=settings.clock)
-        self.deadline: Deadline | None = deadline
-        self.delivery_state = self.earlier = DeliveryState.NOT_SENT
+        self.deadline: Budget | None = (
+            None if settings.total_timeout is None else Budget(self.started + settings.total_timeout, settings.clock)
+        )
+        self.delivery_state = self.earlier = Delivery.NOT_SENT
         self.streaming = self.retry_blocked = self.handing_off = False
-        self.capped: tuple[bool, ...] = ()
         self.attempt_count = self.sends = 0
         self.redirects_followed = 0
-
-    @property
-    def parent_session_id(self) -> str | None:
-        """Return the helper session's safe correlation identifier."""
-        return None if self.session is None else self.session.session_id
 
     def remaining(self) -> float | None:
         """Return seconds until the absolute deadline, or None for an unlimited call."""
         return None if self.deadline is None else self.deadline.remaining()
 
-    def furthest(self) -> DeliveryState:
+    def furthest(self) -> Delivery:
         """Return how far the call got over all its attempts and hops, never forgetting an earlier send or response."""
         current, earlier = self.delivery_state, self.earlier
         return current if _REACHED.index(current) >= _REACHED.index(earlier) else earlier
@@ -86,70 +139,25 @@ class LogicalCallContext:
     def next_send(self) -> None:
         """Begin another attempt or hop, which has sent nothing yet, keeping how far the earlier ones got."""
         self.earlier = self.furthest()
-        self.delivery_state = DeliveryState.NOT_SENT
+        self.delivery_state = Delivery.NOT_SENT
 
     def snapshot_error(self, error: ErrorT) -> ErrorT:
-        """Attach the call's identity and final execution measurements to an error to publish.
-
-        An error without its own delivery evidence, NOT_SENT, takes how far the call got. A transport or auth failure's
-        NOT_SENT holds for its own send only, so it takes how far the call's earlier attempts and hops got.
-        """
+        """Attach the call's operation and final execution measurements to an error to publish."""
         error.operation_id = self.operation_id
-        error.call_id = self.call_id
-        error.parent_session_id = self.parent_session_id
-        if error.delivery_state is DeliveryState.NOT_SENT:
-            error.delivery_state = (
-                self.earlier if isinstance(error, (APIConnectionError, AuthError)) else self.furthest()
-            )
         if error.info is None:
             error.attempt_count = self.attempt_count
             error.elapsed = max(0.0, self.monotonic() - self.started)
         return error
 
-    def expired(
-        self,
-        phase: DeadlinePhase = "unknown",
-        delivery_state: DeliveryState | None = None,
-        cause: BaseException | None = None,
-    ) -> APITimeoutError | None:
+    def expired(self, cause: BaseException | None = None) -> APITimeoutError | None:
         """Return the failure of a total deadline that has passed, or None while time remains."""
         if self.deadline is None or self.monotonic() < self.deadline.at:
             return None
-        return self._deadline_failure(phase, delivery_state, cause)
+        return self.snapshot_error(APITimeoutError(reason="deadline_exceeded", cause=cause))
 
-    def _deadline_failure(
-        self, phase: DeadlinePhase, delivery_state: DeliveryState | None, cause: BaseException | None
-    ) -> APITimeoutError:
-        assert self.deadline is not None
-        return self.snapshot_error(
-            APITimeoutError(
-                deadline_at=self.deadline.at,
-                elapsed=self.monotonic() - self.started,
-                phase=phase,
-                delivery_state=self.furthest() if delivery_state is None else delivery_state,
-                cause=cause,
-                reason="deadline_exceeded",
-            )
-        )
-
-    def capped_failure(self, error: APITimeoutError) -> APITimeoutError | None:
-        """Return the deadline failure of an acquisition's phase timeout whose cap was the time the call had left.
-
-        A tie between a phase's own limit and the time left belongs to the deadline.
-        """
-        index = _PHASES.get(error.phase)
-        if self.streaming or index is None or index >= len(self.capped) or not self.capped[index]:
-            return None
-        return self._deadline_failure("send", None, error.cause)
-
-    def check(
-        self,
-        phase: DeadlinePhase = "unknown",
-        delivery_state: DeliveryState | None = None,
-        cause: BaseException | None = None,
-    ) -> None:
+    def check(self, cause: BaseException | None = None) -> None:
         """Check the total deadline at an SDK boundary without replacing a primary failure."""
-        if (error := self.expired(phase, delivery_state, cause)) is not None:
+        if (error := self.expired(cause)) is not None:
             raise error
 
     def failure(self, error: BaseException) -> BaseException:
@@ -158,123 +166,57 @@ class LogicalCallContext:
             return self.snapshot_error(error)
         return error
 
-    def admit_send(self, *, redirect: bool = False) -> None:
+    def admit_send(self) -> None:
         """Record one native send invocation at its boundary."""
-        self.check("send")
+        self.check()
         self.sends += 1
         if self.session is not None:
             self.session.sends += 1
-        if redirect:
-            self.redirects_followed += 1
-        else:
-            self.attempt_count += 1
-        self.delivery_state = DeliveryState.MAYBE_SENT
+        self.attempt_count += 1
+        self.delivery_state = Delivery.MAYBE_SENT
+
+    def _wait(self, not_before: float) -> float:
+        """Return one retry wait, capped by the time remaining before the next attempt."""
+        self.check()
+        duration = max(0.0, not_before - self.monotonic())
+        remaining = self.remaining()
+        return duration if remaining is None else min(duration, remaining)
 
     def sleep_until(self, not_before: float) -> None:
-        """Wait against the same absolute call deadline and injected clock."""
-        end = real_end(not_before - self.monotonic())
-        while True:
-            self.check("sleep")
-            left = wait_left(not_before - self.monotonic(), end)
-            if not left > 0:
-                return
-            if (remaining := self.remaining()) is not None:
-                left = min(left, remaining)
-            sleep(left)
+        """Sleep once before the next attempt, through the call's clock."""
+        if duration := self._wait(not_before):
+            self.settings.clock.sleep(duration)
+        self.check()
 
     async def asleep_until(self, not_before: float) -> None:
-        """Sleep in the current backend, allowing native task cancellation to propagate."""
-        end = real_end(not_before - self.monotonic())
-        while True:
-            self.check("sleep")
-            left = wait_left(not_before - self.monotonic(), end)
-            if not left > 0:
-                return
-            if (remaining := self.remaining()) is not None:
-                left = min(left, remaining)
-            await anyio.sleep(left)
+        """Await one retry wait with ordinary task cancellation."""
+        if duration := self._wait(not_before):
+            await self.settings.clock.asleep(duration)
+        self.check()
 
     def timeout(self) -> ResolvedTimeoutOptions:
-        """Clamp every native phase to the time left once, before this attempt's request, recording the capped phases.
-
-        A call that hands its response over as a stream reads with the smaller of its stream idle limit and an
-        explicit read limit, since its request keeps that read limit for every body read.
-        """
-        self.check("send")
+        """Cap native I/O phase timeouts by the opt-in request budget before sending."""
+        self.check()
         remaining = self.remaining()
         phases = self.settings.timeout
-        read = phases.read
-        if self.handing_off:
-            read, idle = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
-            read = idle if read is None else read if idle is None else min(read, idle)
-        limits = (phases.connect, read, phases.write, phases.pool)
-        self.capped = tuple(remaining is not None and (limit is None or remaining <= limit) for limit in limits)
+        if remaining is None:
+            return phases
         connect, read, write, pool = (
-            limit if remaining is None else remaining if limit is None else min(limit, remaining) for limit in limits
+            remaining if limit is None else min(limit, remaining)
+            for limit in (phases.connect, phases.read, phases.write, phases.pool)
         )
         return ResolvedTimeoutOptions(connect=connect, read=read, write=write, pool=pool)
 
     def handoff(self) -> None:
-        """Start the stream's own limits: its total timeout and its session's deadline replace the acquisition's."""
+        """Leave stream I/O timeouts to the native client and retain any helper session's budget."""
         self.streaming = True
-        self.delivery_state = DeliveryState.RESPONSE_STARTED
-        total = self.settings.stream_total_timeout
-        deadline = None if total is None else absolute_deadline(self.monotonic() + total, clock=self.settings.clock)
-        if (session := self.session) is not None and (limit := session.deadline) is not None:
-            deadline = limit if deadline is None or limit.at < deadline.at else deadline
-        self.deadline = deadline
-
-    def idle(self, started: float, limit: float | None = None) -> None:
-        """Raise a read timeout when a handed-over stream's read that began at `started` took its idle limit or more.
-
-        The limit is the stream's idle timeout unless one is given; the check runs once the read returned.
-        """
-        limit = self.settings.stream_idle_timeout if limit is None else limit
-        if self.streaming and limit is not None and self.monotonic() - started >= limit:
-            raise APITimeoutError(
-                phase="read",
-                reason="phase_timeout",
-                effective_timeout=limit,
-                delivery_state=DeliveryState.RESPONSE_STARTED,
-            )
-
-    def lane(self, deadline: Deadline | None) -> LogicalCallContext:
-        """Give a socket waiter its own boundary deadline, retaining call identity."""
-        lane = LogicalCallContext(replace(self.settings, total_timeout=None, deadline=None), self.operation_id)
-        lane.call_id, lane.session, lane.started = self.call_id, self.session, self.started
-        lane.deadline, lane.streaming, lane.delivery_state = deadline, True, self.delivery_state
-        lane.earlier = self.earlier
-        return lane
-
-    async def bounded(  # noqa: PLR0913
-        self,
-        operation: Callable[[], Awaitable[T]],
-        *,
-        phase: DeadlinePhase = "unknown",
-        delivery_state: DeliveryState | None = None,
-        cleanup: Callable[[T], Awaitable[None]] | None = None,
-        idle_timeout: float | None = None,
-        idle: bool = True,
-    ) -> T:
-        """Await work directly, checking limits only at cooperative boundaries."""
-        self.check(phase, delivery_state)
-        started = self.monotonic()
-        result = await operation()
-        try:
-            self.check(phase, delivery_state)
-            if phase == "stream" and idle:
-                self.idle(started, idle_timeout)
-        except BaseException as error:
-            if cleanup is not None:
-                await self.cleanup(lambda: cleanup(result), error=error)
-            raise
-        return result
+        self.delivery_state = Delivery.RESPONSE_STARTED
+        self.deadline = None if self.session is None else self.session.deadline
 
     async def cleanup(self, operation: Callable[[], Awaitable[None]], *, error: BaseException | None = None) -> bool:
-        """Release a resource in the current task under a narrow cleanup shield."""
+        """Release a resource with ordinary cancellation, retaining an earlier failure."""
         try:
-            with anyio.CancelScope(shield=True):
-                await operation()
+            await operation()
         except BaseException as failure:
             if error is None:
                 raise

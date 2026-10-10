@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import PurePosixPath
 from types import MappingProxyType
@@ -20,6 +21,24 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import GenerateConfig
 
 Role: TypeAlias = Callable[..., Callable[..., str]]
+
+
+@dataclass(frozen=True, slots=True)
+class Templated:
+    """A generated module as its role renders it: the role, the role's compiled builtin renderer, and its values."""
+
+    role: str
+    compiled: Callable[..., str]
+    values: Mapping[str, object]
+
+    def render(self, role: Role) -> str:
+        """Render the module through a target's roles: a custom template directory's override, or the builtin."""
+        return role(self.role, self.compiled)(**self.values)
+
+
+def templated(role: str, compiled: Callable[..., str], **values: object) -> Templated:
+    """Return the module a role renders from these values."""
+    return Templated(role, compiled, values)
 
 
 class TemplateOverlay:
@@ -41,17 +60,15 @@ class TemplateOverlay:
     def __init__(
         self,
         custom_template_dir: Path,
-        target_id: str,
         data: Mapping[str, object] = MappingProxyType({}),
     ) -> None:
         """Find the roles the directory overrides."""
         self.directory = custom_template_dir / self.SUBDIR
-        self.target_id = target_id
         self.data = data
         self.roles = frozenset(role for role in self.ROLES if (self.directory / role).is_file())
 
     @classmethod
-    def custom(cls, model_config: GenerateConfig, target_id: str, cwd: Path) -> Self | None:
+    def custom(cls, model_config: GenerateConfig, cwd: Path) -> Self | None:
         """Return the overrides of the model configuration's custom template directory, if it sets one.
 
         A relative directory resolves against the caller's working directory, as for the models, and overrides receive
@@ -63,7 +80,7 @@ class TemplateOverlay:
             return None
         from datamodel_code_generator.model.base import ALL_MODEL  # noqa: PLC0415
 
-        return cls(directory, target_id, (model_config.extra_template_data or {}).get(ALL_MODEL, {}))
+        return cls(directory, (model_config.extra_template_data or {}).get(ALL_MODEL, {}))
 
     @cached_property
     def environment(self) -> Environment:
@@ -117,7 +134,6 @@ class TemplateOverlay:
             stage="target",
             message=message,
             option_path=self.OPTION,
-            target_id=self.target_id,
         )
 
 

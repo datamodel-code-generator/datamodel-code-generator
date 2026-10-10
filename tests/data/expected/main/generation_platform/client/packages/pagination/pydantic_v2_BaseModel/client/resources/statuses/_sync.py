@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.statuses import ListStatusesResponse
 
@@ -41,11 +41,13 @@ class StatusesResource:
     def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListStatusesResponse:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (code,),
@@ -64,11 +66,13 @@ class StatusesWithResponse:
     def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListStatusesResponse]:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (code,),
@@ -87,11 +91,13 @@ class StatusesWithRawResponse:
     def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_7,
             (code,),
@@ -110,11 +116,13 @@ class StatusesWithStreamingResponse:
     def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (code,),

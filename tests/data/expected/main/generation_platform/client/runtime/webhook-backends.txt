@@ -2,12 +2,12 @@
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = Shape Shape(root=Circle(radius=1.5)) delivery_id=None timestamp=None matched_key_id='active'
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(reason='value') [] value
 # webhooks pydantic_v2.dataclass
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = Circle Circle(radius=1.5) delivery_id=None timestamp=None matched_key_id='active'
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(reason='value') [] value
 # webhooks dataclasses.dataclass
   generation /webhooks/shape/post/requestBody: The union of Circle and Square needs a declared discriminator for the dataclasses.dataclass converter
 # webhooks typing.TypedDict
@@ -16,4 +16,4 @@
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = TypeError: If a type union contains multiple Struct types, all Struct types must be tagged (via `tag` or `tag_field` kwarg) - type `webhooks_msgspec_struct_models.Circle | webhooks_msgspec_struct_models.Square` is not supported []
-  standard.message = ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  standard.message = ProtocolDataError: ProtocolDataError(reason='value') [] value

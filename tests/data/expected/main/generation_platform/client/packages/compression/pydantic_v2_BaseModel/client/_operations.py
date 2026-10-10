@@ -38,20 +38,8 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
     method='POST',
     path='/items',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('201', 'application/json', 'json', model_bindings.codec_1),),
-        (),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_0,
-            ),
-        ),
-        default='application/json',
-    ),
+    responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_1),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_0),), default='application/json'),
     accepted_content_encodings=('gzip',),
 )
 
@@ -60,21 +48,8 @@ OPERATION_1: Final[OperationPlan[ListItemsResponse]] = OperationPlan(
     method='GET',
     path='/items',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_3),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_2,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_3),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True), codec=model_bindings.codec_2),),
     accepted_content_encodings=('gzip',),
 )
 
@@ -84,17 +59,7 @@ OPERATION_2: Final[OperationPlan[CreateNoteResponse]] = OperationPlan(
     path='/notes',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_4,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_4),), default='application/json', required=True),
 )
 
 OPERATION_3: Final[OperationPlan[PutBlobResponse]] = OperationPlan(
@@ -103,21 +68,8 @@ OPERATION_3: Final[OperationPlan[PutBlobResponse]] = OperationPlan(
     path='/blobs',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='header',
-                name='Content-Length',
-                style='simple',
-                kind='integer',
-            ),
-            codec=model_bindings.codec_5,
-        ),
-    ),
-    body=RequestBody(
-        media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
-        default='application/octet-stream',
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='Content-Length', style='simple', kind='integer'), codec=model_bindings.codec_5),),
+    body=RequestBody(media=(BodyMedia(media_type='application/octet-stream', kind='binary'),), default='application/octet-stream'),
     accepted_content_encodings=('gzip',),
 )
 
@@ -126,32 +78,9 @@ OPERATION_4: Final[OperationPlan[SearchResponse]] = OperationPlan(
     method='POST',
     path='/search',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_8),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_6,
-        ),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_7,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_8),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True), codec=model_bindings.codec_6),),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_7),), default='application/json', required=True),
     accepted_content_encodings=('gzip',),
 )
 
@@ -160,21 +89,8 @@ OPERATION_5: Final[OperationPlan[FeedResponse]] = OperationPlan(
     method='POST',
     path='/feed',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_10),),
-        (),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_9,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_10),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_9),), default='application/json', required=True),
     accepted_content_encodings=('gzip',),
 )
 
@@ -183,21 +99,8 @@ OPERATION_6: Final[OperationPlan[CreateJobResponse]] = OperationPlan(
     method='POST',
     path='/jobs',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('202', 'application/json', 'json', model_bindings.codec_12),),
-        (),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_11,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('202', 'application/json', 'json', model_bindings.codec_12),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_11),), default='application/json', required=True),
     accepted_content_encodings=('gzip',),
 )
 
@@ -206,21 +109,8 @@ OPERATION_7: Final[OperationPlan[GetJobResponse]] = OperationPlan(
     method='GET',
     path='/jobs/{jobId}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_14),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='jobId',
-                style='simple',
-                required=True,
-            ),
-            codec=model_bindings.codec_13,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_14),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='jobId', style='simple', required=True), codec=model_bindings.codec_13),),
 )
 
 OPERATION_8: Final[OperationPlan[CreateCheckResponse]] = OperationPlan(
@@ -228,10 +118,7 @@ OPERATION_8: Final[OperationPlan[CreateCheckResponse]] = OperationPlan(
     method='POST',
     path='/checks',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('202', 'application/json', 'json', model_bindings.codec_15),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('202', 'application/json', 'json', model_bindings.codec_15),), ()),
 )
 
 OPERATION_9: Final[OperationPlan[CheckStatusResponse]] = OperationPlan(
@@ -239,21 +126,8 @@ OPERATION_9: Final[OperationPlan[CheckStatusResponse]] = OperationPlan(
     method='POST',
     path='/checks/status',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_17),),
-        (),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_16,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_17),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_16),), default='application/json', required=True),
     accepted_content_encodings=('gzip',),
 )
 
@@ -262,21 +136,8 @@ OPERATION_10: Final[OperationPlan[ReopenEventsResponse]] = OperationPlan(
     method='GET',
     path='/events',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/event-stream', 'text', model_bindings.codec_19),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_18,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/event-stream', 'text', model_bindings.codec_19),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True), codec=model_bindings.codec_18),),
 )
 
 OPERATION_11: Final[OperationPlan[WatchResponse]] = OperationPlan(
@@ -284,31 +145,8 @@ OPERATION_11: Final[OperationPlan[WatchResponse]] = OperationPlan(
     method='POST',
     path='/events',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/event-stream', 'text', model_bindings.codec_22),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_20,
-        ),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_21,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/event-stream', 'text', model_bindings.codec_22),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True), codec=model_bindings.codec_20),),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_21),), default='application/json', required=True),
     accepted_content_encodings=('gzip',),
 )

@@ -4566,7 +4566,7 @@
         {
           "location": "header",
           "name": "X-Wire",
-          "argument": "x_wire",
+          "argument": "X_Wire",
           "value": "a:b"
         },
         {

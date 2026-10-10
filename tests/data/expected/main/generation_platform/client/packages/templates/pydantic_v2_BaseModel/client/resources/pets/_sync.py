@@ -9,16 +9,13 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal, overload
 
+import models
 from audit import AuditMixin
-from models import FieldPetsPetIdGetResponse as _dcg_type_3
-from models import FieldPetsPostRequest as _dcg_type_1
-from models import NewPet as _dcg_type_0
-from models import Pet as _dcg_type_2
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody, SyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.pets import (
     AttachFilesResponse,
@@ -57,48 +54,57 @@ class PetsResource(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
-        x_trace: str,
-        session: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
+        X_Trace: str,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> ListPetsResponse:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (limit, tags, x_trace, session),
+            (limit, tags, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         ).data
 
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> CreatePetResponse: ...
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> CreatePetResponse: ...
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> CreatePetResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -106,122 +112,150 @@ class PetsResource(AuditMixin):
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         ).data
 
     @overload
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> GetPetResponse: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_2: ...
+        timeout: float | None = None,
+    ) -> models.Pet: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_3: ...
+        timeout: float | None = None,
+    ) -> models.FieldPetsPetIdGetResponse: ...
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> GetPetResponse:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         ).data
 
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> DeletePetsByPetIdResponse:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             options=options,
+            timeout=timeout,
         ).data
 
     def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> HeadPetResponse:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
-            (pet_id,),
+            (petId,),
             options=options,
+            timeout=timeout,
         ).data
 
     def upload_photo(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> UploadPhotoResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         ).data
 
     def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AttachFilesResponse:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
+            timeout=timeout,
         ).data
 
     def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> ReadFilesResponse:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         ).data
 
 
@@ -235,48 +269,57 @@ class PetsWithResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
-        x_trace: str,
-        session: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
+        X_Trace: str,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[ListPetsResponse]:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (limit, tags, x_trace, session),
+            (limit, tags, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[CreatePetResponse]: ...
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[CreatePetResponse]: ...
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[CreatePetResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -284,114 +327,150 @@ class PetsWithResponse(AuditMixin):
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     @overload
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[GetPetResponse]: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_2]: ...
+        timeout: float | None = None,
+    ) -> Response[models.Pet]: ...
     @overload
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_3]: ...
+        timeout: float | None = None,
+    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[GetPetResponse]:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[DeletePetsByPetIdResponse]:
-        """Call DELETE /pets/{petId}."""
-        return self._core.execute(_operations.OPERATION_3, (pet_id,), options=options)
+        """
+        Call DELETE /pets/{petId}.
+        """
+        return self._core.execute(
+            _operations.OPERATION_3,
+            (petId,),
+            options=options,
+            timeout=timeout,
+        )
 
     def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[HeadPetResponse]:
-        """Call HEAD /pets/{petId}."""
-        return self._core.execute(_operations.OPERATION_4, (pet_id,), options=options)
+        """
+        Call HEAD /pets/{petId}.
+        """
+        return self._core.execute(
+            _operations.OPERATION_4,
+            (petId,),
+            options=options,
+            timeout=timeout,
+        )
 
     def upload_photo(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[UploadPhotoResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[AttachFilesResponse]:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
+            timeout=timeout,
         )
 
     def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> Response[ReadFilesResponse]:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
 
@@ -405,48 +484,57 @@ class PetsWithRawResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
-        x_trace: str,
-        session: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
+        X_Trace: str,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (limit, tags, x_trace, session),
+            (limit, tags, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse: ...
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse: ...
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -454,98 +542,123 @@ class PetsWithRawResponse(AuditMixin):
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
-            (pet_id,),
+            (petId,),
             options=options,
+            timeout=timeout,
         )
 
     def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_4,
-            (pet_id,),
+            (petId,),
             options=options,
+            timeout=timeout,
         )
 
     def upload_photo(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
+            timeout=timeout,
         )
 
     def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> RawResponse:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
 
@@ -559,48 +672,57 @@ class PetsWithStreamingResponse(AuditMixin):
     def list_pets(
         self,
         *,
-        limit: int | Unset = UNSET,
-        tags: list[str] | Unset = UNSET,
-        x_trace: str,
-        session: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        tags: list[str] | UNSET = UNSET,
+        X_Trace: str,
+        session: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
-            (limit, tags, x_trace, session),
+            (limit, tags, X_Trace, session),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.NewPet,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
     def create_pet(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldPetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def create_pet(
         self,
         *,
-        body: _dcg_type_0 | _dcg_type_1,
+        body: models.NewPet | models.FieldPetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -608,88 +730,121 @@ class PetsWithStreamingResponse(AuditMixin):
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def delete_pets_by_pet_id(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call DELETE /pets/{petId}."""
-        return self._core.stream(_operations.OPERATION_3, (pet_id,), options=options)
+        """
+        Call DELETE /pets/{petId}.
+        """
+        return self._core.stream(
+            _operations.OPERATION_3,
+            (petId,),
+            options=options,
+            timeout=timeout,
+        )
 
     def head_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call HEAD /pets/{petId}."""
-        return self._core.stream(_operations.OPERATION_4, (pet_id,), options=options)
+        """
+        Call HEAD /pets/{petId}.
+        """
+        return self._core.stream(
+            _operations.OPERATION_4,
+            (petId,),
+            options=options,
+            timeout=timeout,
+        )
 
     def upload_photo(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )
 
     def attach_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: MultipartBody[str | list[str]],
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
+            timeout=timeout,
         )
 
     def read_files(
         self,
         *,
-        pet_id: int,
+        petId: int,
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
+        timeout: float | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
-            (pet_id,),
+            (petId,),
             options=options,
             response_media_type=response_media_type,
+            timeout=timeout,
         )

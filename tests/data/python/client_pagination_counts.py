@@ -64,7 +64,7 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     fetched(lines, "query start next page", lambda: listing.offsets.next_page(first))
     numbered = harness.argument("listUsers", "header", "X-Page", 5)
     exchange.respond(users("1", **{"X-Has-More": "true"}), users("2", **{"X-Has-More": "false"}))
-    drained(lines, "header start", listing.by_header.iterate(x_page=numbered))
+    drained(lines, "header start", listing.by_header.iterate(X_Page=numbered))
     exchange.respond(user_page("1", total=45), user_page("2", total=45))
     body = _search(harness, {"query": "a", "window": {"start": 30}})
     drained(lines, "body start", api.protocols.searches.all.iterate(body=body))
@@ -73,7 +73,9 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         ("querystring without a start", {"term": "a"}),
         ("no querystring", None),
     ):
-        arguments = {} if criteria is None else {"criteria": harness.argument("find", "querystring", "criteria", criteria)}
+        arguments = (
+            {} if criteria is None else {"criteria": harness.argument("find", "querystring", "criteria", criteria)}
+        )
         exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
         drained(lines, label, api.protocols.finds.all.iterate(**arguments))
     drained(lines, "text start", listing.offsets.iterate(offset="forty"))

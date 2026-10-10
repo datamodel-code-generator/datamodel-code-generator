@@ -37,16 +37,8 @@ OPERATION_0: Final[OperationPlan[ParameterResponse]] = OperationPlan(
     method='POST',
     path='/parameter',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_1),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='X-Request-Key', style='simple'),
-            codec=model_bindings.codec_0,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_1),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='X-Request-Key', style='simple'), codec=model_bindings.codec_0),),
 )
 
 OPERATION_1: Final[OperationPlan[ApiKeyResponse]] = OperationPlan(
@@ -54,10 +46,7 @@ OPERATION_1: Final[OperationPlan[ApiKeyResponse]] = OperationPlan(
     method='POST',
     path='/api-key',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_3),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_3),), ()),
     security=security.OPERATION_1,
 )
 
@@ -66,10 +55,7 @@ OPERATION_2: Final[OperationPlan[BearerResponse]] = OperationPlan(
     method='POST',
     path='/bearer',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_5),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_5),), ()),
     security=security.OPERATION_2,
 )
 
@@ -78,10 +64,7 @@ OPERATION_3: Final[OperationPlan[OauthResponse]] = OperationPlan(
     method='POST',
     path='/oauth',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_7),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_7),), ()),
     security=security.OPERATION_3,
 )
 
@@ -90,10 +73,7 @@ OPERATION_4: Final[OperationPlan[OpenidResponse]] = OperationPlan(
     method='POST',
     path='/openid',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_9),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_9),), ()),
     security=security.OPERATION_4,
 )
 
@@ -102,10 +82,7 @@ OPERATION_5: Final[OperationPlan[CookieResponse]] = OperationPlan(
     method='POST',
     path='/cookie',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_11),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_11),), ()),
     idempotency=IdempotencyPlan(header_name='session'),
     security=security.OPERATION_5,
 )
@@ -115,10 +92,7 @@ OPERATION_6: Final[OperationPlan[QueryResponse]] = OperationPlan(
     method='POST',
     path='/query',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_13),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_13),), ()),
     idempotency=IdempotencyPlan(header_name='token'),
     security=security.OPERATION_6,
 )
@@ -128,10 +102,7 @@ OPERATION_7: Final[OperationPlan[IgnoredResponse]] = OperationPlan(
     method='POST',
     path='/ignored',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_15),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_15),), ()),
     idempotency=IdempotencyPlan(header_name='Authorization'),
 )
 
@@ -140,20 +111,8 @@ OPERATION_8: Final[OperationPlan[DirectionResponse]] = OperationPlan(
     method='POST',
     path='/direction',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_18),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='header',
-                name='X-Retry-Control',
-                style='simple',
-            ),
-            codec=model_bindings.codec_17,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_18),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='X-Retry-Control', style='simple'), codec=model_bindings.codec_17),),
     request_id_header='X-Idempotency',
     idempotency=IdempotencyPlan(header_name='X-Idempotency'),
     retry_after_ms_header='X-Idempotency',
@@ -165,10 +124,7 @@ OPERATION_9: Final[OperationPlan[UnusedResponse]] = OperationPlan(
     method='POST',
     path='/unused',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'text/plain', 'text', model_bindings.codec_20),),
-        (),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'text/plain', 'text', model_bindings.codec_20),), ()),
     idempotency=IdempotencyPlan(header_name='X-Auth-Key'),
     security=security.OPERATION_9,
 )

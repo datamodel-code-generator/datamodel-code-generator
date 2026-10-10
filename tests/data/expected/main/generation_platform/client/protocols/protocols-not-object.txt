@@ -1,4 +1,3 @@
 # protocols-not-object
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols: Expected a JSON object, got list
+  Error: Invalid --client-protocols: Input should be a valid dictionary

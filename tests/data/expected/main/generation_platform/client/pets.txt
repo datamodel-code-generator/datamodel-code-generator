@@ -5,13 +5,10 @@ render pydantic_v2.BaseModel
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -30,7 +27,6 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
 render pydantic_v2.dataclass
   write models.py
@@ -38,13 +34,10 @@ render pydantic_v2.dataclass
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -63,7 +56,6 @@ render pydantic_v2.dataclass
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
 render dataclasses.dataclass
   write models.py
@@ -71,13 +63,10 @@ render dataclasses.dataclass
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -96,7 +85,6 @@ render dataclasses.dataclass
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
 render typing.TypedDict
   write models.py
@@ -104,13 +92,10 @@ render typing.TypedDict
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -129,7 +114,6 @@ render typing.TypedDict
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
 render msgspec.Struct
   write models.py
@@ -137,13 +121,10 @@ render msgspec.Struct
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -162,5 +143,4 @@ render msgspec.Struct
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-target-manifest.json
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'msgspec>=0.18']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'msgspec>=0.21.1']

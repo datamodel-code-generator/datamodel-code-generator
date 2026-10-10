@@ -1,0 +1,93 @@
+{
+  "search.session": {
+    "kind": "pagination",
+    "operation": "/paths/~1search~1{scope}/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Page/properties/data/items"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "body", "pointer": "/next"},
+      "write": {"in": "cookie", "name": "session"},
+      "end": [{"kind": "missing"}],
+      "empty_string": "end"
+    }
+  },
+  "search.types": {
+    "kind": "pagination",
+    "operation": "/paths/~1search~1{scope}/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/Page/properties/data/items"},
+    "continuation": {
+      "kind": "cursor",
+      "read": {"from": "status"},
+      "write": {"in": "header", "name": "X-Cursor"},
+      "end": [{"kind": "value", "value": 204}],
+      "empty_string": "end"
+    },
+    "bindings": [{"target": {"in": "path", "name": "scope"}, "value": {"literal": 1}}]
+  },
+  "events.live": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {"pointer": "/components/schemas/Message"},
+    "completion": {"kind": "eof"},
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {"in": "querystring", "name": "filter", "pointer": "/topic"},
+      "reopen_operation": "/paths/~1events/get",
+      "delivery": "at_least_once"
+    }
+  },
+  "jobs.run": {
+    "kind": "polling",
+    "create": "/paths/~1jobs/post",
+    "accepted_statuses": [202],
+    "poll": "/paths/~1jobs~1{jobId}/get",
+    "bindings": [
+      {
+        "target": {"in": "path", "name": "jobId"},
+        "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+      },
+      {"target": {"in": "header", "name": "X-Trace"}, "value": {"literal": 1}},
+      {"target": {"in": "querystring", "name": "view", "pointer": "/fields"}, "value": {"literal": "status"}}
+    ],
+    "state": {"from": "body", "pointer": "/status"},
+    "pending": ["queued", "running"],
+    "succeeded": ["done"],
+    "result": {"kind": "none"}
+  },
+  "files.upload": {
+    "kind": "resumable_upload",
+    "profile": "offset",
+    "create": {
+      "operation": "/paths/~1files/post",
+      "size": {"in": "querystring", "name": "detail", "pointer": "/kind"}
+    },
+    "probe": {
+      "operation": "/paths/~1files~1{fileId}/head",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "fileId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        },
+        {"target": {"in": "querystring", "name": "detail", "pointer": "/kind"}, "value": {"literal": "offset"}}
+      ],
+      "remote_offset": {"from": "header", "name": "Upload-Offset"}
+    },
+    "append": {
+      "operation": "/paths/~1files~1{fileId}/patch",
+      "bindings": [
+        {
+          "target": {"in": "path", "name": "fileId"},
+          "value": {"source": "initial", "selector": {"from": "body", "pointer": "/id"}}
+        }
+      ],
+      "offset": {"in": "header", "name": "Upload-Offset"}
+    },
+    "max_chunk_bytes": 4,
+    "partial_commit": "allowed",
+    "completion": {"kind": "length"}
+  }
+}

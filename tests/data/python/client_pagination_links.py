@@ -65,7 +65,6 @@ _URL_REFUSALS: Final[tuple[tuple[str, object], ...]] = (
     ("other host", f"{_OTHER}/v1/users"),
     ("plain HTTP", "http://api.example.com/v1/users"),
     ("other port", "https://api.example.com:8443/v1/users"),
-    ("oversized", f"/v1/users?q={'a' * 8200}"),
 )
 
 
@@ -97,10 +96,10 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     users = api.protocols.users
     arguments = {
         "limit": harness.argument("listUsers", "query", "limit", 1),
-        "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
+        "X_Trace": harness.argument("listUsers", "header", "X-Trace", "t"),
         "session": harness.argument("listUsers", "cookie", "session", "s"),
     }
-    patched = harness.options.RequestOptions(headers=(("X-Client", "c"),), query=(("debug", "1"),))
+    patched = harness.options.RequestOptions(extra_headers={"X-Client": "c"}, extra_query={"debug": "1"})
     exchange.respond(
         user_page("1", next=f"{_SERVER}/users?limit=2&cursor=b%2Fc"),
         user_page(next="?cursor=c"),
@@ -130,11 +129,6 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     for label, value in _URL_REFUSALS:
         exchange.respond(user_page("1", next=value))
         drained(lines, label, helper.iterate())
-    limits = harness.protocols.PaginationOptions(max_cursor_bytes=40)
-    exchange.respond(user_page("1", next="users?cursor=0123456789"))
-    drained(lines, "resolved URL over the cursor size", helper.iterate(pagination_options=limits))
-    exchange.respond(*(user_page(str(index), next=f"{'a' * 2000}/") for index in range(5)))
-    drained(lines, "relative path growing past 8 KiB", helper.iterate())
 
 
 def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -146,16 +140,13 @@ def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
         exchange.responders.clear()
     exchange.respond(_links('<?page=2>; rel="HTTPS://EXAMPLE.COM/REL/MORE"'), user_page("2"))
     drained(lines, "extension relation", users.related.iterate())
-    limits = harness.protocols.PaginationOptions(max_cursor_bytes=48)
-    exchange.respond(_links("<?page=2>; rel=next", "<?page=9>; rel=last; title=long"))
-    drained(lines, "Link fields over the cursor size", users.linked.iterate(pagination_options=limits))
     trace = harness.argument("listUsers", "header", "X-Trace", "mine")
     exchange.respond(
         headed_page("1", headers=(("Link", "<?page=2>; rel=next"), ("X-Snapshot", "s1"))),
         headed_page("2", headers=(("Link", "<?page=3>; rel=next"), ("X-Snapshot", "s2"))),
         user_page("3"),
     )
-    drained(lines, "snapshot kept from the first page", users.snapshot.iterate(x_trace=trace))
+    drained(lines, "snapshot kept from the first page", users.snapshot.iterate(X_Trace=trace))
 
 
 def _search(harness: Harness, wire: object) -> object:
@@ -171,12 +162,14 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         user_page("1", next="?page=2", token="t1"), user_page("2", next="?page=3", token="t2"), user_page("3")
     )
     drained(lines, "repeated body", searches.repeated.iterate(body=body))
+    exchange.respond(user_page("2", next="?page=3", token="t2"), user_page("3"))
+    drained(lines, "resumed with a body binding", searches.repeated.resume(f"{_SERVER}/searches?page=2", body=body))
     exchange.respond(user_page("1", next="?page=2"), user_page("2"))
     drained(lines, "fetched without the body", searches.fetched.iterate(body=body))
 
 
 def _cycles(api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """End with PaginationCycleError at a URL an earlier page gave, however the server spelled it."""
+    """End with a pagination cycle at a URL an earlier page gave, however the server spelled it."""
     helper = api.protocols.users.follow
     exchange.respond(
         user_page("1", next="?cursor=a"), user_page("2", next="?cursor=b"), user_page("3", next="?cursor=a")
@@ -200,36 +193,31 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     fetched(lines, "next followed page at another server", lambda: helper.next_page(first, options=moved))
 
 
-def _secured(harness: Harness, *origins: Any, **settings: Any) -> Any:
-    """Return client options whose protocol security context allows the origins, with any other settings."""
-    protocols = harness.protocols
-    context = protocols.ProtocolSecurityContext(credential_partition="tenant", allowed_origins=origins)
-    return harness.options.ClientOptions(protocols=harness.options.ProtocolClientOptions(security=context), **settings)
+def _allowed(*origins: Any, **settings: Any) -> dict[str, Any]:
+    """Return client keywords that allow the origins beyond the server's, with any other settings."""
+    return {"allowed_origins": origins, **settings}
 
 
-def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, tuple[Any, ...], Any], ...]:
-    """Return rows of client options, responders, and the start of a traversal or an ordinary call, for either mode.
+def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, dict[str, str]], ...]:
+    """Return rows of client keywords, responders, the start of a traversal or an ordinary call, and credentials.
 
     They follow URLs to allowed origins and back, without the server's credentials, cookies, or the positions of the
-    package's security schemes at any origin, authenticate only where the auth allows, and redirect.
+    package's security schemes at any origin, authenticate only at the server's origin, and redirect.
     """
-    options, auth = harness.options, importlib.import_module(f"{harness.package.__name__}.auth")
+    options = harness.options
     other = harness.protocols.Origin(scheme="https", host="other.example.com", port=443)
-    prefix = "Async" if asynchronous else ""
-    token = getattr(auth, f"{prefix}StaticTokenProvider")(auth.AccessToken("token"))
-    key = getattr(auth, f"{prefix}StaticCredentialProvider")(auth.ApiKeyCredential("key"))
+    bearer = {"bearer": "token"}
     arguments = {
-        "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
+        "X_Trace": harness.argument("listUsers", "header", "X-Trace", "t"),
         "session": harness.argument("listUsers", "cookie", "session", "s"),
-        "options": options.RequestOptions(headers=(("Authorization", "Basic c2VjcmV0"),)),
+        "options": options.RequestOptions(extra_headers={"Authorization": "Basic c2VjcmV0"}),
     }
-    patched = (("X-Api-Key", "k"), ("Authorization", "Basic c2VjcmV0"))
+    patched = {"X-Api-Key": "k", "Authorization": "Basic c2VjcmV0"}
     secure = f"<{_OTHER}/secure/users?page=2>; rel=next"
-    redirects = options.RedirectOptions(enabled=True, allowed_origins=(_OTHER,))
     return (
         (
             "allowed origin and back",
-            _secured(harness, other),
+            _allowed(other),
             (
                 user_page("1", next=f"{_OTHER}/v1/users?cursor=2"),
                 user_page("2", next="?cursor=3"),
@@ -237,83 +225,85 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
                 user_page("4", next="https://third.example.com/v1/users"),
             ),
             lambda api: api.protocols.users.follow.iterate(**arguments),
+            {},
         ),
         (
             "scheme credentials kept from another origin",
-            _secured(harness, other, headers=patched),
+            _allowed(other, default_headers=patched),
             (
                 user_page("1", next=f"{_OTHER}/v1/users?api_key=k&cursor=2"),
                 user_page("2", next=f"{_SERVER}/users?api_key=k&cursor=3"),
                 user_page("3"),
             ),
             lambda api: api.protocols.users.follow.iterate(),
+            {},
         ),
         (
             "same origin bearer",
-            _secured(harness, other, auth=auth.AuthConfig({"bearer": token})),
+            _allowed(other),
             (_links("<?page=2>; rel=next"), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
+            bearer,
         ),
         (
-            "bearer the auth keeps from another origin",
-            _secured(harness, other, auth=auth.AuthConfig({"bearer": token})),
+            "bearer kept from another origin",
+            _allowed(other),
             (_links(secure), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
-        ),
-        (
-            "bearer the auth allows at another origin",
-            _secured(
-                harness,
-                other,
-                auth=auth.AuthConfig({"bearer": token}, allowed_origins=("https://api.example.com", _OTHER)),
-            ),
-            (_links(secure), user_page("2")),
-            lambda api: api.protocols.secure.users.iterate(),
+            bearer,
         ),
         (
             "other scheme's query key at the same origin",
-            _secured(harness, other, auth=auth.AuthConfig({"bearer": token})),
+            _allowed(other),
             (_links("<?api_key=leak&page=2>; rel=next"), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
+            bearer,
         ),
         (
             "scheme query key without auth at the same origin",
-            options.ClientOptions(),
+            {},
             (user_page("1", next="/v1/users?cursor=2&api_key=leak"), user_page("2")),
             lambda api: api.protocols.users.follow.iterate(),
+            {},
         ),
         (
             "query key repeated by the URL",
-            options.ClientOptions(auth=auth.AuthConfig({"query_key": key})),
+            {},
             (user_page("1", next="/v1/keyed/users?api_key=key&cursor=2"), user_page("2")),
             lambda api: api.protocols.keyed.users.iterate(),
+            {"query_key": "key"},
         ),
         (
             "relative URL after a redirect",
-            options.ClientOptions(redirects=options.RedirectOptions(enabled=True)),
+            {"follow_redirects": True},
             (
                 lambda _: httpx2.Response(302, headers={"Location": "/v2/people"}),
                 user_page("1", next="?cursor=2"),
                 user_page("2"),
             ),
             lambda api: api.protocols.users.follow.iterate(),
+            {},
         ),
         (
-            "redirect to another origin without scheme credentials",
-            options.ClientOptions(headers=patched, redirects=redirects),
+            "a scheme key header is never redirected",
+            {"default_headers": patched, "follow_redirects": True},
             (
                 lambda _: httpx2.Response(302, headers={"Location": f"{_OTHER}/v1/users?api_key=k&page=1"}),
                 user_page("1"),
             ),
             lambda api: api.users.with_response.list_users,
+            {},
         ),
     )
 
 
 def _guards(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
     """Run the guarded rows synchronously."""
-    for label, settings, responders, start in _guarded(harness, asynchronous=False):
-        with exchange.client() as native, harness.package.Client(http_client=native, options=settings) as api:
+    for label, settings, responders, start, credentials in _guarded(harness):
+        with (
+            exchange.client() as native,
+            harness.package.Client(http_client=native, **settings, **credentials) as api,
+        ):
             exchange.respond(*responders)
             started = start(api)
             if callable(started):
@@ -325,10 +315,10 @@ def _guards(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
 
 async def _aguards(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
     """Run the guarded rows with asyncio."""
-    for label, settings, responders, start in _guarded(harness, asynchronous=True):
+    for label, settings, responders, start, credentials in _guarded(harness):
         async with (
             exchange.async_client() as native,
-            harness.package.AsyncClient(http_client=native, options=settings) as api,
+            harness.package.AsyncClient(http_client=native, **settings, **credentials) as api,
         ):
             exchange.respond(*responders)
             started = start(api)

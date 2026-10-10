@@ -359,5 +359,24 @@
         "name": "not-reached"
       }
     ]
+  },
+  {
+    "name": "native cancellation while waiting for the send turn",
+    "stopped_turn": true,
+    "hold_entry": false,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "stopped-turn"
+      },
+      {
+        "kind": "child_cancel",
+        "task": "second",
+        "message": "queued native child"
+      },
+      {
+        "kind": "turn"
+      }
+    ]
   }
 ]

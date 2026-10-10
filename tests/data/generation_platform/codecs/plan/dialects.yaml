@@ -56,6 +56,17 @@ paths:
           in: header
           content:
             text/plain: {}
+        - {name: nested, in: header, schema: {type: array, items: {type: array, items: {type: string}}}}
+        - {name: objects, in: header, explode: true, schema: {type: object, properties: {inner: {type: object}}}}
+        - {name: untypedObject, in: header, schema: {properties: {a: {type: string}}}}
+        - {name: untypedArray, in: header, schema: {items: {type: string}}}
+        - {name: label, in: header, schema: {allOf: [{type: string}, {minLength: 1}]}}
+        - {name: either, in: header, schema: {type: [integer, boolean]}}
+        - {name: choice, in: header, schema: {enum: [1, a]}}
+        - {name: nothing, in: header, schema: {type: "null"}}
+        - {name: nullOnly, in: header, schema: {enum: [null]}}
+        - {name: none, in: header, schema: {type: [string, "null"], enum: [null]}}
+        - {name: limitless, in: query, schema: {type: number, default: .inf}}
       responses:
         "200":
           description: ok
