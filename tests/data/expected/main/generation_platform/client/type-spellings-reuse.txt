@@ -1,24 +1,23 @@
 # type-spellings-reuse
 render dataclasses.dataclass
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/model_codecs.py
-  write client/resources/__init__.py
-  write client/resources/default/__init__.py
-  write client/resources/default/_sync.py
-  write client/resources/default/_async.py
-  write client/types/__init__.py
-  write client/types/default/__init__.py
-  write client/types/default/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_operations.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py

@@ -11,10 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "client-coordinator": (
-        "private-import:tests/api_generation/support/client_generation.py",
-        "private-import:tests/api_generation/support/client_protocol_records.py",
-    ),
+    "client-coordinator": ("private-import:tests/api_generation/support/client_protocol_records.py",),
     "command-output": (
         "embedded-source:tests/data/expected/main/generation_platform/client/cli/check-edited.txt",
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check-model-readme.txt",
@@ -1154,8 +1151,9 @@ ALLOWLISTS = {
 }
 ALLOWLIST_GROUP_REASONS = {
     "client-coordinator": (
-        "The client render cases reach the coordinator directly until they run through generate(), and "
-        "client_protocol_records builds the protocol configuration records that the coordinator consumes."
+        "client_protocol_records builds the protocol and client configuration records that the coordinator consumes "
+        "and gives the coordinator the inputs generate() does not take: Python helper records, a helper file path, "
+        "and models without an output."
     ),
     "command-output": (
         "Command-line output that prints generated files, as a user sees it, compared with what the command prints."

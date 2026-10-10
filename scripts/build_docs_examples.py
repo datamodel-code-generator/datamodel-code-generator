@@ -154,17 +154,24 @@ def blocks(path: Path | str, *needles: str, limit: int | None = None, separator:
 
 
 def client_blocks(case_name: str, module: str, *needles: str, limit: int | None = None, separator: str = "\n\n") -> str:
-    """Render a tested client's module and select its documentation blocks without package snapshots."""
-    from tests.api_generation.support.client_generation import render_client  # ruff: ignore[import-outside-top-level]
+    """Generate a tested client's module in a scratch directory and select its documentation blocks."""
+    from tempfile import TemporaryDirectory  # ruff: ignore[import-outside-top-level]
+
+    from tests.api_generation.support.client_generation import (  # ruff: ignore[import-outside-top-level]
+        prepare_client_case,
+        render_client,
+    )
 
     case = json.loads(read_text(CLIENT_DATA / "cases.json"))[case_name]
-    _, modules = render_client(
-        CLIENT_DATA / case["input"],
-        CLIENT_DATA,
-        "pydantic_v2.BaseModel",
-        case.get("model", {}),
-        case.get("config", {}),
-    )
+    with TemporaryDirectory() as directory:
+        prepare_client_case(case_name, root := Path(directory))
+        _, modules = render_client(
+            root / case["input"],
+            root,
+            "pydantic_v2.BaseModel",
+            case.get("model", {}),
+            case.get("config", {}),
+        )
     source = PYTHON_GENERATED_HEADER_PATTERN.sub("", modules[("client", *Path(module).parts)].rstrip(), count=1)
     return blocks(source, *needles, limit=limit, separator=separator)
 

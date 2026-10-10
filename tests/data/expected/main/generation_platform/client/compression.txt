@@ -1,44 +1,43 @@
 # compression
 render pydantic_v2.BaseModel
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/bodies.py
-  write client/model_codecs.py
-  write client/protocols/__init__.py
-  write client/resources/__init__.py
-  write client/resources/items/__init__.py
-  write client/resources/items/_sync.py
-  write client/resources/items/_async.py
-  write client/resources/jobs/__init__.py
-  write client/resources/jobs/_sync.py
-  write client/resources/jobs/_async.py
-  write client/resources/checks/__init__.py
-  write client/resources/checks/_sync.py
-  write client/resources/checks/_async.py
-  write client/resources/events/__init__.py
-  write client/resources/events/_sync.py
-  write client/resources/events/_async.py
-  write client/types/__init__.py
-  write client/types/items/__init__.py
-  write client/types/items/_operations.py
-  write client/types/jobs/__init__.py
-  write client/types/jobs/_operations.py
-  write client/types/checks/__init__.py
-  write client/types/checks/_operations.py
-  write client/types/events/__init__.py
-  write client/types/events/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_operations.py
-  write client/protocols/_plans.py
-  write client/protocols/_helpers.py
-  write client/protocols/_async_helpers.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/bodies.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/checks/__init__.py
+  client/resources/checks/_async.py
+  client/resources/checks/_sync.py
+  client/resources/events/__init__.py
+  client/resources/events/_async.py
+  client/resources/events/_sync.py
+  client/resources/items/__init__.py
+  client/resources/items/_async.py
+  client/resources/items/_sync.py
+  client/resources/jobs/__init__.py
+  client/resources/jobs/_async.py
+  client/resources/jobs/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/checks/__init__.py
+  client/types/checks/_operations.py
+  client/types/events/__init__.py
+  client/types/events/_operations.py
+  client/types/items/__init__.py
+  client/types/items/_operations.py
+  client/types/jobs/__init__.py
+  client/types/jobs/_operations.py
+  models.py

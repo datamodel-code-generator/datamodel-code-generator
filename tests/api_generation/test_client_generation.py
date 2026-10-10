@@ -11,14 +11,14 @@ from datamodel_code_generator import get_version
 from datamodel_code_generator.util import get_yaml_backend
 from tests.api_generation.support.client_generation import (
     client_api_report,
-    client_config_report,
     client_documents,
-    client_helper_spelling_report,
     client_input_report,
     client_ordinary_models,
     client_render,
+    client_tree,
     generate_client,
 )
+from tests.api_generation.support.client_protocol_records import client_config_report
 from tests.conftest import (
     assert_exact_directory_content,
     assert_generated_modules_output,
@@ -293,19 +293,32 @@ def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path:
 
 
 @pytest.mark.parametrize(
-    ("first", "second", "expected"),
+    ("first", "second"),
     [
-        ("pagination-root", "pagination-documents", "helper-documents"),
-        ("webhooks", "webhooks-python", "webhook-records"),
-        ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
-        ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
-        ("caching", "caching-python", "cache-records"),
-        ("references", "self-references", "reference-spellings"),
+        ("pagination-root", "pagination-documents"),
+        ("webhooks", "webhooks-python"),
+        ("webhooks-public-keys", "webhooks-public-keys-python"),
+        ("webhooks-adapters", "webhooks-adapters-python"),
+        ("caching", "caching-python"),
+        ("references", "self-references"),
+    ],
+    ids=[
+        "pagination-root-pagination-documents-helper-documents",
+        "webhooks-webhooks-python-webhook-records",
+        "webhooks-public-keys-webhooks-public-keys-python-webhook-public-key-records",
+        "webhooks-adapters-webhooks-adapters-python-webhook-adapter-records",
+        "caching-caching-python-cache-records",
+        "references-self-references-reference-spellings",
     ],
 )
-def test_client_helper_spellings(first: str, second: str, expected: str, tmp_path: Path) -> None:
-    """Render equivalent helper settings, such as file references and Python records, into the same package."""
-    assert_output(client_helper_spelling_report(first, second, tmp_path), EXPECTED / "spellings" / f"{expected}.txt")
+def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> None:
+    """Generate equivalent helper settings, such as file references and Python records, into the same files.
+
+    Each id names the equality it shows.
+    """
+    left, right = (client_tree(name, tmp_path / name) for name in (first, second))
+    for pattern in ("*.py", "*.md", "py.typed"):
+        assert_exact_directory_content(left, right, pattern)
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-"""Keep generated client dependency and copied-runtime costs visible per capability."""
+"""Keep generated client public files and copied-runtime costs visible per capability."""
 
 from __future__ import annotations
 

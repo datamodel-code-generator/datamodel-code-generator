@@ -1,153 +1,149 @@
 # polling-plans
 render pydantic_v2.dataclass
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/model_codecs.py
-  write client/protocols/__init__.py
-  write client/resources/__init__.py
-  write client/resources/jobs/__init__.py
-  write client/resources/jobs/_sync.py
-  write client/resources/jobs/_async.py
-  write client/resources/reports/__init__.py
-  write client/resources/reports/_sync.py
-  write client/resources/reports/_async.py
-  write client/resources/exports/__init__.py
-  write client/resources/exports/_sync.py
-  write client/resources/exports/_async.py
-  write client/types/__init__.py
-  write client/types/jobs/__init__.py
-  write client/types/jobs/_operations.py
-  write client/types/reports/__init__.py
-  write client/types/reports/_operations.py
-  write client/types/exports/__init__.py
-  write client/types/exports/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_generated/security.py
-  write client/_operations.py
-  write client/protocols/_plans.py
-  write client/protocols/_helpers.py
-  write client/protocols/_async_helpers.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/exports/__init__.py
+  client/resources/exports/_async.py
+  client/resources/exports/_sync.py
+  client/resources/jobs/__init__.py
+  client/resources/jobs/_async.py
+  client/resources/jobs/_sync.py
+  client/resources/reports/__init__.py
+  client/resources/reports/_async.py
+  client/resources/reports/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/exports/__init__.py
+  client/types/exports/_operations.py
+  client/types/jobs/__init__.py
+  client/types/jobs/_operations.py
+  client/types/reports/__init__.py
+  client/types/reports/_operations.py
+  models.py
 render dataclasses.dataclass
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/model_codecs.py
-  write client/protocols/__init__.py
-  write client/resources/__init__.py
-  write client/resources/jobs/__init__.py
-  write client/resources/jobs/_sync.py
-  write client/resources/jobs/_async.py
-  write client/resources/reports/__init__.py
-  write client/resources/reports/_sync.py
-  write client/resources/reports/_async.py
-  write client/resources/exports/__init__.py
-  write client/resources/exports/_sync.py
-  write client/resources/exports/_async.py
-  write client/types/__init__.py
-  write client/types/jobs/__init__.py
-  write client/types/jobs/_operations.py
-  write client/types/reports/__init__.py
-  write client/types/reports/_operations.py
-  write client/types/exports/__init__.py
-  write client/types/exports/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_generated/security.py
-  write client/_operations.py
-  write client/protocols/_plans.py
-  write client/protocols/_helpers.py
-  write client/protocols/_async_helpers.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/exports/__init__.py
+  client/resources/exports/_async.py
+  client/resources/exports/_sync.py
+  client/resources/jobs/__init__.py
+  client/resources/jobs/_async.py
+  client/resources/jobs/_sync.py
+  client/resources/reports/__init__.py
+  client/resources/reports/_async.py
+  client/resources/reports/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/exports/__init__.py
+  client/types/exports/_operations.py
+  client/types/jobs/__init__.py
+  client/types/jobs/_operations.py
+  client/types/reports/__init__.py
+  client/types/reports/_operations.py
+  models.py
 render typing.TypedDict
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/model_codecs.py
-  write client/protocols/__init__.py
-  write client/resources/__init__.py
-  write client/resources/jobs/__init__.py
-  write client/resources/jobs/_sync.py
-  write client/resources/jobs/_async.py
-  write client/resources/reports/__init__.py
-  write client/resources/reports/_sync.py
-  write client/resources/reports/_async.py
-  write client/resources/exports/__init__.py
-  write client/resources/exports/_sync.py
-  write client/resources/exports/_async.py
-  write client/types/__init__.py
-  write client/types/jobs/__init__.py
-  write client/types/jobs/_operations.py
-  write client/types/reports/__init__.py
-  write client/types/reports/_operations.py
-  write client/types/exports/__init__.py
-  write client/types/exports/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_generated/security.py
-  write client/_operations.py
-  write client/protocols/_plans.py
-  write client/protocols/_helpers.py
-  write client/protocols/_async_helpers.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/exports/__init__.py
+  client/resources/exports/_async.py
+  client/resources/exports/_sync.py
+  client/resources/jobs/__init__.py
+  client/resources/jobs/_async.py
+  client/resources/jobs/_sync.py
+  client/resources/reports/__init__.py
+  client/resources/reports/_async.py
+  client/resources/reports/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/exports/__init__.py
+  client/types/exports/_operations.py
+  client/types/jobs/__init__.py
+  client/types/jobs/_operations.py
+  client/types/reports/__init__.py
+  client/types/reports/_operations.py
+  models.py
 render msgspec.Struct
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/model_codecs.py
-  write client/protocols/__init__.py
-  write client/resources/__init__.py
-  write client/resources/jobs/__init__.py
-  write client/resources/jobs/_sync.py
-  write client/resources/jobs/_async.py
-  write client/resources/reports/__init__.py
-  write client/resources/reports/_sync.py
-  write client/resources/reports/_async.py
-  write client/resources/exports/__init__.py
-  write client/resources/exports/_sync.py
-  write client/resources/exports/_async.py
-  write client/types/__init__.py
-  write client/types/jobs/__init__.py
-  write client/types/jobs/_operations.py
-  write client/types/reports/__init__.py
-  write client/types/reports/_operations.py
-  write client/types/exports/__init__.py
-  write client/types/exports/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_generated/security.py
-  write client/_operations.py
-  write client/protocols/_plans.py
-  write client/protocols/_helpers.py
-  write client/protocols/_async_helpers.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'msgspec>=0.21.1']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/exports/__init__.py
+  client/resources/exports/_async.py
+  client/resources/exports/_sync.py
+  client/resources/jobs/__init__.py
+  client/resources/jobs/_async.py
+  client/resources/jobs/_sync.py
+  client/resources/reports/__init__.py
+  client/resources/reports/_async.py
+  client/resources/reports/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/exports/__init__.py
+  client/types/exports/_operations.py
+  client/types/jobs/__init__.py
+  client/types/jobs/_operations.py
+  client/types/reports/__init__.py
+  client/types/reports/_operations.py
+  models.py

@@ -1,2 +1,0 @@
-# pagination-root and pagination-documents
-  same files True

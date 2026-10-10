@@ -1,12 +1,30 @@
-"""Python helper configurations of the client protocol fixtures, relative to the working directory."""
+"""Fixture inputs that only the client coordinator accepts, and the renders and reports that give them.
+
+These are Python helper records, relative to the working directory, a helper file given as a path, client settings
+built as Python records, and model settings without an output. generate() takes helpers and settings as JSON values
+and returns the files of a run without an output, so these cases reach the coordinator directly.
+"""
 
 from __future__ import annotations
 
-from dataclasses import replace
+import json
+from dataclasses import fields, replace
 from functools import reduce
-from typing import TYPE_CHECKING
+from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator import Error
+from datamodel_code_generator._api_generation import generate_target
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
+from datamodel_code_generator._client.config import (
+    BodyFieldName,
+    ClientGenerationConfig,
+    ClientOperationConfig,
+    IdempotencyMetadata,
+    ParameterName,
+    ResourceName,
+    RuntimeOperationMetadata,
+)
 from datamodel_code_generator._client.protocols import (
     AdapterSignature,
     Binding,
@@ -39,6 +57,7 @@ from datamodel_code_generator._client.protocols import (
     StripeStyleSignature,
     WebhookHelper,
 )
+from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
@@ -49,7 +68,12 @@ from datamodel_code_generator._runtime.protocols.records import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from datamodel_code_generator import GenerateConfig
     from datamodel_code_generator._client.protocols import Source
+
+CONFIGS = Path(__file__).parents[2] / "data" / "generation_platform" / "client" / "configs.json"
 
 USERS = "/paths/~1users/get"
 USER = SchemaRef(pointer="/components/schemas/User")
@@ -421,3 +445,95 @@ RECORDS = {
     "adapters": ADAPTERS,
     "caching": CACHING,
 }
+
+
+def coordinated(case: Mapping[str, Any]) -> bool:
+    """Return whether a render case gives Python helper records, a helper file path, or models without an output."""
+    protocols = case.get("config", {}).get("protocols")
+    model = case.get("model", {})
+    return (isinstance(protocols, dict) and ("python" in protocols or "file" in protocols)) or (
+        "output" in model and model["output"] is None
+    )
+
+
+def _selector(value: object) -> object:
+    return OperationRef(**value) if isinstance(value, dict) else value
+
+
+def _operation(value: dict[str, Any]) -> ClientOperationConfig:
+    converted: dict[str, Any] = {**value, "ref": _selector(value.get("ref"))}
+    if isinstance(names := value.get("parameter_names"), list):
+        converted["parameter_names"] = tuple(
+            ParameterName(**item) if isinstance(item, dict) else item for item in names
+        )
+    if isinstance(body_fields := value.get("body_field_names"), list):
+        converted["body_field_names"] = tuple(
+            BodyFieldName(**item) if isinstance(item, dict) else item for item in body_fields
+        )
+    if isinstance(runtime := value.get("runtime"), dict):
+        statuses = runtime.get("success_statuses", ())
+        encodings = runtime.get("accepted_content_encodings", ())
+        idempotency = runtime.get("idempotency")
+        converted["runtime"] = RuntimeOperationMetadata(**{
+            **runtime,
+            "success_statuses": tuple(statuses) if isinstance(statuses, list) else statuses,
+            "accepted_content_encodings": tuple(encodings) if isinstance(encodings, list) else encodings,
+            "idempotency": IdempotencyMetadata(**idempotency) if isinstance(idempotency, dict) else idempotency,
+        })
+    return ClientOperationConfig(**converted)
+
+
+def _protocols(value: str | dict[str, Any], root: Path) -> object:
+    """Return a file under the case root, named directly or as a file entry, a record fixture, or a raw value."""
+    if isinstance(value, str):
+        return root / value
+    if "python" in value:
+        return RECORDS[value["python"]]
+    return root / value["file"] if "file" in value else value["raw"]
+
+
+def client_config(values: Mapping[str, Any], root: Path) -> ClientGenerationConfig:
+    """Build client settings from JSON fixture values; `protocols` names a file, record, or raw value."""
+    values = {"output": "client", "package": "client", "model_package": "models", **values}
+    converted: dict[str, Any] = {}
+    for key, value in values.items():
+        match key:
+            case "output":
+                converted[key] = root / value
+            case "resource_names" if isinstance(value, list):
+                converted[key] = tuple(ResourceName(**item) if isinstance(item, dict) else item for item in value)
+            case "operations" if isinstance(value, list):
+                converted[key] = tuple(_operation(item) for item in value)
+            case "protocols":
+                converted[key] = _protocols(value, root)
+            case _:
+                converted[key] = value
+    return ClientGenerationConfig(**converted)
+
+
+def coordinator_generate(source: Path, model_config: GenerateConfig, values: Mapping[str, Any], root: Path) -> None:
+    """Generate the models and the client package of fixture settings under a root through the coordinator."""
+    generate_target(source, model_config=model_config, config=client_config(values, root), generator=ClientTarget())
+
+
+def _setting(value: object, root: Path) -> str:
+    match value:
+        case tuple():
+            items = [_setting(item, root) for item in value]
+            return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
+        case Path():
+            return repr(PurePosixPath(value.relative_to(root).as_posix()))
+        case _:
+            return repr(value)
+
+
+def client_config_report(case_name: str, root: Path) -> str:
+    """Construct one client configuration from Python values and report it or its diagnostics."""
+    case = json.loads(CONFIGS.read_text(encoding="utf-8"))[case_name]
+    try:
+        config = client_config(case, root)
+    except Error as error:
+        return f"Error: {error}\n"
+    except TypeError as error:
+        return f"TypeError: {error}\n"
+    return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
