@@ -1488,34 +1488,86 @@ def test_external_ref_transport_type_error_is_not_misclassified(monkeypatch: pyt
         parser._get_ref_body_from_url("https://example.com/schema.json")
 
 
+def _write_ref_root(tmp_path: Path, ref: str) -> Path:
+    root = tmp_path / "root.json"
+    root.write_text(json.dumps({"type": "object", "properties": {"a": {"$ref": ref}}}), encoding="utf-8")
+    return root
+
+
 @pytest.mark.parametrize(
-    ("url", "body", "shown"),
+    ("filename", "body", "userinfo", "query"),
     [
-        ("https://example.com/truncated.json", "{", "https://example.com/truncated.json"),
-        ("https://example.com/truncated.yaml", "schema: [", "https://example.com/truncated.yaml"),
-        (
-            "https://user:secret@example.com:8443/v1/truncated.json?token=SECRET#/x",
-            "{",
-            "https://example.com:8443/v1/truncated.json",
-        ),
+        ("truncated.json", b"{", "", ""),
+        ("truncated.yaml", b"schema: [", "", ""),
+        ("truncated.json", b"{", "user:secret@", "?token=SECRET"),
     ],
     ids=("json", "yaml", "credentials"),
 )
 def test_malformed_remote_ref_body_has_format_and_url_context(
-    url: str,
-    body: str,
-    shown: str,
-    monkeypatch: pytest.MonkeyPatch,
+    local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    filename: str,
+    body: bytes,
+    userinfo: str,
+    query: str,
 ) -> None:
     """Translate malformed fetched bodies at the decoder boundary with their URL, without its secrets."""
-    parser = JsonSchemaParser("")
-    monkeypatch.setattr(parser, "_get_text_from_url", lambda _: body)
+    origin = local_http_server.removeprefix("http://")
+    _SchemaHandler.routes[f"/{filename}"] = (200, {"content-type": "application/json"}, body)
+    try:
+        run_main_and_assert(
+            input_path=_write_ref_root(tmp_path, f"http://{userinfo}{origin}/{filename}{query}#/x"),
+            output_path=tmp_path / "model.py",
+            input_file_type="jsonschema",
+            extra_args=["--allow-remote-refs", "--allow-private-network"],
+            expected_exit=Exit.ERROR,
+            capsys=capsys,
+            expected_stderr_contains=f"Invalid file format for jsonschema at {local_http_server}/{filename}: ",
+        )
+    finally:
+        del _SchemaHandler.routes[f"/{filename}"]
 
-    with pytest.raises(
-        InvalidFileFormatError,
-        match=rf"^Invalid file format for jsonschema at {re.escape(shown)}: ",
-    ):
-        parser._get_ref_body_from_url(url)
+
+def test_invalid_external_ref_omits_credentials_and_query(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Name an external reference with two fragments without its userinfo or query."""
+    run_main_and_assert(
+        input_path=_write_ref_root(tmp_path, "http://user:secret@example.com/x.json?token=SECRET#/a#b"),
+        output_path=tmp_path / "model.py",
+        input_file_type="jsonschema",
+        extra_args=["--allow-remote-refs"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Invalid external $ref: http://example.com/x.json\n",
+    )
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("missing.json", "$ref local file not found for http://example.com/missing.json: tried {tried}\n"),
+        ("%2e%2e/x.json", "Unsupported local HTTP $ref URL path: http://example.com/%2e%2e/x.json\n"),
+    ],
+    ids=("not-found", "unsafe-path"),
+)
+def test_local_http_ref_errors_omit_credentials_and_query(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    path: str,
+    expected: str,
+) -> None:
+    """Name a mirrored HTTP reference without its userinfo or query, and look it up by host."""
+    mirror = tmp_path / "mirror"
+    mirror.mkdir()
+    run_main_and_assert(
+        input_path=_write_ref_root(tmp_path, f"http://user:secret@example.com/{path}?token=SECRET#/a"),
+        output_path=tmp_path / "model.py",
+        input_file_type="jsonschema",
+        extra_args=["--http-local-ref-path", str(mirror)],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected.format(tried=mirror.resolve() / "example.com" / "missing.json"),
+    )
 
 
 @pytest.mark.parametrize(
