@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
+import pytest
 import yaml
 
 import datamodel_code_generator
@@ -259,6 +260,7 @@ def client_binding_report(case_name: str, root: Path) -> tuple[str, list[tuple[M
     return _report(case_name, lines, changes, root), packages
 
 
+@pytest.mark.abnormal_path("Another process rewriting the staged models cannot be timed from outside.")
 @contextmanager
 def _rewritten_stage(old: str, new: str) -> Iterator[None]:
     """Replace text in staged models whenever they are read, as a process rewriting the staging directory would."""

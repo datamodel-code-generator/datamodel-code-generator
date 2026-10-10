@@ -71,6 +71,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "data-logic:tests/data/python/core_special_field_prefix_generate.py",
         "data-logic:tests/data/python/generation_session_inputs.py",
     ),
+    "observation-stubs": ("normal-path-mock:tests/data/python/client_native.py::_phases",),
     "runtime-tables": (
         "private-import:tests/data/generation_platform/codecs/typing/annotations.py",
         "private-import:tests/data/generation_platform/codecs/typing/codecs.py",
@@ -80,6 +81,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/generation_platform/codecs/typing/positive.py",
         "private-import:tests/data/python/model_codec_reports.py",
     ),
+    "unobservable-cleanup": ("normal-path-mock:tests/data/python/fastapi_upstream.py::_observe",),
 }
 FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "binding-e2e": (
@@ -378,31 +380,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "embedded-source:tests/data/expected/main/generation_platform/client/bindings/type-statement.txt",
         "embedded-source:tests/data/expected/main/generation_platform/client/fields-shared-refs.txt",
         "embedded-source:tests/data/expected/main/generation_platform/client/input-cycle-reference.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/bodies.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/callbacks.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/docstrings.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/empty.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/encoding.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/info.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/methods.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/names.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/native-custom.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/native-generator.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/native-readonly.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/native-settings.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/native.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/parameters.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/pets.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/references.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/request.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/responses.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/scheme-names.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/security.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/services.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/single.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/templates.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/types.txt",
-        "embedded-source:tests/data/expected/main/generation_platform/fastapi/unbound.txt",
         "embedded-source:tests/data/expected/main/generation_platform/targets/format.txt",
         "embedded-source:tests/data/expected/main/generation_platform/targets/include-paths.txt",
         "embedded-source:tests/data/expected/main/generation_platform/targets/layout-embedded.txt",
@@ -1464,9 +1441,17 @@ ALLOWLIST_GROUP_REASONS = {
         "Drivers that model tests in tests/main run in a subprocess or import as inputs, kept with the model test "
         "fixtures."
     ),
+    "observation-stubs": (
+        "An SDK-owned client builds its own transport, so only a replaced send of that transport sees the timeouts and "
+        "redirect settings each request goes out with."
+    ),
     "runtime-tables": (
         "Combinatorial wire-rule tables, the official JSON Schema suite, and the codec type-check probes exercise "
         "the runtime directly."
+    ),
+    "unobservable-cleanup": (
+        "Files the multipart parser allocates for a request it then refuses never reach a handler, so a spy on their "
+        "construction is the only way to see that the refused request closed them."
     ),
     "binding-e2e": (
         "Fold binding, session, and contract tests into target scenarios; first sweep each guard they inject faults "

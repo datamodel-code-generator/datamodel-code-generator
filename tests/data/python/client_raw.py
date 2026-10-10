@@ -302,6 +302,7 @@ def _status(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         record(lines, "partly read status", response.raise_for_status)
 
 
+@pytest.mark.abnormal_path("A failing link of a completed download needs a full disk or a lost volume.")
 def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Write a body to a borrowed file object, or to a path through a temporary file that success moves there."""
     pet, streaming = _pet(package), api.pets.with_streaming_response
@@ -511,6 +512,7 @@ async def _alist(chunks: AsyncIterator[bytes]) -> list[bytes]:
     return [chunk async for chunk in chunks]
 
 
+@pytest.mark.abnormal_path("A failing link of a completed download needs a full disk or a lost volume.")
 async def _async_download(streaming: Any, pet: object, exchange: Exchange, lines: list[str], directory: Path) -> None:
     target, raced, sink = directory / "pet.json", directory / "raced.json", io.BytesIO()
     exchange.respond(

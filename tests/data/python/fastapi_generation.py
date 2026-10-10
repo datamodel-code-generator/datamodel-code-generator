@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import warnings
 from pathlib import Path
@@ -20,8 +19,6 @@ SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
 RUNTIME = Path(_runtime.__file__).parent
 BUILTIN_TEMPLATES = RUNTIME.parent / "_fastapi" / "templates"
-_DIGEST = re.compile(r'"[0-9a-f]{64}"')
-_SIZE = re.compile(r'"size":\d+')
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
@@ -54,7 +51,13 @@ def in_directory(root: Path) -> AbstractContextManager[object]:
 
 
 def _render(
-    case: dict[str, Any], backend: str, root: Path, modules: Modules, *, builtin_sources: bool = False
+    case: dict[str, Any],
+    backend: str,
+    root: Path,
+    modules: Modules,
+    documents: Modules,
+    *,
+    builtin_sources: bool = False,
 ) -> list[str]:
     model = {
         "input_file_type": "openapi",
@@ -80,7 +83,6 @@ def _render(
     except Error as error:
         return [f"  Error: {error}"]
     lines: list[str] = []
-    shown: list[str] = []
     for parts, text in files.items():
         line = f"  {'/'.join(parts)}"
         match Path(*parts).suffix, parts:
@@ -94,24 +96,28 @@ def _render(
                     "package_snapshots", case.get("backends", ["pydantic_v2.BaseModel"])
                 ):
                     modules[parts] = text
+            case ".md", parts if backend in case.get("readme", ()):
+                documents[parts] = text
             case _:
-                shown.append(f"  file {'/'.join(parts)}")
-                masked = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', text))
-                shown.extend(f"    | {item}" if item else "    |" for item in masked.splitlines())
+                pass
         lines.append(line)
-    return [*lines, *shown]
+    return lines
 
 
-def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False) -> tuple[str, dict[str, Modules]]:
-    """Render one fixture for each of its backends, returning a report and every backend's Python modules.
+def fastapi_render(
+    case_name: str, root: Path, *, builtin_sources: bool = False
+) -> tuple[str, dict[str, Modules], Modules]:
+    """Render one fixture for each of its backends, returning a report, every backend's Python modules, and READMEs.
 
-    The report is headed by the case's `expected` name, or its own. With builtin_sources, a custom template directory
+    The report lists every file a render returns. The READMEs, under their backend's directory, are those of the
+    backends the case's `readme` names. The report is headed by the case's `expected` name, or its own. With builtin_sources, a custom template directory
     holds a copy of the builtin server templates, so that every role renders from its Jinja source instead of its
     compiled renderer.
     """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case.get('expected', case_name)}"]
     rendered: dict[str, Modules] = {}
+    documented: Modules = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
         with warnings.catch_warnings(record=True) as recorded:
@@ -122,13 +128,15 @@ def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False)
                     backend,
                     root / (name := backend.replace(".", "_")),
                     modules := {},
+                    documents := {},
                     builtin_sources=builtin_sources,
                 )
             )
         lines.extend(f"  {item.category.__name__}: {item.message}" for item in recorded)
         if modules:
             rendered[name] = modules
-    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
+        documented.update(((name, *parts), text) for parts, text in documents.items())
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered, documented
 
 
 def fastapi_api_report(root: Path) -> str:

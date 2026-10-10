@@ -82,6 +82,9 @@ class _Stop(BaseException):
     pass
 
 
+_INTERRUPTIONS = (asyncio.CancelledError, _Stop, KeyboardInterrupt, SystemExit)
+
+
 class _RewindFile(io.BytesIO):
     def __init__(self, failure: BaseException) -> None:
         super().__init__(b"body")
@@ -120,9 +123,10 @@ def _secondary(error: BaseException) -> list[str]:
 
 
 def _capture(call: Callable[[], object]) -> tuple[object, ...]:
+    """Record a call's data and attempts, or the SDK error or the KeyboardInterrupt of an interrupted wait."""
     try:
         result = call()
-    except BaseException as error:  # noqa: BLE001
+    except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001
         return _error(error)
     info = getattr(result, "info", None)
     return (
@@ -132,9 +136,10 @@ def _capture(call: Callable[[], object]) -> tuple[object, ...]:
 
 
 async def _acapture(call: Callable[[], Awaitable[object]]) -> tuple[object, ...]:
+    """Record an awaited call's data and attempts, or the SDK error that ended it."""
     try:
         result = await call()
-    except BaseException as error:  # noqa: BLE001
+    except Exception as error:  # noqa: BLE001
         return _error(error)
     info = getattr(result, "info", None)
     return (
@@ -205,14 +210,14 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
 
 
 def _close_interruptions(api: object, events: _Events, exchange: Exchange, lines: list[str]) -> None:
-    for error_type in (asyncio.CancelledError, _Stop, KeyboardInterrupt, SystemExit):
+    for error_type in _INTERRUPTIONS:
         interrupted = error_type("native retry close")
         interrupted.__dict__["__notes__"] = ["original close note"]
         body = _Broken(read=False, close=interrupted)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         try:
             api.retry.with_response.get_safe()
-        except BaseException as error:  # noqa: BLE001
+        except _INTERRUPTIONS as error:
             observed = (
                 type(error).__name__,
                 error is interrupted,
@@ -247,7 +252,7 @@ def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None
         ):
             try:
                 api.retry.post_idempotent(body=file)
-            except BaseException as error:  # noqa: BLE001
+            except errors.SDKError as error:
                 observed = _error(error), error is failure, getattr(error, "cause", None) is failure, file.calls
             else:
                 observed = ("returned",)
@@ -307,14 +312,14 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
 
 
 async def _async_close_interruptions(api: object, events: _Events, exchange: Exchange, lines: list[str]) -> None:
-    for error_type in (asyncio.CancelledError, _Stop, KeyboardInterrupt, SystemExit):
+    for error_type in _INTERRUPTIONS:
         interrupted = error_type("native retry close")
         interrupted.__dict__["__notes__"] = ["original close note"]
         body = _Broken(read=False, close=interrupted)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         try:
             await api.retry.with_response.get_safe()
-        except BaseException as error:  # noqa: BLE001
+        except _INTERRUPTIONS as error:
             observed = (
                 type(error).__name__,
                 error is interrupted,
@@ -349,7 +354,7 @@ async def _async_presend(package: ModuleType, options: ModuleType, lines: list[s
         ):
             try:
                 await api.retry.post_idempotent(body=file)
-            except BaseException as error:  # noqa: BLE001
+            except errors.SDKError as error:
                 observed = _error(error), error is failure, getattr(error, "cause", None) is failure, file.calls
             else:
                 observed = ("returned",)
