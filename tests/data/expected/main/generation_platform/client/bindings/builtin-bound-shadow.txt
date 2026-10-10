@@ -1,14 +1,12 @@
 # builtin-bound-shadow
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default shadow-0
-  @@ -8,0 +9,2 @@
+  @@ -7,0 +8,2 @@
+  +
   +str = int
-  +
 change pydantic_v2.BaseModel default shadow-1
-  @@ -8,0 +9,2 @@
-  +from builtins import int as str
+  @@ -7,0 +8,2 @@
   +
+  +from builtins import int as str

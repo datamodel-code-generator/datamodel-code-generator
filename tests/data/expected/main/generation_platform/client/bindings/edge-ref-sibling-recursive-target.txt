@@ -1,4 +1,4 @@
 # edge-ref-sibling-recursive-target
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
+  model_bindings.py pydantic_v2_BaseModel/default

@@ -1,64 +1,16 @@
 # capture-observation
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.ItemRequest
-  codec_1 models.ItemResponse
-  codec_2 models.BaseRequest
-  codec_3 models.Base
-  codec_4 models.ItemRequest
-  codec_5 models.ItemResponse
-  codec_6 str
-  codec_7 str
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.ItemRequest
-  codec_1 models.ItemResponse
-  codec_2 models.BaseRequest
-  codec_3 models.Base
-  codec_4 models.ItemRequest
-  codec_5 models.ItemResponse
-  codec_6 str
-  codec_7 str
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.ItemRequest
-  codec_1 models.ItemResponse
-  codec_2 models.BaseRequest
-  codec_3 models.Base
-  codec_4 models.ItemRequest
-  codec_5 models.ItemResponse
-  codec_6 str
-  codec_7 str
-  map models:Base id=id, ship-to=ship_to
-  map models:BaseRequest ship-to=ship_to
-  map models:ItemRequest ship-to=ship_to, secret=secret, values=values
-  map models:ItemResponse id=id, ship-to=ship_to, values=values
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.ItemRequest
-  codec_1 models.ItemResponse
-  codec_2 models.BaseRequest
-  codec_3 models.Base
-  codec_4 models.ItemRequest
-  codec_5 models.ItemResponse
-  codec_6 str
-  codec_7 str
-  map models:Base id=id, ship-to=ship-to
-  map models:BaseRequest ship-to=ship-to
-  map models:ItemRequest ship-to=ship-to, secret=secret, values=values
-  map models:ItemResponse id=id, ship-to=ship-to, values=values
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.ItemRequest
-  codec_1 models.ItemResponse
-  codec_2 models.BaseRequest
-  codec_3 models.Base
-  codec_4 models.ItemRequest
-  codec_5 models.ItemResponse
-  codec_6 str
-  codec_7 str
+  model_bindings.py msgspec_Struct/default

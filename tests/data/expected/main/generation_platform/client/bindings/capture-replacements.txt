@@ -1,80 +1,16 @@
 # capture-replacements
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 str
-  codec_3 str
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.Record
-  codec_9 models.Record
-  codec_10 models.Holder
-  codec_11 models.Holder
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 str
-  codec_3 str
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.Record
-  codec_9 models.Record
-  codec_10 models.Holder
-  codec_11 models.Holder
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 str
-  codec_3 str
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.Record
-  codec_9 models.Record
-  codec_10 models.Holder
-  codec_11 models.Holder
-  map models:Holder text=text, list=list, original=original, copy=copy, wrapper=wrapper
-  map models:Record value=value
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 str
-  codec_3 str
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.Record
-  codec_9 models.Record
-  codec_10 models.Holder
-  codec_11 models.Holder
-  map models:Holder text=text, list=list, original=original, copy=copy, wrapper=wrapper
-  map models:Record value=value
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 str
-  codec_3 str
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.Record
-  codec_9 models.Record
-  codec_10 models.Holder
-  codec_11 models.Holder
+  model_bindings.py msgspec_Struct/default

@@ -1,7 +1,4 @@
 # edge-legacy-header-map
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.File
-  codec_1 models.File
-  codec_2 models.PartialResponseContentRangeHeader
+  model_bindings.py pydantic_v2_BaseModel/default

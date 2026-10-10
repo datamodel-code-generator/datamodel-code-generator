@@ -1,9 +1,7 @@
 # decimal-types
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Prices
-  codec_1 models.Prices
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default equivalent-exponent
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None

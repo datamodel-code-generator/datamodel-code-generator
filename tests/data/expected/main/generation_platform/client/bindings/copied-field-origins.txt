@@ -1,172 +1,46 @@
 # copied-field-origins
 render pydantic_v2.BaseModel all
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel constraints
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel none
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.dataclass all
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py pydantic_v2_dataclass/all
 render pydantic_v2.dataclass constraints
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py pydantic_v2_dataclass/all
 render pydantic_v2.dataclass none
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py pydantic_v2_dataclass/all
 render dataclasses.dataclass all
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
-  map models:BaseRequest raw-note=raw_note, secret=secret
-  map models:BaseResponse raw-note=raw_note, id=id
-  map models:ChildRequest raw-note=raw_note, secret=secret
-  map models:ChildResponse raw-note=raw_note, id=id
-  map models:GrandChildRequest raw-note=raw_note, secret=secret
-  map models:GrandChildResponse raw-note=raw_note, id=id
+  model_bindings.py dataclasses_dataclass/all
 render dataclasses.dataclass constraints
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
-  map models:BaseRequest raw-note=raw_note, secret=secret
-  map models:BaseResponse raw-note=raw_note, id=id
-  map models:ChildRequest raw-note=raw_note, secret=secret
-  map models:ChildResponse raw-note=raw_note, id=id
-  map models:GrandChildRequest raw-note=raw_note, secret=secret
-  map models:GrandChildResponse raw-note=raw_note, id=id
+  model_bindings.py dataclasses_dataclass/all
 render dataclasses.dataclass none
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
-  map models:BaseRequest raw-note=raw_note, secret=secret
-  map models:BaseResponse raw-note=raw_note, id=id
-  map models:ChildRequest raw-note=raw_note, secret=secret
-  map models:ChildResponse raw-note=raw_note, id=id
-  map models:GrandChildRequest raw-note=raw_note, secret=secret
-  map models:GrandChildResponse raw-note=raw_note, id=id
+  model_bindings.py dataclasses_dataclass/all
 render typing.TypedDict all
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
-  map models:BaseRequest raw-note=raw-note, secret=secret
-  map models:BaseResponse raw-note=raw-note, id=id
-  map models:ChildRequest raw-note=raw-note, secret=secret
-  map models:ChildResponse raw-note=raw-note, id=id
-  map models:GrandChildRequest raw-note=raw-note, secret=secret
-  map models:GrandChildResponse raw-note=raw-note, id=id
+  model_bindings.py typing_TypedDict/all
 render typing.TypedDict constraints
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
-  map models:BaseRequest raw-note=raw-note, secret=secret
-  map models:BaseResponse raw-note=raw-note, id=id
-  map models:ChildRequest raw-note=raw-note, secret=secret
-  map models:ChildResponse raw-note=raw-note, id=id
-  map models:GrandChildRequest raw-note=raw-note, secret=secret
-  map models:GrandChildResponse raw-note=raw-note, id=id
+  model_bindings.py typing_TypedDict/all
 render typing.TypedDict none
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
-  map models:BaseRequest raw-note=raw-note, secret=secret
-  map models:BaseResponse raw-note=raw-note, id=id
-  map models:ChildRequest raw-note=raw-note, secret=secret
-  map models:ChildResponse raw-note=raw-note, id=id
-  map models:GrandChildRequest raw-note=raw-note, secret=secret
-  map models:GrandChildResponse raw-note=raw-note, id=id
+  model_bindings.py typing_TypedDict/all
 render msgspec.Struct all
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py msgspec_Struct/all
 render msgspec.Struct constraints
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py msgspec_Struct/all
 render msgspec.Struct none
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.BaseResponse
-  codec_2 models.ChildRequest
-  codec_3 models.ChildResponse
-  codec_4 models.GrandChildRequest
-  codec_5 models.GrandChildResponse
+  model_bindings.py msgspec_Struct/all

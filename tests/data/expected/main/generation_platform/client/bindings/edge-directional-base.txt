@@ -1,6 +1,4 @@
 # edge-directional-base
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.UserRequest
-  codec_1 models.UserResponse
+  model_bindings.py pydantic_v2_BaseModel/default

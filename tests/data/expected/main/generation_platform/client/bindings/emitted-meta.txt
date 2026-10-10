@@ -1,14 +1,10 @@
 # emitted-meta
 render msgspec.Struct plain
   models.py
-  model_bindings.py
-  codec_0 models.Metadata
-  codec_1 models.Metadata
+  model_bindings.py msgspec_Struct/plain
 render msgspec.Struct annotated
   models.py
-  model_bindings.py
-  codec_0 models.Metadata
-  codec_1 models.Metadata
+  model_bindings.py msgspec_Struct/plain
 change msgspec.Struct annotated malformed-meta-position
   @@ -30 +30 @@
   -    nested: Annotated[List[List[NestedItem]], Meta(max_length=4, min_length=1)]
