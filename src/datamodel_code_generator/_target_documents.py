@@ -8,10 +8,11 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, TypeAlias, cast
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
 from urllib.request import url2pathname
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
+from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
@@ -73,21 +74,9 @@ def named_document(written: str | None, identity: str | None) -> str:
     """
     if written is None:
         return ""
-    if urlsplit(written).scheme in {"http", "https"}:
-        from datamodel_code_generator.remote_lock import (  # ruff: ignore[import-outside-top-level]
-            RemoteLockError,
-            display_url,
-        )
-
-        try:
-            target_display = display_url(written)
-        except (ValueError, RemoteLockError):
-            host = urlsplit(written).hostname or ""
-            target_display = urlunsplit((urlsplit(written).scheme.lower(), host, "", "", ""))
-        return f" in {target_display!r}"
     parts = urlsplit(identity or written)
     if parts.scheme != "file":
-        return f" in {written!r}"
+        return f" in {redact_url(written)!r}"
     file = Path(url2pathname(parts.path)).as_posix()
     return f" in {file!r}" if written == identity or Path(written).as_posix() == file else f" in {written!r} ({file})"
 

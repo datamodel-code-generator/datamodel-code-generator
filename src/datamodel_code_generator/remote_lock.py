@@ -21,6 +21,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, TypeGuard, cast
 from urllib.parse import SplitResult, parse_qsl, urlsplit, urlunsplit
 
+from datamodel_code_generator._url_redaction import redact_url
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import TextIO
@@ -51,7 +53,7 @@ def _sha256(value: bytes) -> str:
 
 def _split_remote_url(url: str, *, persisted: bool = False) -> tuple[SplitResult, int | None]:
     """Parse and validate the HTTP(S) origin fields used by a lock entry."""
-    message = "Invalid remote lock resource URL" if persisted else f"Invalid remote lock URL: {url!r}"
+    message = "Invalid remote lock resource URL" if persisted else f"Invalid remote lock URL: {redact_url(url)!r}"
     try:
         parsed = urlsplit(url)
         port = parsed.port
@@ -69,8 +71,8 @@ def _split_remote_url(url: str, *, persisted: bool = False) -> tuple[SplitResult
             return parsed, port
 
 
-def display_url(url: str) -> str:
-    """Return a safe origin suitable for a committed lock or diagnostics.
+def _display_url(url: str) -> str:
+    """Return a safe origin suitable for a committed lock.
 
     URL paths are deliberately omitted as deployments frequently put access
     tokens in a path segment. The request digest remains the identity; this
@@ -83,9 +85,6 @@ def display_url(url: str) -> str:
         hostname = f"[{hostname}]"
     netloc = hostname if port is None else f"{hostname}:{port}"
     return urlunsplit((parsed.scheme.lower(), netloc, "", "", ""))
-
-
-_display_url = display_url
 
 
 def _request_sha256(

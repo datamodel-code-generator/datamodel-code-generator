@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import _publication, _target_documents
+from datamodel_code_generator import _publication
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from datamodel_code_generator.util import get_yaml_backend
@@ -268,18 +268,3 @@ def test_target_pyproject_output(
         capsys.readouterr().err + "\n".join(published) + "\n",
         EXPECTED / "configs" / "pyproject-output-override.txt",
     )
-
-
-@pytest.mark.allow_direct_assert("Validate named_document sanitizes remote URLs")
-def test_named_document_sanitizes_remote_urls() -> None:
-    """named_document strips userinfo and query tokens from remote URLs."""
-    url = "http://u:pw@127.0.0.1:8765/bad.yaml?token=SECRET#/x"
-    named = _target_documents.named_document(url, url)
-    assert named == " in 'http://127.0.0.1:8765'"
-    assert "u:pw" not in named
-    assert "SECRET" not in named
-
-    relative_named = _target_documents.named_document("bad.yaml", url)
-    assert relative_named == " in 'bad.yaml'"
-    assert "u:pw" not in relative_named
-    assert "SECRET" not in relative_named

@@ -57,6 +57,7 @@ from datamodel_code_generator._source import (
     load_data,
     load_data_from_path,
 )
+from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANY, Import
@@ -12274,7 +12275,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return reference
         if (target := _document_location(location, document)) == reference or not target.startswith("#"):
             return reference
-        source = "/".join(self._schema_resource_path_parts[document])
+        source = redact_url("/".join(self._schema_resource_path_parts[document]))
         if reference.startswith("#"):
             if not self._lenient_pointer_exists(document, reference):
                 return target if self._lenient_pointer_exists(document, target) else reference
@@ -12904,13 +12905,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         dangling_refs = sorted(self._dangling_refs)
         if self.strict_refs:
-            details = "\n".join(f"- {source}: {ref}" for source, ref in dangling_refs)
+            details = "\n".join(f"- {redact_url(source)}: {ref}" for source, ref in dangling_refs)
             msg = f"Unresolved local $ref targets:\n{details}"
             raise Error(msg)
 
         for source, ref in dangling_refs:
             warn(
-                f"Unresolved local $ref {ref!r} in {source}: JSON pointer was not found. "
+                f"Unresolved local $ref {ref!r} in {redact_url(source)}: JSON pointer was not found. "
                 "Generated a fallback Any model; use --strict-refs to fail instead.",
                 DanglingRefWarning,
                 stacklevel=4,

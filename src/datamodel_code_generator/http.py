@@ -28,6 +28,7 @@ from urllib.parse import urlparse
 from typing_extensions import Self
 
 from datamodel_code_generator import SchemaFetchError
+from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
 
 if TYPE_CHECKING:
@@ -960,7 +961,7 @@ def _format_private_network_error(
         f"Reason: {reason}.{ip_details}\n"
         "datamodel-code-generator blocks local, private, link-local, reserved, and otherwise non-public "
         "network targets by default to reduce SSRF risk.\n"
-        f"URL: {url}\n"
+        f"URL: {redact_url(url)}\n"
         "If this is a trusted internal schema endpoint, pass --allow-private-network "
         "or set allow_private_network=True when using the Python API."
     )
@@ -983,11 +984,11 @@ def _validate_url_for_fetch(
         case "http" | "https":
             pass
         case _:
-            msg = f"Unsupported URL scheme for HTTP fetch: {url}"
+            msg = f"Unsupported URL scheme for HTTP fetch: {redact_url(url)}"
             raise SchemaFetchError(msg)
 
     if (hostname := parsed_url.hostname) is None:
-        msg = f"Missing URL host for HTTP fetch: {url}"
+        msg = f"Missing URL host for HTTP fetch: {redact_url(url)}"
         raise SchemaFetchError(msg)
 
     host = _normalize_dns_host(hostname)
@@ -1036,7 +1037,7 @@ def _get_redirect_url(httpx_module: _HTTPXModule, current_url: str, response: _H
     if response.status_code not in _HTTP_REDIRECT_STATUS_CODES:
         return None
     if not (location := response.headers.get("location")):
-        msg = f"Redirect response from {current_url} is missing a Location header"
+        msg = f"Redirect response from {redact_url(current_url)} is missing a Location header"
         raise SchemaFetchError(msg)
     return str(httpx_module.URL(current_url).join(location))
 
@@ -1178,23 +1179,23 @@ def _get_body(  # noqa: PLR0913, PLR0914
                 pinned_ips=pinned_ips,
             )
         except Exception as exc:
-            msg = f"Failed to fetch {current_url}: {exc}"
+            msg = f"Failed to fetch {redact_url(current_url)}: {exc}"
             raise SchemaFetchError(msg) from exc
         if (redirect_url := _get_redirect_url(http_stack.httpx, current_url, response)) is None:
             break
         current_headers = _get_redirect_headers(current_headers, current_url, redirect_url)
         current_url = redirect_url
     else:
-        msg = f"Too many redirects fetching {url}"
+        msg = f"Too many redirects fetching {redact_url(url)}"
         raise SchemaFetchError(msg)
 
     if response.status_code >= 400:  # noqa: PLR2004
-        msg = f"HTTP {response.status_code} error fetching {current_url}"
+        msg = f"HTTP {response.status_code} error fetching {redact_url(current_url)}"
         raise SchemaFetchError(msg)
     content_type = response.headers.get("content-type", "").lower()
     if "text/html" in content_type:
         msg = (
-            f"Unexpected HTML response from {current_url} "
+            f"Unexpected HTML response from {redact_url(current_url)} "
             f"(Content-Type: {content_type}). Expected JSON or YAML schema content."
         )
         raise SchemaFetchError(msg)
@@ -1211,7 +1212,7 @@ def _get_body(  # noqa: PLR0913, PLR0914
     try:
         return body.decode(encoding)
     except UnicodeDecodeError as exc:
-        msg = f"Unable to decode response from {current_url} using {encoding}: {exc}"
+        msg = f"Unable to decode response from {redact_url(current_url)} using {encoding}: {exc}"
         raise SchemaFetchError(msg) from exc
 
 

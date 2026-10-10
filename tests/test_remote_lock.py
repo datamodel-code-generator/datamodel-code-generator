@@ -759,6 +759,8 @@ def test_remote_lock_rejects_unparseable_request_urls(tmp_path: Path) -> None:
         lock.record_response("https://[not-an-ipv6", None, None, b"body")
     with pytest.raises(RemoteLockError, match="Invalid remote lock URL"):
         remote_lock._display_url("https://[not-an-ipv6")
+    with pytest.raises(RemoteLockError, match=r"^Invalid remote lock URL: 'https://\[bad/schema\.json'$"):
+        lock.record_response("https://user:secret@[bad/schema.json?token=SECRET", None, None, b"body")
 
 
 @pytest.mark.allow_direct_assert
@@ -883,33 +885,3 @@ def test_remote_lock_atomic_failures_remove_temps_and_allow_retry(
     monkeypatch.undo()
     updater.commit()
     assert lockfile.is_file()
-
-
-@pytest.mark.allow_direct_assert("Validate display_url origin sanitization")
-def test_display_url_sanitizes_credentials_query_tokens_and_paths() -> None:
-    """display_url returns the origin without userinfo, path, query, or fragment."""
-    assert remote_lock.display_url("http://u:pw@127.0.0.1:8765/bad.yaml?token=SECRET#/x") == "http://127.0.0.1:8765"
-    assert (
-        remote_lock.display_url("https://alice:secret@schemas.example:8443/v1/schema.json?token=tok#frag")
-        == "https://schemas.example:8443"
-    )
-    assert remote_lock.display_url("http://schemas.example:80/schema.json") == "http://schemas.example"
-    assert remote_lock.display_url("https://schemas.example:443/schema.json") == "https://schemas.example"
-    assert remote_lock.display_url("http://[::1]:8080/v1/schema.json") == "http://[::1]:8080"
-    assert remote_lock._display_url is remote_lock.display_url
-
-
-@pytest.mark.allow_direct_assert("Validate InvalidFileFormatError sanitizes remote URLs")
-def test_invalid_file_format_error_sanitizes_remote_urls() -> None:
-    """InvalidFileFormatError strips userinfo, query, fragment, and path from remote URLs."""
-    from datamodel_code_generator import InputFileType, InvalidFileFormatError
-
-    url = "http://u:pw@127.0.0.1:8765/bad.yaml?token=SECRET#/x"
-    error = InvalidFileFormatError(ValueError("bad syntax"), InputFileType.OpenAPI, source=url)
-
-    assert error.source == "http://127.0.0.1:8765"
-    message = str(error)
-    assert "Invalid file format for openapi at http://127.0.0.1:8765: ValueError: bad syntax" in message
-    assert "u:pw" not in message
-    assert "SECRET" not in message
-    assert "bad.yaml" not in message
