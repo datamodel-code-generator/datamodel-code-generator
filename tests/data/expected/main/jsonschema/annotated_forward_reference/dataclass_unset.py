@@ -36,7 +36,7 @@ class Node:
 
 
 Branches = TypeAliasType(
-    "Branches", Annotated[list["Twigs"], Field(min_length=1, title='Branch list')]
+    "Branches", Annotated["list[Twigs]", Field(min_length=1, title='Branch list')]
 )
 
 
