@@ -83,8 +83,16 @@ def _operation(value: object) -> object:
     return ClientOperationConfig(**converted)
 
 
+FORMATTER_FAILURE = "Ruff command failed"
+
+
 def formatter_refusal(error: RuntimeError) -> str:
-    """Report a formatter that refused the generated files by its failure and the rule codes it left unfixed."""
+    """Report a formatter that refused the generated files by its failure and the rule codes it left unfixed.
+
+    Any other `RuntimeError` is a renderer bug, so it propagates instead of being recorded as a refusal.
+    """
+    if not str(error).startswith(FORMATTER_FAILURE):
+        raise error
     codes = sorted(set(re.findall(r"\b[A-Z]+[0-9]{3}\b", str(error).partition("\n")[2])))
     return f"{type(error).__name__}: {str(error).partition(':')[0]} ({', '.join(codes)})"
 
