@@ -291,6 +291,7 @@ def _owned(package: ModuleType, lines: list[str]) -> None:
     http.close()
 
 
+@pytest.mark.abnormal_path("A full disk or an unopenable temporary file cannot be produced portably.")
 def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
     exchange = Exchange([])
     http = exchange.client(1)
@@ -518,6 +519,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
     await http.aclose()
 
 
+@pytest.mark.abnormal_path("The disk thread cannot be held while it creates a file, nor its unlink denied, portably.")
 async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Stop downloads while or right after the disk thread creates their file, and keep nothing it created."""
     streaming, target = api.with_streaming_response, directory / "opening.bin"
@@ -576,6 +578,7 @@ async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], direct
     lines.append(f"  async cancelled while writing {result} events {events} {_files(directory)}")
 
 
+@pytest.mark.abnormal_path("A full disk cannot be produced portably.")
 async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Fail disk writes while a borrowed connection is held, ending the stream before the failure propagates."""
     streaming, target = api.with_streaming_response, directory / "full.bin"
@@ -615,6 +618,7 @@ async def _late_download(
         lines.append(f"  async download after its acquisition budget {late} {_files(directory)}")
 
 
+@pytest.mark.abnormal_path("The disk thread's first write is observable only by wrapping the file it opens.")
 async def _mid_body(task: asyncio.Task[None]) -> None:
     """Wait until the download wrote the body's first chunk to its temporary file, or until it ended."""
     loop, written = asyncio.get_running_loop(), asyncio.Event()

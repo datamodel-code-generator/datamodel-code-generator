@@ -38,9 +38,10 @@ def _snapshot(error: BaseException) -> tuple[object, ...]:
 def _captured(
     call: Callable[[], object], snapshot: Callable[[BaseException], tuple[object, ...]] = _snapshot
 ) -> tuple[object, ...]:
+    """Record the SDK error, or the KeyboardInterrupt or SystemExit a race delivers, that ends a call."""
     try:
         call()
-    except BaseException as error:
+    except (Exception, KeyboardInterrupt, SystemExit) as error:
         return snapshot(error)
     return ("returned",)
 
@@ -50,9 +51,10 @@ async def _acaptured(
     errors: list[BaseException] | None = None,
     snapshot: Callable[[BaseException], tuple[object, ...]] = _snapshot,
 ) -> tuple[object, ...]:
+    """Record the SDK error, or the task cancellation, that ends an awaited call."""
     try:
         await call()
-    except BaseException as error:
+    except (Exception, asyncio.CancelledError) as error:
         if errors is not None:
             errors.append(error)
         return snapshot(error)
