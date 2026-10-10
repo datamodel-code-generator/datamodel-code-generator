@@ -177,7 +177,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -217,7 +219,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -244,7 +248,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -284,7 +290,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -311,7 +319,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -351,7 +361,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -378,7 +390,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -418,7 +432,9 @@ overrides it for that operation.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -555,33 +571,8 @@ servers keep them.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
-            (),
-        ),
-        parameters=(
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='limit',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('cursor',),
-                ),
-                codec=model_bindings.codec_0,
-            ),
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
-                ),
-                codec=model_bindings.codec_1,
-            ),
-        ),
+        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -589,21 +580,8 @@ servers keep them.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),),
-            (),
-        ),
-        body=RequestBody(
-            media=(
-                BodyMedia(
-                    media_type='application/json',
-                    kind='json',
-                    codec=model_bindings.codec_3,
-                ),
-            ),
-            default='application/json',
-            required=True,
-        ),
+        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
+        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
     )
     ```
 
@@ -755,7 +733,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -771,7 +751,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -797,7 +779,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -813,7 +797,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -839,7 +825,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -855,7 +843,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -881,7 +871,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -897,7 +889,9 @@ generates.
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -1065,7 +1059,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListAllResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1081,7 +1077,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1107,7 +1105,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListAllResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1123,7 +1123,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1149,7 +1151,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1165,7 +1169,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -1191,7 +1197,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1207,7 +1215,9 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -1367,7 +1377,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1383,7 +1395,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1409,7 +1423,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1425,7 +1441,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1451,7 +1469,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1467,7 +1487,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -1493,7 +1515,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1509,7 +1533,9 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -1668,7 +1694,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1684,7 +1712,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1710,7 +1740,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1726,7 +1758,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1752,7 +1786,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1768,7 +1804,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -1794,7 +1832,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1810,7 +1850,9 @@ generation prints name the package by it; the package imports its own modules re
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -2201,7 +2243,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2217,7 +2261,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -2243,7 +2289,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2259,7 +2307,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -2285,7 +2335,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2301,7 +2353,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -2327,7 +2381,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2343,7 +2399,9 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -2481,33 +2539,8 @@ against the document's URL when it is read from one.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
-            (),
-        ),
-        parameters=(
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='limit',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('cursor',),
-                ),
-                codec=model_bindings.codec_0,
-            ),
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
-                ),
-                codec=model_bindings.codec_1,
-            ),
-        ),
+        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -2515,21 +2548,8 @@ against the document's URL when it is read from one.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),),
-            (),
-        ),
-        body=RequestBody(
-            media=(
-                BodyMedia(
-                    media_type='application/json',
-                    kind='json',
-                    codec=model_bindings.codec_3,
-                ),
-            ),
-            default='application/json',
-            required=True,
-        ),
+        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
+        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
     )
     ```
 
@@ -2678,8 +2698,13 @@ Declare the arguments of the operation methods (experimental).
             """The same operations, returning blocks that send each call on entry and stream its response."""
             return PetsWithStreamingResponse(self._core)
 
-        def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> ListPetsResponse:
-            """List the pets."""
+        def list_pets(
+            self,
+            **kwargs: Unpack[Operation0Arguments],
+        ) -> ListPetsResponse:
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_0,
@@ -2692,7 +2717,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_1,
@@ -2715,7 +2742,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation0Arguments],
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_0,
@@ -2728,7 +2757,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_1,
@@ -2747,8 +2778,13 @@ Declare the arguments of the operation methods (experimental).
             """Keep the client core the operations send through."""
             self._core = core
 
-        def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> RawResponse:
-            """List the pets."""
+        def list_pets(
+            self,
+            **kwargs: Unpack[Operation0Arguments],
+        ) -> RawResponse:
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute_raw(
                 _operations.OPERATION_0,
@@ -2757,8 +2793,13 @@ Declare the arguments of the operation methods (experimental).
                 response_media_type=kwargs.get('response_media_type'),
             )
 
-        def create_pet(self, **kwargs: Unpack[Operation1Arguments]) -> RawResponse:
-            """Create a pet."""
+        def create_pet(
+            self,
+            **kwargs: Unpack[Operation1Arguments],
+        ) -> RawResponse:
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute_raw(
                 _operations.OPERATION_1,
@@ -2781,7 +2822,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation0Arguments],
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.stream(
                 _operations.OPERATION_0,
@@ -2794,7 +2837,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.stream(
                 _operations.OPERATION_1,
@@ -2960,7 +3005,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2976,7 +3023,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -3002,7 +3051,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -3018,7 +3069,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -3044,7 +3097,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -3060,7 +3115,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -3086,7 +3143,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -3102,7 +3161,9 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
