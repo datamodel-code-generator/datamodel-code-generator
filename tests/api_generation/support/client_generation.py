@@ -9,10 +9,10 @@ import shutil
 import warnings
 from contextlib import AbstractContextManager, nullcontext
 from functools import partial
+from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-import datamodel_code_generator
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 SOURCE = Path(__file__).parents[2] / "data" / "generation_platform" / "client"
 PACKAGE = "client"
-TEMPLATES = Path(datamodel_code_generator.__file__).parent / "_client" / "templates"
+TEMPLATES = Path(str(files("datamodel_code_generator").joinpath("_client", "templates")))
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 Modules: TypeAlias = dict[tuple[str, ...], str]
 

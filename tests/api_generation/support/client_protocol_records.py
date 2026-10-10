@@ -517,14 +517,12 @@ def coordinator_generate(source: Path, model_config: GenerateConfig, values: Map
 
 
 def _setting(value: object, root: Path) -> str:
-    match value:
-        case tuple():
-            items = [_setting(item, root) for item in value]
-            return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
-        case Path():
-            return repr(PurePosixPath(value.relative_to(root).as_posix()))
-        case _:
-            return repr(value)
+    if isinstance(value, tuple):
+        items = [_setting(item, root) for item in value]
+        return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
+    if isinstance(value, Path):
+        return repr(PurePosixPath(value.relative_to(root).as_posix()))
+    return repr(value)
 
 
 def client_config_report(case_name: str, root: Path) -> str:
