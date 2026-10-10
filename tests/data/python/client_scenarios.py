@@ -7,6 +7,7 @@ import importlib
 import inspect
 import json
 import re
+import typing
 import zlib
 from functools import partial
 from pathlib import Path
@@ -346,6 +347,12 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
         record(lines, f"transport {error.__name__}", lambda: api.pets.get_pet(petId=_pet(package, "getPet")))
     exchange.respond(broken)
     record(lines, "transport broken", lambda: api.pets.get_pet(petId=_pet(package, "getPet")))
+
+
+def type_checking_pets(package: ModuleType, lines: list[str]) -> None:
+    """Call every pets operation, then read the root client's annotations, which name imports kept for type checkers."""
+    pets(package, lines)
+    record(lines, "client annotations", lambda: typing.get_type_hints(package.Client.__init__))
 
 
 def pets(package: ModuleType, lines: list[str]) -> None:
@@ -826,7 +833,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
-    "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), pets),
+    "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), type_checking_pets),
     "type-checking-imports-on": ("type-checking-imports-on", ("pydantic_v2.BaseModel",), pets),
     "auth-errors": ("auth", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),

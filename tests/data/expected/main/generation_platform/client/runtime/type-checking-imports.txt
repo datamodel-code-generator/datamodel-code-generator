@@ -258,3 +258,4 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/jpeg] b''
   async range upload streaming = b'jpeg'
   async response wildcard rejected upload ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', reason='undeclared', field_path='response_media_type') [operation_id='uploadPhoto', field_path=('response_media_type',)] undeclared
+  client annotations ! NameError: name 'ServerSelection' is not defined []

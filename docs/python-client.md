@@ -192,7 +192,9 @@ formatted, and encoded like the model files, by the same model settings: `format
 `use_type_checking_imports`. As for the models, Ruff moves imports only an annotation uses into `TYPE_CHECKING`
 blocks when `ruff-check` runs with its TC rules selected and `use_type_checking_imports` allows it: by default for
 the dataclass, TypedDict, and msgspec backends, and with `use_type_checking_imports` for the Pydantic ones; the
-client reads no annotation at run time. Custom
+client reads no annotation at run time. As for the models, `typing.get_type_hints` on a generated class or function
+whose annotations name a moved import then raises `NameError`: pass `--no-use-type-checking-imports`, or do not
+select the TC rules, to introspect the annotations at run time. Custom
 templates and custom formatters must keep the class and field names of the models: the client binds each operation
 to the names in the generated model graph and does not read the rendered model source.
 
