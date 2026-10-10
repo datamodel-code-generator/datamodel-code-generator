@@ -775,6 +775,19 @@ def _is_object_only_type(type_: str | list[str] | None) -> bool:
     return False
 
 
+def _nullable_map_value_schema(obj: JsonSchemaObject) -> JsonSchemaObject | None:
+    """Return the additionalProperties schema of a type array that permits only null and objects."""
+    return (
+        obj.additionalProperties
+        if isinstance(obj.type, list)
+        and "object" in obj.type
+        and not obj.has_multiple_types
+        and isinstance(obj.additionalProperties, JsonSchemaObject)
+        and "const" not in obj.extras
+        else None
+    )
+
+
 def _find_json_schema_anchor_pointer(schema: YamlValue, anchor: str) -> str | None:
     """Return the JSON pointer for an anchor within one schema document."""
     pending: list[tuple[YamlValue, tuple[str, ...]]] = [(schema, ())]
@@ -9948,6 +9961,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             data_model_root_type=(self._nested_constrained_model_type if not preserve_root_model else None),
         )
 
+    def _parse_additional_properties_map(
+        self, name: str, obj: JsonSchemaObject, path: list[str], additional_properties: JsonSchemaObject
+    ) -> DataType:
+        """Parse a map whose values follow the additionalProperties schema."""
+        return self.data_type(
+            data_types=[
+                self._parse_additional_properties_value(
+                    name,
+                    get_special_path("additionalProperties", path),
+                    obj,
+                    additional_properties=additional_properties,
+                )
+            ],
+            **(self._get_python_type_flags(obj) or {"is_dict": True}),
+        )
+
+    def _parse_nullable_map(
+        self, name: str, obj: JsonSchemaObject, path: list[str], additional_properties: JsonSchemaObject
+    ) -> DataType:
+        """Parse a type array of object and null, keeping the value type of the map."""
+        return self.data_type(
+            data_types=[self._parse_additional_properties_map(name, obj, path, additional_properties)],
+            is_optional=obj.type_has_null,
+        )
+
     def _parse_constrained_additional_properties_value_item(
         self,
         name: str,
@@ -10676,18 +10714,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     name, item.propertyNames, item.additionalProperties, object_path, parent_obj=item
                 )
             if isinstance(item.additionalProperties, JsonSchemaObject):
-                additional_props_type = self._parse_additional_properties_value(
-                    name,
-                    get_special_path("additionalProperties", object_path),
-                    item,
-                    additional_properties=item.additionalProperties,
-                )
-                python_type_flags = self._get_python_type_flags(item)
-                dict_flags = python_type_flags or {"is_dict": True}
-                return self.data_type(
-                    data_types=[additional_props_type],
-                    **dict_flags,
-                )
+                return self._parse_additional_properties_map(name, item, object_path, item.additionalProperties)
             return self.data_type_manager.get_data_type(
                 Types.object,
             )
@@ -10695,11 +10722,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if self.should_parse_enum_as_literal(item, property_name=name):
                 return self.parse_enum_as_literal(item)
             return self.parse_enum(name, item, get_special_path("enum", path), singular_name=singular_name)
-        return (
-            self._get_data_type(item, localize_constraints=False)
-            if shared_numeric_constraints
-            else self.get_data_type(item)
-        )
+        if shared_numeric_constraints:
+            return self._get_data_type(item, localize_constraints=False)
+        if (value_schema := _nullable_map_value_schema(item)) is not None:
+            return self._parse_nullable_map(name, item, get_special_path("object", path), value_schema)
+        return self.get_data_type(item)
 
     def parse_list_item(
         self,
@@ -11158,23 +11185,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 name, obj.propertyNames, obj.additionalProperties, path, parent_obj=obj
             )
         elif obj.is_object and not obj.properties and isinstance(obj.additionalProperties, JsonSchemaObject):
-            additional_props_type = self._parse_additional_properties_value(
-                name,
-                get_special_path("additionalProperties", path),
-                obj,
-                additional_properties=obj.additionalProperties,
-            )
-            python_type_flags = self._get_python_type_flags(obj)
-            dict_flags = python_type_flags or {"is_dict": True}
-            data_type = self.data_type(
-                data_types=[additional_props_type],
-                **dict_flags,
-            )
+            data_type = self._parse_additional_properties_map(name, obj, path, obj.additionalProperties)
         elif obj.enum and not self.ignore_enum_constraints:
             if self.should_parse_enum_as_literal(obj, property_name=name):
                 data_type = self.parse_enum_as_literal(obj)
             else:  # pragma: no cover
                 data_type = self.parse_enum(name, obj, path)
+        elif (value_schema := _nullable_map_value_schema(obj)) is not None:
+            reference = self.model_resolver.add(
+                path, self._apply_title_as_name(name, obj), loaded=True, class_name=True
+            )
+            data_type = self._parse_nullable_map(name, obj, path, value_schema)
         elif obj.type:
             if preserve_constraints and effective_use_annotated:
                 with self._temporarily_enable_field_constraints():
