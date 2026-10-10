@@ -1907,18 +1907,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return any(
             type_ in {"number", "integer"}
             or (
-                type_ == "string"
-                and (format_ in self._data_formats["string"] or (type_, format_) in self.type_mappings)
+                (
+                    (type_, format_) in self.type_mappings
+                    or (type_ == "string" and format_ in self._data_formats["string"])
+                )
                 and self._get_type_with_mappings(type_, format_) in _NUMBER_STRING_FORMAT_TYPES
             )
             for type_ in ((types,) if isinstance(types, str) else types)
         )
 
     def _get_constraint_values(self, obj: JsonSchemaObject) -> dict[str, Any]:
-        """Return JSON Schema constraint values, without number keywords for schemas whose types hold no number.
-
-        Custom templates keep receiving every keyword.
-        """
+        """Return JSON Schema constraint values, without number keywords for schemas whose types hold no number."""
         values = {
             constraint: value
             for constraint in obj.__constraint_field_order__
@@ -1926,7 +1925,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         }
         if (
             values
-            and self.custom_template_dir is None
             and not values.keys().isdisjoint(_NUMBER_CONSTRAINT_KEYS)
             and not self._accepts_number_constraints(obj)
         ):

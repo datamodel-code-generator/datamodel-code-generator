@@ -4725,6 +4725,26 @@ def test_main_number_constraints_on_non_numbers(output_file: Path, expected_file
     )
 
 
+def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
+    """Test number keywords still constrain a non-string type and format that --type-mappings maps to a number."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_mapped_formats.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="number_constraints_on_mapped_formats.py",
+        extra_args=[
+            "--field-constraints",
+            "--type-mappings",
+            "boolean+numeric=integer",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.parametrize(
     ("expected_file", "extra_args"),
@@ -25437,7 +25457,7 @@ def test_optional_disjoint_allof_types(output_file: Path, entrypoint: str, *, sc
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_numeric_null_custom_template(output_file: Path, entrypoint: str) -> None:
-    """Preserve valid custom rendering, including raw constraints and existing imports."""
+    """Render a custom template without number keywords on a null root, keeping its existing imports."""
     source = JSON_SCHEMA_DATA_PATH / "numeric_allof_types/null_template.json"
     expected = EXPECTED_JSON_SCHEMA_PATH / "numeric_allof_types"
     template_dir = DATA_PATH / "templates_numeric_null"
