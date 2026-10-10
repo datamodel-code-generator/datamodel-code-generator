@@ -29,6 +29,7 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _config_dict_items,
     _safe_config_dict_items,
+    assign_forward_reference_fields,
     has_lookaround_pattern,
 )
 from datamodel_code_generator.model.pydantic_v2.imports import (
@@ -61,6 +62,7 @@ def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldB
 
 if TYPE_CHECKING:
     from collections import defaultdict
+    from collections.abc import Mapping
     from pathlib import Path
 
     from datamodel_code_generator import DataclassArguments
@@ -165,6 +167,13 @@ class DataClass(_DataclassReuseMixin, DataModel):
             )
 
         self._lookaround_regex_engine_checked = False
+
+    def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
+        """Write fields that name a later model by assignment, keeping required fields before defaults."""
+        if not assign_forward_reference_fields(self, positions, index):
+            return False
+        self.fields.sort(key=_has_pydantic_dataclass_field_assignment)
+        return True
 
     def _apply_lookaround_regex_engine(self) -> None:
         """Force the python-re regex engine when a lookaround pattern is reachable.

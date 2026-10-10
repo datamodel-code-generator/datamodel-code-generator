@@ -823,6 +823,7 @@ class OpenAPIParser(JsonSchemaParser):
     ) -> DataType | None:
         """Parse all operation parameters into a data model."""
         fields: list[DataModelFieldBase] = []
+        field_schemas: list[tuple[JsonSchemaObject, list[str]]] = []
         exclude_field_names: set[str] = set()
         seen_parameter_names: set[str] = set()
         reference = self.model_resolver.add(path, name, class_name=True, unique=True)
@@ -855,6 +856,7 @@ class OpenAPIParser(JsonSchemaParser):
                 param_schema = parameter.schema_
                 if param_schema.has_ref_with_schema_keywords and not param_schema.is_ref_with_nullable_only:
                     param_schema = self._merge_ref_with_schema(param_schema)
+                field_schemas.append((param_schema, [*path, name, parameter_name]))
                 effective_required = parameter.required
                 effective_default, effective_has_default, use_default_with_required = self._effective_default_state(
                     parameter_name,
@@ -903,6 +905,7 @@ class OpenAPIParser(JsonSchemaParser):
                             schema_path,
                         )
                     )
+                    field_schemas.append((object_schema, schema_path))
 
                 if not data_types:
                     continue
@@ -938,6 +941,8 @@ class OpenAPIParser(JsonSchemaParser):
                 )
 
         if OpenAPIScope.Parameters in self.open_api_scopes and fields:
+            for field_schema, schema_path in field_schemas:
+                self.parse_ref(field_schema, schema_path)
             # Using _create_data_model from parent class JsonSchemaParser
             # This method automatically adds frozen=True for DataClass types
             self.generation_store.register_model(

@@ -10,7 +10,7 @@ from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
-Alias = TypeAliasType("Alias", Union[list["Alias"], int])
+Alias = TypeAliasType("Alias", Union["list[Alias]", int])
 
 
 @dataclass

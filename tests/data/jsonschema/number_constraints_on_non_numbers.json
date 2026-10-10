@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnNonNumbers",
+  "type": "object",
+  "properties": {
+    "string_minimum": {
+      "type": "string",
+      "minimum": 5
+    },
+    "string_length_and_minimum": {
+      "type": "string",
+      "minLength": 2,
+      "minimum": 5
+    },
+    "date_maximum": {
+      "type": "string",
+      "format": "date",
+      "maximum": 10
+    },
+    "date_time_exclusive_minimum": {
+      "type": "string",
+      "format": "date-time",
+      "exclusiveMinimum": 5
+    },
+    "time_exclusive_maximum": {
+      "type": "string",
+      "format": "time",
+      "exclusiveMaximum": 10
+    },
+    "boolean_multiple_of": {
+      "type": "boolean",
+      "multipleOf": 2
+    },
+    "nullable_string_minimum": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minimum": 5
+    },
+    "array_minimum": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minimum": 5
+    },
+    "items_minimum": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minimum": 5
+      }
+    },
+    "root_minimum": {
+      "$ref": "#/definitions/RootMinimum"
+    },
+    "number_minimum": {
+      "type": "number",
+      "minimum": 5
+    },
+    "integer_maximum": {
+      "type": "integer",
+      "maximum": 10
+    },
+    "string_or_number_minimum": {
+      "type": [
+        "string",
+        "number"
+      ],
+      "minimum": 5
+    },
+    "untyped_minimum": {
+      "minimum": 5
+    }
+  },
+  "definitions": {
+    "RootMinimum": {
+      "type": "string",
+      "minimum": 5
+    }
+  }
+}

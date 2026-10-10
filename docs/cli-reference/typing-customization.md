@@ -225,7 +225,7 @@ even in multiple inheritance scenarios where two parent schemas define the same 
           ]
         },
         "RefToNestedAllOfAllOf": {
-          "description": "Ref to nested allOf - not a root model.",
+          "description": "Ref to nested allOf root model.",
           "allOf": [
             { "$ref": "#/definitions/NestedAllOfDatatype" },
             { "maxLength": 100 }
@@ -625,7 +625,7 @@ other properties separate.
               ]
             },
             "RefToNestedAllOfAllOf": {
-              "description": "Ref to nested allOf - not a root model.",
+              "description": "Ref to nested allOf root model.",
               "allOf": [
                 { "$ref": "#/definitions/NestedAllOfDatatype" },
                 { "maxLength": 100 }
@@ -806,12 +806,14 @@ other properties separate.
                 pass
 
 
-            class NestedAllOfDatatype(BaseModel):
-                pass
+            class NestedAllOfDatatype(RootModel[constr(min_length=1)]):
+                root: constr(min_length=1)
 
 
-            class RefToNestedAllOfAllOf(NestedAllOfDatatype):
-                pass
+            class RefToNestedAllOfAllOf(RootModel[constr(min_length=1, max_length=100)]):
+                root: constr(min_length=1, max_length=100) = Field(
+                    ..., description='Ref to nested allOf root model.'
+                )
 
 
             class ConstraintsOnlyDatatype(RootModel[Any]):
@@ -975,12 +977,14 @@ other properties separate.
                 pass
 
 
-            class NestedAllOfDatatype(BaseModel):
-                pass
+            class NestedAllOfDatatype(RootModel[constr(min_length=1)]):
+                root: constr(min_length=1)
 
 
-            class RefToNestedAllOfAllOf(NestedAllOfDatatype):
-                pass
+            class RefToNestedAllOfAllOf(RootModel[constr(min_length=1, max_length=100)]):
+                root: constr(min_length=1, max_length=100) = Field(
+                    ..., description='Ref to nested allOf root model.'
+                )
 
 
             class ConstraintsOnlyDatatype(RootModel[Any]):
