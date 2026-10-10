@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
@@ -13,35 +13,35 @@ from pydantic import TypeAdapter, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 
-from ..model_codecs.media import FieldPlan, charset, decode_form, decode_text, normalize_media_type
-from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
-from ..model_codecs.unset import UNSET, Unset
-from ..model_codecs.wire import thaw_wire
-from .errors import REQUEST_ERRORS, invalid, malformed_request, missing, model_records, unsupported_media, wire_records
+from ..model_codecs.errors import MalformedError
+from ..model_codecs.media import (
+    FieldPlan,
+    charset,
+    decode_form,
+    decode_text,
+    media_kind,
+    normalize_media_type,
+    plain,
+    typed,
+)
+from ..model_codecs.parameter_reads import RawParameters, decode_parameter, raw_parameter
+from ..model_codecs.unset import UNSET
+from .errors import invalid, malformed_request, media_invalid, missing, model_records, unsupported_media
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-    from ..model_codecs.parameters import ParameterPlan, RawParameter
+    from ..model_codecs.parameter_reads import RawParameter
+    from ..model_codecs.parameters import ParameterPlan
     from .errors import Record
 
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form", "multipart"]
-ValueT = TypeVar("ValueT")
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
 _PATH_SAFE: Final = "/:@!$&'()*+,;="
 _TEXT: Final = FieldPlan("")
 _ANY: Final[TypeAdapter[object]] = TypeAdapter(object)
-
-
-def absent() -> None:
-    """Stand in for an omitted optional native value; the endpoint passes UNSET to the handler instead."""
-
-
-def present(value: ValueT | None) -> ValueT | Unset:
-    """Return an optional native value, or UNSET when the request omits it."""
-    return UNSET if value is None else value
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -51,7 +51,7 @@ class ParameterArgument:
     name: str
     plan: ParameterPlan
     adapter: TypeAdapter[object] | None = None
-    default: object = field(default=UNSET, compare=False)
+    default: object = field(default=None, compare=False)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -107,7 +107,7 @@ class ParameterAdapter:
     path: RawPath | None = None
 
     async def __call__(self, request: Request) -> object:
-        """Return the operation's record of adapter parameter values, with UNSET for omitted ones."""
+        """Return the operation's record of adapter parameter values, with their defaults or None for omitted ones."""
         scope = request.scope
         raw = RawParameters(
             path=self._path(scope, self.path) if self.path is not None else {},
@@ -126,17 +126,20 @@ class ParameterAdapter:
             location = (plan.location, plan.name)
             try:
                 wire = decode_parameter(plan, view)
-            except REQUEST_ERRORS as error:
-                records.extend(wire_records(error, location))
-                continue
-            if isinstance(wire, Unset):
+            except MalformedError as error:
+                raise malformed_request() from error
+            if wire is UNSET:
                 if plan.required:
                     records.append(missing(location))
                 else:
                     values[argument.name] = deepcopy(argument.default)
                 continue
             try:
-                values[argument.name] = _validated(argument.adapter, thaw_wire(wire))
+                values[argument.name] = (
+                    (argument.adapter or _ANY).validate_json(cast("str", wire))
+                    if plan.content_media_type is not None and media_kind(plan.content_media_type) == "json"
+                    else _validated(argument.adapter, plain(wire))
+                )
             except ValidationError as error:
                 records.extend(model_records(error, location))
         if records:
@@ -196,24 +199,24 @@ class BodyAdapter:
         )
 
     async def __call__(self, request: Request) -> object:
-        """Return the validated body, or UNSET for an omitted optional body."""
+        """Return the validated body, or None for an omitted optional body."""
         return (await self.receive(request))[1]
 
     async def receive(self, request: Request) -> tuple[str | None, object]:
-        """Return the received media type with the validated body, or UNSET for an omitted optional body."""
+        """Return the received media type with the validated body, or None for both of an omitted optional body."""
         header = request.headers.get("content-type")
         body = await request.body()
         if not body and (header is None or not self.required):
             if self.required:
                 raise RequestValidationError([missing(("body",))])
-            return None, UNSET
+            return None, None
         if (selected := self._select(header)) is None:
             raise unsupported_media()
         media, media_type, received_type = selected
         try:
             return media_type, await _read(media, received_type, body, request)
-        except REQUEST_ERRORS as error:
-            raise RequestValidationError(wire_records(error, ("body",))) from error
+        except MalformedError as error:
+            raise malformed_request() from error
         except ValidationError as error:
             raise RequestValidationError(model_records(error, ("body",))) from error
 
@@ -238,22 +241,33 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
         case "json":
             return (adapter or _ANY).validate_json(body)
         case "text":
-            return _validated(adapter, decode_text(body, charset(media_type)))
+            try:
+                text = decode_text(body, charset(media_type))
+            except MalformedError as error:
+                raise RequestValidationError([media_invalid(("body",))]) from error
+            return _validated(adapter, text)
         case "form":
-            return _validated(adapter, thaw_wire(decode_form(body, media.fields, _TEXT)))
+            return _validated(adapter, plain(decode_form(body, media.fields, _TEXT)))
         case "multipart":
-            return _validated(adapter, await _parts(request, media.fields))
+            return _validated(adapter, plain(await _parts(request, media.fields)))
         case _:
             pass
     return body
 
 
 async def _parts(request: Request, fields: tuple[FieldPlan, ...]) -> dict[str, object]:
-    """Return the parts of a multipart body by name, reading uploads to bytes, as lists for repeated fields."""
-    repeated = {item.name for item in fields if item.repeated}
+    """Return the parts of a multipart body by name, uploads read to bytes and text in its field's kind.
+
+    A repeated field holds a list, and a single-valued one its last part.
+    """
+    declared = {item.name: item for item in fields}
     parts: dict[str, object] = {}
     async with request.form() as form:
         for name in dict.fromkeys(form.keys()):
-            values = [await value.read() if isinstance(value, UploadFile) else value for value in form.getlist(name)]
-            parts[name] = values if name in repeated else values[-1]
+            field = declared.get(name, _TEXT)
+            values = [
+                await value.read() if isinstance(value, UploadFile) else typed(value, field.kind)
+                for value in form.getlist(name)
+            ]
+            parts[name] = values if field.repeated else values[-1]
     return parts

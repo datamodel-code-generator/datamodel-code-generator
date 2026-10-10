@@ -1,0 +1,234 @@
+# Runtime reference
+
+Import `Client` and `AsyncClient` from `client` and the records below from
+`client.options`. Async calls require asyncio.
+
+## Layered options and budgets
+
+A client takes its settings as keywords, a view as the keywords of `with_options(...)`, and one call as
+`options=RequestOptions(...)`. The values a layer gives override those below it: the call's, then the nearest
+view's, then the client's, then fixed defaults. A setting left None inherits, except where None has a meaning of its
+own and UNSET inherits: `timeout=None` lifts every phase limit, `total_timeout=None` removes the optional budget
+across attempts, and `auth=None` sends without an Auth. A number as `timeout` limits every phase and an
+`httpx2.Timeout` each one. `RetryOptions` merges its fields independently, a set of statuses replacing the inherited
+one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client to bound every call to a minute.
+The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
+give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
+the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
+names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
+multipart one without a boundary keeps the body's.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
+
+| Setting | Effective default |
+|---|---|
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
+| retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
+| retry statuses | 408, 429, 500, 502, 503, 504 |
+| maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
+| respect Retry-After / retry pool timeout | True / False |
+| follow redirects | the native client's: False for an SDK-created client |
+| error body prefix | 64 KiB; response and stream bodies are not capped |
+
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
+
+## Retries and replayable input
+
+GET, HEAD, OPTIONS, PUT, and DELETE retry by default; POST and PATCH need an idempotent declaration or a declared key
+header. A connect failure, connect timeout, or pool timeout (with `RetryOptions(retry_on_pool_timeout=True)`) retries
+any call no earlier attempt delivered; other transport failures, callbacks, decoding, cancellation, and deadlines never
+retry, and `retry_safety="never"` forbids every resend. Full jitter samples up to the capped exponential delay. A
+Retry-After delay is a minimum; its date is read by `email.utils.parsedate_to_datetime`, UTC without a known zone, and
+an RFC 850 date's two-digit year is the latest at most 50 years after receipt; a year below 100 in another form is read
+as 1969 to 2068. Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff. A
+call's `RequestOptions(idempotency_key="...")` gives a stable key and `idempotency_key=None` disables the key an
+operation with a declared key header creates once per call; a header of that name among the call's extra headers or the
+default headers is the call's key instead, which a protocol helper refuses. One call keeps its key, origin, and encoded
+body across attempts.
+
+A binary body is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of `bytes`; async calls also take an async file whose `read` is a coroutine function and an async iterable of `bytes`.
+Bytes and seekable files, paths included, are sent with the `Content-Length` measured at call entry and replay from that offset; other inputs are chunked, are never buffered, and cannot replay once consumed.
+Text, `bytearray`, `memoryview`, text-mode or closed files, and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable`.
+The SDK opens a path when the body is first sent, reads at most 64 KiB at a time, in a worker thread in async calls, and closes it when the call ends; caller files stay open.
+
+## Transport
+
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.
+An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, and `auth=None` sends without one; unset, the HTTP client's own Auth applies.
+## Errors and cleanup
+
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase or total timeout. A final status the operation does not declare as a success
+raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with its decoded error body
+or bounded raw bytes. `DecodeError` names a request argument or response that does not fit its declaration,
+and `ConfigurationError` a refused setting or call; messages never carry key, header, or body values. Secondary
+cleanup failures are notes of the primary failure, and native cancellation propagates unchanged.
+
+## Pagination sessions
+
+A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's
+`pagination_options`, then the client's `helper_defaults` for the helper, then the default below. Defaults naming a
+helper the package lacks, or another kind's options, fail construction. The session types are imported from
+`client.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`.
+
+| Limit | Effective default |
+|---|---|
+| pages per session | None (no limit) |
+| items per session | None (no limit); 0 ends a pager at once |
+| session total timeout (`total_timeout`) | None (no limit) |
+
+A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
+binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
+`ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
+cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
+the session ends it with `ProtocolDataError` with the reason `pagination_cycle` after the repeating page. A limit
+reached while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A
+call's options must not give extra headers or query names of a parameter the helper writes.
+
+A next-URL or Link helper sends the first request as the caller gives it and each later page to the URL the last page
+gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
+call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
+the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
+and name an HTTP or HTTPS URL at the server's origin or at one the client's `allowed_origins` lists; anything else
+raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
+headers or query fields the package's security schemes name, and the client's credentials are placed only at the
+server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
+once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
+session, the first page's own included, ends it with `ProtocolDataError` with the reason `pagination_cycle` after the
+repeating page.
+
+A pager's `checkpoint()` returns the continuation it fetches its next page with, the server's cursor, the next offset
+or page number, or the resolved next URL, without sending; it is None before the first page and after the last. The
+helper's `resume(state, ...)` takes that value with the operation's arguments and any body again and returns a pager
+in a session of its own that sends nothing until it is iterated. A continuation holds no call arguments, credentials,
+body, or progress. A pager stopped in the middle of a page gives the continuation before that page, so a resumed pager
+repeats the items already delivered from it. A resumed pager counts pages and items from zero against its own limits,
+starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
+continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
+`initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or a
+`ProtocolDataError` with the reason `pagination_cycle` resumes from its `checkpoint()`; the errors carry no
+continuation.
+
+## Polling sessions
+
+A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
+and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
+session bounds all of them. Each limit comes from the call's `poll_options`, then the client's `helper_defaults` for
+the helper, then the default below. The session types are imported from
+`client.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`.
+
+| Limit | Effective default |
+|---|---|
+| polls per session | 1000; None removes it |
+| poll interval | the helper's declared interval, 1 second unless declared |
+| allowed wait before a poll | 60 seconds; None removes it |
+| session total timeout (`total_timeout`) | 600 seconds; None removes it |
+
+`start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
+handle, a declared immediate status a handle that already holds the result, and any other success status raises
+`ProtocolDataError`. An interval longer than the allowed wait, or not shorter than the session, raises
+`ConfigurationError` before the create request. Each poll waits until the interval after the last response, an
+error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
+after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
+shorter than what remains of the session, raises `SessionLimitError` with the reason `wait` or `deadline` and the
+server's delay as `required_wait` without sending. A resumed handle polls at once, since a checkpoint keeps no server
+delay. A poll's state must equal a declared state value, JSON type included; any other value raises
+`ProtocolDataError`, and success is never inferred.
+
+`wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
+cancelled operation raises `ProtocolDataError` with the reason `operation_failed` or `operation_cancelled`, its last
+poll's decoded data as `data` and its response as `info`, on every later `wait` too. An error that settles nothing, such
+as a transport error, a deadline, a cancellation, or a limit, leaves the handle as it was: pending, so a later `status`
+or `wait` polls again without creating the operation again, or succeeded with its result fetch still due, which a later
+`wait` retries alone. `status` and `wait` at once raise `ConfigurationError` with the reason `invalid_state`, and so
+does every step after `close()` or `aclose()`, which stops only local polling. A call's options must not fix an
+idempotency key or give extra headers or query names of a parameter the helper writes.
+
+`checkpoint()` returns plain JSON without sending, also after closing and while another thread or task polls: an object
+whose `phase` is `pending`, with the values the next poll (`bound`) and a remote cancel (`cancel`) write and those the
+create response gave the result fetch (`seed`), or `fetch`, with the values a due result fetch writes, and the server's
+`expires_at`, never polls, results, model objects, the session, or the call's options; a settled operation has nothing
+left to continue, and its `checkpoint()` raises `ConfigurationError`. The helper's `resume` is never awaited and returns
+a handle in a session of its own that sends nothing until `status` or `wait`: a pending one polls again at once, and one
+whose fetch is due fetches the result; polls, the session's timeout, and deadline start afresh. Before returning, it
+refuses a value that is not JSON or does not fit the helper with `ConfigurationError`, an expired one with the reason
+`expired`, and a dot segment the next poll or remote cancel would write to a path parameter with `ProtocolDataError`;
+any other saved value is checked and encoded when its request is built, as a server's is. After a `SessionLimitError`,
+the handle's `checkpoint()` continues the operation; the errors carry no checkpoint. A helper that declares `expires_at`
+reads the server's expiry, an RFC 3339 date-time with an offset or an HTTP date, from the accepted create response, and
+its checkpoints expire then; a create response without a valid one fails `start` with `ProtocolDataError`, though the
+remote operation was created.
+
+A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
+request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
+another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
+polls again; closing sends nothing.
+
+## SSE streams
+
+An SSE helper's `open` is one session holding one logical call. The call's total timeout bounds only
+acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
+`stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
+imported from `client.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+`UnknownEvent`.
+
+| Limit | Effective default |
+|---|---|
+| idle timeout | the native read timeout; None removes it |
+| session total timeout (`total_timeout`) | None |
+| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
+| reconnection wait | 60 seconds; None removes it |
+
+The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
+UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the reason
+`too_large` and the native `SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator
+maps it to; data that does not decode raises `DecodeError`, and a declared error event raises `ProtocolDataError` with
+the reason `error_event` and the decoded event as `data`. The stream ends at its declared completion; an end before it
+raises `StreamInterruptedError` with the reason `eof`, and a broken connection one with the reason `transport` and its
+transport failure as the cause. A frame an SSE body ends in the middle of is
+discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
+never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
+`with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
+active streams; each stream releases its own response.
+
+A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
+cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
+a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's expiry,
+never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that failed,
+ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing the
+cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
+reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
+caller. It refuses a state that is not JSON or does not fit with `ConfigurationError`, an expired one with the reason
+`expired`, before sending, and a cursor written where a credential goes with the reason `wrong_capability`. Neither the
+headers and query of the client, a view, or the call may name a parameter a reopen writes, nor the call fix a key.
+
+With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
+transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
+`timeout` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
+`SessionLimitError` with the reason `reconnects`; a wait whose backoff cap or `retry` time is longer than allowed, or a
+wait longer than the session has left, raises the interruption instead. Decode, size, remote, idle, and deadline
+failures, the declared end, and closing never reconnect, and events the server sends again after a reopen are delivered
+again.
+
+## Request compression
+
+`Client(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`Client(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
+when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
+
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
+multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
+uncompressed; a one-shot body stays one-shot.
+
+Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
+followed URLs stay uncompressed. Token requests are never compressed.

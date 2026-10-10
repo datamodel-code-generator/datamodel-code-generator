@@ -3,8 +3,8 @@
 
 """Verify the deliveries of one webhook helper with the caller's verifier, then decode their events.
 
-The helper is stripe.event, whose deliveries are verified by the Verifier the caller
-passes, which must authenticate the whole raw body and every fact it returns.
+The helper is stripe.event, whose deliveries are verified by the Verifier the caller passes,
+which must authenticate the whole raw body and every fact it returns.
 """
 
 from __future__ import annotations
@@ -13,8 +13,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Final, TypeVar
 
-from models import Customer as _dcg_type_1
-from models import Invoice as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.protocols.adapters import AdapterPlan, averify_adapted, verify_adapted
@@ -26,24 +25,20 @@ from ..._runtime.protocols.webhooks import (
     WebhookOptions,
 )
 
-__all__ = ["verify", "verify_async"]
+__all__ = [
+    'verify',
+    'verify_async',
+]
 
 
 K = TypeVar("K")
 
 
-_PLAN: Final[AdapterPlan[_dcg_type_0 | _dcg_type_1]] = AdapterPlan(
+_PLAN: Final[AdapterPlan[models.Invoice | models.Customer]] = AdapterPlan(
     helper_id='stripe.event',
     timestamp=True,
     delivery_id=False,
-    event=MappedEventDecoder(
-        '/type',
-        {
-            'invoice.paid': EventDecoder(model_bindings.codec_0),
-            'invoice.updated': EventDecoder(model_bindings.codec_0),
-            'customer.created': EventDecoder(model_bindings.codec_1),
-        },
-    ),
+    event=MappedEventDecoder('/type', {'invoice.paid': EventDecoder(model_bindings.codec_0), 'invoice.updated': EventDecoder(model_bindings.codec_0), 'customer.created': EventDecoder(model_bindings.codec_1)}),
 )
 
 
@@ -55,15 +50,15 @@ def verify(
     verifier: Verifier[K],
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
+) -> VerifiedWebhook[models.Invoice | models.Customer]:
     """Verify a delivery with verifier and decode its event.
 
-    The verifier is called once, synchronously in both functions, and must authenticate
-    the whole raw body and every fact it returns; a result that is not a
-    VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises ConfigurationError before decoding.
-    Deliveries outside the timestamp window are rejected. Verification retains no
-    delivery state; deduplicate in your application using delivery_id when present.
+    The verifier is called once, synchronously in both functions,
+    and must authenticate the whole raw body and every fact it returns;
+    a result that is not a VerifiedSignature, lacks a fact this helper requires, returns one it does not declare,
+    or has a naive timestamp raises ConfigurationError before decoding.
+    Deliveries outside the timestamp window are rejected.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return verify_adapted(
         _PLAN,
@@ -84,15 +79,15 @@ async def verify_async(
     verifier: Verifier[K],
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
+) -> VerifiedWebhook[models.Invoice | models.Customer]:
     """Verify a delivery with verifier and decode its event.
 
-    The verifier is called once, synchronously in both functions, and must authenticate
-    the whole raw body and every fact it returns; a result that is not a
-    VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises ConfigurationError before decoding.
-    Deliveries outside the timestamp window are rejected. Verification retains no
-    delivery state; deduplicate in your application using delivery_id when present.
+    The verifier is called once, synchronously in both functions,
+    and must authenticate the whole raw body and every fact it returns;
+    a result that is not a VerifiedSignature, lacks a fact this helper requires, returns one it does not declare,
+    or has a naive timestamp raises ConfigurationError before decoding.
+    Deliveries outside the timestamp window are rejected.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_adapted(
         _PLAN,

@@ -1,0 +1,61 @@
+"""Operation plans of this package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+{{ imports }}
+
+
+{%- if dependencies %}
+OperationDependencies = {{ typed_dict }}(
+    'OperationDependencies',
+    {
+{%- for dependency in dependencies %}
+        {{ dependency.name }}: {{ dependency.annotation }},
+{%- endfor %}
+    },
+    total=False,
+)
+{%- else %}
+OperationDependencies = {{ typed_dict }}('OperationDependencies', {}, total=False)
+{%- endif %}
+{%- for plan in plans %}
+
+
+class {{ plan.class_name }}:
+    """Plans of the {{ plan.operation }} operation."""
+{%- if plan.parameters %}
+
+    @{{ dataclass }}(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of {{ plan.operation }}."""
+{% for parameter in plan.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }}
+{%- endfor %}
+
+    PARAMETERS: {{ final }} = {{ parameter_adapter }}(
+        arguments={{ plan.arguments }},
+        record=Parameters,
+{%- if plan.path %}
+        path={{ plan.path }},
+{%- endif %}
+    )
+{%- else %}
+{% endif %}
+{%- if plan.body %}
+    BODY: {{ final }} = {{ body_adapter }}(
+        media={{ plan.body.media }},
+{%- if plan.body.optional %}
+        required=False,
+{%- endif %}
+    )
+{%- endif %}
+    RESPONSES: {{ final }} = {{ operation_responses }}(
+        responses={{ plan.responses.responses }},
+{%- if plan.responses.primary %}
+        primary={{ plan.responses.primary }},
+{%- endif %}
+{%- if plan.responses.head %}
+        head=True,
+{%- endif %}
+    )
+{%- endfor %}

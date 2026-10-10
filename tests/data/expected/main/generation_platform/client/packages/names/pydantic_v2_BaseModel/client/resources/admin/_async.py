@@ -48,7 +48,9 @@ class AsyncAdminResource:
         *,
         options: RequestOptions | None = None,
     ) -> CreateAdminUserResponse:
-        """Call POST /admin/users."""
+        """
+        Call POST /admin/users.
+        """
         return (await self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -68,8 +70,14 @@ class AsyncAdminWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[CreateAdminUserResponse]:
-        """Call POST /admin/users."""
-        return await self._core.execute(_operations.OPERATION_4, (), options=options)
+        """
+        Call POST /admin/users.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        )
 
 
 class AsyncAdminWithRawResponse:
@@ -84,7 +92,9 @@ class AsyncAdminWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /admin/users."""
+        """
+        Call POST /admin/users.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -104,5 +114,11 @@ class AsyncAdminWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /admin/users."""
-        return self._core.stream(_operations.OPERATION_4, (), options=options)
+        """
+        Call POST /admin/users.
+        """
+        return self._core.stream(
+            _operations.OPERATION_4,
+            (),
+            options=options,
+        )

@@ -1,29 +1,115 @@
+{%- macro build_signature(builder) -%}
+def {{ builder.name }}(
+    *,
+{%- for parameter in builder.parameters %}
+    {{ parameter.name }}: {{ parameter.annotation }}{% if parameter.default %} = {{ parameter.default }}{% endif %},
+{%- endfor %}
+) -> {{ builder.returns }}:
+{%- endmacro -%}
 """{{ docstring }}"""
 
 {{ imports }}
 {%- for route in routes %}
 
 
-def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
-    {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
+def {{ route.adder }}(
+    {{ route.router }}: {{ api_router }},
+    {{ route.wiring }}: {{ wiring }},
+) -> None:
+    {{ route.service }}: {{ route.protocol }} = {{ route.wiring }}.services[{{ route.group }}]
+    {{ route.handler }} = {{ route.lookup.function }}(
+        {{ route.service }}.{{ route.lookup.method }},
+        {{ route.lookup.label }},
+{%- if route.lookup.asynchronous %}
+        asynchronous=True,
+{%- endif %}
+    )
 {%- if route.principal %}
 
-    {{ route.principal }}
+    {{ route.principal.authorize }} = {{ route.wiring }}.authorizer()
+
+    async def {{ route.principal.name }}(
+        *,
+{%- for parameter in route.principal.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }},
+{%- endfor %}
+    ) -> object:
+        return await {{ route.principal.authenticate }}(
+            {{ route.principal.requirements }},
+            {{ route.principal.credentials }},
+            {{ route.principal.authorize }},
+            {{ route.principal.challenge }},
+        )
 {%- endif %}
 
-    {{ route.signature }}
-        {{ route.body }}
+{%- if route.endpoint.parameters %}
 
-    {{ route.registration }}
+    {% if route.endpoint.asynchronous %}async {% endif %}def {{ route.endpoint.name }}(
+        *,
+{%- for parameter in route.endpoint.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }}{% if parameter.default %} = {{ parameter.default }}{% endif %},
+{%- endfor %}
+    ) -> object:
+{%- else %}
+
+    {% if route.endpoint.asynchronous %}async {% endif %}def {{ route.endpoint.name }}() -> object:
+{%- endif %}
+        return {{ route.call.dispatch }}(
+{%- if route.call.arguments %}
+            {% if route.endpoint.asynchronous %}await {% endif %}{{ route.handler }}(
+{%- for argument in route.call.arguments %}
+                {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+            ),
+{%- else %}
+            {% if route.endpoint.asynchronous %}await {% endif %}{{ route.handler }}(),
+{%- endif %}
+            {{ route.call.responses }},
+        )
+
+    {{ route.router }}.add_api_route(
+        {{ route.registration.path }},
+        {{ route.endpoint.name }},
+        methods={{ route.registration.methods }},
+        status_code={{ route.registration.status_code }},
+{%- if route.registration.response_model %}
+        response_model={{ route.registration.response_model }},
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+{%- else %}
+        response_model=None,
+        response_class={{ route.registration.response_class }},
+{%- endif %}
+{%- for keyword in route.registration.keywords %}
+        {{ keyword.keyword }}={{ keyword.value }},
+{%- endfor %}
+        dependencies={{ route.wiring }}.dependencies.get({{ route.registration.name }}),
+    )
 {%- endfor %}
 
 
-LITERAL_ROUTES: {{ final }} = {{ literal }}
-TEMPLATED_ROUTES: {{ final }} = {{ templated }}
+{% if literal -%}
+LITERAL_ROUTES: {{ final }} = (
+{%- for route in literal %}
+    ({{ route.name }}, {{ route.adder }}),
+{%- endfor %}
+)
+{%- else -%}
+LITERAL_ROUTES: {{ final }} = ()
+{%- endif %}
+{% if templated -%}
+TEMPLATED_ROUTES: {{ final }} = (
+{%- for route in templated %}
+    ({{ route.name }}, {{ route.adder }}),
+{%- endfor %}
+)
+{%- else -%}
+TEMPLATED_ROUTES: {{ final }} = ()
+{%- endif %}
 
 
-{{ signature }}
-    """Check the service and settings, then register {{ group }} on a new router, literal paths first."""
+{{ build_signature(builder) }}
+    """Register {{ group }} on a new router, literal paths first."""
     return {{ build }}(
         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
         services={{ services }},

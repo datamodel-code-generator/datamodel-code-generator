@@ -11,9 +11,7 @@ from typing import TYPE_CHECKING
 
 import httpx2
 
-from tests.data.python.client_body_replay import _Attempt, _Factory
-from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
-from tests.data.python.client_runtime import Exchange, arecord, failing, injected, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, injected, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
@@ -21,43 +19,35 @@ if TYPE_CHECKING:
 
 
 class _Events:
-    def __init__(
-        self,
-        *,
-        fail: str | None = None,
-        scheduled: Callable[[], None] | None = None,
-        ended: Callable[[], None] | None = None,
-    ) -> None:
-        self.fail = fail
-        self.ended = ended
-        self.scheduled = scheduled
-        self.values: list[tuple[object, ...]] = []
-        self.ids: list[object] = []
+    """Record each native send and response through the injected HTTP client's own event hooks."""
 
-    def on_event(self, event: object) -> None:
-        name = getattr(event, "name", None)
-        self.values.append(
-            tuple(
-                getattr(event, key)
-                for key in (
-                    "name",
-                    "attempt_index",
-                    "status",
-                    "sent",
-                    "attempt_count",
-                    "retry_reason",
-                    "outcome",
-                )
-            )
-        )
-        self.ids.append(getattr(event, "call_id", None))
-        if name == "retry_scheduled" and self.scheduled is not None:
-            self.scheduled()
-        if name == "attempt_end" and self.ended is not None:
-            self.ended()
-        if name == self.fail:
-            message = "injected retry hook failure"
+    def __init__(self, *, fail: bool = False, responded: Callable[[], None] | None = None) -> None:
+        self.fail = fail
+        self.responded = responded
+        self.values: list[tuple[object, ...]] = []
+
+    def request(self, request: httpx2.Request) -> None:
+        self.values.append(("request", request.method, request.url.path))
+
+    def response(self, response: httpx2.Response) -> None:
+        self.values.append(("response", response.status_code))
+        if self.responded is not None:
+            self.responded()
+        if self.fail:
+            message = "injected response hook failure"
             raise RuntimeError(message)
+
+    async def arequest(self, request: httpx2.Request) -> None:
+        self.request(request)
+
+    async def aresponse(self, response: httpx2.Response) -> None:
+        self.response(response)
+
+    def hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.request], "response": [self.response]}
+
+    def async_hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.arequest], "response": [self.aresponse]}
 
 
 class _Broken(httpx2.SyncByteStream, httpx2.AsyncByteStream):
@@ -92,12 +82,18 @@ class _Stop(BaseException):
     pass
 
 
+_INTERRUPTIONS = (asyncio.CancelledError, _Stop, KeyboardInterrupt, SystemExit)
+
+
 class _RewindFile(io.BytesIO):
     def __init__(self, failure: BaseException) -> None:
         super().__init__(b"body")
         self.failure = failure
         self.armed = False
         self.calls = 0
+
+    def arm(self) -> None:
+        self.armed = True
 
     def seek(self, offset: int, whence: int = 0, /) -> int:
         if self.armed:
@@ -109,16 +105,6 @@ class _RewindFile(io.BytesIO):
         return super().seek(offset, whence)
 
 
-class _ArmRewind:
-    def __init__(self, file: _RewindFile, event: str) -> None:
-        self.file = file
-        self.event = event
-
-    def on_event(self, event: object) -> None:
-        if getattr(event, "name", None) == self.event:
-            self.file.armed = True
-
-
 def _fault(body: _Broken, status: int = 200) -> Callable[[httpx2.Request], httpx2.Response]:
     return injected(lambda _: httpx2.Response(status, headers={"Content-Type": "text/plain"}, stream=body))
 
@@ -126,21 +112,21 @@ def _fault(body: _Broken, status: int = 200) -> Callable[[httpx2.Request], httpx
 def _error(error: BaseException) -> tuple[object, ...]:
     return (
         type(error).__name__,
-        getattr(error, "retry_stop_reason", None),
+        getattr(error, "reason", None),
         getattr(error, "attempt_count", None),
-        getattr(error, "phase", None),
-        tuple(type(item).__name__ for item in getattr(error, "secondary_errors", ())),
+        tuple(getattr(error, "__notes__", ())),
     )
 
 
 def _secondary(error: BaseException) -> list[str]:
-    return [type(item).__name__ for item in getattr(error, "secondary_errors", ())]
+    return list(getattr(error, "__notes__", ()))
 
 
 def _capture(call: Callable[[], object]) -> tuple[object, ...]:
+    """Record a call's data and attempts, or the SDK error or the KeyboardInterrupt of an interrupted wait."""
     try:
         result = call()
-    except BaseException as error:  # noqa: BLE001
+    except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001
         return _error(error)
     info = getattr(result, "info", None)
     return (
@@ -150,9 +136,10 @@ def _capture(call: Callable[[], object]) -> tuple[object, ...]:
 
 
 async def _acapture(call: Callable[[], Awaitable[object]]) -> tuple[object, ...]:
+    """Record an awaited call's data and attempts, or the SDK error that ended it."""
     try:
         result = await call()
-    except BaseException as error:  # noqa: BLE001
+    except Exception as error:  # noqa: BLE001
         return _error(error)
     info = getattr(result, "info", None)
     return (
@@ -162,9 +149,8 @@ async def _acapture(call: Callable[[], Awaitable[object]]) -> tuple[object, ...]
 
 
 def _report(lines: list[str], events: _Events, exchange: Exchange) -> None:
-    lines.append(f"    events={events.values!r} one-call={len(set(events.ids)) == 1} queued={len(exchange.responders)}")
+    lines.append(f"    events={events.values!r} queued={len(exchange.responders)}")
     events.values.clear()
-    events.ids.clear()
     exchange.responders.clear()
 
 
@@ -172,8 +158,11 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
     """Exercise released candidates, saved raw responses, and cooperative wait termination."""
     options = importlib.import_module(f"{package.__name__}.options")
     exchange, events = Exchange([]), _Events()
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+    retry = options.RetryOptions(initial_delay=0)
+    with (
+        exchange.client(event_hooks=events.hooks()) as native,
+        package.Client(http_client=native, retry=retry) as api,
+    ):
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"done", "text/plain"))
         record(lines, "typed status retry", lambda: _capture(api.retry.with_response.get_safe))
         _report(lines, events, exchange)
@@ -195,7 +184,7 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
         _report(lines, events, exchange)
         for label, retries in (("open", 0), ("partial", 2)):
             exchange.respond(*(raw_response(503, b"busy", "text/plain") for _ in range(retries + 1)))
-            request = options.RequestOptions(retry=options.RetryOptions(max_retries=retries))
+            request = options.RequestOptions(max_retries=retries)
             with api.retry.with_streaming_response.get_safe(options=request) as response:
                 if label == "partial":
                     chunks = response.iter_bytes()
@@ -203,33 +192,32 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
                 record(lines, f"stream status reason {label}", lambda: _capture(response.raise_for_status))
                 record(lines, f"stream repeated status reason {label}", lambda: _capture(response.raise_for_status))
             _report(lines, events, exchange)
-        for name in ("response_headers", "attempt_end", "retry_scheduled"):
-            events.fail = name
-            exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-            record(lines, f"stop hook {name}", lambda: _capture(api.retry.with_response.get_safe))
-            _report(lines, events, exchange)
-        events.fail = None
+        events.fail = True
+        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+        record(lines, "stop response hook", lambda: _capture(api.retry.with_response.get_safe))
+        _report(lines, events, exchange)
+        events.fail = False
         body = _Broken(read=False, close=True)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         record(lines, "failed cleanup stops status retry", lambda: _capture(api.retry.with_response.get_safe))
         record(lines, "failed cleanup count", lambda body=body: body.closes)
         _report(lines, events, exchange)
         _close_interruptions(api, events, exchange, lines)
-    _resource_interruptions(package, options, lines)
     _presend(package, options, lines)
-    _key_inheritance(package, options, lines)
+    _sync_wait(package, options, lines)
+    _key_surfaces(package, options, lines)
     run(lambda: _async_calls(package, options, lines))
 
 
 def _close_interruptions(api: object, events: _Events, exchange: Exchange, lines: list[str]) -> None:
-    for error_type in (asyncio.CancelledError, _Stop, KeyboardInterrupt, SystemExit):
+    for error_type in _INTERRUPTIONS:
         interrupted = error_type("native retry close")
         interrupted.__dict__["__notes__"] = ["original close note"]
         body = _Broken(read=False, close=interrupted)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         try:
             api.retry.with_response.get_safe()
-        except BaseException as error:  # noqa: BLE001
+        except _INTERRUPTIONS as error:
             observed = (
                 type(error).__name__,
                 error is interrupted,
@@ -247,65 +235,24 @@ def _close_interruptions(api: object, events: _Events, exchange: Exchange, lines
         _report(lines, events, exchange)
 
 
-def _resource_interruptions(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
-    for phase in ("send", "response", "ordinary response"):
-        first, second = _Stop("first cleanup interruption"), _Stop("permit interruption")
-        limiter = _SemaphoreLimiter(release_failure=second)
-        attempt = _Attempt(failure=first if phase == "send" else None)
-        body = _Broken(read=False, close=first if phase == "response" else True)
-        exchange, events = Exchange([]), _Events()
-        exchange.respond(
-            failing(httpx2.ReadError) if phase == "send" else _fault(body, 503),
-            raw_response(200, b"unused", "text/plain"),
-        )
-        config = options.ClientOptions(limiter=limiter, retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-        with exchange.client() as native, package.Client(http_client=native, options=config) as api:
-            try:
-                api.retry.post_idempotent(body=bodies.BodyFactory(_Factory((attempt,))))
-            except BaseException as error:  # noqa: BLE001
-                expected = second if phase == "ordinary response" else first
-                observed = (
-                    type(error).__name__,
-                    error is expected,
-                    error.args,
-                    getattr(error, "__notes__", ()),
-                    _secondary(error),
-                )
-            else:
-                observed = ("returned",)
-        record(
-            lines,
-            f"interrupted cleanup {phase}",
-            lambda observed=observed, attempt=attempt, body=body, limiter=limiter: (
-                observed,
-                attempt.closes,
-                body.closes,
-                limiter.usage.releases,
-                limiter.usage.active,
-            ),
-        )
-        _report(lines, events, exchange)
-
-
 def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
-    for stage in ("call_start", "retry_scheduled"):
-        failure = errors.APITimeoutError(
-            effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
-        )
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    for stage in ("before call", "first response"):
+        failure = errors.APITimeoutError(reason="phase_timeout")
         file = _RewindFile(failure)
-        exchange, events = Exchange([]), _Events()
+        exchange, events = Exchange([]), _Events(responded=None if stage == "before call" else file.arm)
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-        config = options.ClientOptions(
-            retry=options.RetryOptions(initial_delay=0),
-            total_timeout=None if stage == "call_start" else 0.5,
-            hooks=(_ArmRewind(file, stage), events),
-        )
-        with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+        retry = options.RetryOptions(initial_delay=0)
+        total = None if stage == "before call" else 0.5
+        if stage == "before call":
+            file.arm()
+        with (
+            exchange.client(event_hooks=events.hooks()) as native,
+            package.Client(http_client=native, retry=retry, total_timeout=total) as api,
+        ):
             try:
-                api.retry.post_idempotent(body=bodies.FileBody(file))
-            except BaseException as error:  # noqa: BLE001
+                api.retry.post_idempotent(body=file)
+            except errors.SDKError as error:
                 observed = _error(error), error is failure, getattr(error, "cause", None) is failure, file.calls
             else:
                 observed = ("returned",)
@@ -316,8 +263,11 @@ def _presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None
 
 async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange, events = Exchange([]), _Events()
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+    retry = options.RetryOptions(initial_delay=0)
+    async with (
+        exchange.async_client(event_hooks=events.async_hooks()) as native,
+        package.AsyncClient(http_client=native, retry=retry) as api,
+    ):
         for label, call in (
             ("typed", api.retry.with_response.get_safe),
             ("buffered", api.retry.with_raw_response.get_safe),
@@ -334,7 +284,7 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
         _report(lines, events, exchange)
         for label, retries in (("open", 0), ("partial", 2)):
             exchange.respond(*(raw_response(503, b"busy", "text/plain") for _ in range(retries + 1)))
-            request = options.RequestOptions(retry=options.RetryOptions(max_retries=retries))
+            request = options.RequestOptions(max_retries=retries)
             async with api.retry.with_streaming_response.get_safe(options=request) as response:
                 if label == "partial":
                     chunks = response.iter_bytes()
@@ -346,32 +296,30 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
                     lines, f"async repeated status reason {label}", lambda: _acapture(response.raise_for_status)
                 )
             _report(lines, events, exchange)
-        for name in ("attempt_end", "retry_scheduled"):
-            events.fail = name
-            exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-            await arecord(lines, f"async stop hook {name}", lambda: _acapture(api.retry.with_response.get_safe))
-            _report(lines, events, exchange)
-        events.fail = None
+        events.fail = True
+        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+        await arecord(lines, "async stop response hook", lambda: _acapture(api.retry.with_response.get_safe))
+        _report(lines, events, exchange)
+        events.fail = False
         body = _Broken(read=False, close=True)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         await arecord(lines, "async failed cleanup stops retry", lambda: _acapture(api.retry.with_response.get_safe))
         _report(lines, events, exchange)
         await _async_close_interruptions(api, events, exchange, lines)
     await _async_wait(package, options, lines)
-    await _async_resource_interruptions(package, options, lines)
     await _async_presend(package, options, lines)
-    await _async_key_inheritance(package, options, lines)
+    await _async_key_surfaces(package, options, lines)
 
 
 async def _async_close_interruptions(api: object, events: _Events, exchange: Exchange, lines: list[str]) -> None:
-    for error_type in (asyncio.CancelledError, _Stop, KeyboardInterrupt, SystemExit):
+    for error_type in _INTERRUPTIONS:
         interrupted = error_type("native retry close")
         interrupted.__dict__["__notes__"] = ["original close note"]
         body = _Broken(read=False, close=interrupted)
         exchange.respond(_fault(body, 503), raw_response(200, b"unused", "text/plain"))
         try:
             await api.retry.with_response.get_safe()
-        except BaseException as error:  # noqa: BLE001
+        except _INTERRUPTIONS as error:
             observed = (
                 type(error).__name__,
                 error is interrupted,
@@ -389,65 +337,24 @@ async def _async_close_interruptions(api: object, events: _Events, exchange: Exc
         _report(lines, events, exchange)
 
 
-async def _async_resource_interruptions(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
-    for phase in ("send", "response", "ordinary response"):
-        first, second = _Stop("first cleanup interruption"), _Stop("permit interruption")
-        limiter = _AsyncSemaphoreLimiter(release_failure=second)
-        attempt = _Attempt(failure=first if phase == "send" else None)
-        body = _Broken(read=False, close=first if phase == "response" else True)
-        exchange, events = Exchange([]), _Events()
-        exchange.respond(
-            failing(httpx2.ReadError) if phase == "send" else _fault(body, 503),
-            raw_response(200, b"unused", "text/plain"),
-        )
-        config = options.ClientOptions(limiter=limiter, retry=options.RetryOptions(initial_delay=0), hooks=(events,))
-        async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
-            try:
-                await api.retry.post_idempotent(body=bodies.AsyncBodyFactory(_Factory((attempt,)).async_call))
-            except BaseException as error:  # noqa: BLE001
-                expected = second if phase == "ordinary response" else first
-                observed = (
-                    type(error).__name__,
-                    error is expected,
-                    error.args,
-                    getattr(error, "__notes__", ()),
-                    _secondary(error),
-                )
-            else:
-                observed = ("returned",)
-        record(
-            lines,
-            f"async interrupted cleanup {phase}",
-            lambda observed=observed, attempt=attempt, body=body, limiter=limiter: (
-                observed,
-                attempt.closes,
-                body.closes,
-                limiter.usage.releases,
-                limiter.usage.active,
-            ),
-        )
-        _report(lines, events, exchange)
-
-
 async def _async_presend(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies, errors = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "errors"))
-    for stage in ("call_start", "retry_scheduled"):
-        failure = errors.APITimeoutError(
-            effective_timeout=1.0, phase="read", delivery_state=errors.DeliveryState.NOT_SENT
-        )
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    for stage in ("before call", "first response"):
+        failure = errors.APITimeoutError(reason="phase_timeout")
         file = _RewindFile(failure)
-        exchange, events = Exchange([]), _Events()
+        exchange, events = Exchange([]), _Events(responded=None if stage == "before call" else file.arm)
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
-        config = options.ClientOptions(
-            retry=options.RetryOptions(initial_delay=0),
-            total_timeout=None if stage == "call_start" else 0.5,
-            hooks=(_ArmRewind(file, stage), events),
-        )
-        async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+        retry = options.RetryOptions(initial_delay=0)
+        total = None if stage == "before call" else 0.5
+        if stage == "before call":
+            file.arm()
+        async with (
+            exchange.async_client(event_hooks=events.async_hooks()) as native,
+            package.AsyncClient(http_client=native, retry=retry, total_timeout=total) as api,
+        ):
             try:
-                await api.retry.post_idempotent(body=bodies.AsyncFileBody(file))
-            except BaseException as error:  # noqa: BLE001
+                await api.retry.post_idempotent(body=file)
+            except errors.SDKError as error:
                 observed = _error(error), error is failure, getattr(error, "cause", None) is failure, file.calls
             else:
                 observed = ("returned",)
@@ -456,15 +363,50 @@ async def _async_presend(package: ModuleType, options: ModuleType, lines: list[s
         file.close()
 
 
+def _sync_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Interrupt the caller inside its synchronous retry wait, and observe the interruption propagate."""
+    durations: list[float] = []
+
+    def sleep(duration: float) -> None:
+        durations.append(duration)
+        message = "retry wait interrupted"
+        raise KeyboardInterrupt(message)
+
+    exchange, events = Exchange([]), _Events()
+    with (
+        exchange.client(event_hooks=events.hooks()) as native,
+        package.Client(
+            http_client=native,
+            retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"),
+            total_timeout=60,
+            clock=options.Clock(monotonic=lambda: 100.0, sleep=sleep),
+        ) as api,
+    ):
+        exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
+        record(lines, "sync wait interrupted", lambda: _capture(api.retry.get_safe))
+        lines.append(f"    wait durations={durations}")
+        _report(lines, events, exchange)
+
+
 async def _async_wait(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Cancel the caller's task while it waits for a scheduled retry, and observe the cancellation propagate."""
-    ready = asyncio.Event()
-    events = _Events(scheduled=ready.set)
-    exchange = Exchange([])
-    config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"), hooks=(events,), total_timeout=60
-    )
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+    """Cancel the caller's task while it awaits its retry wait, and observe the cancellation propagate."""
+    waiting, durations = asyncio.Event(), []
+
+    async def asleep(duration: float) -> None:
+        durations.append(duration)
+        waiting.set()
+        await asyncio.Event().wait()
+
+    exchange, events = Exchange([]), _Events()
+    async with (
+        exchange.async_client(event_hooks=events.async_hooks()) as native,
+        package.AsyncClient(
+            http_client=native,
+            retry=options.RetryOptions(initial_delay=30, max_delay=30, jitter="none"),
+            total_timeout=60,
+            clock=options.Clock(monotonic=lambda: 100.0, asleep=asleep),
+        ) as api,
+    ):
         exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
 
         async def observed() -> tuple[object, ...]:
@@ -477,9 +419,10 @@ async def _async_wait(package: ModuleType, options: ModuleType, lines: list[str]
             return ("returned",)
 
         task = asyncio.create_task(observed())
-        await ready.wait()
+        await waiting.wait()
         task.cancel("retry wait interrupted")
         await arecord(lines, "async wait native", lambda: task)
+        lines.append(f"    wait durations={durations}")
         _report(lines, events, exchange)
 
 
@@ -494,15 +437,19 @@ class _KeyReply:
         self.keys.append(key)
         return raw_response(status, ("absent" if key is None else key).encode(), "text/plain")(request)
 
+    def admitted(self, before: int, exchange: Exchange) -> tuple[object, ...]:
+        """Return the keys sent since a point, how many differ, and how many responses remain unused."""
+        keys = self.keys[before:]
+        return keys, len(set(keys)), len(exchange.responders)
 
-def _key_cases(options: ModuleType, key: object) -> Iterator[tuple[str, bool, str, object]]:
+
+def _key_cases(options: ModuleType) -> Iterator[tuple[str, bool, str, object]]:
     requests = (
         ("omitted", None),
         ("empty", options.RequestOptions()),
         ("UNSET", options.RequestOptions(idempotency_key=options.UNSET)),
         ("None", options.RequestOptions(idempotency_key=None)),
-        ("override", options.RequestOptions(idempotency_key=options.IdempotencyKey("call-key"))),
-        ("same object", options.RequestOptions(idempotency_key=key)),
+        ("caller", options.RequestOptions(idempotency_key="call-key")),
     )
     for declared in (True, False):
         surfaces = ("typed", "response", "buffered", "stream")
@@ -551,31 +498,24 @@ async def _async_key_call(api: object, surface: str, declared: bool, request: ob
         return await response.read()
 
 
-def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+def _key_surfaces(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange, reply = Exchange([]), _KeyReply()
-    client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
     with (
         exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
-        ) as api,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
-        view = api.with_options(options.RequestOptions(idempotency_key=view_key))
-        for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
-            for surface, declared, label, request in _key_cases(options, key):
-                before = len(reply.keys)
-                exchange.respond(lambda request: reply(request, status=503), reply)
-                record(
-                    lines,
-                    f"key {layer} {surface} declared={declared} {label}",
-                    lambda current=current, surface=surface, declared=declared, request=request: _key_call(
-                        current, surface, declared, request
-                    ),
-                )
-                record(lines, "key admission", lambda before=before: (reply.keys[before:], len(exchange.responders)))
-                exchange.responders.clear()
+        for surface, declared, label, request in _key_cases(options):
+            before = len(reply.keys)
+            exchange.respond(lambda request: reply(request, status=503), reply)
+            record(
+                lines,
+                f"key {surface} declared={declared} {label}",
+                lambda surface=surface, declared=declared, request=request: _key_call(api, surface, declared, request),
+            )
+            record(lines, "key admission", lambda before=before: reply.admitted(before, exchange))
+            exchange.responders.clear()
         barrier = threading.Barrier(4)
+        view = api.with_options()
         actions = (
             lambda: _key_call(api, "typed", True, None),
             lambda: _key_call(api, "stream", False, None),
@@ -590,51 +530,39 @@ def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str])
         before = len(reply.keys)
         exchange.respond(reply, reply, reply, reply)
         with ThreadPoolExecutor(max_workers=4) as executor:
-            record(lines, "concurrent inherited keys", lambda: tuple(executor.map(concurrent, actions)))
+            record(lines, "concurrent automatic keys", lambda: tuple(executor.map(concurrent, actions)))
+        keys = reply.keys[before:]
         record(
-            lines, "concurrent key admission", lambda: (sorted(reply.keys[before:], key=repr), len(exchange.responders))
+            lines,
+            "concurrent key admission",
+            lambda: (sorted(keys, key=repr), len(set(keys)), len(exchange.responders)),
         )
-        exchange.responders.clear()
-        for layer, current in (("client", api), ("view", view)):
-            exchange.respond(reply)
-            record(
-                lines,
-                f"key {layer} unchanged after mixed calls",
-                lambda current=current: current.retry.post_keyed(),
-            )
 
 
-async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _async_key_surfaces(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange, reply = Exchange([]), _KeyReply()
-    client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(idempotency_key=client_key, retry=options.RetryOptions(initial_delay=0)),
-        ) as api,
+        package.AsyncClient(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
-        view = api.with_options(options.RequestOptions(idempotency_key=view_key))
-        for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
-            for surface, declared, label, request in _key_cases(options, key):
-                before = len(reply.keys)
-                exchange.respond(lambda request: reply(request, status=503), reply)
-                await arecord(
-                    lines,
-                    f"async key {layer} {surface} declared={declared} {label}",
-                    lambda current=current, surface=surface, declared=declared, request=request: _async_key_call(
-                        current, surface, declared, request
-                    ),
-                )
-                record(
-                    lines, "async key admission", lambda before=before: (reply.keys[before:], len(exchange.responders))
-                )
-                exchange.responders.clear()
+        for surface, declared, label, request in _key_cases(options):
+            before = len(reply.keys)
+            exchange.respond(lambda request: reply(request, status=503), reply)
+            await arecord(
+                lines,
+                f"async key {surface} declared={declared} {label}",
+                lambda surface=surface, declared=declared, request=request: _async_key_call(
+                    api, surface, declared, request
+                ),
+            )
+            record(lines, "async key admission", lambda before=before: reply.admitted(before, exchange))
+            exchange.responders.clear()
+        view = api.with_options()
         before = len(reply.keys)
         exchange.respond(reply, reply, reply, reply)
         await arecord(
             lines,
-            "async concurrent inherited keys",
+            "async concurrent automatic keys",
             lambda: asyncio.gather(
                 _acapture(lambda: _async_key_call(api, "typed", True, None)),
                 _acapture(lambda: _async_key_call(api, "stream", False, None)),
@@ -642,29 +570,19 @@ async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines
                 _acapture(lambda: _async_key_call(view, "request raw", False, None)),
             ),
         )
+        keys = reply.keys[before:]
         record(
             lines,
             "async concurrent key admission",
-            lambda: (sorted(reply.keys[before:], key=repr), len(exchange.responders)),
+            lambda: (sorted(keys, key=repr), len(set(keys)), len(exchange.responders)),
         )
-        exchange.responders.clear()
-        for layer, current in (("client", api), ("view", view)):
-            exchange.respond(reply)
-            await arecord(
-                lines,
-                f"async key {layer} unchanged after mixed calls",
-                lambda current=current: current.retry.post_keyed(),
-            )
 
     reply.keys.clear()
     exchange.responders.clear()
     exchange.respond(lambda request: reply(request, status=503), reply, reply)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0)),
-        ) as automatic,
+        package.AsyncClient(http_client=native, retry=options.RetryOptions(initial_delay=0)) as automatic,
     ):
         await arecord(lines, "async automatic key retained through retry", automatic.retry.post_keyed)
         await arecord(lines, "async automatic key fresh next call", automatic.retry.post_keyed)

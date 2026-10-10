@@ -1,0 +1,12 @@
+# relative-override-modular
+render pydantic_v2.BaseModel default
+  models/__init__.py
+  models/child.py
+  models/defaults.py
+  model_bindings.py
+  codec_0 defaults.Defaults
+  codec_1 defaults.Defaults
+  codec_2 child.Child
+  codec_3 child.Child
+  codec_4 argparse.HelpFormatter._Section
+  codec_5 argparse.HelpFormatter._Section

@@ -5215,5 +5215,29 @@
         "new": "from __future__ import annotations\nfrom msgspec import Struct"
       }
     }
+  },
+  "edge-allof-rw-cycle": {
+    "source": "openapi/allof_required_inherited_rw_cycle.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "relative-override": {
+    "source": "generation_platform/binding/default-inputs.json",
+    "model": {
+      "import_overrides": {
+        "argparse": ".local"
+      }
+    }
+  },
+  "relative-override-modular": {
+    "source": "generation_platform/binding/default-inputs.json",
+    "models": "models",
+    "model": {
+      "import_overrides": {
+        "argparse": ".local"
+      },
+      "module_split_mode": "single"
+    }
   }
 }

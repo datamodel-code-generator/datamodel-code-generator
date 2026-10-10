@@ -66,11 +66,10 @@ class HeadersView:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ResponseInfo:
-    """Describe one completed call: final status and headers, its identifiers, and its measurements."""
+    """Describe one completed call: final status and headers, its request ID, and its measurements."""
 
     status_code: int
     headers: HeadersView
-    call_id: str
     elapsed: float
     content_type: str | None
     request_id: str | None = None

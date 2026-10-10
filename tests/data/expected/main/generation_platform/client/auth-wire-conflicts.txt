@@ -1,7 +1,3 @@
 # auth-wire-conflicts
 render pydantic_v2.BaseModel
-  APIGenerationError
-  MC_PARAMETER_ENCODING binding /paths/~1header/get/parameters/0: Expanded header parameter names collide
-  MC_PARAMETER_ENCODING binding /paths/~1query/get/parameters/0: Expanded query parameter names collide
-  MC_PARAMETER_ENCODING binding /paths/~1cookie/get/parameters/0: Expanded cookie parameter names collide
-  MC_PARAMETER_ENCODING binding /paths/~1expanded/get/parameters/0: Expanded query parameter names collide
+  Error: /paths/~1header/get/parameters/0: Expanded header parameter names collide; /paths/~1query/get/parameters/0: Expanded query parameter names collide; /paths/~1cookie/get/parameters/0: Expanded cookie parameter names collide; /paths/~1expanded/get/parameters/0: Expanded query parameter names collide

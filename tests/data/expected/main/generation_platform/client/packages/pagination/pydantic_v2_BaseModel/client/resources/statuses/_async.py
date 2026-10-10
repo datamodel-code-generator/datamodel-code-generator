@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.statuses import ListStatusesResponse
 
@@ -41,11 +41,13 @@ class AsyncStatusesResource:
     async def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListStatusesResponse:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return (await self._core.execute(
             _operations.OPERATION_7,
             (code,),
@@ -64,11 +66,13 @@ class AsyncStatusesWithResponse:
     async def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListStatusesResponse]:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return await self._core.execute(
             _operations.OPERATION_7,
             (code,),
@@ -87,11 +91,13 @@ class AsyncStatusesWithRawResponse:
     async def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_7,
             (code,),
@@ -110,11 +116,13 @@ class AsyncStatusesWithStreamingResponse:
     def list_statuses(
         self,
         *,
-        code: int | Unset = UNSET,
+        code: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /statuses."""
+        """
+        Call GET /statuses.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (code,),

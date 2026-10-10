@@ -9,12 +9,11 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldLookupGetQuerystringFilterParameter as _dcg_type_1
-from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.default import LookupResponse, SearchResponse
 
@@ -44,11 +43,13 @@ class AsyncDefaultResource:
     async def search(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchResponse:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (criteria,),
@@ -59,11 +60,13 @@ class AsyncDefaultResource:
     async def lookup(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> LookupResponse:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return (await self._core.execute(
             _operations.OPERATION_1,
             (filter,),
@@ -82,11 +85,13 @@ class AsyncDefaultWithResponse:
     async def search(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (criteria,),
@@ -97,11 +102,13 @@ class AsyncDefaultWithResponse:
     async def lookup(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LookupResponse]:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return await self._core.execute(
             _operations.OPERATION_1,
             (filter,),
@@ -120,11 +127,13 @@ class AsyncDefaultWithRawResponse:
     async def search(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (criteria,),
@@ -135,11 +144,13 @@ class AsyncDefaultWithRawResponse:
     async def lookup(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_1,
             (filter,),
@@ -158,11 +169,13 @@ class AsyncDefaultWithStreamingResponse:
     def search(
         self,
         *,
-        criteria: _dcg_type_0 | Unset = UNSET,
+        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /search."""
+        """
+        Call GET /search.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (criteria,),
@@ -173,11 +186,13 @@ class AsyncDefaultWithStreamingResponse:
     def lookup(
         self,
         *,
-        filter: _dcg_type_1 | Unset = UNSET,
+        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /lookup."""
+        """
+        Call GET /lookup.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (filter,),

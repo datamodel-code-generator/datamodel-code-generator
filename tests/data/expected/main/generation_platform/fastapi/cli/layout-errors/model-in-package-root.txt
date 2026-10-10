@@ -1,0 +1,2 @@
+Error: server/__init__.py: Two generated files resolve to the same path
+written []

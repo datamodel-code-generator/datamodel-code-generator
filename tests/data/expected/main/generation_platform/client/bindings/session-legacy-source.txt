@@ -1,3 +1,3 @@
 # session-legacy-source
 render pydantic_v2.BaseModel default
-  diagnostic SchemaParseError: Error at schema path 'session-legacy-source.json/#/components/parameters/Cycle': API_REFERENCE_CYCLE: object references do not reach a declaration
+  diagnostic Error: Error at schema path 'session-legacy-source.json/#/components/parameters/Cycle': API_REFERENCE_CYCLE: object references do not reach a declaration

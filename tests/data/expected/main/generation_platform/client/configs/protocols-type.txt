@@ -1,2 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE config protocols: protocols must be a Path, a ProtocolConfiguration, or None
+Error: --client-protocols must be a Path, a ProtocolConfiguration, a Mapping, or None

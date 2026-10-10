@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-import typing
-from typing import Final
+from typing import Any, Final
 
 import models
 
@@ -15,65 +14,16 @@ from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
 MODELS: Final[dict[type, Model]] = {
     models.Address: Model((Field('city', 'city'), Field('codes', 'codes')), True),
     models.Draft: Model((Field('id', 'id'), Field('title', 'title'), Field('secret', 'secret')), True),
-    models.FieldFormsPostRequest: Model(
-        (Field('name', 'name'), Field('count', 'count'), Field('labels', 'labels')),
-        True,
-    ),
+    models.FieldFormsPostRequest: Model((Field('name', 'name'), Field('count', 'count'), Field('labels', 'labels')), True),
     models.FieldFormsPostResponse: Model((Field('name', 'name'), Field('count', 'count')), True),
-    models.FieldProfilesPostRequest: Model(
-        (
-            Field('name', 'name'),
-            Field('age', 'age'),
-            Field('active', 'active'),
-            Field('tags', 'tags'),
-            Field('address', 'address', models.Address),
-            Field('nickname', 'nickname'),
-        ),
-        True,
-    ),
-    models.FieldProfilesGetResponse: Model(
-        (
-            Field('name', 'name'),
-            Field('age', 'age'),
-            Field('score', 'score'),
-            Field('ratio', 'ratio'),
-            Field('active', 'active'),
-            Field('tags', 'tags'),
-            Field('address', 'address', models.Address),
-        ),
-        True,
-    ),
+    models.FieldProfilesPostRequest: Model((Field('name', 'name'), Field('age', 'age'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address), Field('nickname', 'nickname')), True),
+    models.FieldProfilesGetResponse: Model((Field('name', 'name'), Field('age', 'age'), Field('score', 'score'), Field('ratio', 'ratio'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address)), True),
     models.FieldAttachmentsGetResponse: Model((Field('id', 'id'),), True),
     models.Filter: Model((Field('name', 'name'), Field('min', 'min')), True),
-    models.FieldSearchesPostRequest: Model(
-        (
-            Field('term', 'term'),
-            Field('filter', 'filter', models.Filter),
-            Field('tags', 'tags'),
-            Field('ids', 'ids'),
-            Field('meta', 'meta', models.Address),
-            Field('path', 'path'),
-            Field('extra', 'extra'),
-        ),
-        True,
-    ),
-    models.FieldCardsPostRequest: Model(
-        (Field('title', 'title'), Field('count', 'count'), Field('tags', 'tags')),
-        True,
-    ),
+    models.FieldSearchesPostRequest: Model((Field('term', 'term'), Field('filter', 'filter', models.Filter), Field('tags', 'tags'), Field('ids', 'ids'), Field('meta', 'meta', models.Address), Field('path', 'path'), Field('extra', 'extra')), True),
+    models.FieldCardsPostRequest: Model((Field('title', 'title'), Field('count', 'count'), Field('tags', 'tags')), True),
     models.Point: Model((Field('x', 'x'),), True),
-    models.FieldStickersPostRequest: Model(
-        (
-            Field('tags', 'tags'),
-            Field('words', 'words'),
-            Field('sizes', 'sizes'),
-            Field('filter', 'filter', models.Filter),
-            Field('point', 'point', models.Point),
-            Field('label', 'label'),
-            Field('y', 'y'),
-        ),
-        True,
-    ),
+    models.FieldStickersPostRequest: Model((Field('tags', 'tags'), Field('words', 'words'), Field('sizes', 'sizes'), Field('filter', 'filter', models.Filter), Field('point', 'point', models.Point), Field('label', 'label'), Field('y', 'y')), True),
     models.Bounds: Model((Field('w', 'w'),), True),
     models.FieldDocumentsIdGetPathIdParameter: Model((Field('key', 'key'),), True),
 }
@@ -93,10 +43,7 @@ codec_3: Final[StdlibCodec[models.FieldProfilesGetResponse]] = StdlibCodec(model
 codec_4: Final[StdlibCodec[models.FieldAnythingPostRequest]] = StdlibCodec(None, MODELS)
 """Codec of /paths/~1anything/post request_body (request multipart/form-data)."""
 
-codec_5: Final[StdlibCodec[models.FieldAttachmentsGetResponse]] = StdlibCodec(
-    models.FieldAttachmentsGetResponse,
-    MODELS,
-)
+codec_5: Final[StdlibCodec[models.FieldAttachmentsGetResponse]] = StdlibCodec(models.FieldAttachmentsGetResponse, MODELS)
 """Codec of /paths/~1attachments/get response_body (response 202 multipart/form-data)."""
 
 codec_6: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
@@ -126,10 +73,7 @@ codec_13: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
 codec_14: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
 """Codec of /paths/~1documents/post response_body (response 3XX application/json)."""
 
-codec_15: Final[StdlibCodec[models.FieldDocumentsIdGetPathIdParameter]] = StdlibCodec(
-    models.FieldDocumentsIdGetPathIdParameter,
-    MODELS,
-)
+codec_15: Final[StdlibCodec[models.FieldDocumentsIdGetPathIdParameter]] = StdlibCodec(models.FieldDocumentsIdGetPathIdParameter, MODELS)
 """Codec of /paths/~1documents~1{id}/get parameter (request path id application/json)."""
 
 codec_16: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
@@ -198,7 +142,7 @@ codec_36: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
 codec_37: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
 """Codec of /paths/~1covers/post request_body (request meta multipart/form-data)."""
 
-codec_38: Final[StdlibCodec[typing.Any]] = StdlibCodec(None, MODELS)
+codec_38: Final[StdlibCodec[Any]] = StdlibCodec(None, MODELS)
 """Codec of /paths/~1covers/post request_body (request extra multipart/form-data)."""
 
 codec_39: Final[StdlibCodec[models.Bounds]] = StdlibCodec(models.Bounds, MODELS)

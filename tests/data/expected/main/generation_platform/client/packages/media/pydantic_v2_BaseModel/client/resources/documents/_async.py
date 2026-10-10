@@ -9,13 +9,12 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal, overload
 
-from models import Draft as _dcg_type_0
-from models import FieldDocumentsIdGetPathIdParameter as _dcg_type_1
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...model_codecs import JSONValue
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.documents import (
     ReadDocumentResponse,
@@ -64,7 +63,7 @@ class AsyncDocumentsResource:
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> JSONValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | models.Draft: ...
     @overload
     async def store_document(
         self,
@@ -91,7 +90,7 @@ class AsyncDocumentsResource:
         media_type: Literal['text/plain; charset=utf-16'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> JSONValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | models.Draft: ...
     @overload
     async def store_document(
         self,
@@ -105,7 +104,7 @@ class AsyncDocumentsResource:
     async def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -114,16 +113,16 @@ class AsyncDocumentsResource:
     async def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> JSONValue | None | _dcg_type_0: ...
+    ) -> JSONValue | None | models.Draft: ...
     @overload
     async def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
@@ -131,12 +130,14 @@ class AsyncDocumentsResource:
     async def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return (await self._core.execute(
             _operations.OPERATION_20,
             (),
@@ -149,16 +150,18 @@ class AsyncDocumentsResource:
     async def read_document(
         self,
         *,
-        id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        id: models.FieldDocumentsIdGetPathIdParameter,
+        filter: JSONValue | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadDocumentResponse:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -170,7 +173,9 @@ class AsyncDocumentsResource:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> StoreNoteResponse:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return (await self._core.execute(
             _operations.OPERATION_22,
             (),
@@ -199,18 +204,20 @@ class AsyncDocumentsResource:
     async def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse: ...
     async def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return (await self._core.execute(
             _operations.OPERATION_23,
             (),
@@ -244,7 +251,7 @@ class AsyncDocumentsWithResponse:
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[JSONValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | models.Draft]: ...
     @overload
     async def store_document(
         self,
@@ -271,7 +278,7 @@ class AsyncDocumentsWithResponse:
         media_type: Literal['text/plain; charset=utf-16'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[JSONValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | models.Draft]: ...
     @overload
     async def store_document(
         self,
@@ -285,7 +292,7 @@ class AsyncDocumentsWithResponse:
     async def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -294,16 +301,16 @@ class AsyncDocumentsWithResponse:
     async def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[JSONValue | None | _dcg_type_0]: ...
+    ) -> Response[JSONValue | None | models.Draft]: ...
     @overload
     async def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
@@ -311,12 +318,14 @@ class AsyncDocumentsWithResponse:
     async def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return await self._core.execute(
             _operations.OPERATION_20,
             (),
@@ -329,16 +338,18 @@ class AsyncDocumentsWithResponse:
     async def read_document(
         self,
         *,
-        id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        id: models.FieldDocumentsIdGetPathIdParameter,
+        filter: JSONValue | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadDocumentResponse]:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return await self._core.execute(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )
@@ -350,7 +361,9 @@ class AsyncDocumentsWithResponse:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> Response[StoreNoteResponse]:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return await self._core.execute(
             _operations.OPERATION_22,
             (),
@@ -379,18 +392,20 @@ class AsyncDocumentsWithResponse:
     async def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]: ...
     async def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return await self._core.execute(
             _operations.OPERATION_23,
             (),
@@ -429,7 +444,7 @@ class AsyncDocumentsWithRawResponse:
     async def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -437,12 +452,14 @@ class AsyncDocumentsWithRawResponse:
     async def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_20,
             (),
@@ -455,16 +472,18 @@ class AsyncDocumentsWithRawResponse:
     async def read_document(
         self,
         *,
-        id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        id: models.FieldDocumentsIdGetPathIdParameter,
+        filter: JSONValue | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )
@@ -476,7 +495,9 @@ class AsyncDocumentsWithRawResponse:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_22,
             (),
@@ -505,18 +526,20 @@ class AsyncDocumentsWithRawResponse:
     async def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_23,
             (),
@@ -555,7 +578,7 @@ class AsyncDocumentsWithStreamingResponse:
     def store_document(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Draft,
         media_type: Literal['application/vnd.api+json'],
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
@@ -563,12 +586,14 @@ class AsyncDocumentsWithStreamingResponse:
     def store_document(
         self,
         *,
-        body: JSONValue | str | _dcg_type_0,
+        body: JSONValue | str | models.Draft,
         media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return self._core.stream(
             _operations.OPERATION_20,
             (),
@@ -581,16 +606,18 @@ class AsyncDocumentsWithStreamingResponse:
     def read_document(
         self,
         *,
-        id: _dcg_type_1,
-        filter: JSONValue | Unset = UNSET,
-        x_mode: str | Unset = UNSET,
+        id: models.FieldDocumentsIdGetPathIdParameter,
+        filter: JSONValue | UNSET = UNSET,
+        X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return self._core.stream(
             _operations.OPERATION_21,
-            (id, filter, x_mode),
+            (id, filter, X_Mode),
             options=options,
             response_media_type=response_media_type,
         )
@@ -602,7 +629,9 @@ class AsyncDocumentsWithStreamingResponse:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return self._core.stream(
             _operations.OPERATION_22,
             (),
@@ -631,18 +660,20 @@ class AsyncDocumentsWithStreamingResponse:
     def replace_note(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def replace_note(
         self,
         *,
-        body: JSONValue | str | Unset = UNSET,
+        body: JSONValue | str | UNSET = UNSET,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return self._core.stream(
             _operations.OPERATION_23,
             (),

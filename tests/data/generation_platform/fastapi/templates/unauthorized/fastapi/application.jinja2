@@ -1,0 +1,53 @@
+{%- macro signature(builder) -%}
+def {{ builder.name }}(
+    *,
+{%- for parameter in builder.parameters %}
+    {{ parameter.name }}: {{ parameter.annotation }}{% if parameter.default %} = {{ parameter.default }}{% endif %},
+{%- endfor %}
+) -> {{ builder.returns }}:
+{%- endmacro -%}
+"""Build the router and the application of every selected operation from the services that implement them."""
+
+{{ imports }}
+
+{% if routes -%}
+ROUTES: {{ final }} = (
+{%- for route in routes %}
+    {{ route }},
+{%- endfor %}
+)
+{%- else -%}
+ROUTES: {{ final }} = ()
+{%- endif %}
+INFO: {{ final }}[{{ options }}] = {{ info }}
+
+
+{{ signature(build_router) }}
+    """Register every operation on a new router, literal paths first."""
+    return {{ build }}(
+        ROUTES,
+        services={{ services }},
+        dependencies=dependencies,
+        operation_dependencies=operation_dependencies,
+        prefix=prefix,
+    )
+
+
+{{ signature(create_app) }}
+    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+    app = {{ fastapi }}(**{**INFO, **fastapi_kwargs})
+    app.include_router(
+        build_router(
+{%- for name in arguments %}
+            {{ name }}={{ name }},
+{%- endfor %}
+        )
+    )
+    return app
+
+
+__all__ = [
+{%- for name in exports %}
+    {{ name }},
+{%- endfor %}
+]

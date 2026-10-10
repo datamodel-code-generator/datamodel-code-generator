@@ -7,28 +7,21 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import ClientMessage as _dcg_type_0
-from models import ServerMessage as _dcg_type_1
+import models
 
 from .. import _operations
 from .._generated import model_bindings
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.websocket import ChannelPlan
-from .._runtime.protocols.websocket_connectors import (
-    async_native_connector,
-    native_connector,
-)
 
-SOCKET_0: Final[ChannelPlan[_dcg_type_0, _dcg_type_1]] = ChannelPlan(
+SOCKET_0: Final[ChannelPlan[models.ClientMessage, models.ServerMessage]] = ChannelPlan(
     helper_id='rooms.chat',
     operation=OperationRef(pointer='/paths/~1rooms~1{room}~1socket/get'),
     call=_operations.OPERATION_0,
-    fingerprint='eb202098c6264f2a3c2f2602885dba2b9653862ef831738c97b848024a1018d2',
-    connectors=(native_connector, async_native_connector),
+    fingerprint='106c9217ddb2733347da841b3b8d3d6b5ae96e16522cf5aa756e21997cf09676',
     encoder=model_bindings.codec_4,
     decoder=model_bindings.codec_5,
     subprotocols=('chat.v2', 'chat.v1'),
-    compression=True,
 )
 
 
@@ -36,8 +29,7 @@ SOCKET_1: Final[ChannelPlan[str, bytes]] = ChannelPlan(
     helper_id='feed.text',
     operation=OperationRef(pointer='/paths/~1feed~1socket/get'),
     call=_operations.OPERATION_1,
-    fingerprint='5f27732c942fd28d386b84339da9f1152f1a555950adeaa7a262ef485d8c7a3b',
-    connectors=(native_connector, async_native_connector),
+    fingerprint='2996af3729e604fc9472dab2afb8eee2472886d853b510ac7a2ea32cb23260f6',
     send_codec='utf8',
     receive_codec='bytes',
     receive_frame='binary',
@@ -48,8 +40,7 @@ SOCKET_2: Final[ChannelPlan[bytes, str]] = ChannelPlan(
     helper_id='secure.chat',
     operation=OperationRef(pointer='/paths/~1secure~1socket/get'),
     call=_operations.OPERATION_2,
-    fingerprint='7072fb3d0f918fc42250649d4e2d6c264f4ea0768a8fb5c77f560f654238e94e',
-    connectors=(native_connector, async_native_connector),
+    fingerprint='ef4a607504efe4b145df765218ff13254608e98d9776677a4bb0e507b79fb950',
     send_codec='bytes',
     send_frame='binary',
     receive_codec='utf8',

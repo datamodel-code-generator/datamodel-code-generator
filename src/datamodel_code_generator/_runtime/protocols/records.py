@@ -1,26 +1,22 @@
-"""Selectors, request targets, continuations, poll snapshots, cancel receipts, progress keys, and canonical JSON."""
+"""Selectors, request targets, poll snapshots, cancel receipts, progress keys, and canonical JSON."""
 
 from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from dataclasses import FrozenInstanceError, dataclass, field
-from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, final, get_args
+from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, get_args
 
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import (
-    JSONValue,
-    json_value,
-)
+from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
 
 __all__ = (
     "BodySelector",
     "BodyTarget",
     "CancelReceipt",
-    "Continuation",
     "HeaderSelector",
     "ParameterTarget",
     "PollSnapshot",
@@ -35,7 +31,6 @@ __all__ = (
 P_co = TypeVar("P_co", covariant=True, default=object)
 C_co = TypeVar("C_co", covariant=True, default=object)
 
-ContinuationKind: TypeAlias = Literal["cursor", "offset", "page", "next_url", "link"]
 ProgressKey: TypeAlias = Literal[
     "pages",
     "items",
@@ -49,16 +44,12 @@ ProgressKey: TypeAlias = Literal[
 ProtocolProgress: TypeAlias = Mapping[ProgressKey, int]
 
 PROGRESS_KEYS: Final = get_args(ProgressKey)
-_CONTINUATION_KINDS: Final = get_args(ContinuationKind)
 _OCCURRENCES: Final = ("single", "all")
 _PARAMETER_LOCATIONS: Final = ("path", "query", "header", "cookie")
 _POINTER: Final = re.compile(r"(?:/(?:[^~/]|~[01])*)*")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
-_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 _NESTING: Final = "A wire value must not be nested beyond the interpreter recursion limit"
 _SURROGATES: Final = "A wire string must not contain lone surrogates"
-_KEYS: Final = "A wire object key must be a string"
-_CYCLE: Final = "A wire value must not contain cycles"
 
 
 def record_string(value: object, name: str) -> str:
@@ -67,13 +58,6 @@ def record_string(value: object, name: str) -> str:
         return value
     msg = f"{name} must be a string"
     raise TypeError(msg)
-
-
-def wire_string(value: object, name: str) -> str:
-    """Return a record field that must be UTF-8 encodable wire text, refusing lone surrogates with ValueError."""
-    if (text := record_string(value, name)).isascii() or _SURROGATE.search(text) is None:
-        return text
-    raise ValueError(_SURROGATES)
 
 
 def record_instance(value: object, kinds: type | tuple[type, ...], message: str) -> None:
@@ -100,29 +84,8 @@ def _choice(value: object, name: str, choices: tuple[str, ...]) -> None:
         raise ValueError(msg)
 
 
-def _keyed(value: object, active: set[int]) -> None:
-    """Refuse a cycle, and a member name that is no string, which JSON text would silently turn into one."""
-    marker = id(value)
-    if isinstance(value, dict):
-        members = cast("dict[object, object]", value)
-        if any(type(key) is not str for key in members):
-            raise TypeError(_KEYS)
-        items: Iterable[object] = members.values()
-    elif isinstance(value, list | tuple):
-        items = cast("list[object] | tuple[object, ...]", value)
-    else:
-        return
-    if marker in active:
-        raise ValueError(_CYCLE)
-    active.add(marker)
-    for item in items:
-        _keyed(item, active)
-    active.discard(marker)
-
-
 def _dumped(value: object, *, sort_keys: bool) -> bytes:
     try:
-        _keyed(value, set())
         text = json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
         return text.encode()
     except RecursionError:
@@ -133,7 +96,7 @@ def _dumped(value: object, *, sort_keys: bool) -> bytes:
 
 def plain_copy(value: object) -> JSONValue:
     """Copy a JSON value through its UTF-8 JSON text, refusing what `canonical_json` refuses."""
-    return json_value(_dumped(value, sort_keys=False))
+    return cast("JSONValue", json.loads(_dumped(value, sort_keys=False)))
 
 
 def canonical_json(value: object) -> bytes:
@@ -247,37 +210,6 @@ class Sealed:
         """Refuse pickling, because the value is bound to this process's helpers."""
         msg = f"{type(self).__name__} cannot be pickled"
         raise TypeError(msg)
-
-
-@final
-class Continuation(Sealed):
-    """An opaque position of a helper session; only its kind is public and each instance equals only itself."""
-
-    __slots__ = ("_json", "_kind")
-
-    _kind: ContinuationKind
-    _json: bytes
-
-    def __init__(self, *, kind: ContinuationKind, value: JSONValue) -> None:
-        """Keep the kind and only the canonical JSON of the value."""
-        _choice(kind, "kind", _CONTINUATION_KINDS)
-        encoded = canonical_json(value)
-        for name, item in (("_kind", kind), ("_json", encoded)):
-            object.__setattr__(self, name, item)
-
-    @property
-    def kind(self) -> ContinuationKind:
-        """Return how the helper applies this continuation."""
-        return self._kind
-
-    def __repr__(self) -> str:
-        """Name the kind only, never the continuation value."""
-        return f"Continuation(kind={self._kind!r})"
-
-
-def continuation_json(continuation: Continuation) -> bytes:
-    """Return the canonical JSON a helper compares or writes for a continuation."""
-    return continuation._json  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

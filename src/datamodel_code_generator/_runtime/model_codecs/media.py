@@ -1,4 +1,4 @@
-"""Media-type identity plus reversible JSON, text, and URL-encoded form representations."""
+"""Media-type identity plus ordinary JSON, text, and URL-encoded form representations."""
 
 from __future__ import annotations
 
@@ -7,16 +7,13 @@ import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
-from json.encoder import encode_basestring, encode_basestring_ascii
-from typing import Final, Literal, NoReturn, cast, overload
+from math import isfinite
+from typing import Final, Literal, cast
 from urllib.parse import quote, unquote_to_bytes
 
-from typing_extensions import TypeAliasType
+from typing_extensions import Self, TypeAliasType
 
-from .errors import CodecResourceLimitError, ParameterEncodingError, WireIssue, WireValidationError
-from .wire import JSONScalar as WireScalar
-from .wire import JSONValue as WireJSON
-from .wire import WireValue, checked_key, checked_scalar, enter, freeze_wire
+from .errors import MalformedError, ParameterEncodingError
 
 JSONValue = TypeAliasType("JSONValue", "bool | int | float | str | list[JSONValue] | dict[str, JSONValue] | None")
 JSONScalar = TypeAliasType("JSONScalar", "bool | int | float | str | None")
@@ -34,6 +31,8 @@ _INTEGER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
 _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
+_SCALARS: Final = frozenset({bool, int, float, str, type(None)})
+_NON_FINITE: Final = "A value must be a finite JSON number"
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,9 +44,9 @@ class FieldPlan:
     repeated: bool = False
 
 
-def json_bytes(value: object) -> bytes:
-    """Serialize ordinary JSON builtins as compact UTF-8 bytes."""
-    return json.dumps(value, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+def json_bytes(value: object, *, ascii_only: bool = False) -> bytes:
+    """Serialize ordinary JSON builtins as compact UTF-8 bytes, escaping non-ASCII text when asked."""
+    return json.dumps(value, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False).encode()
 
 
 def json_value(content: str | bytes) -> JSONValue:
@@ -55,22 +54,38 @@ def json_value(content: str | bytes) -> JSONValue:
     return cast("JSONValue", json.loads(content))
 
 
-def plain(value: object) -> JSONValue:
-    """Turn parsed form and header containers into builtins a native backend accepts."""
-    if isinstance(value, Decimal):
-        return float(value)
+class Unparsed(str):  # ruff: ignore[subclass-builtin] - Validating backends receive it as ordinary text.
+    """Text of a declared integer, number, or boolean that is not its canonical JSON literal."""
+
+    __slots__ = ("kind",)
+    kind: LexicalKind
+
+    def __new__(cls, text: str, kind: LexicalKind) -> Self:
+        """Keep the text with the kind it was declared as."""
+        unparsed = super().__new__(cls, text)
+        unparsed.kind = kind
+        return unparsed
+
+
+def plain(value: object, *, strict: bool = False) -> JSONValue:
+    """Turn parsed form and header containers into builtins a native backend accepts.
+
+    Text that is not its kind's JSON literal stays text for a backend that validates it, and is refused when strict.
+    """
+    if type(value) in _SCALARS:
+        return cast("JSONValue", value)
     if isinstance(value, Mapping):
-        return {cast("str", key): plain(item) for key, item in cast("Mapping[object, object]", value).items()}
+        return {
+            cast("str", key): plain(item, strict=strict) for key, item in cast("Mapping[object, object]", value).items()
+        }
     if isinstance(value, (list, tuple)):
-        return [plain(item) for item in cast("list[object] | tuple[object, ...]", value)]
-    return cast("JSONValue", value)
-
-
-def issue(*, code: str, message: str) -> WireValidationError:
-    """Build a value-free lexical failure for a whole media or parameter value."""
-    return WireValidationError((
-        WireIssue(code=code, message=message, instance_pointer="", schema_id="", schema_pointer=""),
-    ))
+        return [plain(item, strict=strict) for item in cast("list[object] | tuple[object, ...]", value)]
+    if not isinstance(value, Unparsed):
+        return cast("JSONValue", value)
+    if strict:
+        msg = f"Invalid {value.kind} literal: {str(value)!r}"
+        raise ValueError(msg)
+    return str(value)
 
 
 def normalize_media_type(value: str) -> str:
@@ -108,119 +123,6 @@ def media_kind(media_type: str) -> MediaKind:
             return "binary"
 
 
-class _DuplicateKeyError(ValueError):
-    pass
-
-
-class _NonFiniteNumberError(ValueError):
-    pass
-
-
-class _IntegerLimitError(ValueError):
-    pass
-
-
-def _unique_object(pairs: list[tuple[str, WireJSON]]) -> dict[str, WireJSON]:
-    if len(result := dict(pairs)) != len(pairs):
-        raise _DuplicateKeyError
-    return result
-
-
-def _reject_constant(_: str) -> NoReturn:
-    raise _NonFiniteNumberError
-
-
-def _integer(text: str) -> int:
-    try:
-        return int(text)
-    except ValueError:
-        raise _IntegerLimitError from None
-
-
-def decode_json(data: bytes) -> WireValue:
-    """Parse UTF-8 JSON text into a wire snapshot, keeping exact number lexemes."""
-    try:
-        parsed: WireJSON = json.loads(
-            data.decode("utf-8"),
-            object_pairs_hook=_unique_object,
-            parse_float=Decimal,
-            parse_int=_integer,
-            parse_constant=_reject_constant,
-        )
-    except (ValueError, RecursionError) as failure:
-        error = _json_error(failure)
-    else:
-        try:
-            return freeze_wire(parsed)
-        except RecursionError:
-            error = _nesting_limit()
-        except ValueError:
-            error = issue(code="json.unicode", message="JSON strings must not contain lone surrogates")
-    raise error from None
-
-
-def _json_error(error: ValueError | RecursionError) -> WireValidationError | CodecResourceLimitError:
-    """Classify a JSON parsing failure without keeping its document or exception chain."""
-    match error:
-        case _DuplicateKeyError():
-            return issue(code="json.duplicate_key", message="A JSON object repeats a member name")
-        case _NonFiniteNumberError():
-            return issue(code="json.non_finite_number", message="JSON numbers must be finite")
-        case _IntegerLimitError():
-            return CodecResourceLimitError("A JSON integer exceeds the interpreter's decimal conversion limit")
-        case UnicodeDecodeError():
-            return issue(code="json.encoding", message="JSON text must be UTF-8")
-        case RecursionError():
-            return _nesting_limit()
-        case _:
-            pass
-    return issue(code="json.syntax", message="The body is not valid JSON")
-
-
-def _nesting_limit() -> CodecResourceLimitError:
-    """Return the resource limit shared by JSON parsing and wire freezing."""
-    return CodecResourceLimitError("JSON text is nested beyond the interpreter recursion limit")
-
-
-@overload
-def encode_json(value: WireJSON, *, ascii_only: bool = False) -> bytes: ...
-@overload
-def encode_json(value: WireValue, *, ascii_only: bool = False) -> bytes: ...
-def encode_json(value: WireJSON | WireValue, *, ascii_only: bool = False) -> bytes:
-    """Serialize a JSON-domain value as compact UTF-8 JSON with exact numbers, checking it while writing."""
-    return _json_text(value, encode_basestring_ascii if ascii_only else encode_basestring, set()).encode()
-
-
-def _json_text(value: WireJSON | WireValue, strings: Callable[[str], str], active: set[int]) -> str:
-    if isinstance(value, (list, tuple)):
-        identity = enter(value, active)
-        text = f"[{','.join([_json_text(item, strings, active) for item in value])}]"
-        active.discard(identity)
-        return text
-    if isinstance(value, Mapping):
-        identity = enter(value, active)
-        members = [f"{strings(checked_key(key))}:{_json_text(item, strings, active)}" for key, item in value.items()]
-        active.discard(identity)
-        return f"{{{','.join(members)}}}"
-    return _json_scalar(checked_scalar(value), strings)
-
-
-def _json_scalar(value: WireScalar, strings: Callable[[str], str]) -> str:
-    match value:
-        case None:
-            return "null"
-        case bool() as flag:
-            return "true" if flag else "false"
-        case str() as string:
-            return strings(string)
-        case int() as number:
-            return _integer_text(number)
-        case float() as number:
-            return repr(number)
-        case number:
-            return str(number)
-
-
 def charset(media_type: str) -> str:
     """Return a normalized media type's charset, defaulting to UTF-8."""
     if ";" not in media_type:
@@ -237,7 +139,24 @@ def decode_text(data: bytes, encoding: str = "utf-8") -> str:
         return data.decode(encoding)
     except (LookupError, UnicodeError):
         message = "Text must be UTF-8" if encoding == "utf-8" else f"Text must be {encoding}"
-        raise issue(code="text.encoding", message=message) from None
+        raise MalformedError(message) from None
+
+
+def finite(value: object) -> None:
+    """Refuse a non-finite float or Decimal, alone or in lists, tuples, and mappings, as no JSON number writes it."""
+    match value:
+        case float() if not isfinite(value):
+            raise ParameterEncodingError(_NON_FINITE)
+        case Decimal() if not value.is_finite():
+            raise ParameterEncodingError(_NON_FINITE)
+        case list() | tuple():
+            for item in cast("Iterable[object]", value):
+                finite(item)
+        case Mapping():
+            for item in cast("Mapping[object, object]", value).values():
+                finite(item)
+        case _:
+            pass
 
 
 def lexical(value: object, kind: LexicalKind) -> str:
@@ -255,6 +174,7 @@ def _lexical_text(value: object, kind: LexicalKind) -> str | None:
         case str():
             return value
         case int() | float() | Decimal():
+            finite(value)
             return _numeral(value, kind) or _numeral(value, "number")
         case _:
             return None
@@ -281,24 +201,21 @@ def _integer_text(value: int) -> str:
         return str(value)
     except ValueError:
         msg = "An integer exceeds the interpreter's decimal conversion limit"
-        raise CodecResourceLimitError(msg) from None
+        raise ParameterEncodingError(msg) from None
 
 
-def typed(text: str, kind: LexicalKind) -> WireScalar:
-    """Read one canonical lexical form back into its declared JSON scalar kind."""
+def typed(text: str, kind: LexicalKind) -> JSONScalar:
+    """Decode a canonical JSON literal of the declared kind, leaving any other text to the model."""
     if kind == "string":
         return text
-    if kind == "boolean" and text in {"true", "false"}:
-        return text == "true"
-    if kind != "boolean" and _INTEGER.fullmatch(text):
+    if kind == "boolean":
+        return text == "true" if text in {"true", "false"} else Unparsed(text, kind)
+    if _INTEGER.fullmatch(text):
         try:
             return int(text)
         except ValueError:
-            msg = "An integer exceeds the interpreter's decimal conversion limit"
-            raise CodecResourceLimitError(msg) from None
-    if kind == "number" and _NUMBER.fullmatch(text):
-        return Decimal(text)
-    raise issue(code="parameter.lexical", message=f"The value is not a canonical {kind}")
+            return Unparsed(text, kind)
+    return float(text) if kind == "number" and _NUMBER.fullmatch(text) else Unparsed(text, kind)
 
 
 def percent_decode(raw: bytes, *, plus: bool) -> str:
@@ -306,11 +223,13 @@ def percent_decode(raw: bytes, *, plus: bool) -> str:
     if plus:
         raw = raw.replace(b"+", b" ")
     if raw.count(b"%") != len(_TRIPLET.findall(raw)):
-        raise issue(code="parameter.percent", message="A percent sign must start a percent-encoded octet")
+        msg = "A percent sign must start a percent-encoded octet"
+        raise MalformedError(msg)
     try:
         return unquote_to_bytes(raw).decode("utf-8")
     except UnicodeDecodeError:
-        raise issue(code="parameter.encoding", message="Percent-decoded octets must be UTF-8") from None
+        msg = "Percent-decoded octets must be UTF-8"
+        raise MalformedError(msg) from None
 
 
 def form_encode(text: str) -> str:
@@ -322,7 +241,7 @@ def encode_form(
     value: object,
     fields: tuple[FieldPlan, ...],
     additional: FieldPlan | None,
-    styled: Mapping[str, Callable[[WireValue], Iterable[str]]] | None = None,
+    styled: Mapping[str, Callable[[JSONValue], Iterable[str]]] | None = None,
 ) -> bytes:
     """Serialize a flat object as ordered URL-encoded pairs, repeating array members.
 
@@ -335,9 +254,9 @@ def encode_form(
     declared = {field.name: field for field in fields}
     pairs: list[str] = []
     owners: dict[str, str] = {}
-    for name, item in cast("Mapping[str, WireJSON | WireValue]", value).items():
+    for name, item in cast("Mapping[str, JSONValue]", value).items():
         if styled and (style := styled.get(name)) is not None:
-            written = list(style(cast("WireValue", item)))
+            written = list(style(item))
             keys = [percent_decode(pair.partition("=")[0].encode("ascii"), plus=True) for pair in written]
         else:
             field = declared.get(name, additional)
@@ -351,8 +270,8 @@ def encode_form(
     return "&".join(pairs).encode("ascii")
 
 
-def _members(value: WireJSON | WireValue) -> tuple[WireJSON | WireValue, ...]:
-    return tuple(value) if isinstance(value, (list, tuple)) else (value,)
+def _members(value: object) -> tuple[object, ...]:
+    return tuple(cast("list[object] | tuple[object, ...]", value)) if isinstance(value, (list, tuple)) else (value,)
 
 
 def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
@@ -360,22 +279,19 @@ def split_form(raw: bytes) -> tuple[tuple[bytes, bytes], ...]:
     return tuple((name, value) for name, _, value in (part.partition(b"=") for part in raw.split(b"&") if part))
 
 
-def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> WireValue:
-    """Read ordered URL-encoded pairs into a flat object, rejecting duplicate scalars."""
+def decode_form(raw: bytes, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> JSONValue:
+    """Split URL-encoded text for native model conversion: repeated fields as lists, a single value by its last."""
     declared = {field.name: field for field in fields}
-    result: dict[str, WireJSON] = {}
+    result: dict[str, JSONValue] = {}
     for raw_name, raw_value in split_form(raw):
         name = percent_decode(raw_name, plus=True)
-        if (field := declared.get(name, additional)) is None:
-            raise issue(code="form.undeclared", message="A URL-encoded form member is not declared")
-        value = typed(percent_decode(raw_value, plus=True), field.kind)
+        field = declared.get(name, additional)
+        value = typed(percent_decode(raw_value, plus=True), "string" if field is None else field.kind)
         match result.get(name):
             case list() as values:
                 values.append(value)
-            case None if field.repeated:
+            case None if field is not None and field.repeated:
                 result[name] = [value]
-            case None:
-                result[name] = value
             case _:
-                raise issue(code="form.duplicate", message="A URL-encoded form repeats a single-valued member")
-    return freeze_wire(result)
+                result[name] = value
+    return result

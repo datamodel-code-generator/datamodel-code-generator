@@ -2,20 +2,17 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 from collections.abc import Coroutine, Mapping
-from dataclasses import dataclass
-from typing import Final, Generic
+from dataclasses import dataclass, field
+from typing import Final, Generic, Literal
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import ResponseValidationError
 from pydantic import TypeAdapter, ValidationError
 from starlette.responses import Response
 from typing_extensions import TypeIs, TypeVar
-
-from ..model_codecs.media import charset, media_kind
-from .application import HandlerConfigurationError
-from .errors import response_failure
 
 BodyT_co = TypeVar("BodyT_co", covariant=True)
 
@@ -34,10 +31,27 @@ class HTTPResult(Generic[BodyT_co]):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Declared:
-    """One declared response: its default media type, and the adapter of the model its body takes."""
+    """One declared response: its default media type with that type's kind and charset, and the model its body takes.
 
-    media_type: str | None = None
-    adapter: TypeAdapter[object] | None = None
+    The model's adapter is built when the response first sends a body; a concurrent first send builds an equal one.
+    """
+
+    media_type: str = "application/json"
+    kind: Literal["json", "text", "form", "multipart", "binary"] = "json"
+    charset: str = "utf-8"
+    model: object = None
+    _adapter: TypeAdapter[object] | None = field(default=None, init=False, repr=False, compare=False)
+
+    def adapter(self) -> TypeAdapter[object] | None:
+        """Return the adapter of the body model, building and keeping it on first use, or None without a model."""
+        if (adapter := self._adapter) is None and (model := self.model) is not None:
+            built: TypeAdapter[object] = TypeAdapter(model)
+            object.__setattr__(self, "_adapter", built)  # noqa: PLC2801 - Keep the adapter on the frozen value.
+            return built
+        return adapter
+
+
+_UNDECLARED: Final = Declared()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -66,11 +80,6 @@ def dispatch(value: object, plan: OperationResponses) -> object:
         return value
     if _is_result(value):
         return _respond(value.status_code, value.body, value.headers, plan)
-    if hasattr(type(value), "__await__"):
-        if isinstance(value, Coroutine):
-            value.close()
-        msg = "The handler returned an awaitable; an asynchronous handler needs handler_mode='async'"
-        raise HandlerConfigurationError(msg)
     return value if plan.primary is None else _respond(plan.primary, value, None, plan)
 
 
@@ -79,16 +88,25 @@ def _is_result(value: object) -> TypeIs[HTTPResult[object]]:
 
 
 def _respond(status: int, body: object, headers: Mapping[str, str] | None, plan: OperationResponses) -> Response:
-    declared = plan.find(status) or Declared(media_type="application/json")
+    declared = plan.find(status) or _UNDECLARED
     if body is None or plan.head or status < _MIN_CONTENT_STATUS or status in _EMPTY_STATUSES:
+        if inspect.isawaitable(body):
+            raise _unawaited(body)
         return Response(status_code=status, headers=headers)
-    media_type = declared.media_type or "application/json"
-    return Response(_content(declared, media_type, body), status_code=status, media_type=media_type, headers=headers)
+    media_type = declared.media_type
+    return Response(_content(declared, body), status_code=status, media_type=media_type, headers=headers)
 
 
-def _content(declared: Declared, media_type: str, body: object) -> bytes:
-    json_media = media_kind(media_type) == "json"
-    if (adapter := declared.adapter) is None:
+def _unawaited(body: object) -> TypeError:
+    """Return the error for an awaitable result that a response without a body would drop before it ran."""
+    if isinstance(body, Coroutine):
+        body.close()
+    return TypeError("The method returned an awaitable for a response without a body; nothing awaited it")
+
+
+def _content(declared: Declared, body: object) -> bytes:
+    json_media = declared.kind == "json"
+    if (adapter := declared.adapter()) is None:
         payload = _json(jsonable_encoder(body, by_alias=True, exclude_unset=True)) if json_media else body
     else:
         try:
@@ -101,13 +119,18 @@ def _content(declared: Declared, media_type: str, body: object) -> bytes:
     if isinstance(payload, bytes):
         return payload
     if not isinstance(payload, str):
-        msg = f"A {media_type} body must be a string or bytes"
-        raise response_failure(msg)
+        msg = f"A {declared.media_type} body must be a string or bytes"
+        raise _failure(msg)
     try:
-        return payload.encode(charset(media_type))
+        return payload.encode(declared.charset)
     except (LookupError, UnicodeError) as error:
-        msg = f"The text body cannot be encoded as {media_type}"
-        raise response_failure(msg) from error
+        msg = f"The text body cannot be encoded as {declared.media_type}"
+        raise _failure(msg) from error
+
+
+def _failure(message: str) -> ResponseValidationError:
+    """Return the error for a handler result that no declared response accepts."""
+    return ResponseValidationError([{"type": "value_error", "loc": ("response",), "msg": message}])
 
 
 def _json(value: object) -> str:

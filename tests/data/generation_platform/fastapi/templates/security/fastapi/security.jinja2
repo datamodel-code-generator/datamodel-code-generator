@@ -1,0 +1,30 @@
+"""Security dependencies of this package, one for each scheme; override one with app.dependency_overrides."""
+
+{{ imports }}
+{%- for scheme in schemes %}
+{%- if scheme.class_name %}
+
+
+{{ scheme.name }} = {{ scheme.class_name }}(
+{%- for keyword in scheme.keywords %}
+{%- if keyword.keyword != "auto_error" %}
+    {{ keyword.keyword }}={{ keyword.value }},
+{%- endif %}
+{%- endfor %}
+    auto_error=True,
+)
+{%- else %}
+
+
+def {{ scheme.name }}() -> object:
+    """Return the {{ scheme.scheme }} credential, which no FastAPI security class reads; override this dependency."""
+    return None
+{%- endif %}
+{%- endfor %}
+
+
+__all__ = [
+{%- for name in exports %}
+    {{ name }},
+{%- endfor %}
+]

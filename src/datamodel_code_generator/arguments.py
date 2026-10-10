@@ -30,6 +30,9 @@ from datamodel_code_generator.enums import (
     AllOfClassHierarchy,
     AllOfMergeMode,
     ClassNameAffixScope,
+    ClientBodyArguments,
+    ClientSignatureStyle,
+    ClientType,
     CollapseRootModelsNameStrategy,
     CustomFileHeaderMode,
     DataclassArguments,
@@ -45,6 +48,10 @@ from datamodel_code_generator.enums import (
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
     StrictTypes,
     TargetPydanticVersion,
     UnionMode,
@@ -542,17 +549,20 @@ model_options.add_argument(
 model_options.add_argument(
     "--target-pydantic-version",
     help="Oldest Pydantic version the generated code must support. "
-    "Unset: the newest supported feature forms, with populate_by_name config like '2'. "
+    "Unset: the newest supported feature forms, with populate_by_name config like '2' "
+    "and the experimental MISSING import like '2.12'. "
     "'2': Pydantic 2.0+ compatible (uses populate_by_name). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
-    "'2.12': Pydantic 2.12+ (supports MISSING sentinel).",
+    "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
+    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic).",
     choices=[v.value for v in TargetPydanticVersion],
     default=None,
 )
 model_options.add_argument(
     "--alias-generator",
     help="Pydantic v2 BaseModel alias generator to use in ConfigDict. "
-    "Matching generated aliases are omitted from individual Field() calls.",
+    "Matching generated aliases are omitted from individual Field() calls, "
+    "except with --target-pydantic-version 2, which writes every alias.",
     choices=[a.value for a in AliasGenerator],
     default=None,
 )
@@ -1018,7 +1028,8 @@ field_options.add_argument(
 )
 field_options.add_argument(
     "--use-missing-sentinel",
-    help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+).",
+    help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), "
+    "or pydantic.MISSING with --target-pydantic-version 2.14 or later.",
     action="store_true",
     default=None,
 )
@@ -1552,7 +1563,7 @@ general_options.add_argument(
 # ======================================================================================
 target_selection_options.add_argument(
     "--generate-server",
-    choices=["fastapi"],
+    choices=[server.value for server in ServerType],
     default=None,
     help="Generate a FastAPI server package for the models; the --server-* options configure it (experimental).",
 )
@@ -1573,13 +1584,13 @@ target_options.add_argument(
 )
 target_options.add_argument(
     "--server-layout",
-    choices=["routers", "single"],
+    choices=[layout.value for layout in ServerLayout],
     default=None,
     help="Write one router module per tag (default) or a single routes module (experimental).",
 )
 target_options.add_argument(
     "--server-handler-mode",
-    choices=["sync", "async"],
+    choices=[mode.value for mode in ServerHandlerMode],
     default=None,
     help="Make service methods plain functions (default) or coroutine functions (experimental).",
 )
@@ -1598,7 +1609,7 @@ target_options.add_argument(
 )
 target_options.add_argument(
     "--server-body-mode",
-    choices=["typed", "request"],
+    choices=[mode.value for mode in ServerBodyMode],
     default=None,
     help="Pass request bodies as validated models (default) or as the raw Request (experimental).",
 )
@@ -1634,6 +1645,70 @@ target_options.add_argument(
     default=None,
     help="Argument names per operation reference, each keyed by location and name such as query:limit, "
     "as inline JSON or a JSON file path (experimental).",
+)
+target_selection_options.add_argument(
+    "--generate-client",
+    choices=[client.value for client in ClientType],
+    default=None,
+    help="Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental).",
+)
+target_options.add_argument(
+    "--client-output",
+    default=None,
+    help="Directory of the generated client package (experimental).",
+)
+target_options.add_argument(
+    "--client-package",
+    default=None,
+    help="Import path of the generated client package (experimental).",
+)
+target_options.add_argument(
+    "--client-model-package",
+    default=None,
+    help="Import path of the models that --output generates (experimental).",
+)
+target_options.add_argument(
+    "--client-signature-style",
+    choices=[style.value for style in ClientSignatureStyle],
+    default=None,
+    help="Declare operation arguments as keywords (default) or as one Unpack[TypedDict] (experimental).",
+)
+target_options.add_argument(
+    "--client-body-arguments",
+    choices=[arguments.value for arguments in ClientBodyArguments],
+    default=None,
+    help="Take request bodies as one body argument (default) or also as field arguments (experimental).",
+)
+target_options.add_argument(
+    "--client-resource-names",
+    type=str,
+    default=None,
+    help='Resource namespaces keyed by tag, such as {"pets": "store.pets"}, as inline JSON or a JSON file path '
+    "(experimental).",
+)
+target_options.add_argument(
+    "--client-operations",
+    type=str,
+    default=None,
+    help="Settings per operation reference, such as /paths/~1pets/get, as inline JSON or a JSON file path; "
+    "their body_arguments overrides --client-body-arguments (experimental).",
+)
+target_options.add_argument(
+    "--client-default-base-url",
+    default=None,
+    help="Server URL of the operations that declare no servers (experimental).",
+)
+target_options.add_argument(
+    "--client-server-base-url",
+    default=None,
+    help="Base URL that relative server URLs of the document resolve against (experimental).",
+)
+target_options.add_argument(
+    "--client-protocols",
+    type=str,
+    default=None,
+    help="Pagination, polling, stream, WebSocket, cache, upload, and webhook helpers by name, as inline JSON or a "
+    "JSON file path (experimental).",
 )
 
 __all__ = [

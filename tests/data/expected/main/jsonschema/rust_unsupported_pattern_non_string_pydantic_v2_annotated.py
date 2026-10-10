@@ -13,4 +13,3 @@ class Model(BaseModel):
     name: Annotated[str | None, Field(pattern='^\\p{L}+$')] = None
     code: Annotated[str | None, Field(pattern='^[a-z]+$')] = None
     site: AnyUrl | None = None
-    blob: Annotated[bytes | None, Field(pattern='^(a)\\1$')] = None

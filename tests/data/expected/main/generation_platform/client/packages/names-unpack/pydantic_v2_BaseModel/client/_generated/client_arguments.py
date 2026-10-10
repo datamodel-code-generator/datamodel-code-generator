@@ -22,7 +22,7 @@ class Operation0Arguments(TypedDict):
 class Operation1Arguments(TypedDict):
     """The keyword arguments of one signature of get_files_by_file_name_by_ext."""
 
-    file_name: str
+    fileName: str
     ext: str
     class_: NotRequired[str]
     two_factor: NotRequired[str | None]
@@ -47,20 +47,36 @@ class Operation4Arguments(TypedDict):
     options: NotRequired[RequestOptions | None]
 
 
-KEYWORDS_0: Final = Keywords('get_root', ('options',), ())
+KEYWORDS_0: Final = Keywords(
+    'get_root',
+    ('options',),
+    (),
+)
 
 
 KEYWORDS_1: Final = Keywords(
     'get_files_by_file_name_by_ext',
-    ('file_name', 'ext', 'class_', 'two_factor', 'options'),
-    ('file_name', 'ext'),
+    ('fileName', 'ext', 'class_', 'two_factor', 'options'),
+    ('fileName', 'ext'),
 )
 
 
-KEYWORDS_2: Final = Keywords('http_get_users', ('options',), ())
+KEYWORDS_2: Final = Keywords(
+    'http_get_users',
+    ('options',),
+    (),
+)
 
 
-KEYWORDS_3: Final = Keywords('list_admin_users', ('options',), ())
+KEYWORDS_3: Final = Keywords(
+    'list_admin_users',
+    ('options',),
+    (),
+)
 
 
-KEYWORDS_4: Final = Keywords('create_admin_user', ('options',), ())
+KEYWORDS_4: Final = Keywords(
+    'create_admin_user',
+    ('options',),
+    (),
+)

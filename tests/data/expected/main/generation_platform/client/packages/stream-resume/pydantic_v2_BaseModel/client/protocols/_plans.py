@@ -7,11 +7,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from models import Created as _dcg_type_1
-from models import Mark as _dcg_type_4
-from models import Message as _dcg_type_0
-from models import Record as _dcg_type_2
-from models import Tick as _dcg_type_3
+import models
 
 from .. import _operations
 from .._generated import model_bindings
@@ -21,6 +17,7 @@ from .._runtime.protocols.records import (
     BodyTarget,
     HeaderSelector,
     ParameterTarget,
+    QuerystringTarget,
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.streams import (
@@ -30,252 +27,159 @@ from .._runtime.protocols.streams import (
     unknown_event,
 )
 
-STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_0: Final[EventPlan[models.Tick]] = EventPlan(
+    helper_id='searches.ticks',
+    operation=OperationRef(pointer='/paths/~1search-feed/post'),
+    call=_operations.OPERATION_0,
+    media='text/event-stream',
+    event=model_bindings.codec_43,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1search-feed/post'), call=_operations.OPERATION_0, media='text/event-stream', write=BodyTarget(pointer='/after'), own=True, cursor=BodySelector(pointer='/seq'), missing='error', null='error'),
+)
+
+
+STREAM_1: Final[EventPlan[models.Tick]] = EventPlan(
+    helper_id='feed.live',
+    operation=OperationRef(pointer='/paths/~1feed/post'),
+    call=_operations.OPERATION_6,
+    media='text/event-stream',
+    event=model_bindings.codec_44,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1feed/post'), call=_operations.OPERATION_6, media='text/event-stream', write=ParameterTarget(location='header', name='Last-Event-ID'), own=True),
+)
+
+
+STREAM_2: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='events.live',
     operation=OperationRef(pointer='/paths/~1events/get'),
-    call=_operations.OPERATION_0,
+    call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='aae3411d1e251d38f9a7baf70300294801c2b2a259595d622e7cfdd6736b72fe',
-    event=model_bindings.codec_39,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1events/get'),
-        call=_operations.OPERATION_0,
-        media='text/event-stream',
-        write=ParameterTarget(location='header', name='Last-Event-ID'),
-        own=True,
-    ),
+    event=model_bindings.codec_45,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1events/get'), call=_operations.OPERATION_1, media='text/event-stream', write=ParameterTarget(location='header', name='Last-Event-ID'), own=True),
 )
 
 
-STREAM_1: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_3: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='events.plain',
     operation=OperationRef(pointer='/paths/~1events/get'),
-    call=_operations.OPERATION_0,
+    call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='80c34baaa42995dab35066fe12824d5d20006c3e98253a8093453eb1f9c70ffd',
-    event=model_bindings.codec_39,
+    event=model_bindings.codec_45,
 )
 
 
-STREAM_2: Final[EventPlan[_dcg_type_1 | UnknownEvent]] = EventPlan(
+STREAM_4: Final[EventPlan[models.Created | UnknownEvent]] = EventPlan(
     helper_id='events.tracked',
     operation=OperationRef(pointer='/paths/~1events/get'),
-    call=_operations.OPERATION_0,
+    call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='0a624a40c6dd7e04de6f101d13e9f812e4bf47c59668ce0e2c309ca9b00799e9',
-    routes=(('created', model_bindings.codec_40),),
+    routes=(('created', model_bindings.codec_46),),
     unknown=unknown_event,
-    errors=(('error', model_bindings.codec_41),),
+    errors=(('error', model_bindings.codec_47),),
     completion='event_type',
     terminal='done',
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1streams~1{streamId}/get'),
-        call=_operations.OPERATION_1,
-        media='text/event-stream; charset=utf-8',
-        write=ParameterTarget(location='header', name='Last-Event-ID'),
-        bindings=(
-            PageBinding(
-                target=ParameterTarget(location='path', name='streamId'),
-                source='initial',
-                selector=HeaderSelector(name='X-Stream-Id'),
-            ),
-            PageBinding(
-                target=ParameterTarget(location='query', name='token'),
-                source='previous',
-                selector=HeaderSelector(name='X-Resume-Token'),
-            ),
-            PageBinding(
-                target=ParameterTarget(location='query', name='mode'),
-                literal='resume',
-            ),
-        ),
-        reconnect_on=('transport_interruption', 'incomplete_eof'),
-        expires_at=HeaderSelector(name='X-Stream-Expires'),
-    ),
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1streams~1{streamId}/get'), call=_operations.OPERATION_2, media='text/event-stream; charset=utf-8', write=ParameterTarget(location='header', name='Last-Event-ID'), bindings=(PageBinding(target=ParameterTarget(location='path', name='streamId'), source='initial', selector=HeaderSelector(name='X-Stream-Id')), PageBinding(target=ParameterTarget(location='query', name='token'), source='previous', selector=HeaderSelector(name='X-Resume-Token')), PageBinding(target=ParameterTarget(location='query', name='mode'), literal='resume')), reconnect_on=('transport_interruption', 'incomplete_eof'), expires_at=HeaderSelector(name='X-Stream-Expires')),
 )
 
 
-STREAM_3: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_5: Final[EventPlan[models.Message]] = EventPlan(
     helper_id='rooms.live',
     operation=OperationRef(pointer='/paths/~1rooms~1{room}{shard}/get'),
-    call=_operations.OPERATION_2,
+    call=_operations.OPERATION_3,
     media='text/event-stream',
-    fingerprint='eae7aec80a771ae54146e8511c5e9e33d00b1fb4bd6278a6c4e2e7fa0b85f6ac',
-    event=model_bindings.codec_42,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1rooms~1{room}{shard}/get'),
-        call=_operations.OPERATION_2,
-        media='text/event-stream',
-        write=ParameterTarget(location='header', name='Last-Event-ID'),
-        own=True,
-        bindings=(
-            PageBinding(
-                target=ParameterTarget(location='path', name='shard'),
-                source='previous',
-                selector=HeaderSelector(name='X-Shard'),
-            ),
-        ),
-    ),
+    event=model_bindings.codec_48,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1rooms~1{room}{shard}/get'), call=_operations.OPERATION_3, media='text/event-stream', write=ParameterTarget(location='header', name='Last-Event-ID'), own=True, bindings=(PageBinding(target=ParameterTarget(location='path', name='shard'), source='previous', selector=HeaderSelector(name='X-Shard')),)),
 )
 
 
-STREAM_4: Final[EventPlan[_dcg_type_2]] = EventPlan(
+STREAM_6: Final[EventPlan[models.Record]] = EventPlan(
     helper_id='records.all',
     operation=OperationRef(pointer='/paths/~1records/get'),
-    call=_operations.OPERATION_4,
+    call=_operations.OPERATION_5,
     media='application/x-ndjson',
-    fingerprint='975adb5b4744242bdfbe45f4235784f5c5fc9d70f52469440a763efdcd4a7f12',
-    event=model_bindings.codec_43,
+    event=model_bindings.codec_49,
     kind='ndjson',
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1records/get'),
-        call=_operations.OPERATION_4,
-        media='application/x-ndjson',
-        write=ParameterTarget(location='query', name='after'),
-        own=True,
-        cursor=BodySelector(pointer='/id'),
-    ),
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1records/get'), call=_operations.OPERATION_5, media='application/x-ndjson', write=ParameterTarget(location='query', name='after'), own=True, cursor=BodySelector(pointer='/id')),
 )
 
 
-STREAM_5: Final[EventPlan[_dcg_type_3 | UnknownEvent]] = EventPlan(
+STREAM_7: Final[EventPlan[models.Tick | UnknownEvent]] = EventPlan(
     helper_id='feed.ticks',
     operation=OperationRef(pointer='/paths/~1feed/post'),
-    call=_operations.OPERATION_5,
+    call=_operations.OPERATION_6,
     media='text/event-stream',
-    fingerprint='edb61ded456f353cb7e50c894043f807e4c3123cbc82331a33e8c3e6891a503f',
     routes=(('tick', model_bindings.codec_44),),
     unknown=unknown_event,
     completion='sentinel',
     terminal='[DONE]',
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1feed/post'),
-        call=_operations.OPERATION_5,
-        media='text/event-stream',
-        write=BodyTarget(pointer='/after'),
-        own=True,
-        cursor=BodySelector(pointer='/seq'),
-        missing='error',
-        null='error',
-        reconnect_on=('incomplete_eof',),
-    ),
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1feed/post'), call=_operations.OPERATION_6, media='text/event-stream', write=BodyTarget(pointer='/after'), own=True, cursor=BodySelector(pointer='/seq'), missing='error', null='error', reconnect_on=('incomplete_eof',)),
 )
 
 
-STREAM_6: Final[EventPlan[_dcg_type_1 | UnknownEvent]] = EventPlan(
+STREAM_8: Final[EventPlan[models.Created | UnknownEvent]] = EventPlan(
     helper_id='topics.marks',
     operation=OperationRef(pointer='/paths/~1events/get'),
-    call=_operations.OPERATION_0,
+    call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='b91009cd58106e803d7da22d7a0a9cc2f3013d75bed0e9705a50b18ef48533ee',
-    routes=(('created', model_bindings.codec_40),),
+    routes=(('created', model_bindings.codec_46),),
     unknown=unknown_event,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1events/get'),
-        call=_operations.OPERATION_0,
-        media='text/event-stream',
-        write=ParameterTarget(location='query', name='topic'),
-        own=True,
-        cursor=BodySelector(pointer='/id'),
-    ),
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1events/get'), call=_operations.OPERATION_1, media='text/event-stream', write=ParameterTarget(location='query', name='topic'), own=True, cursor=BodySelector(pointer='/id')),
 )
 
 
-STREAM_7: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_9: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.scoped',
     operation=OperationRef(pointer='/paths/~1marks/get'),
-    call=_operations.OPERATION_6,
-    media='text/event-stream',
-    fingerprint='84e5d8e314cbd3ddbda65ae230fcafc57a0e9b7f16fedcddac0924b093dc0d2b',
-    event=model_bindings.codec_45,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1marks/get'),
-        call=_operations.OPERATION_6,
-        media='text/event-stream',
-        write=ParameterTarget(location='query', name='scope'),
-        own=True,
-        cursor=BodySelector(pointer='/scope'),
-    ),
-)
-
-
-STREAM_8: Final[EventPlan[_dcg_type_4]] = EventPlan(
-    helper_id='marks.named',
-    operation=OperationRef(pointer='/paths/~1named-marks/get'),
     call=_operations.OPERATION_7,
     media='text/event-stream',
-    fingerprint='9e4ab637e35440d4000aca638631f94d3792bdd8f159853f68e37d8fbdfd0d97',
-    event=model_bindings.codec_46,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1named-marks/get'),
-        call=_operations.OPERATION_7,
-        media='text/event-stream',
-        write=ParameterTarget(location='query', name='scope'),
-        own=True,
-        cursor=BodySelector(pointer='/scope'),
-    ),
+    event=model_bindings.codec_50,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1marks/get'), call=_operations.OPERATION_7, media='text/event-stream', write=ParameterTarget(location='query', name='scope'), own=True, cursor=BodySelector(pointer='/scope')),
 )
 
 
-STREAM_9: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_10: Final[EventPlan[models.Mark]] = EventPlan(
+    helper_id='marks.named',
+    operation=OperationRef(pointer='/paths/~1named-marks/get'),
+    call=_operations.OPERATION_8,
+    media='text/event-stream',
+    event=model_bindings.codec_51,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1named-marks/get'), call=_operations.OPERATION_8, media='text/event-stream', write=ParameterTarget(location='query', name='scope'), own=True, cursor=BodySelector(pointer='/scope')),
+)
+
+
+STREAM_11: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.deep',
     operation=OperationRef(pointer='/paths/~1deep-marks/get'),
-    call=_operations.OPERATION_8,
+    call=_operations.OPERATION_9,
     media='text/event-stream',
-    fingerprint='6b8b52bc991bf859b090771a92fe18c1f7933ccab3cc7d5b1f2385ca5da31577',
-    event=model_bindings.codec_47,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1deep-marks/get'),
-        call=_operations.OPERATION_8,
-        media='text/event-stream',
-        write=ParameterTarget(location='query', name='scope'),
-        own=True,
-        cursor=BodySelector(pointer='/scope'),
-    ),
+    event=model_bindings.codec_52,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1deep-marks/get'), call=_operations.OPERATION_9, media='text/event-stream', write=ParameterTarget(location='query', name='scope'), own=True, cursor=BodySelector(pointer='/scope')),
 )
 
 
-STREAM_10: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_12: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.bound',
     operation=OperationRef(pointer='/paths/~1marks/get'),
-    call=_operations.OPERATION_6,
+    call=_operations.OPERATION_7,
     media='text/event-stream',
-    fingerprint='406608586501fc36e87553d25a434d54e4781656e885ec2deb024eb92bf9721f',
-    event=model_bindings.codec_45,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1marks/get'),
-        call=_operations.OPERATION_6,
-        media='text/event-stream',
-        write=ParameterTarget(location='header', name='Last-Event-ID'),
-        own=True,
-        bindings=(
-            PageBinding(
-                target=ParameterTarget(location='query', name='scope'),
-                literal={'api_key': 'SERVER_KEY'},
-            ),
-        ),
-    ),
+    event=model_bindings.codec_50,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1marks/get'), call=_operations.OPERATION_7, media='text/event-stream', write=ParameterTarget(location='header', name='Last-Event-ID'), own=True, bindings=(PageBinding(target=ParameterTarget(location='query', name='scope'), literal={'api_key': 'SERVER_KEY'}),)),
 )
 
 
-STREAM_11: Final[EventPlan[_dcg_type_4]] = EventPlan(
+STREAM_13: Final[EventPlan[models.Mark]] = EventPlan(
     helper_id='marks.deepbound',
     operation=OperationRef(pointer='/paths/~1deep-marks/get'),
-    call=_operations.OPERATION_8,
+    call=_operations.OPERATION_9,
     media='text/event-stream',
-    fingerprint='4f433df465f8b0d6c90ee0f70529353def3135c220677dba4accad54ae630941',
-    event=model_bindings.codec_47,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1deep-marks/get'),
-        call=_operations.OPERATION_8,
-        media='text/event-stream',
-        write=ParameterTarget(location='header', name='Last-Event-ID'),
-        own=True,
-        bindings=(
-            PageBinding(
-                target=ParameterTarget(location='query', name='scope'),
-                literal={'api_key': 'SERVER_KEY'},
-            ),
-        ),
-    ),
+    event=model_bindings.codec_52,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1deep-marks/get'), call=_operations.OPERATION_9, media='text/event-stream', write=ParameterTarget(location='header', name='Last-Event-ID'), own=True, bindings=(PageBinding(target=ParameterTarget(location='query', name='scope'), literal={'api_key': 'SERVER_KEY'}),)),
+)
+
+
+STREAM_14: Final[EventPlan[models.Mark]] = EventPlan(
+    helper_id='searches.keyed',
+    operation=OperationRef(pointer='/paths/~1search-feed/post'),
+    call=_operations.OPERATION_0,
+    media='text/event-stream',
+    event=model_bindings.codec_53,
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1search-feed/post'), call=_operations.OPERATION_0, media='text/event-stream', write=QuerystringTarget(name='criteria', pointer=''), own=True, cursor=BodySelector(pointer='/scope'), null='error'),
 )

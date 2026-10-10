@@ -7,6 +7,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import NestedPage as _dcg_type_0
+import models
 
-ListNestedResponse: TypeAlias = _dcg_type_0
+ListNestedResponse: TypeAlias = models.NestedPage

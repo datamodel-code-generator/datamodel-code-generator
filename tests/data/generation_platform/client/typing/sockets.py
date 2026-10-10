@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator
+from contextlib import AbstractAsyncContextManager
 from typing import Literal
 
 from pets import AsyncClient, Client
-from pets.errors import ConcurrentReceiveError, DeliveryUnknownError, WebSocketClosedError
-from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions, SessionOptions
+from pets.errors import APIConnectionError, ConfigurationError, WebSocketClosedError
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncWebSocketSession,
     Message,
     PingReceipt,
     WebSocketSession,
-    WebSocketTransportOptions,
     WSOptions,
 )
 from pets_models import (
@@ -37,9 +37,8 @@ def sockets(
     session = client.protocols.rooms.chat.connect(
         room=room,
         since=since,
-        ws_options=WSOptions(open_timeout=1, idle_timeout=None, compression="deflate"),
+        ws_options=WSOptions(open_timeout=1, idle_timeout=None, max_message_bytes=65536, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(session, WebSocketSession[ClientMessage, ServerMessage])
     session.send(message)
@@ -60,41 +59,41 @@ def sockets(
         feed.send("a")
         for item in feed:
             assert_type(item.data, bytes)
-    with client.protocols.secure.chat.connect(x_trace=trace) as secure:
+    with client.protocols.secure.chat.connect(X_Trace=trace) as secure:
         secure.send(b"a")
         assert_type(secure.receive().data, str)
     del messages, widened
 
 
-def failures(error: WebSocketClosedError, unknown: DeliveryUnknownError, busy: ConcurrentReceiveError) -> None:
-    """Read the close code, reason, and cleanliness, how far a message got, and the receive state."""
+def failures(error: WebSocketClosedError, unknown: APIConnectionError, busy: ConfigurationError) -> None:
+    """Read the close code, reason, and cleanliness, a message's unknown delivery, and the receive state."""
     assert_type(error.code, int | None)
     assert_type(error.reason, str)
     assert_type(error.clean, bool)
-    assert_type(unknown.message_id, str | None)
-    assert_type(busy.state, str)
+    assert_type(unknown.reason, str | None)
+    assert_type(busy.field_path, tuple[str | int, ...])
 
 
-def options() -> ClientOptions:
-    """Give a client WebSocket transport settings."""
-    return ClientOptions(
-        protocols=ProtocolClientOptions(websocket_transport=WebSocketTransportOptions(trust_env=True)),
-    )
+def options() -> Client:
+    """Give a client WebSocket helper defaults; transport settings are the HTTP client's."""
+    return Client(helper_defaults={"rooms.chat": WSOptions(ping_interval=None, total_timeout=None)})
 
 
 async def async_sockets(
     client: AsyncClient, message: ClientMessage, room: FieldRoomsRoomSocketGetPathRoomParameter
 ) -> None:
-    """Connect with one await, then await sends, receives, pings, and closes, and iterate asynchronously."""
-    session = await client.protocols.rooms.chat.connect(room=room)
-    assert_type(session, AsyncWebSocketSession[ClientMessage, ServerMessage])
-    await session.send(message)
-    assert_type(await session.receive(), Message[ServerMessage])
-    assert_type(await session.ping(), PingReceipt)
-    messages: AsyncIterator[Message[ServerMessage]] = session
-    async for item in session:
-        assert_type(item.data, ServerMessage)
-    async with await client.protocols.feed.text.connect() as feed:
+    """Enter a connect's async with block, then await sends, receives, pings, and closes, and iterate asynchronously."""
+    connecting = client.protocols.rooms.chat.connect(room=room)
+    assert_type(connecting, AbstractAsyncContextManager[AsyncWebSocketSession[ClientMessage, ServerMessage]])
+    async with connecting as session:
+        assert_type(session, AsyncWebSocketSession[ClientMessage, ServerMessage])
+        await session.send(message)
+        assert_type(await session.receive(), Message[ServerMessage])
+        assert_type(await session.ping(), PingReceipt)
+        messages: AsyncIterator[Message[ServerMessage]] = session
+        async for item in session:
+            assert_type(item.data, ServerMessage)
+        await session.aclose(1001)
+        del messages
+    async with client.protocols.feed.text.connect() as feed:
         assert_type(feed, AsyncWebSocketSession[str, bytes])
-    await session.aclose(1001)
-    del messages

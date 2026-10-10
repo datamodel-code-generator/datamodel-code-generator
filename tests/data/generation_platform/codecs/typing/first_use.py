@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from types import MappingProxyType
+from datamodel_code_generator._runtime.model_codecs.media import json_value, plain
 
-from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire
-
-freeze_wire({"name": "A", "tag": None, "items": [1, {"nested": True}]})
-freeze_wire(MappingProxyType({"items": (1, MappingProxyType({"nested": True}))}))
+json_value('{"name": "A", "tag": null, "items": [1, {"nested": true}]}')
+plain({"items": (1, {"nested": True})})

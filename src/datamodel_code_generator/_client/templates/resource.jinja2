@@ -1,3 +1,25 @@
+{%- macro signature(method, variant, stub) -%}
+{% if method.coroutine %}async {% endif %}def {{ method.name }}(
+        self,
+{%- if variant.unpacked %}
+        **kwargs: {{ variant.unpacked }},
+{%- else %}
+        *,
+{%- for parameter in variant.parameters %}
+        {{ parameter.name }}: {{ parameter.annotation }}{% if parameter.default %} = {{ parameter.default }}{% endif %},
+{%- endfor %}
+{%- endif %}
+    ) -> {{ variant.returns }}:{% if stub %} ...{% endif %}
+{%- endmacro -%}
+{%- macro call(method) -%}
+self._core.{% if method.view == "raw" %}execute_raw{% elif method.view == "streaming" %}stream{% else %}execute{% endif %}(
+            {{ method.call.operation }},
+            {{ method.call.parameters }},
+{%- for argument in method.call.arguments %}
+            {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+        )
+{%- endmacro -%}
 """{{ docstring }}"""
 
 from __future__ import annotations
@@ -12,8 +34,31 @@ class {{ view.name }}:
     def __init__(self, core: {{ core }}) -> None:
         """Keep the client core the operations send through."""
         self._core = core
-{%- for member in view.members %}
+{%- for attribute in view.attributes %}
 
-{{ member }}
+    @{{ cached_property }}
+    def {{ attribute.name }}(self) -> {{ attribute.type }}:
+        """{{ attribute.docstring }}"""
+        return {{ attribute.type }}(self._core)
+{%- endfor %}
+{%- for method in view.methods %}
+{% for overload in method.overloads %}
+    @{{ overload_decorator }}
+    {{ signature(method, overload, True) }}
+{%- endfor %}
+    {{ signature(method, method.implementation, False) }}
+        {{ method.docstring }}
+{%- if method.check %}
+        {{ method.check }}.check(kwargs)
+{%- endif %}
+{%- if method.view == "plain" and method.coroutine %}
+        return (await {{ call(method) }}).data
+{%- elif method.view == "plain" %}
+        return {{ call(method) }}.data
+{%- elif method.coroutine %}
+        return await {{ call(method) }}
+{%- else %}
+        return {{ call(method) }}
+{%- endif %}
 {%- endfor %}
 {%- endfor %}

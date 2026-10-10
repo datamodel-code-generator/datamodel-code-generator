@@ -8,12 +8,17 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan, file_part, value_part
+from ._runtime.client.multipart import MultipartForm, PartPlan
+from ._runtime.client.multipart_responses import (
+    PartsReader,
+    file_part,
+    parts_branch,
+    value_part,
+)
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
     ParameterSpec,
-    PartsReader,
     RequestBody,
     ResponseDecoder,
     ServerPlan,
@@ -21,7 +26,6 @@ from ._runtime.client.operations import (
     binary_branch,
     empty_branch,
     model_branch,
-    parts_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.pets import (
@@ -35,67 +39,15 @@ from .types.pets import (
 )
 from .types.pets.photos import UploadResponse
 
-_SERVERS_0: Final = (
-    ServerPlan(
-        url='https://{region}.example.com/v1',
-        variables=(ServerVariable(name='region', default='api', enum=('api', 'eu')),),
-    ),
-)
+_SERVERS_0: Final = (ServerPlan(url='https://{region}.example.com/v1', variables=(ServerVariable(name='region', default='api', enum=('api', 'eu')),)),)
 
 OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     operation_id='listPets',
     method='GET',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            model_branch('200', 'application/json', 'json', model_bindings.codec_4),
-            model_branch('default', 'application/json', 'json', model_bindings.codec_7),
-        ),
-        (model_branch('default', 'application/json', 'json', model_bindings.codec_7),),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='limit',
-                style='form',
-                explode=True,
-                kind='integer',
-                reserved_names=('tags',),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='tags',
-                style='form',
-                explode=True,
-                shape='array',
-                reserved_names=('limit',),
-            ),
-            codec=model_bindings.codec_1,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='header',
-                name='X-Trace',
-                style='simple',
-                required=True,
-            ),
-            codec=model_bindings.codec_2,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='cookie',
-                name='session',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_3,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_4), model_branch('default', 'application/json', 'json', model_bindings.codec_7)), (model_branch('default', 'application/json', 'json', model_bindings.codec_7),)),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('tags',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='tags', style='form', explode=True, shape='array', reserved_names=('limit',)), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='header', name='X-Trace', style='simple', required=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='cookie', name='session', style='form', explode=True), codec=model_bindings.codec_3)),
     request_id_header='X-Request-Id',
 )
 
@@ -104,25 +56,8 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     method='POST',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('201', 'application/json', 'json', model_bindings.codec_10),),
-        (model_branch('4XX', 'application/json', 'json', model_bindings.codec_11),),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_8,
-            ),
-            BodyMedia(
-                media_type='text/plain',
-                kind='text',
-                codec=model_bindings.codec_9,
-            ),
-        ),
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_10),), (model_branch('4XX', 'application/json', 'json', model_bindings.codec_11),)),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_8), BodyMedia(media_type='text/plain', kind='text', codec=model_bindings.codec_9)), required=True),
 )
 
 OPERATION_2: Final[OperationPlan[GetPetResponse]] = OperationPlan(
@@ -130,25 +65,8 @@ OPERATION_2: Final[OperationPlan[GetPetResponse]] = OperationPlan(
     method='GET',
     path='/pets/{petId}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            model_branch('200', 'application/json', 'json', model_bindings.codec_13),
-            model_branch('200', 'text/plain', 'text', model_bindings.codec_14),
-        ),
-        (empty_branch('404'),),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='petId',
-                style='simple',
-                required=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_12,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_13), model_branch('200', 'text/plain', 'text', model_bindings.codec_14)), (empty_branch('404'),)),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_12),),
     response_media_type='application/json',
 )
 
@@ -158,18 +76,7 @@ OPERATION_3: Final[OperationPlan[DeletePetsByPetIdResponse]] = OperationPlan(
     path='/pets/{petId}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='petId',
-                style='simple',
-                required=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_15,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_15),),
 )
 
 OPERATION_4: Final[OperationPlan[HeadPetResponse]] = OperationPlan(
@@ -178,18 +85,7 @@ OPERATION_4: Final[OperationPlan[HeadPetResponse]] = OperationPlan(
     path='/pets/{petId}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('200'),), (), head=True),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='petId',
-                style='simple',
-                required=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_16,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_16),),
 )
 
 OPERATION_5: Final[OperationPlan[UploadResponse]] = OperationPlan(
@@ -198,22 +94,8 @@ OPERATION_5: Final[OperationPlan[UploadResponse]] = OperationPlan(
     path='/pets/{petId}/photo',
     servers=_SERVERS_0,
     responses=ResponseDecoder((binary_branch('200', 'image/*'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='petId',
-                style='simple',
-                required=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_18,
-        ),
-    ),
-    body=RequestBody(
-        media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
-        default='application/octet-stream',
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_18),),
+    body=RequestBody(media=(BodyMedia(media_type='application/octet-stream', kind='binary'),), default='application/octet-stream'),
 )
 
 OPERATION_6: Final[OperationPlan[AttachFilesResponse]] = OperationPlan(
@@ -222,33 +104,8 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse]] = OperationPlan(
     path='/pets/{petId}/files',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='petId',
-                style='simple',
-                required=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_19,
-        ),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='multipart/form-data',
-                kind='multipart',
-                parts=(
-                    PartPlan('note', codec=model_bindings.codec_21),
-                    PartPlan('labels', repeated=True, codec=model_bindings.codec_22),
-                    PartPlan('file', file=True, required=True),
-                ),
-            ),
-        ),
-        default='multipart/form-data',
-        required=True,
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_19),),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('note', codec=model_bindings.codec_21), PartPlan('labels', repeated=True, codec=model_bindings.codec_22), PartPlan('file')))),), default='multipart/form-data', required=True),
 )
 
 OPERATION_7: Final[OperationPlan[ReadFilesResponse]] = OperationPlan(
@@ -256,37 +113,6 @@ OPERATION_7: Final[OperationPlan[ReadFilesResponse]] = OperationPlan(
     method='GET',
     path='/pets/{petId}/files',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            parts_branch(
-                '200',
-                'multipart/form-data',
-                PartsReader[str | bytes](
-                    (
-                        value_part('note', 'string', model_bindings.codec_23),
-                        value_part(
-                            'labels',
-                            'string',
-                            model_bindings.codec_24,
-                            repeated=True,
-                        ),
-                        file_part('file', required=True),
-                    ),
-                ),
-            ),
-        ),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='petId',
-                style='simple',
-                required=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_20,
-        ),
-    ),
+    responses=ResponseDecoder((parts_branch('200', 'multipart/form-data', PartsReader[str | bytes]((value_part('note', 'string', model_bindings.codec_23), value_part('labels', 'string', model_bindings.codec_24, repeated=True), file_part('file', required=True)))),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_20),),
 )

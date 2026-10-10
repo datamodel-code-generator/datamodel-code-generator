@@ -1,0 +1,5 @@
+# type-checking-imports-off
+render pydantic_v2.BaseModel
+  RuntimeError: Ruff command failed with exit code 1 (TC001, TC002, TC003)
+render msgspec.Struct
+  RuntimeError: Ruff command failed with exit code 1 (TC001, TC002, TC003)

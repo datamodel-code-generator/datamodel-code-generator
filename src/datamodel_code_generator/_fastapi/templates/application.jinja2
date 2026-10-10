@@ -1,13 +1,29 @@
+{%- macro signature(builder) -%}
+def {{ builder.name }}(
+    *,
+{%- for parameter in builder.parameters %}
+    {{ parameter.name }}: {{ parameter.annotation }}{% if parameter.default %} = {{ parameter.default }}{% endif %},
+{%- endfor %}
+) -> {{ builder.returns }}:
+{%- endmacro -%}
 """Build the router and the application of every selected operation from the services that implement them."""
 
 {{ imports }}
 
-ROUTES: {{ final }} = {{ routes }}
+{% if routes -%}
+ROUTES: {{ final }} = (
+{%- for route in routes %}
+    {{ route }},
+{%- endfor %}
+)
+{%- else -%}
+ROUTES: {{ final }} = ()
+{%- endif %}
 INFO: {{ final }}[{{ options }}] = {{ info }}
 
 
-{{ build_signature }}
-    """Check the services and settings, then register every operation, literal paths first."""
+{{ signature(build_router) }}
+    """Register every operation on a new router, literal paths first."""
     return {{ build }}(
         ROUTES,
         services={{ services }},
@@ -17,8 +33,13 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
     )
 
 
-{{ app_signature }}
-    """Create the application with every operation, passing the other keyword arguments to FastAPI."""
+{{ signature(create_app) }}
+    """Create the application with every operation, passing the other keyword arguments to FastAPI.
+
+    Validation errors leave out the request's values, unless exception_handlers handles RequestValidationError. The
+    application serves the source OpenAPI document of its operations, or FastAPI's own with source_openapi=False.
+    """
+    fastapi_kwargs["exception_handlers"] = {{ error_handlers }}(fastapi_kwargs.get("exception_handlers"))
     app = {{ fastapi }}(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
@@ -27,6 +48,8 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 {%- endfor %}
         )
     )
+    if source_openapi:
+        {{ serve_source_openapi }}(app, prefix=prefix, metadata=fastapi_kwargs)
     return app
 
 

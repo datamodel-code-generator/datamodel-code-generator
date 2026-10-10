@@ -1,4 +1,3 @@
 # protocols-not-json
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols: Invalid JSON for protocols: Expecting ',' delimiter: line 1 column 17 (char 16)
+  Error: Invalid JSON for --client-protocols: Expecting ',' delimiter: line 1 column 17 (char 16)

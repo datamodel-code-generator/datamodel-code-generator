@@ -8,64 +8,58 @@
   "paths": {
     "/pets": {
       "get": {
+        "operationId": "listPets",
         "tags": [
           "pets"
         ],
-        "summary": "List Pets",
-        "operationId": "listPets",
         "parameters": [
           {
             "name": "limit",
             "in": "query",
-            "required": false,
+            "description": "Page size.",
             "schema": {
               "type": "integer",
-              "maximum": 100,
+              "format": "int32",
               "minimum": 1,
-              "description": "Page size.",
-              "default": 20,
-              "title": "Limit"
-            },
-            "description": "Page size."
+              "maximum": 100,
+              "default": 20
+            }
           },
           {
             "name": "tags",
             "in": "query",
-            "required": false,
             "schema": {
               "type": "array",
               "items": {
                 "type": "string"
-              },
-              "title": "Tags"
+              }
             }
           },
           {
             "name": "kind",
             "in": "query",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/FieldPetsGetQueryKindParameter"
-            }
-          },
-          {
-            "name": "since",
-            "in": "query",
-            "required": false,
             "schema": {
               "type": "string",
-              "format": "date-time",
-              "title": "Since"
+              "enum": [
+                "cat",
+                "dog"
+              ]
             }
           },
           {
             "name": "X-Request-Id",
             "in": "header",
-            "required": false,
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "title": "X-Request-Id"
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -82,7 +76,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldPetsGetResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pet"
+                  }
                 }
               }
             }
@@ -100,11 +97,10 @@
         }
       },
       "post": {
+        "operationId": "createPet",
         "tags": [
           "pets"
         ],
-        "summary": "Create Pet",
-        "operationId": "createPet",
         "requestBody": {
           "required": true,
           "content": {
@@ -125,55 +121,26 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
     "/pets/mine": {
       "get": {
+        "operationId": "listMyPets",
         "tags": [
           "pets"
         ],
-        "summary": "List My Pets",
-        "operationId": "listMyPets",
         "responses": {
           "200": {
             "description": "The caller's pets.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldPetsMineGetResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/store/inventory": {
-      "get": {
-        "tags": [
-          "store"
-        ],
-        "summary": "Get Inventory",
-        "operationId": "getInventory",
-        "responses": {
-          "200": {
-            "description": "Counts by status.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FieldStoreInventoryGetResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pet"
+                  }
                 }
               }
             }
@@ -183,11 +150,10 @@
     },
     "/pets/{petId}": {
       "get": {
+        "operationId": "getPet",
         "tags": [
           "pets"
         ],
-        "summary": "Get Pet",
-        "operationId": "getPet",
         "parameters": [
           {
             "name": "petId",
@@ -195,8 +161,8 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "minimum": 1,
-              "title": "Petid"
+              "format": "int64",
+              "minimum": 1
             }
           }
         ],
@@ -220,25 +186,14 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       },
       "delete": {
+        "operationId": "deletePet",
         "tags": [
           "pets"
         ],
-        "summary": "Delete Pet",
-        "operationId": "deletePet",
         "parameters": [
           {
             "name": "petId",
@@ -246,21 +201,34 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "minimum": 1,
-              "title": "Petid"
+              "format": "int64",
+              "minimum": 1
             }
           }
         ],
         "responses": {
           "204": {
             "description": "Deleted."
-          },
-          "422": {
-            "description": "Validation Error",
+          }
+        }
+      }
+    },
+    "/store/inventory": {
+      "get": {
+        "operationId": "getInventory",
+        "tags": [
+          "store"
+        ],
+        "responses": {
+          "200": {
+            "description": "Counts by status.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  }
                 }
               }
             }
@@ -271,161 +239,62 @@
   },
   "components": {
     "schemas": {
-      "Error": {
-        "properties": {
-          "code": {
-            "type": "integer",
-            "title": "Code"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
-        "title": "Error"
-      },
-      "FieldPetsGetQueryKindParameter": {
-        "type": "string",
-        "enum": [
-          "cat",
-          "dog"
-        ],
-        "title": "FieldPetsGetQueryKindParameter"
-      },
-      "FieldPetsGetResponse": {
-        "items": {
-          "$ref": "#/components/schemas/Pet"
-        },
-        "type": "array",
-        "title": "FieldPetsGetResponse"
-      },
-      "FieldPetsMineGetResponse": {
-        "items": {
-          "$ref": "#/components/schemas/Pet"
-        },
-        "type": "array",
-        "title": "FieldPetsMineGetResponse"
-      },
-      "FieldStoreInventoryGetResponse": {
-        "additionalProperties": {
-          "type": "integer"
-        },
-        "type": "object",
-        "title": "FieldStoreInventoryGetResponse"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "NewPet": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Name"
-          },
-          "tag": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tag"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "tag"
-        ],
-        "title": "NewPet"
-      },
       "Pet": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "tag": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tag"
-          }
-        },
         "type": "object",
         "required": [
           "id",
           "name",
           "tag"
         ],
-        "title": "Pet"
-      },
-      "ValidationError": {
         "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
+          "id": {
+            "type": "integer"
           },
-          "msg": {
-            "type": "string",
-            "title": "Message"
+          "name": {
+            "type": "string"
           },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
-        },
+        }
+      },
+      "NewPet": {
         "type": "object",
         "required": [
-          "loc",
-          "msg",
-          "type"
+          "name",
+          "tag"
         ],
-        "title": "ValidationError"
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
       }
     }
   }

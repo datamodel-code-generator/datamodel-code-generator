@@ -1,7 +1,7 @@
 --- server/services.py
 +++ server/services.py (expected)
-@@ -74,4 +74,3 @@
-         | HTTPResult[models.FieldStoreInventoryGetResponse]
-         | Response
-     ): ...
+@@ -83,4 +83,3 @@
+         """
+         Handle GET /store/inventory.
+         """
 -# Café

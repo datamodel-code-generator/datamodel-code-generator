@@ -33,37 +33,8 @@ OPERATION_0: Final[OperationPlan[ListUsersResponse]] = OperationPlan(
     method='GET',
     path='/users',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_3),),
-        (model_branch('500', 'application/json', 'json', model_bindings.codec_5),),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-                reserved_names=('limit',),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='limit',
-                style='form',
-                explode=True,
-                kind='integer',
-                reserved_names=('cursor',),
-            ),
-            codec=model_bindings.codec_1,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='X-Snapshot', style='simple'),
-            codec=model_bindings.codec_2,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_3),), (model_branch('500', 'application/json', 'json', model_bindings.codec_5),)),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='header', name='X-Snapshot', style='simple'), codec=model_bindings.codec_2)),
 )
 
 OPERATION_1: Final[OperationPlan[SearchUsersResponse]] = OperationPlan(
@@ -71,32 +42,9 @@ OPERATION_1: Final[OperationPlan[SearchUsersResponse]] = OperationPlan(
     method='POST',
     path='/users/search',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_8),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_6,
-        ),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_7,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_8),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True), codec=model_bindings.codec_6),),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_7),), default='application/json', required=True),
 )
 
 OPERATION_2: Final[OperationPlan[ListLooseResponse]] = OperationPlan(
@@ -104,22 +52,8 @@ OPERATION_2: Final[OperationPlan[ListLooseResponse]] = OperationPlan(
     method='GET',
     path='/loose',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_10),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_9,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_10),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, kind='integer'), codec=model_bindings.codec_9),),
 )
 
 OPERATION_3: Final[OperationPlan[ListNestedResponse]] = OperationPlan(
@@ -127,21 +61,8 @@ OPERATION_3: Final[OperationPlan[ListNestedResponse]] = OperationPlan(
     method='GET',
     path='/nested',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_12),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_11,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_12),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True), codec=model_bindings.codec_11),),
 )
 
 OPERATION_4: Final[OperationPlan[ListLabelsResponse]] = OperationPlan(
@@ -149,21 +70,8 @@ OPERATION_4: Final[OperationPlan[ListLabelsResponse]] = OperationPlan(
     method='GET',
     path='/labels',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_14),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='after',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_13,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_14),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='after', style='form', explode=True), codec=model_bindings.codec_13),),
 )
 
 OPERATION_5: Final[OperationPlan[ListLabelSetsResponse]] = OperationPlan(
@@ -171,21 +79,8 @@ OPERATION_5: Final[OperationPlan[ListLabelSetsResponse]] = OperationPlan(
     method='GET',
     path='/label-sets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_17),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='after',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_16,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_17),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='after', style='form', explode=True), codec=model_bindings.codec_16),),
 )
 
 OPERATION_6: Final[OperationPlan[ListArchiveResponse]] = OperationPlan(
@@ -193,21 +88,8 @@ OPERATION_6: Final[OperationPlan[ListArchiveResponse]] = OperationPlan(
     method='GET',
     path='/archive/{cursor}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_20),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='cursor',
-                style='simple',
-                required=True,
-            ),
-            codec=model_bindings.codec_19,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_20),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='cursor', style='simple', required=True), codec=model_bindings.codec_19),),
 )
 
 OPERATION_7: Final[OperationPlan[ListStatusesResponse]] = OperationPlan(
@@ -215,22 +97,8 @@ OPERATION_7: Final[OperationPlan[ListStatusesResponse]] = OperationPlan(
     method='GET',
     path='/statuses',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('2XX', 'application/json', 'json', model_bindings.codec_22),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='code',
-                style='form',
-                explode=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_21,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('2XX', 'application/json', 'json', model_bindings.codec_22),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='code', style='form', explode=True, kind='integer'), codec=model_bindings.codec_21),),
 )
 
 OPERATION_8: Final[OperationPlan[ListSecureUsersResponse]] = OperationPlan(
@@ -238,20 +106,7 @@ OPERATION_8: Final[OperationPlan[ListSecureUsersResponse]] = OperationPlan(
     method='GET',
     path='/secure/users',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_24),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='cursor',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_23,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_24),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True), codec=model_bindings.codec_23),),
     security=security.OPERATION_8,
 )

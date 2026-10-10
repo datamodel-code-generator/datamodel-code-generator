@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from functools import cached_property
 from itertools import starmap
@@ -16,32 +15,29 @@ from typing_extensions import TypeIs
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.model_facts import ALIASES
-from datamodel_code_generator._client.naming import (
-    RESERVED_ARGUMENTS,
-    RESERVED_MEMBERS,
-    WINDOWS_DEVICES,
-    method_name,
-    pascal,
-    snake,
-)
-from datamodel_code_generator._client.security import SecurityPlanner
-from datamodel_code_generator._codec_type_source import static_scalar
+from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
+from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BuiltinType,
+    ConstructorType,
     LiteralScalar,
     LiteralSequence,
     NoneType,
+    PartFacts,
+    PartSchema,
+    SchemaSite,
     SourceLocation,
     TypeUseBinding,
     UnionType,
 )
+from datamodel_code_generator._target_naming import WINDOWS_DEVICES, NameScope, explicit_name, operation_basis
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Container, Iterable, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._client.config import (
@@ -57,15 +53,15 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
     from datamodel_code_generator._target_contract import (
         Direction,
-        FinalPythonType,
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
+        OperationId,
         SourceDocumentId,
         TypeUseId,
+        TypeView,
         WireDeclaration,
     )
 
@@ -83,16 +79,7 @@ _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SCHEMES: Final = frozenset({"http", "https"})
 _FORM_DATA: Final = "multipart/form-data"
 _NULL: Final = frozenset({"null"})
-_PART_KINDS: Final[dict[tuple[str, ...], PartKind]] = {
-    ("string",): "string",
-    ("integer",): "integer",
-    ("number",): "number",
-    ("boolean",): "boolean",
-    ("integer", "number"): "number",
-}
-_OBJECT: Final = frozenset({"object"})
-_ARRAY: Final = frozenset({"array"})
-_STRING: Final = frozenset({"string"})
+_UNDECLARED: Final = PartFacts(object=True, members=(), extra=None)
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
@@ -104,13 +91,16 @@ _DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PartSpec:
-    """One member of a form-data body with file parts: its plan and its values' type use.
+    """One member of a form-data body with file parts: its plan, its values' type use, and its kind of part.
 
-    A file member has no type use of its values.
+    A file member has no type use of its values. A received member may be required, or excluded by its direction.
     """
 
     plan: PartPlan
     use: TypeUseBinding | None = None
+    file: bool = False
+    required: bool = False
+    excluded: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -149,7 +139,7 @@ class ParameterSpec:
     required: bool
     use: TypeUseBinding | None
     plan: ParameterPlan
-    argument: FinalPythonType | None = None
+    argument: TypeView | None = None
     default: LiteralScalar | None = None
     converts: bool = False
 
@@ -200,7 +190,7 @@ class FieldArgument:
     python_name: str
     wire_name: str
     required: bool
-    type: FinalPythonType
+    type: TypeView
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -220,7 +210,8 @@ class FieldBranch:
 class OperationSpec:
     """Everything the renderer needs for one selected operation.
 
-    `body_only` pairs each body media type of a 'both' operation that has no field arguments with the reason.
+    `body_only` pairs each body media type of a 'both' operation that has no field arguments with the reason, and
+    `scopes` names the scopes its arguments live in for the naming strategy: its resource and its derived method name.
     """
 
     contract: OperationContract
@@ -248,6 +239,7 @@ class OperationSpec:
     security: SecurityBinding | None = None
     auth_challenge_less_401: bool = False
     accepted_content_encodings: tuple[str, ...] = ()
+    scopes: tuple[str, ...] = ()
 
     @property
     def head(self) -> bool:
@@ -267,16 +259,12 @@ class ResourceSpec:
     namespace: str
     operations: tuple[OperationSpec, ...]
     children: tuple[str, ...]
+    pascal: str
 
     @property
     def parts(self) -> tuple[str, ...]:
         """Return the namespace's dotted parts."""
         return tuple(self.namespace.split("."))
-
-    @property
-    def pascal(self) -> str:
-        """Return the PascalCase name of the namespace, which its resource classes start with."""
-        return "".join(pascal(part) for part in self.parts)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -286,6 +274,7 @@ class ClientPlan:
     operations: tuple[OperationSpec, ...]
     resources: tuple[ResourceSpec, ...]
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
+    credentials: tuple[CredentialSpec, ...] = ()
 
     @property
     def roots(self) -> tuple[ResourceSpec, ...]:
@@ -362,9 +351,20 @@ class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
     def __init__(
-        self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan, facts: ModelFacts
+        self,
+        request: TargetRequest,
+        config: ClientGenerationConfig,
+        wire: WirePlan,
+        facts: ModelFacts,
+        helpers: Container[OperationId] = (),
     ) -> None:
-        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys."""
+        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys.
+
+        `helpers` are the operations a sending helper calls, whose methods also take the helper's own arguments.
+        """
+        assert request.batch.names is not None
+        self.names = request.batch.names
+        self.helpers = helpers
         self.request = request
         self.config = config
         self.wire = wire
@@ -380,6 +380,7 @@ class Planner:
         self.security = SecurityPlanner(request.batch, self.problems)
         self.settings = self.resolved()
         self.raise_problems()
+        self.namespaces = self.tag_namespaces()
 
     @cached_property
     def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
@@ -398,7 +399,10 @@ class Planner:
             reference = OperationRef(pointer=item.ref) if isinstance(item.ref, str) else item.ref
             option = f"operations[{index}].ref"
             if (operation := self.request.resolve(reference)) is None:
-                message = f"The operation setting {reference.pointer!r} {self.request.unresolved}"
+                from datamodel_code_generator._target_documents import named_document  # noqa: PLC0415
+
+                named = named_document(reference.document, reference.document)
+                message = f"The operation setting {reference.pointer!r}{named} {self.request.unresolved}"
                 self.problems.append(_problem("E_OPERATION_REF", message, option_path=option))
             elif (key := operation.id.use_site.pointer) in resolved:
                 self.problems.append(_problem("E_CONFIG_CONFLICT", f"Two settings name {key!r}", option_path=option))
@@ -408,17 +412,22 @@ class Planner:
 
     def plan(self) -> ClientPlan:
         """Plan each selected operation, then its resource namespaces and the names they must keep apart."""
-        specs = tuple(starmap(self.operation, enumerate(self.request.operations)))
+        specs = self.named(tuple(starmap(self.operation, enumerate(self.request.operations))))
         self.raise_problems()
         resources = self.resources(specs)
+        credentials = self.security.credentials(spec.security for spec in specs)
         self.raise_problems()
-        return ClientPlan(operations=specs, resources=resources, security_schemes=self.security.root)
+        return ClientPlan(
+            operations=specs, resources=resources, security_schemes=self.security.root, credentials=credentials
+        )
 
     def operation(self, index: int, operation: OperationContract) -> OperationSpec:
         """Plan one operation's names, arguments, media, responses, and servers."""
         setting = self.settings.get(operation.id.use_site.pointer)
         name = self.method(operation, setting)
-        parameters = self.parameters(operation, setting)
+        resource = self.resource(operation, setting)
+        scopes = (*resource.split("."), name)
+        parameters = self.parameters(operation, setting, scopes)
         body = None if operation.request_body is None else self.body(operation, operation.request_body, setting)
         runtime = None if setting is None else setting.runtime
         security = self.security.binding(operation)
@@ -440,9 +449,9 @@ class Planner:
         return OperationSpec(
             contract=operation,
             index=index,
-            resource=self.resource(operation, setting),
+            resource=resource,
             name=name,
-            pascal=pascal(name),
+            pascal="",
             operation_id=operation_id if isinstance(operation_id, str) and operation_id else None,
             parameters=parameters,
             body=body,
@@ -461,6 +470,7 @@ class Planner:
             security=security,
             auth_challenge_less_401=False if runtime is None else runtime.auth_challenge_less_401,
             accepted_content_encodings=() if runtime is None else runtime.accepted_content_encodings,
+            scopes=scopes,
         )
 
     def _idempotency_header(
@@ -496,50 +506,150 @@ class Planner:
             )
 
     def resource(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
-        """Return the operation's resource namespace: explicit, its first tag's mapped or snake name, or default."""
+        """Return the operation's resource namespace: explicit, its first tag's mapped or derived name, or default.
+
+        Each other tag derives a new name beside the clients' members; a Windows device name needs an explicit one.
+        """
         if setting is not None and setting.resource is not None:
             return setting.resource
         if not (tags := _tags(operation)):
             return "default"
         if (mapped := self.resource_names.get(tags[0])) is not None:
             return mapped
-        namespace = snake(tags[0])
-        if not namespace or namespace in RESERVED_MEMBERS | WINDOWS_DEVICES:
-            message = f"The tag {tags[0]!r} of {_label(operation)} needs an explicit resource name"
-            self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
-        return namespace
+        return self.namespaces[tags[0]]
+
+    def tag_namespaces(self) -> dict[str, str]:
+        """Name the resource of each first tag that no setting names, apart from the clients' members and each other.
+
+        A Windows device name needs an explicit one.
+        """
+        first: dict[str, OperationContract] = {}
+        for operation in self.request.operations:
+            setting = self.settings.get(operation.id.use_site.pointer)
+            if (
+                (setting is None or setting.resource is None)
+                and (tags := _tags(operation))
+                and tags[0] not in self.resource_names
+            ):
+                first.setdefault(tags[0], operation)
+        bases = [self.names.function(tag) for tag in first]
+        names = self.names.claim(
+            NameScope(RESERVED_MEMBERS, folded=True),
+            [(base, _local(operation), ()) for operation, base in zip(first.values(), bases, strict=True)],
+        )
+        for (tag, operation), namespace in zip(first.items(), names, strict=True):
+            if namespace.casefold() in WINDOWS_DEVICES:
+                message = f"The tag {tag!r} of {_label(operation)} needs an explicit resource name"
+                self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
+        return dict(zip(first, names, strict=True))
 
     def method(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
-        """Return the operation's method name: explicit, its operationId in snake case, or its method and path."""
-        operation_id = next((_plain(item) for key, item in operation.facts if key == "operationId"), None)
-        if setting is not None and setting.name is not None:
-            name = setting.name
-        elif isinstance(operation_id, str) and operation_id:
-            name = snake(operation_id)
-        else:
-            name = method_name(operation.method, operation.path)
-        if not name or name in RESERVED_MEMBERS:
-            message = f"{_label(operation)} needs an explicit method name instead of {name!r}"
+        """Return the operation's method name: explicit, or derived from its operationId or its method and path.
+
+        The resource names derived names apart; an explicit name must not be a member the resource defines.
+        """
+        if setting is None or (name := setting.name) is None:
+            return self.names.function(operation_basis(operation.method, operation.path, operation.operation_id))
+        if name in RESERVED_MEMBERS:
+            message = f"The method name {name!r} of {_label(operation)} is reserved"
             self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return name
 
+    def _explicit_method(self, operation: OperationContract) -> bool:
+        """Return whether the operation's settings name its method."""
+        return (setting := self.settings.get(operation.id.use_site.pointer)) is not None and setting.name is not None
+
+    def named(self, specs: tuple[OperationSpec, ...]) -> tuple[OperationSpec, ...]:
+        """Name each resource's methods apart and give each its PascalCase type name.
+
+        A resource holds its members and child namespaces, then explicit method names, which must be new, then
+        derived ones, suffixed in operation order; their type names are suffixed by the model's class rule.
+        """
+        members: dict[str, list[OperationSpec]] = {}
+        for spec in specs:
+            members.setdefault(spec.resource, []).append(spec)
+        namespaces = {".".join(parts[:size]) for parts in map(_parts_of, members) for size in range(1, len(parts) + 1)}
+        named = list(specs)
+        for namespace, operations in members.items():
+            scope = NameScope(child.rpartition(".")[2] for child in namespaces if child.rpartition(".")[0] == namespace)
+            explicit = {spec.index for spec in operations if self._explicit_method(spec.contract)}
+            for spec in operations:
+                if spec.index in explicit and not scope.take(spec.name):
+                    message = f"The resource {namespace!r} takes the name {spec.name!r} twice"
+                    self.problems.append(_problem("E_NAME_COLLISION", message))
+            for name in RESERVED_MEMBERS:
+                scope.take(name)
+            parts = tuple(namespace.split("."))
+            derived = [spec for spec in operations if spec.index not in explicit]
+            claimed = dict(
+                zip(
+                    (spec.index for spec in derived),
+                    self.names.claim(scope, [(spec.name, _local(spec.contract), parts) for spec in derived]),
+                    strict=True,
+                )
+            )
+            methods = [claimed.get(spec.index, spec.name) for spec in operations]
+            prefix = ("".join(map(self.names.pascal, parts)),)
+            pascals = self.names.claim(
+                NameScope(),
+                [
+                    (self.names.pascal(name), _local(spec.contract), prefix)
+                    for spec, name in zip(operations, methods, strict=True)
+                ],
+                camel=True,
+            )
+            for spec, name, pascal in zip(operations, methods, pascals, strict=True):
+                named[spec.index] = replace(spec, name=name, pascal=pascal)
+        return tuple(named)
+
     def parameters(
-        self, operation: OperationContract, setting: ClientOperationConfig | None
+        self, operation: OperationContract, setting: ClientOperationConfig | None, path: tuple[str, ...]
     ) -> tuple[ParameterSpec, ...]:
-        """Plan the effective parameters in order and name their arguments."""
+        """Plan the effective parameters in order and name their arguments.
+
+        Explicit names, configured or `--aliases` entries, are taken first and must be new identifiers; the other
+        arguments are named as model fields after their wire names, then suffixed apart from the method's own
+        arguments, a helper's when a helper calls the operation, and each other in declaration order.
+        """
         names = () if setting is None else setting.parameter_names
         explicit = {(item.in_, item.name): item.python_name for item in names}
         plans = self.parameter_plans.get(operation.id, {})
-        specs: list[ParameterSpec] = []
+        declared: list[tuple[WireDeclaration, ParameterLocation, str, ParameterPlan, str | None]] = []
+        scope = NameScope()
         for declaration in operation.parameters:
             location = _LOCATIONS[fact(declaration, "in")]
             wire_name = declaration.name or ""
             if (plan := plans.get((location, wire_name))) is None:
                 continue
-            python_name = explicit.pop((location, wire_name), None) or snake(wire_name)
-            if not python_name or python_name in RESERVED_ARGUMENTS:
-                message = f"The {location} parameter {wire_name!r} of {_label(operation)} needs an explicit python_name"
+            given = explicit.pop((location, wire_name), None) or self._alias(
+                operation, declaration, location, wire_name
+            )
+            declared.append((declaration, location, wire_name, plan, given))
+            if given is None:
+                continue
+            if given in RESERVED_ARGUMENTS:
+                message = (
+                    f"The {location} parameter {wire_name!r} of {_label(operation)} cannot take the name {given!r}"
+                )
                 self.problems.append(_problem("E_RESERVED_NAME", message, declaration.use_site))
+            elif not scope.take(given):
+                message = f"The arguments of {_label(operation)} take {given!r} twice"
+                self.problems.append(_problem("E_NAME_COLLISION", message, operation.id.use_site))
+        for name in (*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())):
+            scope.take(name)
+        bases = {index: self.names.argument(item[2]) for index, item in enumerate(declared) if item[4] is None}
+        claimed = dict(
+            zip(
+                bases,
+                self.names.claim(
+                    scope, [(base, _declared_by(declared[index][0], operation), path) for index, base in bases.items()]
+                ),
+                strict=True,
+            )
+        )
+        specs: list[ParameterSpec] = []
+        for index, (declaration, location, wire_name, plan, given) in enumerate(declared):
+            python_name = given or claimed[index]
             required = fact(declaration, "required") is True
             use = self.use(_uses(declaration))
             argument = None if use is None or use.type is None else self.facts.argument(use.type)
@@ -552,7 +662,7 @@ class Planner:
                     use=use,
                     plan=plan,
                     argument=argument,
-                    default=None if required else _default(self.wire, use, argument),
+                    default=None if required else _default(use, argument),
                     converts=use is not None
                     and use.type is not None
                     and argument != self.facts.argument(use.type, ALIASES),
@@ -566,14 +676,7 @@ class Planner:
             )
             for location, name in explicit
         )
-        self.problems.extend(
-            _problem(
-                "E_NAME_COLLISION", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
-            )
-            for name, count in sorted(Counter(spec.python_name for spec in specs).items())
-            if count > 1
-        )
-        declared = {spec.wire_name for spec in specs if spec.location == "path"}
+        paths = {spec.wire_name for spec in specs if spec.location == "path"}
         self.problems.extend(
             _problem(
                 "E_METADATA_REQUIRED",
@@ -581,9 +684,21 @@ class Planner:
                 operation.id.use_site,
             )
             for placeholder in dict.fromkeys(_PLACEHOLDER.findall(operation.path))
-            if placeholder not in declared
+            if placeholder not in paths
         )
         return tuple(specs)
+
+    def _alias(
+        self, operation: OperationContract, declaration: WireDeclaration, location: str, wire_name: str
+    ) -> str | None:
+        """Return the `--aliases` entry naming a parameter's argument, which must be an identifier."""
+        if (alias := self.names.alias(wire_name)) is not None and not explicit_name(alias):
+            message = (
+                f"The --aliases entry {alias!r} of the {location} parameter {wire_name!r} of {_label(operation)} "
+                "is not an identifier"
+            )
+            self.problems.append(_problem("E_CONFIG_VALUE", message, declaration.use_site))
+        return alias
 
     def use(self, uses: tuple[TypeUseId, ...]) -> TypeUseBinding | None:
         """Return the first type use of a declaration."""
@@ -600,7 +715,7 @@ class Planner:
         kind = media_kind(media_type)
         use = self.use(declaration.schemas)
         essence = media_type.partition(";")[0]
-        if (reason := self.unsupported(kind, essence, use, request=request)) is not None:
+        if (reason := _unsupported(kind, essence, use, request=request)) is not None:
             message = f"The {media_type} media of {_label(operation)} {reason}"
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
         if kind == "multipart" and not request and (encoding := _encoded(declaration)) is not None:
@@ -619,16 +734,9 @@ class Planner:
         extra: PartSpec | None = None
         if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None:
             members, extra = (
-                _sent(
-                    self.wire,
-                    self._schemas,
-                    use,
-                    use.schema,
-                    media_of=media_of,
-                    styles_of=styles_of,
-                )
+                self._sent(use, use.schema, media_of=media_of, styles_of=styles_of)
                 if request
-                else _received(self.wire, self._schemas, use, use.schema)
+                else self._received(use, use.schema)
             )
             if members is None:
                 encoded = tuple(styles_of.values())
@@ -646,7 +754,7 @@ class Planner:
                     )
                 )
         parts, additional_part = (
-            _part_plans(self.wire, use) if kind == "multipart" and not request and members is None else ((), None)
+            self._part_plans(use) if kind == "multipart" and not request and members is None else ((), None)
         )
         return MediaSpec(
             media_type=media_type,
@@ -673,7 +781,8 @@ class Planner:
         A style, explode, or allowReserved leaves the contentType ignored, and only a member holding no files takes it.
         Only a declared header with a schema is returned; a body sent whole cannot carry a required one.
         """
-        members = {} if use is None else {name: member for name, member, _ in _members(use)}
+        declared = dict(_parts(use).members)
+        members = {} if use is None else {name: declared[name] for name, _, _ in _members(use)}
         media_of: dict[str, tuple[str, ...]] = {}
         headers_of: dict[str, tuple[HeaderSpec, ...]] = {}
         for encoding in (child for child in declaration.children if child.kind == "encoding"):
@@ -685,7 +794,7 @@ class Planner:
             match _content_types(encoding):
                 case _ if name not in members:
                     self.problems.append(_problem("E_METADATA_REQUIRED", f"{label} names no member", encoding.use_site))
-                case _ if styled and _file(self.wire, members[name]):
+                case _ if styled and members[name].file:
                     message = f"{label} gives a style to a member holding files"
                     self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
                 case _ if styled:
@@ -697,11 +806,10 @@ class Planner:
                 case ():
                     pass
                 case (single,) if not media_range(single) and (
-                    media_kind(single) == "json"
-                    or (media_kind(single) == "text" and not _structured(self.wire, members[name]))
+                    media_kind(single) == "json" or (media_kind(single) == "text" and not members[name].structured)
                 ):
                     media_of[name] = (single,)
-                case types if _file(self.wire, members[name]):
+                case types if members[name].file:
                     media_of[name] = types
                 case _:
                     message = f"{label} has no builtin encoding for a member holding no files"
@@ -718,22 +826,139 @@ class Planner:
             and (plan := self.header_plans.get(use.id)) is not None
         )
 
-    def unsupported(self, kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:
-        """Return why a media type cannot be sent or read yet, or None when it can.
+    def _extra_use(self, body: TypeUseBinding, extra: SchemaSite) -> TypeUseBinding | None:
+        """Return the use the other properties of a body are read or sent by, when their schema is bound."""
+        return schema_use(self._schemas, extra.location, body.id.direction, extra.target)
 
-        Multipart without a schema is sent as form-data parts and read as bytes of any multipart media; with a
-        schema, only form-data maps its parts to the schema's members, which must be an object's.
+    def _sent(
+        self,
+        use: TypeUseBinding,
+        site: SourceLocation,
+        *,
+        media_of: Mapping[str, tuple[str, ...]],
+        styles_of: Mapping[str, ParameterPlan],
+    ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
+        """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
+
+        A member holding no files takes values of its field's type, which the part's own type use validates, and a
+        styled member writes the parts its style gives rather than one for each item.
         """
-        if kind != "multipart":
-            return None
-        if use is None or use.schema is None:
-            return None if essence == _FORM_DATA or not request else "is not supported yet"
-        if essence != _FORM_DATA:
-            return "is not supported yet"
-        _, schema = self.wire.schema(use.schema)
-        return (
-            None if _types(schema) - _NULL in {frozenset(), _OBJECT} else "needs an object schema to be sent as parts"
+        parts = _parts(use)
+        declared_extra = parts.extra
+        additional: PartSpec | None = PartSpec(plan=PartPlan(""))
+        if declared_extra == "closed":
+            additional = None
+        elif isinstance(declared_extra, PartSchema) and declared_extra.file:
+            additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated), file=True)
+        elif (
+            isinstance(declared_extra, PartSchema)
+            and (typed := self._extra_use(use, extra := _site(declared_extra, site))) is not None
+        ):
+            additional = PartSpec(
+                plan=PartPlan("", repeated=declared_extra.repeated), use=_part_use(use, extra.location, None, typed)
+            )
+        declared = dict(parts.members)
+        members = _members(use)
+        if not any(declared[name].file for name, _, _ in members) and (additional is None or not additional.file):
+            return None, None
+        specs: list[PartSpec] = []
+        for name, member, facts in members:
+            part = declared[name]
+            specs.append(
+                PartSpec(
+                    plan=PartPlan(
+                        name,
+                        repeated=name not in styles_of and part.repeated,
+                        content_types=media_of.get(name, ()),
+                        style=styles_of.get(name),
+                    ),
+                    use=None
+                    if part.file
+                    else _part_use(use, member, name, TypeUseBinding(use.id, "bound", facts.type, None)),
+                    file=part.file,
+                )
+            )
+        return tuple(specs), additional
+
+    def _received(
+        self, use: TypeUseBinding, site: SourceLocation
+    ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
+        """Return the member plans of a form-data response with file parts, or None when its object is read whole.
+
+        A part holding no file is read by the type use of its schema, or of its items' schema when its member repeats;
+        a part of an untyped extra keeps its bytes, as a file part does.
+        """
+        parts = _parts(use)
+        declared = dict(parts.members)
+        members = _members(use)
+        declared_extra = parts.extra
+        if not any(declared[name].file for name, _, _ in members) and not (
+            isinstance(declared_extra, PartSchema) and declared_extra.file
+        ):
+            return None, None
+        additional: PartSpec | None = PartSpec(plan=PartPlan("", repeated=True), file=True)
+        if declared_extra == "closed":
+            additional = None
+        elif isinstance(declared_extra, PartSchema):
+            additional = self._read(use, "", _site(declared_extra, site).location, declared_extra, required=False)
+        return tuple(
+            self._read(
+                use,
+                name,
+                member,
+                declared[name],
+                required=facts.required and not facts.write_only,
+                excluded=facts.write_only,
+            )
+            for name, member, facts in members
+        ), additional
+
+    def _read(  # noqa: PLR0913
+        self,
+        body: TypeUseBinding,
+        name: str,
+        location: SourceLocation,
+        part: PartSchema,
+        *,
+        required: bool,
+        excluded: bool = False,
+    ) -> PartSpec:
+        """Return how a member's parts are read: a file's as bytes, any other in its kind by its or its items' use."""
+        if part.file:
+            return PartSpec(
+                plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
+            )
+        plan = self._part_plan(name, location, part)
+        read = _site(part, location, items=plan.repeated)
+        bound = schema_use(self._schemas, read.location, body.id.direction, read.target) or TypeUseBinding(
+            body.id, "not_generated", None, None
         )
+        return PartSpec(
+            plan=plan, use=_part_use(body, read.location, name or None, bound), required=required, excluded=excluded
+        )
+
+    def _part_plans(self, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
+        """Return how the parts of a multipart response are read: each member's kind, then any other part's."""
+        if use is None or use.schema is None:
+            return (), None
+        parts = _parts(use)
+        declared = dict(parts.members)
+        plans = tuple(
+            self._part_plan(member.wire_name, member.schema, declared[member.wire_name])
+            for member in use.members
+            if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
+        )
+        if (declared_extra := parts.extra) == "closed":
+            return plans, None
+        if isinstance(declared_extra, PartSchema):
+            return plans, self._part_plan("", _site(declared_extra, use.schema).location, declared_extra)
+        return plans, PartPlan("")
+
+    def _part_plan(self, name: str, location: SourceLocation, part: PartSchema) -> PartPlan:
+        """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
+        steps = ("items",) if part.repeated else ()
+        kind: PartKind = (self.wire.kinds.at((location, steps)) if part.text else None) or "json"
+        return PartPlan(name, kind, repeated=part.repeated)
 
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None
@@ -870,42 +1095,58 @@ class Planner:
         for namespace in members:
             if "." in namespace:
                 children[namespace.rpartition(".")[0]].append(namespace)
-        resources = tuple(
-            ResourceSpec(namespace=namespace, operations=tuple(operations), children=tuple(children[namespace]))
+        folded: dict[str, list[str]] = {}
+        for namespace in members:
+            folded.setdefault(namespace.casefold(), []).append(namespace)
+        self.problems.extend(
+            _problem(
+                "E_NAME_COLLISION",
+                f"The resource namespaces {', '.join(map(repr, spellings))} differ only by case, which their "
+                "directories cannot; name them explicitly",
+            )
+            for spellings in folded.values()
+            if len(spellings) > 1
+        )
+        return tuple(
+            ResourceSpec(
+                namespace=namespace,
+                operations=tuple(operations),
+                children=tuple(children[namespace]),
+                pascal="".join(self.names.pascal(part) for part in namespace.split(".")),
+            )
             for namespace, operations in members.items()
         )
-        for resource in resources:
-            self.check_names(resource)
-        return resources
-
-    def check_names(self, resource: ResourceSpec) -> None:
-        """Reject methods that take one name twice, a child resource's name, or one PascalCase type name twice."""
-        taken = [spec.name for spec in resource.operations]
-        taken.extend(child.rpartition(".")[2] for child in resource.children)
-        self.problems.extend(
-            _problem("E_NAME_COLLISION", f"The resource {resource.namespace!r} takes the name {name!r} twice")
-            for name, count in sorted(Counter(taken).items())
-            if count > 1
-        )
-        self.problems.extend(
-            _problem("E_NAME_COLLISION", f"Several methods of the resource {resource.namespace!r} become {name!r}")
-            for name, count in sorted(Counter(spec.pascal for spec in resource.operations).items())
-            if count > 1
-        )
 
 
-def _default(wire: WirePlan, use: TypeUseBinding | None, argument: FinalPythonType | None) -> LiteralScalar | None:
+def _declared_by(declaration: WireDeclaration, operation: OperationContract) -> bool:
+    """Return whether the document that names an operation's path item declares one of its declarations."""
+    return declaration.declaration.location.document == operation.id.use_site.document
+
+
+def _local(operation: OperationContract) -> bool:
+    """Return whether the document that names the operation's path item declares the operation itself."""
+    return operation.declaration.location.document == operation.id.use_site.document
+
+
+def _parts_of(namespace: str) -> list[str]:
+    return namespace.split(".")
+
+
+def _default(use: TypeUseBinding | None, argument: TypeView | None) -> LiteralScalar | None:
     """Return the default the schema of a builtin scalar argument, or one or None, declares when it is of its type."""
-    if argument is None or use is None or use.schema is None:
+    if argument is None or use is None:
         return None
     present = (
         tuple(member for member in argument.members if not isinstance(member, NoneType))
         if isinstance(argument, UnionType)
         else (argument,)
     )
-    if len(present) != 1 or not isinstance(scalar := static_scalar(present[0]), BuiltinType):
+    if len(present) != 1:
         return None
-    literal = wire.default(use.schema)
+    scalar = present[0].base if isinstance(present[0], ConstructorType) else present[0]
+    if not isinstance(scalar, BuiltinType):
+        return None
+    literal = use.default
     return literal if literal is not None and literal.kind in _DEFAULTS.get(scalar.name, ()) else None
 
 
@@ -945,13 +1186,24 @@ def media_range(media_type: str) -> bool:
     return "*" in media_type.partition(";")[0]
 
 
-def _file(wire: WirePlan, location: SourceLocation) -> bool:
-    """Return whether a property holds binary files: a binary string, or an array of them."""
-    _, schema = wire.schema(location)
-    if _types(schema) - _NULL == _ARRAY:
-        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
-    binary = schema.get("format") == "binary" or ("contentMediaType" in schema and "contentEncoding" not in schema)
-    return _types(schema) - _NULL == _STRING and binary
+def _unsupported(kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:
+    """Return why a media type cannot be sent or read yet, or None when it can.
+
+    Multipart without a schema is sent as form-data parts and read as bytes of any multipart media; with a
+    schema, only form-data maps its parts to the schema's members, which must be an object's.
+    """
+    if kind != "multipart":
+        return None
+    if use is None or use.schema is None:
+        return None if essence == _FORM_DATA or not request else "is not supported yet"
+    if essence != _FORM_DATA:
+        return "is not supported yet"
+    return None if _parts(use).object else "needs an object schema to be sent as parts"
+
+
+def _parts(use: TypeUseBinding | None) -> PartFacts:
+    """Return what the schema of a multipart body or response says of its parts, nothing for one without a schema."""
+    return _UNDECLARED if use is None or use.parts is None else use.parts
 
 
 def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldFacts]]:
@@ -991,129 +1243,10 @@ def schema_use(
     )
 
 
-def _extra(location: SourceLocation) -> SourceLocation:
-    return SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
-
-
-def _sent(  # noqa: PLR0913
-    wire: WirePlan,
-    schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
-    use: TypeUseBinding,
-    site: SourceLocation,
-    *,
-    media_of: Mapping[str, tuple[str, ...]],
-    styles_of: Mapping[str, ParameterPlan],
-) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
-    """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
-
-    A member holding no files takes values of its field's type, which the part's own type use validates, and a styled
-    member writes the parts its style gives rather than one for each item.
-    """
-    location, schema = wire.schema(site)
-    members = _members(use)
-    extra = _extra(location)
-    match schema.get("additionalProperties", True):
-        case False:
-            additional = None
-        case Mapping() as declared if declared and _file(wire, extra):
-            additional = PartSpec(plan=PartPlan("", repeated=_array(wire, extra), file=True))
-        case Mapping() as declared if declared and (
-            typed := schema_use(schemas, extra, use.id.direction, wire.schema(extra)[0])
-        ):
-            additional = PartSpec(
-                plan=PartPlan("", repeated=_array(wire, extra)),
-                use=_part_use(use, extra, None, typed),
-            )
-        case _:
-            additional = PartSpec(plan=PartPlan(""))
-    files = {name for name, member, _ in members if _file(wire, member)}
-    if not files and (additional is None or not additional.plan.file):
-        return None, None
-    return tuple(
-        PartSpec(
-            plan=PartPlan(
-                name,
-                repeated=name not in styles_of and _array(wire, member),
-                file=name in files,
-                required=facts.required and not facts.read_only,
-                excluded=facts.read_only,
-                content_types=media_of.get(name, ()),
-                style=styles_of.get(name),
-            ),
-            use=None
-            if name in files
-            else _part_use(use, member, name, TypeUseBinding(use.id, "bound", facts.type, None)),
-        )
-        for name, member, facts in members
-    ), additional
-
-
-def _received(
-    wire: WirePlan,
-    schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
-    use: TypeUseBinding,
-    site: SourceLocation,
-) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
-    """Return the member plans of a form-data response with file parts, or None when its object is read whole.
-
-    A part holding no file is read by the type use of its schema, or of its items' schema when its member repeats; a
-    part of an untyped extra keeps its bytes, as a file part does.
-    """
-    location, schema = wire.schema(site)
-    members = _members(use)
-    extra = _extra(location)
-    declared = schema.get("additionalProperties", True)
-    typed = isinstance(declared, Mapping) and bool(declared)
-    files = {name for name, member, _ in members if _file(wire, member)}
-    file_extra = typed and _file(wire, extra)
-    if not files and not file_extra:
-        return None, None
-    match declared:
-        case False:
-            additional = None
-        case _ if typed:
-            additional = _read(wire, schemas, use, "", extra, file=file_extra, required=False)
-        case _:
-            additional = PartSpec(plan=PartPlan("", repeated=True, file=True))
-    return tuple(
-        _read(
-            wire,
-            schemas,
-            use,
-            name,
-            member,
-            file=name in files,
-            required=facts.required and not facts.write_only,
-            excluded=facts.write_only,
-        )
-        for name, member, facts in members
-    ), additional
-
-
-def _read(  # noqa: PLR0913
-    wire: WirePlan,
-    schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
-    body: TypeUseBinding,
-    name: str,
-    location: SourceLocation,
-    *,
-    file: bool,
-    required: bool,
-    excluded: bool = False,
-) -> PartSpec:
-    """Return how a member's parts are read: a file's as bytes, any other in its kind by its own or its items' use."""
-    if file:
-        return PartSpec(
-            plan=PartPlan(name, repeated=_array(wire, location), file=True, required=required, excluded=excluded)
-        )
-    plan = _part_plan(wire, name, location, required=required, excluded=excluded)
-    if plan.repeated:
-        resolved, _ = wire.schema(location)
-        location = SourceLocation(resolved.document, f"{resolved.pointer}/items", "schema")
-    bound = schema_use(schemas, location, body.id.direction, wire.schema(location)[0]) or TypeUseBinding(
-        body.id, "not_generated", None, None
-    )
-    return PartSpec(plan=plan, use=_part_use(body, location, name or None, bound))
+def _site(part: PartSchema, location: SourceLocation, *, items: bool = False) -> SchemaSite:
+    """Return where a part's values are read: its schema's site, or its items' when it repeats, as recorded."""
+    found = part.items if items else part.own
+    return SchemaSite(location, location) if found is None else found
 
 
 def _part_use(
@@ -1127,63 +1260,6 @@ def _part_use(
         reason=bound.reason,
         schema=location,
     )
-
-
-def _array(wire: WirePlan, location: SourceLocation) -> bool:
-    """Return whether a member is an array, whose items are parts of their own."""
-    return _types(wire.schema(location)[1]) - _NULL == _ARRAY
-
-
-def _part_plans(wire: WirePlan, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
-    """Return how the parts of a form-data response are read: each member's kind, then any other part's."""
-    if use is None or use.schema is None:
-        return (), None
-    location, schema = wire.schema(use.schema)
-    parts = tuple(
-        _part_plan(wire, member.wire_name, member.schema)
-        for member in use.members
-        if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
-    )
-    match schema.get("additionalProperties", True):
-        case False:
-            return parts, None
-        case Mapping() as extra if extra:
-            extra_location = SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
-            return parts, _part_plan(wire, "", extra_location)
-        case _:
-            pass
-    return parts, PartPlan("")
-
-
-def _part_plan(
-    wire: WirePlan, name: str, location: SourceLocation, *, required: bool = False, excluded: bool = False
-) -> PartPlan:
-    """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
-    _, schema = wire.schema(location)
-    if repeated := _types(schema) - _NULL == _ARRAY:
-        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
-    kind = _PART_KINDS.get(tuple(sorted(_types(schema) - _NULL)), "json")
-    return PartPlan(name, kind, repeated=repeated, required=required, excluded=excluded)
-
-
-def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:
-    """Return the JSON types a schema declares, none when it declares none."""
-    match declared := schema.get("type"):
-        case str():
-            return frozenset({declared})
-        case tuple():
-            return frozenset(str(item) for item in declared)
-        case _:
-            pass
-    return frozenset()
-
-
-def _structured(wire: WirePlan, location: SourceLocation) -> bool:
-    """Return whether a member holds objects or arrays, directly or as the items of an array, which text cannot."""
-    _, schema = wire.schema(location)
-    if _types(schema) - _NULL == _ARRAY:
-        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
-    return bool(_types(schema) & {"object", "array"})
 
 
 def _content_types(encoding: WireDeclaration) -> tuple[str, ...] | None:
