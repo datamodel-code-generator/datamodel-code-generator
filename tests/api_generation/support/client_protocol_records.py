@@ -16,7 +16,6 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._api_generation import generate_target
 from datamodel_code_generator._api_types import OperationRef, SchemaRef
 from datamodel_code_generator._client.config import (
-    BodyFieldName,
     ClientGenerationConfig,
     ClientOperationConfig,
     IdempotencyMetadata,
@@ -463,10 +462,6 @@ def _operation(value: dict[str, Any]) -> ClientOperationConfig:
     if isinstance(names := value.get("parameter_names"), list):
         converted["parameter_names"] = tuple(
             ParameterName(**item) if isinstance(item, dict) else item for item in names
-        )
-    if isinstance(body_fields := value.get("body_field_names"), list):
-        converted["body_field_names"] = tuple(
-            BodyFieldName(**item) if isinstance(item, dict) else item for item in body_fields
         )
     if isinstance(runtime := value.get("runtime"), dict):
         statuses = runtime.get("success_statuses", ())
