@@ -815,6 +815,8 @@ def _sorted_validation_errors(text: str) -> str:
             parts.extend((text[position : header.end()], "\n".join(sorted(errors))))
             position = end - 1
     return "".join((*parts, text[position:]))
+
+
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "allowreserved-path-30": ("allowreserved-path-30", BACKENDS, reserved_paths),
     "allowreserved-path-31": ("allowreserved-path-31", BACKENDS, reserved_paths),
