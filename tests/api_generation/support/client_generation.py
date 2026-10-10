@@ -16,7 +16,11 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
-from tests.api_generation.support.client_protocol_records import coordinated, coordinator_generate
+from tests.api_generation.support.client_protocol_records import (
+    client_records_report,
+    coordinated,
+    coordinator_generate,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -344,6 +348,50 @@ def client_render(case_name: str, root: Path, *, builtin_sources: bool = False) 
         if modules and (kept := selected[backend] if isinstance(selected, dict) else selected):
             rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
+
+
+def _configured(options: Mapping[str, Any], root: Path) -> list[str]:
+    """Generate the pets client with client option values, listing the files written or the refusal."""
+    source = _prepare_input({"input": "pets.yaml"}, root)
+    before = _files(root)
+    try:
+        generate(
+            source,
+            config=model_config(
+                root / "models.py",
+                "pydantic_v2.BaseModel",
+                {
+                    **client_options({}, root, PACKAGE, "models"),
+                    **{f"client_{key}": value for key, value in options.items()},
+                },
+            ),
+        )
+    except Error as error:
+        return [f"  Error: {error}"]
+    return [
+        f"  {path.as_posix()}"
+        for path in sorted(_outputs(root, before), key=Path.as_posix)
+        if "_runtime" not in path.parts
+    ]
+
+
+def client_config_report(case_name: str, root: Path) -> str:
+    """Generate a client with one case's client option values, then build the settings only Python records hold.
+
+    The options run through generate() and report the files written or the refusal; the records report the settings
+    the coordinator builds from them or its diagnostics.
+    """
+    case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
+    lines: list[str] = []
+    if "options" in case:
+        lines.extend(("generate()", *_configured(case["options"], root / "generate")))
+    if "records" in case:
+        (records := root / "records").mkdir(parents=True)
+        lines.extend((
+            "records",
+            *(f"  {line}" for line in client_records_report(case["records"], records).splitlines()),
+        ))
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
 
 
 def client_cli_arguments(pyproject: Path) -> list[str]:

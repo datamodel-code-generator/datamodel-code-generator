@@ -1,1 +1,4 @@
-Error: --client-resource-names must be a tuple of ResourceName records; --client-operations must be a tuple of ClientOperationConfig records; --client-signature-style must be 'explicit' or 'unpack'; --client-body-arguments must be 'body' or 'both'; --client-default-base-url must be an absolute http or https URL without userinfo, query, or fragment; --client-server-base-url must be an absolute http or https URL without userinfo, query, or fragment
+generate()
+  Error: --client-default-base-url must be an absolute http or https URL without userinfo, query, or fragment
+records
+  Error: --client-resource-names must be a tuple of ResourceName records; --client-operations must be a tuple of ClientOperationConfig records; --client-signature-style must be 'explicit' or 'unpack'; --client-body-arguments must be 'body' or 'both'; --client-server-base-url must be an absolute http or https URL without userinfo, query, or fragment

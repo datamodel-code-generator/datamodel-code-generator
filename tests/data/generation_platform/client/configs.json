@@ -1,424 +1,442 @@
 {
-  "defaults": {},
+  "defaults": {
+    "options": {}
+  },
   "values": {
-    "transport": "httpx2",
-    "resource_names": [
-      {
-        "tag": "pets",
-        "namespace": "store.pets"
-      }
-    ],
-    "operations": [
-      {
-        "ref": {
-          "pointer": "/paths/~1pets/get"
-        },
-        "resource": "store",
-        "name": "list_all",
-        "parameter_names": [
-          {
-            "in_": "query",
-            "name": "limit",
-            "python_name": "page_size"
-          }
-        ],
-        "request_media_type": "application/json",
-        "response_media_type": "application/json",
-        "runtime": {
-          "request_id_header": "X-Request-Id",
-          "success_statuses": [
-            302,
-            304
-          ]
-        },
-        "description": "List them."
-      }
-    ],
-    "default_base_url": "https://api.example.com/v1",
-    "server_base_url": "http://localhost:8080",
-    "signature_style": "unpack"
+    "options": {
+      "resource_names": {
+        "pets": "store.pets"
+      },
+      "operations": {
+        "/paths/~1pets/get": {
+          "resource": "store",
+          "name": "list_all",
+          "parameter_names": {
+            "query:limit": "page_size"
+          },
+          "response_media_type": "application/json",
+          "runtime": {
+            "request_id_header": "X-Request-Id",
+            "success_statuses": [
+              302,
+              304
+            ]
+          },
+          "description": "List them."
+        }
+      },
+      "default_base_url": "https://api.example.com/v1",
+      "server_base_url": "http://localhost:8080",
+      "signature_style": "unpack"
+    }
   },
   "invalid-values": {
-    "transport": "httpx",
-    "resource_names": [
-      {
-        "tag": 1,
-        "namespace": "pets"
+    "options": {
+      "resource_names": {
+        "pets": "store.close"
       },
-      {
-        "tag": "pets",
-        "namespace": "Pets"
+      "operations": {
+        "/paths/~1pets/get": {
+          "resource": "store.",
+          "name": "List",
+          "parameter_names": {
+            "query:limit": "not an identifier"
+          },
+          "request_media_type": "json",
+          "response_media_type": 5,
+          "runtime": {
+            "request_id_header": "X Request",
+            "success_statuses": [
+              200,
+              true,
+              301,
+              301
+            ]
+          },
+          "description": 5
+        }
       },
-      {
-        "tag": "pets",
-        "namespace": "store.close"
-      }
-    ],
-    "operations": [
-      {
-        "ref": 5,
-        "resource": "store.",
-        "name": "List",
-        "parameter_names": [
-          {
-            "in_": "body",
-            "name": "limit",
-            "python_name": "limit"
-          },
-          {
-            "in_": "query",
-            "name": "limit",
-            "python_name": "a"
-          },
-          {
-            "in_": "query",
-            "name": "limit",
-            "python_name": "b"
-          },
-          {
-            "in_": [],
-            "name": "limit",
-            "python_name": "c"
-          }
-        ],
-        "request_media_type": "json",
-        "response_media_type": 5,
-        "runtime": {
-          "request_id_header": "X Request",
-          "success_statuses": [
-            200,
-            true,
-            301,
-            301
+      "default_base_url": "ftp://example.com",
+      "server_base_url": "https://user@example.com:0/"
+    },
+    "records": {
+      "transport": "httpx",
+      "resource_names": [
+        {
+          "tag": 1,
+          "namespace": "pets"
+        },
+        {
+          "tag": "pets",
+          "namespace": "store"
+        },
+        {
+          "tag": "pets",
+          "namespace": "store"
+        }
+      ],
+      "operations": [
+        {
+          "ref": 5,
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "limit",
+              "python_name": "a"
+            },
+            {
+              "in_": "query",
+              "name": "limit",
+              "python_name": "b"
+            }
           ]
         },
-        "description": 5
-      },
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": "fast"
-      }
-    ],
-    "default_base_url": "ftp://example.com",
-    "server_base_url": "https://user@example.com:0/",
-    "signature_style": "Unpack"
+        {
+          "ref": "/paths/~1pets/get",
+          "runtime": "fast"
+        }
+      ],
+      "signature_style": "Unpack"
+    }
   },
   "invalid-urls": {
-    "default_base_url": "https://example.com/v1?key=1",
-    "server_base_url": "https://example.com/v1#top"
+    "options": {
+      "default_base_url": "https://example.com/v1?key=1",
+      "server_base_url": "https://example.com/v1#top"
+    }
   },
   "invalid-shapes": {
-    "resource_names": "pets",
-    "operations": "all",
-    "default_base_url": "https://[invalid",
-    "server_base_url": 5,
-    "signature_style": [],
-    "body_arguments": {}
+    "options": {
+      "default_base_url": "https://[invalid"
+    },
+    "records": {
+      "resource_names": "pets",
+      "operations": "all",
+      "server_base_url": 5,
+      "signature_style": [],
+      "body_arguments": {}
+    }
   },
   "invalid-parameter-names": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/get",
-        "parameter_names": "limit"
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "parameter_names": "limit"
+        }
       }
-    ]
+    },
+    "records": {
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": "limit"
+        }
+      ]
+    }
   },
   "body-fields": {
-    "body_arguments": "both",
-    "operations": [
-      {
-        "ref": "/paths/~1pets~1{petId}/put",
-        "body_arguments": "body"
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "body_field_names": [
-          {
-            "media_type": "application/json",
-            "name": "tag",
-            "python_name": "pet_tag"
+    "options": {
+      "body_arguments": "both",
+      "operations": {
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "body_arguments": "body"
+        },
+        "/paths/~1pets/post": {
+          "body_field_names": {
+            "application/json": {
+              "tag": "pet_tag"
+            }
           }
-        ]
+        }
       }
-    ]
+    }
   },
   "body-fields-invalid": {
-    "body_arguments": "all",
-    "operations": [
-      {
-        "ref": "/paths/~1pets/get",
-        "body_arguments": "fields",
-        "body_field_names": "tag"
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "body_arguments": []
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "body_arguments": "fields"
+        },
+        "/paths/~1pets/post": {
+          "body_arguments": []
+        }
       }
-    ]
+    },
+    "records": {
+      "body_arguments": "all",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "body_field_names": "tag"
+        }
+      ]
+    }
   },
   "body-field-names-invalid": {
-    "body_arguments": "both",
-    "operations": [
-      {
-        "ref": "/paths/~1pets/post",
-        "body_arguments": "body",
-        "body_field_names": [
-          {
-            "media_type": "application/json",
-            "name": "tag",
-            "python_name": "pet_tag"
+    "options": {
+      "body_arguments": "both",
+      "operations": {
+        "/paths/~1pets/post": {
+          "body_arguments": "body",
+          "body_field_names": {
+            "application/json": {
+              "tag": "pet_tag"
+            }
           }
-        ]
-      },
-      {
-        "ref": "/paths/~1pets/put",
-        "body_field_names": [
-          {
-            "media_type": "json",
-            "name": "",
-            "python_name": "Tag"
-          },
-          {
-            "media_type": "application/json",
-            "name": "tag",
-            "python_name": "pet_tag"
-          },
-          {
-            "media_type": "Application/JSON",
-            "name": "tag",
-            "python_name": "label"
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "body_field_names": {
+            "json": {
+              "": "Tag"
+            },
+            "application/json": {
+              "tag": "pet_tag"
+            },
+            "Application/JSON": {
+              "tag": "label"
+            }
           }
-        ]
+        }
       }
-    ]
+    }
   },
   "retry-values": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "retry_safety": "method_default",
-          "idempotency": {
-            "header_name": "Idempotency-Key"
-          },
-          "retry_after_ms_header": "X-Retry-In-Ms",
-          "should_retry_header": "X-Retry-Permitted"
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "retry_safety": "idempotent",
-          "idempotency": {
-            "header_name": "Idempotency-Key"
-          },
-          "retry_after_ms_header": "X-Retry-In-Ms",
-          "should_retry_header": "X-Retry-Permitted"
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "retry_safety": "never",
-          "idempotency": {
-            "header_name": "Idempotency-Key"
-          },
-          "retry_after_ms_header": "X-Retry-In-Ms",
-          "should_retry_header": "X-Retry-Permitted"
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "retry_safety": "method_default",
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            },
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "runtime": {
+            "retry_safety": "idempotent",
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            },
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        "/paths/~1pets~1{petId}~1files/post": {
+          "runtime": {
+            "retry_safety": "never",
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            },
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
         }
       }
-    ]
+    }
   },
   "retry-invalid": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "retry_safety": null
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "retry_safety": "safe"
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "idempotency": "header"
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "retry_after_ms_header": ""
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "should_retry_header": "bad name"
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "idempotency": {
-            "header_name": "bad name"
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "retry_safety": null
+          }
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "runtime": {
+            "retry_safety": "safe"
+          }
+        },
+        "/paths/~1pets~1{petId}~1files/post": {
+          "runtime": {
+            "retry_after_ms_header": ""
+          }
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "runtime": {
+            "should_retry_header": "bad name"
+          }
+        },
+        "/paths/~1pets/get": {
+          "runtime": {
+            "idempotency": {
+              "header_name": "bad name"
+            }
           }
         }
       }
-    ]
+    },
+    "records": {
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "runtime": {
+            "idempotency": "header"
+          }
+        }
+      ]
+    }
   },
   "retry-conflicting-controls": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "retry_after_ms_header": "X-Retry",
-          "should_retry_header": "x-retry"
-        }
-      }
-    ]
-  },
-  "retry-unknown-field": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "idempotency": {
-            "header_name": "Idempotency-Key",
-            "secret": "not-permitted"
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "retry_after_ms_header": "X-Retry",
+            "should_retry_header": "x-retry"
           }
         }
       }
-    ]
+    }
+  },
+  "retry-unknown-field": {
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "secret": "not-permitted"
+            }
+          }
+        }
+      }
+    }
   },
   "auth-values": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "auth_challenge_less_401": false
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "auth_challenge_less_401": true
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "runtime": {
+            "auth_challenge_less_401": false
+          }
+        },
+        "/paths/~1pets/post": {
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
         }
       }
-    ]
+    }
   },
   "auth-invalid": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "auth_challenge_less_401": null
-        }
-      },
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "auth_challenge_less_401": 1
-        }
-      },
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "auth_challenge_less_401": "yes"
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "runtime": {
+            "auth_challenge_less_401": null
+          }
+        },
+        "/paths/~1pets~1{petId}/get": {
+          "runtime": {
+            "auth_challenge_less_401": 1
+          }
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "runtime": {
+            "auth_challenge_less_401": "yes"
+          }
         }
       }
-    ]
+    }
   },
   "auth-unknown": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/get",
-        "runtime": {
-          "security": []
+    "options": {
+      "operations": {
+        "/paths/~1pets/get": {
+          "runtime": {
+            "security": []
+          }
         }
       }
-    ]
+    }
   },
   "protocols-path": {
-    "protocols": "protocols/disabled.json"
+    "records": {
+      "protocols": "protocols/disabled.json"
+    }
   },
   "protocols-type": {
-    "protocols": {
-      "raw": 5
+    "records": {
+      "protocols": {
+        "raw": 5
+      }
     }
   },
   "protocols-records": {
-    "protocols": {
-      "python": "disabled"
+    "records": {
+      "protocols": {
+        "python": "disabled"
+      }
     }
   },
   "protocols-records-invalid": {
-    "protocols": {
-      "python": "invalid"
+    "records": {
+      "protocols": {
+        "python": "invalid"
+      }
     }
   },
   "protocols-records-shape": {
-    "protocols": {
-      "python": "shape"
+    "records": {
+      "protocols": {
+        "python": "shape"
+      }
     }
   },
   "compression-values": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "accepted_content_encodings": [
-            "GZIP"
-          ]
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "GZIP"
+            ]
+          }
         }
       }
-    ]
+    }
   },
   "compression-invalid": {
-    "operations": [
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "accepted_content_encodings": [
-            "br"
-          ]
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "accepted_content_encodings": [
-            "identity"
-          ]
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "accepted_content_encodings": [
-            "gzip",
-            "GZIP"
-          ]
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "accepted_content_encodings": [
-            "not token"
-          ]
-        }
-      },
-      {
-        "ref": "/paths/~1pets/post",
-        "runtime": {
-          "accepted_content_encodings": "gzip"
+    "options": {
+      "operations": {
+        "/paths/~1pets/post": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "br"
+            ]
+          }
+        },
+        "/paths/~1pets~1{petId}~1photo/put": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "identity"
+            ]
+          }
+        },
+        "/paths/~1pets~1{petId}~1files/post": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip",
+              "GZIP"
+            ]
+          }
+        },
+        "/paths/~1pets/get": {
+          "runtime": {
+            "accepted_content_encodings": [
+              "not token"
+            ]
+          }
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "runtime": {
+            "accepted_content_encodings": "gzip"
+          }
         }
       }
-    ]
+    }
   }
 }
