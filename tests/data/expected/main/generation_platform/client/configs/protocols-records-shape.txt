@@ -1,1 +1,2 @@
-Error: --client-protocols must be a mapping
+records
+  Error: --client-protocols must be a mapping

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import operator
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -236,7 +237,7 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     ):
         record(lines, label, lambda arguments=arguments: summary(harness.protocols.Page(**arguments)))
     record(lines, "page frozen", lambda: setattr(first, "data", None))
-    record(lines, "page equality", lambda: (first == first, first == second, hash(first) == hash(first)))  # noqa: PLR0124
+    record(lines, "page equality", lambda: (operator.eq(first, first), first == second, hash(first) == hash(first)))
 
 
 def _ends(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
