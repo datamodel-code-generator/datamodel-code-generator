@@ -129,6 +129,10 @@ ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
 )
 EXCLUDED_CASES: dict[str, str] = {
+    "jsonschema/number_constraints_on_mapped_formats.json": (
+        "the boolean numeric format needs --type-mappings; "
+        "test_main_number_constraints_on_mapped_formats checks the mapped number bound"
+    ),
     "jsonschema/number_constraints_on_numeric_string_formats.json": (
         "hypothesis-jsonschema generates arbitrary strings for the decimal, integer and unixtime formats; "
         "test_main_number_constraints_on_numeric_string_formats checks their generated number bounds"
