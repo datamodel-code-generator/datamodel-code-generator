@@ -130,7 +130,9 @@ class AsyncDefaultResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (tag,),
@@ -195,7 +197,9 @@ class AsyncDefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_1,
             (petId,),
@@ -248,7 +252,9 @@ class AsyncDefaultResource:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> LogVisitResponse:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return (await self._core.execute(
             _operations.OPERATION_2,
             (petId,),
@@ -266,7 +272,9 @@ class AsyncDefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SetOwnerResponse:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return (await self._core.execute(
             _operations.OPERATION_3,
             (petId,),
@@ -304,7 +312,9 @@ class AsyncDefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreateOwnerResponse:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return (await self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -343,7 +353,9 @@ class AsyncDefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutLabelsResponse:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return (await self._core.execute(
             _operations.OPERATION_5,
             (petId,),
@@ -361,7 +373,9 @@ class AsyncDefaultResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> PutPhotoResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return (await self._core.execute(
             _operations.OPERATION_6,
             (petId,),
@@ -402,7 +416,9 @@ class AsyncDefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplacePetResponse:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return (await self._core.execute(
             _operations.OPERATION_7,
             (petId,),
@@ -499,7 +515,9 @@ class AsyncDefaultWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (tag,),
@@ -564,7 +582,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UpdatePetResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return await self._core.execute(
             _operations.OPERATION_1,
             (petId,),
@@ -617,7 +637,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LogVisitResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return await self._core.execute(
             _operations.OPERATION_2,
             (petId,),
@@ -635,7 +657,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SetOwnerResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return await self._core.execute(
             _operations.OPERATION_3,
             (petId,),
@@ -673,7 +697,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreateOwnerResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return await self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -712,7 +738,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutLabelsResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return await self._core.execute(
             _operations.OPERATION_5,
             (petId,),
@@ -730,7 +758,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PutPhotoResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return await self._core.execute(
             _operations.OPERATION_6,
             (petId,),
@@ -771,7 +801,9 @@ class AsyncDefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplacePetResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return await self._core.execute(
             _operations.OPERATION_7,
             (petId,),
@@ -868,7 +900,9 @@ class AsyncDefaultWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (tag,),
@@ -933,7 +967,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_1,
             (petId,),
@@ -986,7 +1022,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_2,
             (petId,),
@@ -1004,7 +1042,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_3,
             (petId,),
@@ -1042,7 +1082,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -1081,7 +1123,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_5,
             (petId,),
@@ -1099,7 +1143,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_6,
             (petId,),
@@ -1140,7 +1186,9 @@ class AsyncDefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_7,
             (petId,),
@@ -1237,7 +1285,9 @@ class AsyncDefaultWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (tag,),
@@ -1302,7 +1352,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (petId,),
@@ -1355,7 +1407,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets/{petId}/visits."""
+        """
+        Call POST /pets/{petId}/visits.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (petId,),
@@ -1373,7 +1427,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/owner."""
+        """
+        Call PUT /pets/{petId}/owner.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (petId,),
@@ -1411,7 +1467,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /owners."""
+        """
+        Call POST /owners.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),
@@ -1450,7 +1508,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/labels."""
+        """
+        Call PUT /pets/{petId}/labels.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (petId,),
@@ -1468,7 +1528,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (petId,),
@@ -1509,7 +1571,9 @@ class AsyncDefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/records."""
+        """
+        Call PUT /pets/{petId}/records.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (petId,),

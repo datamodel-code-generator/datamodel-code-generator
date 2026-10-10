@@ -26,7 +26,9 @@ from .responses import RawResponse
 if TYPE_CHECKING:
     from .resources.pets._sync import PetsResource
 
-_DEFAULTS = ClientDefaults(bodies=MULTIPART_BODIES)
+_DEFAULTS = ClientDefaults(
+    bodies=MULTIPART_BODIES,
+)
 
 
 class ClientView:

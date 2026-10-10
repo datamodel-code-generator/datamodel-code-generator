@@ -25,7 +25,9 @@ from .responses import AsyncRawResponse
 if TYPE_CHECKING:
     from .resources.retry._async import AsyncRetryResource
 
-_DEFAULTS = ClientDefaults(bodies=BINARY_BODIES)
+_DEFAULTS = ClientDefaults(
+    bodies=BINARY_BODIES,
+)
 
 
 class AsyncClientView:

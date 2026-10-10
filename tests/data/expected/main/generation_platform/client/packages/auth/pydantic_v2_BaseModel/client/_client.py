@@ -140,18 +140,16 @@ class Client(ClientView):
             auth=auth,
             clock=clock,
             http_client=http_client,
-            credentials=SchemeCredentials(
-                {
-                    "bearer": bearer,
-                    "header_key": header_key,
-                    "basic": basic,
-                    "query_key": query_key,
-                    "cookie_key": cookie_key,
-                    "bearer_alias": bearer_alias,
-                    "oauth": oauth,
-                    "openid": openid,
-                },
-            ),
+            credentials=SchemeCredentials({
+                "bearer": bearer,
+                "header_key": header_key,
+                "basic": basic,
+                "query_key": query_key,
+                "cookie_key": cookie_key,
+                "bearer_alias": bearer_alias,
+                "oauth": oauth,
+                "openid": openid,
+            }),
         )
 
     def close(self) -> None:

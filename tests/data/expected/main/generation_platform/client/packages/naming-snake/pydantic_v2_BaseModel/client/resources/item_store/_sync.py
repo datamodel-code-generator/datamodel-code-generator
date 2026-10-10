@@ -57,23 +57,12 @@ class ItemStoreResource:
         item_id_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> GetItemResponse:
-        """Call GET /items/{itemId}."""
+        """
+        Call GET /items/{itemId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (
-                item_id,
-                item_id_1,
-                item_id_2,
-                x_request_id,
-                page_size_,
-                field_2fa,
-                class_,
-                options_1,
-                body_1,
-                self_1,
-                session_id,
-                item_id_1_1,
-            ),
+            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
             options=options,
         ).data
 
@@ -109,7 +98,9 @@ class ItemStoreResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetItem1Response:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (name,),
@@ -144,23 +135,12 @@ class ItemStoreWithResponse:
         item_id_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[GetItemResponse]:
-        """Call GET /items/{itemId}."""
+        """
+        Call GET /items/{itemId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (
-                item_id,
-                item_id_1,
-                item_id_2,
-                x_request_id,
-                page_size_,
-                field_2fa,
-                class_,
-                options_1,
-                body_1,
-                self_1,
-                session_id,
-                item_id_1_1,
-            ),
+            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
             options=options,
         )
 
@@ -196,7 +176,9 @@ class ItemStoreWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetItem1Response]:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (name,),
@@ -231,23 +213,12 @@ class ItemStoreWithRawResponse:
         item_id_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /items/{itemId}."""
+        """
+        Call GET /items/{itemId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (
-                item_id,
-                item_id_1,
-                item_id_2,
-                x_request_id,
-                page_size_,
-                field_2fa,
-                class_,
-                options_1,
-                body_1,
-                self_1,
-                session_id,
-                item_id_1_1,
-            ),
+            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
             options=options,
         )
 
@@ -283,7 +254,9 @@ class ItemStoreWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (name,),
@@ -318,23 +291,12 @@ class ItemStoreWithStreamingResponse:
         item_id_1_1: int | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /items/{itemId}."""
+        """
+        Call GET /items/{itemId}.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
-            (
-                item_id,
-                item_id_1,
-                item_id_2,
-                x_request_id,
-                page_size_,
-                field_2fa,
-                class_,
-                options_1,
-                body_1,
-                self_1,
-                session_id,
-                item_id_1_1,
-            ),
+            (item_id, item_id_1, item_id_2, x_request_id, page_size_, field_2fa, class_, options_1, body_1, self_1, session_id, item_id_1_1),
             options=options,
         )
 
@@ -370,7 +332,9 @@ class ItemStoreWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (name,),

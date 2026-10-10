@@ -32,8 +32,7 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | follow redirects | the native client's: False for an SDK-created client |
 | error body prefix | 64 KiB; response and stream bodies are not capped |
 
-`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait
-sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
 
 ## Retries and replayable input
 
@@ -53,13 +52,9 @@ No operation of this package sends a binary or multipart body, so `request_raw` 
 
 ## Transport
 
-Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content
-decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.  An SDK-created
-client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2
-client passed as `http_client` keeps its own construction and stays caller owned. `auth` of the client, a view, or a
-call's `RequestOptions` takes any `httpx2.Auth`, and `auth=None` sends without one; unset, the HTTP client's own Auth
-applies.
-
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.
+An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, and `auth=None` sends without one; unset, the HTTP client's own Auth applies.
 ## Errors and cleanup
 
 Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's

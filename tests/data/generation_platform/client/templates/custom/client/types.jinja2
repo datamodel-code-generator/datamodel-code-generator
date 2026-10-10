@@ -1,0 +1,40 @@
+{%- macro accessor(headers, name, returns, stub) -%}
+def {{ headers.function }}(
+    info: {{ headers.info }},
+    *,
+    name: {{ name }},
+) -> {{ returns }}:{% if stub %} ...{% endif %}
+{%- endmacro -%}
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+{%- for alias in aliases %}
+
+
+{{ alias.name }}: {{ type_alias }} = {{ alias.value }}
+{{ alias.name | replace("Response", "Result") }}: {{ type_alias }} = {{ alias.name }}
+{%- if alias.headers %}
+
+
+{{ alias.headers.constant }}: {{ alias.headers.annotation }} = {{ alias.headers.decoders }}(
+    {{ alias.headers.operation_id }},
+    {{ alias.headers.statuses }},
+    {{ alias.headers.entries }},
+)
+
+{% for overload in alias.headers.overloads %}
+@{{ overload_decorator }}
+{{ accessor(alias.headers, overload.name, overload.returns, True) }}
+{%- endfor %}
+{{ accessor(alias.headers, alias.headers.name, alias.headers.returns, False) }}
+    """{{ alias.headers.docstring }}"""
+    return {{ alias.headers.constant }}.decode(info, name)
+{%- endif %}
+{%- endfor %}
+{%- for section in sections %}
+
+
+{{ section }}
+{%- endfor %}

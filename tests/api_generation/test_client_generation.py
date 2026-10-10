@@ -133,6 +133,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "sockets",
         "caching",
         "compression",
+        "docstrings",
         "templates",
         "templates-invalid",
         "templates-not-found",
@@ -264,6 +265,7 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("stream-resume", True),
         ("streams", True),
         ("uploads", True),
+        ("webhooks", True),
         ("templates-missing", False),
     ],
 )

@@ -32,8 +32,7 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | follow redirects | the native client's: False for an SDK-created client |
 | error body prefix | 64 KiB; response and stream bodies are not capped |
 
-`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait
-sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
 
 ## Retries and replayable input
 
@@ -49,23 +48,16 @@ operation with a declared key header creates once per call; a header of that nam
 default headers is the call's key instead, which a protocol helper refuses. One call keeps its key, origin, and encoded
 body across attempts.
 
-A binary body is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of `bytes`; async calls also take
-an async file whose `read` is a coroutine function and an async iterable of `bytes`. Bytes and seekable files, paths
-included, are sent with the `Content-Length` measured at call entry and replay from that offset; other inputs are
-chunked, are never buffered, and cannot replay once consumed. Text, `bytearray`, `memoryview`, text-mode or closed
-files, and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable`. The SDK opens a path
-when the body is first sent, reads at most 64 KiB at a time, in a worker thread in async calls, and closes it when the
-call ends; caller files stay open.
+A binary body is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of `bytes`; async calls also take an async file whose `read` is a coroutine function and an async iterable of `bytes`.
+Bytes and seekable files, paths included, are sent with the `Content-Length` measured at call entry and replay from that offset; other inputs are chunked, are never buffered, and cannot replay once consumed.
+Text, `bytearray`, `memoryview`, text-mode or closed files, and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable`.
+The SDK opens a path when the body is first sent, reads at most 64 KiB at a time, in a worker thread in async calls, and closes it when the call ends; caller files stay open.
 
 ## Transport
 
-Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content
-decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.  An SDK-created
-client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2
-client passed as `http_client` keeps its own construction and stays caller owned. `auth` of the client, a view, or a
-call's `RequestOptions` takes any `httpx2.Auth`, and `auth=None` sends without one; unset, the HTTP client's own Auth
-applies.
-
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.
+An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, and `auth=None` sends without one; unset, the HTTP client's own Auth applies.
 ## Errors and cleanup
 
 Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's

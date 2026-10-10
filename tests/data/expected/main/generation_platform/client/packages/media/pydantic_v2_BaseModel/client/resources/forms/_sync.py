@@ -70,7 +70,9 @@ class FormsResource:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitFormResponse:
-        """Call POST /forms."""
+        """
+        Call POST /forms.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -87,7 +89,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitProfileResponse:
-        """Call POST /profiles."""
+        """
+        Call POST /profiles.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -102,7 +106,9 @@ class FormsResource:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadProfileResponse:
-        """Call GET /profiles."""
+        """
+        Call GET /profiles.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -117,7 +123,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAnythingResponse:
-        """Call POST /anything."""
+        """
+        Call POST /anything.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -133,7 +141,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitPartsResponse:
-        """Call POST /attachments."""
+        """
+        Call POST /attachments.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -169,7 +179,9 @@ class FormsResource:
         response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadPartsResponse:
-        """Call GET /attachments."""
+        """
+        Call GET /attachments.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -185,7 +197,9 @@ class FormsResource:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitPairsResponse:
-        """Call POST /pairs."""
+        """
+        Call POST /pairs.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -202,7 +216,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitUploadResponse:
-        """Call POST /uploads."""
+        """
+        Call POST /uploads.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -217,7 +233,9 @@ class FormsResource:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadUploadResponse:
-        """Call GET /uploads."""
+        """
+        Call GET /uploads.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -256,7 +274,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAvatarResponse:
-        """Call POST /avatars."""
+        """
+        Call POST /avatars.
+        """
         return self._core.execute(
             _operations.OPERATION_9,
             (),
@@ -272,7 +292,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitScansResponse:
-        """Call POST /scans."""
+        """
+        Call POST /scans.
+        """
         return self._core.execute(
             _operations.OPERATION_10,
             (),
@@ -288,7 +310,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitPhotosResponse:
-        """Call POST /photos."""
+        """
+        Call POST /photos.
+        """
         return self._core.execute(
             _operations.OPERATION_11,
             (),
@@ -304,7 +328,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitLabelsResponse:
-        """Call POST /labels."""
+        """
+        Call POST /labels.
+        """
         return self._core.execute(
             _operations.OPERATION_12,
             (),
@@ -320,7 +346,9 @@ class FormsResource:
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitSearchResponse:
-        """Call POST /searches."""
+        """
+        Call POST /searches.
+        """
         return self._core.execute(
             _operations.OPERATION_15,
             (),
@@ -336,7 +364,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCoverResponse:
-        """Call POST /covers."""
+        """
+        Call POST /covers.
+        """
         return self._core.execute(
             _operations.OPERATION_16,
             (),
@@ -352,7 +382,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCardResponse:
-        """Call POST /cards."""
+        """
+        Call POST /cards.
+        """
         return self._core.execute(
             _operations.OPERATION_17,
             (),
@@ -368,7 +400,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitStickersResponse:
-        """Call POST /stickers."""
+        """
+        Call POST /stickers.
+        """
         return self._core.execute(
             _operations.OPERATION_18,
             (),
@@ -384,7 +418,9 @@ class FormsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAlbumResponse:
-        """Call POST /albums."""
+        """
+        Call POST /albums.
+        """
         return self._core.execute(
             _operations.OPERATION_19,
             (),
@@ -409,7 +445,9 @@ class FormsWithResponse:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitFormResponse]:
-        """Call POST /forms."""
+        """
+        Call POST /forms.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -426,7 +464,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitProfileResponse]:
-        """Call POST /profiles."""
+        """
+        Call POST /profiles.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -441,7 +481,9 @@ class FormsWithResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadProfileResponse]:
-        """Call GET /profiles."""
+        """
+        Call GET /profiles.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -456,7 +498,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAnythingResponse]:
-        """Call POST /anything."""
+        """
+        Call POST /anything.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -472,7 +516,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitPartsResponse]:
-        """Call POST /attachments."""
+        """
+        Call POST /attachments.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -508,7 +554,9 @@ class FormsWithResponse:
         response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadPartsResponse]:
-        """Call GET /attachments."""
+        """
+        Call GET /attachments.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -524,7 +572,9 @@ class FormsWithResponse:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitPairsResponse]:
-        """Call POST /pairs."""
+        """
+        Call POST /pairs.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -541,7 +591,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitUploadResponse]:
-        """Call POST /uploads."""
+        """
+        Call POST /uploads.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -556,7 +608,9 @@ class FormsWithResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadUploadResponse]:
-        """Call GET /uploads."""
+        """
+        Call GET /uploads.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -595,7 +649,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAvatarResponse]:
-        """Call POST /avatars."""
+        """
+        Call POST /avatars.
+        """
         return self._core.execute(
             _operations.OPERATION_9,
             (),
@@ -611,7 +667,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitScansResponse]:
-        """Call POST /scans."""
+        """
+        Call POST /scans.
+        """
         return self._core.execute(
             _operations.OPERATION_10,
             (),
@@ -627,7 +685,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitPhotosResponse]:
-        """Call POST /photos."""
+        """
+        Call POST /photos.
+        """
         return self._core.execute(
             _operations.OPERATION_11,
             (),
@@ -643,7 +703,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitLabelsResponse]:
-        """Call POST /labels."""
+        """
+        Call POST /labels.
+        """
         return self._core.execute(
             _operations.OPERATION_12,
             (),
@@ -659,7 +721,9 @@ class FormsWithResponse:
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitSearchResponse]:
-        """Call POST /searches."""
+        """
+        Call POST /searches.
+        """
         return self._core.execute(
             _operations.OPERATION_15,
             (),
@@ -675,7 +739,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCoverResponse]:
-        """Call POST /covers."""
+        """
+        Call POST /covers.
+        """
         return self._core.execute(
             _operations.OPERATION_16,
             (),
@@ -691,7 +757,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCardResponse]:
-        """Call POST /cards."""
+        """
+        Call POST /cards.
+        """
         return self._core.execute(
             _operations.OPERATION_17,
             (),
@@ -707,7 +775,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitStickersResponse]:
-        """Call POST /stickers."""
+        """
+        Call POST /stickers.
+        """
         return self._core.execute(
             _operations.OPERATION_18,
             (),
@@ -723,7 +793,9 @@ class FormsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAlbumResponse]:
-        """Call POST /albums."""
+        """
+        Call POST /albums.
+        """
         return self._core.execute(
             _operations.OPERATION_19,
             (),
@@ -748,7 +820,9 @@ class FormsWithRawResponse:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /forms."""
+        """
+        Call POST /forms.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -765,7 +839,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /profiles."""
+        """
+        Call POST /profiles.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -780,7 +856,9 @@ class FormsWithRawResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /profiles."""
+        """
+        Call GET /profiles.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -795,7 +873,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /anything."""
+        """
+        Call POST /anything.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (),
@@ -811,7 +891,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /attachments."""
+        """
+        Call POST /attachments.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -826,7 +908,9 @@ class FormsWithRawResponse:
         response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /attachments."""
+        """
+        Call GET /attachments.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
             (),
@@ -842,7 +926,9 @@ class FormsWithRawResponse:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /pairs."""
+        """
+        Call POST /pairs.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_6,
             (),
@@ -859,7 +945,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /uploads."""
+        """
+        Call POST /uploads.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_7,
             (),
@@ -874,7 +962,9 @@ class FormsWithRawResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /uploads."""
+        """
+        Call GET /uploads.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_8,
             (),
@@ -913,7 +1003,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /avatars."""
+        """
+        Call POST /avatars.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_9,
             (),
@@ -929,7 +1021,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /scans."""
+        """
+        Call POST /scans.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_10,
             (),
@@ -945,7 +1039,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /photos."""
+        """
+        Call POST /photos.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_11,
             (),
@@ -961,7 +1057,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /labels."""
+        """
+        Call POST /labels.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_12,
             (),
@@ -977,7 +1075,9 @@ class FormsWithRawResponse:
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /searches."""
+        """
+        Call POST /searches.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_15,
             (),
@@ -993,7 +1093,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /covers."""
+        """
+        Call POST /covers.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_16,
             (),
@@ -1009,7 +1111,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /cards."""
+        """
+        Call POST /cards.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_17,
             (),
@@ -1025,7 +1129,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /stickers."""
+        """
+        Call POST /stickers.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_18,
             (),
@@ -1041,7 +1147,9 @@ class FormsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /albums."""
+        """
+        Call POST /albums.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_19,
             (),
@@ -1066,7 +1174,9 @@ class FormsWithStreamingResponse:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /forms."""
+        """
+        Call POST /forms.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (),
@@ -1083,7 +1193,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /profiles."""
+        """
+        Call POST /profiles.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -1098,7 +1210,9 @@ class FormsWithStreamingResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /profiles."""
+        """
+        Call GET /profiles.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (),
@@ -1113,7 +1227,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /anything."""
+        """
+        Call POST /anything.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (),
@@ -1129,7 +1245,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /attachments."""
+        """
+        Call POST /attachments.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),
@@ -1144,7 +1262,9 @@ class FormsWithStreamingResponse:
         response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /attachments."""
+        """
+        Call GET /attachments.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (),
@@ -1160,7 +1280,9 @@ class FormsWithStreamingResponse:
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /pairs."""
+        """
+        Call POST /pairs.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (),
@@ -1177,7 +1299,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /uploads."""
+        """
+        Call POST /uploads.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (),
@@ -1192,7 +1316,9 @@ class FormsWithStreamingResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /uploads."""
+        """
+        Call GET /uploads.
+        """
         return self._core.stream(
             _operations.OPERATION_8,
             (),
@@ -1231,7 +1357,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data', 'application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /avatars."""
+        """
+        Call POST /avatars.
+        """
         return self._core.stream(
             _operations.OPERATION_9,
             (),
@@ -1247,7 +1375,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /scans."""
+        """
+        Call POST /scans.
+        """
         return self._core.stream(
             _operations.OPERATION_10,
             (),
@@ -1263,7 +1393,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /photos."""
+        """
+        Call POST /photos.
+        """
         return self._core.stream(
             _operations.OPERATION_11,
             (),
@@ -1279,7 +1411,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /labels."""
+        """
+        Call POST /labels.
+        """
         return self._core.stream(
             _operations.OPERATION_12,
             (),
@@ -1295,7 +1429,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /searches."""
+        """
+        Call POST /searches.
+        """
         return self._core.stream(
             _operations.OPERATION_15,
             (),
@@ -1311,7 +1447,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /covers."""
+        """
+        Call POST /covers.
+        """
         return self._core.stream(
             _operations.OPERATION_16,
             (),
@@ -1327,7 +1465,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /cards."""
+        """
+        Call POST /cards.
+        """
         return self._core.stream(
             _operations.OPERATION_17,
             (),
@@ -1343,7 +1483,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /stickers."""
+        """
+        Call POST /stickers.
+        """
         return self._core.stream(
             _operations.OPERATION_18,
             (),
@@ -1359,7 +1501,9 @@ class FormsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /albums."""
+        """
+        Call POST /albums.
+        """
         return self._core.stream(
             _operations.OPERATION_19,
             (),

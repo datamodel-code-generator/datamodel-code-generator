@@ -47,7 +47,9 @@ class DefaultResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListItemsResponse:
-        """Call GET /items."""
+        """
+        Call GET /items.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (kind,),
@@ -62,7 +64,9 @@ class DefaultResource:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AddItemResponse:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -86,7 +90,9 @@ class DefaultWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListItemsResponse]:
-        """Call GET /items."""
+        """
+        Call GET /items.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (kind,),
@@ -101,7 +107,9 @@ class DefaultWithResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[AddItemResponse]:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -125,7 +133,9 @@ class DefaultWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /items."""
+        """
+        Call GET /items.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (kind,),
@@ -140,7 +150,9 @@ class DefaultWithRawResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -164,7 +176,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /items."""
+        """
+        Call GET /items.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (kind,),
@@ -179,7 +193,9 @@ class DefaultWithStreamingResponse:
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /items."""
+        """
+        Call POST /items.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),

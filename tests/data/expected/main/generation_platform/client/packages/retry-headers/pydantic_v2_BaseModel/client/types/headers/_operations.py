@@ -21,25 +21,7 @@ ParameterResponse: TypeAlias = models.FieldParameterPostResponse
 _PARAMETER_HEADERS: Final[ResponseHeaders[models.FieldParameterPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'parameter',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_2,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_2, missing=optional_header)),)),),
 )
 
 
@@ -58,25 +40,7 @@ ApiKeyResponse: TypeAlias = models.FieldApiKeyPostResponse
 _API_KEY_HEADERS: Final[ResponseHeaders[models.FieldApiKeyPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'api_key',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_4,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_4, missing=optional_header)),)),),
 )
 
 
@@ -95,25 +59,7 @@ BearerResponse: TypeAlias = models.FieldBearerPostResponse
 _BEARER_HEADERS: Final[ResponseHeaders[models.FieldBearerPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'bearer',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_6,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_6, missing=optional_header)),)),),
 )
 
 
@@ -132,25 +78,7 @@ OauthResponse: TypeAlias = models.FieldOauthPostResponse
 _OAUTH_HEADERS: Final[ResponseHeaders[models.FieldOauthPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'oauth',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_8,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_8, missing=optional_header)),)),),
 )
 
 
@@ -169,25 +97,7 @@ OpenidResponse: TypeAlias = models.FieldOpenidPostResponse
 _OPENID_HEADERS: Final[ResponseHeaders[models.FieldOpenidPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'openid',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_10,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_10, missing=optional_header)),)),),
 )
 
 
@@ -206,25 +116,7 @@ CookieResponse: TypeAlias = models.FieldCookiePostResponse
 _COOKIE_HEADERS: Final[ResponseHeaders[models.FieldCookiePostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'cookie',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_12,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_12, missing=optional_header)),)),),
 )
 
 
@@ -243,25 +135,7 @@ QueryResponse: TypeAlias = models.FieldQueryPostResponse
 _QUERY_HEADERS: Final[ResponseHeaders[models.FieldQueryPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'query',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_14,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_14, missing=optional_header)),)),),
 )
 
 
@@ -280,25 +154,7 @@ IgnoredResponse: TypeAlias = models.FieldIgnoredPostResponse
 _IGNORED_HEADERS: Final[ResponseHeaders[models.FieldIgnoredPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'ignored',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_16,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_16, missing=optional_header)),)),),
 )
 
 
@@ -317,25 +173,7 @@ DirectionResponse: TypeAlias = models.FieldDirectionPostResponse
 _DIRECTION_HEADERS: Final[ResponseHeaders[models.FieldDirectionPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'direction',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_19,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_19, missing=optional_header)),)),),
 )
 
 
@@ -354,25 +192,7 @@ UnusedResponse: TypeAlias = models.FieldUnusedPostResponse
 _UNUSED_HEADERS: Final[ResponseHeaders[models.FieldUnusedPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'unused',
     frozenset({'200'}),
-    (
-        (
-            'X-Idempotency',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Idempotency',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_21,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_21, missing=optional_header)),)),),
 )
 
 

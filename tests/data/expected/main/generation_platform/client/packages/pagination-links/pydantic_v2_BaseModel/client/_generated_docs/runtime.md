@@ -32,8 +32,7 @@ Native phase timeouts bound each I/O wait rather than the total duration of a ca
 | follow redirects | the native client's: False for an SDK-created client |
 | error body prefix | 64 KiB; response and stream bodies are not capped |
 
-`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait
-sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
 
 ## Retries and replayable input
 
@@ -53,11 +52,9 @@ No operation of this package sends a binary or multipart body, so `request_raw` 
 
 ## Transport
 
-Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content
-decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call. A request
-carrying a credential at a declared scheme's position other than `Authorization` is never redirected: its 3xx is the
-final response. An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root
-close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.
+A request carrying a credential at a declared scheme's position other than `Authorization` is never redirected: its 3xx is the final response.
+An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
 
 ## Authentication
 
@@ -69,20 +66,16 @@ def authenticated_client(token: str) -> Client:
     return Client(bearer=token)
 ```
 
-`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: `bearer` (bearer token),
-`query_key` (API key). A value is a string, a `(username, password)` tuple for HTTP Basic, or a callable returning one,
-which is called for each request; a bearer argument also takes an OAuth provider. A call sends the credentials of its
-operation's first security alternative they all satisfy, at the positions its schemes declare, and only to its server's
-origin. An anonymous alternative applies only when no other alternative is satisfied, so an optional operation sends a
-credential given for a listed scheme; an operation declaring empty security and `request_raw` send none. A required
-operation no credential satisfies raises `ConfigurationError` with the reason `missing_credentials` before sending,
-unless the HTTP client has an Auth of its own. A callable's failure raises `AuthError` with the reason
-`provider_failed`. Credentials beside the client's `auth` or an Auth of an injected HTTP client raise
-`ConfigurationError` with the reason `conflicting_auth`. `auth` of the client, a view, or a call's `RequestOptions`
-takes any `httpx2.Auth`, which replaces the credentials for its calls, and `auth=None` sends without an Auth; unset, the
-credentials apply, or else the HTTP client's own Auth. Sign requests with an `httpx2.Auth` of your own, which reads the
-body natively. Credential values do not appear in repr; a query credential is part of the request URL, which the
-`httpx2` logger records at INFO level.
+`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: `bearer` (bearer token), `query_key` (API key).
+A value is a string, a `(username, password)` tuple for HTTP Basic, or a callable returning one, which is called for each request; a bearer argument also takes an OAuth provider.
+A call sends the credentials of its operation's first security alternative they all satisfy, at the positions its schemes declare, and only to its server's origin.
+An anonymous alternative applies only when no other alternative is satisfied, so an optional operation sends a credential given for a listed scheme; an operation declaring empty security and `request_raw` send none.
+A required operation no credential satisfies raises `ConfigurationError` with the reason `missing_credentials` before sending, unless the HTTP client has an Auth of its own.
+A callable's failure raises `AuthError` with the reason `provider_failed`.
+Credentials beside the client's `auth` or an Auth of an injected HTTP client raise `ConfigurationError` with the reason `conflicting_auth`.
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth.
+Sign requests with an `httpx2.Auth` of your own, which reads the body natively.
+Credential values do not appear in repr; a query credential is part of the request URL, which the `httpx2` logger records at INFO level.
 
 ## Errors and cleanup
 

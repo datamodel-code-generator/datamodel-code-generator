@@ -921,11 +921,18 @@ def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_client_job_on_change(tmp_path: Path) -> None:
-    """Regenerate a client job of a watched batch whenever its input changes, as a model job is."""
+    """Regenerate a client job of a watched batch whenever its input changes, as a model job is.
+
+    The job documents its methods with their operations' summaries, so a changed summary changes the client.
+    """
     source = PROJECT_ROOT / "tests/data/generation_platform/client/cli"
     input_file = tmp_path / "options.yaml"
     shutil.copy2(source / "options.yaml", input_file)
-    shutil.copy2(source / "pyproject-jobs.toml", tmp_path / "pyproject.toml")
+    settings = (source / "pyproject-jobs.toml").read_text(encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        settings.replace("disable-timestamp = true\n", "disable-timestamp = true\nuse-schema-description = true\n"),
+        encoding="utf-8",
+    )
     resource = _WatchedOutput(tmp_path / "client" / "resources" / "pets" / "_sync.py")
     process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _start_batch_watch_cli_until_ready(tmp_path)
 

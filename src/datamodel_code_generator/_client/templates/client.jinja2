@@ -3,8 +3,23 @@
 from __future__ import annotations
 
 {{ imports }}
+{%- if lazy_imports %}
 
-_DEFAULTS = {{ defaults }}
+if {{ type_checking }}:
+{%- for item in lazy_imports %}
+    from {{ item.module }} import {{ item.name }}
+{%- endfor %}
+{%- endif %}
+
+{% if defaults.arguments -%}
+_DEFAULTS = {{ defaults.constructor }}(
+{%- for argument in defaults.arguments %}
+    {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+)
+{%- else -%}
+_DEFAULTS = {{ defaults.constructor }}()
+{%- endif %}
 
 
 class {{ name }}View:
@@ -26,19 +41,23 @@ class {{ name }}View:
 {%- endfor %}
     ) -> {{ name }}View:
         """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
-        core = {{ view }}
+        core = self._core.view(
+{%- for argument in view_keywords %}
+            {{ argument.name }}={{ argument.name }},
+{%- endfor %}
+        )
         return {{ name }}View._from_core(core)
 
-    {{ coroutine }}def request_raw(
+    {% if asynchronous %}async {% endif %}def request_raw(
         self,
         method: str,
         url: str,
         *,
-        body: {{ binary }} | {{ unset }} = {{ unset_value }},
+        body: {{ binary }} | {{ unset }} = {{ unset }},
         options: {{ request_options }} | None = None,
     ) -> {{ raw }}:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
-        return {{ wait }}self._core.request_raw(method, url, body=body, options=options)
+        return {% if asynchronous %}await {% endif %}self._core.request_raw(method, url, body=body, options=options)
 
     @{{ cached_property }}
     def with_streaming_response(self) -> {{ name }}WithStreamingResponse:
@@ -81,9 +100,66 @@ class {{ name }}({{ name }}View):
 {%- if helper_settings %}
         from {{ helper_settings }} import HelperSettings
 {% endif %}
-        self._core = {{ create }}
+        self._core = {{ core }}.create(
+            _DEFAULTS,
+{%- for argument in create %}
+            {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+{%- if credentials %}
+            credentials={{ scheme_credentials }}({
+{%- for argument in credentials %}
+                {{ argument.scheme }}: {{ argument.name }},
+{%- endfor %}
+            }),
+{%- endif %}
+        )
+{%- if asynchronous %}
 
-{{ lifecycle }}
+    async def aclose(self) -> None:
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
+        await self._core.aclose()
+
+    async def __aenter__(self) -> {{ self_type }}:
+        """Return this client, which leaving the block closes."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: {{ traceback }} | None,
+    ) -> None:
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            await self.aclose()
+        except Exception as error:
+            if exc is None:
+                raise
+            {{ add_secondary }}(exc, error)
+{%- else %}
+
+    def close(self) -> None:
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
+        self._core.close()
+
+    def __enter__(self) -> {{ self_type }}:
+        """Return this client, which leaving the block closes."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: {{ traceback }} | None,
+    ) -> None:
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            self.close()
+        except Exception as error:
+            if exc is None:
+                raise
+            {{ add_secondary }}(exc, error)
+{%- endif %}
 
 
 class {{ name }}WithStreamingResponse:
@@ -98,7 +174,7 @@ class {{ name }}WithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: {{ binary }} | {{ unset }} = {{ unset_value }},
+        body: {{ binary }} | {{ unset }} = {{ unset }},
         options: {{ request_options }} | None = None,
     ) -> {{ manager }}[{{ raw }}]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

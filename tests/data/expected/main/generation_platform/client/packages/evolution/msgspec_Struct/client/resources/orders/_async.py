@@ -48,7 +48,9 @@ class AsyncOrdersResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (orderId, view),
@@ -72,7 +74,9 @@ class AsyncOrdersWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (orderId, view),
@@ -96,7 +100,9 @@ class AsyncOrdersWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (orderId, view),
@@ -120,7 +126,9 @@ class AsyncOrdersWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (orderId, view),

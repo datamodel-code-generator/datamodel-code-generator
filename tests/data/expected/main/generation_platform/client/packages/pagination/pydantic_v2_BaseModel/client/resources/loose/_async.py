@@ -45,7 +45,9 @@ class AsyncLooseResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLooseResponse:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return (await self._core.execute(
             _operations.OPERATION_2,
             (cursor,),
@@ -68,7 +70,9 @@ class AsyncLooseWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLooseResponse]:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return await self._core.execute(
             _operations.OPERATION_2,
             (cursor,),
@@ -91,7 +95,9 @@ class AsyncLooseWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_2,
             (cursor,),
@@ -114,7 +120,9 @@ class AsyncLooseWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (cursor,),

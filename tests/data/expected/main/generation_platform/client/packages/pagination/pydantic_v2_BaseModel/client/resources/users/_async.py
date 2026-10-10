@@ -49,7 +49,9 @@ class AsyncUsersResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (cursor, limit, X_Snapshot),
@@ -66,7 +68,9 @@ class AsyncUsersResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchUsersResponse:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return (await self._core.execute(
             _operations.OPERATION_1,
             (cursor,),
@@ -93,7 +97,9 @@ class AsyncUsersWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (cursor, limit, X_Snapshot),
@@ -110,7 +116,9 @@ class AsyncUsersWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchUsersResponse]:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return await self._core.execute(
             _operations.OPERATION_1,
             (cursor,),
@@ -137,7 +145,9 @@ class AsyncUsersWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (cursor, limit, X_Snapshot),
@@ -154,7 +164,9 @@ class AsyncUsersWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_1,
             (cursor,),
@@ -181,7 +193,9 @@ class AsyncUsersWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (cursor, limit, X_Snapshot),
@@ -198,7 +212,9 @@ class AsyncUsersWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (cursor,),

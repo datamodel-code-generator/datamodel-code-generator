@@ -59,7 +59,9 @@ class DefaultResource:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> ListPetsResponse:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (limit, offset, handle, kind, mode, tags, since),
@@ -75,7 +77,9 @@ class DefaultResource:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> AddPetsResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -91,7 +95,9 @@ class DefaultResource:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> CreateJobResponse:
-        """Call POST /jobs."""
+        """
+        Call POST /jobs.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -106,7 +112,9 @@ class DefaultResource:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> GetJobResponse:
-        """Call GET /jobs/{jobId}."""
+        """
+        Call GET /jobs/{jobId}.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (jobId,),
@@ -135,7 +143,9 @@ class DefaultWithResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> Response[ListPetsResponse]:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (limit, offset, handle, kind, mode, tags, since),
@@ -151,7 +161,9 @@ class DefaultWithResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> Response[AddPetsResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -167,7 +179,9 @@ class DefaultWithResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> Response[CreateJobResponse]:
-        """Call POST /jobs."""
+        """
+        Call POST /jobs.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -182,7 +196,9 @@ class DefaultWithResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> Response[GetJobResponse]:
-        """Call GET /jobs/{jobId}."""
+        """
+        Call GET /jobs/{jobId}.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (jobId,),
@@ -211,7 +227,9 @@ class DefaultWithRawResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> RawResponse:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (limit, offset, handle, kind, mode, tags, since),
@@ -227,7 +245,9 @@ class DefaultWithRawResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> RawResponse:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -243,7 +263,9 @@ class DefaultWithRawResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> RawResponse:
-        """Call POST /jobs."""
+        """
+        Call POST /jobs.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -258,7 +280,9 @@ class DefaultWithRawResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> RawResponse:
-        """Call GET /jobs/{jobId}."""
+        """
+        Call GET /jobs/{jobId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (jobId,),
@@ -287,7 +311,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (limit, offset, handle, kind, mode, tags, since),
@@ -303,7 +329,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /pets."""
+        """
+        Call POST /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -319,7 +347,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /jobs."""
+        """
+        Call POST /jobs.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (),
@@ -334,7 +364,9 @@ class DefaultWithStreamingResponse:
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /jobs/{jobId}."""
+        """
+        Call GET /jobs/{jobId}.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (jobId,),

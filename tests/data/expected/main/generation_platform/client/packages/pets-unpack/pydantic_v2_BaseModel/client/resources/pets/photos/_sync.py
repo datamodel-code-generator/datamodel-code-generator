@@ -40,8 +40,13 @@ class PetsPhotosResource:
         """The same operations, returning blocks that send each call on entry and stream its response."""
         return PetsPhotosWithStreamingResponse(self._core)
 
-    def upload(self, **kwargs: Unpack[Operation5Arguments]) -> UploadResponse:
-        """Call PUT /pets/{petId}/photo."""
+    def upload(
+        self,
+        **kwargs: Unpack[Operation5Arguments],
+    ) -> UploadResponse:
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
@@ -64,7 +69,9 @@ class PetsPhotosWithResponse:
         self,
         **kwargs: Unpack[Operation5Arguments],
     ) -> Response[UploadResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
@@ -83,8 +90,13 @@ class PetsPhotosWithRawResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
-    def upload(self, **kwargs: Unpack[Operation5Arguments]) -> RawResponse:
-        """Call PUT /pets/{petId}/photo."""
+    def upload(
+        self,
+        **kwargs: Unpack[Operation5Arguments],
+    ) -> RawResponse:
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_5,
@@ -107,7 +119,9 @@ class PetsPhotosWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation5Arguments],
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,

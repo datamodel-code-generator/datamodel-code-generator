@@ -21,25 +21,7 @@ ListUsersResponse: TypeAlias = models.UserPage
 _LIST_USERS_HEADERS: Final[ResponseHeaders[models.FieldUsersGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listUsers',
     frozenset({'200', '500'}),
-    (
-        (
-            'X-Next',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Next',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_4,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_4, missing=optional_header)),)),),
 )
 
 

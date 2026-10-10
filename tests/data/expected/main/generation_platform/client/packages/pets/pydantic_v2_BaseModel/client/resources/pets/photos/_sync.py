@@ -48,7 +48,9 @@ class PetsPhotosResource:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> UploadResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (petId,),
@@ -75,7 +77,9 @@ class PetsPhotosWithResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UploadResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (petId,),
@@ -102,7 +106,9 @@ class PetsPhotosWithRawResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
             (petId,),
@@ -129,7 +135,9 @@ class PetsPhotosWithStreamingResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (petId,),

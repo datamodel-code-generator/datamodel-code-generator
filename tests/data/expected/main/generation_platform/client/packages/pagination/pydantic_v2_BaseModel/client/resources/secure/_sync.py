@@ -45,7 +45,9 @@ class SecureResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListSecureUsersResponse:
-        """Call GET /secure/users."""
+        """
+        Call GET /secure/users.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (cursor,),
@@ -68,7 +70,9 @@ class SecureWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListSecureUsersResponse]:
-        """Call GET /secure/users."""
+        """
+        Call GET /secure/users.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (cursor,),
@@ -91,7 +95,9 @@ class SecureWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /secure/users."""
+        """
+        Call GET /secure/users.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_8,
             (cursor,),
@@ -114,7 +120,9 @@ class SecureWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /secure/users."""
+        """
+        Call GET /secure/users.
+        """
         return self._core.stream(
             _operations.OPERATION_8,
             (cursor,),

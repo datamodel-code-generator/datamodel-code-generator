@@ -27,44 +27,7 @@ ListPetsResponse: TypeAlias = models.FieldPetsGetResponse | models.Error
 _LIST_PETS_HEADERS: Final[ResponseHeaders[models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader, UNSET]] = ResponseHeaders(
     'listPets',
     frozenset({'200', 'default'}),
-    (
-        (
-            'X-Next',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Next',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_5,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-        (
-            'X-Rate',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Rate',
-                            style='simple',
-                            required=True,
-                            kind='integer',
-                        ),
-                        codec=model_bindings.codec_6,
-                        missing=required_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_5, missing=optional_header)),)), ('X-Rate', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Rate', style='simple', required=True, kind='integer'), codec=model_bindings.codec_6, missing=required_header)),))),
 )
 
 
@@ -106,25 +69,7 @@ HeadPetResponse: TypeAlias = None
 _HEAD_PET_HEADERS: Final[ResponseHeaders[models.FieldPetsPetIdHeadResponse200ETagHeader, UNSET]] = ResponseHeaders(
     'headPet',
     frozenset({'200'}),
-    (
-        (
-            'ETag',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='ETag',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_17,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('ETag', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='ETag', style='simple'), codec=model_bindings.codec_17, missing=optional_header)),)),),
 )
 
 

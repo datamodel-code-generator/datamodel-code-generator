@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
@@ -31,6 +32,33 @@ _PLAN_DEFAULTS: Final[dict[str, object]] = {
     "shape": "scalar",
     "kind": "string",
 }
+
+
+@dataclass(frozen=True, slots=True)
+class Parameter:
+    """One parameter of a generated signature, with its default expression or none."""
+
+    name: str
+    annotation: str
+    default: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class Keyword:
+    """One argument of a generated call: its keyword, empty for a positional one, and its value expression."""
+
+    keyword: str
+    value: str
+
+
+@dataclass(frozen=True, slots=True)
+class Plan:
+    """A module-level plan constant: its name, its annotation, and the constructor call of its value."""
+
+    name: str
+    annotation: str
+    constructor: str
+    arguments: tuple[Keyword, ...]
 
 
 def items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:

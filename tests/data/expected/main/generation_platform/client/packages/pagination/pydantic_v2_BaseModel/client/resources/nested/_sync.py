@@ -45,7 +45,9 @@ class NestedResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListNestedResponse:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (cursor,),
@@ -68,7 +70,9 @@ class NestedWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListNestedResponse]:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (cursor,),
@@ -91,7 +95,9 @@ class NestedWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (cursor,),
@@ -114,7 +120,9 @@ class NestedWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (cursor,),

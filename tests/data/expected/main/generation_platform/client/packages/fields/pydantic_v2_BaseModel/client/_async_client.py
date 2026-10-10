@@ -26,7 +26,9 @@ from .responses import AsyncRawResponse
 if TYPE_CHECKING:
     from .resources.default._async import AsyncDefaultResource
 
-_DEFAULTS = ClientDefaults(bodies=MULTIPART_BODIES)
+_DEFAULTS = ClientDefaults(
+    bodies=MULTIPART_BODIES,
+)
 
 
 class AsyncClientView:

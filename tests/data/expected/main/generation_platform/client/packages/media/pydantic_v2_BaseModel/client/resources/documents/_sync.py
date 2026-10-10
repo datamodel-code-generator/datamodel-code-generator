@@ -135,7 +135,9 @@ class DocumentsResource:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return self._core.execute(
             _operations.OPERATION_20,
             (),
@@ -154,7 +156,9 @@ class DocumentsResource:
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadDocumentResponse:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return self._core.execute(
             _operations.OPERATION_21,
             (id, filter, X_Mode),
@@ -169,7 +173,9 @@ class DocumentsResource:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> StoreNoteResponse:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return self._core.execute(
             _operations.OPERATION_22,
             (),
@@ -209,7 +215,9 @@ class DocumentsResource:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return self._core.execute(
             _operations.OPERATION_23,
             (),
@@ -315,7 +323,9 @@ class DocumentsWithResponse:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return self._core.execute(
             _operations.OPERATION_20,
             (),
@@ -334,7 +344,9 @@ class DocumentsWithResponse:
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadDocumentResponse]:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return self._core.execute(
             _operations.OPERATION_21,
             (id, filter, X_Mode),
@@ -349,7 +361,9 @@ class DocumentsWithResponse:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> Response[StoreNoteResponse]:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return self._core.execute(
             _operations.OPERATION_22,
             (),
@@ -389,7 +403,9 @@ class DocumentsWithResponse:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return self._core.execute(
             _operations.OPERATION_23,
             (),
@@ -441,7 +457,9 @@ class DocumentsWithRawResponse:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_20,
             (),
@@ -460,7 +478,9 @@ class DocumentsWithRawResponse:
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_21,
             (id, filter, X_Mode),
@@ -475,7 +495,9 @@ class DocumentsWithRawResponse:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_22,
             (),
@@ -515,7 +537,9 @@ class DocumentsWithRawResponse:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_23,
             (),
@@ -567,7 +591,9 @@ class DocumentsWithStreamingResponse:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /documents."""
+        """
+        Call POST /documents.
+        """
         return self._core.stream(
             _operations.OPERATION_20,
             (),
@@ -586,7 +612,9 @@ class DocumentsWithStreamingResponse:
         response_media_type: Literal['application/vnd.api+json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /documents/{id}."""
+        """
+        Call GET /documents/{id}.
+        """
         return self._core.stream(
             _operations.OPERATION_21,
             (id, filter, X_Mode),
@@ -601,7 +629,9 @@ class DocumentsWithStreamingResponse:
         media_type: Literal['application/json', 'application/vnd.note+json'],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /notes."""
+        """
+        Call POST /notes.
+        """
         return self._core.stream(
             _operations.OPERATION_22,
             (),
@@ -641,7 +671,9 @@ class DocumentsWithStreamingResponse:
         media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /notes."""
+        """
+        Call PUT /notes.
+        """
         return self._core.stream(
             _operations.OPERATION_23,
             (),

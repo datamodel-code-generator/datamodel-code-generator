@@ -14,10 +14,10 @@ from textwrap import fill
 from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._client._compiled_templates import types as types_template
+from datamodel_code_generator._client.facade import render_facade, statement
 from datamodel_code_generator._client.naming import folded
 from datamodel_code_generator._client.plan import schema_use, schema_uses
-from datamodel_code_generator._client.render import WIDTH
+from datamodel_code_generator._client.render import WIDTH, render_sections
 from datamodel_code_generator._python_layout import Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_contract import OperationId, SourceLocation
@@ -258,15 +258,16 @@ class _Webhooks:
         root = packages.pop(PurePosixPath("webhooks"))
         keys = self.keys()
         return (
-            (
-                PurePosixPath("webhooks", "__init__.py"),
-                f'"""{_ROOTS[frozenset(root)]}"""\n',
-            ),
+            (PurePosixPath("webhooks", "__init__.py"), render_facade(self.role, "webhooks", _ROOTS[frozenset(root)])),
             *(() if keys is None else ((PurePosixPath("webhooks", "keys.py"), keys),)),
             *(
                 (
                     package / "__init__.py",
-                    f'"""The {".".join(package.parts[1:])} webhook {_KINDS[frozenset(kinds)]}."""\n',
+                    render_facade(
+                        self.role,
+                        ".".join(package.parts),
+                        f"The {'.'.join(package.parts[1:])} webhook {_KINDS[frozenset(kinds)]}.",
+                    ),
                 )
                 for package, kinds in sorted(packages.items())
             ),
@@ -284,11 +285,13 @@ class _Webhooks:
                 modules.setdefault(algorithm.key_module, set()).add(algorithm.key)
         if not modules:
             return None
-        imports = "".join(
-            f"from ..{module} import {', '.join(sorted(names))}\n" for module, names in sorted(modules.items())
+        return render_facade(
+            self.role,
+            "webhooks.keys",
+            "The key types of this package's webhook signatures.",
+            imports=(statement(f"..{module}", sorted(names)) for module, names in sorted(modules.items())),
+            exports=sorted(set().union(*modules.values())),
         )
-        names = ", ".join(f'"{name}"' for name in sorted(set().union(*modules.values())))
-        return f'"""The key types of this package\'s webhook signatures."""\n\n{imports}\n__all__ = [{names}]\n'
 
     def decoder(self, module: TargetModule, event: WebhookEvent) -> Group:
         """Return the runtime decoder of one event type."""
@@ -376,7 +379,8 @@ class _Webhooks:
             sections = [plan, *self.functions(module, event, key, signature)]
         docstring = _docstring(summary, text, "")
         exported = ", ".join(f'"{name}"' for name in sorted(names - {"_PLAN"}))
-        return self.role("types.jinja2", types_template.render)(
+        return render_sections(
+            self.role,
             docstring=docstring.removeprefix('"""').removesuffix('"""'),
             imports=module.imports(),
             sections=[f"__all__ = [{exported}]", *sections],

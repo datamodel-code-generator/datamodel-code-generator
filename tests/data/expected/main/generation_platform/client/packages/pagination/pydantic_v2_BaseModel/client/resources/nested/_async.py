@@ -45,7 +45,9 @@ class AsyncNestedResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListNestedResponse:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return (await self._core.execute(
             _operations.OPERATION_3,
             (cursor,),
@@ -68,7 +70,9 @@ class AsyncNestedWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListNestedResponse]:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return await self._core.execute(
             _operations.OPERATION_3,
             (cursor,),
@@ -91,7 +95,9 @@ class AsyncNestedWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_3,
             (cursor,),
@@ -114,7 +120,9 @@ class AsyncNestedWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (cursor,),

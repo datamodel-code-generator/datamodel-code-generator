@@ -47,7 +47,11 @@ class Operation4Arguments(TypedDict):
     options: NotRequired[RequestOptions | None]
 
 
-KEYWORDS_0: Final = Keywords('get_root', ('options',), ())
+KEYWORDS_0: Final = Keywords(
+    'get_root',
+    ('options',),
+    (),
+)
 
 
 KEYWORDS_1: Final = Keywords(
@@ -57,10 +61,22 @@ KEYWORDS_1: Final = Keywords(
 )
 
 
-KEYWORDS_2: Final = Keywords('http_get_users', ('options',), ())
+KEYWORDS_2: Final = Keywords(
+    'http_get_users',
+    ('options',),
+    (),
+)
 
 
-KEYWORDS_3: Final = Keywords('list_admin_users', ('options',), ())
+KEYWORDS_3: Final = Keywords(
+    'list_admin_users',
+    ('options',),
+    (),
+)
 
 
-KEYWORDS_4: Final = Keywords('create_admin_user', ('options',), ())
+KEYWORDS_4: Final = Keywords(
+    'create_admin_user',
+    ('options',),
+    (),
+)

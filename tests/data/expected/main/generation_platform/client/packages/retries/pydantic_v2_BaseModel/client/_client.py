@@ -25,7 +25,9 @@ from .responses import RawResponse
 if TYPE_CHECKING:
     from .resources.retry._sync import RetryResource
 
-_DEFAULTS = ClientDefaults(bodies=BINARY_BODIES)
+_DEFAULTS = ClientDefaults(
+    bodies=BINARY_BODIES,
+)
 
 
 class ClientView:

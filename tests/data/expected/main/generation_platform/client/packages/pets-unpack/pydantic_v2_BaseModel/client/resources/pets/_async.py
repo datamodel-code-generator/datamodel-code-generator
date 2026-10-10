@@ -80,16 +80,13 @@ class AsyncPetsResource:
         self,
         **kwargs: Unpack[Operation0Arguments],
     ) -> ListPetsResponse:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (
-                kwargs.get('limit', UNSET),
-                kwargs.get('labels', UNSET),
-                kwargs['X_Trace'],
-                kwargs.get('session', UNSET),
-            ),
+            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )).data
@@ -108,7 +105,9 @@ class AsyncPetsResource:
         self,
         **kwargs: Unpack[Operation1Arguments2],
     ) -> CreatePetResponse:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         KEYWORDS_1.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_1,
@@ -138,7 +137,9 @@ class AsyncPetsResource:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> GetPetResponse:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         KEYWORDS_2.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_2,
@@ -151,7 +152,9 @@ class AsyncPetsResource:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> DeletePetsByPetIdResponse:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         KEYWORDS_3.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_3,
@@ -163,7 +166,9 @@ class AsyncPetsResource:
         self,
         **kwargs: Unpack[Operation4Arguments],
     ) -> HeadPetResponse:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         KEYWORDS_4.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_4,
@@ -175,7 +180,9 @@ class AsyncPetsResource:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> AttachFilesResponse:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         KEYWORDS_6.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_6,
@@ -189,7 +196,9 @@ class AsyncPetsResource:
         self,
         **kwargs: Unpack[Operation7Arguments],
     ) -> ReadFilesResponse:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         KEYWORDS_7.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_7,
@@ -210,16 +219,13 @@ class AsyncPetsWithResponse:
         self,
         **kwargs: Unpack[Operation0Arguments],
     ) -> Response[ListPetsResponse]:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_0,
-            (
-                kwargs.get('limit', UNSET),
-                kwargs.get('labels', UNSET),
-                kwargs['X_Trace'],
-                kwargs.get('session', UNSET),
-            ),
+            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -238,7 +244,9 @@ class AsyncPetsWithResponse:
         self,
         **kwargs: Unpack[Operation1Arguments2],
     ) -> Response[CreatePetResponse]:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         KEYWORDS_1.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_1,
@@ -268,7 +276,9 @@ class AsyncPetsWithResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> Response[GetPetResponse]:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         KEYWORDS_2.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_2,
@@ -281,7 +291,9 @@ class AsyncPetsWithResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> Response[DeletePetsByPetIdResponse]:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         KEYWORDS_3.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_3,
@@ -293,7 +305,9 @@ class AsyncPetsWithResponse:
         self,
         **kwargs: Unpack[Operation4Arguments],
     ) -> Response[HeadPetResponse]:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         KEYWORDS_4.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_4,
@@ -305,7 +319,9 @@ class AsyncPetsWithResponse:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> Response[AttachFilesResponse]:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         KEYWORDS_6.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_6,
@@ -319,7 +335,9 @@ class AsyncPetsWithResponse:
         self,
         **kwargs: Unpack[Operation7Arguments],
     ) -> Response[ReadFilesResponse]:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         KEYWORDS_7.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_7,
@@ -340,16 +358,13 @@ class AsyncPetsWithRawResponse:
         self,
         **kwargs: Unpack[Operation0Arguments],
     ) -> AsyncRawResponse:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (
-                kwargs.get('limit', UNSET),
-                kwargs.get('labels', UNSET),
-                kwargs['X_Trace'],
-                kwargs.get('session', UNSET),
-            ),
+            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -368,7 +383,9 @@ class AsyncPetsWithRawResponse:
         self,
         **kwargs: Unpack[Operation1Arguments2],
     ) -> AsyncRawResponse:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         KEYWORDS_1.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_1,
@@ -383,7 +400,9 @@ class AsyncPetsWithRawResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> AsyncRawResponse:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         KEYWORDS_2.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_2,
@@ -396,7 +415,9 @@ class AsyncPetsWithRawResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> AsyncRawResponse:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         KEYWORDS_3.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_3,
@@ -408,7 +429,9 @@ class AsyncPetsWithRawResponse:
         self,
         **kwargs: Unpack[Operation4Arguments],
     ) -> AsyncRawResponse:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         KEYWORDS_4.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_4,
@@ -420,7 +443,9 @@ class AsyncPetsWithRawResponse:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> AsyncRawResponse:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         KEYWORDS_6.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_6,
@@ -434,7 +459,9 @@ class AsyncPetsWithRawResponse:
         self,
         **kwargs: Unpack[Operation7Arguments],
     ) -> AsyncRawResponse:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         KEYWORDS_7.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_7,
@@ -455,16 +482,13 @@ class AsyncPetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation0Arguments],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_0,
-            (
-                kwargs.get('limit', UNSET),
-                kwargs.get('labels', UNSET),
-                kwargs['X_Trace'],
-                kwargs.get('session', UNSET),
-            ),
+            (kwargs.get('limit', UNSET), kwargs.get('labels', UNSET), kwargs['X_Trace'], kwargs.get('session', UNSET)),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -483,7 +507,9 @@ class AsyncPetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation1Arguments2],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,
@@ -498,7 +524,9 @@ class AsyncPetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation2Arguments3],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         KEYWORDS_2.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_2,
@@ -511,7 +539,9 @@ class AsyncPetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation3Arguments],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         KEYWORDS_3.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_3,
@@ -523,7 +553,9 @@ class AsyncPetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation4Arguments],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         KEYWORDS_4.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_4,
@@ -535,7 +567,9 @@ class AsyncPetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation6Arguments1],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         KEYWORDS_6.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_6,
@@ -549,7 +583,9 @@ class AsyncPetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation7Arguments],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,

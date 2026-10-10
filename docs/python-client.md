@@ -110,7 +110,7 @@ such as `/paths/~1pets/get`, or a document and a pointer joined by `#`, to the s
 | `name` | The method name |
 | `parameter_names` | Argument names keyed by location and name, such as `{"query:limit": "page_size"}` |
 | `request_media_type`, `response_media_type` | The default media types of the body and of the result |
-| `description` | The method docstring |
+| `description` | The method docstring, over the operation's route or, with `--use-schema-description`, its summary and description |
 | `body_arguments` | `"body"` or `"both"`, over `--client-body-arguments` |
 | `body_field_names` | Keyword names of body fields, keyed by media type, then property, such as `{"application/json": {"petName": "pet_name"}}` |
 | `runtime` | `request_id_header`, `success_statuses`, `retry_safety`, `idempotency` (`{"header_name": "Idempotency-Key"}`), `retry_after_ms_header`, `should_retry_header`, `auth_challenge_less_401`, and `accepted_content_encodings` |
@@ -2417,7 +2417,9 @@ Every keyword is a real keyword-only parameter of the method and of each of its 
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (petId,),
@@ -2438,16 +2440,27 @@ Every overload and the implementation take `**kwargs` typed by a TypedDict of th
 
 ```python
     @overload
-    def get_pet(self, **kwargs: Unpack[Operation2Arguments]) -> models.Pet: ...
+    def get_pet(
+        self,
+        **kwargs: Unpack[Operation2Arguments],
+    ) -> models.Pet: ...
     @overload
-    def get_pet(self, **kwargs: Unpack[Operation2Arguments1]) -> models.Pet: ...
+    def get_pet(
+        self,
+        **kwargs: Unpack[Operation2Arguments1],
+    ) -> models.Pet: ...
     @overload
     def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments2],
     ) -> models.FieldPetsPetIdGetResponse: ...
-    def get_pet(self, **kwargs: Unpack[Operation2Arguments3]) -> GetPetResponse:
-        """Show one pet."""
+    def get_pet(
+        self,
+        **kwargs: Unpack[Operation2Arguments3],
+    ) -> GetPetResponse:
+        """
+        Call GET /pets/{petId}.
+        """
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
@@ -2722,7 +2735,9 @@ overload for each field, which that overload requires, and one that takes nothin
         media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> UpdatePetResponse:
-        """Call PATCH /pets/{petId}."""
+        """
+        Call PATCH /pets/{petId}.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (petId,),
@@ -3019,6 +3034,56 @@ An injected client stays the caller's: close it after the SDK client.
 when no response arrived. Closing a root refuses new calls from the root and its views and closes its created native
 client once; borrowed clients and providers keep the caller's lifetime. Responses and files opened from paths are
 released in `finally`; a release failure is named in the notes of the primary error, or propagates without one.
+
+## Templates
+
+The client templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
+as model templates do: the files of its `client` directory replace the builtin roles of the same name:
+`facade.jinja2` (the package initializers and the public modules `options`, `errors`, `responses`, `auth`, `bodies`,
+`model_codecs`, and `protocols`, and the webhook packages' initializers and `webhooks/keys.py`), `client.jinja2` (`_client.py` and `_async_client.py`), `resource.jinja2` (each
+resource's `_sync.py` and `_async.py`), `types.jinja2` (each resource's `types/<resource>/_operations.py`, and the
+helper and webhook modules), `arguments.jinja2` (`_generated/client_arguments.py`), `operations.jinja2`
+(`_operations.py`), `security.jinja2` (`_generated/security.py`), `readme.jinja2`, and `runtime.jinja2` (the runtime
+reference). A role the directory does not hold, or a custom template directory without a `client` directory, keeps
+its builtin template. The builtin templates are in the `_client/templates` directory of the installed package; copy
+one to start from it. Each role receives the values its builtin template uses and, as custom model templates do, the
+`#all#` entry of [`--extra-template-data`](cli-reference/template-customization.md#extra-template-data); the role's
+own values take precedence over the extra data.
+
+The values a role receives can change while client generation is experimental, and a value that an older copy of a
+builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
+compare an override with the current builtin template after an upgrade. The templates write every module, class,
+function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
+Each role receives these top-level values, where `imports` is the module's import block and the facade's `module`,
+which the builtin template does not use, is the module's dotted path in the package, empty for the package itself:
+
+| Role | Values |
+| --- | --- |
+| `arguments.jinja2` | `docstring`, `imports`, `records`, `keywords` |
+| `client.jinja2` | `asynchronous`, `docstring`, `imports`, `type_checking`, `lazy_imports`, `defaults`, `name`, `class_docstring`, `core`, `view_keywords`, `client_keywords`, `credentials`, `create`, `scheme_credentials`, `unset`, `request_options`, `cached_property`, `raw`, `binary`, `manager`, `self_type`, `traceback`, `add_secondary`, `resources`, `protocols`, `protocols_module`, `helper_settings` |
+| `facade.jinja2` | `module`, `docstring`, `future`, `imports`, `checking`, `classes`, `exports`, `lazy`, `loader`, `listing` |
+| `operations.jinja2` | `docstring`, `imports`, `servers`, `operations` |
+| `readme.jinja2` | `package`, `public_modules`, `reference`, `signature_style`, `body_arguments`, `backend`, `model_package`, `operations`, `contracts`, `helpers`, `stream_label`, `resumes`, `sockets`, `kinds`, `compression`, `dependencies`, `security`, `capabilities`, `runtime` |
+| `resource.jinja2` | `docstring`, `imports`, `core`, `cached_property`, `overload_decorator`, `views` |
+| `runtime.jinja2` | `package`, `oauth`, `schemes`, `security`, `raw_bytes`, `multipart_requests`, `credentials`, `example`, `flows`, `pagination`, `polling`, `cache`, `uploads`, `streams`, `sockets`, `compression` |
+| `security.jinja2` | `docstring`, `imports`, `schemes`, `root_annotation`, `root`, `operations` |
+| `types.jinja2` | `docstring`, `imports`, `type_alias`, `overload_decorator`, `aliases`, `sections` |
+
+`resource.jinja2` receives one view for each class of a resource module, with its cached `attributes` and its
+`methods`. A method has its `name`, `view` (`plain`, `metadata`, `raw`, or `streaming`), whether it is a
+`coroutine`, its `docstring`, its `overloads` and `implementation` signatures, each with its `parameters` (`name`,
+`annotation`, `default`) or the TypedDict it `unpacked`, and its `returns`, the keywords record it `check`s an
+unpacked call with, and its `call` of the client core: the `operation`, the `parameters` tuple, and the keyword
+`arguments`. The plan constants of `operations.jinja2`, `security.jinja2`, and `arguments.jinja2` have a `name`, an
+`annotation`, a `constructor`, and `arguments`, each with a `keyword`, empty for a positional one, and a `value`.
+`types.jinja2` receives the finished definitions of the helper and webhook modules as `sections`. A builtin template
+writes each parameter, argument, export, and plan keyword on its own line, and leaves the type annotations and plan
+values on one line for the formatter.
+
+An operation method's docstring is its `operations[].description`, or, with `--use-schema-description`, the
+operation's summary and description, or else its route, such as `Call GET /pets/{petId}.`, formatted as model
+docstrings are, on one line with `--use-single-line-docstring`. A template that does not parse or render stops the
+run with an `Error` that names the file in the custom template directory and, when Jinja knows it, the line.
 
 ## Errors
 

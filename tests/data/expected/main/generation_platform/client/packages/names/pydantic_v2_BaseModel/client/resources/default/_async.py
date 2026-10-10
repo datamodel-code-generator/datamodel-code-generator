@@ -42,7 +42,9 @@ class AsyncDefaultResource:
         *,
         options: RequestOptions | None = None,
     ) -> GetRootResponse:
-        """Call GET /."""
+        """
+        Call GET /.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -62,8 +64,14 @@ class AsyncDefaultWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[GetRootResponse]:
-        """Call GET /."""
-        return await self._core.execute(_operations.OPERATION_0, (), options=options)
+        """
+        Call GET /.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_0,
+            (),
+            options=options,
+        )
 
 
 class AsyncDefaultWithRawResponse:
@@ -78,7 +86,9 @@ class AsyncDefaultWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /."""
+        """
+        Call GET /.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -98,5 +108,11 @@ class AsyncDefaultWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /."""
-        return self._core.stream(_operations.OPERATION_0, (), options=options)
+        """
+        Call GET /.
+        """
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (),
+            options=options,
+        )

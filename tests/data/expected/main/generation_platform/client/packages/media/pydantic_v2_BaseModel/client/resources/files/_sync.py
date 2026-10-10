@@ -157,7 +157,9 @@ class FilesResource:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -190,7 +192,9 @@ class FilesResource:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -323,7 +327,9 @@ class FilesWithResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -356,7 +362,9 @@ class FilesWithResponse:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -408,7 +416,9 @@ class FilesWithRawResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_13,
             (),
@@ -441,7 +451,9 @@ class FilesWithRawResponse:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_14,
             (),
@@ -493,7 +505,9 @@ class FilesWithStreamingResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return self._core.stream(
             _operations.OPERATION_13,
             (),
@@ -526,7 +540,9 @@ class FilesWithStreamingResponse:
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return self._core.stream(
             _operations.OPERATION_14,
             (),

@@ -44,7 +44,9 @@ class AsyncPetsPhotosResource:
         self,
         **kwargs: Unpack[Operation5Arguments1],
     ) -> UploadResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return (await self._core.execute(
             _operations.OPERATION_5,
@@ -67,7 +69,9 @@ class AsyncPetsPhotosWithResponse:
         self,
         **kwargs: Unpack[Operation5Arguments1],
     ) -> Response[UploadResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return await self._core.execute(
             _operations.OPERATION_5,
@@ -90,7 +94,9 @@ class AsyncPetsPhotosWithRawResponse:
         self,
         **kwargs: Unpack[Operation5Arguments1],
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return await self._core.execute_raw(
             _operations.OPERATION_5,
@@ -113,7 +119,9 @@ class AsyncPetsPhotosWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation5Arguments1],
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,

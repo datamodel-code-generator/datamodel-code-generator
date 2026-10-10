@@ -1,0 +1,33 @@
+{%- macro constant(plan) -%}
+{{ plan.name }}: {{ plan.annotation }} = {{ plan.constructor }}(
+{%- for argument in plan.arguments %}
+    {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+)
+{%- endmacro -%}
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+{%- for plan in schemes %}
+
+
+{{ constant(plan) }}
+{%- endfor %}
+
+
+{% if root -%}
+ROOT_SCHEMES: {{ root_annotation }} = (
+{%- for name in root %}
+    {{ name }},
+{%- endfor %}
+)
+{%- else -%}
+ROOT_SCHEMES: {{ root_annotation }} = ()
+{%- endif %}
+{%- for plan in operations %}
+
+
+{{ constant(plan) }}
+{%- endfor %}

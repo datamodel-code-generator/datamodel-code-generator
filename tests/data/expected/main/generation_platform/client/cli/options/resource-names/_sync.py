@@ -48,7 +48,9 @@ class AnimalsResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
-        """List the pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (limit, cursor),
@@ -64,7 +66,9 @@ class AnimalsResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse:
-        """Create a pet."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -90,7 +94,9 @@ class AnimalsWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
-        """List the pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (limit, cursor),
@@ -106,7 +112,9 @@ class AnimalsWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]:
-        """Create a pet."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -132,7 +140,9 @@ class AnimalsWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """List the pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (limit, cursor),
@@ -148,7 +158,9 @@ class AnimalsWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Create a pet."""
+        """
+        Call POST /pets.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -174,7 +186,9 @@ class AnimalsWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """List the pets."""
+        """
+        Call GET /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (limit, cursor),
@@ -190,7 +204,9 @@ class AnimalsWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Create a pet."""
+        """
+        Call POST /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),

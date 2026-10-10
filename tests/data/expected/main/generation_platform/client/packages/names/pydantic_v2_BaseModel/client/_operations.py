@@ -38,41 +38,7 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse]] = OperationPl
     path='/files/{fileName}.{ext}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='fileName',
-                style='simple',
-                required=True,
-                reserved_names=('ext',),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='ext',
-                style='simple',
-                required=True,
-                reserved_names=('fileName',),
-            ),
-            codec=model_bindings.codec_1,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='class',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_2,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='2fa', style='simple'),
-            codec=model_bindings.codec_3,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='fileName', style='simple', required=True, reserved_names=('ext',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='path', name='ext', style='simple', required=True, reserved_names=('fileName',)), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='class', style='form', explode=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='header', name='2fa', style='simple'), codec=model_bindings.codec_3)),
 )
 
 OPERATION_2: Final[OperationPlan[HttpGetUsersResponse]] = OperationPlan(

@@ -318,19 +318,7 @@ class Operation7Arguments2(TypedDict):
 
 KEYWORDS_0: Final = Keywords(
     'create_pet',
-    (
-        'tag',
-        'body',
-        'name',
-        'kind',
-        'pet_tag',
-        'birthDate',
-        'owner',
-        'secret',
-        'media_type',
-        'response_media_type',
-        'options',
-    ),
+    ('tag', 'body', 'name', 'kind', 'pet_tag', 'birthDate', 'owner', 'secret', 'media_type', 'response_media_type', 'options'),
     (),
 )
 

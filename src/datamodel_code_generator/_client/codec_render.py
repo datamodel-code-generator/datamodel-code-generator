@@ -161,14 +161,3 @@ class _Renderer:
 def render_model_bindings(plan: ClientCodecs, types: TypeNames) -> RenderedBindings:
     """Render one native codec per selected use and the stdlib models its conversions reach."""
     return _Renderer(plan, types).render()
-
-
-def render_model_codecs() -> str:
-    """Expose the JSON value type and the sentinel for an omitted argument."""
-    return '''"""JSON values and omitted arguments used by the generated client."""
-
-from ._runtime.model_codecs.media import JSONValue
-from ._runtime.model_codecs.unset import UNSET
-
-__all__ = ["JSONValue", "UNSET"]
-'''
