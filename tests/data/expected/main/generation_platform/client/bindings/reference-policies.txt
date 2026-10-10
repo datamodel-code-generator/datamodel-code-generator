@@ -1,147 +1,31 @@
 # reference-policies
 render pydantic_v2.BaseModel kept
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 Optional[models.NullableName]
-  codec_5 Optional[models.NullableName]
-  codec_6 SerializeAsAny[models.Base]
-  codec_7 SerializeAsAny[models.Base]
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py pydantic_v2_BaseModel/kept
 render pydantic_v2.BaseModel collapsed
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 Optional[str]
-  codec_5 Optional[str]
-  codec_6 SerializeAsAny[models.Base]
-  codec_7 SerializeAsAny[models.Base]
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py pydantic_v2_BaseModel/collapsed
 render pydantic_v2.dataclass kept
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 SerializeAsAny[models.Base]
-  codec_7 SerializeAsAny[models.Base]
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py pydantic_v2_dataclass/kept
 render pydantic_v2.dataclass collapsed
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 Optional[str]
-  codec_5 Optional[str]
-  codec_6 SerializeAsAny[models.Base]
-  codec_7 SerializeAsAny[models.Base]
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py pydantic_v2_dataclass/collapsed
 render dataclasses.dataclass kept
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
-  map models:Base kind=kind
-  map models:Child kind=kind, extra=extra
-  map models:Holder record=record, name=name, maybe=maybe, pair=pair, base=base
-  map models:NullableRecord value=value
+  model_bindings.py dataclasses_dataclass/kept
 render dataclasses.dataclass collapsed
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 Optional[str]
-  codec_5 Optional[str]
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
-  map models:Base kind=kind
-  map models:Child kind=kind, extra=extra
-  map models:Holder record=record, name=name, maybe=maybe, pair=pair, base=base
-  map models:NullableRecord value=value
+  model_bindings.py dataclasses_dataclass/collapsed
 render typing.TypedDict kept
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
-  map models:Base kind=kind
-  map models:Child kind=kind, extra=extra
-  map models:Holder record=record, name=name, maybe=maybe, pair=pair, base=base
-  map models:NullableRecord value=value
+  model_bindings.py typing_TypedDict/kept
 render typing.TypedDict collapsed
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 Optional[str]
-  codec_5 Optional[str]
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
-  map models:Base kind=kind
-  map models:Child kind=kind, extra=extra
-  map models:Holder record=record, name=name, maybe=maybe, pair=pair, base=base
-  map models:NullableRecord value=value
+  model_bindings.py typing_TypedDict/collapsed
 render msgspec.Struct kept
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py msgspec_Struct/kept
 render msgspec.Struct collapsed
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 Optional[str]
-  codec_5 Optional[str]
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py msgspec_Struct/collapsed

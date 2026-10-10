@@ -1,8 +1,4 @@
 # final-imports
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
-  codec_2 Color
-  codec_3 Color
+  model_bindings.py pydantic_v2_BaseModel/default

@@ -3,19 +3,4 @@ render pydantic_v2.BaseModel default
   diagnostic Error: Generated model E (field-ownership-conflict.json#/components/schemas/E) has inconsistent method resolution order for generated bases C (field-ownership-conflict.json#/components/schemas/C), D (field-ownership-conflict.json#/components/schemas/D).
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.C
-  codec_5 models.C
-  codec_6 models.D
-  codec_7 models.D
-  codec_8 models.E
-  codec_9 models.E
-  map models:A a=a
-  map models:B b=b
-  map models:C b=b, a=a, c=c
-  map models:D a=a, b=b, d=d
-  map models:E
+  model_bindings.py typing_TypedDict/default

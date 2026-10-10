@@ -1,53 +1,13 @@
 # field-ownership
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.C
-  codec_5 models.C
-  codec_6 models.Leaf
-  codec_7 models.Leaf
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.C
-  codec_5 models.C
-  codec_6 models.Leaf
-  codec_7 models.Leaf
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.C
-  codec_5 models.C
-  codec_6 models.Leaf
-  codec_7 models.Leaf
-  map models:A root=root, shared-key=shared_key
-  map models:B root=root, shared-key=shared_key, left=left
-  map models:C root=root, shared-key=shared_key, right=right
-  map models:Leaf root=root, shared-key=shared_key, right=right, left=left, leaf-key=leaf_key
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.C
-  codec_5 models.C
-  codec_6 models.Leaf
-  codec_7 models.Leaf
-  map models:A root=root, shared-key=shared-key
-  map models:B root=root, shared-key=shared-key, left=left
-  map models:C root=root, shared-key=shared-key, right=right
-  map models:Leaf root=root, shared-key=shared-key, left=left, right=right, leaf-key=leaf-key
+  model_bindings.py typing_TypedDict/default

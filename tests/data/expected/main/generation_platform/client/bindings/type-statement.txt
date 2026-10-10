@@ -1,74 +1,16 @@
 # type-statement
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
-  map models:Base kind=kind
-  map models:Child kind=kind, extra=extra
-  map models:Holder record=record, name=name, maybe=maybe, pair=pair, base=base
-  map models:NullableRecord value=value
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
-  map models:Base kind=kind
-  map models:Child kind=kind, extra=extra
-  map models:Holder record=record, name=name, maybe=maybe, pair=pair, base=base
-  map models:NullableRecord value=value
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Holder
-  codec_1 models.Holder
-  codec_2 Optional[models.NullableRecord]
-  codec_3 Optional[models.NullableRecord]
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  codec_6 models.Base
-  codec_7 models.Base
-  codec_8 models.Child
-  codec_9 models.Child
+  model_bindings.py msgspec_Struct/default

@@ -1,12 +1,4 @@
 # synthetic-origins
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  codec_2 models.Dictionary
-  codec_3 models.Dictionary
-  codec_4 models.Choice
-  codec_5 models.Choice
-  codec_6 models.Required
-  codec_7 models.Required
+  model_bindings.py pydantic_v2_BaseModel/default

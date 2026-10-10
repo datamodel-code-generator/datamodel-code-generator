@@ -1,40 +1,16 @@
 # materialized-allof-union-origins
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Envelope
-  codec_1 models.Envelope
-  codec_2 models.Variants
-  codec_3 models.Variants
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Envelope
-  codec_1 models.Envelope
-  codec_2 models.Variants
-  codec_3 models.Variants
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Envelope
-  codec_1 models.Envelope
-  codec_2 models.Variants
-  codec_3 models.Variants
-  map models:Envelope nested=nested
-  map models:Variants1 ship-to=ship_to, other-key=other_key
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Envelope
-  codec_1 models.Envelope
-  codec_2 models.Variants
-  codec_3 models.Variants
-  map models:Envelope nested=nested
-  map models:Variants1 ship-to=ship-to, other-key=other-key
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Envelope
-  codec_1 models.Envelope
-  codec_2 models.Variants
-  codec_3 models.Variants
+  model_bindings.py msgspec_Struct/default

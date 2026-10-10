@@ -1,10 +1,7 @@
 # functional-fields
 render typing.TypedDict total
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  map models:Payload =, ship-to=ship-to, quote'=quote', back\slash=back\slash, class=class, naïve=naïve
+  model_bindings.py typing_TypedDict/total
 change typing.TypedDict total missing-symbol
   @@ -12 +12 @@
   -Payload = TypedDict('Payload', {
@@ -63,13 +60,7 @@ change typing.TypedDict total class-declaration
   +    ship_to: str
 render typing.TypedDict total-false
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  map models:Payload =, ship-to=ship-to, quote'=quote', back\slash=back\slash, class=class, naïve=naïve
+  model_bindings.py typing_TypedDict/total
 render typing.TypedDict total-false-extensions
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  map models:Payload =, ship-to=ship-to, quote'=quote', back\slash=back\slash, class=class, naïve=naïve
+  model_bindings.py typing_TypedDict/total

@@ -1,103 +1,31 @@
 # final-types-metadata-types
 render pydantic_v2.BaseModel annotated
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
+  model_bindings.py pydantic_v2_BaseModel/annotated
 render pydantic_v2.BaseModel collapsed-remapped
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
+  model_bindings.py pydantic_v2_BaseModel/annotated
 render pydantic_v2.dataclass annotated
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
+  model_bindings.py pydantic_v2_dataclass/annotated
 render pydantic_v2.dataclass collapsed-remapped
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
+  model_bindings.py pydantic_v2_dataclass/annotated
 render dataclasses.dataclass annotated
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
-  map models:A kind=kind
-  map models:B kind=kind
-  map models:Envelope value=value, values=values
+  model_bindings.py dataclasses_dataclass/annotated
 render dataclasses.dataclass collapsed-remapped
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
-  map models:A kind=kind
-  map models:B kind=kind
-  map models:Envelope value=value, values=values
+  model_bindings.py dataclasses_dataclass/annotated
 render typing.TypedDict annotated
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
-  map models:A kind=kind
-  map models:B kind=kind
-  map models:Envelope value=value, values=values
+  model_bindings.py typing_TypedDict/annotated
 render typing.TypedDict collapsed-remapped
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
-  map models:A kind=kind
-  map models:B kind=kind
-  map models:Envelope value=value, values=values
+  model_bindings.py typing_TypedDict/annotated
 render msgspec.Struct annotated
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
+  model_bindings.py msgspec_Struct/annotated
 render msgspec.Struct collapsed-remapped
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
+  model_bindings.py msgspec_Struct/annotated
