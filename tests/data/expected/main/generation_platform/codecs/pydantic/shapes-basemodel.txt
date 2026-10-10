@@ -25,7 +25,7 @@ values-server-response-integer-key: native Values(amount=None, day=None, clock=N
 values-client-from-wire-nested: ValidationError model_type@[]
 tree-client-decode-native: ValidationError value_error@['pair', 1],value_error@['index', 'k', 'contact']
 tree-server-mutate-pair: mutated pair
-tree-server-encode-mutated: native Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=(1,), contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) set=['children', 'index', 'pair', 'value'] json={"value":1,"children":[{"value":2}],"pair":[1],"index":{"a":{"value":3}}}
+tree-server-encode-mutated: native Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=(1, 'bad@y'), contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) set=['children', 'index', 'pair', 'value'] json={"value":1,"children":[{"value":2}],"pair":[1,"bad@y"],"index":{"a":{"value":3}}}
 values-server-response-codes: native Values(amount=None, day=None, clock=None, span=None, uid=None, secret=None, blob=None, level=None, link=None, any=None, list_=None, codes=['a'], un=None, mark=None) set=['codes'] json={"codes":["a"]}
 values-client-encode-codes: native Values(amount=None, day=None, clock=None, span=None, uid=None, secret=None, blob=None, level=None, link=None, any=None, list_=None, codes=['a'], un=None, mark=None) set=['codes'] json={"codes":["a"]}
 values-server-decode-nested: HTTP 422 {"detail":[{"type":"model_attributes_type","loc":["body"],"msg":"Input should be a valid dictionary or object to extract fields from"}]}
