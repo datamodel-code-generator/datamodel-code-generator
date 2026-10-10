@@ -42,8 +42,14 @@ class AdminUsersResource:
         *,
         options: RequestOptions | None = None,
     ) -> ListAdminUsersResponse:
-        """Call GET /admin/users."""
-        return self._core.execute(_operations.OPERATION_3, (), options=options).data
+        """
+        Call GET /admin/users.
+        """
+        return self._core.execute(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        ).data
 
 
 class AdminUsersWithResponse:
@@ -58,8 +64,14 @@ class AdminUsersWithResponse:
         *,
         options: RequestOptions | None = None,
     ) -> Response[ListAdminUsersResponse]:
-        """Call GET /admin/users."""
-        return self._core.execute(_operations.OPERATION_3, (), options=options)
+        """
+        Call GET /admin/users.
+        """
+        return self._core.execute(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
 
 
 class AdminUsersWithRawResponse:
@@ -74,8 +86,14 @@ class AdminUsersWithRawResponse:
         *,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /admin/users."""
-        return self._core.execute_raw(_operations.OPERATION_3, (), options=options)
+        """
+        Call GET /admin/users.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
 
 
 class AdminUsersWithStreamingResponse:
@@ -90,5 +108,11 @@ class AdminUsersWithStreamingResponse:
         *,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /admin/users."""
-        return self._core.stream(_operations.OPERATION_3, (), options=options)
+        """
+        Call GET /admin/users.
+        """
+        return self._core.stream(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )

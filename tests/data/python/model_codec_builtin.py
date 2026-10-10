@@ -13,18 +13,15 @@ import warnings
 from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime, time
-from functools import reduce
 from itertools import starmap
-from operator import or_
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any, get_args, get_type_hints
+from typing import TYPE_CHECKING, Any, get_type_hints
 
 from pydantic import BaseModel, RootModel, TypeAdapter, ValidationError
 
-from datamodel_code_generator import Error, SchemaParseError
-from datamodel_code_generator.fastapi import generate_fastapi
+from datamodel_code_generator import Error, SchemaParseError, generate
 from tests.data.python.client_generation import generate_client, model_config
-from tests.data.python.fastapi_generation import fastapi_config
+from tests.data.python.fastapi_generation import server_options
 from tests.data.python.generated_packages import generated_root, import_generated, import_generated_codecs
 
 if TYPE_CHECKING:
@@ -103,11 +100,16 @@ def generate_package(
     package = fixture["package"]
     try:
         if server:
-            generate_fastapi(
+            generate(
                 source,
-                model_config=model_config(root / f"{package}_models.py", backend, options),
-                config=fastapi_config(
-                    {"output": package, "package": package, "model_package": f"{package}_models", **config}, root
+                config=model_config(
+                    root / f"{package}_models.py",
+                    backend,
+                    {
+                        **options,
+                        **server_options({"config": config}, package, f"{package}_models"),
+                        "server_output": root / package,
+                    },
                 ),
             )
         else:
@@ -402,22 +404,27 @@ class _NativeServerCases:
         route = self.routes[path, method]
         if role == "response_body":
             status = parts[0]
-            native_type = route.response_model if int(status) == route.status_code else route.responses[status]["model"]
+            native_type = (
+                route.response_model if int(status) == route.status_code else self.declared(route.name, status)
+            )
         else:
             name = "body" if role == "request_body" else parts[-1]
             hints = get_type_hints(route.endpoint, include_extras=True)
             if name in hints:
                 native_type = hints[name]
             else:
-                name = re.sub(r"\W", "_", name).lower()
+                name = re.sub(r"\W", "_", name)
                 service = next(service for service in self.services.values() if hasattr(service, route.name))
-                native_type = get_type_hints(getattr(service, route.name))[name]
-                members = tuple(
-                    member for member in get_args(native_type) if getattr(member, "__name__", "") != "Unset"
-                )
-                if members:
-                    native_type = reduce(or_, members)
+                native_type = get_type_hints(getattr(service, route.name), include_extras=True)[name]
         return route, native_type
+
+    def declared(self, name: str, status: str) -> object:
+        """Return the model the generated contract declares for one response of an operation."""
+        contract = importlib.import_module(f"{self.package}._generated.contract")
+        plans = next(
+            item for item in vars(contract).values() if getattr(item, "__doc__", None) == f"Plans of the {name} operation."
+        )
+        return plans.RESPONSES.responses[status].model
 
     def request(self, route: Any, value: object) -> object:
         from fastapi.testclient import TestClient

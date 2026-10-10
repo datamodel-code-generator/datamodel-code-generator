@@ -6,8 +6,8 @@ from collections import OrderedDict
 from threading import Lock
 
 from ..client.errors import ConfigurationError
+from ..client.timing import positive_count
 from .caches import CacheEntry
-from .options import positive_count
 
 
 def _key(value: object) -> bytes:

@@ -1,8 +1,9 @@
 """Declare the runtime modules a client package copies from its capabilities, and what it exports.
 
-The capabilities are the security schemes, the helpers, and the model codec kinds. The copy set never follows the
-modules' imports: each capability names every module it needs, including those its modules import only for
-annotations or inside functions, so that the package type-checks as copied.
+The capabilities are the security schemes, the helpers, the model codec kinds, and the request bodies and response
+headers the operations declare. The copy set never follows the modules' imports: each capability names every module it
+needs, including those its modules import only for annotations or inside functions, so that the package type-checks as
+copied, and the core modules name no other module.
 """
 
 from __future__ import annotations
@@ -10,75 +11,62 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._runtime.client.security import SecurityScheme
-from datamodel_code_generator._target_contract import LiteralMapping, LiteralScalar
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from datamodel_code_generator._client.codec_plan import ClientCodecs
     from datamodel_code_generator._client.plan import ClientPlan
-    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch
 
 Security: TypeAlias = Literal["api_key", "basic", "bearer", "client_credentials", "refresh_token"]
+RawBody: TypeAlias = Literal["bytes", "binary", "multipart"]
 Helper: TypeAlias = Literal[
     "pagination", "polling", "streams", "websocket", "webhooks", "cache", "uploads", "compression"
 ]
 
 _CORE: Final = (
-    "client/auth.py",
-    "client/auth_challenges.py",
-    "client/auth_policy.py",
-    "client/bodies.py",
-    "client/body_sources.py",
     "client/client.py",
-    "client/codecs.py",
-    "client/coding.py",
-    "client/disk.py",
+    "client/content.py",
     "client/errors.py",
-    "client/events.py",
-    "client/hooks.py",
     "client/logical.py",
     "client/media.py",
-    "client/multipart.py",
     "client/native.py",
     "client/operations.py",
     "client/options.py",
     "client/paths.py",
+    "client/positions.py",
     "client/raw.py",
-    "client/redirects.py",
     "client/responses.py",
     "client/retry.py",
-    "client/scopes.py",
-    "client/security.py",
     "client/timing.py",
     "client/urls.py",
     "model_codecs/errors.py",
     "model_codecs/media.py",
     "model_codecs/parameters.py",
     "model_codecs/unset.py",
-    "model_codecs/wire.py",
+)
+_PROTOCOLS: Final = (
+    "protocols/client.py",
     "protocols/caches.py",
-    "protocols/errors.py",
-    "protocols/names.py",
     "protocols/options.py",
     "protocols/origins.py",
-    "protocols/records.py",
-    "protocols/references.py",
-    "protocols/resume.py",
-    "protocols/sources.py",
-    "protocols/websocket_types.py",
 )
-_OAUTH: Final = ("client/grants.py", "client/oauth.py", "client/refresh.py")
-_PAGES: Final = ("protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
+_SCHEMES: Final = ("client/security.py",)
+_AUTH: Final = (*_SCHEMES, "client/auth.py")
+_OAUTH: Final = (*_AUTH, "client/oauth.py")
+_BINARY: Final = ("client/bodies.py", "client/body_sources.py")
+_MULTIPART: Final = (*_BINARY, "client/multipart.py")
+_HEADERS: Final = ("client/codecs.py", "model_codecs/parameter_reads.py")
+_BASE: Final = ("protocols/errors.py", "protocols/records.py", "protocols/references.py")
+_PAGES: Final = (*_BASE, "protocols/links.py", "protocols/pagination.py", "protocols/values.py", "protocols/writes.py")
+_RESUMED: Final = (*_PAGES, "protocols/resume.py")
 _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "pagination": _PAGES,
-    "polling": (*_PAGES, "protocols/polling.py"),
-    "streams": (*_PAGES, "protocols/streams.py"),
-    "uploads": (*_PAGES, "protocols/uploads.py"),
-    "cache": ("protocols/cache.py", "protocols/cache_stores.py"),
-    "websocket": ("protocols/websocket.py", "protocols/websocket_connectors.py", "protocols/websocket_native.py"),
-    "webhooks": ("protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
+    "polling": (*_RESUMED, "protocols/polling.py"),
+    "streams": (*_RESUMED, "protocols/streams.py"),
+    "uploads": (*_RESUMED, "protocols/sources.py", "protocols/uploads.py"),
+    "cache": (*_BASE, "protocols/cache.py", "protocols/cache_stores.py"),
+    "websocket": (*_BASE, "protocols/websocket.py"),
+    "webhooks": (*_BASE, "protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
     "compression": ("client/compression.py",),
 }
 _VERIFIED: Final = ("protocols/signatures.py", "protocols/verification.py", "protocols/webhook_keys.py")
@@ -111,7 +99,10 @@ class Capabilities:
     """What a client package declares: its usable security schemes, its helpers, and its model codec kinds.
 
     `signatures` holds the signature kinds of the webhook helpers; `keywords` marks a package whose generated keyword
-    records name the runtime's unpacked-argument types.
+    records name the runtime's unpacked-argument types. `schemes` marks a package that declares security schemes or
+    operation security, usable or not; `binary_bodies` and `multipart_requests` one whose operations send binary or
+    form-data bodies, `form_data` one with a URL-encoded body or response no schema describes, `response_headers` one
+    that decodes declared response headers, and `multipart_responses` one that reads multipart responses.
     """
 
     security: frozenset[Security]
@@ -119,6 +110,12 @@ class Capabilities:
     signatures: frozenset[str]
     backends: frozenset[str]
     keywords: bool
+    schemes: bool = False
+    binary_bodies: bool = False
+    multipart_requests: bool = False
+    form_data: bool = False
+    response_headers: bool = False
+    multipart_responses: bool = False
 
     @property
     def oauth(self) -> bool:
@@ -127,7 +124,7 @@ class Capabilities:
 
     @property
     def protocols(self) -> bool:
-        """Whether a helper that `ProtocolClientOptions` configures is declared."""
+        """Whether a helper that the client's helper settings configure is declared."""
         return bool(self.helpers - {"webhooks", "compression"})
 
     def modules(self) -> tuple[str, ...]:
@@ -135,46 +132,36 @@ class Capabilities:
         modules = {*_CORE, *(module for kind in self.backends for module in _BACKENDS[kind])}
         modules.update(module for helper in self.helpers for module in _HELPERS[helper])
         modules.update(module for kind in self.signatures for module in _SIGNATURES.get(kind, _VERIFIED))
-        if self.oauth:
-            modules.update(_OAUTH)
+        if self.protocols:
+            modules.update(_PROTOCOLS)
+        if self.schemes:
+            modules.update(_SCHEMES)
+        if self.security:
+            modules.update(_OAUTH if self.oauth else _AUTH)
         if self.keywords:
             modules.add("client/arguments.py")
+        if self.binary_bodies:
+            modules.update(_BINARY)
+        if self.multipart_requests:
+            modules.update(_MULTIPART)
+        if self.response_headers:
+            modules.update(_HEADERS)
+        if self.multipart_responses:
+            modules.update((*_MULTIPART, "client/multipart_responses.py"))
         return tuple(sorted(modules))
 
-
-def _flows(facts: dict[str, object]) -> Iterable[Security]:
-    """Return the OAuth capabilities of one OAuth 2 or OpenID Connect declaration."""
-    flows = facts.get("flows")
-    names = (
-        {key.value for key, _ in flows.entries if isinstance(key, LiteralScalar)}
-        if isinstance(flows, LiteralMapping)
-        else set()
-    )
-    if "clientCredentials" in names:
-        yield "client_credentials"
-    if facts.get("type") == "openIdConnect" or names - {"clientCredentials"}:
-        yield "refresh_token"
+    @property
+    def raw_body(self) -> RawBody:
+        """Return the bodies `request_raw` takes: those of the request media the package declares, else bytes."""
+        return "multipart" if self.multipart_requests else "binary" if self.binary_bodies else "bytes"
 
 
-def declared_security(plan: ClientPlan, batch: GeneratedTypeContractBatch) -> frozenset[Security]:
-    """Return the credential kinds of the usable schemes that the package's root or its operations name.
-
-    A bearer scheme declared as OAuth 2 also declares each of its flows' token providers.
-    """
-    schemes = {scheme for scheme in plan.security_schemes if isinstance(scheme, SecurityScheme)}
-    schemes.update(
-        item.scheme
-        for spec in plan.operations
-        if spec.security is not None
-        for alternative in spec.security.alternatives
-        for item in alternative
-    )
-    kinds: set[Security] = {scheme.kind for scheme in schemes}
-    bearer = {scheme.name for scheme in schemes if scheme.kind == "bearer"}
-    for declaration in batch.security_schemes:
-        if declaration.name in bearer:
-            kinds.update(_flows({name: getattr(value, "value", value) for name, value in declaration.facts}))
-    return frozenset(kinds)
+def declared_security(plan: ClientPlan) -> frozenset[Security]:
+    """Return the credential kinds of the schemes the package's operations require, and their OAuth flows."""
+    return frozenset((
+        *(credential.scheme.kind for credential in plan.credentials),
+        *(flow for credential in plan.credentials for flow, _ in credential.flows),
+    ))
 
 
 def declared_helpers(kinds: Iterable[str], plan: ClientPlan) -> frozenset[Helper]:

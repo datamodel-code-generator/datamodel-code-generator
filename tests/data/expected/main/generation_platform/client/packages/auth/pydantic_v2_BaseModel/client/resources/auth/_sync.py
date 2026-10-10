@@ -9,12 +9,12 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldApiKeyCookieParametersGetQueryFilterParameter as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody, SyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.auth import (
     AliasAuthResponse,
@@ -74,7 +74,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> InheritedAuthResponse:
-        """Call GET /inherited."""
+        """
+        Call GET /inherited.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -88,7 +90,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AnonymousResponse:
-        """Call GET /anonymous."""
+        """
+        Call GET /anonymous.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -102,7 +106,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> EmptySecurityResponse:
-        """Call GET /empty."""
+        """
+        Call GET /empty.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -116,7 +122,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> OptionalAuthResponse:
-        """Call GET /optional."""
+        """
+        Call GET /optional.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -130,7 +138,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> OptionalTokenFirstResponse:
-        """Call GET /optional-token-first."""
+        """
+        Call GET /optional-token-first.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -144,7 +154,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AndAuthResponse:
-        """Call GET /and."""
+        """
+        Call GET /and.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -158,7 +170,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> OrAuthResponse:
-        """Call GET /or."""
+        """
+        Call GET /or.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -172,7 +186,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AuthorizationOrResponse:
-        """Call GET /authorization-or."""
+        """
+        Call GET /authorization-or.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -186,7 +202,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> ApiKeyHeaderResponse:
-        """Call GET /api-key/header."""
+        """
+        Call GET /api-key/header.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -200,7 +218,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> ApiKeyQueryResponse:
-        """Call GET /api-key/query."""
+        """
+        Call GET /api-key/query.
+        """
         return self._core.execute(
             _operations.OPERATION_9,
             (),
@@ -214,7 +234,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> ApiKeyCookieResponse:
-        """Call GET /api-key/cookie."""
+        """
+        Call GET /api-key/cookie.
+        """
         return self._core.execute(
             _operations.OPERATION_10,
             (),
@@ -227,15 +249,17 @@ class AuthResource:
         *,
         theme: str,
         page: int,
-        x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        X_Trace: str,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieParametersResponse:
-        """Call GET /api-key/cookie-parameters."""
+        """
+        Call GET /api-key/cookie-parameters.
+        """
         return self._core.execute(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         ).data
@@ -246,7 +270,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> BasicResponse:
-        """Call GET /basic."""
+        """
+        Call GET /basic.
+        """
         return self._core.execute(
             _operations.OPERATION_12,
             (),
@@ -260,7 +286,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> BearerResponse:
-        """Call GET /bearer."""
+        """
+        Call GET /bearer.
+        """
         return self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -274,7 +302,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AliasAuthResponse:
-        """Call GET /alias."""
+        """
+        Call GET /alias.
+        """
         return self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -288,7 +318,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> OauthReadResponse:
-        """Call GET /oauth/read."""
+        """
+        Call GET /oauth/read.
+        """
         return self._core.execute(
             _operations.OPERATION_15,
             (),
@@ -302,7 +334,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> OauthScopesResponse:
-        """Call GET /oauth/scopes."""
+        """
+        Call GET /oauth/scopes.
+        """
         return self._core.execute(
             _operations.OPERATION_16,
             (),
@@ -316,7 +350,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> OauthEmptyResponse:
-        """Call GET /oauth/empty."""
+        """
+        Call GET /oauth/empty.
+        """
         return self._core.execute(
             _operations.OPERATION_17,
             (),
@@ -330,7 +366,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> OpenidReadResponse:
-        """Call GET /openid/read."""
+        """
+        Call GET /openid/read.
+        """
         return self._core.execute(
             _operations.OPERATION_18,
             (),
@@ -344,7 +382,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> ChallengeLessResponse:
-        """Call GET /challenge-less."""
+        """
+        Call GET /challenge-less.
+        """
         return self._core.execute(
             _operations.OPERATION_19,
             (),
@@ -355,12 +395,14 @@ class AuthResource:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> UnsafeAuthResponse:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.execute(
             _operations.OPERATION_20,
             (),
@@ -373,12 +415,14 @@ class AuthResource:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> IdempotentAuthResponse:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.execute(
             _operations.OPERATION_21,
             (),
@@ -394,7 +438,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> NeverAuthResponse:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.execute(
             _operations.OPERATION_22,
             (),
@@ -408,7 +454,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> VendorAuthResponse:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.execute(
             _operations.OPERATION_23,
             (),
@@ -419,12 +467,14 @@ class AuthResource:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> SignedBodyResponse:
-        """Call PUT /signed."""
+        """
+        Call PUT /signed.
+        """
         return self._core.execute(
             _operations.OPERATION_24,
             (),
@@ -442,7 +492,9 @@ class AuthResource:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> SignedMultipartResponse:
-        """Call POST /signed-multipart."""
+        """
+        Call POST /signed-multipart.
+        """
         return self._core.execute(
             _operations.OPERATION_25,
             (),
@@ -466,7 +518,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[InheritedAuthResponse]:
-        """Call GET /inherited."""
+        """
+        Call GET /inherited.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -480,7 +534,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[AnonymousResponse]:
-        """Call GET /anonymous."""
+        """
+        Call GET /anonymous.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -494,7 +550,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[EmptySecurityResponse]:
-        """Call GET /empty."""
+        """
+        Call GET /empty.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -508,7 +566,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OptionalAuthResponse]:
-        """Call GET /optional."""
+        """
+        Call GET /optional.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -522,7 +582,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OptionalTokenFirstResponse]:
-        """Call GET /optional-token-first."""
+        """
+        Call GET /optional-token-first.
+        """
         return self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -536,7 +598,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[AndAuthResponse]:
-        """Call GET /and."""
+        """
+        Call GET /and.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -550,7 +614,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OrAuthResponse]:
-        """Call GET /or."""
+        """
+        Call GET /or.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -564,7 +630,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[AuthorizationOrResponse]:
-        """Call GET /authorization-or."""
+        """
+        Call GET /authorization-or.
+        """
         return self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -578,7 +646,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ApiKeyHeaderResponse]:
-        """Call GET /api-key/header."""
+        """
+        Call GET /api-key/header.
+        """
         return self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -592,7 +662,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ApiKeyQueryResponse]:
-        """Call GET /api-key/query."""
+        """
+        Call GET /api-key/query.
+        """
         return self._core.execute(
             _operations.OPERATION_9,
             (),
@@ -606,7 +678,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ApiKeyCookieResponse]:
-        """Call GET /api-key/cookie."""
+        """
+        Call GET /api-key/cookie.
+        """
         return self._core.execute(
             _operations.OPERATION_10,
             (),
@@ -619,15 +693,17 @@ class AuthWithResponse:
         *,
         theme: str,
         page: int,
-        x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        X_Trace: str,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieParametersResponse]:
-        """Call GET /api-key/cookie-parameters."""
+        """
+        Call GET /api-key/cookie-parameters.
+        """
         return self._core.execute(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         )
@@ -638,7 +714,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[BasicResponse]:
-        """Call GET /basic."""
+        """
+        Call GET /basic.
+        """
         return self._core.execute(
             _operations.OPERATION_12,
             (),
@@ -652,7 +730,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[BearerResponse]:
-        """Call GET /bearer."""
+        """
+        Call GET /bearer.
+        """
         return self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -666,7 +746,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[AliasAuthResponse]:
-        """Call GET /alias."""
+        """
+        Call GET /alias.
+        """
         return self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -680,7 +762,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OauthReadResponse]:
-        """Call GET /oauth/read."""
+        """
+        Call GET /oauth/read.
+        """
         return self._core.execute(
             _operations.OPERATION_15,
             (),
@@ -694,7 +778,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OauthScopesResponse]:
-        """Call GET /oauth/scopes."""
+        """
+        Call GET /oauth/scopes.
+        """
         return self._core.execute(
             _operations.OPERATION_16,
             (),
@@ -708,7 +794,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OauthEmptyResponse]:
-        """Call GET /oauth/empty."""
+        """
+        Call GET /oauth/empty.
+        """
         return self._core.execute(
             _operations.OPERATION_17,
             (),
@@ -722,7 +810,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[OpenidReadResponse]:
-        """Call GET /openid/read."""
+        """
+        Call GET /openid/read.
+        """
         return self._core.execute(
             _operations.OPERATION_18,
             (),
@@ -736,7 +826,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ChallengeLessResponse]:
-        """Call GET /challenge-less."""
+        """
+        Call GET /challenge-less.
+        """
         return self._core.execute(
             _operations.OPERATION_19,
             (),
@@ -747,12 +839,14 @@ class AuthWithResponse:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UnsafeAuthResponse]:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.execute(
             _operations.OPERATION_20,
             (),
@@ -765,12 +859,14 @@ class AuthWithResponse:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[IdempotentAuthResponse]:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.execute(
             _operations.OPERATION_21,
             (),
@@ -786,7 +882,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[NeverAuthResponse]:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.execute(
             _operations.OPERATION_22,
             (),
@@ -800,7 +898,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[VendorAuthResponse]:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.execute(
             _operations.OPERATION_23,
             (),
@@ -811,12 +911,14 @@ class AuthWithResponse:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SignedBodyResponse]:
-        """Call PUT /signed."""
+        """
+        Call PUT /signed.
+        """
         return self._core.execute(
             _operations.OPERATION_24,
             (),
@@ -834,7 +936,9 @@ class AuthWithResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SignedMultipartResponse]:
-        """Call POST /signed-multipart."""
+        """
+        Call POST /signed-multipart.
+        """
         return self._core.execute(
             _operations.OPERATION_25,
             (),
@@ -858,7 +962,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /inherited."""
+        """
+        Call GET /inherited.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -872,7 +978,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /anonymous."""
+        """
+        Call GET /anonymous.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -886,7 +994,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /empty."""
+        """
+        Call GET /empty.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -900,7 +1010,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /optional."""
+        """
+        Call GET /optional.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (),
@@ -914,7 +1026,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /optional-token-first."""
+        """
+        Call GET /optional-token-first.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -928,7 +1042,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /and."""
+        """
+        Call GET /and.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
             (),
@@ -942,7 +1058,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /or."""
+        """
+        Call GET /or.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_6,
             (),
@@ -956,7 +1074,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /authorization-or."""
+        """
+        Call GET /authorization-or.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_7,
             (),
@@ -970,7 +1090,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /api-key/header."""
+        """
+        Call GET /api-key/header.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_8,
             (),
@@ -984,7 +1106,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /api-key/query."""
+        """
+        Call GET /api-key/query.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_9,
             (),
@@ -998,7 +1122,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /api-key/cookie."""
+        """
+        Call GET /api-key/cookie.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_10,
             (),
@@ -1011,15 +1137,17 @@ class AuthWithRawResponse:
         *,
         theme: str,
         page: int,
-        x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        X_Trace: str,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /api-key/cookie-parameters."""
+        """
+        Call GET /api-key/cookie-parameters.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         )
@@ -1030,7 +1158,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /basic."""
+        """
+        Call GET /basic.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_12,
             (),
@@ -1044,7 +1174,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /bearer."""
+        """
+        Call GET /bearer.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_13,
             (),
@@ -1058,7 +1190,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /alias."""
+        """
+        Call GET /alias.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_14,
             (),
@@ -1072,7 +1206,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /oauth/read."""
+        """
+        Call GET /oauth/read.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_15,
             (),
@@ -1086,7 +1222,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /oauth/scopes."""
+        """
+        Call GET /oauth/scopes.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_16,
             (),
@@ -1100,7 +1238,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /oauth/empty."""
+        """
+        Call GET /oauth/empty.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_17,
             (),
@@ -1114,7 +1254,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /openid/read."""
+        """
+        Call GET /openid/read.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_18,
             (),
@@ -1128,7 +1270,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /challenge-less."""
+        """
+        Call GET /challenge-less.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_19,
             (),
@@ -1139,12 +1283,14 @@ class AuthWithRawResponse:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_20,
             (),
@@ -1157,12 +1303,14 @@ class AuthWithRawResponse:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_21,
             (),
@@ -1178,7 +1326,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_22,
             (),
@@ -1192,7 +1342,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_23,
             (),
@@ -1203,12 +1355,14 @@ class AuthWithRawResponse:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call PUT /signed."""
+        """
+        Call PUT /signed.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_24,
             (),
@@ -1226,7 +1380,9 @@ class AuthWithRawResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /signed-multipart."""
+        """
+        Call POST /signed-multipart.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_25,
             (),
@@ -1250,7 +1406,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /inherited."""
+        """
+        Call GET /inherited.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (),
@@ -1264,7 +1422,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /anonymous."""
+        """
+        Call GET /anonymous.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -1278,7 +1438,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /empty."""
+        """
+        Call GET /empty.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (),
@@ -1292,7 +1454,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /optional."""
+        """
+        Call GET /optional.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (),
@@ -1306,7 +1470,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /optional-token-first."""
+        """
+        Call GET /optional-token-first.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),
@@ -1320,7 +1486,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /and."""
+        """
+        Call GET /and.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (),
@@ -1334,7 +1502,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /or."""
+        """
+        Call GET /or.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (),
@@ -1348,7 +1518,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /authorization-or."""
+        """
+        Call GET /authorization-or.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (),
@@ -1362,7 +1534,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /api-key/header."""
+        """
+        Call GET /api-key/header.
+        """
         return self._core.stream(
             _operations.OPERATION_8,
             (),
@@ -1376,7 +1550,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /api-key/query."""
+        """
+        Call GET /api-key/query.
+        """
         return self._core.stream(
             _operations.OPERATION_9,
             (),
@@ -1390,7 +1566,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /api-key/cookie."""
+        """
+        Call GET /api-key/cookie.
+        """
         return self._core.stream(
             _operations.OPERATION_10,
             (),
@@ -1403,15 +1581,17 @@ class AuthWithStreamingResponse:
         *,
         theme: str,
         page: int,
-        x_trace: str,
-        filter: _dcg_type_0 | Unset = UNSET,
+        X_Trace: str,
+        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /api-key/cookie-parameters."""
+        """
+        Call GET /api-key/cookie-parameters.
+        """
         return self._core.stream(
             _operations.OPERATION_11,
-            (theme, page, x_trace, filter),
+            (theme, page, X_Trace, filter),
             options=options,
             response_media_type=response_media_type,
         )
@@ -1422,7 +1602,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /basic."""
+        """
+        Call GET /basic.
+        """
         return self._core.stream(
             _operations.OPERATION_12,
             (),
@@ -1436,7 +1618,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /bearer."""
+        """
+        Call GET /bearer.
+        """
         return self._core.stream(
             _operations.OPERATION_13,
             (),
@@ -1450,7 +1634,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /alias."""
+        """
+        Call GET /alias.
+        """
         return self._core.stream(
             _operations.OPERATION_14,
             (),
@@ -1464,7 +1650,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /oauth/read."""
+        """
+        Call GET /oauth/read.
+        """
         return self._core.stream(
             _operations.OPERATION_15,
             (),
@@ -1478,7 +1666,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /oauth/scopes."""
+        """
+        Call GET /oauth/scopes.
+        """
         return self._core.stream(
             _operations.OPERATION_16,
             (),
@@ -1492,7 +1682,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /oauth/empty."""
+        """
+        Call GET /oauth/empty.
+        """
         return self._core.stream(
             _operations.OPERATION_17,
             (),
@@ -1506,7 +1698,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /openid/read."""
+        """
+        Call GET /openid/read.
+        """
         return self._core.stream(
             _operations.OPERATION_18,
             (),
@@ -1520,7 +1714,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /challenge-less."""
+        """
+        Call GET /challenge-less.
+        """
         return self._core.stream(
             _operations.OPERATION_19,
             (),
@@ -1531,12 +1727,14 @@ class AuthWithStreamingResponse:
     def unsafe_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.stream(
             _operations.OPERATION_20,
             (),
@@ -1549,12 +1747,14 @@ class AuthWithStreamingResponse:
     def idempotent_auth(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.stream(
             _operations.OPERATION_21,
             (),
@@ -1570,7 +1770,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.stream(
             _operations.OPERATION_22,
             (),
@@ -1584,7 +1786,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.stream(
             _operations.OPERATION_23,
             (),
@@ -1595,12 +1799,14 @@ class AuthWithStreamingResponse:
     def signed_body(
         self,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /signed."""
+        """
+        Call PUT /signed.
+        """
         return self._core.stream(
             _operations.OPERATION_24,
             (),
@@ -1618,7 +1824,9 @@ class AuthWithStreamingResponse:
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /signed-multipart."""
+        """
+        Call POST /signed-multipart.
+        """
         return self._core.stream(
             _operations.OPERATION_25,
             (),

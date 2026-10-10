@@ -3,24 +3,24 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   start gzip = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
   > PATCH https://api.example.com/files/u1
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'0123'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'0123'
   compressed range = progress 4/10 complete=False
   > HEAD https://api.example.com/files/u1
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u1
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'4567'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'4567'
   > PATCH https://api.example.com/files/u1
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'89'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'89'
   compressed resume = None
-  checkpoint the completed upload ! ProtocolStateError: ProtocolStateError(state='complete', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  checkpoint the completed upload ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.complete') [field_path=('checkpoint', 'complete')] invalid_state
   stored u1: 10 bytes, original=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u2
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'01234567'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'01234567'
   plain range = progress 8/10 complete=False
   > PATCH https://api.example.com/files/u2
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'89'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'89'
   plain range = progress 10/10 complete=False
   > GET https://api.example.com/files/u2/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -32,23 +32,23 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   async start gzip = AsyncUploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
   > PATCH https://api.example.com/files/u3
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'0123'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'0123'
   async compressed range = progress 4/10 complete=False
   > HEAD https://api.example.com/files/u3
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u3
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'4567'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'4567'
   > PATCH https://api.example.com/files/u3
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'89'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, upload-checksum: sha1 FrBr2bc4g14tE0/o1ZbpqwCGqYU=, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'89'
   async compressed resume = None
-  async checkpoint the completed upload ! ProtocolStateError: ProtocolStateError(state='complete', action='checkpoint') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_state_error
+  async checkpoint the completed upload ! ConfigurationError: ConfigurationError(reason='invalid_state', field_path='checkpoint.complete') [field_path=('checkpoint', 'complete')] invalid_state
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u4
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'01234567'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'01234567'
   async plain range = progress 8/10 complete=False
   > PATCH https://api.example.com/files/u4
-    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip b'89'
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'89'
   async plain range = progress 10/10 complete=False
   > GET https://api.example.com/files/u4/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

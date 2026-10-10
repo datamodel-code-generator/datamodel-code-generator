@@ -114,7 +114,14 @@ def _validate_http_key_value_options(
 
 @lru_cache(maxsize=1)
 def _get_config_class() -> type[Config]:
-    from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator  # noqa: PLC0415
+    from pydantic import (  # noqa: PLC0415
+        ConfigDict,
+        Field,
+        PrivateAttr,
+        ValidationInfo,
+        field_validator,
+        model_validator,
+    )
     from typing_extensions import Self  # noqa: PLC0415
 
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
@@ -128,6 +135,8 @@ def _get_config_class() -> type[Config]:
             protected_namespaces=(),
             defer_build=True,
         )
+
+        _json_sources: dict[str, Any] = PrivateAttr(default_factory=dict)
 
         def get(self, item: str) -> Any:  # pragma: no cover
             """Get attribute value by name."""
@@ -333,10 +342,6 @@ def _get_config_class() -> type[Config]:
             f"`--keyword-only` requires `--target-python-version` {PythonVersion.PY_310.value} or higher."
         )
 
-        __validate_target_selection_err: ClassVar[str] = (
-            "--generate-server and --generate-client cannot be used together"
-        )
-
         __validate_all_exports_collision_strategy_err: ClassVar[str] = (
             "`--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`."
         )
@@ -378,13 +383,6 @@ def _get_config_class() -> type[Config]:
                 and not python_target.has_kw_only_dataclass
             ):
                 raise Error(self.__validate_keyword_only_err)  # pragma: no cover
-            return self
-
-        @model_validator(mode="after")
-        def validate_target_selection(self: Self) -> Self:
-            """Validate that one run selects at most one generation target."""
-            if self.generate_server is not None and self.generate_client is not None:
-                raise Error(self.__validate_target_selection_err)
             return self
 
         @model_validator(mode="after")
@@ -457,31 +455,6 @@ def _get_config_class() -> type[Config]:
         watch_delay: float = 0.5
         list_deprecations: Optional[str] = None  # noqa: UP045
         list_experimental: Optional[str] = None  # noqa: UP045
-        generate_server: Optional[Literal["fastapi"]] = None  # noqa: UP045
-        server_output: Optional[Path] = None  # noqa: UP045
-        server_package: Optional[str] = None  # noqa: UP045
-        server_model_package: Optional[str] = None  # noqa: UP045
-        server_layout: Optional[Literal["routers", "single"]] = None  # noqa: UP045
-        server_handler_mode: Optional[Literal["sync", "async"]] = None  # noqa: UP045
-        server_handler_modes: Optional[Mapping[str, Literal["sync", "async"]]] = None  # noqa: UP045
-        server_include_request: Optional[bool] = None  # noqa: UP045
-        server_body_mode: Optional[Literal["typed", "request"]] = None  # noqa: UP045
-        server_body_modes: Optional[Mapping[str, Literal["typed", "request"]]] = None  # noqa: UP045
-        server_primary_responses: Optional[Mapping[str, Any]] = None  # noqa: UP045
-        server_operation_names: Optional[Mapping[str, str]] = None  # noqa: UP045
-        server_router_names: Optional[Mapping[str, str]] = None  # noqa: UP045
-        server_parameter_names: Optional[Mapping[str, Mapping[str, str]]] = None  # noqa: UP045
-        generate_client: Optional[Literal["httpx2"]] = None  # noqa: UP045
-        client_output: Optional[Path] = None  # noqa: UP045
-        client_package: Optional[str] = None  # noqa: UP045
-        client_model_package: Optional[str] = None  # noqa: UP045
-        client_signature_style: Optional[Literal["explicit", "unpack"]] = None  # noqa: UP045
-        client_body_arguments: Optional[Literal["body", "both"]] = None  # noqa: UP045
-        client_resource_names: Optional[Mapping[str, str]] = None  # noqa: UP045
-        client_operations: Optional[Mapping[str, Mapping[str, Any]]] = None  # noqa: UP045
-        client_default_base_url: Optional[str] = None  # noqa: UP045
-        client_server_base_url: Optional[str] = None  # noqa: UP045
-        client_protocols: Optional[Mapping[str, Any]] = None  # noqa: UP045
 
         def merge_args(self, args: Namespace) -> None:
             """Merge command-line arguments into config."""

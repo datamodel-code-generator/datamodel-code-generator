@@ -252,16 +252,19 @@ class ModuleSplitMode(Enum):
 class TargetPydanticVersion(Enum):
     """Target Pydantic version for generated code.
 
-    An unset target emits the newest supported feature forms and keeps the populate_by_name config naming of V2.
+    An unset target emits the newest supported feature forms and keeps the populate_by_name config naming of V2,
+    and the experimental MISSING import of V2_12.
 
     V2: Generate code compatible with Pydantic 2.0+ (uses populate_by_name).
     V2_11: Generate code for Pydantic 2.11+ (uses validate_by_name).
     V2_12: Generate code for Pydantic 2.12+ (supports MISSING sentinel).
+    V2_14: Generate code for Pydantic 2.14+ (imports MISSING from pydantic).
     """
 
     V2 = "2"
     V2_11 = "2.11"
     V2_12 = "2.12"
+    V2_14 = "2.14"
 
 
 def _pydantic_version_key(target_version: TargetPydanticVersion | str) -> tuple[int, ...]:
@@ -402,6 +405,53 @@ class VersionMode(Enum):
     Strict = "strict"
 
 
+class ServerType(Enum):
+    """Server package a generation run adds to the models."""
+
+    FastAPI = "fastapi"
+
+
+class ServerLayout(Enum):
+    """Module layout of a generated server package."""
+
+    Routers = "routers"
+    Single = "single"
+
+
+class ServerHandlerMode(Enum):
+    """Kind of function a generated service method is."""
+
+    Sync = "sync"
+    Async = "async"
+
+
+class ServerBodyMode(Enum):
+    """How a generated server passes request bodies to services."""
+
+    Typed = "typed"
+    Request = "request"
+
+
+class ClientType(Enum):
+    """Client package a generation run adds to the models."""
+
+    HTTPX2 = "httpx2"
+
+
+class ClientSignatureStyle(Enum):
+    """How generated client methods declare keyword arguments."""
+
+    Explicit = "explicit"
+    Unpack = "unpack"
+
+
+class ClientBodyArguments(Enum):
+    """How generated client methods take request bodies."""
+
+    Body = "body"
+    Both = "both"
+
+
 __all__ = [
     "DEFAULT_SHARED_MODULE_NAME",
     "MAX_VERSION",
@@ -413,6 +463,9 @@ __all__ = [
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientBodyArguments",
+    "ClientSignatureStyle",
+    "ClientType",
     "CollapseRootModelsNameStrategy",
     "CustomFileHeaderMode",
     "DataModelType",
@@ -432,6 +485,10 @@ __all__ = [
     "ReadOnlyWriteOnlyModelType",
     "ReuseScope",
     "SchemaValidatorType",
+    "ServerBodyMode",
+    "ServerHandlerMode",
+    "ServerLayout",
+    "ServerType",
     "StrictTypes",
     "TargetPydanticVersion",
     "UnionMode",

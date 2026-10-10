@@ -5,8 +5,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
-from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
+from datamodel_code_generator import DataModelType, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
 from tests.data.python.strict_typing import checked, marked_lines, negative
 
@@ -16,19 +15,19 @@ SAMPLES = SOURCE / "typing"
 
 def _generate(root: Path, source: Path, package: str, backend: DataModelType, **settings: object) -> None:
     shutil.copy2(source, root / "api.yaml")
-    generate_fastapi(
+    generate(
         root / "api.yaml",
-        model_config=GenerateConfig(
-            output=root / f"{package}_models.py",
-            input_file_type="openapi",
-            target_python_version="3.11",
-            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            output_model_type=backend,
-            formatters=[Formatter.BUILTIN],
-        ),
-        config=FastAPIConfig(
-            output=root / package, package=package, model_package=f"{package}_models", **settings
-        ),
+        output=root / f"{package}_models.py",
+        input_file_type="openapi",
+        target_python_version="3.11",
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+        output_model_type=backend,
+        formatters=[Formatter.BUILTIN],
+        generate_server="fastapi",
+        server_output=root / package,
+        server_package=package,
+        server_model_package=f"{package}_models",
+        **settings,
     )
 
 
@@ -39,7 +38,7 @@ def fastapi_typing_report(root: Path, backend: DataModelType) -> str:
         SOURCE / "server-security.yaml",
         "secured",
         backend,
-        handler_modes={"/paths/~1maybe/get": "async", "/paths/~1custom/get": "async"},
+        server_handler_modes={"/paths/~1maybe/get": "async", "/paths/~1custom/get": "async"},
     )
     for sample in ("applications", "applications_negative"):
         shutil.copyfile(SAMPLES / f"{sample}.py", root / f"{sample}.py")

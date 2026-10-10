@@ -11,35 +11,25 @@ import models
 
 from .._runtime.model_codecs.native import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldUsersGetQueryCursorParameter]] = PydanticCodec(
-    models.FieldUsersGetQueryCursorParameter,
-)
+codec_0: Final[PydanticCodec[models.FieldUsersGetQueryCursorParameter]] = PydanticCodec(models.FieldUsersGetQueryCursorParameter)
 """Codec of /paths/~1users/get parameter (request query cursor)."""
 
-codec_1: Final[PydanticCodec[models.FieldUsersGetQueryLimitParameter]] = PydanticCodec(
-    models.FieldUsersGetQueryLimitParameter,
-)
+codec_1: Final[PydanticCodec[models.FieldUsersGetQueryLimitParameter]] = PydanticCodec(models.FieldUsersGetQueryLimitParameter)
 """Codec of /paths/~1users/get parameter (request query limit)."""
 
-codec_2: Final[PydanticCodec[models.FieldUsersGetHeaderXSnapshotParameter]] = PydanticCodec(
-    models.FieldUsersGetHeaderXSnapshotParameter,
-)
+codec_2: Final[PydanticCodec[models.FieldUsersGetHeaderXSnapshotParameter]] = PydanticCodec(models.FieldUsersGetHeaderXSnapshotParameter)
 """Codec of /paths/~1users/get parameter (request header X-Snapshot)."""
 
 codec_3: Final[PydanticCodec[models.UserPage]] = PydanticCodec(models.UserPage)
 """Codec of /paths/~1users/get response_body (response 200 application/json)."""
 
-codec_4: Final[PydanticCodec[models.FieldUsersGetResponse200XNextHeader]] = PydanticCodec(
-    models.FieldUsersGetResponse200XNextHeader,
-)
+codec_4: Final[PydanticCodec[models.FieldUsersGetResponse200XNextHeader]] = PydanticCodec(models.FieldUsersGetResponse200XNextHeader)
 """Codec of /paths/~1users/get response_header (response X-Next 200)."""
 
 codec_5: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
 """Codec of /paths/~1users/get response_body (response 500 application/json)."""
 
-codec_6: Final[PydanticCodec[models.FieldUsersSearchPostQueryCursorParameter]] = PydanticCodec(
-    models.FieldUsersSearchPostQueryCursorParameter,
-)
+codec_6: Final[PydanticCodec[models.FieldUsersSearchPostQueryCursorParameter]] = PydanticCodec(models.FieldUsersSearchPostQueryCursorParameter)
 """Codec of /paths/~1users~1search/post parameter (request query cursor)."""
 
 codec_7: Final[PydanticCodec[models.UserQuery]] = PydanticCodec(models.UserQuery)
@@ -48,67 +38,49 @@ codec_7: Final[PydanticCodec[models.UserQuery]] = PydanticCodec(models.UserQuery
 codec_8: Final[PydanticCodec[models.UserPage]] = PydanticCodec(models.UserPage)
 """Codec of /paths/~1users~1search/post response_body (response 200 application/json)."""
 
-codec_9: Final[PydanticCodec[models.FieldLooseGetQueryCursorParameter]] = PydanticCodec(
-    models.FieldLooseGetQueryCursorParameter,
-)
+codec_9: Final[PydanticCodec[models.FieldLooseGetQueryCursorParameter]] = PydanticCodec(models.FieldLooseGetQueryCursorParameter)
 """Codec of /paths/~1loose/get parameter (request query cursor)."""
 
 codec_10: Final[PydanticCodec[models.LoosePage]] = PydanticCodec(models.LoosePage)
 """Codec of /paths/~1loose/get response_body (response 200 application/json)."""
 
-codec_11: Final[PydanticCodec[models.FieldNestedGetQueryCursorParameter]] = PydanticCodec(
-    models.FieldNestedGetQueryCursorParameter,
-)
+codec_11: Final[PydanticCodec[models.FieldNestedGetQueryCursorParameter]] = PydanticCodec(models.FieldNestedGetQueryCursorParameter)
 """Codec of /paths/~1nested/get parameter (request query cursor)."""
 
 codec_12: Final[PydanticCodec[models.NestedPage]] = PydanticCodec(models.NestedPage)
 """Codec of /paths/~1nested/get response_body (response 200 application/json)."""
 
-codec_13: Final[PydanticCodec[models.FieldLabelsGetQueryAfterParameter]] = PydanticCodec(
-    models.FieldLabelsGetQueryAfterParameter,
-)
+codec_13: Final[PydanticCodec[models.FieldLabelsGetQueryAfterParameter]] = PydanticCodec(models.FieldLabelsGetQueryAfterParameter)
 """Codec of /paths/~1labels/get parameter (request query after)."""
 
 codec_14: Final[PydanticCodec[models.FieldLabelsGetResponse]] = PydanticCodec(models.FieldLabelsGetResponse)
 """Codec of /paths/~1labels/get response_body (response 200 application/json)."""
 
-codec_15: Final[PydanticCodec[models.FieldLabelsGetResponse200XNextHeader]] = PydanticCodec(
-    models.FieldLabelsGetResponse200XNextHeader,
-)
+codec_15: Final[PydanticCodec[models.FieldLabelsGetResponse200XNextHeader]] = PydanticCodec(models.FieldLabelsGetResponse200XNextHeader)
 """Codec of /paths/~1labels/get response_header (response X-Next 200)."""
 
-codec_16: Final[PydanticCodec[models.FieldLabelSetsGetQueryAfterParameter]] = PydanticCodec(
-    models.FieldLabelSetsGetQueryAfterParameter,
-)
+codec_16: Final[PydanticCodec[models.FieldLabelSetsGetQueryAfterParameter]] = PydanticCodec(models.FieldLabelSetsGetQueryAfterParameter)
 """Codec of /paths/~1label-sets/get parameter (request query after)."""
 
 codec_17: Final[PydanticCodec[models.LabelList]] = PydanticCodec(models.LabelList)
 """Codec of /paths/~1label-sets/get response_body (response 200 application/json)."""
 
-codec_18: Final[PydanticCodec[models.FieldLabelSetsGetResponse200XNextHeader]] = PydanticCodec(
-    models.FieldLabelSetsGetResponse200XNextHeader,
-)
+codec_18: Final[PydanticCodec[models.FieldLabelSetsGetResponse200XNextHeader]] = PydanticCodec(models.FieldLabelSetsGetResponse200XNextHeader)
 """Codec of /paths/~1label-sets/get response_header (response X-Next 200)."""
 
-codec_19: Final[PydanticCodec[models.FieldArchiveCursorGetPathCursorParameter]] = PydanticCodec(
-    models.FieldArchiveCursorGetPathCursorParameter,
-)
+codec_19: Final[PydanticCodec[models.FieldArchiveCursorGetPathCursorParameter]] = PydanticCodec(models.FieldArchiveCursorGetPathCursorParameter)
 """Codec of /paths/~1archive~1{cursor}/get parameter (request path cursor)."""
 
 codec_20: Final[PydanticCodec[models.UserPage]] = PydanticCodec(models.UserPage)
 """Codec of /paths/~1archive~1{cursor}/get response_body (response 200 application/json)."""
 
-codec_21: Final[PydanticCodec[models.FieldStatusesGetQueryCodeParameter]] = PydanticCodec(
-    models.FieldStatusesGetQueryCodeParameter,
-)
+codec_21: Final[PydanticCodec[models.FieldStatusesGetQueryCodeParameter]] = PydanticCodec(models.FieldStatusesGetQueryCodeParameter)
 """Codec of /paths/~1statuses/get parameter (request query code)."""
 
 codec_22: Final[PydanticCodec[models.UserPage]] = PydanticCodec(models.UserPage)
 """Codec of /paths/~1statuses/get response_body (response 2XX application/json)."""
 
-codec_23: Final[PydanticCodec[models.FieldSecureUsersGetQueryCursorParameter]] = PydanticCodec(
-    models.FieldSecureUsersGetQueryCursorParameter,
-)
+codec_23: Final[PydanticCodec[models.FieldSecureUsersGetQueryCursorParameter]] = PydanticCodec(models.FieldSecureUsersGetQueryCursorParameter)
 """Codec of /paths/~1secure~1users/get parameter (request query cursor)."""
 
 codec_24: Final[PydanticCodec[models.UserPage]] = PydanticCodec(models.UserPage)

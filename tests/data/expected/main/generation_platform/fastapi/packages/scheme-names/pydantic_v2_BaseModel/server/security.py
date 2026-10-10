@@ -5,17 +5,34 @@
 
 from fastapi.security import APIKeyHeader, APIKeyQuery, HTTPBasic
 
-api_key = APIKeyHeader(name='X-Key', scheme_name='api-key', auto_error=False)
+api_key = APIKeyHeader(
+    name='X-Key',
+    scheme_name='api-key',
+    auto_error=False,
+)
 
 
-api_key_1 = APIKeyQuery(name='key', scheme_name='api_key', auto_error=False)
+api_key_1 = APIKeyQuery(
+    name='key',
+    scheme_name='api_key',
+    auto_error=False,
+)
 
 
-wiring = HTTPBasic(scheme_name='wiring', auto_error=False)
+wiring = HTTPBasic(
+    scheme_name='wiring',
+    auto_error=False,
+)
+
+
+def h___o_n() -> object:
+    """Return the h\"\"\"o\\N credential, which no FastAPI security class reads; override this dependency."""
+    return None
 
 
 __all__ = [
     'api_key',
     'api_key_1',
+    'h___o_n',
     'wiring',
 ]

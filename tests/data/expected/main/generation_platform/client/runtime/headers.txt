@@ -3,43 +3,57 @@
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, x-trace: t1] b''
   client headers = FieldPetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-view: v1, x-view: v2, x-trace: t1, cookie: session=s1] b''
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-view: v1, x-trace: t1, cookie: session=s1] b''
   view headers under the parameters = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: nested/1, x-view: v2, x-trace: t1] b''
+  nested view headers = FieldPetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-trace: call] b''
   call headers over the parameters = FieldPetsGetResponse(root=[])
   > POST https://api.example.com/v1/pets
-    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-type: application/json, content-length: 14] b'{"name":"fox"}'
-  body media type repeated = Pet(id=1, name='fox', tag=None)
-  body relabeled ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='conflicts_with_body_media', field_path='headers.Content-Type') [operation_id='createPet', field_path=('headers', 'Content-Type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
-  body media type removed ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', reason='conflicts_with_body_media', field_path='headers.content-type') [operation_id='createPet', field_path=('headers', 'content-type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
-  media type of no body ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='conflicts_with_body_media', field_path='headers.Content-Type') [operation_id='getPet', field_path=('headers', 'Content-Type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
-  narrowed Accept replaced ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='conflicts_with_response_media', field_path='headers.Accept') [operation_id='getPet', field_path=('headers', 'Accept'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_response_media
-  narrowed Accept removed ! ConfigurationError: ConfigurationError(operation_id='getPet', call_id='<call>', reason='conflicts_with_response_media', field_path='headers.Accept') [operation_id='getPet', field_path=('headers', 'Accept'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_response_media
-  raw parts relabeled ! ConfigurationError: ConfigurationError(call_id='<call>', reason='conflicts_with_body_media', field_path='headers.Content-Type') [field_path=('headers', 'Content-Type'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] conflicts_with_body_media
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-type: text/plain, content-length: 14] b'{"name":"fox"}'
+  body relabeled = Pet(id=1, name='fox', tag=None)
+  > POST https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-length: 14] b'{"name":"fox"}'
+  body media type removed = Pet(id=1, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: Application/JSON, user-agent: custom/1, x-client: c] b''
-  no body without a media type, narrowed Accept repeated = Pet(id=3, name='fox', tag=None)
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-type: text/plain] b''
+  media type of no body = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: */*, user-agent: custom/1, x-client: c] b''
+  narrowed Accept replaced = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c] b''
+  narrowed Accept removed = Pet(id=3, name='fox', tag=None)
+  > POST https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-type: application/json, content-length: 14] b'{"name":"fox"}'
+  view Content-Type under the body's media type = Pet(id=1, name='fox', tag=None)
   > POST https://raw.example.com/items
     [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: application/xml, content-length: 4] b'<a/>'
   raw bytes labeled = b'ok'
   > POST https://raw.example.com/items
-    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, x-raw: 1, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
-  raw parts with their media type repeated = b'ok'
-  reserved header ! ConfigurationError: ConfigurationError(reason='reserved', field_path='headers.Host') [field_path=('headers', 'Host'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] reserved
-  header name that is no token ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.Bad Name') [field_path=('headers', 'Bad Name'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header value on two lines ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header set and removed ! ConfigurationError: ConfigurationError(reason='set_and_removed', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] set_and_removed
-  header that is no pair ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  header value that is no text ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  headers that are no sequence ! ConfigurationError: ConfigurationError(reason='invalid_type', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_type
-  coding without a decoder ! ConfigurationError: ConfigurationError(reason='unsupported_coding', field_path='headers.Accept-Encoding') [field_path=('headers', 'Accept-Encoding'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unsupported_coding
-  coding named twice ! ConfigurationError: ConfigurationError(reason='unsupported_coding', field_path='headers.Accept-Encoding') [field_path=('headers', 'Accept-Encoding'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unsupported_coding
-  coding of a weight out of range ! ConfigurationError: ConfigurationError(reason='unsupported_coding', field_path='headers.Accept-Encoding') [field_path=('headers', 'Accept-Encoding'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unsupported_coding
-  coding of two weights ! ConfigurationError: ConfigurationError(reason='unsupported_coding', field_path='headers.Accept-Encoding') [field_path=('headers', 'Accept-Encoding'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] unsupported_coding
-  headers listed = (('X-A', 'a'), ('X-B', None))
+    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: multipart/mixed; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  raw parts relabeled = b'ok'
+  > POST https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  raw parts under a client Content-Type = b'ok'
+  > POST https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: multipart/form-data; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  raw parts under a view Content-Type = b'ok'
+  > POST https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: multipart/form-data; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  raw parts under a view without Content-Type = b'ok'
+  > POST https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip, deflate, content-type: multipart/mixed; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  raw parts relabeled without a boundary = b'ok'
+  > POST https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip, deflate, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  raw parts unlabeled by the call = b'ok'
+  header value on two lines ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='LocalProtocolError') [operation_id='getPet', cause=LocalProtocolError("Illegal header value b'a\\r\\nb'")]
+  header value on two lines retry waits []
   > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-client: c, x-call: 1] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-call: 1] b''
   async call headers = Pet(id=3, name='fox', tag=None)
   > GET https://raw.example.com/items
     [host: raw.example.com, accept-encoding: gzip, deflate, x-client: c, x-raw: 1] b''

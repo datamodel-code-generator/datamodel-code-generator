@@ -1,12 +1,55 @@
+=== arguments.jinja2 / populated
+"""The keyword arguments 日本 that unpacked operation methods take."""
+
+from __future__ import annotations
+
+from typing import Final
+from typing_extensions import NotRequired, TypedDict
+
+
+class Operation0Arguments(TypedDict):
+    """The keyword arguments of one signature of list_pets."""
+
+    limit: NotRequired[int | UNSET]
+    options: NotRequired[RequestOptions | None]
+
+
+class Operation1Arguments(TypedDict):
+    """The keyword arguments of one signature of get_pet."""
+
+    petId: int
+
+
+KEYWORDS_0: Final = Keywords(
+    'list_pets',
+    ('limit', 'options'),
+    (),
+)
+
+=== arguments.jinja2 / empty
+"""The keyword arguments 日本 that unpacked operation methods take."""
+
+from __future__ import annotations
+
+from typing import Final
+from typing_extensions import NotRequired, TypedDict
+
 === client.jinja2 / populated
 """Client 日本 {braces} \\ \"quotes\""""
 
 from __future__ import annotations
 
-from typing import Final
-from .options import ClientOptions, RequestOptions
+from typing import TYPE_CHECKING
+from .options import RequestOptions, ServerSelection
 
-_DEFAULTS = ClientOptions()
+if TYPE_CHECKING:
+    from .resources.pets._sync import PetsResource
+    from .protocols._helpers import ProtocolHelpers
+
+_DEFAULTS = ClientDefaults(
+    security_schemes=security.ROOT_SCHEMES,
+    helpers=(('pets.list', 'pagination'),),
+)
 
 
 class ClientView:
@@ -20,16 +63,25 @@ class ClientView:
         view._core = core
         return view
 
-    def with_options(self, options: RequestOptions) -> ClientView:
-        """Return a typed view with these request options layered on the current settings."""
-        return ClientView._from_core(self._core.view(options))
+    def with_options(
+        self,
+        *,
+        base_url: str | None = None,
+        timeout: float | UNSET | None = UNSET,
+    ) -> ClientView:
+        """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
+        core = self._core.view(
+            base_url=base_url,
+            timeout=timeout,
+        )
+        return ClientView._from_core(core)
 
     def request_raw(
         self,
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -41,95 +93,25 @@ class ClientView:
         return ClientWithStreamingResponse(self._core)
 
     @cached_property
-    def pets(self) -> Pets:
+    def pets(self) -> PetsResource:
         """The pets operations."""
-        from .resources.pets import Pets
+        from .resources.pets._sync import PetsResource
 
-        return Pets(self._core)
+        return PetsResource(self._core)
 
     @cached_property
     def 日本(self) -> UnicodeResource:
         """The 日本 operations."""
-        from .resources.unicode import UnicodeResource
+        from .resources.unicode._sync import UnicodeResource
 
         return UnicodeResource(self._core)
 
-
-class Client(ClientView):
-    """Client API {braces}"""
-
-    def __init__(
-        self,
-        *,
-        options: ClientOptions | None = None,
-        http_client: HTTPClient | Unset | None = UNSET,
-    ) -> None:
-        """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = SyncCore.create(_DEFAULTS, options=options, http_client=http_client)
-
-    def close(self) -> None:
-        self._core.close()
-
-
-class ClientWithStreamingResponse:
-    """Raw requests to any absolute URL that send on entering a block that streams the response."""
-
-    def __init__(self, core: SyncCore) -> None:
-        """Keep the client core the requests send through."""
-        self._core = core
-
-    def request_raw(
-        self,
-        method: str,
-        url: str,
-        *,
-        body: BinaryBody | Unset = UNSET,
-        options: RequestOptions | None = None,
-    ) -> AbstractContextManager[RawResponse]:
-        """Return a block that sends the request on entry and yields its streaming response until exit."""
-        return self._core.stream_raw(method, url, body=body, options=options)
-
-=== client.jinja2 / empty
-"""Client 日本 {braces} \\ \"quotes\""""
-
-from __future__ import annotations
-
-from typing import Final
-from .options import ClientOptions, RequestOptions
-
-_DEFAULTS = ClientOptions()
-
-
-class ClientView:
-    """Typed operations and request option layers sharing the root's native client."""
-
-    _core: SyncCore
-
-    @classmethod
-    def _from_core(cls, core: SyncCore) -> ClientView:
-        view = cls.__new__(cls)
-        view._core = core
-        return view
-
-    def with_options(self, options: RequestOptions) -> ClientView:
-        """Return a typed view with these request options layered on the current settings."""
-        return ClientView._from_core(self._core.view(options))
-
-    def request_raw(
-        self,
-        method: str,
-        url: str,
-        *,
-        body: BinaryBody | Unset = UNSET,
-        options: RequestOptions | None = None,
-    ) -> RawResponse:
-        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
-        return self._core.request_raw(method, url, body=body, options=options)
-
     @cached_property
-    def with_streaming_response(self) -> ClientWithStreamingResponse:
-        """Raw requests that send on entering a block that streams the response."""
-        return ClientWithStreamingResponse(self._core)
+    def protocols(self) -> ProtocolHelpers:
+        """The protocol helpers of this API, by their dotted names."""
+        from .protocols._helpers import ProtocolHelpers
+
+        return ProtocolHelpers(self._core)
 
 
 class Client(ClientView):
@@ -138,14 +120,47 @@ class Client(ClientView):
     def __init__(
         self,
         *,
-        options: ClientOptions | None = None,
-        http_client: HTTPClient | Unset | None = UNSET,
+        api_key: Secret | None = None,
+        oauth: Secret | TokenSource | None = None,
+        base_url: str | None = None,
+        timeout: float | UNSET | None = UNSET,
+        helper_defaults: Mapping[str, HelperOptions] | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = SyncCore.create(_DEFAULTS, options=options, http_client=http_client)
+        from ._runtime.protocols.options import HelperSettings
+
+        self._core = SyncCore.create(
+            _DEFAULTS,
+            base_url=base_url,
+            timeout=timeout,
+            protocols=HelperSettings(defaults=helper_defaults),
+            credentials=SchemeCredentials({
+                "api_key": api_key,
+                "oauth 日本": oauth,
+            }),
+        )
 
     def close(self) -> None:
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         self._core.close()
+
+    def __enter__(self) -> Self:
+        """Return this client, which leaving the block closes."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            self.close()
+        except Exception as error:
+            if exc is None:
+                raise
+            add_secondary(exc, error)
 
 
 class ClientWithStreamingResponse:
@@ -160,21 +175,21 @@ class ClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""
         return self._core.stream_raw(method, url, body=body, options=options)
 
-=== client.jinja2 / async_protocols
+=== client.jinja2 / async_bare
 """Client 日本 {braces} \\ \"quotes\""""
 
 from __future__ import annotations
 
-from typing import Final
-from .options import ClientOptions, RequestOptions
+from typing import TYPE_CHECKING
+from .options import RequestOptions, ServerSelection
 
-_DEFAULTS = ClientOptions()
+_DEFAULTS = ClientDefaults()
 
 
 class AsyncClientView:
@@ -188,18 +203,27 @@ class AsyncClientView:
         view._core = core
         return view
 
-    def with_options(self, options: RequestOptions) -> AsyncClientView:
-        """Return a typed view with these request options layered on the current settings."""
-        return AsyncClientView._from_core(self._core.view(options))
+    def with_options(
+        self,
+        *,
+        base_url: str | None = None,
+        timeout: float | UNSET | None = UNSET,
+    ) -> AsyncClientView:
+        """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
+        core = self._core.view(
+            base_url=base_url,
+            timeout=timeout,
+        )
+        return AsyncClientView._from_core(core)
 
     async def request_raw(
         self,
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
-    ) -> RawResponse:
+    ) -> AsyncRawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
         return await self._core.request_raw(method, url, body=body, options=options)
 
@@ -208,27 +232,6 @@ class AsyncClientView:
         """Raw requests that send on entering a block that streams the response."""
         return AsyncClientWithStreamingResponse(self._core)
 
-    @cached_property
-    def pets(self) -> Pets:
-        """The pets operations."""
-        from .resources.pets import Pets
-
-        return Pets(self._core)
-
-    @cached_property
-    def 日本(self) -> UnicodeResource:
-        """The 日本 operations."""
-        from .resources.unicode import UnicodeResource
-
-        return UnicodeResource(self._core)
-
-    @cached_property
-    def protocols(self) -> AsyncProtocols:
-        """The protocol helpers of this API, by their dotted names."""
-        from .protocols import AsyncProtocols
-
-        return AsyncProtocols(self._core)
-
 
 class AsyncClient(AsyncClientView):
     """Client API {braces}"""
@@ -236,14 +239,36 @@ class AsyncClient(AsyncClientView):
     def __init__(
         self,
         *,
-        options: ClientOptions | None = None,
-        http_client: HTTPClient | Unset | None = UNSET,
+        base_url: str | None = None,
+        timeout: float | UNSET | None = UNSET,
+        helper_defaults: Mapping[str, HelperOptions] | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = AsyncCore.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = AsyncCore.create(
+            _DEFAULTS,
+        )
 
     async def aclose(self) -> None:
+        """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
         await self._core.aclose()
+
+    async def __aenter__(self) -> Self:
+        """Return this client, which leaving the block closes."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """Close this client, keeping a close failure beside an error that leaves the block."""
+        try:
+            await self.aclose()
+        except Exception as error:
+            if exc is None:
+                raise
+            add_secondary(exc, error)
 
 
 class AsyncClientWithStreamingResponse:
@@ -258,11 +283,325 @@ class AsyncClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BinaryBody | Unset = UNSET,
+        body: BinaryBody | UNSET = UNSET,
         options: RequestOptions | None = None,
-    ) -> AbstractAsyncContextManager[RawResponse]:
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""
         return self._core.stream_raw(method, url, body=body, options=options)
+
+=== facade.jinja2 / populated
+"""Errors 日本 {braces} of this package."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from ._runtime.client.errors import APIStatusError, SDKError
+from ._runtime.client.oauth import ClientCredentials
+
+if TYPE_CHECKING:
+    from ._runtime.protocols.errors import ProtocolDataError
+    from ._async_client import AsyncClient
+
+
+class PetsClientCredentials(ClientCredentials):
+    """The client credentials 日本 provider."""
+
+    token_url = 'https://auth.example.com/token'
+    scopes = ('read',)
+
+
+__all__ = [
+    'APIStatusError',
+    'AsyncClient',
+    'PetsClientCredentials',
+    'ProtocolDataError',
+    'SDKError',
+]
+
+
+def __getattr__(name: str) -> object:
+    """Load a name 日本 on first use."""
+    if name in {'ProtocolDataError'}:
+        from ._runtime.protocols import errors
+
+        value = globals()[name] = getattr(errors, name)
+        return value
+    if name in {'AsyncClient'}:
+        from . import _async_client
+
+        return getattr(_async_client, name)
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
+
+
+def __dir__() -> list[str]:
+    """List the module's names, including those loaded on first use."""
+    return sorted({*globals(), *__all__})
+
+=== facade.jinja2 / exports
+"""Errors 日本 {braces} of this package."""
+
+from ._runtime.client.errors import APIStatusError, SDKError
+from ._runtime.client.oauth import ClientCredentials
+
+__all__ = [
+    'APIStatusError',
+    'AsyncClient',
+    'PetsClientCredentials',
+    'ProtocolDataError',
+    'SDKError',
+]
+
+=== facade.jinja2 / docstring
+"""The resources 日本 of the clients."""
+
+=== helper_plans.jinja2 / populated
+"""The plans of this package's pagination helpers 日本 {braces}."""
+
+from __future__ import annotations
+
+from typing import Final
+from msgspec import UnsetType
+
+
+def _items_0(
+    data: ListPetsResponse,
+) -> Sequence[models.Pet] | None:
+    """Return the items of one page of pets.日本."""
+    if (value_0 := data['page']) is None:
+        return None
+    if (value_1 := value_0.items) is None or isinstance(value_1, UnsetType):
+        return None
+    if isinstance(value_2 := value_1.get('next'), UnsetType):
+        return None
+    return value_2.data
+
+
+def _result_1(
+    data: GetJobResponse,
+) -> models.Report | None:
+    """Return the result of jobs.run in its final poll."""
+    return data.result
+
+
+PLAN_0: Final[PaginationPlan[models.Pet, ListPetsResponse]] = PaginationPlan(
+    helper_id='pets.日本',
+    items=_items_0,
+)
+
+=== helper_plans.jinja2 / empty
+"""The plans of this package's stream helpers."""
+
+from __future__ import annotations
+
+from typing import Final
+
+=== helpers.jinja2 / sync
+"""The synchronous protocol helpers of this package, by their dotted names."""
+
+from __future__ import annotations
+
+from functools import cached_property
+
+
+class ProtocolHelpers:
+    """The protocol helpers of this API."""
+
+    def __init__(self, core: ClientCore_1) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = ClientCore.from_client(core)
+
+    @cached_property
+    def pets(self) -> PetsProtocols:
+        """The pets protocol helpers."""
+        return PetsProtocols(self._core)
+
+
+class PetsProtocols:
+    """The pets protocol helpers 日本 {braces}."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = core
+
+    @cached_property
+    def all(self) -> PetsAllPagination:
+        """The pets.all pagination helper."""
+        return PetsAllPagination(self._core)
+
+    @cached_property
+    def run(self) -> JobsRunPolling:
+        """The jobs.run polling helper."""
+        return JobsRunPolling(self._core)
+
+
+class PetsAllPagination:
+    """The pets.all pagination helper of GET /pets."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def next_page(
+        self,
+        page: Page[models.Pet, ListPetsResponse],
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> Page[models.Pet, ListPetsResponse] | None:
+        """Fetch the page after a page of this helper 日本 {braces}."""
+        return following_page(
+            self._core,
+            _plans.PLAN_0,
+            (cursor,),
+            options=options,
+        )
+
+    def page(
+        self,
+        *,
+        cursor: str,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> Page[models.Pet, ListPetsResponse]:
+        """Fetch the first page of GET /pets."""
+        return first_page(
+            self._core,
+            _plans.PLAN_0,
+            (cursor,),
+            options=options,
+        )
+
+
+class JobsRunPolling:
+    """The jobs.run polling helper of POST /jobs."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+
+class JobsRunHandle(LroHandle[models.Report, GetJobResponse]):
+    """A handle of the jobs.run polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
+
+    __slots__ = ()
+
+    def cancel_remote(self) -> CancelReceipt[CancelJobResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return self._cancel_remote(_plans.CANCEL_1)
+
+=== helpers.jinja2 / async
+"""The asyncio protocol helpers of this package, by their dotted names."""
+
+from __future__ import annotations
+
+from functools import cached_property
+
+
+class AsyncJobsRunPolling:
+    """The jobs.run polling helper of POST /jobs."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def start(
+        self,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncJobsRunHandle:
+        """Create the operation of POST /jobs and return the handle that polls it."""
+        return await astart_operation(
+            self._core,
+            _plans.PLAN_0,
+            (cursor,),
+            options=options,
+        )
+
+
+class AsyncJobsRunHandle(AsyncLroHandle[models.Report, GetJobResponse]):
+    """A handle of the jobs.run polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
+
+    __slots__ = ()
+
+    async def cancel_remote(self) -> CancelReceipt[CancelJobResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return await self._cancel_remote(_plans.CANCEL_1)
+
+=== model_bindings.jinja2 / stdlib
+"""Native model codecs of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+from typing import Final
+
+import models
+
+from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+
+
+
+MODELS: Final[dict[type, Model]] = {
+    models.Pet: Model((Field('name', 'name'),), True),
+    models.日本: Model((Field('{braces}', 'braces'),)),
+}
+
+codec_0: Final[StdlibCodec[models.Pet]] = StdlibCodec(models.Pet, MODELS)
+"""Codec of /paths/~1pets/get response_body (response 200 application/json)."""
+
+codec_1: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
+"""Codec of \"日本\" {braces}."""
+
+=== model_bindings.jinja2 / native
+"""Native model codecs of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+from typing import Final
+
+import models
+
+from .._runtime.model_codecs.native import PydanticCodec
+
+
+codec_0: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
+"""Codec of /paths/~1pets/get response_body (response 200 application/json)."""
+
+=== model_bindings.jinja2 / empty
+"""Native model codecs of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+=== operations.jinja2 / populated
+"""The operation registry 日本 of this package."""
+
+from __future__ import annotations
+
+from typing import Final
+from ._runtime.client.operations import OperationPlan, ServerPlan
+
+
+_SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
+
+_SERVERS_1: Final = ()
+
+OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
+    operation_id='listPets',
+    method='GET',
+    servers=_SERVERS_0,
+)
+
+=== operations.jinja2 / empty
+"""The operation registry 日本 of this package."""
+
+from __future__ import annotations
+
+from typing import Final
+from ._runtime.client.operations import OperationPlan, ServerPlan
+
 
 === readme.jinja2 / populated
 # client
@@ -273,9 +612,8 @@ explicit URL. Close clients with `with` or `async with`, and retain streaming re
 
 ```python
 from client import Client
-from client.options import ClientOptions, RetryOptions
 
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+with Client(max_retries=0) as client:
     response = client.request_raw("GET", "https://api.example.com/health")
     status = response.info.status_code
 ```
@@ -283,8 +621,8 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
@@ -328,8 +666,10 @@ An SSE and NDJSON helper's `open` sends its operation in a session of its own an
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
 the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
 `checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
+`with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
+lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`
+closes the connection.
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
 once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
@@ -339,9 +679,9 @@ it settles and returns its result, each poll after the wait the last response re
 stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
 operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
 the runtime reference for their limits and checkpoints.
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits.
+A cache helper's `fetch` answers from a fresh entry of the store the client's `cache_stores` lends it, or of a memory
+store the client creates, or sends the request, revalidating a stale entry. See the runtime reference for their limits
+and keys.
 An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
 `run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
 holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
@@ -353,7 +693,7 @@ holds. `close()` or `aclose()` stops only local uploading. See the runtime refer
 ## Request compression
 
 These operations declare request compression. Their bodies are gzipped by default;
-`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+`Client(compression=None)` disables it for the client. See the runtime reference.
 
 ```json
 {"gzip": ["create"]}
@@ -389,9 +729,8 @@ explicit URL. Close clients with `with` or `async with`, and retain streaming re
 
 ```python
 from client import Client
-from client.options import ClientOptions, RetryOptions
 
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+with Client(max_retries=0) as client:
     response = client.request_raw("GET", "https://api.example.com/health")
     status = response.info.status_code
 ```
@@ -399,8 +738,8 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
@@ -459,9 +798,8 @@ explicit URL. Close clients with `with` or `async with`, and retain streaming re
 
 ```python
 from client import Client
-from client.options import ClientOptions, RetryOptions
 
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+with Client(max_retries=0) as client:
     response = client.request_raw("GET", "https://api.example.com/health")
     status = response.info.status_code
 ```
@@ -469,8 +807,8 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
@@ -516,8 +854,10 @@ An SSE and NDJSON helper's `open` sends its operation in a session of its own an
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
 the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
 `checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
-A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
-server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection.
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own once the server answers 101:
+`with client.protocols.<name>.connect(...) as session:` on `Client`, or `async with` on `AsyncClient`, whose session
+lives for its block. The session sends and receives typed messages, and leaving the block, `close()`, or `aclose()`
+closes the connection.
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
 once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
@@ -527,9 +867,9 @@ it settles and returns its result, each poll after the wait the last response re
 stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
 operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
 the runtime reference for their limits and checkpoints.
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry. See the runtime
-reference for their limits.
+A cache helper's `fetch` answers from a fresh entry of the store the client's `cache_stores` lends it, or of a memory
+store the client creates, or sends the request, revalidating a stale entry. See the runtime reference for their limits
+and keys.
 An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
 `run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
 holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
@@ -541,7 +881,7 @@ holds. `close()` or `aclose()` stops only local uploading. See the runtime refer
 ## Request compression
 
 These operations declare request compression. Their bodies are gzipped by default;
-`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+`Client(compression=None)` disables it for the client. See the runtime reference.
 
 ```json
 {"gzip": ["create"]}
@@ -577,9 +917,8 @@ explicit URL. Close clients with `with` or `async with`, and retain streaming re
 
 ```python
 from client import Client
-from client.options import ClientOptions, RetryOptions
 
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+with Client(max_retries=0) as client:
     response = client.request_raw("GET", "https://api.example.com/health")
     status = response.info.status_code
 ```
@@ -587,8 +926,8 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
@@ -666,9 +1005,8 @@ explicit URL. Close clients with `with` or `async with`, and retain streaming re
 
 ```python
 from client import Client
-from client.options import ClientOptions, RetryOptions
 
-with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+with Client(max_retries=0) as client:
     response = client.request_raw("GET", "https://api.example.com/health")
     status = response.info.status_code
 ```
@@ -676,8 +1014,8 @@ with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
 Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
 
 See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
 
@@ -726,7 +1064,7 @@ See the runtime reference for their limits.
 ## Request compression
 
 These operations declare request compression. Their bodies are gzipped by default;
-`ClientOptions(compression=None)` disables it for the client. See the runtime reference.
+`Client(compression=None)` disables it for the client. See the runtime reference.
 
 ```json
 {"gzip": ["create"]}
@@ -761,29 +1099,173 @@ from __future__ import annotations
 from .core import Core
 
 
-class Pets:
-    """Pets {braces}"""
+class PetsResource:
+    """The pets 日本 operations."""
 
     def __init__(self, core: Core) -> None:
         """Keep the client core the operations send through."""
         self._core = core
 
-    def get(self) -> Pet:
-        return self._core.get()
+    @cached_property
+    def with_response(self) -> PetsWithResponse:
+        """The same operations, returning metadata."""
+        return PetsWithResponse(self._core)
 
-    def list(self) -> list[Pet]:
-        return self._core.list()
+    @cached_property
+    def photos(self) -> PetsPhotosResource:
+        """The pets.photos operations."""
+        return PetsPhotosResource(self._core)
+
+    @overload
+    def get_pet(
+        self,
+        *,
+        petId: int,
+        body: Pet,
+    ) -> Pet: ...
+    def get_pet(
+        self,
+        *,
+        petId: int,
+        body: Pet | UNSET = UNSET,
+        options: RequestOptions | None = None,
+    ) -> Pet:
+        """
+        Call GET /pets/{petId} 日本.
+        """
+        return self._core.execute(
+            _operations.OPERATION_0,
+            (petId,),
+            body=body,
+            options=options,
+            response_media_type=response_media_type,
+        ).data
+
+    async def get_pet_async(
+        self,
+        *,
+        petId: int,
+        body: Pet | UNSET = UNSET,
+        options: RequestOptions | None = None,
+    ) -> Pet:
+        """
+        Call GET /pets/{petId} 日本.
+        """
+        return (await self._core.execute(
+            _operations.OPERATION_0,
+            (petId,),
+            body=body,
+            options=options,
+            response_media_type=response_media_type,
+        )).data
 
 
-class AsyncPets:
-    """Async pets 日本"""
+class PetsWithResponse:
+    """The pets operations, with metadata."""
 
     def __init__(self, core: Core) -> None:
         """Keep the client core the operations send through."""
         self._core = core
 
-    async def get(self) -> Pet:
-        return await self._core.get()
+    @overload
+    async def get_pet(
+        self,
+        *,
+        petId: int,
+        body: Pet,
+    ) -> Pet: ...
+    @overload
+    async def get_pet(
+        self,
+        *,
+        petId: int,
+        body: Pet,
+    ) -> Pet: ...
+    async def get_pet(
+        self,
+        *,
+        petId: int,
+        body: Pet | UNSET = UNSET,
+        options: RequestOptions | None = None,
+    ) -> Pet:
+        """
+        Call GET /pets/{petId} 日本.
+        """
+        return await self._core.execute(
+            _operations.OPERATION_0,
+            (petId,),
+            body=body,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def get_pet_sync(
+        self,
+        *,
+        petId: int,
+        body: Pet | UNSET = UNSET,
+        options: RequestOptions | None = None,
+    ) -> Pet:
+        """
+        Call GET /pets/{petId} 日本.
+        """
+        return self._core.execute(
+            _operations.OPERATION_0,
+            (petId,),
+            body=body,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+
+class PetsWithRawResponse:
+    """The pets operations, raw."""
+
+    def __init__(self, core: Core) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get_pet(
+        self,
+        **kwargs: Unpack[Operation0Arguments],
+    ) -> RawResponse:
+        """
+        Call GET /pets/{petId} 日本.
+        """
+        KEYWORDS_0.check(kwargs)
+        return self._core.execute_raw(
+            _operations.OPERATION_0,
+            (petId,),
+            body=body,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+
+class PetsWithStreamingResponse:
+    """The pets operations, streaming."""
+
+    def __init__(self, core: Core) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get_pet(
+        self,
+        *,
+        petId: int,
+        body: Pet | UNSET = UNSET,
+        options: RequestOptions | None = None,
+    ) -> Pet:
+        """
+        Call GET /pets/{petId} 日本.
+        """
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (petId,),
+            body=body,
+            options=options,
+            response_media_type=response_media_type,
+        )
 
 === resource.jinja2 / empty
 """Resource 日本 {braces}"""
@@ -807,20 +1289,726 @@ class Pets:
         """Keep the client core the operations send through."""
         self._core = core
 
+=== runtime.jinja2 / populated
+# Runtime reference
+
+Import `Client` and `AsyncClient` from `pets_日本` and the records below from
+`pets_日本.options`. Async calls require asyncio.
+
+## Layered options and budgets
+
+A client takes its settings as keywords, a view as the keywords of `with_options(...)`, and one call as
+`options=RequestOptions(...)`. The values a layer gives override those below it: the call's, then the nearest
+view's, then the client's, then fixed defaults. A setting left None inherits, except where None has a meaning of its
+own and UNSET inherits: `timeout=None` lifts every phase limit, `total_timeout=None` removes the optional budget
+across attempts, and `auth=None` sends without an Auth. A number as `timeout` limits every phase and an
+`httpx2.Timeout` each one. `RetryOptions` merges its fields independently, a set of statuses replacing the inherited
+one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client to bound every call to a minute.
+The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
+give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
+the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
+names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
+multipart one without a boundary keeps the body's.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
+
+| Setting | Effective default |
+|---|---|
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
+| retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
+| retry statuses | 408, 429, 500, 502, 503, 504 |
+| maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
+| respect Retry-After / retry pool timeout | True / False |
+| follow redirects | the native client's: False for an SDK-created client |
+| error body prefix | 64 KiB; response and stream bodies are not capped |
+
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
+An OAuth provider takes `clock=Clock(...)` for its own token expiry.
+
+## Retries and replayable input
+
+GET, HEAD, OPTIONS, PUT, and DELETE retry by default; POST and PATCH need an idempotent declaration or a declared key
+header. A connect failure, connect timeout, or pool timeout (with `RetryOptions(retry_on_pool_timeout=True)`) retries
+any call no earlier attempt delivered; other transport failures, callbacks, decoding, cancellation, and deadlines never
+retry, and `retry_safety="never"` forbids every resend. Full jitter samples up to the capped exponential delay. A
+Retry-After delay is a minimum; its date is read by `email.utils.parsedate_to_datetime`, UTC without a known zone, and
+an RFC 850 date's two-digit year is the latest at most 50 years after receipt; a year below 100 in another form is read
+as 1969 to 2068. Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff. A
+call's `RequestOptions(idempotency_key="...")` gives a stable key and `idempotency_key=None` disables the key an
+operation with a declared key header creates once per call; a header of that name among the call's extra headers or the
+default headers is the call's key instead, which a protocol helper refuses. One call keeps its key, origin, and encoded
+body across attempts.
+
+A binary body is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of `bytes`; async calls also take an async file whose `read` is a coroutine function and an async iterable of `bytes`.
+Bytes and seekable files, paths included, are sent with the `Content-Length` measured at call entry and replay from that offset; other inputs are chunked, are never buffered, and cannot replay once consumed.
+Text, `bytearray`, `memoryview`, text-mode or closed files, and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable`.
+The SDK opens a path when the body is first sent, reads at most 64 KiB at a time, in a worker thread in async calls, and closes it when the call ends; caller files stay open.
+A multipart body replays when all its file parts can; HTTPX2 reads multipart files synchronously, so an async file or async iterable as a file part raises a request `DecodeError` with the reason `unencodable` before sending.
+
+## Transport
+
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.
+A request carrying a credential at a declared scheme's position other than `Authorization` is never redirected: its 3xx is the final response.
+An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
+
+## Authentication
+
+```python
+from pets_日本 import Client
+
+
+def authenticated_client(key: str) -> Client:
+    return Client(api_key=key)
+```
+
+`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: `api_key` (API key), `token` (bearer token).
+A value is a string, a `(username, password)` tuple for HTTP Basic, or a callable returning one, which is called for each request; a bearer argument also takes an OAuth provider.
+A call sends the credentials of its operation's first security alternative they all satisfy, at the positions its schemes declare, and only to its server's origin.
+An anonymous alternative applies only when no other alternative is satisfied, so an optional operation sends a credential given for a listed scheme; an operation declaring empty security and `request_raw` send none.
+A required operation no credential satisfies raises `ConfigurationError` with the reason `missing_credentials` before sending, unless the HTTP client has an Auth of its own.
+A callable's failure raises `AuthError` with the reason `provider_failed`.
+Credentials beside the client's `auth` or an Auth of an injected HTTP client raise `ConfigurationError` with the reason `conflicting_auth`.
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth.
+Sign requests with an `httpx2.Auth` of your own, which reads the body natively.
+Credential values do not appear in repr; a query credential is part of the request URL, which the `httpx2` logger records at INFO level.
+
+`pets_日本.auth` exports `ClientCredentials` and `RefreshToken`, and a subclass of either for each declared flow whose token URL is declared, which `token_url=` overrides.
+They are bearer credentials: `ClientCredentials(client_id=..., client_secret=..., scopes=..., audience=...)` requests a client's own token, and `RefreshToken(token_set, client_id=..., on_token_refreshed=...)` renews a `TokenSet` with its refresh token and hands each refreshed set to the callback.
+The call needing a token requests it inline under the provider's lock, which concurrent calls wait for, through the client's HTTP client without its Auth and without redirects, or through the provider's own `http_client`.
+A token is renewed once a tenth of its lifetime, at most thirty seconds, remains; a 401 with a Bearer `invalid_token` challenge, or without a challenge on an operation declaring `auth_challenge_less_401`, renews it once and sends a replayable request again.
+A rejected token request raises `AuthError` with the reason `oauth_error`, and `invalid_grant` on a refresh the reason `reauthorization_required`.
+A `TokenSet` omits its tokens from repr, and the SDK persists nothing.
+
+## Errors and cleanup
+
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase or total timeout. A final status the operation does not declare as a success
+raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with its decoded error body
+or bounded raw bytes. `AuthError` names its `reason`, `DecodeError` names a request argument or response that does not fit its declaration,
+and `ConfigurationError` a refused setting or call; messages never carry key, header, or body values. Secondary
+cleanup failures are notes of the primary failure, and native cancellation propagates unchanged.
+
+## Pagination sessions
+
+A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's
+`pagination_options`, then the client's `helper_defaults` for the helper, then the default below. Defaults naming a
+helper the package lacks, or another kind's options, fail construction. The session types are imported from
+`pets_日本.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`.
+
+| Limit | Effective default |
+|---|---|
+| pages per session | None (no limit) |
+| items per session | None (no limit); 0 ends a pager at once |
+| session total timeout (`total_timeout`) | None (no limit) |
+
+A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
+binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
+`ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
+cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
+the session ends it with `ProtocolDataError` with the reason `pagination_cycle` after the repeating page. A limit
+reached while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A
+call's options must not give extra headers or query names of a parameter the helper writes.
+
+An offset or page-number helper sends the first request as the caller gives it and starts at the position the caller
+passes for the written target, or else at the configured first position; a starting value that is not an integer raises
+a request `DecodeError` when its codec refuses it and `ProtocolDataError` otherwise, before sending. Each later page's
+position is the last one advanced by the configured step, or by the last page's item count. A page whose `has_more` is
+false ends the traversal, and so does one after which the items counted before the next position reach its `total`: the
+offsets past the first position for an offset, the items delivered since the start for a page number, which also ends
+at a page without items. Any other empty page continues. A header spells `true`, `false`, or a signed decimal count. A
+missing, null, or mistyped value, a negative total, and a page without items that continues while the step counts items
+raise `ProtocolDataError`; positions only grow, so they never repeat.
+
+A next-URL or Link helper sends the first request as the caller gives it and each later page to the URL the last page
+gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
+call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
+the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
+and name an HTTP or HTTPS URL at the server's origin or at one the client's `allowed_origins` lists; anything else
+raises `ProtocolDataError`. A request to another origin carries no credential or cookie header and none of the
+headers or query fields the package's security schemes name, and the client's credentials are placed only at the
+server's origin. A Link header's values must parse as RFC 8288 links and give the relation at most
+once; a page without the relation is the last, and an empty page with a URL continues. A URL seen earlier in the
+session, the first page's own included, ends it with `ProtocolDataError` with the reason `pagination_cycle` after the
+repeating page.
+
+A pager's `checkpoint()` returns the continuation it fetches its next page with, the server's cursor, the next offset
+or page number, or the resolved next URL, without sending; it is None before the first page and after the last. The
+helper's `resume(state, ...)` takes that value with the operation's arguments and any body again and returns a pager
+in a session of its own that sends nothing until it is iterated. A continuation holds no call arguments, credentials,
+body, or progress. A pager stopped in the middle of a page gives the continuation before that page, so a resumed pager
+repeats the items already delivered from it. A resumed pager counts pages and items from zero against its own limits,
+starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
+continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
+`initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or a
+`ProtocolDataError` with the reason `pagination_cycle` resumes from its `checkpoint()`; the errors carry no
+continuation.
+
+## Polling sessions
+
+A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
+and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
+session bounds all of them. Each limit comes from the call's `poll_options`, then the client's `helper_defaults` for
+the helper, then the default below. The session types are imported from
+`pets_日本.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, and `AsyncLroHandle`.
+
+| Limit | Effective default |
+|---|---|
+| polls per session | 1000; None removes it |
+| poll interval | the helper's declared interval, 1 second unless declared |
+| allowed wait before a poll | 60 seconds; None removes it |
+| session total timeout (`total_timeout`) | 600 seconds; None removes it |
+
+`start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
+handle, a declared immediate status a handle that already holds the result, and any other success status raises
+`ProtocolDataError`. An interval longer than the allowed wait, or not shorter than the session, raises
+`ConfigurationError` before the create request. Each poll waits until the interval after the last response, an
+error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
+after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
+shorter than what remains of the session, raises `SessionLimitError` with the reason `wait` or `deadline` and the
+server's delay as `required_wait` without sending. A resumed handle polls at once, since a checkpoint keeps no server
+delay. A poll's state must equal a declared state value, JSON type included; any other value raises
+`ProtocolDataError`, and success is never inferred.
+
+`wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
+cancelled operation raises `ProtocolDataError` with the reason `operation_failed` or `operation_cancelled`, its last
+poll's decoded data as `data` and its response as `info`, on every later `wait` too. An error that settles nothing, such
+as a transport error, a deadline, a cancellation, or a limit, leaves the handle as it was: pending, so a later `status`
+or `wait` polls again without creating the operation again, or succeeded with its result fetch still due, which a later
+`wait` retries alone. `status` and `wait` at once raise `ConfigurationError` with the reason `invalid_state`, and so
+does every step after `close()` or `aclose()`, which stops only local polling. A call's options must not fix an
+idempotency key or give extra headers or query names of a parameter the helper writes.
+
+`checkpoint()` returns plain JSON without sending, also after closing and while another thread or task polls: an object
+whose `phase` is `pending`, with the values the next poll (`bound`) and a remote cancel (`cancel`) write and those the
+create response gave the result fetch (`seed`), or `fetch`, with the values a due result fetch writes, and the server's
+`expires_at`, never polls, results, model objects, the session, or the call's options; a settled operation has nothing
+left to continue, and its `checkpoint()` raises `ConfigurationError`. The helper's `resume` is never awaited and returns
+a handle in a session of its own that sends nothing until `status` or `wait`: a pending one polls again at once, and one
+whose fetch is due fetches the result; polls, the session's timeout, and deadline start afresh. Before returning, it
+refuses a value that is not JSON or does not fit the helper with `ConfigurationError`, an expired one with the reason
+`expired`, and a dot segment the next poll or remote cancel would write to a path parameter with `ProtocolDataError`;
+any other saved value is checked and encoded when its request is built, as a server's is. After a `SessionLimitError`,
+the handle's `checkpoint()` continues the operation; the errors carry no checkpoint. A helper that declares `expires_at`
+reads the server's expiry, an RFC 3339 date-time with an offset or an HTTP date, from the accepted create response, and
+its checkpoints expire then; a create response without a valid one fails `start` with `ProtocolDataError`, though the
+remote operation was created.
+
+A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
+request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
+another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
+polls again; closing sends nothing.
+
+## Cache helpers
+
+A cache helper keeps entries in the store the client's `cache_stores` lends it under its name, a `MemoryCacheStore` or
+`AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the client's mode. Without
+one, the client's root creates a memory store of 128 entries for the helper at its first fetch, which the root's views
+share and no other client does. The client never closes a store. The types are imported from
+`pets_日本.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
+stores.
+
+| Limit | Effective default |
+|---|---|
+| stored body per entry | 2 MiB |
+| freshness of any entry | 300 seconds |
+
+`fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
+events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
+time. An entry is keyed by the method, the Accept header, and the identity the request is sent as: before the lookup,
+the call's Auth, which is its own, its credentials', or else the HTTP client's, places credentials on a copy of the
+request without sending it, and the key takes the URL with any query credentials, the values of the credential headers,
+and every header the Auth added or changed. A callable credential is therefore called, and a token may be requested,
+for the lookup as well as for the send. A response is stored only when the request it answered was sent as the same
+identity, so a rotated or one-time credential, a timestamped signature, or a renewed token is never stored and never
+answers another identity. An entry is selected by the request headers its `Vary` names and those the client's, views',
+or call's headers name or a declared parameter fills. A request carrying credentials needs a helper declared
+authenticated and an anonymous one a helper declared anonymous; anything else raises `ConfigurationError` with the
+reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
+transport, are not in the key: give such a client a store of its own.
+Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
+and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
+came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
+allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `SDKError` with the reason
+`store_failed` and never resend a request.
+The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
+Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
+Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
+Concurrent custom-store writes use last-completing replacement.
+
+## Upload sessions
+
+An upload helper's `start` and the handle it returns are one session, and so are `resume` and its handle. The create
+call, every probe, append, and the completion are logical calls of their own, with their own retries, total timeout,
+and idempotency key; the session bounds all of them. Each limit comes from the call's `upload_options`, then the
+client's `helper_defaults` for the helper, then the default below. The session types are imported from
+`pets_日本.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
+`AsyncUploadHandle`.
+
+| Limit | Effective default |
+|---|---|
+| chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
+| session total timeout (`total_timeout`) | None (no limit) |
+
+A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
+to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
+creates the upload without reading it. Each append seeks to the confirmed offset and reads the rest of its chunk into
+one buffer; content shorter or longer than the upload's size raises `ConfigurationError` with the reason
+`source_changed` and the handle sends nothing more. The content is not hashed: keep it unchanged while it is uploaded.
+A one-shot stream, iterator, or a reader that cannot seek raises `ConfigurationError` with the reason
+`wrong_capability`; send it as an ordinary upload. Sources are borrowed and never
+closed.
+
+`start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
+confirmed offset, and `run` appends every remaining chunk and completes the upload: by length, returning None, or with
+the declared completion operation, sent once and returning its response. An append whose outcome is unknown is never
+resent blindly: the server's offset is probed once instead, and an unchanged offset sends the range again, the chunk's
+end confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that
+regresses, passes the content, or commits part of a chunk that may not be raises `ProtocolDataError`, and a probe that
+fails raises `APIConnectionError` with the reason `delivery_unknown`; so does a completion whose outcome is unknown,
+which is never sent again.
+
+`checkpoint()` returns plain JSON, sending nothing: the content's `size`, the `chunk` size, the `confirmed` offset, the
+values later calls write (`bound`), a completion of unknown outcome (`phase`), and the server's `expires_at`; a complete
+upload has no checkpoint, and errors carry none. `resume` checks it and the source's size, then probes the server's
+offset once; it never creates the upload again, and a completion of unknown outcome raises again. A value that is not
+JSON or does not fit the helper, or whose chunk size exceeds `chunk_bytes`, raises `ConfigurationError`, with the reason
+`expired` for a checkpoint past the server's declared expiry. `advance` and `run` at once raise `ConfigurationError`
+with the reason `invalid_state`, and so does every step after `close()` or `aclose()`, which stops only local uploading.
+A call's options must not fix an idempotency key or give extra headers or query names of a parameter the helper
+writes.
+
+## SSE or NDJSON streams
+
+An SSE or NDJSON helper's `open` is one session holding one logical call. The call's total timeout bounds only
+acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
+`stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
+imported from `pets_日本.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+`UnknownEvent`.
+
+| Limit | Effective default |
+|---|---|
+| idle timeout | the native read timeout; None removes it |
+| session total timeout (`total_timeout`) | None |
+| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
+| reconnection wait | 60 seconds; None removes it |
+
+The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
+UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the reason
+`too_large` and the native `SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator
+maps it to; data that does not decode raises `DecodeError`, and a declared error event raises `ProtocolDataError` with
+the reason `error_event` and the decoded event as `data`. The stream ends at its declared completion; an end before it
+raises `StreamInterruptedError` with the reason `eof`, and a broken connection one with the reason `transport` and its
+transport failure as the cause. A frame an SSE body ends in the middle of is
+discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
+never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
+`with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
+active streams; each stream releases its own response.
+
+An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
+blank line or one that is not UTF-8 or JSON raises `DecodeError`. Bytes after the last line end raise
+`StreamInterruptedError` with the reason `eof` unless the helper's `final_line` is `allow_eof`, which decodes them as
+the last record. A record has the empty string as its event type and no event ID, and a declared error record raises
+`ProtocolDataError` with the reason `error_event`.
+
+A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
+cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
+a stream's `checkpoint()` returns plain JSON without sending: the cursor, the bindings' values, and the server's expiry,
+never events, counts, the caller's arguments, responses, the session, or the call's options. A stream that failed,
+ended, or closed keeps its checkpoint. The helper's `resume` sends the reopen in a session of its own, writing the
+cursor, and omitting a cleared one, and returns once its response is a declared success, counting events and
+reconnections afresh; a reopen of the helper's own operation takes the operation's arguments and body again from the
+caller. It refuses a state that is not JSON or does not fit with `ConfigurationError`, an expired one with the reason
+`expired`, before sending, and a cursor written where a credential goes with the reason `wrong_capability`. Neither the
+headers and query of the client, a view, or the call may name a parameter a reopen writes, nor the call fix a key.
+
+With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
+transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
+`timeout` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections raises
+`SessionLimitError` with the reason `reconnects`; a wait whose backoff cap or `retry` time is longer than allowed, or a
+wait longer than the session has left, raises the interruption instead. Decode, size, remote, idle, and deadline
+failures, the declared end, and closing never reconnect, and events the server sends again after a reopen are delivered
+again.
+
+## WebSocket sessions
+
+A WebSocket helper's `connect` is one session. On `Client` it returns the session, which `with` or `close()` closes; on
+`AsyncClient` it is used as `async with client.protocols.<name>.connect(...) as session:`, and the session runs in the
+task that entered the block and closes when it leaves. Its handshake is one logical call of the helper's GET operation,
+sent through the client's HTTP client with initial authentication and its event hooks, and with the HTTP client's
+transport, proxy, and TLS settings: a 101 hands the connection to an HTTPX2 WebSocket session, and any other response
+raises the operation's `APIStatusError`. Each limit comes from the call's `ws_options`, then the client's
+`helper_defaults` for the helper, then the default below. The session types are imported from `pets_日本.protocols`:
+`WSOptions`, `WebSocketSession`, `AsyncWebSocketSession`, `Message`, and `PingReceipt`.
+
+| Limit | Effective default |
+|---|---|
+| open timeout | 5 seconds, also capped by the native connect, read, write, and pool timeouts and the deadline |
+| idle timeout | the native read timeout; None removes it |
+| message size | 1 MiB |
+| ping interval and pong timeout | 20 seconds each; None removes them |
+| session total timeout (`total_timeout`) | None |
+
+The connection belongs to the HTTP
+client's pool, so closing the client also closes the connections of its open sessions. One `receive` waits at a time,
+and a second one raises `ConfigurationError` with the reason `invalid_state`; HTTPX2 writes sends one at a time beside
+it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping fails it. A message is JSON
+coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares; one that does not decode
+raises `DecodeError` and closes the connection with 1002, and one over the size limit raises `ProtocolDataError` with
+the reason `too_large` after HTTPX2 closed the connection with 1009. A receive that waits longer than the idle timeout
+raises `APITimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
+reason, is answered with the same code, and ends iteration when it was normal. A send or ping on a connection that is
+already closing raises `WebSocketClosedError` without a code; a send that may have reached the server raises
+`APIConnectionError` with the reason `delivery_unknown`, closes the session, and is never sent again. Sessions never
+reconnect. Received handshake refusals are terminal, including redirects and 401s; credentials are never refreshed or
+invalidated by a refused upgrade. Only a transport failure proven unsent before handover may use the call's existing
+retry policy. Closing a session sends the code and reason given, 1000 by default.
+
+## Request compression
+
+`Client(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`Client(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
+when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
+
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. Files, paths, iterables, and
+multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
+uncompressed; a one-shot body stays one-shot.
+
+Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
+followed URLs stay uncompressed. Token requests are never compressed.
+
+
+=== runtime.jinja2 / minimal
+# Runtime reference
+
+Import `Client` and `AsyncClient` from `pets` and the records below from
+`pets.options`. Async calls require asyncio.
+
+## Layered options and budgets
+
+A client takes its settings as keywords, a view as the keywords of `with_options(...)`, and one call as
+`options=RequestOptions(...)`. The values a layer gives override those below it: the call's, then the nearest
+view's, then the client's, then fixed defaults. A setting left None inherits, except where None has a meaning of its
+own and UNSET inherits: `timeout=None` lifts every phase limit, `total_timeout=None` removes the optional budget
+across attempts, and `auth=None` sends without an Auth. A number as `timeout` limits every phase and an
+`httpx2.Timeout` each one. `RetryOptions` merges its fields independently, a set of statuses replacing the inherited
+one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client to bound every call to a minute.
+The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
+give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
+the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
+names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
+multipart one without a boundary keeps the body's.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
+
+| Setting | Effective default |
+|---|---|
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
+| retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
+| retry statuses | 408, 429, 500, 502, 503, 504 |
+| maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
+| respect Retry-After / retry pool timeout | True / False |
+| follow redirects | the native client's: False for an SDK-created client |
+| error body prefix | 64 KiB; response and stream bodies are not capped |
+
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
+
+## Retries and replayable input
+
+GET, HEAD, OPTIONS, PUT, and DELETE retry by default; POST and PATCH need an idempotent declaration or a declared key
+header. A connect failure, connect timeout, or pool timeout (with `RetryOptions(retry_on_pool_timeout=True)`) retries
+any call no earlier attempt delivered; other transport failures, callbacks, decoding, cancellation, and deadlines never
+retry, and `retry_safety="never"` forbids every resend. Full jitter samples up to the capped exponential delay. A
+Retry-After delay is a minimum; its date is read by `email.utils.parsedate_to_datetime`, UTC without a known zone, and
+an RFC 850 date's two-digit year is the latest at most 50 years after receipt; a year below 100 in another form is read
+as 1969 to 2068. Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff. A
+call's `RequestOptions(idempotency_key="...")` gives a stable key and `idempotency_key=None` disables the key an
+operation with a declared key header creates once per call; a header of that name among the call's extra headers or the
+default headers is the call's key instead, which a protocol helper refuses. One call keeps its key, origin, and encoded
+body across attempts.
+
+No operation of this package sends a binary or multipart body, so `request_raw` takes `bytes`.
+
+## Transport
+
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.
+An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, and `auth=None` sends without one; unset, the HTTP client's own Auth applies.
+## Errors and cleanup
+
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase or total timeout. A final status the operation does not declare as a success
+raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with its decoded error body
+or bounded raw bytes. `DecodeError` names a request argument or response that does not fit its declaration,
+and `ConfigurationError` a refused setting or call; messages never carry key, header, or body values. Secondary
+cleanup failures are notes of the primary failure, and native cancellation propagates unchanged.
+
+
+=== runtime.jinja2 / partial
+# Runtime reference
+
+Import `Client` and `AsyncClient` from `pets` and the records below from
+`pets.options`. Async calls require asyncio.
+
+## Layered options and budgets
+
+A client takes its settings as keywords, a view as the keywords of `with_options(...)`, and one call as
+`options=RequestOptions(...)`. The values a layer gives override those below it: the call's, then the nearest
+view's, then the client's, then fixed defaults. A setting left None inherits, except where None has a meaning of its
+own and UNSET inherits: `timeout=None` lifts every phase limit, `total_timeout=None` removes the optional budget
+across attempts, and `auth=None` sends without an Auth. A number as `timeout` limits every phase and an
+`httpx2.Timeout` each one. `RetryOptions` merges its fields independently, a set of statuses replacing the inherited
+one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client to bound every call to a minute.
+The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
+give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
+the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
+names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
+multipart one without a boundary keeps the body's.
+Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
+
+| Setting | Effective default |
+|---|---|
+| owned-client connect / read / write / pool timeout | 5 / 600 / 600 / 600 seconds |
+| injected-client phase timeouts | inherited from the native client unless overridden |
+| total timeout | None; opt in across attempts |
+| retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
+| retry statuses | 408, 429, 500, 502, 503, 504 |
+| maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
+| respect Retry-After / retry pool timeout | True / False |
+| follow redirects | the native client's: False for an SDK-created client |
+| error body prefix | 64 KiB; response and stream bodies are not capped |
+
+`Client(clock=Clock(monotonic=..., time=..., random=..., sleep=..., asleep=...))` replaces the time, jitter, and wait sources of every call: each retry, poll, and reconnection wait goes through `sleep`, or `asleep` in an asyncio client.
+
+## Retries and replayable input
+
+GET, HEAD, OPTIONS, PUT, and DELETE retry by default; POST and PATCH need an idempotent declaration or a declared key
+header. A connect failure, connect timeout, or pool timeout (with `RetryOptions(retry_on_pool_timeout=True)`) retries
+any call no earlier attempt delivered; other transport failures, callbacks, decoding, cancellation, and deadlines never
+retry, and `retry_safety="never"` forbids every resend. Full jitter samples up to the capped exponential delay. A
+Retry-After delay is a minimum; its date is read by `email.utils.parsedate_to_datetime`, UTC without a known zone, and
+an RFC 850 date's two-digit year is the latest at most 50 years after receipt; a year below 100 in another form is read
+as 1969 to 2068. Raw calls return final statuses, retry exhaustion included; stream bodies never retry after handoff. A
+call's `RequestOptions(idempotency_key="...")` gives a stable key and `idempotency_key=None` disables the key an
+operation with a declared key header creates once per call; a header of that name among the call's extra headers or the
+default headers is the call's key instead, which a protocol helper refuses. One call keeps its key, origin, and encoded
+body across attempts.
+
+A binary body is `bytes`, a binary file object, an `os.PathLike` path, or an iterable of `bytes`; async calls also take an async file whose `read` is a coroutine function and an async iterable of `bytes`.
+Bytes and seekable files, paths included, are sent with the `Content-Length` measured at call entry and replay from that offset; other inputs are chunked, are never buffered, and cannot replay once consumed.
+Text, `bytearray`, `memoryview`, text-mode or closed files, and paths that cannot be opened raise a request `DecodeError` with the reason `unencodable`.
+The SDK opens a path when the body is first sent, reads at most 64 KiB at a time, in a worker thread in async calls, and closes it when the call ends; caller files stay open.
+
+## Transport
+
+Requests go through the native HTTPX2 client with its `auth`, event hooks, redirect setting, framing, and content decoding; `follow_redirects` of the client, a view, or a call overrides the redirect setting per call.
+A request carrying a credential at a declared scheme's position other than `Authorization` is never redirected: its 3xx is the final response.
+An SDK-created client has HTTPX2's defaults, a 600 second timeout, and 5 seconds to connect, and root close closes it once; an HTTPX2 client passed as `http_client` keeps its own construction and stays caller owned.
+
+## Authentication
+
+```python
+from pets import Client
+
+
+def authenticated_client(key: str) -> Client:
+    return Client(api_key=key)
+```
+
+`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: `api_key` (API key).
+A value is a string, a `(username, password)` tuple for HTTP Basic, or a callable returning one, which is called for each request; a bearer argument also takes an OAuth provider.
+A call sends the credentials of its operation's first security alternative they all satisfy, at the positions its schemes declare, and only to its server's origin.
+An anonymous alternative applies only when no other alternative is satisfied, so an optional operation sends a credential given for a listed scheme; an operation declaring empty security and `request_raw` send none.
+A required operation no credential satisfies raises `ConfigurationError` with the reason `missing_credentials` before sending, unless the HTTP client has an Auth of its own.
+A callable's failure raises `AuthError` with the reason `provider_failed`.
+Credentials beside the client's `auth` or an Auth of an injected HTTP client raise `ConfigurationError` with the reason `conflicting_auth`.
+`auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials for its calls, and `auth=None` sends without an Auth; unset, the credentials apply, or else the HTTP client's own Auth.
+Sign requests with an `httpx2.Auth` of your own, which reads the body natively.
+Credential values do not appear in repr; a query credential is part of the request URL, which the `httpx2` logger records at INFO level.
+
+## Errors and cleanup
+
+Every exception derives from `SDKError`, which keeps a short `reason`, the `operation_id`, the call's
+`attempt_count`, `elapsed`, and `request_id`, and the original failure as `cause`. `APIConnectionError` is an I/O
+failure and `APITimeoutError` a phase or total timeout. A final status the operation does not declare as a success
+raises `APIStatusError`, or its subclass for 400, 401, 403, 404, 409, 422, 429, and 5xx, with its decoded error body
+or bounded raw bytes. `AuthError` names its `reason`, `DecodeError` names a request argument or response that does not fit its declaration,
+and `ConfigurationError` a refused setting or call; messages never carry key, header, or body values. Secondary
+cleanup failures are notes of the primary failure, and native cancellation propagates unchanged.
+
+## Pagination sessions
+
+A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's
+`pagination_options`, then the client's `helper_defaults` for the helper, then the default below. Defaults naming a
+helper the package lacks, or another kind's options, fail construction. The session types are imported from
+`pets.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`.
+
+| Limit | Effective default |
+|---|---|
+| pages per session | None (no limit) |
+| items per session | None (no limit); 0 ends a pager at once |
+| session total timeout (`total_timeout`) | None (no limit) |
+
+A page's items must be a JSON array. Each value a binding reads is sent as it came, without its target's schema
+checks; a dot segment for a path parameter, and a missing binding value, raise `ProtocolDataError`. A limit reached
+while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A call's
+options must not give extra headers or query names of a parameter the helper writes.
+
+A pager's `checkpoint()` returns the continuation it fetches its next page with, the server's cursor, the next offset
+or page number, or the resolved next URL, without sending; it is None before the first page and after the last. The
+helper's `resume(state, ...)` takes that value with the operation's arguments and any body again and returns a pager
+in a session of its own that sends nothing until it is iterated. A continuation holds no call arguments, credentials,
+body, or progress. A pager stopped in the middle of a page gives the continuation before that page, so a resumed pager
+repeats the items already delivered from it. A resumed pager counts pages and items from zero against its own limits,
+starts its session's timeout afresh, and detects cycles from the given continuation on. Its first request writes the
+continuation and the helper's literal bindings, a binding that reads a response takes the caller's argument, and an
+`initial` binding is read from the first resumed page. A next URL is checked as a server's, at the same origins, and
+kept without the credentials the client places itself. A pager stopped by `SessionLimitError` or a
+`ProtocolDataError` with the reason `pagination_cycle` resumes from its `checkpoint()`; the errors carry no
+continuation.
+
+## SSE streams
+
+An SSE helper's `open` is one session holding one logical call. The call's total timeout bounds only
+acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
+`stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
+imported from `pets.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+`UnknownEvent`.
+
+| Limit | Effective default |
+|---|---|
+| idle timeout | the native read timeout; None removes it |
+| session total timeout (`total_timeout`) | None |
+
+The idle timeout runs only while the next step waits for bytes. HTTPX2's `EventSource` parses server-sent events as
+UTF-8 text without a leading byte order mark; an event without data is not delivered, though its `id` and `retry`
+fields still count, and an event over HTTPX2's 1 MiB event size limit raises `ProtocolDataError` with the reason
+`too_large` and the native `SSEError` as its cause. An event's data is JSON decoded by the schema its discriminator
+maps it to; data that does not decode raises `DecodeError`, and a declared error event raises `ProtocolDataError` with
+the reason `error_event` and the decoded event as `data`. The stream ends at its declared completion; an end before it
+raises `StreamInterruptedError` with the reason `eof`, and a broken connection one with the reason `transport` and its
+transport failure as the cause. A frame an SSE body ends in the middle of is
+discarded, as the event-stream interpretation discards it. A helper that does not declare `resume`
+never reconnects, and `StreamOptions(reconnect=True)` raises `ConfigurationError` for it. Close a stream with
+`with`, `async with`, or `close()`; leaving a loop early does not release its response. A root close does not drain
+active streams; each stream releases its own response.
+
+
+=== security.jinja2 / populated
+"""Immutable security catalogues 日本."""
+
+from __future__ import annotations
+
+from typing import Final
+from .._runtime.client.security import SecurityBinding, SecurityScheme
+
+
+_SCHEME_0: Final = SecurityScheme(
+    name='api_key',
+    kind='api_key',
+)
+
+
+_SCHEME_1: Final = UnavailableSecurityScheme(
+    name='digest',
+)
+
+
+ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
+    _SCHEME_0,
+    _SCHEME_1,
+)
+
+
+OPERATION_0: Final = SecurityBinding(
+    schemes=(_SCHEME_0,),
+    alternatives=((),),
+)
+
+=== security.jinja2 / empty
+"""Immutable security catalogues 日本."""
+
+from __future__ import annotations
+
+from typing import Final
+from .._runtime.client.security import SecurityBinding, SecurityScheme
+
+
+ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = ()
+
 === types.jinja2 / populated
 """Types 日本 {braces}"""
 
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import Final, TypeAlias
 
 
-class First(TypedDict):
-    value: str
+ListPetsResponse: TypeAlias = models.Pets | models.Error
 
 
-class Second(TypedDict):
-    value: int
+_LIST_PETS_HEADERS: Final[ResponseHeaders[int | str, UNSET]] = ResponseHeaders(
+    'listPets',
+    frozenset({'200'}),
+    (('X-Rate', (('200', HeaderBranch(codec=codec_1)),)),),
+)
+
+
+@overload
+def decode_list_pets_header(
+    info: ResponseInfo,
+    *,
+    name: Literal['X-Rate'],
+) -> int: ...
+@overload
+def decode_list_pets_header(
+    info: ResponseInfo,
+    *,
+    name: Literal['X-日本'],
+) -> str | UNSET: ...
+def decode_list_pets_header(
+    info: ResponseInfo,
+    *,
+    name: Literal['X-Rate', 'X-日本'],
+) -> int | str | UNSET:
+    """Decode one declared response header of list_pets from a response's metadata."""
+    return _LIST_PETS_HEADERS.decode(info, name)
+
+
+GetPetResponse: TypeAlias = None
+
+
+CountPetsResponse: TypeAlias = int
+
+
+_COUNT_PETS_HEADERS: Final[ResponseHeaders[int | str, UNSET]] = ResponseHeaders(
+    'listPets',
+    frozenset({'200'}),
+    (('X-Rate', (('200', HeaderBranch(codec=codec_1)),)),),
+)
+
+
+def decode_count_pets_header(
+    info: ResponseInfo,
+    *,
+    name: Literal['X-Rate'],
+) -> int:
+    """Decode one declared response header of list_pets from a response's metadata."""
+    return _COUNT_PETS_HEADERS.decode(info, name)
 
 === types.jinja2 / empty
 """Types 日本 {braces}"""
@@ -828,3 +2016,159 @@ class Second(TypedDict):
 from __future__ import annotations
 
 from typing import TypedDict
+
+=== webhook.jinja2 / builtin
+"""Verify the signed deliveries of one webhook helper, then decode their events.
+
+The helper is github.日本, whose deliveries are signed with HMAC-SHA256 {braces}.
+"""
+
+from __future__ import annotations
+
+from typing import Final
+
+
+__all__ = [
+    'verify',
+    'verify_async',
+]
+
+
+_PLAN: Final[WebhookPlan[models.Event, HmacKey]] = WebhookPlan(
+    helper_id='github.日本',
+    event=EventDecoder(model_bindings.codec_0),
+)
+
+
+def verify(
+    raw_body: bytes,
+    headers: Sequence[tuple[str, str]],
+    keys: KeySet[HmacKey],
+    *,
+    now: datetime,
+    options: WebhookOptions | None = None,
+) -> VerifiedWebhook[models.Event]:
+    """Verify a delivery and decode its event.
+
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
+    """
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        now=now,
+        options=options,
+    )
+
+
+async def verify_async(
+    raw_body: bytes,
+    headers: Sequence[tuple[str, str]],
+    keys: KeySet[HmacKey],
+    *,
+    now: datetime,
+    options: WebhookOptions | None = None,
+) -> VerifiedWebhook[models.Event]:
+    """Verify a delivery and decode its event.
+
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
+    """
+    return await averify_webhook(
+        _PLAN,
+        raw_body,
+        now=now,
+        options=options,
+    )
+
+=== webhook.jinja2 / adapter
+"""Verify the deliveries of one webhook helper with the caller's verifier, then decode their events.
+
+The helper is adapted.plain, whose deliveries are verified by the Verifier the caller passes,
+which must authenticate the whole raw body and every fact it returns.
+"""
+
+from __future__ import annotations
+
+from typing import Final, TypeVar
+
+
+__all__ = [
+    'verify',
+    'verify_async',
+]
+
+
+K = TypeVar("K")
+
+
+_PLAN: Final[AdapterPlan[models.Event]] = AdapterPlan(
+    helper_id='github.日本',
+    event=EventDecoder(model_bindings.codec_0),
+)
+
+
+def verify(
+    raw_body: bytes,
+    headers: Sequence[tuple[str, str]],
+    keys: KeySet[K],
+    *,
+    verifier: Verifier[K],
+    now: datetime,
+    options: WebhookOptions | None = None,
+) -> VerifiedWebhook[models.Event]:
+    """Verify a delivery with verifier and decode its event.
+
+    The verifier is called once, synchronously in both functions,
+    and must authenticate the whole raw body and every fact it returns;
+    a result that is not a VerifiedSignature, lacks a fact this helper requires, returns one it does not declare,
+    or has a naive timestamp raises ConfigurationError before decoding.
+    Deliveries outside the timestamp window are rejected.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
+    """
+    return verify_adapted(
+        _PLAN,
+        raw_body,
+        verifier=verifier,
+        now=now,
+        options=options,
+    )
+
+=== webhook.jinja2 / unsigned
+"""Decode the unsigned deliveries of one webhook helper.
+
+The helper is unsigned.日本, whose deliveries carry no signature:
+nothing authenticates who sent one, that its body is unchanged, or that it is not a replay,
+so treat every event as untrusted input.
+"""
+
+from __future__ import annotations
+
+from typing import Final
+
+
+__all__ = [
+    'decode_unverified',
+]
+
+
+_PLAN: Final[EventPlan[models.Event]] = EventPlan(
+    helper_id='github.日本',
+    event=EventDecoder(model_bindings.codec_0),
+)
+
+
+def decode_unverified(
+    raw_body: bytes,
+    *,
+    options: WebhookOptions | None = None,
+) -> models.Event:
+    """Decode a delivery's event without authenticating it.
+
+    Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,
+    and no duplicate information is returned: treat the event as untrusted input.
+    Of options, only max_body_bytes applies.
+    """
+    return decode_unsigned(
+        _PLAN,
+        raw_body,
+        options=options,
+    )

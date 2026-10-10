@@ -142,6 +142,7 @@ from datamodel_code_generator._cli_config import (
 )
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._project_config import (
+    _PYPROJECT_JSON_CONFIG_FIELDS,
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
     _normalize_pyproject_config,
@@ -218,8 +219,6 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
-_TARGET_SELECTORS: tuple[tuple[str, str], ...] = (("generate_server", "server_"), ("generate_client", "client_"))
-_TARGET_REQUIRED: tuple[str, ...] = ("output", "package", "model_package")
 
 
 class Exit(IntEnum):
@@ -281,16 +280,23 @@ def _create_config(
     pyproject_config: Mapping[str, Any],
     cli_config_args: Mapping[str, _RawConfigValue],
 ) -> Config:
-    """Create the final CLI config while preserving pyproject/CLI validation order."""
+    """Create the final CLI config while preserving pyproject/CLI validation order.
+
+    The config keeps the text or path each JSON option was given as: a JSON file is the base of the paths it names.
+    """
     config_class = _get_config_class()
-    if not pyproject_config:
-        return config_class.model_validate(_prepare_cli_config_args(cli_config_args))
+    if pyproject_config:
+        from argparse import Namespace as ArgNamespace  # noqa: PLC0415
 
-    from argparse import Namespace as ArgNamespace  # noqa: PLC0415
-
-    config = config_class.model_validate(pyproject_config)
-    cli_namespace = ArgNamespace(**cli_config_args)
-    config.merge_args(cli_namespace)
+        config = config_class.model_validate(pyproject_config)
+        config.merge_args(ArgNamespace(**cli_config_args))
+    else:
+        config = config_class.model_validate(_prepare_cli_config_args(cli_config_args))
+    config._json_sources = {  # noqa: SLF001
+        name: value
+        for name in _PYPROJECT_JSON_CONFIG_FIELDS
+        if isinstance(value := cli_config_args.get(name, pyproject_config.get(name)), str | Path)
+    }
     return config
 
 
@@ -420,6 +426,24 @@ def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLoc
     else:
         policy = "inactive"
     return _RemoteLockPlan(canonical_path, canonical_path, literal_path, policy)
+
+
+def _watch_remote_lock_setup(
+    config: Config,
+    pyproject_path: Path | None,
+    watch_dependencies: WatchDependencies | None,
+    bound_plan: _RemoteLockPlan | None,
+) -> tuple[_RemoteLockPlan, set[Path] | None]:
+    """Resolve the lock plan of a run and register its lock with the watcher, returning the lock intent to settle."""
+    lock_plan = bound_plan or _remote_lock_plan(config, pyproject_path)
+    intent: set[Path] | None = None
+    if config.watch and watch_dependencies is not None:
+        if bound_plan is None:
+            (lock_plan,), intent = watch_dependencies._apply_remote_lock_plans((lock_plan,))  # noqa: SLF001
+        watch_dependencies.add_file(lock_plan.canonical_path)
+        if lock_plan.policy == "update":
+            watch_dependencies.exclude_file(lock_plan.canonical_path)
+    return lock_plan, intent
 
 
 def _paths_alias_or_overlap(first: Path, second: Path) -> bool:
@@ -764,10 +788,13 @@ def _paths_overlap_or_samefile(first: Path, second: Path) -> bool:
 def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
     """Validate all selected jobs before any job starts generation.
 
-    Jobs that each generate a target may name one models output, which they must then generate identically.
+    Jobs that each generate a target may name one models output, which they must then generate identically. A job
+    may keep its models inside its target output, or the target output inside its models directory.
     """
     artifacts: list[tuple[str, str, Path]] = []
     inputs: list[tuple[str, Path]] = []
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
     target_jobs = {plan.name for plan in plans if _selected_target(plan.config) is not None}
     for plan in plans:
         config = plan.config
@@ -796,7 +823,8 @@ def _preflight_job_plans(plans: Sequence[JobPlan]) -> None:
                 and first_kind == second_kind == "output"
                 and target_jobs.issuperset((first_job, second_job))
             )
-            if shares_models or not _paths_overlap_or_samefile(first_path, second_path):
+            nests_models = first_job == second_job and "model metadata" not in {first_kind, second_kind}
+            if shares_models or nests_models or not _paths_overlap_or_samefile(first_path, second_path):
                 continue
             msg = (
                 f"Jobs '{first_job}' ({first_kind}: {first_path}) and '{second_job}' "
@@ -1108,7 +1136,9 @@ class OutputComparisonOptions(NamedTuple):
     directory_display_path: str | None = None
 
     def directory_file_path(self, path: Path) -> str:
-        """Qualify a directory entry when comparing several output roots."""
+        """Qualify a directory entry when comparing several output roots; a single-module output keeps its own name."""
+        if not path.parts and self.single_file_display_path is not None:
+            return self.single_file_display_path
         return (path if self.directory_display_path is None else Path(self.directory_display_path) / path).as_posix()
 
     @property
@@ -1196,7 +1226,10 @@ def _compare_directories(
     encoding: str,
     comparison: OutputComparisonOptions,
 ) -> tuple[list[DirectoryChangedFile], list[str], list[str]]:
-    """Compare generated directory with existing directory."""
+    """Compare generated directory with existing directory.
+
+    Two inputs can generate a single-module file at the directory path: it is compared as the file at that path.
+    """
     changed_files: list[DirectoryChangedFile] = []
 
     generated_files = {path.relative_to(generated_dir) for path in generated_dir.rglob("*.py")}
@@ -1206,6 +1239,11 @@ def _compare_directories(
         for path in actual_dir.rglob("*.py"):
             if "__pycache__" not in path.parts:
                 actual_files.add(path.relative_to(actual_dir))
+
+    if comparison.input_diff:
+        for files, output in ((generated_files, generated_dir), (actual_files, actual_dir)):
+            if not files and output.is_file():
+                files.add(Path())
 
     missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
     extra_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(actual_files - generated_files)]
@@ -1490,19 +1528,21 @@ def _structured_output_json_schema() -> str:
 
 
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
-    if is_directory_output:
-        for generated_file in sorted(generated_output.rglob("*")):
-            if not generated_file.is_file():
-                continue
-            target = actual_output / generated_file.relative_to(generated_output)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(generated_file, target)
-        return
+    from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
 
-    if not generated_output.exists():
-        return
-    actual_output.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(generated_output, actual_output)
+    targets: dict[Path, Path] = {}
+    if is_directory_output:
+        targets = {
+            generated_file: actual_output / generated_file.relative_to(generated_output)
+            for generated_file in sorted(generated_output.rglob("*"))
+            if generated_file.is_file()
+        }
+    if not targets and generated_output.is_file():
+        targets = {generated_output: actual_output}
+    warn_shadowed_modules(targets.values())
+    for generated_file, target in targets.items():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(generated_file, target)
 
 
 def _write_generated_result(
@@ -1611,23 +1651,10 @@ def _generation_config(  # noqa: PLR0913
     return generation_config
 
 
-def _option_list(flags: Sequence[str]) -> str:
-    """Name options as an English list."""
-    return flags[0] if len(flags) == 1 else f"{', '.join(flags[:-1])} and {flags[-1]}"
-
-
-def _flag(field: str, *, negative: bool = False) -> str:
-    """Return the option of a Config field, or its --no- form."""
-    return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
-
-
-def _selected_target(config: Config) -> tuple[str, str] | None:
-    """Return the selector and the settings prefix of the target a config selects, or None for a model-only config."""
-    return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
-
-
 def _target_output(config: Config) -> tuple[str, Path] | None:
     """Name the package directory of the target a config selects, such as the server output and its path."""
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
     if (selected := _selected_target(config)) is None or (output := getattr(config, f"{selected[1]}output")) is None:
         return None
     return f"{selected[1].removesuffix('_')} output", output
@@ -1638,6 +1665,13 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
 
     Target keys of pyproject.toml are validated like model keys but have no effect while their target is not selected.
     """
+    from datamodel_code_generator.base_config import (  # noqa: PLC0415
+        _TARGET_SELECTORS,
+        _flag,
+        _missing_target_options,
+        _option_list,
+    )
+
     explicit = _explicit_config_args(namespace)
     unselected = [(selector, prefix) for selector, prefix in _TARGET_SELECTORS if getattr(config, selector) is None]
     given = [
@@ -1653,23 +1687,14 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
         if flags
     ]:
         return errors
-    return [
-        f"{_flag(selector)} requires {_option_list(missing)}"
-        for selector, prefix in _TARGET_SELECTORS
-        if getattr(config, selector) is not None
-        and (
-            missing := [
-                _flag(field) for name in _TARGET_REQUIRED if getattr(config, field := f"{prefix}{name}") is None
-            ]
-        )
-    ]
+    return [] if (missing := _missing_target_options(config)) is None else [missing]
 
 
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
     """Return the remote lock file a generation target's models read or update, or None while no lock applies.
 
-    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target, and the
-    target manifest, only while a policy uses it: an update, a locked run, or an existing file to verify.
+    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target only
+    while a policy uses it: an update, a locked run, or an existing file to verify.
     """
     if config.lockfile is not None:
         return config.lockfile
@@ -1793,6 +1818,8 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
     A target job stages nothing: it renders its models and package without writing them, for publication with the
     batch.
     """
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
     if plan.config.check or _selected_target(plan.config) is not None:
         return _StagedJobPlan(plan, plan.config, None, None, None, None, None, None, None, None, ())
 
@@ -2402,6 +2429,30 @@ def _diff_against_validation_error(config: Config, namespace: Namespace) -> str 
     return next((message for is_incompatible, message in incompatible_options if is_incompatible), None)
 
 
+def _watch_and_regenerate(
+    args: Sequence[str],
+    config: Config,
+    dependencies: WatchDependencies | None,
+    *,
+    watch_path: Path | None = None,
+    watch_delay: float | None = None,
+) -> Exit:
+    """Watch what a generation read, regenerating it through the command after each change until interrupted."""
+    try:
+        from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
+
+        return watch_and_regenerate(
+            config,
+            dependencies=dependencies,
+            regenerate=lambda: _main(args, start_watch=False, dependencies=dependencies),
+            watch_path=watch_path,
+            watch_delay=watch_delay,
+        )
+    except Exception as e:  # noqa: BLE001
+        print(str(e), file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
+
+
 def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     args: Sequence[str] | None = None,
     *,
@@ -2507,9 +2558,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         if any(plan.config.check for plan in batch_plan.jobs):
             print("Error: --watch and --check cannot be used together", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
-        if selected := next(filter(None, (_selected_target(plan.config) for plan in batch_plan.jobs)), None):
-            print(f"Error: {_flag(selected[0])} cannot be used with --watch", file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
         if namespace.output_format == "json":
             print("Error: --output-format json cannot be used with --watch", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
@@ -2520,23 +2568,13 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         result = _run_watched_jobs(args, batch_plan, watch_dependencies)
         if result is not Exit.OK or not start_watch:
             return result
-        try:
-            from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
-
-            return watch_and_regenerate(
-                batch_plan.jobs[0].config,
-                dependencies=watch_dependencies,
-                regenerate=lambda: _main(
-                    args,
-                    start_watch=False,
-                    dependencies=watch_dependencies,
-                ),
-                watch_path=batch_plan.pyproject_path,
-                watch_delay=batch_plan.watch_delay,
-            )
-        except Exception as e:  # noqa: BLE001
-            print(str(e), file=sys.stderr)  # noqa: T201
-            return Exit.ERROR
+        return _watch_and_regenerate(
+            args,
+            batch_plan.jobs[0].config,
+            watch_dependencies,
+            watch_path=batch_plan.pyproject_path,
+            watch_delay=batch_plan.watch_delay,
+        )
 
     # Handle --ignore-pyproject and --profile options
     if _batch_config is not None:
@@ -2683,22 +2721,6 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         for error in target_usage:
             print(f"Error: {error}", file=sys.stderr)  # noqa: T201
         return Exit.ERROR
-    if _selected_target(config) is not None:
-        if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
-            return refusal
-        lock = None
-        if _batch_targets is None:
-            try:
-                _validate_remote_lock_preflight(
-                    (("command", config, pyproject_path),), (_remote_lock_plan(config, pyproject_path),)
-                )
-            except Error as e:
-                print(str(e), file=sys.stderr)  # noqa: T201
-                return Exit.ERROR
-        elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
-            lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
-        return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
-
     if config.watch and config.check:
         print(  # noqa: T201
             "Error: --watch and --check cannot be used together",
@@ -2727,15 +2749,41 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    lock_plan = _bound_remote_lock_plan or _remote_lock_plan(config, pyproject_path)
-    remote_lock_intent: set[Path] | None = None
-    if config.watch and watch_dependencies is not None and _bound_remote_lock_plan is None:
-        (lock_plan,), remote_lock_intent = watch_dependencies._apply_remote_lock_plans((lock_plan,))  # noqa: SLF001
+    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+
+    if _selected_target(config) is not None:
+        if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
+            return refusal
+        lock = None
+        if _batch_targets is None:
+            try:
+                _validate_remote_lock_preflight(
+                    (("command", config, pyproject_path),), (_remote_lock_plan(config, pyproject_path),)
+                )
+            except Error as e:
+                print(str(e), file=sys.stderr)  # noqa: T201
+                return Exit.ERROR
+        elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
+            lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
+        if not config.watch or watch_dependencies is None:
+            return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
+        # A batch job never watches (watch is an outer setting), so this run owns its lock plan and its intent.
+        _, remote_lock_intent = _watch_remote_lock_setup(config, pyproject_path, watch_dependencies, None)
+        with watch_dependencies.generation() as generation:
+            result = _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
+            generation.failed = result is not Exit.OK
+        if result is Exit.OK:
+            watch_dependencies._commit_remote_lock_intent(cast("set[Path]", remote_lock_intent))  # noqa: SLF001
+        else:
+            watch_dependencies._merge_remote_lock_intent(cast("set[Path]", remote_lock_intent))  # noqa: SLF001
+        if result is not Exit.OK or not start_watch:
+            return result
+        return _watch_and_regenerate(args, config, watch_dependencies)
+
+    lock_plan, remote_lock_intent = _watch_remote_lock_setup(
+        config, pyproject_path, watch_dependencies, _bound_remote_lock_plan
+    )
     active_lockfile = lock_plan.canonical_path if lock_plan.active else None
-    if config.watch and watch_dependencies is not None:
-        watch_dependencies.add_file(lock_plan.canonical_path)
-        if lock_plan.policy == "update":
-            watch_dependencies.exclude_file(lock_plan.canonical_path)
     remote_transaction_owner = False
     if _remote_locks is _UNRESOLVED_REMOTE_LOCKS:
         try:
@@ -2787,17 +2835,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             if result is not Exit.OK:
                 return finish_watch_remote_lock_intent(result)
             finish_watch_remote_lock_intent(result)
-            try:
-                from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
-
-                return watch_and_regenerate(
-                    config,
-                    dependencies=watch_dependencies,
-                    regenerate=lambda: _main(args, start_watch=False, dependencies=watch_dependencies),
-                )
-            except Exception as e:  # noqa: BLE001
-                print(str(e), file=sys.stderr)  # noqa: T201
-                return Exit.ERROR
+            return _watch_and_regenerate(args, config, watch_dependencies)
         result = _run_single_remote_transaction(
             args,
             config,
@@ -3040,23 +3078,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return cleanup_and_return(Exit.DIFF if comparison.differences else Exit.OK)
 
     if config.watch and start_watch:
-        try:
-            from datamodel_code_generator.watch import watch_and_regenerate  # noqa: PLC0415
-
-            return cleanup_and_return(
-                watch_and_regenerate(
-                    config,
-                    dependencies=watch_dependencies,
-                    regenerate=lambda: _main(
-                        args,
-                        start_watch=False,
-                        dependencies=watch_dependencies,
-                    ),
-                )
-            )
-        except Exception as e:  # noqa: BLE001
-            print(str(e), file=sys.stderr)  # noqa: T201
-            return cleanup_and_return(Exit.ERROR)
+        return cleanup_and_return(_watch_and_regenerate(args, config, watch_dependencies))
 
     return cleanup_and_return(Exit.OK)
 

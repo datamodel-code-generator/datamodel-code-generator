@@ -1,0 +1,13 @@
+# the server job's services.py cannot be written
+Error: could not publish batch output: No space left on device
+  outputs []
+# the batch publishes
+Add the runtime dependencies of server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
+  outputs ['models.py', 'schemas.py', 'server']
+# the server job's services.py cannot be replaced
+Error: could not publish batch output: No space left on device
+  outputs ['models.py', 'schemas.py', 'server']
+  schemas.py still edited True
+  models.py still edited True
+  server/services.py still edited True

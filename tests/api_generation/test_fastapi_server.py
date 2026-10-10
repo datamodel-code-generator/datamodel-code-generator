@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -14,33 +15,57 @@ from tests.data.python.fastapi_openapi import SCENARIOS, fastapi_openapi_report
 from tests.data.python.fastapi_server import fastapi_server_report
 from tests.data.python.fastapi_upstream import fastapi_upstream_report
 from tests.data.python.model_codec_builtin import builtin_codec_report, builtin_codec_startup_report
+from tests.main.conftest import EXPERIMENTAL_MISSING_IMPORT_WARNING
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs/pydantic"
 CODEC_EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi/servers"
+PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start preset emits type statements")
 
 
 @pytest.mark.parametrize(
     "case",
     [
         "pets",
+        "pets-type-checking",
+        "pets-type-checking-default",
+        "pets-type-checking-off",
         "unbound",
         "parameters",
+        "strict",
+        "strict-annotated",
+        pytest.param("strict-preset", marks=PRESET),
+        "defaults",
+        "defaults-annotated",
+        pytest.param("defaults-preset", marks=PRESET),
         "kinds",
         "kinds-annotated",
         "kinds-decimal",
         "kinds-literal",
+        "errors",
         "bodies",
         "results",
         "security",
+        "security-templates",
         "customized",
+        "locals",
+        "naming",
+        "naming-snake",
+        "naming-parent-prefixed",
+        "naming-full-path",
+        "naming-primary-first",
+        "unauthorized",
         "variants",
         "variants-request-response",
         "variants-modular",
         "variants-reuse",
         "forms",
         "responses",
+        "nested-models",
+        "stale",
+        "spellings",
+        "spellings-exact",
     ],
 )
 def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -77,7 +102,7 @@ def test_text_charsets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         ("pets", "pets-noalias-forbid"),
         ("pets", "pets-generator"),
         ("pets", "pets-serialization"),
-        ("pets", "pets-missing"),
+        pytest.param("pets", "pets-missing", marks=EXPERIMENTAL_MISSING_IMPORT_WARNING),
         ("pets", "pets-strict"),
         ("pets", "pets-forbid"),
         ("pets", "pets-allow"),

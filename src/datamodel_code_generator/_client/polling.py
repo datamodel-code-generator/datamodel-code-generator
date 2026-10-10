@@ -25,8 +25,8 @@ from datamodel_code_generator._client.pagination import (
     _target_key,
     credential_place,
 )
-from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._target_contract import AnnotatedType, NoneType, UnionType
+from datamodel_code_generator._target_contract import NoneType, UnionType
+from datamodel_code_generator._target_module import TargetModule, TypeNames
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterator, Mapping
@@ -38,8 +38,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._target_contract import FinalPythonType, OperationId, TypeUseBinding, TypeUseId
+    from datamodel_code_generator._target_contract import OperationId, TypeUseBinding, TypeUseId, TypeView
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 _KINDS: Final = {"polling": "polling", "sse": "SSE", "ndjson": "NDJSON"}
@@ -62,7 +61,7 @@ class PollingSpec:
     poll: OperationSpec
     poll_use: TypeUseBinding
     create_uses: tuple[TypeUseBinding, ...] = ()
-    value: FinalPythonType | None = None
+    value: TypeView | None = None
     steps: tuple[ItemStep, ...] = ()
     fetch: OperationSpec | None = None
     fetch_use: TypeUseBinding | None = None
@@ -83,14 +82,14 @@ class _Source:
 
     spec: OperationSpec
     response: ResponseSpec
-    body: FinalPythonType | None
+    body: TypeView | None
 
 
 @dataclass(frozen=True, slots=True)
 class _Result:
     """A checked result: its type, how its accessor reads it, and its schema; or the fetch's operation and use."""
 
-    value: FinalPythonType | None = None
+    value: TypeView | None = None
     steps: tuple[ItemStep, ...] = ()
     schema: Mapping[str, str] | None = None
     fetch: OperationSpec | None = None
@@ -105,12 +104,15 @@ def _response(spec: OperationSpec, status: int) -> ResponseSpec | None:
     return keys.get(str(status)) or keys.get(f"{status // 100}XX") or keys.get("default")
 
 
-def _nonnull(value: FinalPythonType) -> FinalPythonType:
-    """Return a type without None, through its metadata, as a result that reads null is refused at runtime."""
-    if not isinstance(base := value.base if isinstance(value, AnnotatedType) else value, UnionType):
+def _nonnull(value: TypeView) -> TypeView:
+    """Return a type without None, as a result that reads null is refused at runtime.
+
+    The union of the other members keeps the discriminator its schema declares.
+    """
+    if not isinstance(value, UnionType) or not any(isinstance(member, NoneType) for member in value.members):
         return value
-    members = tuple(member for member in base.members if not isinstance(member, NoneType))
-    return members[0] if len(members) == 1 else UnionType(members, base.preserve_order)
+    members = tuple(member for member in value.members if not isinstance(member, NoneType))
+    return members[0] if len(members) == 1 else UnionType(members, value.preserve_order, value.discriminator)
 
 
 class _Polls:
@@ -121,13 +123,13 @@ class _Polls:
         self.pages = pages
         self.operations = operations
         self.protocols = protocols
-        self.spelling = TypeSource(Namespace(()), pages.facts.imports, lambda module, name: f"{module}.{name}")
+        self.spelling = TargetModule(TypeNames(pages.request.batch), qualified=True)
 
     def spec(self, reference: OperationRef) -> OperationSpec:
         """Return the selected operation a helper reference names."""
         return self.operations[self.protocols.operations[reference].id]
 
-    def model(self, response: ResponseSpec) -> FinalPythonType | None:
+    def model(self, response: ResponseSpec) -> TypeView | None:
         """Return the type of a response's one JSON media with a codec, or None for any other response."""
         return None if (use := _page_use([response])) is None or use.id not in self.pages.codecs else use.type
 
@@ -248,7 +250,7 @@ class _Polls:
                     f"{_label(spec)}, which is no JSON model"
                 )
                 return _problem("E_CONFIG_VALUE", "config", at, message, spec)
-            body = cast("FinalPythonType", source.body)
+            body = cast("TypeView", source.body)
             types = self.pages.read(helper, spec, body, response.headers, selector, at, what)
             if isinstance(types, Diagnostic):
                 return types
@@ -391,10 +393,10 @@ class _Polls:
         ):
             message = f"The {what} pointer {pointer!r} of {name!r} names no property of the {_label(spec)} response"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
-        if (expected := self.pages.item_schema(reference)) is None:
+        if (expected := self.pages.item_type(reference, "response")) == "missing":
             message = f"The {what} schema {reference.pointer!r} of {name!r} does not exist in its document"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.schema", message, spec)
-        if self.pages.wire.schema(self.pages.nonnull(member.schema))[0] != expected:
+        if not self.pages.same(member.model_facts.type, expected):
             message = f"The {what} schema {reference.pointer!r} of {name!r} is not the schema its pointer reads"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.schema", message, spec)
         schema = {"document": self.protocols.documents[reference], "pointer": reference.pointer}
@@ -450,7 +452,7 @@ class _Polls:
                 problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.statuses[{index}]", message, create))
         successes = [response for response in create.responses if response.success]
         uses = [_page_use([response]) for response in successes]
-        spelled = {self.spelling.static(use.type) for use in uses if use is not None and use.type is not None}
+        spelled = {self.spelling.hint(use.type) for use in uses if use is not None and use.type is not None}
         model = self.model(successes[0]) if successes else None
         if model is None or None in uses or len(spelled) != 1:
             message = (
@@ -468,26 +470,25 @@ class _Polls:
         assert expected is not None
         assert reached.value is not None
         assert reached.schema is not None
-        if (given := self.spelling.static(reached.value)) != (wanted := self.spelling.static(expected)):
+        if (given := self.spelling.hint(reached.value)) != (wanted := self.spelling.hint(expected)):
             message = f"The immediate result of {name!r} reads {given}, which is not its result type {wanted}"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, create))
             return None
         return reached.steps, reached.schema
 
 
-def plan_polling(  # noqa: PLR0913, PLR0917
+def plan_polling(
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[PollingSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled polling helper, returning them and each checked helper's problems."""
     if protocols is None:
         return (), {}
     operations = {spec.contract.id: spec for spec in plan.operations}
-    polls = _Polls(_Pages(protocols, plan, facts, codecs, wire, request), operations, protocols)
+    polls = _Polls(_Pages(protocols, plan, facts, codecs, request), operations, protocols)
     specs: list[PollingSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:

@@ -25,32 +25,6 @@ OPERATION_0: Final[OperationPlan[GetOrderResponse]] = OperationPlan(
     method='GET',
     path='/orders/{orderId}',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            model_branch('200', 'application/json', 'json', model_bindings.codec_2),
-            model_branch('default', 'application/json', 'json', model_bindings.codec_3),
-        ),
-        (model_branch('default', 'application/json', 'json', model_bindings.codec_3),),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='orderId',
-                style='simple',
-                required=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='view',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_1,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2), model_branch('default', 'application/json', 'json', model_bindings.codec_3)), (model_branch('default', 'application/json', 'json', model_bindings.codec_3),)),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='orderId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='view', style='form', explode=True), codec=model_bindings.codec_1)),
 )

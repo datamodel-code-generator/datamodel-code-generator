@@ -595,7 +595,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         inline docstring
   --use-missing-sentinel
                         Use pydantic.experimental.missing_sentinel.MISSING for
-                        optional fields without defaults (Pydantic v2.12+).
+                        optional fields without defaults (Pydantic v2.12+), or
+                        pydantic.MISSING with --target-pydantic-version 2.14
+                        or later.
   --use-serialization-alias
                         Use serialization_alias instead of alias for field
                         aliasing (Pydantic v2 only). This allows setting
@@ -609,7 +611,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --alias-generator {to_camel,to_pascal,to_snake}
                         Pydantic v2 BaseModel alias generator to use in
                         ConfigDict. Matching generated aliases are omitted
-                        from individual Field() calls.
+                        from individual Field() calls, except with --target-
+                        pydantic-version 2, which writes every alias.
   --all-exports-collision-strategy {error,minimal-prefix,full-prefix}
                         Strategy for name collisions when using --all-exports-
                         scope=recursive. 'error': raise an error (default).
@@ -740,13 +743,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         applies only to automatic inference and does not
                         override --treat-dot-as-module or --no-treat-dot-as-
                         module.
-  --target-pydantic-version {2,2.11,2.12}
+  --target-pydantic-version {2,2.11,2.12,2.14}
                         Oldest Pydantic version the generated code must
                         support. Unset: the newest supported feature forms,
-                        with populate_by_name config like '2'. '2': Pydantic
+                        with populate_by_name config like '2' and the
+                        experimental MISSING import like '2.12'. '2': Pydantic
                         2.0+ compatible (uses populate_by_name). '2.11':
                         Pydantic 2.11+ (uses validate_by_name). '2.12':
-                        Pydantic 2.12+ (supports MISSING sentinel).
+                        Pydantic 2.12+ (supports MISSING sentinel). '2.14':
+                        Pydantic 2.14+ (imports MISSING from pydantic).
   --target-python-version {3.10,3.11,3.12,3.13,3.14}
                         target python version
   --treat-dot-as-module, --no-treat-dot-as-module

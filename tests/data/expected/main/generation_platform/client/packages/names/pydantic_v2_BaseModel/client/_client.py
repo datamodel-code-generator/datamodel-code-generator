@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from contextlib import AbstractContextManager
 from functools import cached_property
 from types import TracebackType
@@ -15,17 +16,15 @@ from typing_extensions import Self
 
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.client.errors import add_secondary
-from ._runtime.model_codecs.unset import UNSET, Unset
-from .bodies import BodyInput
-from .model_codecs import JSONValue
-from .options import ClientOptions, RequestOptions
+from ._runtime.model_codecs.unset import UNSET
+from .options import Clock, RequestOptions, RetryOptions, ServerSelection
 from .responses import RawResponse
 
 if TYPE_CHECKING:
     from .resources.admin._sync import AdminResource
     from .resources.default._sync import DefaultResource
     from .resources.store._sync import StoreResource
-    from .resources.u30e6_u30fc_u30b6_u30fc._sync import U30e6U30fcU30b6U30fcResource
+    from .resources.ユーザー._sync import ユーザーResource
 
 _DEFAULTS = ClientDefaults()
 
@@ -41,16 +40,41 @@ class ClientView:
         view._core = core
         return view
 
-    def with_options(self, options: RequestOptions) -> ClientView:
-        """Return a typed view with these request options layered on the current settings."""
-        return ClientView._from_core(self._core.view(options))
+    def with_options(
+        self,
+        *,
+        base_url: str | None = None,
+        server: ServerSelection | None = None,
+        timeout: float | httpx2.Timeout | UNSET | None = UNSET,
+        total_timeout: float | UNSET | None = UNSET,
+        max_retries: int | None = None,
+        retry: RetryOptions | None = None,
+        default_headers: Mapping[str, str | None] | None = None,
+        default_query: Mapping[str, str | None] | None = None,
+        follow_redirects: bool | None = None,
+        auth: httpx2.Auth | UNSET | None = UNSET,
+    ) -> ClientView:
+        """Return a typed view with these settings over the current ones; None and UNSET keep the current one."""
+        core = self._core.view(
+            base_url=base_url,
+            server=server,
+            timeout=timeout,
+            total_timeout=total_timeout,
+            max_retries=max_retries,
+            retry=retry,
+            default_headers=default_headers,
+            default_query=default_query,
+            follow_redirects=follow_redirects,
+            auth=auth,
+        )
+        return ClientView._from_core(core)
 
     def request_raw(
         self,
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | Unset = UNSET,
+        body: bytes | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -76,11 +100,11 @@ class ClientView:
         return StoreResource(self._core)
 
     @cached_property
-    def u30e6_u30fc_u30b6_u30fc(self) -> U30e6U30fcU30b6U30fcResource:
-        """The u30e6_u30fc_u30b6_u30fc operations."""
-        from .resources.u30e6_u30fc_u30b6_u30fc._sync import U30e6U30fcU30b6U30fcResource
+    def ユーザー(self) -> ユーザーResource:
+        """The ユーザー operations."""
+        from .resources.ユーザー._sync import ユーザーResource
 
-        return U30e6U30fcU30b6U30fcResource(self._core)
+        return ユーザーResource(self._core)
 
     @cached_property
     def admin(self) -> AdminResource:
@@ -96,11 +120,35 @@ class Client(ClientView):
     def __init__(
         self,
         *,
-        options: ClientOptions | None = None,
-        http_client: httpx2.Client | Unset | None = UNSET,
+        base_url: str | None = None,
+        server: ServerSelection | None = None,
+        timeout: float | httpx2.Timeout | UNSET | None = UNSET,
+        total_timeout: float | None = None,
+        max_retries: int = 2,
+        retry: RetryOptions | None = None,
+        default_headers: Mapping[str, str | None] | None = None,
+        default_query: Mapping[str, str | None] | None = None,
+        follow_redirects: bool | None = None,
+        auth: httpx2.Auth | UNSET | None = UNSET,
+        clock: Clock | None = None,
+        http_client: httpx2.Client | None = None,
     ) -> None:
         """Borrow the native HTTP client given, or create one this root owns and closes."""
-        self._core = ClientCore.create(_DEFAULTS, options=options, http_client=http_client)
+        self._core = ClientCore.create(
+            _DEFAULTS,
+            base_url=base_url,
+            server=server,
+            timeout=timeout,
+            total_timeout=total_timeout,
+            max_retries=max_retries,
+            retry=retry,
+            default_headers=default_headers,
+            default_query=default_query,
+            follow_redirects=follow_redirects,
+            auth=auth,
+            clock=clock,
+            http_client=http_client,
+        )
 
     def close(self) -> None:
         """Close the native HTTP client created by this root once; borrowed clients remain caller owned."""
@@ -137,7 +185,7 @@ class ClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: BodyInput[JSONValue] | Unset = UNSET,
+        body: bytes | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

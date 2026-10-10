@@ -9,13 +9,12 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal, overload
 
-from models import Address as _dcg_type_0
-from models import FieldFilesPostRequest2 as _dcg_type_1
+import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.files import ReplaceFileResponse, StoreFileResponse
 
@@ -46,7 +45,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -55,16 +54,16 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
+    ) -> models.Address | None: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -73,7 +72,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -95,7 +94,7 @@ class AsyncFilesResource:
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
+    ) -> models.Address | None: ...
     @overload
     async def store_file(
         self,
@@ -118,7 +117,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -127,16 +126,16 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> _dcg_type_0 | None: ...
+    ) -> models.Address | None: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -145,7 +144,7 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -153,12 +152,14 @@ class AsyncFilesResource:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> StoreFileResponse:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return (await self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -180,18 +181,20 @@ class AsyncFilesResource:
     async def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse: ...
     async def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceFileResponse:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return (await self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -212,7 +215,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -221,16 +224,16 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
+    ) -> Response[models.Address | None]: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -239,7 +242,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -261,7 +264,7 @@ class AsyncFilesWithResponse:
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
+    ) -> Response[models.Address | None]: ...
     @overload
     async def store_file(
         self,
@@ -284,7 +287,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -293,16 +296,16 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
-    ) -> Response[_dcg_type_0 | None]: ...
+    ) -> Response[models.Address | None]: ...
     @overload
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -311,7 +314,7 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -319,12 +322,14 @@ class AsyncFilesWithResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreFileResponse]:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return await self._core.execute(
             _operations.OPERATION_13,
             (),
@@ -346,18 +351,20 @@ class AsyncFilesWithResponse:
     async def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]: ...
     async def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceFileResponse]:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return await self._core.execute(
             _operations.OPERATION_14,
             (),
@@ -378,7 +385,7 @@ class AsyncFilesWithRawResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -396,7 +403,7 @@ class AsyncFilesWithRawResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -404,12 +411,14 @@ class AsyncFilesWithRawResponse:
     async def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_13,
             (),
@@ -431,18 +440,20 @@ class AsyncFilesWithRawResponse:
     async def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse: ...
     async def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_14,
             (),
@@ -463,7 +474,7 @@ class AsyncFilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_0,
+        body: models.Address,
         media_type: Literal['application/json'],
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -481,7 +492,7 @@ class AsyncFilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_1,
+        body: models.FieldFilesPostRequest2,
         media_type: str,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -489,12 +500,14 @@ class AsyncFilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: _dcg_type_0 | AsyncBinaryBody | _dcg_type_1,
+        body: models.Address | AsyncBinaryBody | models.FieldFilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /files."""
+        """
+        Call POST /files.
+        """
         return self._core.stream(
             _operations.OPERATION_13,
             (),
@@ -516,18 +529,20 @@ class AsyncFilesWithStreamingResponse:
     def replace_file(
         self,
         *,
-        body: Unset = UNSET,
+        body: UNSET = UNSET,
         media_type: None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
     def replace_file(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /files."""
+        """
+        Call PUT /files.
+        """
         return self._core.stream(
             _operations.OPERATION_14,
             (),

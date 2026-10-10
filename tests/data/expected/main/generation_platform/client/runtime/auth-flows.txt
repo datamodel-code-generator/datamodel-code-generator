@@ -1,307 +1,149 @@
 # auth pydantic_v2.BaseModel
-  > GET https://api.example.com/basic
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Basic dXPDqXI6cMOkOnNz] b''
-  basic utf-8 = ('returned', 200)
-  basic colon user = ('ConfigurationError', 'invalid_basic', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  basic control user = ('ConfigurationError', 'invalid_basic', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  basic lone surrogate = ('ConfigurationError', 'invalid_basic', None, 'UnicodeEncodeError', (), 0, 'NOT_SENT', 0)
-  > GET https://api.example.com/api-key/query?api_key=query-secret
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  query key = ('returned', 200)
-  query key lone surrogate = ('ConfigurationError', 'invalid_query', None, 'UnicodeEncodeError', (), 0, 'NOT_SENT', 0)
-  > GET https://api.example.com/api-key/cookie
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: session_key=cookie-secret] b''
-  cookie key = ('returned', 200)
-  cookie key separator = ('ConfigurationError', 'invalid_cookie', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  header key CRLF = ('ConfigurationError', 'invalid_header', None, 'NoneType', (), 0, 'NOT_SENT', 0)
+redirects
   > GET https://api.example.com/api-key/header
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: in ner] b''
-  header key inner space = ('returned', 200)
-  bearer token trailing space = ('ConfigurationError', 'invalid_header', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  > GET https://api.example.com/and
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: and-key, authorization: Bearer and-token] b''
-  and alternative = ('returned', 200)
-  > GET https://api.example.com/api-key/cookie-parameters?page=2
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-trace: trace, cookie: theme=dark; session_key=cookie-secret] b''
-  cookie key beside cookie parameter = ('returned', 200)
-  token type mac = ('ConfigurationError', 'unsupported_token_type', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  api key material for bearer = ('ConfigurationError', 'invalid_material', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  past expiry = ('AuthError', 'token_expired', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  naive expiry = ('AuthError', 'invalid_expiry', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  failing offset expiry = ('AuthError', 'invalid_expiry', None, 'ValueError', (), 0, 'NOT_SENT', 0)
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret] b''
+  header key not redirected raw = ('returned', 302, 'https://other.example.com/api-key/header')
+    unused=1
+  > GET https://api.example.com/api-key/query?api_key=key-secret
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  query key not redirected raw = ('returned', 307, 'https://other.example.com/q')
+    unused=1
+  > GET https://api.example.com/api-key/cookie
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: session_key=key-secret] b''
+  cookie key not redirected raw = ('returned', 308, 'https://other.example.com/c')
+    unused=1
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: patched-secret] b''
+  patched scheme header not redirected raw = ('returned', 302, 'https://other.example.com/anonymous')
+    unused=1
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret] b''
+  header key at its own origin not redirected raw = ('returned', 302, 'https://api.example.com/moved')
+    unused=1
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret] b''
+  SDK choice cannot redirect a header key raw = ('returned', 307, 'https://other.example.com/api-key/header')
+    unused=1
   > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer t] b''
-  future expiry = ('returned', 200)
-  provider get raises = ('AuthError', 'provider_failed', None, 'ValueError', (), 0, 'NOT_SENT', 0)
-  provider returns a coroutine = ('ConfigurationError', 'invalid_material', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  environment missing = ('ConfigurationError', 'missing_value', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  known read grants=('read',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  known read grants=('read',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  known empty grants=() status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  known empty grants=() status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  known write grants=('write',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  known write grants=('write',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  hierarchical grants=('read:all',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  hierarchical grants=('read:all',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  unknown grants=None status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  unknown grants=None status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  environment bearer version same value=True changed value=True
-  async provider on sync client construction = ('ConfigurationError', 'invalid_mode', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  partial refresh capability construction = ('ConfigurationError', 'invalid_refresh_capability', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  async signer on sync client construction = ('ConfigurationError', 'invalid_mode', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  origin with path = ('ConfigurationError', 'invalid_origin', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  origin with user = ('ConfigurationError', 'invalid_origin', None, 'InvalidURL', (), 0, 'NOT_SENT', 0)
-  origin port overflow = ('ConfigurationError', 'invalid_origin', None, 'InvalidURL', (), 0, 'NOT_SENT', 0)
-  unknown scheme = ('ConfigurationError', 'unknown_scheme', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  unavailable scheme = ('ConfigurationError', 'unavailable_scheme', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  selection out of range = ('ConfigurationError', 'out_of_range', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  selected alternative incomplete = ('ConfigurationError', 'missing_credentials', None, 'NoneType', (), 0, 'NOT_SENT', 0)
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  > GET https://other.example.com/b
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  bearer redirected without Authorization raw = ('returned', 200, None)
+    unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  > GET https://api.example.com/b2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  bearer redirected within its origin raw = ('returned', 200, None)
+    unused=0
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  selection on anonymous operation = ('returned', 200)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  selection on single alternative = ('returned', 200)
-  > GET https://api.example.com/empty
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  anonymous without opt-in = ('returned', 200)
-  anonymous scheme without credential = ('ConfigurationError', 'missing_credentials', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  anonymous without schemes or signers = ('ConfigurationError', 'empty_selection', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signer capabilities mapping = ('ConfigurationError', 'invalid_capabilities', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signer capabilities raising = ('ConfigurationError', 'invalid_capabilities', None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
-  two credentials one header = ('ConfigurationError', 'name_collision', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signer header beside credential header = ('ConfigurationError', 'name_collision', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  two signers one query name = ('ConfigurationError', 'name_collision', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signer managing cookie beside cookie key = ('ConfigurationError', 'name_collision', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  invalid managed header = ('ConfigurationError', 'invalid_name', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  header credential named Cookie beside cookie key = ('ConfigurationError', 'name_collision', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  generic managed header patch = ('ConfigurationError', 'managed_field', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  generic managed query patch = ('ConfigurationError', 'managed_field', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  generic managed cookie patch = ('ConfigurationError', 'managed_field', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  > GET https://api.example.com/api-key/cookie
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: theme=light; session_key=key] b''
-  generic ordinary cookie patch = ('returned', 200)
-  > GET https://api.example.com/api-key/cookie
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: theme=light; session_key=key] b''
-  padded ordinary cookie patch = ('returned', 200)
-  signer claiming a parameter header = ('ConfigurationError', 'name_collision', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signer claiming an exploded query field = ('ConfigurationError', 'name_collision', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer static] b''
-  static token rejected = ('AuthenticationError', None, 'auth_unrefreshable', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
-    callbacks=()
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer new] b''
-  refreshable recovered = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get', 'refresh']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer new] b''
-  refreshable rejected twice = ('AuthenticationError', None, 'auth_recovery_exhausted', 'NoneType', (), 2, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate', 'get', 'refresh', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer published] b''
-  newer publication skips refresh = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  invalidate fails while recovering = ('AuthenticationError', None, 'callback_failure', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  invalidate fails locally = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  refresh fails = ('AuthError', 'provider_failed', None, 'RuntimeError', (), 1, 'RESPONSE_STARTED', 0)
-    callbacks=['get', 'invalidate', 'get', 'refresh']
-  > POST https://api.example.com/unsafe
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  unsafe operation rejected = ('AuthenticationError', None, 'unsafe_operation', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/never
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  never operation rejected = ('AuthenticationError', None, 'operation_never', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  raw invalidate failure = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  streamed invalidate failure = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
-  request_raw invalidate failure = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  hook fails on the invalidation span = ('SDKError', 'hook_failed', None, 'RuntimeError', (), 1, 'RESPONSE_STARTED', 0)
-    callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_start', 'response_headers', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
+  > GET https://other.example.com/anonymous
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  plain request inherits the client's redirects raw = ('returned', 200, None)
+    unused=0
   > GET https://api.example.com/anonymous
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-sig: signed] b''
-  signed anonymous rejected = ('AuthenticationError', None, 'status_not_retryable', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  retry token already expired = ('AuthError', 'token_expired', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
-    callbacks=['get', 'get'] resource_arrivals=1
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  redirect hop token already expired = ('AuthError', 'token_expired', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
-    callbacks=['get', 'get'] resource_arrivals=1
-  > GET https://api.example.com/oauth/read
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  > GET https://api.example.com/oauth/read
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer narrowed] b''
-  refresh grants known empty scopes = ('PermissionDeniedError', None, 'status_not_retryable', 'NoneType', (), 2, 'RESPONSE_STARTED', 9)
-    callbacks=['get', 'invalidate', 'get', 'refresh'] resource_arrivals=2
-  async known read grants=('read',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async known read grants=('read',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async known empty grants=() status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async known empty grants=() status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async known write grants=('write',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async known write grants=('write',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async hierarchical grants=('read:all',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async hierarchical grants=('read:all',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async unknown grants=None status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  async unknown grants=None status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer static] b''
-  async static token rejected = ('AuthenticationError', None, 'auth_unrefreshable', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
-    callbacks=()
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer new] b''
-  async refreshable recovered = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get', 'refresh']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer new] b''
-  async refreshable rejected twice = ('AuthenticationError', None, 'auth_recovery_exhausted', 'NoneType', (), 2, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate', 'get', 'refresh', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer old] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer published] b''
-  async newer publication skips refresh = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async invalidate fails while recovering = ('AuthenticationError', None, 'callback_failure', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async invalidate fails locally = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async refresh fails = ('AuthError', 'provider_failed', None, 'RuntimeError', (), 1, 'RESPONSE_STARTED', 0)
-    callbacks=['get', 'invalidate', 'get', 'refresh']
-  > POST https://api.example.com/unsafe
-    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async unsafe operation rejected = ('AuthenticationError', None, 'unsafe_operation', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/never
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async never operation rejected = ('AuthenticationError', None, 'operation_never', 'NoneType', (), 1, 'RESPONSE_STARTED', 8)
-    callbacks=['get', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async raw invalidate failure = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async streamed invalidate failure = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
-  async request_raw invalidate failure = ('AuthenticationError', None, 'disabled', 'NoneType', ('AuthError',), 1, 'RESPONSE_STARTED', 8)
-  > GET https://api.example.com/empty
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  async anonymous without opt-in = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get', 'invalidate', 'get', 'invalidate']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer soon] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
-  token expired in flight = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get', 'refresh']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer soon] b''
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
-  async token expired in flight = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get', 'refresh']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
-  token expires while waiting for a permit = ('returned', 200)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
-  static token expires while waiting for a permit = ('AuthError', 'token_expired', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  signer outlives the token = ('AuthError', 'token_expired', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'attempt_end', 'call_end']
-  every token expires while waiting for a permit = ('AuthError', 'token_expired', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_end', 'call_end']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
-  async token expires while waiting for a permit = ('returned', 200)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
-  async static token expires while waiting for a permit = ('AuthError', 'token_expired', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  async signer outlives the token = ('AuthError', 'token_expired', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'attempt_end', 'call_end']
-  async every token expires while waiting for a permit = ('AuthError', 'token_expired', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_end', 'call_end']
-  provider and auth_end hook fail = ('AuthError', 'provider_failed', None, 'ValueError', ('SDKError',), 0, 'NOT_SENT', 0)
-    callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  auth_start hook fails = ('SDKError', 'hook_failed', None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
-    callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  async provider and auth_end hook fail = ('AuthError', 'provider_failed', None, 'ValueError', ('SDKError',), 0, 'NOT_SENT', 0)
-    callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  async auth_start hook fails = ('SDKError', 'hook_failed', None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
-    callbacks=[] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  root call = ('returned', 200)
-  call after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    provider closes=0 borrowed closed=False view close=False
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  async root call = ('returned', 200)
-  async call after close = ('ConfigurationError', 'client_closed', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-    provider closes=0 borrowed closed=False view close=False
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
-  credentials kept to their origin = ('ConfigurationError', 'origin_denied', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
-  > GET https://api.example.com/bearer
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token, x-sig: signed] b''
-  signer kept to its origin = ('ConfigurationError', 'origin_denied', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
-  > GET https://api.example.com/api-key/query?api_key=query-secret
+  plain request on a client that follows none raw = ('returned', 302, 'https://other.example.com/anonymous')
+    unused=1
+  > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  > GET https://other.example.com/api-key/query?page=1&api_key=query-secret
+  > GET https://other.example.com/anonymous
     [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  query key placed again after a redirect = ('returned', 200)
-  > GET https://api.example.com/api-key/query?api_key=query-secret
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  self redirect planting the query key = ('ConfigurationError', 'redirect_refused', None, 'NoneType', (), 1, 'RESPONSE_STARTED', 0)
-  > GET https://api.example.com/anonymous?api%20key=query-secret
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  > GET https://other.example.com/anonymous?api%20key=query-secret
+  plain request the SDK redirects raw = ('returned', 200, None)
+    unused=0
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-caller-key: caller-secret] b''
+  > GET https://other.example.com/
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-caller-key: caller-secret] b''
+  caller's own Auth applied and redirected raw = ('returned', 200, None)
+    unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  > GET https://other.example.com/bearer
     [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
-  form-encoded planted query key = ('returned', 200)
-  > GET https://api.example.com/anonymous?sig=v
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-sig: signed] b''
-  signature query placed = ('returned', 200)
-  signer raises = ('AuthError', 'signing_failed', None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
-  signature header undeclared = ('ConfigurationError', 'undeclared_header', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signature header CRLF = ('ConfigurationError', 'invalid_header', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signature header leading space = ('ConfigurationError', 'invalid_header', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signature header name folding to a token = ('ConfigurationError', 'invalid_header', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signature query undeclared = ('ConfigurationError', 'undeclared_query', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signature query lone surrogate = ('ConfigurationError', 'invalid_query', None, 'UnicodeEncodeError', (), 0, 'NOT_SENT', 0)
-  signer returns a mapping = ('ConfigurationError', 'invalid_result', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  signer returns a coroutine = ('ConfigurationError', 'invalid_result', None, 'NoneType', (), 0, 'NOT_SENT', 0)
-  async signer raises = ('AuthError', 'signing_failed', None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
+  bearer rejected by another origin ! AuthenticationError: Error code: 401 [operation_id='bearer', status_code=401, body=b'', body_bytes=b'', truncated=False, cause=DecodeError()]
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret] b''
+  async header key not redirected = ('returned', 302, 'https://other.example.com/api-key/header')
+    unused=1
+  > GET https://api.example.com/api-key/query?api_key=key-secret
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  async query key not redirected = ('returned', 307, 'https://other.example.com/q')
+    unused=1
+  > GET https://api.example.com/api-key/cookie
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: session_key=key-secret] b''
+  async cookie key not redirected = ('returned', 308, 'https://other.example.com/c')
+    unused=1
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: patched-secret] b''
+  async patched scheme header not redirected = ('returned', 302, 'https://other.example.com/anonymous')
+    unused=1
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret] b''
+  async header key at its own origin not redirected = ('returned', 302, 'https://api.example.com/moved')
+    unused=1
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret] b''
+  async SDK choice cannot redirect a header key = ('returned', 307, 'https://other.example.com/api-key/header')
+    unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  > GET https://other.example.com/b
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  async bearer redirected without Authorization = ('returned', 200, None)
+    unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  > GET https://api.example.com/b2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret] b''
+  async bearer redirected within its origin = ('returned', 200, None)
+    unused=0
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  > GET https://other.example.com/anonymous
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  async plain request inherits the client's redirects = ('returned', 200, None)
+    unused=0
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  async plain request on a client that follows none = ('returned', 302, 'https://other.example.com/anonymous')
+    unused=1
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  > GET https://other.example.com/anonymous
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
+  async plain request the SDK redirects = ('returned', 200, None)
+    unused=0
+  > GET https://api.example.com/anonymous
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-caller-key: caller-secret] b''
+  > GET https://other.example.com/
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-caller-key: caller-secret] b''
+  async caller's own Auth applied and redirected = ('returned', 200, None)
+    unused=0
+signing
+  > PUT https://api.example.com/signed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, content-length: 7, x-signature: fcc15d6ea9d47ea1] b'payload'
+  signed bytes = b'ok'
+  > PUT https://api.example.com/signed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, content-length: 9, x-signature: 47071517fa70f5dc] b'file-body'
+  signed file = b'ok'
+  > PUT https://api.example.com/signed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, transfer-encoding: chunked, x-signature: 8e7254d4e9ba6c3d] b'chunk-body'
+  signed chunks = b'ok'
+  > PUT https://api.example.com/signed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, content-length: 7, x-signature: fcc15d6ea9d47ea1] b'payload'
+  > PUT https://api.example.com/signed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, content-length: 7, x-signature: fcc15d6ea9d47ea1] b'payload'
+  signed retry = b'ok'
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-signature: 503473565ce46a21] b''
+  signature replaces the credentials = b'ok'
+  signatures ['7:fcc15d6ea9d47ea1', '9:47071517fa70f5dc', 'chunked:8e7254d4e9ba6c3d', '7:fcc15d6ea9d47ea1', '7:fcc15d6ea9d47ea1', 'chunked:503473565ce46a21']
+  > PUT https://api.example.com/signed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, content-length: 7, x-signature: fcc15d6ea9d47ea1] b'payload'
+  async signed bytes = b'ok'
+  > PUT https://api.example.com/signed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, transfer-encoding: chunked, x-signature: 8e7254d4e9ba6c3d] b'chunk-body'
+  async signed chunks = b'ok'
+  async signatures ['7:fcc15d6ea9d47ea1', 'chunked:8e7254d4e9ba6c3d']

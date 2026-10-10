@@ -1,4 +1,4 @@
-"""Generate the FastAPI server target from the command line: publish, check, report, and refuse conflicts."""
+"""Generate the FastAPI server target from the command line: publish, check, report, and overwrite like models."""
 
 from __future__ import annotations
 
@@ -9,8 +9,21 @@ from pathlib import Path
 
 import pytest
 
-from datamodel_code_generator import get_version
+from datamodel_code_generator import (
+    DataModelType,
+    InputFileType,
+    OpenAPIScope,
+    PythonVersion,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
+    generate,
+    get_version,
+    load_pyproject_config,
+)
 from datamodel_code_generator.__main__ import Exit
+from datamodel_code_generator.format import Formatter
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
 from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
 from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args, run_main_with_system_exit
@@ -38,9 +51,15 @@ UNSUPPORTED = (
     "support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'\n"
 )
 CONFLICT = "Error: --generate-server cannot be used with"
+DOCUMENT_BASE = (
+    "A relative document of an operation reference resolves against the JSON file that holds the reference, or\n"
+    "without a file against the working directory, and against the pyproject.toml directory for a table."
+)
 CHECK_CASES = json.loads((CLI / "check-cases.json").read_text(encoding="utf-8"))
 JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
+LAYOUT_ERRORS = json.loads((CLI / "layout-errors.json").read_text(encoding="utf-8"))
+MODEL_DEPENDENCIES = json.loads((CLI / "model-dependencies.json").read_text(encoding="utf-8"))
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -76,7 +95,7 @@ def _methods(services: Path) -> str:
 def test_fastapi_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the models and the server package, check an edit and a missing owned file, then rewrite both."""
+    """Write the models and the server package, check an edit and a missing generated file, then rewrite both."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -143,6 +162,85 @@ def test_fastapi_cli_generate(
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
 
 
+@pytest.mark.parametrize("case_name", MODEL_DEPENDENCIES)
+def test_fastapi_cli_model_dependencies(
+    case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print the requirements of the optional libraries that the import statements of the models name.
+
+    Import-like text elsewhere in a model file, such as a docstring header, names no requirement. The models are
+    compared, not run: they import optional libraries that a test environment need not hold.
+    """
+    monkeypatch.chdir(tmp_path)
+    expected = EXPECTED / "cli" / "model-dependencies"
+    run_main_and_assert(
+        input_path=Path("contacts.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
+        copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
+        capsys=capsys,
+        expected_stderr=(expected / f"{case_name}.txt").read_text(encoding="utf-8"),
+        assert_func=assert_file_content,
+        expected_file=expected / f"{case_name}.py",
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize("case_name", ["unchanged", "models-in-package", "package-in-models"])
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
+def test_fastapi_cli_check_read_only(
+    case_name: str,
+    structured: bool,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Check outputs whose directories cannot be written to: a check creates nothing inside the outputs it compares.
+
+    The outputs lie beside each other, or one inside the other. A model directory in such a nested layout is not
+    importable under its own name, as the model checks of the helper import it, so they are left out for it.
+    """
+    case = CHECK_CASES[case_name]
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
+    source = Path("spec/modular.yaml" if case.get("modular") else "pets.yaml")
+    output = Path(case.get("model", "models" if case.get("modular") else "models.py"))
+    server = case.get("server", "server")
+    arguments = case.get("arguments", ())
+    nested_package = bool(case.get("modular")) and bool({"model", "server"} & case.keys())
+    run_main_and_assert(
+        input_path=source,
+        input_file_type="openapi",
+        output_path=output,
+        extra_args=_server(*arguments, output=server),
+        capsys=capsys,
+        expected_stderr=(EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)).read_text(encoding="utf-8"),
+        skip_code_validation=nested_package,
+    )
+    roots = [root for root in (tmp_path / server, tmp_path / output) if root.is_dir()]
+    directories = [*roots, *(path for root in roots for path in root.rglob("*") if path.is_dir())]
+    for directory in directories:
+        directory.chmod(0o555)
+    try:
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=output,
+            extra_args=_server(
+                "--check", *arguments, *(["--output-format", "json"] if structured else []), output=server
+            ),
+            capsys=capsys,
+            assert_no_stderr=True,
+            expected_stdout_path=EXPECTED / "cli" / "check" / f"unchanged.{'json' if structured else 'txt'}",
+            skip_code_validation=nested_package,
+        )
+    finally:
+        for directory in directories:
+            directory.chmod(0o755)
+
+
 @pytest.mark.parametrize("case_name", CHECK_CASES)
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_check_outputs(
@@ -152,28 +250,39 @@ def test_fastapi_cli_check_outputs(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Compare real model and target text without publishing or changing any output file."""
+    """Compare real model and target text without publishing or changing any output file.
+
+    A fresh case checks a tree no generation wrote; a regenerate case generates over its edits before the check.
+    A case can name its model and server outputs, with the arguments that give their import paths. A model
+    directory in such a nested layout is not importable under its own name, as the model checks of the helper
+    import it, so they are left out for it.
+    """
     case = CHECK_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
-    output = Path("models" if case.get("modular") else "models.py")
+    output = Path(case.get("model", "models" if case.get("modular") else "models.py"))
+    server = case.get("server", "server")
+    notice = EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)
     source = Path("pets.yaml")
     if case.get("modular") or case.get("source"):
         shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
         source = Path("spec") / case.get("source", "modular.yaml")
     encoding = case.get("encoding", "utf-8")
-    options: list[str] = ["--encoding", encoding]
+    options: list[str] = ["--encoding", encoding, *case.get("arguments", ())]
+    unvalidated = encoding != "utf-8" or (bool(case.get("modular")) and bool({"model", "server"} & case.keys()))
     if case.get("templates"):
         shutil.copytree(CLI / "check-templates", tmp_path / "templates")
         options.extend(["--custom-template-dir", "templates"])
-    run_main_and_assert(
-        input_path=source,
-        input_file_type="openapi",
-        output_path=output,
-        extra_args=_server(*options),
-        capsys=capsys,
-        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
-    )
+    if not case.get("fresh"):
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=output,
+            extra_args=_server(*options, output=server),
+            capsys=capsys,
+            expected_stderr=notice.read_text(encoding="utf-8"),
+            skip_code_validation=unvalidated,
+        )
     for name in case.get("remove", ()):
         if (path := tmp_path / name).is_dir():
             shutil.rmtree(path)
@@ -185,16 +294,28 @@ def test_fastapi_cli_check_outputs(
     for name, text in case.get("write", {}).items():
         (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding=encoding)
-    for name in case.get("crlf", ()):
-        (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline="\r\n")
+    endings = [*((name, "\r\n") for name in case.get("crlf", ())), *((name, "\n") for name in case.get("lf", ()))]
+    for name, newline in endings:
+        (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline=newline)
     for name in case.get("binary", ()):
         (tmp_path / name).write_bytes((CLI / "non-text.dat").read_bytes())
+    if case.get("regenerate"):
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=output,
+            extra_args=_server(*options, *case.get("options", ()), output=server),
+            capsys=capsys,
+            expected_stderr=notice.read_text(encoding="utf-8"),
+            skip_code_validation=unvalidated,
+        )
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     if case.get("nested"):
         monkeypatch.chdir(tmp_path / "server")
     base = Path("..") if case.get("nested") else Path()
-    changed = any(key in case for key in ("remove", "append", "binary", "changed"))
+    changed = any(key in case for key in ("remove", "append", "binary"))
     changed |= "write" in case and any(name.endswith(".py") and "__pycache__" not in name for name in case["write"])
+    changed = case.get("changed", changed)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("error", UserWarning)
         run_main_and_assert(
@@ -206,7 +327,7 @@ def test_fastapi_cli_check_outputs(
                 *options,
                 *case.get("options", ()),
                 *(["--output-format", "json"] if structured else []),
-                output=str(base / "server"),
+                output=str(base / server),
             ),
             capsys=capsys,
             expected_exit=Exit.ERROR if "error" in case else Exit.DIFF if changed else Exit.OK,
@@ -217,7 +338,7 @@ def test_fastapi_cli_check_outputs(
                 if "error" not in case
                 else None
             ),
-            skip_code_validation=encoding != "utf-8",
+            skip_code_validation=unvalidated,
         )
     after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     assert_output(
@@ -229,11 +350,16 @@ def test_fastapi_cli_check_outputs(
 def test_fastapi_cli_generation_json(
     case_name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Print one generation payload whose paths compose with its output, and name files the same way in a check."""
+    """Print one generation payload whose paths compose with its output, and name files the same way in a check.
+
+    A case can write files before the run, which overwrites those at its paths and leaves the others. A stale case
+    regenerates fewer files, so the check that follows lists what the generation left in place as extra. An
+    unvalidated case leaves out the model checks of the helper, which import a model directory under its own name.
+    """
     case = JSON_CASES[case_name]
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
-    source = Path("pets.yaml")
+    source = Path(shutil.copy2(SOURCE / name, name)) if (name := case.get("input")) else Path("pets.yaml")
     if name := case.get("source"):
         shutil.copytree(DATA / "generation_platform" / "targets" / "spec", tmp_path / "spec")
         source = Path("spec") / name
@@ -241,6 +367,8 @@ def test_fastapi_cli_generation_json(
     model = (tmp_path if "model" in absolute else Path()) / case.get("model", "models.py")
     server = (tmp_path if "server" in absolute else Path()) / case.get("server", "server")
     encoding = case.get("encoding", "utf-8")
+    notice = EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)
+    unvalidated = encoding != "utf-8" or case.get("unvalidated", False)
     options = ["--output-format", "json", "--encoding", encoding, *case.get("options", ())]
     if case.get("templates"):
         shutil.copytree(CLI / "check-templates", tmp_path / "templates")
@@ -254,9 +382,9 @@ def test_fastapi_cli_generation_json(
             capsys=capsys,
             expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
         )
-    if case.get("unowned"):
-        server.mkdir()
-        (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
+    for name, text in case.get("write", {}).items():
+        (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding=encoding)
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
         run_main_and_assert(
@@ -264,30 +392,39 @@ def test_fastapi_cli_generation_json(
             input_file_type="openapi",
             output_path=model,
             extra_args=_server(*options, *case.get("publish", ()), output=str(server)),
-            skip_code_validation=encoding != "utf-8",
+            skip_code_validation=unvalidated,
         )
     captured = capsys.readouterr()
-    assert_output(captured.err, DEPENDENCIES)
+    assert_output(captured.err, notice)
     if payload := case.get("payload"):
         assert_output(captured.out.replace(tmp_path.as_posix(), "<root>"), EXPECTED / "cli" / "json" / f"{payload}.txt")
-    assert_output(
-        "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
-        EXPECTED / "cli" / ("unowned-warning.txt" if case.get("unowned") else "no-warning.txt"),
-    )
     if case.get("package"):
         assert_file_content(tmp_path / model, PACKAGE / "models.py")
         assert_directory_content(tmp_path / server, PACKAGE / "server")
     for name in case.get("published", ()):
         assert_file_content(tmp_path / name, EXPECTED / "cli" / "json" / "published" / f"{name}.txt")
-    run_main_and_assert(
-        input_path=source,
-        input_file_type="openapi",
-        output_path=model,
-        extra_args=_server("--check", *options, output=str(server)),
-        capsys=capsys,
-        assert_no_stderr=True,
-        expected_stdout_path=EXPECTED / "cli" / "check" / "unchanged.json",
-        skip_code_validation=encoding != "utf-8",
+    stale = case.get("stale")
+    with warnings.catch_warnings(record=True) as checked:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=source,
+            input_file_type="openapi",
+            output_path=model,
+            extra_args=_server("--check", *options, output=str(server)),
+            capsys=capsys,
+            assert_no_stderr=True,
+            expected_exit=Exit.DIFF if stale else Exit.OK,
+            expected_stdout_path=EXPECTED
+            / "cli"
+            / (Path("json", "check", f"{stale}.txt") if stale else Path("check", "unchanged.json")),
+            skip_code_validation=unvalidated,
+        )
+    assert_output(
+        "\n".join([
+            *(f"{item.category.__name__}: {item.message}" for item in recorded),
+            *(f"check {item.category.__name__}: {item.message}" for item in checked),
+        ]),
+        EXPECTED / "cli" / case.get("warnings", "no-warning.txt"),
     )
     if removed := case.get("remove"):
         for name in removed:
@@ -301,6 +438,7 @@ def test_fastapi_cli_generation_json(
             output_path=model,
             extra_args=_server("--check", *options, output=str(server)),
             expected_exit=Exit.DIFF,
+            skip_code_validation=unvalidated,
         )
         assert_output(
             capsys.readouterr().out.replace(tmp_path.as_posix(), "<root>"),
@@ -387,9 +525,10 @@ def test_fastapi_cli_precedence(
 def test_fastapi_cli_pyproject_paths(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Resolve pyproject.toml paths, JSON files and operation documents against its directory.
+    """Resolve pyproject.toml paths and JSON files, and the operation documents of its tables, against its directory.
 
-    Command-line paths and JSON files resolve against the working directory.
+    Command-line paths and JSON files resolve against the working directory. The operation documents that a JSON
+    file names resolve against the file's directory.
     """
     project, work = tmp_path / "project", tmp_path / "project" / "work"
     work.mkdir(parents=True)
@@ -408,6 +547,39 @@ def test_fastapi_cli_pyproject_paths(
         "".join(f"# in {path.parent.parent.relative_to(tmp_path).as_posix()}\n{_methods(path)}" for path in services),
         EXPECTED / "cli" / "pyproject-paths.txt",
     )
+
+
+@pytest.mark.parametrize(
+    ("pyproject", "arguments"),
+    [
+        (
+            [],
+            [
+                *("--input", "../api/pets.yaml", "--input-file-type", "openapi", "--output", "../models.py"),
+                *_server("--server-handler-modes", "../api/modes.json", output="../server"),
+            ],
+        ),
+        (["pyproject-json-files.toml"], []),
+    ],
+    ids=["option", "pyproject"],
+)
+def test_fastapi_cli_json_file_documents(
+    pyproject: list[str],
+    arguments: list[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolve the documents that the operation references of a JSON file name against the file's directory."""
+    project, work = tmp_path / "project", tmp_path / "project" / "work"
+    work.mkdir(parents=True)
+    shutil.copytree(CLI / "json-files", project / "api")
+    shutil.copy2(SOURCE / "pets.yaml", project / "api" / "pets.yaml")
+    for name in pyproject:
+        shutil.copy2(CLI / name, project / "pyproject.toml")
+    monkeypatch.chdir(work)
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_output(_methods(project / "server" / "services.py"), EXPECTED / "cli" / "json-file-documents.txt")
 
 
 def test_fastapi_cli_generate_pyproject_config(capsys: pytest.CaptureFixture[str]) -> None:
@@ -651,15 +823,21 @@ def test_fastapi_cli_models_as_given(
 
 
 @pytest.mark.parametrize(
+    "layout",
+    [[], ["--output", "server/models.py", "--server-model-package", "server.models"]],
+    ids=["beside", "models-in-package"],
+)
+@pytest.mark.parametrize(
     "formatters", [[], ["--formatters", "ruff-check", "ruff-format"]], ids=["default", "ruff-isort-rules"]
 )
 def test_fastapi_cli_check_after_generate(
-    formatters: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    formatters: list[str], layout: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Find nothing to change in a copy of a fresh generation, though its models were still staged when formatted.
 
     The copy also gives isort, which caches where it places a module per configuration, a configuration of its own.
-    Ruff reads the server directory's name as the package name while the server files are still staged.
+    Ruff reads the server directory's name as the package name while the server files are still staged. The models
+    lie beside the server package or inside it, where they are staged beside the package.
     """
     generated, copy = tmp_path / "generated", tmp_path / "copy"
     generated.mkdir()
@@ -673,6 +851,7 @@ def test_fastapi_cli_check_after_generate(
         "--disable-timestamp",
         *formatters,
         *SERVER,
+        *layout,
     ]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", FutureWarning)
@@ -874,8 +1053,8 @@ def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[s
 @pytest.mark.parametrize(
     ("arguments", "stderr"),
     [
-        (["--watch", "--output-format", "json"], f"{CONFLICT} --watch\n"),
-        (["--diff-against", "pets.yaml"], f"{CONFLICT} --diff-against\n"),
+        (["--watch", "--output-format", "json"], "Error: --output-format json cannot be used with --watch\n"),
+        (["--diff-against", "pets.yaml", "--check"], "Error: --diff-against and --check cannot be used together\n"),
         (
             ["--update-lock", "--lockfile", "server/api.lock"],
             "Remote lock for 'command' ({lock}) overlaps server output for 'command': {server}\n",
@@ -890,7 +1069,7 @@ def test_fastapi_cli_conflicts(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the target cannot honor, and a remote lock inside the server output, before writing anything."""
+    """Refuse the model mode conflicts, and a remote lock inside the server output, before writing anything."""
     monkeypatch.chdir(tmp_path)
     root = tmp_path.resolve()
     run_main_and_assert(
@@ -907,6 +1086,42 @@ def test_fastapi_cli_conflicts(
     assert_output(
         (tmp_path / "pyproject.toml").read_text(encoding="utf-8"),
         EXPECTED / "cli" / "kept" / "pyproject-target.toml.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    ("case", "baseline", "expected_exit"),
+    [("unchanged", "pets.yaml", Exit.OK), ("changed", "pets-baseline.yaml", Exit.DIFF)],
+    ids=["unchanged", "changed"],
+)
+@pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
+def test_fastapi_cli_input_diff(
+    case: str,
+    baseline: str,
+    expected_exit: Exit,
+    structured: bool,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compare the models and the server two inputs render through the model input diff, writing nothing.
+
+    The baseline changes a model, a parameter description, and the operation tags, so files change, and a router
+    is generated only from each input.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    shutil.copy2(CLI / "pets-baseline.yaml", tmp_path / "pets-baseline.yaml")
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--diff-against", baseline, *(["--output-format", "json"] if structured else [])),
+        expected_exit=expected_exit,
+        capsys=capsys,
+        assert_no_stderr=True,
+        expected_stdout_path=EXPECTED / "cli" / "input-diff" / f"{case}.{'json' if structured else 'txt'}",
+        file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
     )
 
 
@@ -929,6 +1144,87 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     )
 
 
+@pytest.mark.parametrize("name", LAYOUT_ERRORS)
+def test_fastapi_cli_layout_errors(
+    name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a model file at a server file's path and a module beside a generated package directory of its name.
+
+    Python would import the package directory instead of the module, so nothing is written.
+    """
+    case = LAYOUT_ERRORS[name]
+    monkeypatch.chdir(tmp_path)
+    source = case.get("input", "pets.yaml")
+    shutil.copy2((CLI if "input" in case else SOURCE) / source, tmp_path / source)
+    run_main_and_assert(
+        input_path=Path(source),
+        output_path=Path(case["output"]),
+        input_file_type="openapi",
+        extra_args=_server(*case["arguments"], output=case.get("server", "server")),
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+    )
+    written = sorted(path.name for path in tmp_path.iterdir() if path.name != source)
+    assert_output(f"{capsys.readouterr().err}written {written}\n", EXPECTED / "cli" / "layout-errors" / f"{name}.txt")
+
+
+def test_fastapi_cli_model_and_form_dependencies(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print the requirements the models add to the server's, such as the email, ULID, and --use-pendulum types."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("contacts.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--use-pendulum"),
+        copy_files=[(SOURCE / "install" / "contacts.yaml", tmp_path / "contacts.yaml")],
+        skip_code_validation=True,
+    )
+    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "model-dependencies.txt")
+
+
+def test_fastapi_cli_nested_models_example(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run the documented command that keeps the models inside the server package, then find nothing to change.
+
+    The command is run as documented: its preset chooses the formatters, so the helper adds no formatter settings.
+    """
+    monkeypatch.chdir(tmp_path)
+    shutil.copy2(SOURCE / "pets.yaml", tmp_path / "api.yaml")
+    arguments = json.loads((CLI / "nested-models-example.json").read_text(encoding="utf-8"))
+    run_main_with_args(
+        arguments,
+        capsys=capsys,
+        expected_stderr=(EXPECTED / "cli" / "dependencies-app-server.txt").read_text(encoding="utf-8"),
+        use_builtin_default_formatter=False,
+    )
+    run_main_with_args(
+        [*arguments, "--check"], capsys=capsys, assert_no_stderr=True, use_builtin_default_formatter=False
+    )
+    assert_output(_methods(tmp_path / "app" / "server" / "services.py"), EXPECTED / "cli" / "nested-models-example.txt")
+
+
+def test_fastapi_cli_nested_job(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models of a server job inside its own package, as a single run can, then check both as one tree."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-nested-jobs.toml")
+    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    assert_file_content(tmp_path / "server" / "models.py", PACKAGE / "models.py")
+    run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / "server" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
+    run_main_with_args(
+        ["--all-jobs", "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "check" / "extra-python.txt",
+        assert_no_stderr=True,
+    )
+
+
 def test_fastapi_cli_mixed_jobs(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -940,6 +1236,50 @@ def test_fastapi_cli_mixed_jobs(
     assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
+
+
+@pytest.mark.parametrize(
+    ("case", "pyproject", "arguments", "packages", "check"),
+    [
+        ("target-module", [], ["--input", "pets.yaml", *DOC_OPTIONS], ["server/services"], Exit.DIFF),
+        ("models", [], ["--input", "pets.yaml", *DOC_OPTIONS], ["models"], Exit.OK),
+        ("mixed-jobs", ["pyproject-mixed-jobs.toml"], ["--all-jobs"], ["schemas", "models"], Exit.OK),
+    ],
+    ids=["target-module", "models", "mixed-jobs"],
+)
+def test_fastapi_cli_shadowed_modules(
+    case: str,
+    pyproject: list[str],
+    arguments: list[str],
+    packages: list[str],
+    check: Exit,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Report each planned module beside a package of its name, on the run that writes it and on an unchanged one.
+
+    The models of a server run, its target modules, and the model-only jobs of its batch are reported alike, and
+    --check, which writes nothing, reports none.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, *pyproject)
+    for package in packages:
+        (tmp_path / package).mkdir(parents=True)
+        (tmp_path / package / "__init__.py").touch()
+    lines = []
+    for run, options, expected_exit in (
+        ("first", [], Exit.OK),
+        ("unchanged", [], Exit.OK),
+        ("check", ["--check"], check),
+    ):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            run_main_with_args([*arguments, *options], expected_exit=expected_exit)
+        lines.append(f"# {run} run")
+        lines.extend(
+            f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-modules" / f"{case}.txt")
 
 
 def test_fastapi_cli_jobs_json(
@@ -1073,32 +1413,14 @@ def test_fastapi_cli_job_lockfile(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     )
 
 
-def test_fastapi_cli_job_changed(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Publish nothing when a file a server job planned changes before the batch publishes it."""
-    monkeypatch.chdir(tmp_path)
-    _copy(tmp_path, "pyproject-jobs.toml")
-    run_main_with_args(["--job", "server"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
-    shutil.copy2(CLI / "pyproject-interfered-jobs.toml", tmp_path / "pyproject.toml")
-    run_main_with_args(
-        ["--all-jobs"],
-        expected_exit=Exit.ERROR,
-        capsys=capsys,
-        expected_stderr=(
-            f"Error: could not publish batch output: {(Path.cwd() / 'server' / '.dcg-target-manifest.json').as_posix()}"
-            ": The file changed after the target was planned\n"
-        ),
-    )
-    assert_output(
-        "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())), EXPECTED / "cli" / "jobs-changed.txt"
-    )
-
-
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], "Error: --generate-server cannot be used with --watch\n"),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--watch", "--check"],
+            "Error: --watch and --check cannot be used together\n",
+        ),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--server-layout", "single"],
@@ -1204,27 +1526,70 @@ def test_fastapi_cli_config_errors(
     )
 
 
-@pytest.mark.parametrize(
-    ("server", "pyproject"),
-    [([], ["pyproject-configured.toml"]), ([*SERVER, *CONFIGURED], [])],
-    ids=["pyproject", "options"],
-)
-def test_fastapi_cli_config_values(
-    server: list[str], pyproject: list[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Write the same package from every server setting in pyproject.toml as from the same options.
+@pytest.mark.parametrize("form", ["pyproject", "options", "python", "loaded"])
+def test_fastapi_cli_config_values(form: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the same package from every server setting in pyproject.toml as from the same options or generate().
 
-    The server templates come from the custom template directory.
+    generate() takes the options as keywords, or loads the pyproject.toml keys from another directory, where the
+    paths and documents of the keys still resolve against the pyproject.toml directory. The server templates come
+    from the custom template directory.
     """
     monkeypatch.chdir(tmp_path)
     shutil.copytree(SOURCE / "templates" / "roles", tmp_path / "templates")
-    run_main_and_assert(
-        input_path=Path("pets.yaml"),
-        output_path=Path("models.py"),
-        input_file_type="openapi",
-        extra_args=[*OPTIONS, "--custom-template-dir", "templates", *server],
-        copy_files=[*_inputs(tmp_path, *pyproject), (CLI / "primary-responses.json", tmp_path / "responses.json")],
-    )
+    pyproject = ["pyproject-configured.toml"] if form in {"pyproject", "loaded"} else []
+    for source, destination in [
+        *_inputs(tmp_path, *pyproject),
+        (CLI / "primary-responses.json", tmp_path / "responses.json"),
+    ]:
+        shutil.copy2(source, destination)
+    models = {
+        "input_file_type": InputFileType.OpenAPI,
+        "output": tmp_path / "models.py",
+        "target_python_version": PythonVersion.PY_311,
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType.PydanticV2BaseModel,
+        "formatters": [Formatter.BUILTIN],
+        "disable_timestamp": True,
+        "custom_template_dir": tmp_path / "templates",
+    }
+    match form:
+        case "python":
+            generate(
+                Path("pets.yaml"),
+                **models,
+                generate_server=ServerType.FastAPI,
+                server_output=Path("server"),
+                server_package="server",
+                server_model_package="models",
+                server_layout=ServerLayout.Routers,
+                server_handler_mode=ServerHandlerMode.Async,
+                server_include_request=True,
+                server_body_mode=ServerBodyMode.Request,
+                server_router_names={"tag:pets": "animals"},
+                server_body_modes={"/paths/~1pets/post": ServerBodyMode.Typed},
+                server_primary_responses=json.loads((tmp_path / "responses.json").read_text(encoding="utf-8")),
+                server_operation_names={"/paths/~1pets/get": "list_all"},
+                server_parameter_names={
+                    "/paths/~1pets/get": {"query:limit": "page_size", "header:X-Request-Id": "trace"}
+                },
+                server_handler_modes={"/paths/~1pets/get": "sync"},
+            )
+        case "loaded":
+            (elsewhere := tmp_path / "elsewhere").mkdir()
+            monkeypatch.chdir(elsewhere)
+            generate(tmp_path / "pets.yaml", config=load_pyproject_config(tmp_path, overrides=models))
+        case _:
+            run_main_and_assert(
+                input_path=Path("pets.yaml"),
+                output_path=Path("models.py"),
+                input_file_type="openapi",
+                extra_args=[
+                    *OPTIONS,
+                    "--custom-template-dir",
+                    "templates",
+                    *([] if pyproject else [*SERVER, *CONFIGURED]),
+                ],
+            )
     sources = sorted(
         path for path in (tmp_path / "server").rglob("*.py") if not {"_runtime", "_generated"} & set(path.parts)
     )
@@ -1347,13 +1712,25 @@ def test_fastapi_cli_pyproject_json_error(
                 *("--server-body-modes", '{"other.yaml#/paths/~1pets/post": "request"}'),
             ],
         ),
+        (
+            "file-documents",
+            [
+                *("--server-handler-modes", "api/modes.json", "--server-body-modes", "api/body-modes.json"),
+                *("--server-operation-names", "api/names.json", "--server-parameter-names", "api/parameters.json"),
+                *("--server-primary-responses", "api/responses.json"),
+            ],
+        ),
     ],
 )
 def test_fastapi_cli_setting_errors(
     name: str, arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Report every server setting the server cannot use, before any file is written."""
+    """Report every server setting the server cannot use, before any file is written.
+
+    An entry of a JSON file names the file its document resolved to: the file's sibling, not the input next to it.
+    """
     monkeypatch.chdir(tmp_path)
+    shutil.copytree(CLI / "json-files", tmp_path / "api")
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
@@ -1363,7 +1740,10 @@ def test_fastapi_cli_setting_errors(
         expected_exit=Exit.ERROR,
         output_should_not_exist=True,
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "setting-errors" / f"{name}.txt")
+    assert_output(
+        capsys.readouterr().err.replace(tmp_path.resolve().as_posix(), "<root>"),
+        EXPECTED / "cli" / "setting-errors" / f"{name}.txt",
+    )
 
 
 @pytest.mark.parametrize(
@@ -1476,12 +1856,13 @@ methods. `--server-handler-modes` overrides it for single operations.""",
             id="server-handler-modes",
             marks=pytest.mark.cli_doc(
                 options=["--server-handler-modes"],
-                option_description="""Set the handler mode of single operations (experimental).
+                option_description=f"""Set the handler mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
 `--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
-such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. In
-pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole table.""",
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`.
+{DOCUMENT_BASE} In pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole
+table.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-handler-modes", '{"/paths/~1pets/post": "async"}'],
                 golden_output=f"{DOC_OUTPUT}/handler-modes/services.py",
@@ -1526,10 +1907,10 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             id="server-body-modes",
             marks=pytest.mark.cli_doc(
                 options=["--server-body-modes"],
-                option_description="""Set the body mode of single operations (experimental).
+                option_description=f"""Set the body mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `typed` or `request`, and overrides
-`--server-body-mode` for those operations.""",
+`--server-body-mode` for those operations. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-body-modes", '{"/paths/~1pets~1{name}/put": "request"}'],
                 golden_output=f"{DOC_OUTPUT}/body-modes/services.py",
@@ -1542,11 +1923,11 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
             id="server-primary-responses",
             marks=pytest.mark.cli_doc(
                 options=["--server-primary-responses"],
-                option_description="""Choose the response a bare return value of an operation takes (experimental).
+                option_description=f"""Choose the response a bare return value of an operation takes (experimental).
 
 The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
 response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
-primary response from the declared success responses.""",
+primary response from the declared success responses. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 201}}'],
                 golden_output=f"{DOC_OUTPUT}/primary-responses/pets.py",
@@ -1559,10 +1940,10 @@ primary response from the declared success responses.""",
             id="server-operation-names",
             marks=pytest.mark.cli_doc(
                 options=["--server-operation-names"],
-                option_description="""Name the service methods of single operations (experimental).
+                option_description=f"""Name the service methods of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to method names. Other operations take the
-snake_case form of their operationId, or of their method and path.""",
+snake_case form of their operationId, or of their method and path. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-operation-names", '{"/paths/~1pets/get": "list_all"}'],
                 golden_output=f"{DOC_OUTPUT}/operation-names/services.py",
@@ -1591,10 +1972,10 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             id="server-parameter-names",
             marks=pytest.mark.cli_doc(
                 options=["--server-parameter-names"],
-                option_description="""Name the method arguments of single operations (experimental).
+                option_description=f"""Name the method arguments of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to objects that map a parameter, written as its
-location and name such as `query:limit` or `header:X-Request-Id`, to the argument name.""",
+location and name such as `query:limit` or `header:X-Request-Id`, to the argument name. {DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[
                     *DOC_OPTIONS,
@@ -1655,12 +2036,15 @@ def test_fastapi_cli_failures(
     )
 
 
-@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent"])
+@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent", "publication"])
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_model_error_context(
     case: str, structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files."""
+    """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files.
+
+    A failed publication is reported as by the model runs that publish through the same journal.
+    """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
     options: list[str] = []
@@ -1682,6 +2066,9 @@ def test_fastapi_cli_model_error_context(
             (tmp_path / "api.lock").write_text("{broken", encoding="utf-8")
             options = ["--lockfile", "api.lock"]
             stderr = "Error: Unable to read remote lock "
+        case "publication":
+            (tmp_path / "server" / "services.py").mkdir(parents=True)
+            stderr = "Error: could not publish batch output: [Errno 21] Is a directory: "
         case _:
             (tmp_path / "occupied").write_text("occupied\n", encoding="utf-8")
             output = Path("occupied/models.py")
@@ -1695,32 +2082,4 @@ def test_fastapi_cli_model_error_context(
         expected_stderr_contains=stderr,
         expected_stdout_path=EXPECTED / "cli" / "json" / "error-empty.txt" if structured else None,
         output_should_not_exist=True,
-    )
-
-
-@pytest.mark.parametrize("disabled", [False, True])
-def test_fastapi_cli_unowned_manifest(
-    disabled: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Keep the unowned-state warning separate from the error that refuses to overwrite existing files."""
-    monkeypatch.chdir(tmp_path)
-    _copy(tmp_path)
-    (server := tmp_path / "server").mkdir()
-    (server / ".dcg-target-manifest.json").write_text("{}", encoding="utf-8")
-    (server / "application.py").write_text("# User application\n", encoding="utf-8")
-    with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("always", UserWarning)
-        run_main_and_assert(
-            input_path=Path("pets.yaml"),
-            output_path=Path("models.py"),
-            input_file_type="openapi",
-            extra_args=_server(*(["--disable-warnings"] if disabled else [])),
-            expected_exit=Exit.ERROR,
-            capsys=capsys,
-            expected_stderr="Error: application.py: An unmanaged file occupies a path the target owns\n",
-            output_should_not_exist=True,
-        )
-    assert_output(
-        "\n".join(f"{item.category.__name__}: {item.message}" for item in recorded),
-        EXPECTED / "cli" / ("no-warning.txt" if disabled else "unowned-warning.txt"),
     )

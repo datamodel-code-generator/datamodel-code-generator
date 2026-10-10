@@ -1,0 +1,19 @@
+# references
+render pydantic_v2.BaseModel
+  models.py
+  server/__init__.py
+  server/application.py
+  server/routes.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/openapi.py
+  server/security.py
+  server/services.py
+  server/README.md
+  server/_runtime/__init__.py (copied runtime)
+  server/_runtime/server/__init__.py (copied runtime)
+  server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/openapi.py (copied runtime)
+  server/_runtime/server/responses.py (copied runtime)
+  server/_runtime/server/security.py (copied runtime)
+  server/py.typed

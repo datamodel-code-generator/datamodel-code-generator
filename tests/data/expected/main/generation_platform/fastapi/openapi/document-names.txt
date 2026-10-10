@@ -1,10 +1,22 @@
 # document-names
+DocumentationAnnotationWarning: <root>/docs_names: /paths/~1users~1{id}/get/parameters/4/schema/examples/1: The served document leaves out 1, which has no JSON form
 {
   "openapi": "3.1.0",
   "info": {
     "title": "Names",
     "version": "1.0"
   },
+  "x-anchored": {
+    "$ref": "#users"
+  },
+  "tags": [
+    {
+      "name": "Users",
+      "x-codes": {
+        "200": "ok"
+      }
+    }
+  ],
   "paths": {
     "/users/me": {
       "get": {
@@ -12,19 +24,6 @@
           "Users",
           "admin"
         ],
-        "summary": "Get  Users Me",
-        "operationId": "get__users_me_users_me_get",
-        "responses": {
-          "204": {
-            "description": "Done."
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "summary": "Get  Health",
-        "operationId": "get__health_health_get",
         "responses": {
           "204": {
             "description": "Done."
@@ -34,74 +33,62 @@
     },
     "/users/{id}": {
       "get": {
+        "operationId": "GetUserByID",
         "tags": [
           "Users"
         ],
-        "summary": "Get User By Id",
-        "operationId": "GetUserByID",
-        "deprecated": true,
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "title": "Id"
+              "type": "integer"
             }
           },
           {
             "name": "id",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "integer",
-              "title": "Id"
+              "type": "integer"
             }
           },
           {
             "name": "body",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "string",
-              "title": "Body"
-            }
-          },
-          {
-            "name": "dcg_p0",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "title": "Dcg P0"
-            }
-          },
-          {
-            "name": "parameters",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "title": "Parameters"
-            }
-          },
-          {
-            "name": "get_user_by_id_handler",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "title": "Get User By Id Handler"
+              "type": "string"
             }
           },
           {
             "name": "media_type",
             "in": "header",
-            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dcg_p0",
+            "in": "query",
             "schema": {
               "type": "string",
-              "title": "Media Type"
+              "examples": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Tag"
             }
           },
           {
@@ -110,47 +97,41 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "get_user_by_id_handler",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
+        "deprecated": true,
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       },
       "put": {
+        "operationId": "class",
         "tags": [
           "Users"
         ],
-        "summary": "Class ",
-        "operationId": "class",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "title": "Id"
+              "type": "integer"
             }
           },
           {
             "name": "principal",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "string",
-              "title": "Principal"
+              "type": "string"
             }
           }
         ],
@@ -159,7 +140,12 @@
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldUsersIdPutRequest"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -167,35 +153,23 @@
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
-    "/files/{dcg_p1}/{dcg_p0}": {
+    "/files/{file.name}/{dcg_p0}": {
       "get": {
+        "operationId": "getFile",
         "tags": [
           "2024 files"
         ],
-        "summary": "Get File",
-        "operationId": "getFile",
         "parameters": [
           {
-            "name": "dcg_p1",
+            "name": "file.name",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "title": "Dcg P1"
+              "type": "string"
             }
           },
           {
@@ -203,33 +177,29 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "title": "Dcg P0"
+              "type": "string"
             }
           },
           {
             "name": "limit",
             "in": "query",
-            "required": false,
             "schema": {
-              "type": "integer",
-              "title": "Limit"
+              "type": "integer"
             }
           }
         ],
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "responses": {
+          "204": {
+            "description": "Done."
           }
         }
       }
@@ -237,75 +207,9 @@
   },
   "components": {
     "schemas": {
-      "FieldUsersIdPutRequest": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          }
-        },
-        "type": "object",
-        "title": "FieldUsersIdPutRequest"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
-          }
-        },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
+      "Tag": {
+        "$anchor": "tag",
+        "type": "string"
       }
     }
   }

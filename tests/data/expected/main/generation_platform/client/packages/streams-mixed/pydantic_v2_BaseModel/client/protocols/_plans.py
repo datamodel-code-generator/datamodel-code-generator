@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final
 
-from models import Note as _dcg_type_0
+import models
 
 from .. import _operations
 from .._generated import model_bindings
@@ -19,32 +19,28 @@ from .._runtime.protocols.streams import EventPlan
 from ..types.notes import ListNotesResponse
 
 
-def _items_0(data: ListNotesResponse) -> Sequence[_dcg_type_0] | None:
+def _items_0(
+    data: ListNotesResponse,
+) -> Sequence[models.Note] | None:
     """Return the items of one page of notes.all."""
     return data.data
 
 
-PLAN_0: Final[PaginationPlan[_dcg_type_0, ListNotesResponse]] = PaginationPlan(
+PLAN_0: Final[PaginationPlan[models.Note, ListNotesResponse]] = PaginationPlan(
     helper_id='notes.all',
     operation=OperationRef(pointer='/paths/~1notes/get'),
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next_cursor'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_null=True,
-        empty_string_ends=True,
-    ),
-    fingerprint='a673b831b58197e611289322390e209809c6bfe8d0e0df49453722c5958011a0',
+    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_null=True, empty_string_ends=True),
+    fingerprint='1735e7dd8ce25219d536f4ec4926b642d13cbf19eb2b62b05b5af4d08a2327f8',
 )
 
 
-STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
+STREAM_0: Final[EventPlan[models.Note]] = EventPlan(
     helper_id='notes.watch',
     operation=OperationRef(pointer='/paths/~1notes~1events/get'),
     call=_operations.OPERATION_1,
     media='text/event-stream',
-    fingerprint='b898c12f6160a565c9391791dbb42b6459bb729a9665af07d3ba2e64d1b94cd5',
     event=model_bindings.codec_3,
 )

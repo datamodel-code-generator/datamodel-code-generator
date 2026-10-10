@@ -3,6 +3,11 @@ info:
   title: Inputs the client refuses after binding
   version: '1'
 paths:
+  /items/{missing}:
+    get:
+      responses:
+        '204':
+          description: A placeholder without its parameter.
   /search:
     get:
       parameters:

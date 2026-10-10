@@ -35,12 +35,7 @@ OPERATION_0: Final[OperationPlan[InheritedResponse]] = OperationPlan(
     path='/inherited',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
-            codec=model_bindings.codec_0,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_0),),
     security=security.OPERATION_0,
 )
 
@@ -50,12 +45,7 @@ OPERATION_1: Final[OperationPlan[ExplicitResponse]] = OperationPlan(
     path='/explicit',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'),
-            codec=model_bindings.codec_1,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_1),),
     security=security.OPERATION_1,
 )
 

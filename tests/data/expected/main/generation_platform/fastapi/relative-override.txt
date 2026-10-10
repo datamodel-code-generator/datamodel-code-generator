@@ -1,0 +1,3 @@
+# relative-override
+render pydantic_v2.BaseModel
+  Error: /paths/~1days/post/requestBody: The use's final type has no expression a generated module can import

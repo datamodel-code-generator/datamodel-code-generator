@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info: {title: Bound type spellings, version: "1.0"}
+servers:
+  - url: https://api.example.com
+paths:
+  /named:
+    post:
+      operationId: postNamed
+      parameters:
+        - {name: listed, in: query, schema: {$ref: "#/components/schemas/Listed"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Named"}
+      responses:
+        "200":
+          description: The thing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+components:
+  schemas:
+    Named: {type: string, x-python-type: tests.data.python.fastapi_handlers.spelling_types.Annotated}
+    Listed: {type: string, x-python-type: tests.data.python.fastapi_handlers.spelling_types.List}
+    Bounded: {type: string, maxLength: 3}
+    Thing:
+      type: object
+      x-python-import:
+        module: tests.data.python.fastapi_handlers.spelling_types
+        name: Holder
+        native-field: {module: tests.data.python.fastapi_handlers.spelling_types, qualname: Holder, fields: [{name: items, arguments: [0], pydantic: true}]}

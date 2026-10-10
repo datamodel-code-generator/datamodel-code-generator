@@ -138,11 +138,11 @@ overrides it for that operation.
     from functools import cached_property
     from typing import Literal, overload
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -172,12 +172,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -189,9 +191,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -200,9 +202,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -210,14 +212,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -239,12 +243,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -256,9 +262,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -267,9 +273,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -277,14 +283,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -306,12 +314,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -323,9 +333,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -334,9 +344,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -344,14 +354,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -373,12 +385,14 @@ overrides it for that operation.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -390,9 +404,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
-            name: Unset = UNSET,
-            tag: Unset = UNSET,
+            body: models.NewPet,
+            name: UNSET = UNSET,
+            tag: UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -401,9 +415,9 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: Unset = UNSET,
+            body: UNSET = UNSET,
             name: str,
-            tag: str | Unset = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
@@ -411,14 +425,16 @@ overrides it for that operation.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0 | Unset = UNSET,
-            name: str | Unset = UNSET,
-            tag: str | Unset = UNSET,
+            body: models.NewPet | UNSET = UNSET,
+            name: str | UNSET = UNSET,
+            tag: str | UNSET = UNSET,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -555,33 +571,8 @@ servers keep them.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
-            (),
-        ),
-        parameters=(
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='limit',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('cursor',),
-                ),
-                codec=model_bindings.codec_0,
-            ),
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
-                ),
-                codec=model_bindings.codec_1,
-            ),
-        ),
+        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -589,21 +580,8 @@ servers keep them.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),),
-            (),
-        ),
-        body=RequestBody(
-            media=(
-                BodyMedia(
-                    media_type='application/json',
-                    kind='json',
-                    codec=model_bindings.codec_3,
-                ),
-            ),
-            default='application/json',
-            required=True,
-        ),
+        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
+        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
     )
     ```
 
@@ -716,11 +694,11 @@ generates.
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -750,12 +728,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -766,12 +746,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -792,12 +774,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -808,12 +792,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -834,12 +820,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -850,12 +838,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -876,12 +866,14 @@ generates.
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -892,12 +884,14 @@ generates.
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -918,7 +912,9 @@ Set the client settings of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to their settings. An operation reference is the
 JSON pointer of the path item method, such as `/paths/~1pets/get`, optionally after a document and `#`, such as
-`pets.yaml#/paths/~1pets/get`. The settings are `resource`, `name`, `parameter_names` (keyed by location and name,
+`pets.yaml#/paths/~1pets/get`. A relative document resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table. The settings are
+`resource`, `name`, `parameter_names` (keyed by location and name,
 such as `{"query:limit": "page_size"}`), `request_media_type`, `response_media_type`, `description`,
 `body_arguments`, which overrides `--client-body-arguments`, `body_field_names` (keyed by media type, then property,
 such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `request_id_header`, `success_statuses`,
@@ -1024,11 +1020,11 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListAllResponse
 
@@ -1058,12 +1054,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListAllResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1074,12 +1072,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1100,12 +1100,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListAllResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1116,12 +1118,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1142,12 +1146,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1158,12 +1164,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -1184,12 +1192,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def list_all(
             self,
             *,
-            page_size: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            page_size: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (page_size, cursor),
@@ -1200,12 +1210,14 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -1326,11 +1338,11 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -1360,12 +1372,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1376,12 +1390,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1402,12 +1418,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1418,12 +1436,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1444,12 +1464,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1460,12 +1482,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -1486,12 +1510,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1502,12 +1528,14 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -1627,11 +1655,11 @@ generation prints name the package by it; the package imports its own modules re
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -1661,12 +1689,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1677,12 +1707,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1703,12 +1735,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1719,12 +1753,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -1745,12 +1781,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1761,12 +1799,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -1787,12 +1827,14 @@ generation prints name the package by it; the package imports its own modules re
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -1803,12 +1845,14 @@ generation prints name the package by it; the package imports its own modules re
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -1829,8 +1873,9 @@ Declare the protocol helpers of the client package (experimental).
 
 The JSON object, inline or in a file, maps each helper's name to the definition of a pagination, polling, stream,
 WebSocket, cache, upload, or webhook helper, as the Python client guide describes. Relative documents that its
-references name resolve against the working directory for a command-line value, and against the pyproject.toml
-directory for the `client-protocols` key, which may also be a table.
+references name resolve against the directory of the JSON file that holds them, on the command line and for the
+`client-protocols` key alike. For inline JSON they resolve against the working directory, and for a table of the
+`client-protocols` key against the pyproject.toml directory.
 
 **Option relationships:**
 
@@ -1928,9 +1973,11 @@ directory for the `client-protocols` key, which may also be a table.
 
     from functools import cached_property
 
-    from models import Pet as _dcg_type_0
+    import models
 
-    from .._runtime.client.client import ClientCore
+    from .._runtime.client.client import ClientCore as ClientCore_1
+    from .._runtime.model_codecs.media import JSONValue
+    from .._runtime.protocols.client import ClientCore
     from .._runtime.protocols.pagination import (
         Page,
         Pager,
@@ -1939,8 +1986,7 @@ directory for the `client-protocols` key, which may also be a table.
         iterate_pages,
         resume_pages,
     )
-    from .._runtime.protocols.resume import ResumeState
-    from ..options import UNSET, RequestOptions, SessionOptions, Unset
+    from ..options import UNSET, RequestOptions
     from ..types.pets import ListPetsResponse
     from . import PaginationOptions, _plans
 
@@ -1948,9 +1994,9 @@ directory for the `client-protocols` key, which may also be a table.
     class ProtocolHelpers:
         """The protocol helpers of this API."""
 
-        def __init__(self, core: ClientCore) -> None:
+        def __init__(self, core: ClientCore_1) -> None:
             """Keep the client core its helpers send through."""
-            self._core = core
+            self._core = ClientCore.from_client(core)
 
         @cached_property
         def pets(self) -> PetsProtocols:
@@ -1981,12 +2027,11 @@ directory for the `client-protocols` key, which may also be a table.
         def page(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Page[_dcg_type_0, ListPetsResponse]:
+        ) -> Page[models.Pet, ListPetsResponse]:
             """Fetch the first page of GET /pets."""
             return first_page(
                 self._core,
@@ -1994,18 +2039,16 @@ directory for the `client-protocols` key, which may also be a table.
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def iterate(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
             return iterate_pages(
                 self._core,
@@ -2013,17 +2056,15 @@ directory for the `client-protocols` key, which may also be a table.
                 (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def next_page(
             self,
-            page: Page[_dcg_type_0, ListPetsResponse],
+            page: Page[models.Pet, ListPetsResponse],
             *,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Page[_dcg_type_0, ListPetsResponse] | None:
+        ) -> Page[models.Pet, ListPetsResponse] | None:
             """Fetch the page after a page of this helper, or return None after the last page."""
             return following_page(
                 self._core,
@@ -2031,25 +2072,25 @@ directory for the `client-protocols` key, which may also be a table.
                 page,
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
 
         def resume(
             self,
-            state: ResumeState,
+            state: JSONValue,
             *,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             pagination_options: PaginationOptions | None = None,
             options: RequestOptions | None = None,
-            session_options: SessionOptions | None = None,
-        ) -> Pager[_dcg_type_0, ListPetsResponse]:
+        ) -> Pager[models.Pet, ListPetsResponse]:
             """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
             return resume_pages(
                 self._core,
                 _plans.PLAN_0,
                 state,
+                (limit, cursor),
                 pagination_options=pagination_options,
                 options=options,
-                session_options=session_options,
             )
     ```
 
@@ -2163,11 +2204,11 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.animals import CreatePetResponse, ListPetsResponse
 
@@ -2197,12 +2238,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2213,12 +2256,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -2239,12 +2284,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2255,12 +2302,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -2281,12 +2330,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2297,12 +2348,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -2323,12 +2376,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2339,12 +2394,14 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -2482,33 +2539,8 @@ against the document's URL when it is read from one.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),),
-            (),
-        ),
-        parameters=(
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='limit',
-                    style='form',
-                    explode=True,
-                    kind='integer',
-                    reserved_names=('cursor',),
-                ),
-                codec=model_bindings.codec_0,
-            ),
-            ParameterSpec(
-                plan=ParameterPlan(
-                    location='query',
-                    name='cursor',
-                    style='form',
-                    explode=True,
-                    reserved_names=('limit',),
-                ),
-                codec=model_bindings.codec_1,
-            ),
-        ),
+        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -2516,21 +2548,8 @@ against the document's URL when it is read from one.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder(
-            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),),
-            (),
-        ),
-        body=RequestBody(
-            media=(
-                BodyMedia(
-                    media_type='application/json',
-                    kind='json',
-                    codec=model_bindings.codec_3,
-                ),
-            ),
-            default='application/json',
-            required=True,
-        ),
+        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
+        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
     )
     ```
 
@@ -2679,8 +2698,13 @@ Declare the arguments of the operation methods (experimental).
             """The same operations, returning blocks that send each call on entry and stream its response."""
             return PetsWithStreamingResponse(self._core)
 
-        def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> ListPetsResponse:
-            """List the pets."""
+        def list_pets(
+            self,
+            **kwargs: Unpack[Operation0Arguments],
+        ) -> ListPetsResponse:
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_0,
@@ -2693,7 +2717,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_1,
@@ -2716,7 +2742,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation0Arguments],
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_0,
@@ -2729,7 +2757,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute(
                 _operations.OPERATION_1,
@@ -2748,8 +2778,13 @@ Declare the arguments of the operation methods (experimental).
             """Keep the client core the operations send through."""
             self._core = core
 
-        def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> RawResponse:
-            """List the pets."""
+        def list_pets(
+            self,
+            **kwargs: Unpack[Operation0Arguments],
+        ) -> RawResponse:
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.execute_raw(
                 _operations.OPERATION_0,
@@ -2758,8 +2793,13 @@ Declare the arguments of the operation methods (experimental).
                 response_media_type=kwargs.get('response_media_type'),
             )
 
-        def create_pet(self, **kwargs: Unpack[Operation1Arguments]) -> RawResponse:
-            """Create a pet."""
+        def create_pet(
+            self,
+            **kwargs: Unpack[Operation1Arguments],
+        ) -> RawResponse:
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.execute_raw(
                 _operations.OPERATION_1,
@@ -2782,7 +2822,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation0Arguments],
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             KEYWORDS_0.check(kwargs)
             return self._core.stream(
                 _operations.OPERATION_0,
@@ -2795,7 +2837,9 @@ Declare the arguments of the operation methods (experimental).
             self,
             **kwargs: Unpack[Operation1Arguments],
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             KEYWORDS_1.check(kwargs)
             return self._core.stream(
                 _operations.OPERATION_1,
@@ -2922,11 +2966,11 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
     from functools import cached_property
     from typing import Literal
 
-    from models import NewPet as _dcg_type_0
+    import models
 
     from ... import _operations
     from ..._runtime.client.client import ClientCore
-    from ...options import UNSET, RequestOptions, Unset
+    from ...options import UNSET, RequestOptions
     from ...responses import RawResponse, Response
     from ...types.pets import CreatePetResponse, ListPetsResponse
 
@@ -2956,12 +3000,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> ListPetsResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -2972,12 +3018,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> CreatePetResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -2998,12 +3046,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[ListPetsResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -3014,12 +3064,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> Response[CreatePetResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute(
                 _operations.OPERATION_1,
                 (),
@@ -3040,12 +3092,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -3056,12 +3110,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> RawResponse:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.execute_raw(
                 _operations.OPERATION_1,
                 (),
@@ -3082,12 +3138,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def list_pets(
             self,
             *,
-            limit: int | Unset = UNSET,
-            cursor: str | Unset = UNSET,
+            limit: int | UNSET = UNSET,
+            cursor: str | UNSET = UNSET,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """List the pets."""
+            """
+            Call GET /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_0,
                 (limit, cursor),
@@ -3098,12 +3156,14 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
         def create_pet(
             self,
             *,
-            body: _dcg_type_0,
+            body: models.NewPet,
             media_type: Literal['application/json'] | None = None,
             response_media_type: Literal['application/json'] | None = None,
             options: RequestOptions | None = None,
         ) -> AbstractContextManager[RawResponse]:
-            """Create a pet."""
+            """
+            Call POST /pets.
+            """
             return self._core.stream(
                 _operations.OPERATION_1,
                 (),
@@ -3233,18 +3293,20 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3252,7 +3314,10 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3369,18 +3434,20 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             request: Request,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3388,7 +3455,10 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3400,7 +3470,8 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
 Set the body mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `typed` or `request`, and overrides
-`--server-body-mode` for those operations.
+`--server-body-mode` for those operations. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 
@@ -3505,18 +3576,20 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3524,7 +3597,10 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
             *,
             request: Request,
             name: str,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3640,18 +3716,20 @@ methods. `--server-handler-modes` overrides it for single operations.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         async def replace_pet(
@@ -3659,7 +3737,10 @@ methods. `--server-handler-modes` overrides it for single operations.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3672,8 +3753,10 @@ Set the handler mode of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to `sync` or `async`, and overrides
 `--server-handler-mode` for those operations. An operation reference is the JSON pointer of the path item method,
-such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`. In
-pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole table.
+such as `/paths/~1pets/get`, optionally after a document and `#`, such as `pets.yaml#/paths/~1pets/get`.
+A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table. In pyproject.toml, `server-handler-modes` is a table, and a command-line value replaces the whole
+table.
 
 **Option relationships:**
 
@@ -3777,18 +3860,20 @@ pyproject.toml, `server-handler-modes` is a table, and a command-line value repl
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         async def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3796,7 +3881,10 @@ pyproject.toml, `server-handler-modes` is a table, and a command-line value repl
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -3914,11 +4002,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
@@ -3926,7 +4013,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -3935,7 +4025,10 @@ Each service method takes a `request` keyword argument as well as the operation'
             request: Request,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4036,21 +4129,36 @@ Choose how the server package lays out its routes (experimental).
     from typing import Annotated, Final
 
     import models
-    from fastapi import APIRouter, Body, Path, Query
+    from fastapi import APIRouter, Body, Path, Query, params
     from fastapi.responses import Response
 
     from ._generated import contract
     from ._generated.contract import OperationDependencies
-    from ._runtime.server.application import Dependency, Wiring, build
+    from ._runtime.server.application import Wiring, build, checked
     from ._runtime.server.responses import dispatch
     from .services import Service
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-        list_pets_handler = wiring.handlers['list_pets']
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        service: Service = wiring.services['service']
+        list_pets_handler = checked(
+            service.list_pets,
+            'The service.list_pets method of GET /pets',
+        )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -4063,18 +4171,30 @@ Choose how the server package lays out its routes (experimental).
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-        create_pet_handler = wiring.handlers['create_pet']
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        service: Service = wiring.services['service']
+        create_pet_handler = checked(
+            service.create_pet,
+            'The service.create_pet method of POST /pets',
+        )
 
         def create_pet(
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -4087,13 +4207,19 @@ Choose how the server package lays out its routes (experimental).
             operation_id='createPet',
             tags=['pets'],
             response_description='Already there.',
-            responses={'201': {'model': models.Pet, 'description': 'Created.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
-        replace_pet_handler = wiring.handlers['replace_pet']
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        service: Service = wiring.services['service']
+        replace_pet_handler = checked(
+            service.replace_pet,
+            'The service.replace_pet method of PUT /pets/{name}',
+        )
 
         def replace_pet(
             *,
@@ -4101,7 +4227,10 @@ Choose how the server package lays out its routes (experimental).
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -4115,26 +4244,27 @@ Choose how the server package lays out its routes (experimental).
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
     LITERAL_ROUTES: Final = (
-        (contract.ListPets.OPERATION, _add_list_pets),
-        (contract.CreatePet.OPERATION, _add_create_pet),
+        ('list_pets', _add_list_pets),
+        ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
         *,
         service: Service,
-        dependencies: Sequence[Dependency] = (),
+        dependencies: Sequence[params.Depends] = (),
         operation_dependencies: OperationDependencies | None = None,
         prefix: str = "",
     ) -> APIRouter:
-        """Check the service and settings, then register every operation on a new router, literal paths first."""
+        """Register every operation on a new router, literal paths first."""
         return build(
             (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
             services={'service': service},
@@ -4257,18 +4387,20 @@ generates.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4276,7 +4408,10 @@ generates.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4288,7 +4423,8 @@ generates.
 Name the service methods of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to method names. Other operations take the
-snake_case form of their operationId, or of their method and path.
+snake_case form of their operationId, or of their method and path. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 
@@ -4392,18 +4528,20 @@ snake_case form of their operationId, or of their method and path.
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4411,7 +4549,10 @@ snake_case form of their operationId, or of their method and path.
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4528,18 +4669,20 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4547,7 +4690,10 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4663,18 +4809,20 @@ generation prints name the package by it; the package imports its own modules re
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4682,7 +4830,10 @@ generation prints name the package by it; the package imports its own modules re
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4694,7 +4845,8 @@ generation prints name the package by it; the package imports its own modules re
 Name the method arguments of single operations (experimental).
 
 The JSON object, inline or in a file, maps operation references to objects that map a parameter, written as its
-location and name such as `query:limit` or `header:X-Request-Id`, to the argument name.
+location and name such as `query:limit` or `header:X-Request-Id`, to the argument name. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 
@@ -4798,18 +4950,20 @@ location and name such as `query:limit` or `header:X-Request-Id`, to the argumen
             self,
             *,
             page_size: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -4817,7 +4971,10 @@ location and name such as `query:limit` or `header:X-Request-Id`, to the argumen
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->
@@ -4830,7 +4987,8 @@ Choose the response a bare return value of an operation takes (experimental).
 
 The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
 response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
-primary response from the declared success responses.
+primary response from the declared success responses. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
 
@@ -4919,21 +5077,36 @@ primary response from the declared success responses.
     from typing import Annotated, Final
 
     import models
-    from fastapi import APIRouter, Body, Path, Query
+    from fastapi import APIRouter, Body, Path, Query, params
     from fastapi.responses import Response
 
     from .._generated import contract
     from .._generated.contract import OperationDependencies
-    from .._runtime.server.application import Dependency, Wiring, build
+    from .._runtime.server.application import Wiring, build, checked
     from .._runtime.server.responses import dispatch
     from ..services import PetsService
 
 
-    def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
-        list_pets_handler = wiring.handlers['list_pets']
+    def _add_list_pets(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        pets: PetsService = wiring.services['pets']
+        list_pets_handler = checked(
+            pets.list_pets,
+            'The pets.list_pets method of GET /pets',
+        )
 
-        def list_pets(*, limit: Annotated[int, Query(alias='limit')] = 20) -> object:
-            return dispatch(list_pets_handler(limit=limit), contract.ListPets.RESPONSES)
+        def list_pets(
+            *,
+            limit: Annotated[int, Query(alias='limit')] = 20,
+        ) -> object:
+            return dispatch(
+                list_pets_handler(
+                    limit=limit,
+                ),
+                contract.ListPets.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -4946,18 +5119,30 @@ primary response from the declared success responses.
             operation_id='listPets',
             tags=['pets'],
             response_description='The pets.',
-            dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+            dependencies=wiring.dependencies.get('list_pets'),
         )
 
 
-    def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
-        create_pet_handler = wiring.handlers['create_pet']
+    def _add_create_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        pets: PetsService = wiring.services['pets']
+        create_pet_handler = checked(
+            pets.create_pet,
+            'The pets.create_pet method of POST /pets',
+        )
 
         def create_pet(
             *,
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
-            return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+            return dispatch(
+                create_pet_handler(
+                    body=body,
+                ),
+                contract.CreatePet.RESPONSES,
+            )
 
         router.add_api_route(
             '/pets',
@@ -4970,13 +5155,19 @@ primary response from the declared success responses.
             operation_id='createPet',
             tags=['pets'],
             response_description='Created.',
-            responses={'200': {'model': models.Pet, 'description': 'Already there.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+            dependencies=wiring.dependencies.get('create_pet'),
         )
 
 
-    def _add_replace_pet(router: APIRouter, wiring: Wiring) -> None:
-        replace_pet_handler = wiring.handlers['replace_pet']
+    def _add_replace_pet(
+        router: APIRouter,
+        wiring: Wiring,
+    ) -> None:
+        pets: PetsService = wiring.services['pets']
+        replace_pet_handler = checked(
+            pets.replace_pet,
+            'The pets.replace_pet method of PUT /pets/{name}',
+        )
 
         def replace_pet(
             *,
@@ -4984,7 +5175,10 @@ primary response from the declared success responses.
             body: Annotated[models.Pet, Body(media_type='application/json')],
         ) -> object:
             return dispatch(
-                replace_pet_handler(name=name, body=body),
+                replace_pet_handler(
+                    name=name,
+                    body=body,
+                ),
                 contract.ReplacePet.RESPONSES,
             )
 
@@ -4998,26 +5192,27 @@ primary response from the declared success responses.
             operation_id='replacePet',
             tags=['pets'],
             response_description='Replaced.',
-            responses={'204': {'description': 'Replaced.'}},
-            dependencies=wiring.dependencies.get('/paths/~1pets~1{name}/put'),
+            dependencies=wiring.dependencies.get('replace_pet'),
         )
 
 
     LITERAL_ROUTES: Final = (
-        (contract.ListPets.OPERATION, _add_list_pets),
-        (contract.CreatePet.OPERATION, _add_create_pet),
+        ('list_pets', _add_list_pets),
+        ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = ((contract.ReplacePet.OPERATION, _add_replace_pet),)
+    TEMPLATED_ROUTES: Final = (
+        ('replace_pet', _add_replace_pet),
+    )
 
 
     def build_router(
         *,
         pets: PetsService,
-        dependencies: Sequence[Dependency] = (),
+        dependencies: Sequence[params.Depends] = (),
         operation_dependencies: OperationDependencies | None = None,
         prefix: str = "",
     ) -> APIRouter:
-        """Check the service and settings, then register the pets operations on a new router, literal paths first."""
+        """Register the pets operations on a new router, literal paths first."""
         return build(
             (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
             services={'pets': pets},
@@ -5140,18 +5335,20 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             self,
             *,
             limit: int,
-        ) -> (
-            models.FieldPetsGetResponse
-            | HTTPResult[models.FieldPetsGetResponse]
-            | Response
-        ): ...
+        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+            """
+            Handle GET /pets.
+            """
 
         @abstractmethod
         def create_pet(
             self,
             *,
             body: models.Pet,
-        ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+        ) -> models.Pet | HTTPResult[models.Pet] | Response:
+            """
+            Handle POST /pets.
+            """
 
         @abstractmethod
         def replace_pet(
@@ -5159,7 +5356,10 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             *,
             name: str,
             body: models.Pet,
-        ) -> None | HTTPResult[None] | Response: ...
+        ) -> None | HTTPResult[None] | Response:
+            """
+            Handle PUT /pets/{name}.
+            """
     ```
 
     <!-- fmt: on -->

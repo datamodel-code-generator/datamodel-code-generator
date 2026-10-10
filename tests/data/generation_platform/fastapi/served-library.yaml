@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info: {title: Library, version: "1.0"}
+paths: {}
+components:
+  pathItems:
+    PetEvent:
+      post:
+        requestBody:
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Cat"}
+        responses:
+          "200": {description: Received.}
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties: {kind: {const: cat}, meow: {type: boolean}}
+    Dog:
+      type: object
+      required: [kind]
+      properties: {kind: {const: dog}, bark: {type: boolean}}

@@ -22,12 +22,12 @@ _SCHEME_0: Final = SecurityScheme(
 )
 
 
-ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (_SCHEME_0,)
+ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
+    _SCHEME_0,
+)
 
 
 OPERATION_8: Final = SecurityBinding(
     schemes=(_SCHEME_0,),
-    alternatives=(
-        (SecurityRequirement(scheme=_SCHEME_0, required_scopes=('users.read',)),),
-    ),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=('users.read',)),),),
 )

@@ -1,0 +1,10 @@
+# naming-primary-first pydantic_v2.BaseModel
+  > GET https://api.example.com/items/1?cursor=q
+    [host: api.example.com, accept-encoding: gzip, deflate, cursor: h] b''
+  get an item by an external and a local cursor = None
+  > GET https://api.example.com/items?limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, limit: 1] b''
+  list the local items = None
+  > GET https://api.example.com/shared?limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  list the shared items = None

@@ -1,21 +1,35 @@
 # session-missing-inherited-array
 render pydantic_v2.BaseModel default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Bad
+  codec_1 models.Good
 render pydantic_v2.dataclass default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Bad
+  codec_1 models.Good
 render dataclasses.dataclass default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Bad
+  codec_1 models.Good
+  map models:Bad value=value
+  map models:Good value=value
 render typing.TypedDict default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Bad
+  codec_1 models.Good
+  map models:Bad value=value
+  map models:Good value=value
 render msgspec.Struct default
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-inherited-array.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
-  diagnostic APIGenerationError
-  diagnostic BND_UNRESOLVED_REFERENCE binding /components/schemas/Base/properties/value/items/$ref: A schema reference pointer does not exist
+  models.py
+  model_bindings.py
+  codec_0 models.Bad
+  codec_1 models.Good

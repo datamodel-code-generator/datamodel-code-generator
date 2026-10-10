@@ -9,11 +9,11 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import FieldOrdersOrderIdGetQueryViewParameter as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.orders import GetOrderResponse
 
@@ -43,15 +43,17 @@ class OrdersResource:
     def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         ).data
@@ -67,15 +69,17 @@ class OrdersWithResponse:
     def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -91,15 +95,17 @@ class OrdersWithRawResponse:
     def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
@@ -115,15 +121,17 @@ class OrdersWithStreamingResponse:
     def get_order(
         self,
         *,
-        order_id: int,
-        view: _dcg_type_0 | Unset = UNSET,
+        orderId: int,
+        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /orders/{orderId}."""
+        """
+        Call GET /orders/{orderId}.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
-            (order_id, view),
+            (orderId, view),
             options=options,
             response_media_type=response_media_type,
         )
