@@ -10,6 +10,9 @@
     ],
     "package_snapshots": [
       "pydantic_v2.BaseModel"
+    ],
+    "readme": [
+      "pydantic_v2.BaseModel"
     ]
   },
   "parameters": {
@@ -40,7 +43,10 @@
         "/paths/~1json/post": "typed"
       }
     },
-    "package_snapshots": []
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "responses": {
     "input": "responses.yaml",
@@ -73,7 +79,10 @@
         }
       }
     },
-    "package_snapshots": []
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "single": {
     "input": "pets.yaml",
@@ -276,7 +285,10 @@
         "/paths/~1custom/get": "async"
       }
     },
-    "package_snapshots": []
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "security-errors": {
     "input": "security-errors.yaml"
@@ -323,7 +335,10 @@
   },
   "callbacks": {
     "input": "callbacks.yaml",
-    "package_snapshots": []
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "scheme-names": {
     "input": "scheme-names.yaml"
@@ -344,7 +359,10 @@
       "openapi_include_paths": [
         "/none"
       ]
-    }
+    },
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "docstrings": {
     "input": "docstrings.yaml",
@@ -366,7 +384,10 @@
           "team": "the platform team"
         }
       }
-    }
+    },
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "template-invalid": {
     "input": "pets.yaml",
@@ -389,7 +410,10 @@
     "model": {
       "custom_template_dir": "templates/missing"
     },
-    "expected": "pets"
+    "expected": "pets",
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "relative-override": {
     "input": "relative-override.yaml",
