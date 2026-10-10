@@ -80,6 +80,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/generation_platform/codecs/typing/positive.py",
         "private-import:tests/data/python/model_codec_reports.py",
     ),
+    "unobservable-cleanup": ("normal-path-mock:tests/data/python/fastapi_upstream.py::_observe",),
 }
 FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "binding-e2e": (
@@ -1467,6 +1468,10 @@ ALLOWLIST_GROUP_REASONS = {
     "runtime-tables": (
         "Combinatorial wire-rule tables, the official JSON Schema suite, and the codec type-check probes exercise "
         "the runtime directly."
+    ),
+    "unobservable-cleanup": (
+        "Files the multipart parser allocates for a request it then refuses never reach a handler, so a spy on their "
+        "construction is the only way to see that the refused request closed them."
     ),
     "binding-e2e": (
         "Fold binding, session, and contract tests into target scenarios; first sweep each guard they inject faults "

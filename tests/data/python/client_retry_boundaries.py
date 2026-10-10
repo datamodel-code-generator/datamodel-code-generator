@@ -102,7 +102,7 @@ def _presend(package: ModuleType, options: ModuleType, errors: ModuleType, lines
         ):
             try:
                 api.retry.get_safe()
-            except BaseException as error:  # noqa: BLE001
+            except errors.SDKError as error:
                 observed = _error(error), getattr(error, "cause", None) is failure, fault.calls
             else:
                 observed = ("returned",)
@@ -158,7 +158,7 @@ async def _async_presend(package: ModuleType, options: ModuleType, errors: Modul
         ):
             try:
                 await api.retry.get_safe()
-            except BaseException as error:  # noqa: BLE001
+            except errors.SDKError as error:
                 observed = _error(error), getattr(error, "cause", None) is failure, fault.calls
             else:
                 observed = ("returned",)
@@ -194,7 +194,7 @@ async def _late_native(package: ModuleType, lines: list[str]) -> None:
         async def request() -> tuple[object, ...]:
             try:
                 await api.retry.post_idempotent(body=b"request")
-            except BaseException as error:  # noqa: BLE001
+            except asyncio.CancelledError as error:
                 return type(error).__name__, error.args, getattr(error, "__notes__", ())
             return ("returned",)
 
@@ -227,7 +227,7 @@ def _terminal(package: ModuleType, lines: list[str]) -> None:
                         response.read()
                 else:
                     api.retry.get_safe()
-            except BaseException as error:  # noqa: BLE001
+            except KeyboardInterrupt as error:
                 observed = type(error).__name__, error is primary, error.args, getattr(error, "__notes__", ())
             else:
                 observed = ("returned",)
@@ -254,7 +254,7 @@ def _failed_streams(package: ModuleType, lines: list[str]) -> None:
                 with api.retry.with_streaming_response.get_safe() as response:
                     _caller_block(failure)
                     response.read()
-            except BaseException as error:  # noqa: BLE001
+            except KeyboardInterrupt as error:
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ()), _secondary(error)
         record(lines, f"stream close interruption after a failed {failure}", lambda observed=observed: observed)
 
@@ -272,7 +272,7 @@ async def _async_failed_streams(package: ModuleType, lines: list[str]) -> None:
                 async with api.retry.with_streaming_response.get_safe() as response:
                     _caller_block(failure)
                     await response.read()
-            except BaseException as error:  # noqa: BLE001
+            except _Stop as error:
                 observed = type(error).__name__, error is primary, getattr(error, "__notes__", ()), _secondary(error)
         record(lines, f"async stream close interruption after a failed {failure}", lambda observed=observed: observed)
 
@@ -299,7 +299,7 @@ async def _async_terminal(package: ModuleType, lines: list[str]) -> None:
                         await response.read()
                 else:
                     await api.retry.get_safe()
-            except BaseException as error:  # noqa: BLE001
+            except asyncio.CancelledError as error:
                 observed = type(error).__name__, error is primary, error.args, getattr(error, "__notes__", ())
             else:
                 observed = ("returned",)

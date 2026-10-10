@@ -50,6 +50,7 @@ HELPER_ROOTS = (
     Path("api_generation", "support"),
     Path("api_generation", "scenarios"),
 )
+PLATFORM_MODULES = (*HELPER_ROOTS, Path("api_generation"))
 OUTPUT_ROOT = Path("data", "expected")
 PLATFORM_OUTPUT = OUTPUT_ROOT / "main" / "generation_platform"
 PLATFORM_OUTPUT_SUFFIXES = frozenset({".json", ".txt"})
@@ -173,7 +174,10 @@ RULE_FAILURE_MESSAGES = {
         "delattr, attribute assignment, or sys.modules entries that replace datamodel_code_generator or generated "
         "package internals pin them on a normal path. Drive the behavior through public entry points and generated "
         'packages instead, or mark the enclosing test or helper with @pytest.mark.abnormal_path("why e2e cannot '
-        'reproduce it").'
+        'reproduce it").\n'
+        "Generation platform tests and their helpers (tests/api_generation and the report helper roots) also patch "
+        "nothing they import from outside tests/, such as an HTTP transport, pathlib, a framework class, sys.stdin, "
+        "or a sys.modules entry, without that marker: a fault injected there is an abnormal path too."
     ),
     MARKER_REASON: (
         "@pytest.mark.abnormal_path and @pytest.mark.allow_direct_assert take exactly one non-empty string literal "
@@ -500,6 +504,7 @@ class _ModuleAnalyzer(ast.NodeVisitor):
     def __init__(self, path: Path, source: str, tests_root: Path) -> None:
         self.path = path
         self.tests_root = tests_root
+        self.platform = any(map(path.is_relative_to, PLATFORM_MODULES))
         self.lines = _SourceLines(source)
         self.scope = self.module = _Scope(None, None)
         self.scopes: list[tuple[_Scope, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef]] = []
@@ -732,6 +737,16 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         self.reached[key] = reached
         return reached
 
+    def imported_from_outside(self, target: ast.expr, scope: _Scope) -> bool:
+        """Whether a patch target is a dotted string or an imported name from outside the tests/ package."""
+        if (text := _complete_text(target)) is not None:
+            return self.resolve(tuple(text.split(".")))[0] != "tests"
+        if not (chain := _attribute_chain(target)) or (owner := scope.owner(chain[0])) is None:
+            return False
+        return any(
+            isinstance(value, tuple) and self.resolve(value)[0] != "tests" for value, _ in owner.bindings[chain[0]]
+        )
+
     def replaces_internal_module_entry(self, function: tuple[str, ...], call: ast.Call, target: ast.expr) -> bool:
         """Whether a patch of sys.modules sets or removes a package or generated runtime module."""
         if not _is_sys_modules(target, self.aliases):
@@ -799,8 +814,10 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         if function in PROFILE_HOOKS:
             return True
         if function in PATCH_CALLS and (target := _patch_target(node)) is not None:
-            return self.reaches(target, scope, instances=True) or self.replaces_internal_module_entry(
-                function, node, target
+            return (
+                self.reaches(target, scope, instances=True)
+                or self.replaces_internal_module_entry(function, node, target)
+                or (self.platform and self.imported_from_outside(target, scope))
             )
         return function in SETATTR_CALLS and bool(node.args) and self.reaches(node.args[0], scope, instances=False)
 
@@ -2214,6 +2231,57 @@ def test_collect_findings_reports_normal_path_mocks(tmp_path: Path) -> None:
         "data-logic data/python/cycle_b.py:1 <module>: module under tests/data/python",
         "data-logic data/python/reexport.py:1 <module>: module under tests/data/python",
     ]
+
+
+FOREIGN_PATCH_PROBE = """\
+import sys
+from pathlib import Path
+from unittest.mock import patch
+
+import httpx2
+import pytest
+
+from tests.data.python.formatters import CodeFormatter
+
+
+class _Local:
+    pass
+
+
+def test_faults(monkeypatch, fixture_object):
+    patch.object(httpx2.HTTPTransport, "handle_request")
+    patch.object(Path, "read_bytes")
+    monkeypatch.setattr("sys.stdin", None)
+    monkeypatch.setitem(sys.modules, "h2", None)
+    monkeypatch.setattr(CodeFormatter, "clock", None)
+    monkeypatch.setattr("tests.data.python.formatters.CodeFormatter.clock", None)
+    monkeypatch.setattr(_Local, "value", None)
+    monkeypatch.setattr(fixture_object, "value", None)
+    monkeypatch.setattr(unbound, "value", None)
+    monkeypatch.setattr(_Local(), "value", None)
+
+
+@pytest.mark.abnormal_path("the transport fails only on a broken network")
+def test_marked():
+    patch.object(httpx2.HTTPTransport, "handle_request")
+"""
+
+
+def test_collect_findings_reports_foreign_patches_in_platform_modules(tmp_path: Path) -> None:
+    """Platform tests and helpers patch nothing imported from outside tests/ unless marked as an abnormal path.
+
+    Other test modules keep the narrower rule, which reports only patches that replace package internals.
+    """
+    platform = ("api_generation/test_faults.py", "data/generation_platform/faults.py")
+    statements = (
+        '16 test_faults: patch.object(httpx2.HTTPTransport, "handle_request")',
+        '17 test_faults: patch.object(Path, "read_bytes")',
+        '18 test_faults: monkeypatch.setattr("sys.stdin", None)',
+        '19 test_faults: monkeypatch.setitem(sys.modules, "h2", None)',
+    )
+    findings = _probe_findings(tmp_path, dict.fromkeys(("test_other.py", *platform), FOREIGN_PATCH_PROBE))
+
+    assert findings == [f"normal-path-mock {path}:{statement}" for path in platform for statement in statements]
 
 
 def test_collect_findings_applies_rules_by_module_kind(tmp_path: Path) -> None:

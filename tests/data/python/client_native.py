@@ -469,6 +469,7 @@ class _ResponseHook:
 def _location_hooks(package: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
     """Fail or interrupt a malformed redirect in the injected client's response hook, before HTTPX2 reads its Location."""
     mode = "async" if asynchronous else "sync"
+    errors = importlib.import_module(f"{package.__name__}.errors")
     server = NativeFixture()
     server.status, server.location = 302, _LOCATIONS[0][1]
     try:
@@ -490,7 +491,7 @@ def _location_hooks(package: ModuleType, lines: list[str], *, asynchronous: bool
                             )
                             try:
                                 await operation()
-                            except BaseException as failure:
+                            except (errors.SDKError, Stop) as failure:
                                 lines.append(
                                     f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                                 )
@@ -508,7 +509,7 @@ def _location_hooks(package: ModuleType, lines: list[str], *, asynchronous: bool
                         operation = api.retry.with_raw_response.get_safe if raw else api.retry.with_response.get_safe
                         try:
                             operation()
-                        except BaseException as failure:
+                        except (errors.SDKError, Stop) as failure:
                             lines.append(
                                 f"  {label}: {_details(failure)} notes={getattr(failure, '__notes__', [])} same={failure is error}"
                             )
@@ -520,6 +521,7 @@ def _location_hooks(package: ModuleType, lines: list[str], *, asynchronous: bool
         server.stop()
 
 
+@pytest.mark.abnormal_path("A local peer cannot produce each kind of native send failure on demand.")
 def native_faults(package: ModuleType, lines: list[str]) -> None:
     """Inject abnormal native send exceptions at the HTTP transport boundary."""
     from unittest.mock import patch
@@ -597,6 +599,7 @@ def native_faults(package: ModuleType, lines: list[str]) -> None:
     _phases(package, lines)
 
 
+@pytest.mark.abnormal_path("Only a replaced send of the transport an SDK-owned client builds sees its timeouts.")
 def _phases(package: ModuleType, lines: list[str]) -> None:
     """Observe the timeouts and redirects each request goes out with, on an SDK-owned and on an injected client."""
     from unittest.mock import patch
@@ -663,6 +666,7 @@ def _phases(package: ModuleType, lines: list[str]) -> None:
         lines.append(f"    phases={seen}")
 
 
+@pytest.mark.abnormal_path("A failing close of the transport the SDK owns cannot be produced with a real connection.")
 def _native_close(package: ModuleType, lines: list[str]) -> None:
     """Preserve a primary failure while the native owned client's close fails after release."""
     from unittest.mock import patch
@@ -695,6 +699,7 @@ def _native_close(package: ModuleType, lines: list[str]) -> None:
         server.stop()
 
 
+@pytest.mark.abnormal_path("A failing close of the transport the SDK owns cannot be produced with a real connection.")
 async def _native_async_close(package: ModuleType, lines: list[str], base_url: str) -> None:
     """Keep task cancellation primary beside an owned native asynchronous close failure."""
     from unittest.mock import patch
