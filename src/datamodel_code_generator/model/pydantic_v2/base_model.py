@@ -1105,6 +1105,28 @@ def _construct_parser_simple_field(**data: Unpack[_ParserSimpleFieldData]) -> Da
 DataModelField.PARSER_CONSTRUCTOR = _construct_parser_simple_field
 
 
+def assign_forward_reference_fields(model: DataModel, positions: Mapping[str, int], index: int) -> bool:
+    """Write fields that name a later model by assignment when the target predates Pydantic 2.11.
+
+    A deferred annotation naming a model defined later in the module cannot be evaluated while the class is
+    created, and older Pydantic then mishandles the ``Field()`` inside ``Annotated``: it drops aliases and
+    descriptions, ignores ``validate_default`` or fails on constraints. A self reference can be evaluated, so
+    it is not a forward reference here. ``positions`` maps each model path in the module to its order and
+    ``index`` is the order of ``model``; the result tells whether a field changed.
+    """
+    if model_target_supports(model, PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM):
+        return False
+    changed = False
+    for field in model.fields:
+        if field.use_annotated and any(
+            (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
+            for data_type in field.data_type.all_data_types
+        ):
+            field.use_annotated = False
+            changed = True
+    return changed
+
+
 def has_lookaround_pattern(
     fields: list[DataModelFieldBase],
     *,
@@ -2122,24 +2144,8 @@ class BaseModel(BaseModelBase):
         return None
 
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
-        """Leave ``Annotated`` for fields that name a later model when the target predates Pydantic 2.11.
-
-        A deferred annotation naming a model defined later in the module cannot be evaluated while the class is
-        created, and older Pydantic then mishandles the ``Field()`` inside ``Annotated``: it drops aliases and
-        descriptions, ignores ``validate_default`` or fails on constraints. A self reference can be evaluated, so
-        it is not a forward reference here.
-        """
-        if model_target_supports(self, PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM):
-            return False
-        changed = False
-        for field in self.fields:
-            if field.use_annotated and any(
-                (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
-                for data_type in field.data_type.all_data_types
-            ):
-                field.use_annotated = False
-                changed = True
-        return changed
+        """Leave ``Annotated`` for fields that name a later model when the target predates Pydantic 2.11."""
+        return assign_forward_reference_fields(self, positions, index)
 
     def _prepare_schema_runtime_validation_config(self) -> None:
         """Prepare Pydantic config required by schema-derived runtime validators."""

@@ -2436,31 +2436,60 @@ def test_main_use_annotated_forward_reference(
         )
 
 
-@pytest.mark.parametrize(
-    ("output_model_type", "extra_args", "expected_file"),
-    [
-        ("pydantic_v2.BaseModel", ["--disable-future-imports"], "no_generator_2_eager.py"),
-        ("pydantic_v2.dataclass", [], "dataclass_2.py"),
-    ],
-    ids=["disable-future-imports", "pydantic-dataclass"],
-)
-def test_main_use_annotated_forward_reference_unchanged(
-    output_file: Path, output_model_type: str, extra_args: list[str], expected_file: str
-) -> None:
-    """Keep Annotated for --target-pydantic-version 2 where annotations are eager or the model is a dataclass."""
+def test_main_use_annotated_forward_reference_eager(output_file: Path) -> None:
+    """Keep Annotated for --target-pydantic-version 2 where annotations are evaluated eagerly."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file=f"annotated_forward_reference/{expected_file}",
+        expected_file="annotated_forward_reference/no_generator_2_eager.py",
         extra_args=[
             "--output-model-type",
-            output_model_type,
+            "pydantic_v2.BaseModel",
             "--use-annotated",
             "--target-pydantic-version",
             "2",
-            *extra_args,
+            "--disable-future-imports",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["unset", "2"])
+def test_main_use_annotated_forward_reference_dataclass(output_file: Path, target_pydantic_version: str | None) -> None:
+    """Write pydantic dataclass fields whose type is defined later as assignments for --target-pydantic-version 2."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"annotated_forward_reference/dataclass_{target_pydantic_version or 'unset'}.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-annotated",
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+
+
+def test_main_use_annotated_forward_reference_dataclass_required_order(output_file: Path) -> None:
+    """Keep required pydantic dataclass fields before a forward-referenced field written as an assignment."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="annotated_forward_reference/dataclass_required_order_2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-annotated",
+            "--target-pydantic-version",
+            "2",
         ],
         force_exec_validation=True,
     )

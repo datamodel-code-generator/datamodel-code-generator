@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import AliasChoices, Field
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -15,14 +15,10 @@ Labels = TypeAliasType("Labels", Annotated[list[str], Field(min_length=1)])
 
 @dataclass
 class Tree:
-    rootNode: Node = Field(..., description='The first node')
+    rootNode: Annotated[Node, Field(description='The first node')]
     treeName: str | None = None
-    spare_node: Node | None = Field(
-        None,
-        serialization_alias='spare-node',
-        validation_alias=AliasChoices('spare-node'),
-    )
-    nodes: list[Node] | None = Field(None, min_length=1)
+    spare_node: Annotated[Node | None, Field(alias='spare-node')] = None
+    nodes: Annotated[list[Node] | None, Field(min_length=1)] = None
     labels: Labels | None = None
     pick: Node | None = Field(default_factory=dict, title='Pick', validate_default=True)
     spare: Node | None = Field(
@@ -34,16 +30,8 @@ class Tree:
 @dataclass
 class Node:
     nodeValue: int | None = None
-    owner_tree: Tree | None = Field(
-        None,
-        serialization_alias='owner-tree',
-        validation_alias=AliasChoices('owner-tree'),
-    )
-    next_node: Node | None = Field(
-        None,
-        serialization_alias='next-node',
-        validation_alias=AliasChoices('next-node'),
-    )
+    owner_tree: Annotated[Tree | None, Field(alias='owner-tree')] = None
+    next_node: Annotated[Node | None, Field(alias='next-node')] = None
     kind: str | None = 'leaf'
 
 

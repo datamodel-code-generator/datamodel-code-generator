@@ -112,12 +112,13 @@ When the target is unset:
 | --- | --- | --- |
 | `MISSING` (2.14 deprecates the experimental path) | `from pydantic.experimental.missing_sentinel import MISSING` | `from pydantic import MISSING` |
 
-With `2` and `--use-annotated`, a `BaseModel` or `RootModel` field whose type names a model defined later in the same
-module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11 cannot evaluate such an
-annotation while it creates the class, and then mishandles the `Field()` inside `Annotated[...]`: depending on the
-release it drops the alias and the description, ignores `validate_default`, or fails on a constraint. Fields that
-reference only their own model or earlier models, output without deferred annotations (`--disable-future-imports`),
-and `pydantic_v2.dataclass` output keep the `Annotated` form.
+With `2` and `--use-annotated`, a `BaseModel`, `RootModel` or `pydantic_v2.dataclass` field whose type names a model
+defined later in the same module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11
+cannot evaluate such an annotation while it creates the class, and then mishandles the `Field()` inside
+`Annotated[...]`: depending on the release it drops the alias and the description, ignores `validate_default`, or fails
+on a constraint. Required dataclass fields written this way move after the other required fields. Fields that reference
+only their own model or earlier models, and output without deferred annotations (`--disable-future-imports`), keep the
+`Annotated` form.
 
 For a field written this way, type checkers that read `Field()` assignments, such as pyright, take the alias as the
 constructor argument name and treat a positional default such as `Field(None, alias=...)` as a required argument. Add
