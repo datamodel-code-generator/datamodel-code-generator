@@ -1,11 +1,23 @@
-output=PurePosixPath('client')
-package='client'
-model_package='models'
-transport='httpx2'
-resource_names=()
-operations=()
-signature_style='explicit'
-body_arguments='body'
-default_base_url=None
-server_base_url=None
-protocols=None
+generate()
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/bodies.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/pets/__init__.py
+  client/resources/pets/_async.py
+  client/resources/pets/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/pets/__init__.py
+  client/types/pets/_operations.py
+  models.py
