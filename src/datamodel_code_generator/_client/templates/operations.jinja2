@@ -1,0 +1,20 @@
+{%- macro constant(plan) -%}
+{{ plan.name }}: {{ plan.annotation }} = {{ plan.constructor }}(
+{%- for argument in plan.arguments %}
+    {% if argument.keyword %}{{ argument.keyword }}={% endif %}{{ argument.value }},
+{%- endfor %}
+)
+{%- endmacro -%}
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+{% for server in servers %}
+
+{{ server.name }}: {{ server.annotation }} = {{ server.value }}
+{%- endfor %}
+{%- for plan in operations %}
+
+{{ constant(plan) }}
+{%- endfor %}

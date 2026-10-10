@@ -41,7 +41,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
 )
 from datamodel_code_generator._target_module import TargetModule
-from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
+from datamodel_code_generator._target_render import Keyword, Parameter, field_plan, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role
 from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
@@ -317,23 +317,6 @@ class Module(TargetModule):
                 pass
         assert isinstance(value, ImportedExpression), "constraints and defaults hold scalars and expressions"
         return f"{value.prefix}{self.imported(value.import_)}{value.suffix}"
-
-
-@dataclass(frozen=True, slots=True)
-class Parameter:
-    """One parameter of a generated signature, with its default expression or none."""
-
-    name: str
-    annotation: str
-    default: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class Keyword:
-    """One keyword argument of a generated call."""
-
-    keyword: str
-    value: str
 
 
 @dataclass(frozen=True, slots=True)

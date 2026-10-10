@@ -95,7 +95,9 @@ _SCHEME_9: Final = SecurityScheme(
 )
 
 
-_SCHEME_10: Final = UnavailableSecurityScheme(name='unused_digest')
+_SCHEME_10: Final = UnavailableSecurityScheme(
+    name='unused_digest',
+)
 
 
 _SCHEME_11: Final = SecurityScheme(
@@ -123,507 +125,156 @@ ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
 
 
 OPERATION_0: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
 OPERATION_1: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((),),
 )
 
 
 OPERATION_2: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=(),
 )
 
 
 OPERATION_3: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((), (SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),)),
 )
 
 
 OPERATION_4: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),), ()),
 )
 
 
 OPERATION_5: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
-    alternatives=(
-        (
-            SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),
-            SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),
-        ),
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=()), SecurityRequirement(scheme=_SCHEME_6, required_scopes=())),),
 )
 
 
 OPERATION_6: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
-    alternatives=(
-        (SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),),
-        (SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),), (SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),)),
 )
 
 
 OPERATION_7: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
-    alternatives=(
-        (SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),
-        (SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),), (SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),)),
 )
 
 
 OPERATION_8: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),),),
 )
 
 
 OPERATION_9: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_1, required_scopes=()),),),
 )
 
 
 OPERATION_10: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),),),
 )
 
 
 OPERATION_11: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),),),
 )
 
 
 OPERATION_12: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
 
 
 OPERATION_13: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
 OPERATION_14: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_7, required_scopes=()),),),
 )
 
 
 OPERATION_15: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_8, required_scopes=('read',)),),),
 )
 
 
 OPERATION_16: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
-    alternatives=(
-        (SecurityRequirement(scheme=_SCHEME_8, required_scopes=('read', 'write')),),
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_8, required_scopes=('read', 'write')),),),
 )
 
 
 OPERATION_17: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_8, required_scopes=()),),),
 )
 
 
 OPERATION_18: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_9, required_scopes=('read',)),),),
 )
 
 
 OPERATION_19: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
 OPERATION_20: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
 OPERATION_21: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
 OPERATION_22: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
 OPERATION_23: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
 OPERATION_24: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((),),
 )
 
 
 OPERATION_25: Final = SecurityBinding(
-    schemes=(
-        _SCHEME_0,
-        _SCHEME_1,
-        _SCHEME_2,
-        _SCHEME_3,
-        _SCHEME_4,
-        _SCHEME_5,
-        _SCHEME_6,
-        _SCHEME_7,
-        _SCHEME_8,
-        _SCHEME_9,
-        _SCHEME_10,
-        _SCHEME_11,
-    ),
+    schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3, _SCHEME_4, _SCHEME_5, _SCHEME_6, _SCHEME_7, _SCHEME_8, _SCHEME_9, _SCHEME_10, _SCHEME_11),
     alternatives=((),),
 )

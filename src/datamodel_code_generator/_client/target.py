@@ -199,6 +199,8 @@ class ClientTarget:
             types=types,
             dependencies=dependencies,
             templates=ClientTemplates.custom(request.model_config, request.cwd),
+            use_schema_description=request.model_config.use_schema_description,
+            use_single_line_docstring=request.model_config.use_single_line_docstring,
         )
         return TargetRender(files=renderer.files(), dependencies=dependencies)
 

@@ -5077,18 +5077,51 @@
       ]
     }
   },
+  "docstrings": {
+    "input": "docstrings.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "use_schema_description": true,
+      "use_single_line_docstring": true
+    }
+  },
   "templates": {
     "input": "pets.yaml",
     "references": [
+      "templates/custom/client/client.jinja2",
+      "templates/custom/client/facade.jinja2",
+      "templates/custom/client/readme.jinja2",
       "templates/custom/client/resource.jinja2",
-      "templates/custom/client/readme.jinja2"
+      "templates/custom/client/runtime.jinja2",
+      "templates/custom/client/types.jinja2"
     ],
     "modules": [
+      [
+        "client",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
       [
         "client",
         "resources",
         "pets",
         "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "pets",
+        "_operations.py"
       ]
     ],
     "cwd": true,

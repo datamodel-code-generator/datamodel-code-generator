@@ -48,7 +48,9 @@ class AsyncPetsPhotosResource:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> UploadResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return (await self._core.execute(
             _operations.OPERATION_5,
             (petId,),
@@ -75,7 +77,9 @@ class AsyncPetsPhotosWithResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UploadResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return await self._core.execute(
             _operations.OPERATION_5,
             (petId,),
@@ -102,7 +106,9 @@ class AsyncPetsPhotosWithRawResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_5,
             (petId,),
@@ -129,7 +135,9 @@ class AsyncPetsPhotosWithStreamingResponse:
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (petId,),

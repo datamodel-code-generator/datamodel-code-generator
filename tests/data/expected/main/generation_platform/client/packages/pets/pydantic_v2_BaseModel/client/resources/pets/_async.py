@@ -65,7 +65,9 @@ class AsyncPetsResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListPetsResponse:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (limit, labels, X_Trace, session),
@@ -99,7 +101,9 @@ class AsyncPetsResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> CreatePetResponse:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         return (await self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -140,7 +144,9 @@ class AsyncPetsResource:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetPetResponse:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_2,
             (petId,),
@@ -154,7 +160,9 @@ class AsyncPetsResource:
         petId: int,
         options: RequestOptions | None = None,
     ) -> DeletePetsByPetIdResponse:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_3,
             (petId,),
@@ -167,7 +175,9 @@ class AsyncPetsResource:
         petId: int,
         options: RequestOptions | None = None,
     ) -> HeadPetResponse:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         return (await self._core.execute(
             _operations.OPERATION_4,
             (petId,),
@@ -182,7 +192,9 @@ class AsyncPetsResource:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AttachFilesResponse:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return (await self._core.execute(
             _operations.OPERATION_6,
             (petId,),
@@ -198,7 +210,9 @@ class AsyncPetsResource:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadFilesResponse:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return (await self._core.execute(
             _operations.OPERATION_7,
             (petId,),
@@ -224,7 +238,9 @@ class AsyncPetsWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListPetsResponse]:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (limit, labels, X_Trace, session),
@@ -258,7 +274,9 @@ class AsyncPetsWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CreatePetResponse]:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         return await self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -299,7 +317,9 @@ class AsyncPetsWithResponse:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetPetResponse]:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return await self._core.execute(
             _operations.OPERATION_2,
             (petId,),
@@ -313,7 +333,9 @@ class AsyncPetsWithResponse:
         petId: int,
         options: RequestOptions | None = None,
     ) -> Response[DeletePetsByPetIdResponse]:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         return await self._core.execute(
             _operations.OPERATION_3,
             (petId,),
@@ -326,7 +348,9 @@ class AsyncPetsWithResponse:
         petId: int,
         options: RequestOptions | None = None,
     ) -> Response[HeadPetResponse]:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         return await self._core.execute(
             _operations.OPERATION_4,
             (petId,),
@@ -341,7 +365,9 @@ class AsyncPetsWithResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[AttachFilesResponse]:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return await self._core.execute(
             _operations.OPERATION_6,
             (petId,),
@@ -357,7 +383,9 @@ class AsyncPetsWithResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadFilesResponse]:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return await self._core.execute(
             _operations.OPERATION_7,
             (petId,),
@@ -383,7 +411,9 @@ class AsyncPetsWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (limit, labels, X_Trace, session),
@@ -417,7 +447,9 @@ class AsyncPetsWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -434,7 +466,9 @@ class AsyncPetsWithRawResponse:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_2,
             (petId,),
@@ -448,7 +482,9 @@ class AsyncPetsWithRawResponse:
         petId: int,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call DELETE /pets/{petId}."""
+        """
+        Call DELETE /pets/{petId}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_3,
             (petId,),
@@ -461,7 +497,9 @@ class AsyncPetsWithRawResponse:
         petId: int,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call HEAD /pets/{petId}."""
+        """
+        Call HEAD /pets/{petId}.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (petId,),
@@ -476,7 +514,9 @@ class AsyncPetsWithRawResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_6,
             (petId,),
@@ -492,7 +532,9 @@ class AsyncPetsWithRawResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_7,
             (petId,),
@@ -518,7 +560,9 @@ class AsyncPetsWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """List every pet."""
+        """
+        Call GET /pets.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (limit, labels, X_Trace, session),
@@ -552,7 +596,9 @@ class AsyncPetsWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Create a pet \"quoted\" \\ escaped."""
+        """
+        Create a pet "quoted" \\ escaped.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -569,7 +615,9 @@ class AsyncPetsWithStreamingResponse:
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Show one pet."""
+        """
+        Call GET /pets/{petId}.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (petId,),
@@ -583,8 +631,14 @@ class AsyncPetsWithStreamingResponse:
         petId: int,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call DELETE /pets/{petId}."""
-        return self._core.stream(_operations.OPERATION_3, (petId,), options=options)
+        """
+        Call DELETE /pets/{petId}.
+        """
+        return self._core.stream(
+            _operations.OPERATION_3,
+            (petId,),
+            options=options,
+        )
 
     def head_pet(
         self,
@@ -592,8 +646,14 @@ class AsyncPetsWithStreamingResponse:
         petId: int,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call HEAD /pets/{petId}."""
-        return self._core.stream(_operations.OPERATION_4, (petId,), options=options)
+        """
+        Call HEAD /pets/{petId}.
+        """
+        return self._core.stream(
+            _operations.OPERATION_4,
+            (petId,),
+            options=options,
+        )
 
     def attach_files(
         self,
@@ -603,7 +663,9 @@ class AsyncPetsWithStreamingResponse:
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /pets/{petId}/files."""
+        """
+        Call POST /pets/{petId}/files.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (petId,),
@@ -619,7 +681,9 @@ class AsyncPetsWithStreamingResponse:
         response_media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /pets/{petId}/files."""
+        """
+        Call GET /pets/{petId}/files.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (petId,),

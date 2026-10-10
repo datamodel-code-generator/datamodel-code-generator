@@ -1,0 +1,26 @@
+{%- macro constant(plan) -%}
+{{ plan.name }}: {{ plan.annotation }} = {{ plan.constructor }}(
+{%- for argument in plan.arguments %}
+    {% if argument.keyword %}{{ argument.keyword }}={% endif %}{{ argument.value }},
+{%- endfor %}
+)
+{%- endmacro -%}
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+{%- for entry in records %}
+
+
+class {{ entry.name }}({{ entry.base }}):
+    """{{ entry.docstring }}"""
+{% for member in entry.members %}
+    {{ member.name }}: {{ member.annotation }}
+{%- endfor %}
+{%- endfor %}
+{%- for plan in keywords %}
+
+
+{{ constant(plan) }}
+{%- endfor %}

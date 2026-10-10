@@ -11,16 +11,21 @@ if TYPE_CHECKING:
     from ._async_client import AsyncClient, AsyncClientView
     from ._client import Client, ClientView
 
-__all__ = ["AsyncClient", "AsyncClientView", "Client", "ClientView"]
+__all__ = [
+    'AsyncClient',
+    'AsyncClientView',
+    'Client',
+    'ClientView',
+]
 
 
 def __getattr__(name: str) -> object:
     """Import a client on first use, so importing the package loads no HTTP runtime."""
-    if name in {"Client", "ClientView"}:
+    if name in {'Client', 'ClientView'}:
         from . import _client
 
         return getattr(_client, name)
-    if name in {"AsyncClient", "AsyncClientView"}:
+    if name in {'AsyncClient', 'AsyncClientView'}:
         from . import _async_client
 
         return getattr(_async_client, name)

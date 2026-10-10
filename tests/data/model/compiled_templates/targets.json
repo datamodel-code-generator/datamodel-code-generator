@@ -1,161 +1,212 @@
 {
   "client": {
+    "arguments.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "The keyword arguments 日本 that unpacked operation methods take.",
+          "imports": "from typing import Final\nfrom typing_extensions import NotRequired, TypedDict",
+          "records": [
+            {
+              "name": "Operation0Arguments",
+              "base": "TypedDict",
+              "docstring": "The keyword arguments of one signature of list_pets.",
+              "members": [
+                {
+                  "name": "limit",
+                  "annotation": "NotRequired[int | UNSET]",
+                  "default": ""
+                },
+                {
+                  "name": "options",
+                  "annotation": "NotRequired[RequestOptions | None]",
+                  "default": ""
+                }
+              ]
+            },
+            {
+              "name": "Operation1Arguments",
+              "base": "TypedDict",
+              "docstring": "The keyword arguments of one signature of get_pet.",
+              "members": [
+                {
+                  "name": "petId",
+                  "annotation": "int",
+                  "default": ""
+                }
+              ]
+            }
+          ],
+          "keywords": [
+            {
+              "name": "KEYWORDS_0",
+              "annotation": "Final",
+              "constructor": "Keywords",
+              "arguments": [
+                {
+                  "keyword": "",
+                  "value": "'list_pets'"
+                },
+                {
+                  "keyword": "",
+                  "value": "('limit', 'options')"
+                },
+                {
+                  "keyword": "",
+                  "value": "()"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "The keyword arguments 日本 that unpacked operation methods take.",
+          "imports": "from typing import Final\nfrom typing_extensions import NotRequired, TypedDict",
+          "records": [],
+          "keywords": []
+        }
+      }
+    ],
     "client.jinja2": [
       {
         "name": "populated",
         "context": {
+          "asynchronous": false,
           "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
-          "imports": "from typing import Final\nfrom .options import RequestOptions, ServerSelection",
-          "defaults": "ClientDefaults()",
-          "name": "Client",
-          "core": "SyncCore",
-          "request_options": "RequestOptions",
-          "coroutine": "",
-          "binary": "BinaryBody",
-          "unset": "UNSET",
-          "unset_value": "UNSET",
-          "raw": "RawResponse",
-          "wait": "",
-          "cached_property": "cached_property",
-          "protocols": null,
-          "protocols_module": ".protocols",
-          "resources": [
+          "imports": "from typing import TYPE_CHECKING\nfrom .options import RequestOptions, ServerSelection",
+          "type_checking": "TYPE_CHECKING",
+          "lazy_imports": [
             {
-              "name": "pets",
-              "namespace": "pets",
-              "class_name": "Pets",
-              "module": ".resources.pets"
+              "module": ".resources.pets._sync",
+              "name": "PetsResource"
             },
             {
-              "name": "日本",
-              "namespace": "日本",
-              "class_name": "UnicodeResource",
-              "module": ".resources.unicode"
+              "module": ".protocols._helpers",
+              "name": "ProtocolHelpers"
             }
           ],
+          "defaults": {
+            "name": "_DEFAULTS",
+            "annotation": "",
+            "constructor": "ClientDefaults",
+            "arguments": [
+              {
+                "keyword": "security_schemes",
+                "value": "security.ROOT_SCHEMES"
+              },
+              {
+                "keyword": "helpers",
+                "value": "(('pets.list', 'pagination'),)"
+              }
+            ]
+          },
+          "name": "Client",
           "class_docstring": "Client API {braces}",
-          "lifecycle": "    def close(self) -> None:\n        self._core.close()",
-          "manager": "AbstractContextManager",
+          "core": "SyncCore",
+          "view_keywords": [
+            {
+              "name": "base_url",
+              "annotation": "str | None",
+              "default": "None"
+            },
+            {
+              "name": "timeout",
+              "annotation": "float | UNSET | None",
+              "default": "UNSET"
+            }
+          ],
+          "client_keywords": [
+            {
+              "name": "base_url",
+              "annotation": "str | None",
+              "default": "None"
+            },
+            {
+              "name": "timeout",
+              "annotation": "float | UNSET | None",
+              "default": "UNSET"
+            },
+            {
+              "name": "helper_defaults",
+              "annotation": "Mapping[str, HelperOptions] | None",
+              "default": "None"
+            }
+          ],
           "credentials": [
             {
               "name": "api_key",
-              "annotation": "Secret"
+              "annotation": "Secret",
+              "scheme": "\"api_key\""
             },
             {
               "name": "oauth",
-              "annotation": "Secret | TokenSource"
+              "annotation": "Secret | TokenSource",
+              "scheme": "\"oauth 日本\""
             }
           ],
-          "create": "SyncCore.create(\n            _DEFAULTS,\n            base_url=base_url,\n            timeout=timeout,\n            http_client=http_client,\n            credentials=SchemeCredentials({\"api_key\": api_key, \"oauth\": oauth}),\n        )",
-          "view_keywords": [
+          "create": [
             {
-              "name": "base_url",
-              "annotation": "str | None",
-              "default": "None"
+              "keyword": "base_url",
+              "value": "base_url"
             },
             {
-              "name": "timeout",
-              "annotation": "float | UNSET | None",
-              "default": "UNSET"
+              "keyword": "timeout",
+              "value": "timeout"
+            },
+            {
+              "keyword": "protocols",
+              "value": "HelperSettings(defaults=helper_defaults)"
             }
           ],
-          "view": "self._core.view(base_url=base_url, timeout=timeout)",
-          "client_keywords": [
-            {
-              "name": "base_url",
-              "annotation": "str | None",
-              "default": "None"
-            },
-            {
-              "name": "timeout",
-              "annotation": "float | UNSET | None",
-              "default": "UNSET"
-            },
-            {
-              "name": "http_client",
-              "annotation": "HTTPClient | None",
-              "default": "None"
-            }
-          ]
-        }
-      },
-      {
-        "name": "empty",
-        "context": {
-          "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
-          "imports": "from typing import Final\nfrom .options import RequestOptions, ServerSelection",
-          "defaults": "ClientDefaults()",
-          "name": "Client",
-          "core": "SyncCore",
-          "request_options": "RequestOptions",
-          "coroutine": "",
-          "binary": "BinaryBody",
+          "scheme_credentials": "SchemeCredentials",
           "unset": "UNSET",
-          "unset_value": "UNSET",
-          "raw": "RawResponse",
-          "wait": "",
+          "request_options": "RequestOptions",
           "cached_property": "cached_property",
-          "protocols": null,
-          "protocols_module": ".protocols",
-          "resources": [],
-          "class_docstring": "Client API {braces}",
-          "lifecycle": "    def close(self) -> None:\n        self._core.close()",
+          "raw": "RawResponse",
+          "binary": "BinaryBody",
           "manager": "AbstractContextManager",
-          "credentials": [],
-          "create": "SyncCore.create(_DEFAULTS, http_client=http_client)",
-          "view_keywords": [],
-          "view": "self._core.view()",
-          "client_keywords": [
-            {
-              "name": "http_client",
-              "annotation": "HTTPClient | None",
-              "default": "None"
-            }
-          ]
-        }
-      },
-      {
-        "name": "async_protocols",
-        "context": {
-          "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
-          "imports": "from typing import Final\nfrom .options import RequestOptions, ServerSelection",
-          "defaults": "ClientDefaults()",
-          "name": "AsyncClient",
-          "core": "AsyncCore",
-          "request_options": "RequestOptions",
-          "coroutine": "async ",
-          "binary": "BinaryBody",
-          "unset": "UNSET",
-          "unset_value": "UNSET",
-          "raw": "RawResponse",
-          "wait": "await ",
-          "cached_property": "cached_property",
-          "protocols": "AsyncProtocols",
-          "protocols_module": ".protocols",
+          "self_type": "Self",
+          "traceback": "TracebackType",
+          "add_secondary": "add_secondary",
           "resources": [
             {
               "name": "pets",
               "namespace": "pets",
-              "class_name": "Pets",
-              "module": ".resources.pets"
+              "class_name": "PetsResource",
+              "module": ".resources.pets._sync"
             },
             {
               "name": "日本",
               "namespace": "日本",
               "class_name": "UnicodeResource",
-              "module": ".resources.unicode"
+              "module": ".resources.unicode._sync"
             }
           ],
+          "protocols": "ProtocolHelpers",
+          "protocols_module": ".protocols._helpers",
+          "helper_settings": "._runtime.protocols.options"
+        }
+      },
+      {
+        "name": "async_bare",
+        "context": {
+          "asynchronous": true,
+          "docstring": "Client 日本 {braces} \\\\ \\\"quotes\\\"",
+          "imports": "from typing import TYPE_CHECKING\nfrom .options import RequestOptions, ServerSelection",
+          "type_checking": "",
+          "lazy_imports": [],
+          "defaults": {
+            "name": "_DEFAULTS",
+            "annotation": "",
+            "constructor": "ClientDefaults",
+            "arguments": []
+          },
+          "name": "AsyncClient",
           "class_docstring": "Client API {braces}",
-          "lifecycle": "    async def aclose(self) -> None:\n        await self._core.aclose()",
-          "manager": "AbstractAsyncContextManager",
-          "credentials": [
-            {
-              "name": "token",
-              "annotation": "Secret | TokenSource"
-            }
-          ],
-          "create": "AsyncCore.create(_DEFAULTS, base_url=base_url, timeout=timeout, http_client=http_client, credentials=SchemeCredentials({\"bearer\": token}))",
+          "core": "AsyncCore",
           "view_keywords": [
             {
               "name": "base_url",
@@ -168,7 +219,6 @@
               "default": "UNSET"
             }
           ],
-          "view": "self._core.view(base_url=base_url, timeout=timeout)",
           "client_keywords": [
             {
               "name": "base_url",
@@ -181,35 +231,174 @@
               "default": "UNSET"
             },
             {
-              "name": "http_client",
-              "annotation": "HTTPClient | None",
+              "name": "helper_defaults",
+              "annotation": "Mapping[str, HelperOptions] | None",
               "default": "None"
             }
-          ]
+          ],
+          "credentials": [],
+          "create": [],
+          "scheme_credentials": "",
+          "unset": "UNSET",
+          "request_options": "RequestOptions",
+          "cached_property": "cached_property",
+          "raw": "AsyncRawResponse",
+          "binary": "BinaryBody",
+          "manager": "AbstractAsyncContextManager",
+          "self_type": "Self",
+          "traceback": "TracebackType",
+          "add_secondary": "add_secondary",
+          "resources": [],
+          "protocols": "",
+          "protocols_module": ".protocols._helpers",
+          "helper_settings": ""
         }
       }
     ],
-    "resource.jinja2": [
+    "facade.jinja2": [
       {
         "name": "populated",
         "context": {
-          "docstring": "Resource 日本 {braces}",
-          "imports": "from .core import Core",
-          "core": "Core",
-          "views": [
+          "module": "errors",
+          "docstring": "Errors 日本 {braces} of this package.",
+          "future": true,
+          "imports": "from ._runtime.client.errors import APIStatusError, SDKError\nfrom ._runtime.client.oauth import ClientCredentials",
+          "checking": [
+            "from ._runtime.protocols.errors import ProtocolDataError",
+            "from ._async_client import AsyncClient"
+          ],
+          "classes": [
             {
-              "name": "Pets",
-              "docstring": "Pets {braces}",
-              "members": [
-                "    def get(self) -> Pet:\n        return self._core.get()",
-                "    def list(self) -> list[Pet]:\n        return self._core.list()"
+              "name": "PetsClientCredentials",
+              "base": "ClientCredentials",
+              "docstring": "The client credentials 日本 provider.",
+              "attributes": [
+                {
+                  "name": "token_url",
+                  "value": "'https://auth.example.com/token'"
+                },
+                {
+                  "name": "scopes",
+                  "value": "('read',)"
+                }
               ]
             },
             {
-              "name": "AsyncPets",
-              "docstring": "Async pets 日本",
-              "members": [
-                "    async def get(self) -> Pet:\n        return await self._core.get()"
+              "name": "Bare",
+              "base": "object",
+              "docstring": "No attributes.",
+              "attributes": []
+            }
+          ],
+          "exports": [
+            "APIStatusError",
+            "AsyncClient",
+            "PetsClientCredentials",
+            "ProtocolDataError",
+            "SDKError"
+          ],
+          "lazy": [
+            {
+              "names": "{'ProtocolDataError'}",
+              "module": "._runtime.protocols",
+              "attribute": "errors",
+              "cache": true
+            },
+            {
+              "names": "{'AsyncClient'}",
+              "module": ".",
+              "attribute": "_async_client",
+              "cache": false
+            }
+          ],
+          "loader": "Load a name 日本 on first use.",
+          "listing": "List the module's names, including those loaded on first use."
+        }
+      },
+      {
+        "name": "exports",
+        "context": {
+          "module": "options",
+          "docstring": "Errors 日本 {braces} of this package.",
+          "future": false,
+          "imports": "from ._runtime.client.errors import APIStatusError, SDKError\nfrom ._runtime.client.oauth import ClientCredentials",
+          "checking": [],
+          "classes": [],
+          "exports": [
+            "APIStatusError",
+            "AsyncClient",
+            "PetsClientCredentials",
+            "ProtocolDataError",
+            "SDKError"
+          ],
+          "lazy": [],
+          "loader": "",
+          "listing": ""
+        }
+      },
+      {
+        "name": "docstring",
+        "context": {
+          "module": "resources",
+          "docstring": "The resources 日本 of the clients.",
+          "future": false,
+          "imports": "",
+          "checking": [],
+          "classes": [],
+          "exports": [],
+          "lazy": [],
+          "loader": "",
+          "listing": ""
+        }
+      }
+    ],
+    "operations.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "The operation registry 日本 of this package.",
+          "imports": "from typing import Final\nfrom ._runtime.client.operations import OperationPlan, ServerPlan",
+          "servers": [
+            {
+              "name": "_SERVERS_0",
+              "annotation": "Final",
+              "value": "(ServerPlan(url='https://api.example.com'),)"
+            },
+            {
+              "name": "_SERVERS_1",
+              "annotation": "Final",
+              "value": "()"
+            }
+          ],
+          "operations": [
+            {
+              "name": "OPERATION_0",
+              "annotation": "Final[OperationPlan[ListPetsResponse]]",
+              "constructor": "OperationPlan",
+              "arguments": [
+                {
+                  "keyword": "operation_id",
+                  "value": "'listPets'"
+                },
+                {
+                  "keyword": "method",
+                  "value": "'GET'"
+                },
+                {
+                  "keyword": "servers",
+                  "value": "_SERVERS_0"
+                }
+              ]
+            },
+            {
+              "name": "OPERATION_1",
+              "annotation": "Final[OperationPlan[None]]",
+              "constructor": "OperationPlan",
+              "arguments": [
+                {
+                  "keyword": "",
+                  "value": "'positional'"
+                }
               ]
             }
           ]
@@ -218,46 +407,10 @@
       {
         "name": "empty",
         "context": {
-          "docstring": "Resource 日本 {braces}",
-          "imports": "from .core import Core",
-          "core": "Core",
-          "views": []
-        }
-      },
-      {
-        "name": "empty_members",
-        "context": {
-          "docstring": "Resource 日本 {braces}",
-          "imports": "from .core import Core",
-          "core": "Core",
-          "views": [
-            {
-              "name": "Pets",
-              "docstring": "Pets {braces}",
-              "members": []
-            }
-          ]
-        }
-      }
-    ],
-    "types.jinja2": [
-      {
-        "name": "populated",
-        "context": {
-          "docstring": "Types 日本 {braces}",
-          "imports": "from typing import TypedDict",
-          "sections": [
-            "class First(TypedDict):\n    value: str",
-            "class Second(TypedDict):\n    value: int"
-          ]
-        }
-      },
-      {
-        "name": "empty",
-        "context": {
-          "docstring": "Types 日本 {braces}",
-          "imports": "from typing import TypedDict",
-          "sections": []
+          "docstring": "The operation registry 日本 of this package.",
+          "imports": "from typing import Final\nfrom ._runtime.client.operations import OperationPlan, ServerPlan",
+          "servers": [],
+          "operations": []
         }
       }
     ],
@@ -690,6 +843,666 @@
               ]
             }
           ]
+        }
+      }
+    ],
+    "resource.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Resource 日本 {braces}",
+          "imports": "from .core import Core",
+          "core": "Core",
+          "cached_property": "cached_property",
+          "overload_decorator": "overload",
+          "views": [
+            {
+              "name": "PetsResource",
+              "docstring": "The pets 日本 operations.",
+              "attributes": [
+                {
+                  "name": "with_response",
+                  "type": "PetsWithResponse",
+                  "docstring": "The same operations, returning metadata."
+                },
+                {
+                  "name": "photos",
+                  "type": "PetsPhotosResource",
+                  "docstring": "The pets.photos operations."
+                }
+              ],
+              "methods": [
+                {
+                  "name": "get_pet",
+                  "view": "plain",
+                  "coroutine": false,
+                  "docstring": "\"\"\"\n        Call GET /pets/{petId} 日本.\n        \"\"\"",
+                  "overloads": [
+                    {
+                      "parameters": [
+                        {
+                          "name": "petId",
+                          "annotation": "int",
+                          "default": ""
+                        },
+                        {
+                          "name": "body",
+                          "annotation": "Pet",
+                          "default": ""
+                        }
+                      ],
+                      "unpacked": "",
+                      "returns": "Pet"
+                    }
+                  ],
+                  "implementation": {
+                    "parameters": [
+                      {
+                        "name": "petId",
+                        "annotation": "int",
+                        "default": ""
+                      },
+                      {
+                        "name": "body",
+                        "annotation": "Pet | UNSET",
+                        "default": "UNSET"
+                      },
+                      {
+                        "name": "options",
+                        "annotation": "RequestOptions | None",
+                        "default": "None"
+                      }
+                    ],
+                    "unpacked": "",
+                    "returns": "Pet"
+                  },
+                  "check": "",
+                  "call": {
+                    "operation": "_operations.OPERATION_0",
+                    "parameters": "(petId,)",
+                    "arguments": [
+                      {
+                        "keyword": "body",
+                        "value": "body"
+                      },
+                      {
+                        "keyword": "options",
+                        "value": "options"
+                      },
+                      {
+                        "keyword": "response_media_type",
+                        "value": "response_media_type"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "get_pet_async",
+                  "view": "plain",
+                  "coroutine": true,
+                  "docstring": "\"\"\"\n        Call GET /pets/{petId} 日本.\n        \"\"\"",
+                  "overloads": [],
+                  "implementation": {
+                    "parameters": [
+                      {
+                        "name": "petId",
+                        "annotation": "int",
+                        "default": ""
+                      },
+                      {
+                        "name": "body",
+                        "annotation": "Pet | UNSET",
+                        "default": "UNSET"
+                      },
+                      {
+                        "name": "options",
+                        "annotation": "RequestOptions | None",
+                        "default": "None"
+                      }
+                    ],
+                    "unpacked": "",
+                    "returns": "Pet"
+                  },
+                  "check": "",
+                  "call": {
+                    "operation": "_operations.OPERATION_0",
+                    "parameters": "(petId,)",
+                    "arguments": [
+                      {
+                        "keyword": "body",
+                        "value": "body"
+                      },
+                      {
+                        "keyword": "options",
+                        "value": "options"
+                      },
+                      {
+                        "keyword": "response_media_type",
+                        "value": "response_media_type"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "PetsWithResponse",
+              "docstring": "The pets operations, with metadata.",
+              "attributes": [],
+              "methods": [
+                {
+                  "name": "get_pet",
+                  "view": "metadata",
+                  "coroutine": true,
+                  "docstring": "\"\"\"\n        Call GET /pets/{petId} 日本.\n        \"\"\"",
+                  "overloads": [
+                    {
+                      "parameters": [
+                        {
+                          "name": "petId",
+                          "annotation": "int",
+                          "default": ""
+                        },
+                        {
+                          "name": "body",
+                          "annotation": "Pet",
+                          "default": ""
+                        }
+                      ],
+                      "unpacked": "",
+                      "returns": "Pet"
+                    },
+                    {
+                      "parameters": [
+                        {
+                          "name": "petId",
+                          "annotation": "int",
+                          "default": ""
+                        },
+                        {
+                          "name": "body",
+                          "annotation": "Pet",
+                          "default": ""
+                        }
+                      ],
+                      "unpacked": "",
+                      "returns": "Pet"
+                    }
+                  ],
+                  "implementation": {
+                    "parameters": [
+                      {
+                        "name": "petId",
+                        "annotation": "int",
+                        "default": ""
+                      },
+                      {
+                        "name": "body",
+                        "annotation": "Pet | UNSET",
+                        "default": "UNSET"
+                      },
+                      {
+                        "name": "options",
+                        "annotation": "RequestOptions | None",
+                        "default": "None"
+                      }
+                    ],
+                    "unpacked": "",
+                    "returns": "Pet"
+                  },
+                  "check": "",
+                  "call": {
+                    "operation": "_operations.OPERATION_0",
+                    "parameters": "(petId,)",
+                    "arguments": [
+                      {
+                        "keyword": "body",
+                        "value": "body"
+                      },
+                      {
+                        "keyword": "options",
+                        "value": "options"
+                      },
+                      {
+                        "keyword": "response_media_type",
+                        "value": "response_media_type"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "get_pet_sync",
+                  "view": "metadata",
+                  "coroutine": false,
+                  "docstring": "\"\"\"\n        Call GET /pets/{petId} 日本.\n        \"\"\"",
+                  "overloads": [],
+                  "implementation": {
+                    "parameters": [
+                      {
+                        "name": "petId",
+                        "annotation": "int",
+                        "default": ""
+                      },
+                      {
+                        "name": "body",
+                        "annotation": "Pet | UNSET",
+                        "default": "UNSET"
+                      },
+                      {
+                        "name": "options",
+                        "annotation": "RequestOptions | None",
+                        "default": "None"
+                      }
+                    ],
+                    "unpacked": "",
+                    "returns": "Pet"
+                  },
+                  "check": "",
+                  "call": {
+                    "operation": "_operations.OPERATION_0",
+                    "parameters": "(petId,)",
+                    "arguments": [
+                      {
+                        "keyword": "body",
+                        "value": "body"
+                      },
+                      {
+                        "keyword": "options",
+                        "value": "options"
+                      },
+                      {
+                        "keyword": "response_media_type",
+                        "value": "response_media_type"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "PetsWithRawResponse",
+              "docstring": "The pets operations, raw.",
+              "attributes": [],
+              "methods": [
+                {
+                  "name": "get_pet",
+                  "view": "raw",
+                  "coroutine": false,
+                  "docstring": "\"\"\"\n        Call GET /pets/{petId} 日本.\n        \"\"\"",
+                  "overloads": [],
+                  "implementation": {
+                    "parameters": [],
+                    "unpacked": "Unpack[Operation0Arguments]",
+                    "returns": "RawResponse"
+                  },
+                  "check": "KEYWORDS_0",
+                  "call": {
+                    "operation": "_operations.OPERATION_0",
+                    "parameters": "(petId,)",
+                    "arguments": [
+                      {
+                        "keyword": "body",
+                        "value": "body"
+                      },
+                      {
+                        "keyword": "options",
+                        "value": "options"
+                      },
+                      {
+                        "keyword": "response_media_type",
+                        "value": "response_media_type"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "PetsWithStreamingResponse",
+              "docstring": "The pets operations, streaming.",
+              "attributes": [],
+              "methods": [
+                {
+                  "name": "get_pet",
+                  "view": "streaming",
+                  "coroutine": false,
+                  "docstring": "\"\"\"\n        Call GET /pets/{petId} 日本.\n        \"\"\"",
+                  "overloads": [],
+                  "implementation": {
+                    "parameters": [
+                      {
+                        "name": "petId",
+                        "annotation": "int",
+                        "default": ""
+                      },
+                      {
+                        "name": "body",
+                        "annotation": "Pet | UNSET",
+                        "default": "UNSET"
+                      },
+                      {
+                        "name": "options",
+                        "annotation": "RequestOptions | None",
+                        "default": "None"
+                      }
+                    ],
+                    "unpacked": "",
+                    "returns": "Pet"
+                  },
+                  "check": "",
+                  "call": {
+                    "operation": "_operations.OPERATION_0",
+                    "parameters": "(petId,)",
+                    "arguments": [
+                      {
+                        "keyword": "body",
+                        "value": "body"
+                      },
+                      {
+                        "keyword": "options",
+                        "value": "options"
+                      },
+                      {
+                        "keyword": "response_media_type",
+                        "value": "response_media_type"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Resource 日本 {braces}",
+          "imports": "from .core import Core",
+          "core": "Core",
+          "cached_property": "cached_property",
+          "overload_decorator": "",
+          "views": []
+        }
+      },
+      {
+        "name": "empty_members",
+        "context": {
+          "docstring": "Resource 日本 {braces}",
+          "imports": "from .core import Core",
+          "core": "Core",
+          "cached_property": "cached_property",
+          "overload_decorator": "",
+          "views": [
+            {
+              "name": "Pets",
+              "docstring": "Pets {braces}",
+              "attributes": [],
+              "methods": []
+            }
+          ]
+        }
+      }
+    ],
+    "runtime.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "package": "pets_日本",
+          "oauth": true,
+          "schemes": true,
+          "security": true,
+          "raw_bytes": false,
+          "multipart_requests": true,
+          "credentials": [
+            {
+              "name": "api_key",
+              "label": "API key"
+            },
+            {
+              "name": "token",
+              "label": "bearer token"
+            }
+          ],
+          "example": {
+            "name": "api_key",
+            "value": "key",
+            "annotation": "key: str"
+          },
+          "flows": true,
+          "pagination": {
+            "cursors": true,
+            "counts": true,
+            "follows": true
+          },
+          "polling": true,
+          "cache": true,
+          "uploads": true,
+          "streams": {
+            "label": "SSE or NDJSON",
+            "ndjson": true,
+            "resumed": true
+          },
+          "sockets": true,
+          "compression": true
+        }
+      },
+      {
+        "name": "minimal",
+        "context": {
+          "package": "pets",
+          "oauth": false,
+          "schemes": false,
+          "security": false,
+          "raw_bytes": true,
+          "multipart_requests": false,
+          "credentials": [],
+          "example": null,
+          "flows": false,
+          "pagination": null,
+          "polling": false,
+          "cache": false,
+          "uploads": false,
+          "streams": null,
+          "sockets": false,
+          "compression": false
+        }
+      },
+      {
+        "name": "partial",
+        "context": {
+          "package": "pets",
+          "oauth": false,
+          "schemes": true,
+          "security": true,
+          "raw_bytes": false,
+          "multipart_requests": false,
+          "credentials": [
+            {
+              "name": "api_key",
+              "label": "API key"
+            }
+          ],
+          "example": {
+            "name": "api_key",
+            "value": "key",
+            "annotation": "key: str"
+          },
+          "flows": false,
+          "pagination": {
+            "cursors": false,
+            "counts": false,
+            "follows": false
+          },
+          "polling": false,
+          "cache": false,
+          "uploads": false,
+          "streams": {
+            "label": "SSE",
+            "ndjson": false,
+            "resumed": false
+          },
+          "sockets": false,
+          "compression": false
+        }
+      }
+    ],
+    "security.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Immutable security catalogues 日本.",
+          "imports": "from typing import Final\nfrom .._runtime.client.security import SecurityBinding, SecurityScheme",
+          "schemes": [
+            {
+              "name": "_SCHEME_0",
+              "annotation": "Final",
+              "constructor": "SecurityScheme",
+              "arguments": [
+                {
+                  "keyword": "name",
+                  "value": "'api_key'"
+                },
+                {
+                  "keyword": "kind",
+                  "value": "'api_key'"
+                }
+              ]
+            },
+            {
+              "name": "_SCHEME_1",
+              "annotation": "Final",
+              "constructor": "UnavailableSecurityScheme",
+              "arguments": [
+                {
+                  "keyword": "name",
+                  "value": "'digest'"
+                }
+              ]
+            }
+          ],
+          "root_annotation": "Final[tuple[SecuritySchemeEntry, ...]]",
+          "root": [
+            "_SCHEME_0",
+            "_SCHEME_1"
+          ],
+          "operations": [
+            {
+              "name": "OPERATION_0",
+              "annotation": "Final",
+              "constructor": "SecurityBinding",
+              "arguments": [
+                {
+                  "keyword": "schemes",
+                  "value": "(_SCHEME_0,)"
+                },
+                {
+                  "keyword": "alternatives",
+                  "value": "((),)"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Immutable security catalogues 日本.",
+          "imports": "from typing import Final\nfrom .._runtime.client.security import SecurityBinding, SecurityScheme",
+          "schemes": [],
+          "root_annotation": "Final[tuple[SecuritySchemeEntry, ...]]",
+          "root": [],
+          "operations": []
+        }
+      }
+    ],
+    "types.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "Types 日本 {braces}",
+          "imports": "from typing import Final, TypeAlias",
+          "type_alias": "TypeAlias",
+          "overload_decorator": "overload",
+          "aliases": [
+            {
+              "name": "ListPetsResponse",
+              "value": "models.Pets | models.Error",
+              "headers": {
+                "constant": "_LIST_PETS_HEADERS",
+                "annotation": "Final[ResponseHeaders[int | str, UNSET]]",
+                "decoders": "ResponseHeaders",
+                "operation_id": "'listPets'",
+                "statuses": "frozenset({'200'})",
+                "entries": "(('X-Rate', (('200', HeaderBranch(codec=codec_1)),)),)",
+                "function": "decode_list_pets_header",
+                "info": "ResponseInfo",
+                "overloads": [
+                  {
+                    "name": "Literal['X-Rate']",
+                    "returns": "int"
+                  },
+                  {
+                    "name": "Literal['X-日本']",
+                    "returns": "str | UNSET"
+                  }
+                ],
+                "name": "Literal['X-Rate', 'X-日本']",
+                "returns": "int | str | UNSET",
+                "docstring": "Decode one declared response header of list_pets from a response's metadata."
+              }
+            },
+            {
+              "name": "GetPetResponse",
+              "value": "None",
+              "headers": null
+            },
+            {
+              "name": "CountPetsResponse",
+              "value": "int",
+              "headers": {
+                "constant": "_COUNT_PETS_HEADERS",
+                "annotation": "Final[ResponseHeaders[int | str, UNSET]]",
+                "decoders": "ResponseHeaders",
+                "operation_id": "'listPets'",
+                "statuses": "frozenset({'200'})",
+                "entries": "(('X-Rate', (('200', HeaderBranch(codec=codec_1)),)),)",
+                "function": "decode_count_pets_header",
+                "info": "ResponseInfo",
+                "overloads": [],
+                "name": "Literal['X-Rate']",
+                "returns": "int",
+                "docstring": "Decode one declared response header of list_pets from a response's metadata."
+              }
+            }
+          ],
+          "sections": []
+        }
+      },
+      {
+        "name": "sections",
+        "context": {
+          "docstring": "Types 日本 {braces}",
+          "imports": "from typing import TypedDict",
+          "type_alias": "",
+          "overload_decorator": "",
+          "aliases": [],
+          "sections": [
+            "class First(TypedDict):\n    value: str",
+            "class Second(TypedDict):\n    value: int"
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "Types 日本 {braces}",
+          "imports": "from typing import TypedDict",
+          "type_alias": "",
+          "overload_decorator": "",
+          "aliases": [],
+          "sections": []
         }
       }
     ]

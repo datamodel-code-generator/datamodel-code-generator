@@ -166,10 +166,18 @@ KEYWORDS_2: Final = Keywords(
 )
 
 
-KEYWORDS_3: Final = Keywords('delete_pets_by_pet_id', ('petId', 'options'), ('petId',))
+KEYWORDS_3: Final = Keywords(
+    'delete_pets_by_pet_id',
+    ('petId', 'options'),
+    ('petId',),
+)
 
 
-KEYWORDS_4: Final = Keywords('head_pet', ('petId', 'options'), ('petId',))
+KEYWORDS_4: Final = Keywords(
+    'head_pet',
+    ('petId', 'options'),
+    ('petId',),
+)
 
 
 KEYWORDS_5: Final = Keywords(
