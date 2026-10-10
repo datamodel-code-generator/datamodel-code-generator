@@ -1,4 +1,4 @@
-"""Render model fixtures as client packages and report the models and model codecs each package ships.
+"""Render model fixtures as client packages and report the model modules and model codecs each package ships.
 
 Every component schema becomes the body and response of one operation, so the client binds every model. A change
 edits the generated models through a custom formatter, as a user formatter may, and the report shows what the
@@ -118,11 +118,14 @@ def _models(modules: Modules) -> Modules:
     return {parts: text for parts, text in modules.items() if parts[0] != PACKAGE}
 
 
-def _shipped(diagnostics: list[str], modules: Modules, *, maps: bool) -> list[str]:
-    """Return the refusal or diagnostics, the models, and the codecs and field maps of a rendered package."""
+def _shipped(diagnostics: list[str], modules: Modules, *, maps: bool, sources: bool) -> list[str]:
+    """Return the refusal or diagnostics, the model modules, and the codecs and field maps of a rendered package.
+
+    With sources, each model module is followed by its lines, for an edit to show what it changes in the models.
+    """
     lines = [f"diagnostic {item}" for item in diagnostics]
     for parts, text in _models(modules).items():
-        lines.extend(["/".join(parts), *text.splitlines()])
+        lines.extend(["/".join(parts), *(text.splitlines() if sources else ())])
     if BINDINGS in modules:
         lines.append("model_bindings.py")
         lines.extend(_codecs(modules[BINDINGS], maps=maps))
@@ -165,11 +168,11 @@ def _difference(before: list[str], after: list[str]) -> list[str]:
 
 def _renders(
     case: dict[str, Any], root: Path
-) -> Iterator[tuple[str, Callable[..., tuple[list[str], Modules]], Callable[[str], Path]]]:
+) -> Iterator[tuple[str, Callable[..., tuple[list[str], list[str], Modules]], Callable[[str], Path]]]:
     """Yield the label of each backend and variant of a case, and functions that render it or its models in a directory.
 
-    A render returns its report lines and the Python modules of the package it ships, and the ordinary generation
-    returns the directory that holds its models.
+    A render returns its report lines without and with the model sources, and the Python modules of the package it
+    ships, and the ordinary generation returns the directory that holds its models.
     """
     source = _document(DATA / case["source"], root, case)
     config = {**CLIENT, **case.get("config", {})}
@@ -194,7 +197,7 @@ def _renders(
             *,
             backend: str = backend,
             model: dict = model,
-        ) -> tuple[list[str], Modules]:
+        ) -> tuple[list[str], list[str], Modules]:
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
                 try:
@@ -210,7 +213,12 @@ def _renders(
                     if not isinstance(error, datamodel_code_generator.Error) and type(error).__name__ != raises:
                         raise
                     diagnostics, modules = [f"{type(error).__name__}: {error}"], {}
-            return [*_warnings(caught), *_shipped(diagnostics, modules, maps=backend in STDLIB)], modules
+            reported = _warnings(caught)
+            return (
+                [*reported, *_shipped(diagnostics, modules, maps=backend in STDLIB, sources=False)],
+                [*reported, *_shipped(diagnostics, modules, maps=backend in STDLIB, sources=True)],
+                modules,
+            )
 
         def ordinary(name: str, *, backend: str = backend, model: dict = model) -> Path:
             with warnings.catch_warnings(record=True) as caught:
@@ -249,13 +257,13 @@ def client_binding_report(case_name: str, root: Path) -> tuple[str, list[tuple[M
     packages: list[tuple[Modules, Path]] = []
     for key, render, ordinary in _renders(case, root):
         count, label = key.split(" ", 1)
-        shipped, modules = render(count)
+        listed, shipped, modules = render(count)
         if modules:
             packages.append((_models(modules), ordinary(f"ordinary-{count}")))
-        lines.extend((f"render {label}", *(f"  {line}" for line in shipped)))
+        lines.extend((f"render {label}", *(f"  {line}" for line in listed)))
         for change in changes.pop(label, ()):
             edit = {key: change[key] for key in ("old", "new", "append") if key in change}
-            edited, _ = render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
+            _, edited, _ = render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
             lines.extend((f"change {label} {change['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
     return _report(case_name, lines, changes, root), packages
 
@@ -285,9 +293,9 @@ def client_binding_rewrite_report(case_name: str, root: Path) -> str:
         count, label = key.split(" ", 1)
         if not (selected := rewrites.pop(label, ())):
             continue
-        shipped, _ = render(count)
+        _, shipped, _ = render(count)
         for rewrite in selected:
             with _rewritten_stage(rewrite["old"], rewrite["new"]):
-                edited, _ = render(rewrite["id"])
+                _, edited, _ = render(rewrite["id"])
             lines.extend((f"rewrite {label} {rewrite['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
     return _report(case_name, lines, rewrites, root)
