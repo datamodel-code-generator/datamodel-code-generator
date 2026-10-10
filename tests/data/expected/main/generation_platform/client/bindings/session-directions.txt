@@ -1,173 +1,61 @@
 # session-directions
 render pydantic_v2.BaseModel request-response
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
+  model_bindings.py pydantic_v2_BaseModel/request-response
 render pydantic_v2.BaseModel all
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
+  model_bindings.py pydantic_v2_BaseModel/request-response
 render pydantic_v2.dataclass request-response
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
+  model_bindings.py pydantic_v2_dataclass/request-response
 render pydantic_v2.dataclass all
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
+  model_bindings.py pydantic_v2_dataclass/all
 render pydantic_v2.dataclass all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
+  model_bindings.py pydantic_v2_dataclass/all
 render pydantic_v2.dataclass request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
+  model_bindings.py pydantic_v2_dataclass/request-response
 render dataclasses.dataclass request-response
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
-  map models:EnvelopeRequest record=record, records=records
-  map models:EnvelopeResponse record=record, records=records
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/request-response
 render dataclasses.dataclass all
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
-  map models:Envelope record=record, records=records
-  map models:Record id=id, secret=secret, name=name
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/all
 render dataclasses.dataclass all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
-  map models:Envelope record=record, records=records
-  map models:Record id=id, secret=secret, name=name
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/all
 render dataclasses.dataclass request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
-  map models:EnvelopeRequest record=record, records=records
-  map models:EnvelopeResponse record=record, records=records
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/request-response
 render typing.TypedDict request-response
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
-  map models:EnvelopeRequest record=record, records=records
-  map models:EnvelopeResponse record=record, records=records
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py typing_TypedDict/request-response
 render typing.TypedDict all
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
-  map models:Envelope record=record, records=records
-  map models:Record id=id, secret=secret, name=name
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py typing_TypedDict/all
 render typing.TypedDict all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
-  map models:Envelope record=record, records=records
-  map models:Record id=id, secret=secret, name=name
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py typing_TypedDict/all
 render typing.TypedDict request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
-  map models:EnvelopeRequest record=record, records=records
-  map models:EnvelopeResponse record=record, records=records
-  map models:RecordRequest secret=secret, name=name
-  map models:RecordResponse id=id, name=name
+  model_bindings.py typing_TypedDict/request-response
 render msgspec.Struct request-response
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
+  model_bindings.py msgspec_Struct/request-response
 render msgspec.Struct all
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
+  model_bindings.py msgspec_Struct/all
 render msgspec.Struct all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.Envelope
-  codec_3 models.Envelope
+  model_bindings.py msgspec_Struct/all
 render msgspec.Struct request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.RecordRequest
-  codec_1 models.RecordResponse
-  codec_2 models.EnvelopeRequest
-  codec_3 models.EnvelopeResponse
+  model_bindings.py msgspec_Struct/request-response

@@ -1,17 +1,14 @@
 # session-alias-dependencies
 render pydantic_v2.BaseModel plain
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/plain
 render pydantic_v2.dataclass plain
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_dataclass/plain
 render dataclasses.dataclass plain
   diagnostic Error: /components/schemas/Model/properties/bound: The dataclasses.dataclass converter has no conversion for the int | None type; /components/schemas/Model/properties/mixed: The dataclasses.dataclass converter has no conversion for the int type
 render typing.TypedDict plain
   diagnostic Error: /components/schemas/Model/properties/bound: The typing.TypedDict converter has no conversion for the int | None type; /components/schemas/Model/properties/mixed: The typing.TypedDict converter has no conversion for the int type
 render msgspec.Struct plain
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py msgspec_Struct/plain

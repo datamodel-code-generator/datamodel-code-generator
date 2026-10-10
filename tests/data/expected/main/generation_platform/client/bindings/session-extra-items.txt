@@ -1,53 +1,21 @@
 # session-extra-items
 render typing.TypedDict typing
   models.py
-  model_bindings.py
-  codec_0 models.Imported
-  codec_1 models.Direct
-  codec_2 models.Nested
-  codec_3 models.Recursive
-  map models:Direct fixed=fixed
-  map models:Imported fixed=fixed
-  map models:Nested fixed=fixed
-  map models:Recursive fixed=fixed
+  model_bindings.py typing_TypedDict/typing
 change typing.TypedDict typing corrupt-child
   @@ -13 +13 @@
   -    bad: str
   +    bad: int
 render typing.TypedDict standard
   models.py
-  model_bindings.py
-  codec_0 models.Imported
-  codec_1 models.Direct
-  codec_2 models.Nested
-  codec_3 models.Recursive
-  map models:Direct fixed=fixed
-  map models:Imported fixed=fixed
-  map models:Nested fixed=fixed
-  map models:Recursive fixed=fixed
+  model_bindings.py typing_TypedDict/typing
 change typing.TypedDict standard corrupt-child
   @@ -13 +13 @@
   -    bad: str
   +    bad: int
 render typing.TypedDict remapped
   models.py
-  model_bindings.py
-  codec_0 models.Imported
-  codec_1 models.Direct
-  codec_2 models.Nested
-  codec_3 models.Recursive
-  map models:Direct fixed=fixed
-  map models:Imported fixed=fixed
-  map models:Nested fixed=fixed
-  map models:Recursive fixed=fixed
+  model_bindings.py typing_TypedDict/typing
 render typing.TypedDict standard-remapped
   models.py
-  model_bindings.py
-  codec_0 models.Imported
-  codec_1 models.Direct
-  codec_2 models.Nested
-  codec_3 models.Recursive
-  map models:Direct fixed=fixed
-  map models:Imported fixed=fixed
-  map models:Nested fixed=fixed
-  map models:Recursive fixed=fixed
+  model_bindings.py typing_TypedDict/typing

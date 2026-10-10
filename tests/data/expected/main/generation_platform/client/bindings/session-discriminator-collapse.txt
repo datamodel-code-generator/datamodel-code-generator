@@ -8,23 +8,7 @@ render pydantic_v2.BaseModel members
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
+  model_bindings.py pydantic_v2_BaseModel/members
 render pydantic_v2.BaseModel values
   models/__init__.py
   models/grandchild.py
@@ -34,23 +18,7 @@ render pydantic_v2.BaseModel values
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
+  model_bindings.py pydantic_v2_BaseModel/members
 render pydantic_v2.dataclass members
   models/__init__.py
   models/grandchild.py
@@ -60,23 +28,7 @@ render pydantic_v2.dataclass members
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
+  model_bindings.py pydantic_v2_dataclass/members
 render pydantic_v2.dataclass values
   models/__init__.py
   models/grandchild.py
@@ -86,23 +38,7 @@ render pydantic_v2.dataclass values
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
+  model_bindings.py pydantic_v2_dataclass/members
 render dataclasses.dataclass members
   models/__init__.py
   models/grandchild.py
@@ -112,28 +48,7 @@ render dataclasses.dataclass members
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
-  map models.grandchild:Grandchild version=version, request_id=request_id
-  map models.holder:Holder items=items
-  map models.request_base:RequestBase version=version
-  map models.request_v1:RequestV1 version=version, request_id=request_id
-  map models.request_v2:RequestV2 version=version
+  model_bindings.py dataclasses_dataclass/members
 render dataclasses.dataclass values
   models/__init__.py
   models/grandchild.py
@@ -143,28 +58,7 @@ render dataclasses.dataclass values
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
-  map models.grandchild:Grandchild version=version, request_id=request_id
-  map models.holder:Holder items=items
-  map models.request_base:RequestBase version=version
-  map models.request_v1:RequestV1 version=version, request_id=request_id
-  map models.request_v2:RequestV2 version=version
+  model_bindings.py dataclasses_dataclass/values
 render typing.TypedDict members
   diagnostic Error: /paths/~1bindings~11/post/requestBody: The discriminator version gives v1 to two union models; /paths/~1bindings~11/post/requestBody: The discriminator version gives v2 to two union models; /paths/~1bindings~11/post/responses/200: The discriminator version gives v1 to two union models; /paths/~1bindings~11/post/responses/200: The discriminator version gives v2 to two union models
 render typing.TypedDict values
@@ -178,23 +72,7 @@ render msgspec.Struct members
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
+  model_bindings.py msgspec_Struct/members
 render msgspec.Struct values
   models/__init__.py
   models/grandchild.py
@@ -204,20 +82,4 @@ render msgspec.Struct values
   models/request_v1.py
   models/request_v2.py
   models/request_version_enum.py
-  model_bindings.py
-  codec_0 grandchild.Grandchild
-  codec_1 grandchild.Grandchild
-  codec_2 request.Request
-  codec_3 request.Request
-  codec_4 request_version_enum.RequestVersionEnum
-  codec_5 request_version_enum.RequestVersionEnum
-  codec_6 request_base.RequestBase
-  codec_7 request_base.RequestBase
-  codec_8 request_v1.RequestV1
-  codec_9 request_v1.RequestV1
-  codec_10 request_v2.RequestV2
-  codec_11 request_v2.RequestV2
-  codec_12 List[int]
-  codec_13 List[int]
-  codec_14 holder.Holder
-  codec_15 holder.Holder
+  model_bindings.py msgspec_Struct/members

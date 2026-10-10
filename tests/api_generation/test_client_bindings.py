@@ -20,7 +20,12 @@ from tests.api_generation.support.client_bindings import (
 )
 from tests.api_generation.support.client_generation import render_client
 from tests.api_generation.support.fastapi_generation import in_directory
-from tests.conftest import assert_exact_directory_content, assert_output, write_generated_modules
+from tests.conftest import (
+    assert_exact_directory_content,
+    assert_generated_modules_output,
+    assert_output,
+    write_generated_modules,
+)
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/bindings"
 BINDING_CASES = json.loads(CASES.read_text(encoding="utf-8"))
@@ -29,14 +34,15 @@ PARITY_CASES = json.loads((DATA / "generation_platform/binding/capture-parity.js
 
 @pytest.mark.parametrize("case", list(BINDING_CASES))
 def test_client_model_bindings(case: str, tmp_path: Path) -> None:
-    """Report the models and codecs a package ships, and what each formatter edit of the models changes.
+    """Report the models a package ships and pin its model bindings, and report what each formatter edit changes.
 
     The models each package ships equal the models ordinary generation writes for the same options. An edit the
     bindings cannot project drops the field's binding. Cases marked "pins" keep current behaviour that #4299 (binding
     diagnostics never reach a package) and #4300 (conflicting allOf base order) will change.
     """
-    report, packages = client_binding_report(case, tmp_path)
+    report, packages, bindings = client_binding_report(case, tmp_path)
     assert_output(report, EXPECTED / f"{case}.txt")
+    assert_generated_modules_output(bindings, EXPECTED / case)
     for index, (models, ordinary) in enumerate(packages):
         write_generated_modules(captured := tmp_path / "captured" / str(index), models)
         assert_exact_directory_content(captured, ordinary)

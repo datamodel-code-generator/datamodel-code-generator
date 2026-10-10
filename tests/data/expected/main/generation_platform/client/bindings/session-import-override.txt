@@ -1,5 +1,4 @@
 # session-import-override
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 AwareDatetime
+  model_bindings.py pydantic_v2_BaseModel/default

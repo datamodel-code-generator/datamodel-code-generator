@@ -1,26 +1,14 @@
 # session-inherited-tuple
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Child
-  codec_1 models.Child
-  codec_2 models.Parent
-  codec_3 models.Parent
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Child
-  codec_1 models.Child
-  codec_2 models.Parent
-  codec_3 models.Parent
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   diagnostic Error: /paths/~1bindings~10/post/requestBody: The union of PayloadItem and PayloadItem1 needs a declared discriminator for the dataclasses.dataclass converter; /paths/~1bindings~11/post/requestBody: The union of PayloadItem2 and PayloadItem3 needs a declared discriminator for the dataclasses.dataclass converter
 render typing.TypedDict default
   diagnostic Error: /paths/~1bindings~10/post/requestBody: The union of PayloadItem and PayloadItem1 needs a declared discriminator for the typing.TypedDict converter; /paths/~1bindings~11/post/requestBody: The union of PayloadItem2 and PayloadItem3 needs a declared discriminator for the typing.TypedDict converter
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Child
-  codec_1 models.Child
-  codec_2 models.Parent
-  codec_3 models.Parent
+  model_bindings.py msgspec_Struct/default

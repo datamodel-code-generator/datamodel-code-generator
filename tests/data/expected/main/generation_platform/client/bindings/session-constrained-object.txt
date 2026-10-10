@@ -1,55 +1,31 @@
 # session-constrained-object
 render pydantic_v2.BaseModel plain
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
+  model_bindings.py pydantic_v2_BaseModel/plain
 render pydantic_v2.BaseModel annotated
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
+  model_bindings.py pydantic_v2_BaseModel/plain
 render pydantic_v2.dataclass plain
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
+  model_bindings.py pydantic_v2_dataclass/plain
 render pydantic_v2.dataclass annotated
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
+  model_bindings.py pydantic_v2_dataclass/plain
 render dataclasses.dataclass plain
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  map models:Payload value=value
+  model_bindings.py dataclasses_dataclass/plain
 render dataclasses.dataclass annotated
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  map models:Payload value=value
+  model_bindings.py dataclasses_dataclass/plain
 render typing.TypedDict plain
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  map models:Payload value=value
+  model_bindings.py typing_TypedDict/plain
 render typing.TypedDict annotated
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
-  map models:Payload value=value
+  model_bindings.py typing_TypedDict/plain
 render msgspec.Struct plain
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
+  model_bindings.py msgspec_Struct/plain
 render msgspec.Struct annotated
   models.py
-  model_bindings.py
-  codec_0 models.Payload
-  codec_1 models.Payload
+  model_bindings.py msgspec_Struct/plain
