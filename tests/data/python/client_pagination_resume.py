@@ -39,14 +39,14 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
 
 def _cursors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     helper = api.protocols.users.all
-    arguments = {"limit": 3, "x_trace": "trace-secret", "session": "cookie-secret"}
+    arguments = {"limit": 3, "X_Trace": "trace-secret", "session": "cookie-secret"}
     pager = helper.iterate(**arguments)
     record(lines, "initial checkpoint", pager.checkpoint)
     exchange.respond(user_page("1", "2", next_cursor="a"))
     fetched(lines, "first page", lambda: next(pager.iter_pages()))
     state = pager.checkpoint()
     lines.append(f"  server value={state!r} encoded={json.dumps(state)} progress={progress(pager)}")
-    resumed = helper.resume(json.loads(json.dumps(state)), limit=2, x_trace="new-trace", session="new-cookie")
+    resumed = helper.resume(json.loads(json.dumps(state)), limit=2, X_Trace="new-trace", session="new-cookie")
     lines.append(f"  resumed progress={progress(resumed)}")
     exchange.respond(user_page("3"))
     drained(lines, "caller arguments supplied again", resumed)
@@ -169,11 +169,11 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     record(lines, "required body supplied again", lambda: helper.resume(state))
 
     exchange.respond(user_page("1", next_cursor="a"))
-    pager = api.protocols.users.snapshot.iterate(x_trace="first")
+    pager = api.protocols.users.snapshot.iterate(X_Trace="first")
     exchange.responders[0] = headed_page("1", headers=(("X-Snapshot", "s1"),), next_cursor="a")
     fetched(lines, "bound first page", lambda: next(pager.iter_pages()))
     exchange.respond(headed_page("2", headers=(("X-Snapshot", "s2"),), next_cursor="b"), user_page("3"))
-    drained(lines, "caller resupplies binding", api.protocols.users.snapshot.resume(pager.checkpoint(), x_trace="s1"))
+    drained(lines, "caller resupplies binding", api.protocols.users.snapshot.resume(pager.checkpoint(), X_Trace="s1"))
     exchange.respond(user_page("4"))
     drained(lines, "literal binding on resumed first page", api.protocols.users.limited.resume("a", limit=9))
     since = harness.argument("listUsers", "query", "since", "2026-01-02")

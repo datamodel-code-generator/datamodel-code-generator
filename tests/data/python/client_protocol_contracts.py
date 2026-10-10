@@ -489,16 +489,16 @@ def _calls(package: ModuleType, defaults: Any, lines: list[str]) -> None:
     trace = _trace(package)
     with exchange.client() as native, package.Client(http_client=native, helper_defaults=defaults) as api:
         exchange.respond(json_response(200, [{"id": 1, "name": "cat"}], **{"X-Rate": "1"}))
-        record(lines, "configured client list", lambda: api.pets.list_pets(x_trace=trace))
+        record(lines, "configured client list", lambda: api.pets.list_pets(X_Trace=trace))
         view = api.with_options(total_timeout=2)
         exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
-        record(lines, "configured view list", lambda: view.pets.list_pets(x_trace=trace))
+        record(lines, "configured view list", lambda: view.pets.list_pets(X_Trace=trace))
     with (
         exchange.client() as native,
         package.Client(http_client=native, helper_defaults=None) as api,
     ):
         exchange.respond(json_response(200, [], **{"X-Rate": "1"}))
-        record(lines, "default helper settings list", lambda: api.pets.list_pets(x_trace=trace))
+        record(lines, "default helper settings list", lambda: api.pets.list_pets(X_Trace=trace))
 
 
 async def _async_calls(package: ModuleType, defaults: Any, lines: list[str]) -> None:
@@ -510,4 +510,4 @@ async def _async_calls(package: ModuleType, defaults: Any, lines: list[str]) -> 
         package.AsyncClient(http_client=native, helper_defaults=defaults) as api,
     ):
         exchange.respond(json_response(200, [{"id": 2, "name": "dog"}], **{"X-Rate": "1"}))
-        await arecord(lines, "async configured client list", lambda: api.pets.list_pets(x_trace=trace))
+        await arecord(lines, "async configured client list", lambda: api.pets.list_pets(X_Trace=trace))

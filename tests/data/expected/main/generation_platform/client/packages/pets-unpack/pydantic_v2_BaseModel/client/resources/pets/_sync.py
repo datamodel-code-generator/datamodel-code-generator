@@ -84,7 +84,7 @@ class PetsResource:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -130,7 +130,7 @@ class PetsResource:
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         ).data
@@ -143,7 +143,7 @@ class PetsResource:
         KEYWORDS_3.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         ).data
 
@@ -152,7 +152,7 @@ class PetsResource:
         KEYWORDS_4.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         ).data
 
@@ -164,7 +164,7 @@ class PetsResource:
         KEYWORDS_6.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -178,7 +178,7 @@ class PetsResource:
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         ).data
@@ -202,7 +202,7 @@ class PetsWithResponse:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -257,7 +257,7 @@ class PetsWithResponse:
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -270,7 +270,7 @@ class PetsWithResponse:
         KEYWORDS_3.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -282,7 +282,7 @@ class PetsWithResponse:
         KEYWORDS_4.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -294,7 +294,7 @@ class PetsWithResponse:
         KEYWORDS_6.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -308,7 +308,7 @@ class PetsWithResponse:
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -329,7 +329,7 @@ class PetsWithRawResponse:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -360,7 +360,7 @@ class PetsWithRawResponse:
         KEYWORDS_2.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -373,7 +373,7 @@ class PetsWithRawResponse:
         KEYWORDS_3.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -382,7 +382,7 @@ class PetsWithRawResponse:
         KEYWORDS_4.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -391,7 +391,7 @@ class PetsWithRawResponse:
         KEYWORDS_6.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -402,7 +402,7 @@ class PetsWithRawResponse:
         KEYWORDS_7.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -426,7 +426,7 @@ class PetsWithStreamingResponse:
             (
                 kwargs.get('limit', UNSET),
                 kwargs.get('labels', UNSET),
-                kwargs['x_trace'],
+                kwargs['X_Trace'],
                 kwargs.get('session', UNSET),
             ),
             options=kwargs.get('options'),
@@ -466,7 +466,7 @@ class PetsWithStreamingResponse:
         KEYWORDS_2.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )
@@ -479,7 +479,7 @@ class PetsWithStreamingResponse:
         KEYWORDS_3.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -491,7 +491,7 @@ class PetsWithStreamingResponse:
         KEYWORDS_4.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_4,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
         )
 
@@ -503,7 +503,7 @@ class PetsWithStreamingResponse:
         KEYWORDS_6.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -517,7 +517,7 @@ class PetsWithStreamingResponse:
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             options=kwargs.get('options'),
             response_media_type=kwargs.get('response_media_type'),
         )

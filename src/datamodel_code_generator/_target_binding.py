@@ -79,6 +79,7 @@ from datamodel_code_generator._target_contract import (
     WireDeclaration,
 )
 from datamodel_code_generator._target_module import TypeComposer
+from datamodel_code_generator._target_naming import TargetNames
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
@@ -3603,6 +3604,7 @@ def bind_operations(
             document_facts=parser.document_facts.get(next(iter(documents.ids), ""), ()),
             hint_type=builder.binder.hints.hint_type,
             hint_imports=tuple(builder.binder.hints.fixed),
+            names=TargetNames.of(parser.model_resolver),
         ),
         _pristine(parser, documents.documents),
     )

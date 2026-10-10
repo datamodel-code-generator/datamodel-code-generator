@@ -3,10 +3,10 @@ serve pydantic_v2.BaseModel
 service UntaggedService: get_values, post_form, upload
 service UntaggedService without its methods: TypeError
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=None)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
 < 204 - b''
 > GET /values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4
-  get_values(id=5, count=12, bounded=3, score=2.5, flag=True, name='n', label='ab', counts=[1, 2], names=['a', 'b'], page=2, size=3, maybe=4, x_trace=7, x_tag='t', blob=None, visits=None)
+  get_values(id=5, count=12, bounded=3, score=2.5, flag=True, name='n', label='ab', counts=[1, 2], names=['a', 'b'], page=2, size=3, maybe=4, X_Trace=7, X_Tag='t', blob=None, visits=None)
 < 204 - b''
 > GET /values/x
 < 422 application/json [{"type": "int_type", "loc": ["path", "id"]}]
@@ -33,21 +33,21 @@ service UntaggedService without its methods: TypeError
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["header", "X-Trace"]}]
 > GET /values/5?blob=abc&size=3
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, x_trace=None, x_tag=None, blob=b'abc', visits=None)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob=b'abc', visits=None)
 < 204 - b''
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=3)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=3)
 < 204 - b''
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["cookie", "visits"]}]
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=2)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=2)
 < 204 - b''
 > GET /values/5?count=1&count=2
-  get_values(id=5, count=2, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=None)
+  get_values(id=5, count=2, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
 < 204 - b''
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=1, x_tag=None, blob=None, visits=None)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=1, X_Tag=None, blob=None, visits=None)
 < 204 - b''
 > POST /forms
   post_form(Form(count=2, score=2.5, flag=True, name='n', counts=[1, 2]))
@@ -69,10 +69,10 @@ serve pydantic_v2.dataclass
 service UntaggedService: get_values, post_form, upload
 service UntaggedService without its methods: TypeError
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=None)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
 < 204 - b''
 > GET /values/5?count=12&bounded=3&score=2.5&flag=true&name=n&label=ab&counts=1&counts=2&names=a&names=b&page=2&size=3&maybe=4
-  get_values(id=5, count=12, bounded=3, score=2.5, flag=True, name='n', label='ab', counts=[1, 2], names=['a', 'b'], page=2, size=3, maybe=4, x_trace=7, x_tag='t', blob=None, visits=None)
+  get_values(id=5, count=12, bounded=3, score=2.5, flag=True, name='n', label='ab', counts=[1, 2], names=['a', 'b'], page=2, size=3, maybe=4, X_Trace=7, X_Tag='t', blob=None, visits=None)
 < 204 - b''
 > GET /values/x
 < 422 application/json [{"type": "int_type", "loc": ["path", "id"]}]
@@ -99,21 +99,21 @@ service UntaggedService without its methods: TypeError
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["header", "X-Trace"]}]
 > GET /values/5?blob=abc&size=3
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, x_trace=None, x_tag=None, blob=b'abc', visits=None)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob=b'abc', visits=None)
 < 204 - b''
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=3)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=3)
 < 204 - b''
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["cookie", "visits"]}]
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=2)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=2)
 < 204 - b''
 > GET /values/5?count=1&count=2
-  get_values(id=5, count=2, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=None)
+  get_values(id=5, count=2, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
 < 204 - b''
 > GET /values/5
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=1, x_tag=None, blob=None, visits=None)
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=1, X_Tag=None, blob=None, visits=None)
 < 204 - b''
 > POST /forms
   post_form(Form(count=2, score=2.5, flag=True, name='n', counts=[1, 2]))

@@ -9,7 +9,7 @@ service UntaggedService without its methods: TypeError
   handle_list_pets()
 < 200 application/json ["rex"]
 > DELETE /pets/1
-  handle_delete_pet(pet_id=1)
+  handle_delete_pet(petId=1)
 < 204 - b''
 > GET /health
   handle_get_health()

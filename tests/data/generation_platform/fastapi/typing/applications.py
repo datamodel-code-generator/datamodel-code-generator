@@ -72,12 +72,12 @@ class Public:
 
 
 class Untagged(UntaggedService[User]):
-    async def get_maybe(self, *, principal: User | None, query_principal: str | None) -> PlainTextResponse:
+    async def get_maybe(self, *, principal: User | None, principal_1: str | None) -> PlainTextResponse:
         name = "anonymous" if principal is None else principal.name
-        return PlainTextResponse(name if query_principal is None else query_principal)
+        return PlainTextResponse(name if principal_1 is None else principal_1)
 
-    def put_pet(self, *, principal: object, pet_id: int) -> HTTPResult[None]:
-        return HTTPResult(204, headers={"x-pet": f"{principal} {pet_id}"})
+    def put_pet(self, *, principal: object, petId: int) -> HTTPResult[None]:
+        return HTTPResult(204, headers={"x-pet": f"{principal} {petId}"})
 
     def get_session(self, *, principal: User) -> None:
         del principal

@@ -42,7 +42,7 @@ class PetsPhotosResource:
     def upload(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -51,7 +51,7 @@ class PetsPhotosResource:
         """Call PUT /pets/{petId}/photo."""
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -69,7 +69,7 @@ class PetsPhotosWithResponse:
     def upload(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -78,7 +78,7 @@ class PetsPhotosWithResponse:
         """Call PUT /pets/{petId}/photo."""
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -96,7 +96,7 @@ class PetsPhotosWithRawResponse:
     def upload(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -105,7 +105,7 @@ class PetsPhotosWithRawResponse:
         """Call PUT /pets/{petId}/photo."""
         return self._core.execute_raw(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -123,7 +123,7 @@ class PetsPhotosWithStreamingResponse:
     def upload(
         self,
         *,
-        pet_id: int,
+        petId: int,
         body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
@@ -132,7 +132,7 @@ class PetsPhotosWithStreamingResponse:
         """Call PUT /pets/{petId}/photo."""
         return self._core.stream(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,

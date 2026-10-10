@@ -303,11 +303,11 @@
 -
 -    def get_pet(
 -        *,
--        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
+-        petId: Annotated[int, Field(ge=1), Path(alias='petId')],
 -    ) -> object:
 -        return dispatch(
 -            get_pet_handler(
--                pet_id=pet_id,
+-                petId=petId,
 -            ),
 -            contract.GetPet.RESPONSES,
 -        )
@@ -339,11 +339,11 @@
 -
 -    def delete_pet(
 -        *,
--        pet_id: Annotated[int, Field(ge=1), Path(alias='petId')],
+-        petId: Annotated[int, Field(ge=1), Path(alias='petId')],
 -    ) -> object:
 -        return dispatch(
 -            delete_pet_handler(
--                pet_id=pet_id,
+-                petId=petId,
 -            ),
 -            contract.DeletePet.RESPONSES,
 -        )
@@ -394,7 +394,7 @@
 -    def get_pet(
 -        self,
 -        *,
--        pet_id: int,
+-        petId: int,
 -    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
 -        """
 -        Handle GET /pets/{petId}.
@@ -404,7 +404,7 @@
 -    def delete_pet(
 -        self,
 -        *,
--        pet_id: int,
+-        petId: int,
 -    ) -> None | HTTPResult[None] | Response:
 -        """
 -        Handle DELETE /pets/{petId}.

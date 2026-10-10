@@ -274,7 +274,7 @@ def _cursors(resumes: _Resumes, api: Any) -> None:
         )
     )
     stream = helper.open(
-        topic=resumes.argument("query", "topic", "news"), last_event_id=resumes.argument("header", "Last-Event-ID", "0")
+        topic=resumes.argument("query", "topic", "news"), Last_Event_ID=resumes.argument("header", "Last-Event-ID", "0")
     )
     record(lines, "checkpoint before any event", stream.checkpoint)
     lines.append(f"  {_event(next(stream))}")

@@ -198,7 +198,7 @@ class UsersAllPagination:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[models.User, ListUsersResponse]:
@@ -206,7 +206,7 @@ class UsersAllPagination:
         return first_page(
             self._core,
             _plans.PLAN_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             pagination_options=pagination_options,
             options=options,
         )
@@ -216,7 +216,7 @@ class UsersAllPagination:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
@@ -224,7 +224,7 @@ class UsersAllPagination:
         return iterate_pages(
             self._core,
             _plans.PLAN_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             pagination_options=pagination_options,
             options=options,
         )
@@ -251,7 +251,7 @@ class UsersAllPagination:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
@@ -260,7 +260,7 @@ class UsersAllPagination:
             self._core,
             _plans.PLAN_0,
             state,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             pagination_options=pagination_options,
             options=options,
         )
@@ -278,7 +278,7 @@ class UsersByHeaderPagination:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Page[models.User, ListUsersResponse]:
@@ -286,7 +286,7 @@ class UsersByHeaderPagination:
         return first_page(
             self._core,
             _plans.PLAN_1,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             pagination_options=pagination_options,
             options=options,
         )
@@ -296,7 +296,7 @@ class UsersByHeaderPagination:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
@@ -304,7 +304,7 @@ class UsersByHeaderPagination:
         return iterate_pages(
             self._core,
             _plans.PLAN_1,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             pagination_options=pagination_options,
             options=options,
         )
@@ -331,7 +331,7 @@ class UsersByHeaderPagination:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
     ) -> Pager[models.User, ListUsersResponse]:
@@ -340,7 +340,7 @@ class UsersByHeaderPagination:
             self._core,
             _plans.PLAN_1,
             state,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             pagination_options=pagination_options,
             options=options,
         )

@@ -413,7 +413,7 @@ class _NativeServerCases:
             if name in hints:
                 native_type = hints[name]
             else:
-                name = re.sub(r"\W", "_", name).lower()
+                name = re.sub(r"\W", "_", name)
                 service = next(service for service in self.services.values() if hasattr(service, route.name))
                 native_type = get_type_hints(getattr(service, route.name), include_extras=True)[name]
         return route, native_type

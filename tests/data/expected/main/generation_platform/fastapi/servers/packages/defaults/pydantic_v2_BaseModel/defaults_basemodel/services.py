@@ -26,7 +26,7 @@ class UntaggedService(Protocol):
         bounded: int,
         page: int,
         words: list[str],
-        x_level: int,
+        X_Level: int,
         tags: defaults_basemodel_models.Tags,
         labels: defaults_basemodel_models.FieldValuesGetQueryLabelsParameter,
         rows: defaults_basemodel_models.FieldValuesGetQueryRowsParameter | None,
@@ -38,7 +38,7 @@ class UntaggedService(Protocol):
         shade: defaults_basemodel_models.Shade,
         colors: list[defaults_basemodel_models.Color],
         sized: int | None,
-        x_colors: list[defaults_basemodel_models.Color],
+        X_Colors: list[defaults_basemodel_models.Color],
     ) -> None | HTTPResult[None] | Response:
         """
         Handle GET /values.

@@ -102,14 +102,14 @@ class DefaultResource:
     def get_job(
         self,
         *,
-        job_id: str,
+        jobId: str,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> GetJobResponse:
         """Call GET /jobs/{jobId}."""
         return self._core.execute(
             _operations.OPERATION_3,
-            (job_id,),
+            (jobId,),
             options=options,
             response_media_type=response_media_type,
         ).data
@@ -178,14 +178,14 @@ class DefaultWithResponse:
     def get_job(
         self,
         *,
-        job_id: str,
+        jobId: str,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> Response[GetJobResponse]:
         """Call GET /jobs/{jobId}."""
         return self._core.execute(
             _operations.OPERATION_3,
-            (job_id,),
+            (jobId,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -254,14 +254,14 @@ class DefaultWithRawResponse:
     def get_job(
         self,
         *,
-        job_id: str,
+        jobId: str,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> RawResponse:
         """Call GET /jobs/{jobId}."""
         return self._core.execute_raw(
             _operations.OPERATION_3,
-            (job_id,),
+            (jobId,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -330,14 +330,14 @@ class DefaultWithStreamingResponse:
     def get_job(
         self,
         *,
-        job_id: str,
+        jobId: str,
         response_media_type: Optional[Literal['application/json']] = None,
         options: Optional[RequestOptions] = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /jobs/{jobId}."""
         return self._core.stream(
             _operations.OPERATION_3,
-            (job_id,),
+            (jobId,),
             options=options,
             response_media_type=response_media_type,
         )

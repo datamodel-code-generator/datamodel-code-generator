@@ -80,7 +80,7 @@ class PetsService(Protocol):
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
         limit: int,
         code: str | None,
         codes: list[spellings_basemodel_models.Code] | None,

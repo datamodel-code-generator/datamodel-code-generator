@@ -40,7 +40,7 @@ class AsyncStoreResource:
     async def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
@@ -49,7 +49,7 @@ class AsyncStoreResource:
         """Call GET /files/{fileName}.{ext}."""
         return (await self._core.execute(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         )).data
 
@@ -64,7 +64,7 @@ class AsyncStoreWithResponse:
     async def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
@@ -73,7 +73,7 @@ class AsyncStoreWithResponse:
         """Call GET /files/{fileName}.{ext}."""
         return await self._core.execute(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         )
 
@@ -88,7 +88,7 @@ class AsyncStoreWithRawResponse:
     async def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
@@ -97,7 +97,7 @@ class AsyncStoreWithRawResponse:
         """Call GET /files/{fileName}.{ext}."""
         return await self._core.execute_raw(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         )
 
@@ -112,7 +112,7 @@ class AsyncStoreWithStreamingResponse:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
@@ -121,6 +121,6 @@ class AsyncStoreWithStreamingResponse:
         """Call GET /files/{fileName}.{ext}."""
         return self._core.stream(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         )

@@ -26,7 +26,7 @@ class PetsService(Protocol):
         limit: int,
         tags: list[str] | None,
         kind: pets_dataclass_models.FieldPetsGetQueryKindParameter | None,
-        x_request_id: UUID | None,
+        X_Request_Id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
     ) -> pets_dataclass_models.FieldPetsGetResponse | HTTPResult[pets_dataclass_models.FieldPetsGetResponse | pets_dataclass_models.Error] | Response:
@@ -56,7 +56,7 @@ class PetsService(Protocol):
     def get_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
     ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error] | Response:
         """
         Handle GET /pets/{petId}.
@@ -66,7 +66,7 @@ class PetsService(Protocol):
     def delete_pet(
         self,
         *,
-        pet_id: int,
+        petId: int,
     ) -> None | HTTPResult[None] | Response:
         """
         Handle DELETE /pets/{petId}.

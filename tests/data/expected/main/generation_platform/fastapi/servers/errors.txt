@@ -4,7 +4,7 @@ service UntaggedService: list_codes, update_account
 service UntaggedService without its methods: TypeError
 app default
 > POST /accounts/1?limit=5
-  update_account(id=1, limit=5, x_token='long-token', session='long-session', body=Login(secret='long-secret'))
+  update_account(id=1, limit=5, X_Token='long-token', session='long-session', body=Login(secret='long-secret'))
 < 204 - b''
 > POST /accounts/0?limit=11
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"]}, {"type": "less_than_equal", "loc": ["query", "limit"]}, {"type": "string_too_short", "loc": ["header", "X-Token"]}, {"type": "string_too_short", "loc": ["cookie", "session"]}, {"type": "string_too_short", "loc": ["body", "secret"]}]
@@ -20,7 +20,7 @@ app default
 < 404 application/json {"detail":"Not Found"}
 app override
 > POST /accounts/1?limit=5
-  update_account(id=1, limit=5, x_token='long-token', session='long-session', body=Login(secret='long-secret'))
+  update_account(id=1, limit=5, X_Token='long-token', session='long-session', body=Login(secret='long-secret'))
 < 204 - b''
 > POST /accounts/0?limit=11
 < 400 application/json {"detail":"5 invalid values"}
@@ -28,7 +28,7 @@ app override
 < 400 application/json {"detail":"1 invalid values"}
 app router
 > POST /accounts/1?limit=5
-  update_account(id=1, limit=5, x_token='long-token', session='long-session', body=Login(secret='long-secret'))
+  update_account(id=1, limit=5, X_Token='long-token', session='long-session', body=Login(secret='long-secret'))
 < 204 - b''
 > POST /accounts/0?limit=11
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"], "input": "0", "ctx": {"ge": 1}}, {"type": "less_than_equal", "loc": ["query", "limit"], "input": "11", "ctx": {"le": 10}}, {"type": "string_too_short", "loc": ["header", "X-Token"], "input": "short", "ctx": {"min_length": 8}}, {"type": "string_too_short", "loc": ["cookie", "session"], "input": "short", "ctx": {"min_length": 8}}, {"type": "string_too_short", "loc": ["body", "secret"], "input": "p4ss", "ctx": {"min_length": 8}}]
@@ -36,7 +36,7 @@ app router
 < 422 application/json [{"type": "string_too_short", "loc": ["query", "codes", 0]}]
 app router-handler
 > POST /accounts/1?limit=5
-  update_account(id=1, limit=5, x_token='long-token', session='long-session', body=Login(secret='long-secret'))
+  update_account(id=1, limit=5, X_Token='long-token', session='long-session', body=Login(secret='long-secret'))
 < 204 - b''
 > POST /accounts/0?limit=11
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"]}, {"type": "less_than_equal", "loc": ["query", "limit"]}, {"type": "string_too_short", "loc": ["header", "X-Token"]}, {"type": "string_too_short", "loc": ["cookie", "session"]}, {"type": "string_too_short", "loc": ["body", "secret"]}]

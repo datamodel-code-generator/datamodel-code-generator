@@ -101,8 +101,8 @@ class UsersProfileCache:
         self,
         *,
         fields: str | UNSET = UNSET,
-        accept_language: str | UNSET = UNSET,
-        user_id: int,
+        Accept_Language: str | UNSET = UNSET,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -110,7 +110,7 @@ class UsersProfileCache:
         return fetch(
             self._core,
             _plans.PLAN_0,
-            (fields, accept_language, user_id),
+            (fields, Accept_Language, userId),
             cache_options=cache_options,
             options=options,
         )
@@ -127,8 +127,8 @@ class UsersDatedCache:
         self,
         *,
         fields: str | UNSET = UNSET,
-        accept_language: str | UNSET = UNSET,
-        user_id: int,
+        Accept_Language: str | UNSET = UNSET,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -136,7 +136,7 @@ class UsersDatedCache:
         return fetch(
             self._core,
             _plans.PLAN_1,
-            (fields, accept_language, user_id),
+            (fields, Accept_Language, userId),
             cache_options=cache_options,
             options=options,
         )
@@ -201,7 +201,7 @@ class SecureProfileCache:
     def fetch(
         self,
         *,
-        user_id: int,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:
@@ -209,7 +209,7 @@ class SecureProfileCache:
         return fetch(
             self._core,
             _plans.PLAN_4,
-            (user_id,),
+            (userId,),
             cache_options=cache_options,
             options=options,
         )

@@ -10,13 +10,14 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, Type
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
-from datamodel_code_generator._client.naming import identifier, namespace_problem, token
+from datamodel_code_generator._client.naming import namespace_problem, token
 from datamodel_code_generator._runtime.client.options import is_base_url
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
+from datamodel_code_generator._target_naming import explicit_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -239,7 +240,7 @@ def _field_name_problems(item: ClientOperationConfig, default: object, at: str) 
         )
     seen: set[tuple[str, str]] = set()
     for index, name in enumerate(names):
-        if not (_media(name.media_type) and _text(name.name) and identifier(name.python_name)):
+        if not (_media(name.media_type) and _text(name.name) and explicit_name(name.python_name)):
             yield _diagnostic(
                 "E_CONFIG_VALUE",
                 f"{at}.body_field_names[{index}]",
@@ -260,8 +261,8 @@ def _operation_config_problems(item: ClientOperationConfig, at: str) -> Iterator
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.ref", "ref must be an OperationRef or a pointer string")
     if item.resource is not None and (problem := namespace_problem(item.resource)) is not None:
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.resource", problem)
-    if item.name is not None and not identifier(item.name):
-        yield _diagnostic("E_CONFIG_VALUE", f"{at}.name", "name must be a lowercase ASCII identifier")
+    if item.name is not None and not explicit_name(item.name):
+        yield _diagnostic("E_CONFIG_VALUE", f"{at}.name", "name must be a Python identifier")
     yield from _parameter_name_problems(item.parameter_names, f"{at}.parameter_names")
     for name in ("request_media_type", "response_media_type"):
         if (media := getattr(item, name)) is not None and not _media(media):
@@ -335,7 +336,7 @@ def _parameter_name_problems(value: object, at: str) -> Iterator[Diagnostic]:
         return
     seen: set[tuple[str, str]] = set()
     for index, item in enumerate(value):
-        if not _one_of(item.in_, _LOCATIONS) or not _text(item.name) or not identifier(item.python_name):
+        if not _one_of(item.in_, _LOCATIONS) or not _text(item.name) or not explicit_name(item.python_name):
             yield _diagnostic(
                 "E_CONFIG_VALUE", f"{at}[{index}]", "A parameter name needs a location, a wire name, and an identifier"
             )

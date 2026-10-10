@@ -475,7 +475,7 @@ def _completed_response(package: ModuleType, options: ModuleType, lines: list[st
                 "completed typed response after expiry",
                 lambda: (
                     api.pets.with_response
-                    .list_pets(x_trace=argument(package, "listPets", "header", "X-Trace", "t"))
+                    .list_pets(X_Trace=argument(package, "listPets", "header", "X-Trace", "t"))
                     .data.root[0]
                     .name
                 ),
@@ -498,7 +498,7 @@ async def _acompleted_response(package: ModuleType, options: ModuleType, lines: 
 
             async def completed() -> object:
                 response = await api.pets.with_response.list_pets(
-                    x_trace=argument(package, "listPets", "header", "X-Trace", "t")
+                    X_Trace=argument(package, "listPets", "header", "X-Trace", "t")
                 )
                 return response.data.root[0].name
 

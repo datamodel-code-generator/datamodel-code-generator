@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .resources.admin._async import AsyncAdminResource
     from .resources.default._async import AsyncDefaultResource
     from .resources.store._async import AsyncStoreResource
-    from .resources.u30e6_u30fc_u30b6_u30fc._async import AsyncU30e6U30fcU30b6U30fcResource
+    from .resources.ユーザー._async import AsyncユーザーResource
 
 _DEFAULTS = ClientDefaults()
 
@@ -100,11 +100,11 @@ class AsyncClientView:
         return AsyncStoreResource(self._core)
 
     @cached_property
-    def u30e6_u30fc_u30b6_u30fc(self) -> AsyncU30e6U30fcU30b6U30fcResource:
-        """The u30e6_u30fc_u30b6_u30fc operations."""
-        from .resources.u30e6_u30fc_u30b6_u30fc._async import AsyncU30e6U30fcU30b6U30fcResource
+    def ユーザー(self) -> AsyncユーザーResource:
+        """The ユーザー operations."""
+        from .resources.ユーザー._async import AsyncユーザーResource
 
-        return AsyncU30e6U30fcU30b6U30fcResource(self._core)
+        return AsyncユーザーResource(self._core)
 
     @cached_property
     def admin(self) -> AsyncAdminResource:

@@ -199,53 +199,53 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
 def _calls(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
     """Run the request hook for every attempt and redirect hop, and the response hook for every response."""
     exchange.respond(json_response(200, _PET))
-    _observed(lines, "typed get", lambda: api.pets.with_response.get_pet(pet_id=pet))
+    _observed(lines, "typed get", lambda: api.pets.with_response.get_pet(petId=pet))
     exchange.respond(_refusing, json_response(200, _PET))
-    _observed(lines, "get retried after a refused connection", lambda: api.pets.with_response.get_pet(pet_id=pet))
+    _observed(lines, "get retried after a refused connection", lambda: api.pets.with_response.get_pet(petId=pet))
     exchange.respond(raw_response(503), json_response(200, _PET))
-    _observed(lines, "get retried after a 503", lambda: api.pets.with_response.get_pet(pet_id=pet))
+    _observed(lines, "get retried after a 503", lambda: api.pets.with_response.get_pet(petId=pet))
     exchange.respond(raw_response(302, Location="/v1/pets/3"), json_response(200, _PET))
-    _observed(lines, "get following a redirect", lambda: api.pets.with_response.get_pet(pet_id=pet))
+    _observed(lines, "get following a redirect", lambda: api.pets.with_response.get_pet(petId=pet))
     exchange.respond(json_response(200, _PET), raw_response(200, b"ok", "text/plain"), json_response(200, _PET))
-    record(lines, "raw get", lambda: _status(api.pets.with_raw_response.get_pet(pet_id=pet)))
+    record(lines, "raw get", lambda: _status(api.pets.with_raw_response.get_pet(petId=pet)))
     record(lines, "raw request", lambda: api.request_raw("GET", _RAW).body_bytes)
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as streamed:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as streamed:
         record(lines, "streamed get", streamed.read)
 
 
 def _failing_hooks(api: Any, exchange: Exchange, lines: list[str], observer: _Hooks, pet: object) -> None:
     """Fail a call as HTTPX2 raises a hook's error: before sending, or once a response arrived, never retried."""
     observer.failing = "request"
-    _observed(lines, "get whose request hook fails", lambda: api.pets.get_pet(pet_id=pet))
+    _observed(lines, "get whose request hook fails", lambda: api.pets.get_pet(petId=pet))
     _observed(lines, "raw request whose request hook fails", lambda: api.request_raw("GET", _RAW))
     observer.error = httpx2.ConnectError
-    _observed(lines, "get whose request hook refuses the connection", lambda: api.pets.get_pet(pet_id=pet))
+    _observed(lines, "get whose request hook refuses the connection", lambda: api.pets.get_pet(petId=pet))
     observer.error = RuntimeError
     observer.failing = "response"
     exchange.respond(raw_response(503), json_response(200, _PET))
-    _observed(lines, "get whose response hook fails on a 503", lambda: api.pets.get_pet(pet_id=pet))
+    _observed(lines, "get whose response hook fails on a 503", lambda: api.pets.get_pet(petId=pet))
     lines.append(f"    unanswered after it: {len(exchange.responders)}")
     exchange.responders.clear()
     exchange.respond(json_response(200, _PET))
-    _observed(lines, "stream whose response hook fails", api.pets.with_streaming_response.get_pet(pet_id=pet).__enter__)
+    _observed(lines, "stream whose response hook fails", api.pets.with_streaming_response.get_pet(petId=pet).__enter__)
     observer.failing = None
 
 
 def _faults(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
     """End calls a codec, a refused connection, an interruption, or a failing close stops."""
-    record(lines, "list of a trace its codec refuses", lambda: api.pets.list_pets(x_trace=object()))
+    record(lines, "list of a trace its codec refuses", lambda: api.pets.list_pets(X_Trace=object()))
     exchange.respond(_refusing, _refusing, _refusing)
-    _observed(lines, "get of a refused connection", lambda: api.pets.get_pet(pet_id=pet))
+    _observed(lines, "get of a refused connection", lambda: api.pets.get_pet(petId=pet))
     exchange.respond(_interrupting)
     try:
-        api.pets.get_pet(pet_id=pet)
+        api.pets.get_pet(petId=pet)
     except KeyboardInterrupt:
         lines.append("  get interrupted: KeyboardInterrupt")
     exchange.respond(_failing_close, _failing_close)
-    record(lines, "get whose response close fails", lambda: api.pets.get_pet(pet_id=pet))
-    record(lines, "raw get whose response close fails", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
+    record(lines, "get whose response close fails", lambda: api.pets.get_pet(petId=pet))
+    record(lines, "raw get whose response close fails", lambda: api.pets.with_raw_response.get_pet(petId=pet))
     exchange.respond(_broken_failing_close)
-    record(lines, "get whose read breaks off and close fails", lambda: api.pets.get_pet(pet_id=pet))
+    record(lines, "get whose read breaks off and close fails", lambda: api.pets.get_pet(petId=pet))
 
 
 def _unread_close(package: ModuleType, lines: list[str], pet: object) -> None:
@@ -256,7 +256,7 @@ def _unread_close(package: ModuleType, lines: list[str], pet: object) -> None:
         return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_FailingClose())
 
     with httpx2.Client(transport=httpx2.MockTransport(answer)) as http, package.Client(http_client=http) as api:
-        manager = api.pets.with_streaming_response.get_pet(pet_id=pet)
+        manager = api.pets.with_streaming_response.get_pet(petId=pet)
         closing = manager.__enter__()
         record(lines, "stream closed unread whose close fails", closing.close)
         record(lines, "its block left after it", lambda: manager.__exit__(None, None, None))
@@ -265,35 +265,35 @@ def _unread_close(package: ModuleType, lines: list[str], pet: object) -> None:
 def _streams(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
     """End each handed-over stream once: closed early, discarded, iterated, interrupted, failed, or an error's."""
     exchange.respond(json_response(200, _PET), json_response(200, _PET), json_response(200, _PET))
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as early:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as early:
         lines.append(f"  stream closed early: {early.info.status_code}")
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as interrupted:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as interrupted:
         interrupted.discard(KeyboardInterrupt())
         lines.append("  stream discarded for an interruption")
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as iterated:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as iterated:
         record(lines, "stream iterated", lambda: b"".join(iterated.iter_bytes()))
     exchange.respond(_interrupted_close)
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as interrupting:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as interrupting:
         try:
             interrupting.close()
         except KeyboardInterrupt:
             lines.append("  stream whose close is interrupted: KeyboardInterrupt")
     exchange.respond(broken)
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as failed:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as failed:
         record(lines, "stream failing on reading it", failed.read)
     exchange.respond(raw_response(404))
-    with api.pets.with_streaming_response.get_pet(pet_id=pet) as missing:
+    with api.pets.with_streaming_response.get_pet(petId=pet) as missing:
         lines.append(f"  stream of an error: {outcome(missing.raise_for_status)}")
 
 
 def _raw(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
     """Refuse raw calls before sending, and end one a refused connection fails."""
-    record(lines, "raw get of a pet its codec refuses", lambda: api.pets.with_raw_response.get_pet(pet_id=object()))
+    record(lines, "raw get of a pet its codec refuses", lambda: api.pets.with_raw_response.get_pet(petId=object()))
     trace = object()
-    record(lines, "raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=trace))
+    record(lines, "raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(X_Trace=trace))
     record(lines, "raw request to no URL", lambda: api.request_raw("GET", "not a url"))
     exchange.respond(_refusing, _refusing, _refusing)
-    record(lines, "raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
+    record(lines, "raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(petId=pet))
 
 
 async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
@@ -312,19 +312,19 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
 
 async def _async_calls(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
     exchange.respond(json_response(200, _PET))
-    await _aobserved(lines, "async typed get", lambda: api.pets.with_response.get_pet(pet_id=pet))
+    await _aobserved(lines, "async typed get", lambda: api.pets.with_response.get_pet(petId=pet))
     exchange.respond(_refusing, json_response(200, _PET))
     await _aobserved(
-        lines, "async get retried after a refused connection", lambda: api.pets.with_response.get_pet(pet_id=pet)
+        lines, "async get retried after a refused connection", lambda: api.pets.with_response.get_pet(petId=pet)
     )
     exchange.respond(raw_response(503), json_response(200, _PET))
-    await _aobserved(lines, "async get retried after a 503", lambda: api.pets.with_response.get_pet(pet_id=pet))
+    await _aobserved(lines, "async get retried after a 503", lambda: api.pets.with_response.get_pet(petId=pet))
     exchange.respond(raw_response(302, Location="/v1/pets/3"), json_response(200, _PET))
-    await _aobserved(lines, "async get following a redirect", lambda: api.pets.with_response.get_pet(pet_id=pet))
+    await _aobserved(lines, "async get following a redirect", lambda: api.pets.with_response.get_pet(petId=pet))
     exchange.respond(json_response(200, _PET), raw_response(200, b"ok", "text/plain"))
 
     async def raw_get() -> tuple[int, int]:
-        return _status(await api.pets.with_raw_response.get_pet(pet_id=pet))
+        return _status(await api.pets.with_raw_response.get_pet(petId=pet))
 
     await arecord(lines, "async raw get", raw_get)
 
@@ -336,61 +336,61 @@ async def _async_calls(api: Any, exchange: Exchange, lines: list[str], pet: obje
 
 async def _async_failing_hooks(api: Any, exchange: Exchange, lines: list[str], observer: _Hooks, pet: object) -> None:
     observer.failing = "request"
-    await _aobserved(lines, "async get whose request hook fails", lambda: api.pets.get_pet(pet_id=pet))
+    await _aobserved(lines, "async get whose request hook fails", lambda: api.pets.get_pet(petId=pet))
     await _aobserved(lines, "async raw request whose request hook fails", lambda: api.request_raw("GET", _RAW))
     observer.error = httpx2.ConnectError
-    await _aobserved(lines, "async get whose request hook refuses the connection", lambda: api.pets.get_pet(pet_id=pet))
+    await _aobserved(lines, "async get whose request hook refuses the connection", lambda: api.pets.get_pet(petId=pet))
     observer.error = RuntimeError
     observer.failing = "response"
     exchange.respond(raw_response(503), json_response(200, _PET))
-    await _aobserved(lines, "async get whose response hook fails on a 503", lambda: api.pets.get_pet(pet_id=pet))
+    await _aobserved(lines, "async get whose response hook fails on a 503", lambda: api.pets.get_pet(petId=pet))
     lines.append(f"    unanswered after it: {len(exchange.responders)}")
     exchange.responders.clear()
     exchange.respond(json_response(200, _PET))
-    manager = api.pets.with_streaming_response.get_pet(pet_id=pet)
+    manager = api.pets.with_streaming_response.get_pet(petId=pet)
     await _aobserved(lines, "async stream whose response hook fails", manager.__aenter__)
     observer.failing = None
 
 
 async def _async_faults(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
     await arecord(
-        lines, "async raw get of a pet its codec refuses", lambda: api.pets.with_raw_response.get_pet(pet_id=object())
+        lines, "async raw get of a pet its codec refuses", lambda: api.pets.with_raw_response.get_pet(petId=object())
     )
     await arecord(
         lines,
         "async raw list of a trace its codec refuses",
-        lambda: api.pets.with_raw_response.list_pets(x_trace=object()),
+        lambda: api.pets.with_raw_response.list_pets(X_Trace=object()),
     )
     await arecord(lines, "async raw request to no URL", lambda: api.request_raw("GET", "not a url"))
     exchange.respond(_refusing, _refusing, _refusing)
     await arecord(
-        lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet)
+        lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(petId=pet)
     )
     exchange.respond(_cancelling)
     try:
-        await api.pets.get_pet(pet_id=pet)
+        await api.pets.get_pet(petId=pet)
     except asyncio.CancelledError:
         lines.append("  async get cancelled: CancelledError")
     exchange.respond(_failing_close, _failing_close)
-    await arecord(lines, "async get whose response close fails", lambda: api.pets.get_pet(pet_id=pet))
+    await arecord(lines, "async get whose response close fails", lambda: api.pets.get_pet(petId=pet))
     await arecord(
-        lines, "async raw get whose response close fails", lambda: api.pets.with_raw_response.get_pet(pet_id=pet)
+        lines, "async raw get whose response close fails", lambda: api.pets.with_raw_response.get_pet(petId=pet)
     )
 
 
 async def _async_streams(api: Any, exchange: Exchange, lines: list[str], pet: object) -> None:
     exchange.respond(json_response(200, _PET), json_response(200, _PET), abroken)
-    async with api.pets.with_streaming_response.get_pet(pet_id=pet) as early:
+    async with api.pets.with_streaming_response.get_pet(petId=pet) as early:
         lines.append(f"  async stream closed early: {early.info.status_code}")
-    async with api.pets.with_streaming_response.get_pet(pet_id=pet) as read:
+    async with api.pets.with_streaming_response.get_pet(petId=pet) as read:
         await arecord(lines, "async stream read", read.read)
-    async with api.pets.with_streaming_response.get_pet(pet_id=pet) as failed:
+    async with api.pets.with_streaming_response.get_pet(petId=pet) as failed:
         await arecord(lines, "async stream failing on reading it", failed.read)
     exchange.respond(raw_response(404))
-    async with api.pets.with_streaming_response.get_pet(pet_id=pet) as missing:
+    async with api.pets.with_streaming_response.get_pet(petId=pet) as missing:
         lines.append(f"  async stream of an error: {await aoutcome(missing.raise_for_status)}")
     exchange.respond(_interrupted_close)
-    async with api.pets.with_streaming_response.get_pet(pet_id=pet) as cancelling:
+    async with api.pets.with_streaming_response.get_pet(petId=pet) as cancelling:
         try:
             await cancelling.aclose()
         except asyncio.CancelledError:
@@ -398,7 +398,7 @@ async def _async_streams(api: Any, exchange: Exchange, lines: list[str], pet: ob
     exchange.respond(json_response(200, _PET))
 
     async def raw_get() -> int:
-        return (await api.pets.with_raw_response.get_pet(pet_id=pet)).info.status_code
+        return (await api.pets.with_raw_response.get_pet(petId=pet)).info.status_code
 
     await arecord(lines, "async raw get after it", raw_get)
 
@@ -446,13 +446,13 @@ async def _cancelled_failures(package: ModuleType, lines: list[str]) -> None:
             httpx2.AsyncClient(transport=httpx2.MockTransport(answer)) as http,
             package.AsyncClient(http_client=http) as api,
         ):
-            manager = api.pets.with_streaming_response.get_pet(pet_id=pet) if mode == "stream-read" else None
+            manager = api.pets.with_streaming_response.get_pet(petId=pet) if mode == "stream-read" else None
             handle = None if manager is None else await manager.__aenter__()
             match mode:
                 case "typed-send" | "typed-read":
-                    caller = asyncio.create_task(api.pets.get_pet(pet_id=pet))
+                    caller = asyncio.create_task(api.pets.get_pet(petId=pet))
                 case "raw-send" | "raw-read":
-                    caller = asyncio.create_task(api.pets.with_raw_response.get_pet(pet_id=pet))
+                    caller = asyncio.create_task(api.pets.with_raw_response.get_pet(petId=pet))
                 case _:
                     caller = asyncio.create_task(handle.read())
             await body.entered.wait()

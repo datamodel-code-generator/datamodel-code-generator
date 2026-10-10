@@ -5,7 +5,7 @@ render pydantic_v2.BaseModel
   server/application.py
   server/routers/__init__.py
   server/routers/users.py
-  server/routers/router_2024_files.py
+  server/routers/field_2024_files.py
   server/routers/misc.py
   server/_generated/__init__.py
   server/_generated/contract.py
@@ -33,10 +33,10 @@ render pydantic_v2.BaseModel
     |
     | | Service | Method | HTTP method | Path | Operation reference |
     | | --- | --- | --- | --- | --- |
-    | | `UsersService` | `get__users_me` | GET | `/users/me` | `/paths/~1users~1me/get` |
+    | | `UsersService` | `get_users_me` | GET | `/users/me` | `/paths/~1users~1me/get` |
     | | `UsersService` | `get_user_by_id` | GET | `/users/{id}` | `/paths/~1users~1{id}/get` |
     | | `UsersService` | `class_` | PUT | `/users/{id}` | `/paths/~1users~1{id}/put` |
-    | | `Router2024FilesService` | `get_file` | GET | `/files/{file.name}/{dcg_p0}` | `/paths/~1files~1{file.name}~1{dcg_p0}/get` |
+    | | `Field2024FilesService` | `get_file` | GET | `/files/{file.name}/{dcg_p0}` | `/paths/~1files~1{file.name}~1{dcg_p0}/get` |
     | | `MiscService` | `health_check` | GET | `/health` | `/paths/~1health/get` |
     |
     | `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
@@ -51,14 +51,14 @@ render pydantic_v2.BaseModel
     |
     | ```python
     | from server import create_app
-    | from server.services import UsersService, Router2024FilesService, MiscService
+    | from server.services import UsersService, Field2024FilesService, MiscService
     |
     |
     | class Users(UsersService):
-    |     """Implement `get__users_me`, `get_user_by_id`, and `class_`."""
+    |     """Implement `get_users_me`, `get_user_by_id`, and `class_`."""
     |
     |
-    | class Router2024Files(Router2024FilesService):
+    | class Field2024Files(Field2024FilesService):
     |     """Implement `get_file`."""
     |
     |
@@ -66,7 +66,7 @@ render pydantic_v2.BaseModel
     |     """Implement `health_check`."""
     |
     |
-    | app = create_app(users=Users(), router_2024_files=Router2024Files(), misc=Misc())
+    | app = create_app(users=Users(), field_2024_files=Field2024Files(), misc=Misc())
     | ```
     |
     | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
@@ -79,7 +79,7 @@ render pydantic_v2.BaseModel
     | from server import build_router
     |
     | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
-    | app.include_router(build_router(users=Users(), router_2024_files=Router2024Files(), misc=Misc()))
+    | app.include_router(build_router(users=Users(), field_2024_files=Field2024Files(), misc=Misc()))
     | ```
     |
     | ## Served OpenAPI document

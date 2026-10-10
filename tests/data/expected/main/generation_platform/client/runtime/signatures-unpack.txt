@@ -1,12 +1,12 @@
 # pets-unpack pydantic_v2.BaseModel
   plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list = FieldPetsGetResponse(root=[])
@@ -21,13 +21,13 @@
   raw list with an unknown keyword ! TypeError, sent False
   streaming list without its required keyword ! TypeError, sent False
   async plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   async list = FieldPetsGetResponse(root=[])
@@ -36,13 +36,13 @@
   async streaming list with an unknown keyword ! TypeError, sent False
 # pets-unpack pydantic_v2.dataclass
   plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list = []
@@ -57,13 +57,13 @@
   raw list with an unknown keyword ! TypeError, sent False
   streaming list without its required keyword ! TypeError, sent False
   async plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   async list = []
@@ -72,13 +72,13 @@
   async streaming list with an unknown keyword ! TypeError, sent False
 # pets-unpack dataclasses.dataclass
   plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list = []
@@ -93,13 +93,13 @@
   raw list with an unknown keyword ! TypeError, sent False
   streaming list without its required keyword ! TypeError, sent False
   async plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   async list = []
@@ -108,13 +108,13 @@
   async streaming list with an unknown keyword ! TypeError, sent False
 # pets-unpack typing.TypedDict
   plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list = []
@@ -129,13 +129,13 @@
   raw list with an unknown keyword ! TypeError, sent False
   streaming list without its required keyword ! TypeError, sent False
   async plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   async list = []
@@ -144,13 +144,13 @@
   async streaming list with an unknown keyword ! TypeError, sent False
 # pets-unpack msgspec.Struct
   plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list = []
@@ -165,13 +165,13 @@
   raw list with an unknown keyword ! TypeError, sent False
   streaming list without its required keyword ! TypeError, sent False
   async plain get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_raw_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine True
+    keywords petId!, response_media_type, options coroutine True
   async with_streaming_response get_pet (kwargs:VAR_KEYWORD) unbound (self:POSITIONAL_OR_KEYWORD, kwargs:VAR_KEYWORD)
-    keywords pet_id!, response_media_type, options coroutine False
+    keywords petId!, response_media_type, options coroutine False
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   async list = []

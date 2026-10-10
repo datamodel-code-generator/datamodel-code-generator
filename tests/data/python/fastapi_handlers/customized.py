@@ -16,12 +16,12 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append("handle_list_pets()")
             return ["rex"]
 
-        async def handle_delete_pet(self, *, pet_id: int) -> None:
-            calls.append(f"handle_delete_pet(pet_id={pet_id!r})")
+        async def handle_delete_pet(self, *, petId: int) -> None:
+            calls.append(f"handle_delete_pet(petId={petId!r})")
 
-        async def handle_move_pet(self, *, pet_id: int) -> object:
-            calls.append(f"handle_move_pet(pet_id={pet_id!r})")
-            return server.HTTPResult(201, headers={"Location": f"/pets/{pet_id}"})
+        async def handle_move_pet(self, *, petId: int) -> object:
+            calls.append(f"handle_move_pet(petId={petId!r})")
+            return server.HTTPResult(201, headers={"Location": f"/pets/{petId}"})
 
     class Untagged(server.services.UntaggedService):
         async def handle_get_health(self) -> None:

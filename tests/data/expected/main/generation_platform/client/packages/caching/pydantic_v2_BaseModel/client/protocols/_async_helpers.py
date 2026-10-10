@@ -101,8 +101,8 @@ class AsyncUsersProfileCache:
         self,
         *,
         fields: str | UNSET = UNSET,
-        accept_language: str | UNSET = UNSET,
-        user_id: int,
+        Accept_Language: str | UNSET = UNSET,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -110,7 +110,7 @@ class AsyncUsersProfileCache:
         return await afetch(
             self._core,
             _plans.PLAN_0,
-            (fields, accept_language, user_id),
+            (fields, Accept_Language, userId),
             cache_options=cache_options,
             options=options,
         )
@@ -127,8 +127,8 @@ class AsyncUsersDatedCache:
         self,
         *,
         fields: str | UNSET = UNSET,
-        accept_language: str | UNSET = UNSET,
-        user_id: int,
+        Accept_Language: str | UNSET = UNSET,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetUserResponse]:
@@ -136,7 +136,7 @@ class AsyncUsersDatedCache:
         return await afetch(
             self._core,
             _plans.PLAN_1,
-            (fields, accept_language, user_id),
+            (fields, Accept_Language, userId),
             cache_options=cache_options,
             options=options,
         )
@@ -201,7 +201,7 @@ class AsyncSecureProfileCache:
     async def fetch(
         self,
         *,
-        user_id: int,
+        userId: int,
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:
@@ -209,7 +209,7 @@ class AsyncSecureProfileCache:
         return await afetch(
             self._core,
             _plans.PLAN_4,
-            (user_id,),
+            (userId,),
             cache_options=cache_options,
             options=options,
         )

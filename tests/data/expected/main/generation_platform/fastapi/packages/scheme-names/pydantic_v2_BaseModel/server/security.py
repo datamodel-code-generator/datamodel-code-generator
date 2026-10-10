@@ -25,7 +25,7 @@ wiring = HTTPBasic(
 )
 
 
-def h_o_n() -> object:
+def h___o_n() -> object:
     """Return the h\"\"\"o\\N credential, which no FastAPI security class reads; override this dependency."""
     return None
 
@@ -33,6 +33,6 @@ def h_o_n() -> object:
 __all__ = [
     'api_key',
     'api_key_1',
-    'h_o_n',
+    'h___o_n',
     'wiring',
 ]

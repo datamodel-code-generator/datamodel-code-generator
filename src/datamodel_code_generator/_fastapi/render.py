@@ -16,7 +16,6 @@ from datamodel_code_generator._fastapi._compiled_templates import readme as read
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import security as security_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
-from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.plan import (
     Default,
     MemberDefault,
@@ -521,11 +520,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         self.use_schema_description = use_schema_description
         self.use_single_line_docstring = use_single_line_docstring
         self.classes = _plan_classes(plan, {name for module, name in types.fixed if module is not None})
-        taken: set[str] = set()
-        self.scheme_names: dict[str, str] = {}
-        for scheme in plan.schemes:
-            taken.add(name := _unique(normalize(scheme.name, empty="scheme", digit="s_"), taken))
-            self.scheme_names[scheme.name] = name
+        self.scheme_names = {scheme.name: scheme.python_name for scheme in plan.schemes}
 
     @staticmethod
     def file(path: PurePosixPath, kind: str, text: str, *, verbatim: bool = False) -> RenderedFile:

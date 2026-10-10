@@ -1,14 +1,12 @@
-"""Plan route paths, internal path slots, groups, and operation names of a FastAPI server target."""
+"""Plan route paths, internal path slots, and groups of a FastAPI server target."""
 
 from __future__ import annotations
 
 import keyword
 import re
-from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._fastapi.naming import file_stem_conflict, normalize
 from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence
 
 if TYPE_CHECKING:
@@ -69,7 +67,7 @@ BUILDER_NAMES: Final = frozenset({
     "version",
     "webhooks",
 })
-_EXPORTED_NAMES: Final = frozenset({"serve_source_openapi", "validation_error_handler"})
+EXPORTED_NAMES: Final = frozenset({"serve_source_openapi", "validation_error_handler"})
 
 
 class RouteError(ValueError):
@@ -150,18 +148,6 @@ def _plain(name: str) -> bool:
     return name.isascii() and name.isidentifier() and not keyword.iskeyword(name)
 
 
-def operation_name(operation: OperationContract) -> str:
-    """Return an operation's default function name: its operationId, or its method and path."""
-    facts = dict(operation.facts)
-    source = operation_id.value if isinstance(operation_id := facts.get("operationId"), LiteralScalar) else None
-    text = (
-        source
-        if isinstance(source, str) and operation.explicit_operation_id
-        else f"{operation.method}_{operation.path}"
-    )
-    return normalize(text, empty="operation", digit="op_")
-
-
 def tags(operation: OperationContract) -> tuple[str, ...]:
     """Return an operation's tags in declaration order."""
     if not isinstance(value := dict(operation.facts).get("tags"), LiteralSequence):
@@ -176,8 +162,8 @@ def group_key(operation: OperationContract, *, single: bool) -> str:
     return f"tag:{found[0]}" if (found := tags(operation)) else "untagged"
 
 
-def group_stem(key: str) -> str:
-    """Return a group's default name, its router file stem and service argument: its first tag, untagged, or service."""
+def group_basis(key: str) -> str:
+    """Return the text a group's default name derives from: its first tag, untagged, or service for all."""
     match key:
         case "all":
             return "service"
@@ -185,15 +171,4 @@ def group_stem(key: str) -> str:
             return key
         case _:
             pass
-    return normalize(key.removeprefix("tag:"), empty="router", digit="router_")
-
-
-def stem_conflicts(stems: Iterable[str]) -> set[str]:
-    """Return group names that repeat under casefolding, name reserved files, or take a name the package defines.
-
-    Each name is a router file stem and the keyword that passes the group's service to a builder.
-    """
-    names = list(stems)
-    folded = Counter(name.casefold() for name in names)
-    reserved = BUILDER_NAMES | _EXPORTED_NAMES
-    return {name for name in names if folded[name.casefold()] > 1 or file_stem_conflict(name) or name in reserved}
+    return key.removeprefix("tag:")

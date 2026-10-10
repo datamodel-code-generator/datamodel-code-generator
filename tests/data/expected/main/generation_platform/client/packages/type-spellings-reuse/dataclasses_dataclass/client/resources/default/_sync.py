@@ -40,7 +40,7 @@ class DefaultResource:
     def get_pet(
         self,
         *,
-        pet_id: str,
+        petId: str,
         page: int | UNSET = UNSET,
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
@@ -48,7 +48,7 @@ class DefaultResource:
         """Call GET /pets/{petId}."""
         return self._core.execute(
             _operations.OPERATION_0,
-            (pet_id, page, offset),
+            (petId, page, offset),
             options=options,
         ).data
 
@@ -63,7 +63,7 @@ class DefaultWithResponse:
     def get_pet(
         self,
         *,
-        pet_id: str,
+        petId: str,
         page: int | UNSET = UNSET,
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
@@ -71,7 +71,7 @@ class DefaultWithResponse:
         """Call GET /pets/{petId}."""
         return self._core.execute(
             _operations.OPERATION_0,
-            (pet_id, page, offset),
+            (petId, page, offset),
             options=options,
         )
 
@@ -86,7 +86,7 @@ class DefaultWithRawResponse:
     def get_pet(
         self,
         *,
-        pet_id: str,
+        petId: str,
         page: int | UNSET = UNSET,
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
@@ -94,7 +94,7 @@ class DefaultWithRawResponse:
         """Call GET /pets/{petId}."""
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (pet_id, page, offset),
+            (petId, page, offset),
             options=options,
         )
 
@@ -109,7 +109,7 @@ class DefaultWithStreamingResponse:
     def get_pet(
         self,
         *,
-        pet_id: str,
+        petId: str,
         page: int | UNSET = UNSET,
         offset: int | UNSET = UNSET,
         options: RequestOptions | None = None,
@@ -117,6 +117,6 @@ class DefaultWithStreamingResponse:
         """Call GET /pets/{petId}."""
         return self._core.stream(
             _operations.OPERATION_0,
-            (pet_id, page, offset),
+            (petId, page, offset),
             options=options,
         )

@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import OperationRef
-from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
+from datamodel_code_generator._target_naming import explicit_name
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
@@ -86,7 +86,7 @@ def _frozen(value: object) -> object:
 
 
 def _identifier(value: object) -> bool:
-    return isinstance(value, str) and explicit(value)
+    return explicit_name(value)
 
 
 def _router_names_valid(value: object) -> bool:

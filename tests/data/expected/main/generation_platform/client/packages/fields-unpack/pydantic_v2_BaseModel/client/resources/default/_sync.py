@@ -118,7 +118,7 @@ class DefaultResource:
                 kwargs.get('name', UNSET),
                 kwargs.get('kind', UNSET),
                 kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
+                kwargs.get('birthDate', UNSET),
                 kwargs.get('owner', UNSET),
                 kwargs.get('secret', UNSET),
             ),
@@ -155,7 +155,7 @@ class DefaultResource:
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -185,7 +185,7 @@ class DefaultResource:
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -197,7 +197,7 @@ class DefaultResource:
         KEYWORDS_3.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -223,7 +223,7 @@ class DefaultResource:
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         ).data
@@ -246,7 +246,7 @@ class DefaultResource:
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -258,7 +258,7 @@ class DefaultResource:
         KEYWORDS_6.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -282,7 +282,7 @@ class DefaultResource:
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -331,7 +331,7 @@ class DefaultWithResponse:
                 kwargs.get('name', UNSET),
                 kwargs.get('kind', UNSET),
                 kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
+                kwargs.get('birthDate', UNSET),
                 kwargs.get('owner', UNSET),
                 kwargs.get('secret', UNSET),
             ),
@@ -368,7 +368,7 @@ class DefaultWithResponse:
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -398,7 +398,7 @@ class DefaultWithResponse:
         KEYWORDS_2.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -413,7 +413,7 @@ class DefaultWithResponse:
         KEYWORDS_3.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -439,7 +439,7 @@ class DefaultWithResponse:
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -462,7 +462,7 @@ class DefaultWithResponse:
         KEYWORDS_5.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -477,7 +477,7 @@ class DefaultWithResponse:
         KEYWORDS_6.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -501,7 +501,7 @@ class DefaultWithResponse:
         KEYWORDS_7.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -544,7 +544,7 @@ class DefaultWithRawResponse:
                 kwargs.get('name', UNSET),
                 kwargs.get('kind', UNSET),
                 kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
+                kwargs.get('birthDate', UNSET),
                 kwargs.get('owner', UNSET),
                 kwargs.get('secret', UNSET),
             ),
@@ -575,7 +575,7 @@ class DefaultWithRawResponse:
         KEYWORDS_1.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -593,7 +593,7 @@ class DefaultWithRawResponse:
         KEYWORDS_2.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -605,7 +605,7 @@ class DefaultWithRawResponse:
         KEYWORDS_3.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -628,7 +628,7 @@ class DefaultWithRawResponse:
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -645,7 +645,7 @@ class DefaultWithRawResponse:
         KEYWORDS_5.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -657,7 +657,7 @@ class DefaultWithRawResponse:
         KEYWORDS_6.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -678,7 +678,7 @@ class DefaultWithRawResponse:
         KEYWORDS_7.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -727,7 +727,7 @@ class DefaultWithStreamingResponse:
                 kwargs.get('name', UNSET),
                 kwargs.get('kind', UNSET),
                 kwargs.get('pet_tag', UNSET),
-                kwargs.get('birth_date', UNSET),
+                kwargs.get('birthDate', UNSET),
                 kwargs.get('owner', UNSET),
                 kwargs.get('secret', UNSET),
             ),
@@ -764,7 +764,7 @@ class DefaultWithStreamingResponse:
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -794,7 +794,7 @@ class DefaultWithStreamingResponse:
         KEYWORDS_2.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_2,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('note', UNSET), kwargs.get('visit_options', UNSET)),
             media_type=kwargs.get('media_type'),
@@ -809,7 +809,7 @@ class DefaultWithStreamingResponse:
         KEYWORDS_3.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_3,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -835,7 +835,7 @@ class DefaultWithStreamingResponse:
             _operations.OPERATION_4,
             (),
             body=kwargs.get('body', UNSET),
-            fields=(kwargs.get('email', UNSET), kwargs.get('nick_name', UNSET)),
+            fields=(kwargs.get('email', UNSET), kwargs.get('nickName', UNSET)),
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
         )
@@ -858,7 +858,7 @@ class DefaultWithStreamingResponse:
         KEYWORDS_5.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_5,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('size', UNSET),),
             media_type=kwargs.get('media_type'),
@@ -873,7 +873,7 @@ class DefaultWithStreamingResponse:
         KEYWORDS_6.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_6,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs['body'],
             media_type=kwargs.get('media_type'),
             options=kwargs.get('options'),
@@ -897,7 +897,7 @@ class DefaultWithStreamingResponse:
         KEYWORDS_7.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_7,
-            (kwargs['pet_id'],),
+            (kwargs['petId'],),
             body=kwargs.get('body', UNSET),
             fields=(kwargs.get('name', UNSET), kwargs.get('tag', UNSET)),
             media_type=kwargs.get('media_type'),

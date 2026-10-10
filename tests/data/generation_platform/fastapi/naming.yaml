@@ -1,0 +1,64 @@
+openapi: 3.1.0
+info: {title: Naming, version: "1.0"}
+paths:
+  /items/{itemId}:
+    get:
+      operationId: getItem
+      tags: [Item Store]
+      parameters:
+        - {name: itemId, in: path, required: true, schema: {type: integer}}
+        - {name: itemId, in: query, schema: {type: integer}}
+        - {name: itemId, in: header, schema: {type: integer}}
+        - {name: X-Request-Id, in: header, schema: {type: string}}
+        - {name: "page[size]", in: query, schema: {type: integer}}
+        - {name: 2fa, in: query, schema: {type: string}}
+        - {name: class, in: query, schema: {type: string}}
+        - {name: request, in: query, schema: {type: string}}
+        - {name: body, in: query, schema: {type: string}}
+        - {name: self, in: query, schema: {type: string}}
+        - {name: sessionId, in: cookie, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /items:
+    post:
+      operationId: get_item
+      tags: [Item Store]
+      parameters:
+        - {name: name, in: query, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/NewItem"}
+      responses:
+        "204": {description: Done.}
+  /items/{itemId}/tags:
+    delete:
+      tags: [item store]
+      parameters:
+        - {name: itemId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /x1:
+    get:
+      operationId: x1
+      responses:
+        "204": {description: Done.}
+  /x_1:
+    get:
+      operationId: x_1
+      responses:
+        "204": {description: Done.}
+  /health:
+    get:
+      tags: [close]
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    NewItem:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        itemCount: {type: integer}

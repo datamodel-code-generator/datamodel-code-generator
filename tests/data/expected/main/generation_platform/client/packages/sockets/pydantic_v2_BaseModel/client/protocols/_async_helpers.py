@@ -137,7 +137,7 @@ class AsyncSecureChatWebsocket:
     def connect(
         self,
         *,
-        x_trace: str | UNSET = UNSET,
+        X_Trace: str | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncWebSocketSession[bytes, str]]:
@@ -145,7 +145,7 @@ class AsyncSecureChatWebsocket:
         return aconnect_socket(
             self._core,
             _plans.SOCKET_2,
-            (x_trace,),
+            (X_Trace,),
             ws_options=ws_options,
             options=options,
         )

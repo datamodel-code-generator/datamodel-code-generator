@@ -17,9 +17,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
     class Pets(server.services.PetsService):
         def list_pets(
-            self, *, limit: object, tags: object, kind: object, x_request_id: object, since: object, session: object
+            self, *, limit: object, tags: object, kind: object, X_Request_Id: object, since: object, session: object
         ) -> object:
-            record("list_pets", limit=limit, tags=tags, kind=kind, x_request_id=x_request_id, since=since, session=session)
+            record("list_pets", limit=limit, tags=tags, kind=kind, X_Request_Id=X_Request_Id, since=since, session=session)
             if limit == 99:
                 return server.HTTPResult(status_code=500, body=models.Error(code=1, message="Too many"))
             return list(pets.values())[: limit if isinstance(limit, int) else None]
@@ -32,15 +32,15 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             record("list_my_pets")
             return [{"id": 1, "name": "Mimi", "tag": None}]
 
-        def get_pet(self, *, pet_id: int) -> object:
-            record("get_pet", pet_id=pet_id)
-            if (pet := pets.get(pet_id)) is None:
+        def get_pet(self, *, petId: int) -> object:
+            record("get_pet", petId=petId)
+            if (pet := pets.get(petId)) is None:
                 return server.HTTPResult(status_code=404, body=models.Error(code=404, message="Not found"))
             return pet
 
-        def delete_pet(self, *, pet_id: int) -> object:
-            record("delete_pet", pet_id=pet_id)
-            return None if pet_id in pets else server.HTTPResult(status_code=404, body=models.Error(code=404, message="Gone"))
+        def delete_pet(self, *, petId: int) -> object:
+            record("delete_pet", petId=petId)
+            return None if petId in pets else server.HTTPResult(status_code=404, body=models.Error(code=404, message="Gone"))
 
     class Store(server.services.StoreService):
         def get_inventory(self) -> object:

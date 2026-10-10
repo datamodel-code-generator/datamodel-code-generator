@@ -20,7 +20,7 @@ PLAN_0: Final[CachePlan[GetUserResponse]] = CachePlan(
     call=_operations.OPERATION_0,
     validator='both',
     authenticated=False,
-    fingerprint='c1ff6be2ac04e953306821cd2e60ad47febb9b2da17907fb9678e9e0c6e0b835',
+    fingerprint='9965bde8d07231c0a37923040664331938fc8b6c71ad957beb6046c4a1db9122',
     vary_allowlist=frozenset(('accept-language',)),
 )
 
@@ -31,7 +31,7 @@ PLAN_1: Final[CachePlan[GetUserResponse]] = CachePlan(
     call=_operations.OPERATION_0,
     validator='last_modified',
     authenticated=False,
-    fingerprint='0c84c1aa68bdc755548e3b102133d727d0391041207c594796d7748be73576c5',
+    fingerprint='044c13cb102fcac661ebf828b50477582b2e75c34b76f7b64d0b2d78b908bf1c',
     statuses=frozenset((200, 203)),
 )
 
@@ -63,6 +63,6 @@ PLAN_4: Final[CachePlan[GetSecureUserResponse]] = CachePlan(
     call=_operations.OPERATION_7,
     validator='etag',
     authenticated=True,
-    fingerprint='d58a9b35a20b658873d0ab7cc823c2cf9daf68626fbf168bbfce995f300f048a',
+    fingerprint='40f19501c49f220c54e15f87ffc5287590a65b3b0840a4968cbb71e4c339992c',
     vary_allowlist=frozenset(('x-signature',)),
 )

@@ -45,14 +45,14 @@ class AsyncUsersResource:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
         """Call GET /users."""
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -89,14 +89,14 @@ class AsyncUsersWithResponse:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
         """Call GET /users."""
         return await self._core.execute(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         )
@@ -133,14 +133,14 @@ class AsyncUsersWithRawResponse:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /users."""
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         )
@@ -177,14 +177,14 @@ class AsyncUsersWithStreamingResponse:
         *,
         cursor: str | UNSET = UNSET,
         limit: int | UNSET = UNSET,
-        x_snapshot: str | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /users."""
         return self._core.stream(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         )

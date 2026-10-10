@@ -53,7 +53,7 @@ def _parameters(harness: Harness, api: Any, exchange: Exchange, lines: list[str]
     drained(lines, "header cursor", helpers.by_header.iterate())
     start = harness.argument("listUsers", "header", "X-Cursor", "start")
     exchange.respond(users("1", cursor="a"), users("2"))
-    drained(lines, "header cursor over the caller's", helpers.by_header.iterate(x_cursor=start))
+    drained(lines, "header cursor over the caller's", helpers.by_header.iterate(X_Cursor=start))
 
 
 def _overrides(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:

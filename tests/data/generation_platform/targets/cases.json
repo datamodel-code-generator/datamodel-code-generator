@@ -102,7 +102,12 @@
           "config": {"server_primary_responses": {"spec/other.yaml#/paths/~1pets/get": {"status_code": 200}}}
         }
       },
-      {"check": {"exit": "ERROR", "config": {"server_operation_names": {"/paths/~1pets/get": "create_pet"}}}}
+      {
+        "check": {
+          "exit": "ERROR",
+          "config": {"server_operation_names": {"/paths/~1pets/get": "create_pet", "/paths/~1pets/post": "create_pet"}}
+        }
+      }
     ]
   },
   "locks": {

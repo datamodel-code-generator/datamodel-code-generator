@@ -74,7 +74,7 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     ),
     fields=FieldArguments(
         method='create_pet',
-        names=('name', 'kind', 'pet_tag', 'birth_date', 'owner', 'secret'),
+        names=('name', 'kind', 'pet_tag', 'birthDate', 'owner', 'secret'),
         media=(
             BodyFields(
                 media_type='application/json',
@@ -225,7 +225,7 @@ OPERATION_4: Final[OperationPlan[CreateOwnerResponse]] = OperationPlan(
     ),
     fields=FieldArguments(
         method='create_owner',
-        names=('email', 'nick_name'),
+        names=('email', 'nickName'),
         media=(
             BodyFields(
                 media_type='application/json',

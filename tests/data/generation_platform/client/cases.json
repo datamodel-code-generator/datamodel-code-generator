@@ -587,19 +587,19 @@
       [
         "client",
         "resources",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "__init__.py"
       ],
       [
         "client",
         "resources",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "_async.py"
       ],
       [
         "client",
         "resources",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "_sync.py"
       ],
       [
@@ -655,13 +655,13 @@
       [
         "client",
         "types",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "__init__.py"
       ],
       [
         "client",
         "types",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "_operations.py"
       ],
       [
@@ -741,7 +741,26 @@
     }
   },
   "name-errors": {
-    "input": "name-errors.yaml"
+    "input": "name-errors.yaml",
+    "model": {"aliases": {"petId": "pet id"}},
+    "config": {
+      "operations": [
+        {"ref": "/paths/~1close/get", "name": "with_options"},
+        {
+          "ref": "/paths/~1view/get",
+          "parameter_names": [
+            {"in_": "query", "name": "body", "python_name": "options"},
+            {"in_": "query", "name": "user-id", "python_name": "uid"},
+            {"in_": "header", "name": "user_id", "python_name": "uid"}
+          ]
+        }
+      ]
+    }
+  },
+  "method-collisions-suffix": {
+    "input": "method-collisions.yaml",
+    "model": {"duplicate_name_suffix": {"model": "Variant"}},
+    "modules": [["client", "types", "default", "_operations.py"]]
   },
   "child-collision": {
     "input": "names.yaml",
@@ -800,8 +819,26 @@
       ]
     }
   },
+  "naming": {
+    "input": "naming.yaml",
+    "config": {"body_arguments": "both"},
+    "modules": [
+      ["client", "_client.py"],
+      ["client", "resources", "item_store", "_sync.py"],
+      ["client", "resources", "item_store_1", "_sync.py"],
+      ["client", "resources", "close_1", "_sync.py"],
+      ["client", "types", "item_store", "_operations.py"]
+    ]
+  },
+  "naming-snake": {
+    "input": "naming.yaml",
+    "model": {"snake_case_field": true},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
+  },
   "method-collisions": {
-    "input": "method-collisions.yaml"
+    "input": "method-collisions.yaml",
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
   },
   "reference-errors": {
     "input": "pets.yaml",
@@ -1301,7 +1338,7 @@
             {
               "media_type": "application/json",
               "name": "birthDate",
-              "python_name": "kind"
+              "python_name": "tag"
             }
           ]
         },
@@ -2106,7 +2143,8 @@
     "input": "auth-wire-conflicts.yaml"
   },
   "credential-name-errors": {
-    "input": "credential-name-errors.yaml"
+    "input": "credential-name-errors.yaml",
+    "modules": [["client", "_client.py"], ["client", "auth.py"]]
   },
   "auth-context": {
     "input": "auth-context.yaml",

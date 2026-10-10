@@ -96,7 +96,7 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     users = api.protocols.users
     arguments = {
         "limit": harness.argument("listUsers", "query", "limit", 1),
-        "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
+        "X_Trace": harness.argument("listUsers", "header", "X-Trace", "t"),
         "session": harness.argument("listUsers", "cookie", "session", "s"),
     }
     patched = harness.options.RequestOptions(extra_headers={"X-Client": "c"}, extra_query={"debug": "1"})
@@ -146,7 +146,7 @@ def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
         headed_page("2", headers=(("Link", "<?page=3>; rel=next"), ("X-Snapshot", "s2"))),
         user_page("3"),
     )
-    drained(lines, "snapshot kept from the first page", users.snapshot.iterate(x_trace=trace))
+    drained(lines, "snapshot kept from the first page", users.snapshot.iterate(X_Trace=trace))
 
 
 def _search(harness: Harness, wire: object) -> object:
@@ -208,7 +208,7 @@ def _guarded(harness: Harness) -> tuple[tuple[str, Any, tuple[Any, ...], Any, di
     other = harness.protocols.Origin(scheme="https", host="other.example.com", port=443)
     bearer = {"bearer": "token"}
     arguments = {
-        "x_trace": harness.argument("listUsers", "header", "X-Trace", "t"),
+        "X_Trace": harness.argument("listUsers", "header", "X-Trace", "t"),
         "session": harness.argument("listUsers", "cookie", "session", "s"),
         "options": options.RequestOptions(extra_headers={"Authorization": "Basic c2VjcmV0"}),
     }

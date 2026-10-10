@@ -88,7 +88,7 @@ def _credentials(package: ModuleType, exchange: Exchange, lines: list[str]) -> N
         record(
             lines,
             "cookie beside parameters",
-            lambda: api.auth.cookie_parameters(theme="dark", page=1, x_trace="trace"),
+            lambda: api.auth.cookie_parameters(theme="dark", page=1, X_Trace="trace"),
         )
         record(lines, "basic", api.auth.basic)
         record(lines, "and", api.auth.and_auth)

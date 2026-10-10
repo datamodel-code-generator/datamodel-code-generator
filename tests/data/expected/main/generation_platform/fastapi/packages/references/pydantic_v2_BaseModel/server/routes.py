@@ -53,14 +53,14 @@ def _add_list_pets(
         principal: Annotated[object, Depends(list_pets_principal)],
         limit: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='limit')] = None,
         page: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='page')] = None,
-        x_trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
+        X_Trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
     ) -> object:
         return dispatch(
             list_pets_handler(
                 principal=principal,
                 limit=limit,
                 page=page,
-                x_trace=x_trace,
+                X_Trace=X_Trace,
             ),
             contract.ListPets.RESPONSES,
         )
@@ -105,13 +105,13 @@ def _add_create_pet(
     def create_pet(
         *,
         principal: Annotated[object, Depends(create_pet_principal)],
-        x_trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
+        X_Trace: Annotated[str | None, Header(alias='X-Trace', convert_underscores=False)] = None,
         body: Annotated[models.Pet, Body(media_type='application/json')],
     ) -> object:
         return dispatch(
             create_pet_handler(
                 principal=principal,
-                x_trace=x_trace,
+                X_Trace=X_Trace,
                 body=body,
             ),
             contract.CreatePet.RESPONSES,

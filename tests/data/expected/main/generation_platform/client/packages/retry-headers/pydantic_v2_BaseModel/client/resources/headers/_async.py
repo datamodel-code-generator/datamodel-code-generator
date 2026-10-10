@@ -52,14 +52,14 @@ class AsyncHeadersResource:
     async def parameter(
         self,
         *,
-        x_request_key: str | UNSET = UNSET,
+        X_Request_Key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> ParameterResponse:
         """Call POST /parameter."""
         return (await self._core.execute(
             _operations.OPERATION_0,
-            (x_request_key,),
+            (X_Request_Key,),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -165,14 +165,14 @@ class AsyncHeadersResource:
     async def direction(
         self,
         *,
-        x_retry_control: str | UNSET = UNSET,
+        X_Retry_Control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> DirectionResponse:
         """Call POST /direction."""
         return (await self._core.execute(
             _operations.OPERATION_8,
-            (x_retry_control,),
+            (X_Retry_Control,),
             options=options,
             response_media_type=response_media_type,
         )).data
@@ -202,14 +202,14 @@ class AsyncHeadersWithResponse:
     async def parameter(
         self,
         *,
-        x_request_key: str | UNSET = UNSET,
+        X_Request_Key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ParameterResponse]:
         """Call POST /parameter."""
         return await self._core.execute(
             _operations.OPERATION_0,
-            (x_request_key,),
+            (X_Request_Key,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -315,14 +315,14 @@ class AsyncHeadersWithResponse:
     async def direction(
         self,
         *,
-        x_retry_control: str | UNSET = UNSET,
+        X_Retry_Control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[DirectionResponse]:
         """Call POST /direction."""
         return await self._core.execute(
             _operations.OPERATION_8,
-            (x_retry_control,),
+            (X_Retry_Control,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -352,14 +352,14 @@ class AsyncHeadersWithRawResponse:
     async def parameter(
         self,
         *,
-        x_request_key: str | UNSET = UNSET,
+        X_Request_Key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /parameter."""
         return await self._core.execute_raw(
             _operations.OPERATION_0,
-            (x_request_key,),
+            (X_Request_Key,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -465,14 +465,14 @@ class AsyncHeadersWithRawResponse:
     async def direction(
         self,
         *,
-        x_retry_control: str | UNSET = UNSET,
+        X_Retry_Control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /direction."""
         return await self._core.execute_raw(
             _operations.OPERATION_8,
-            (x_retry_control,),
+            (X_Retry_Control,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -502,14 +502,14 @@ class AsyncHeadersWithStreamingResponse:
     def parameter(
         self,
         *,
-        x_request_key: str | UNSET = UNSET,
+        X_Request_Key: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /parameter."""
         return self._core.stream(
             _operations.OPERATION_0,
-            (x_request_key,),
+            (X_Request_Key,),
             options=options,
             response_media_type=response_media_type,
         )
@@ -615,14 +615,14 @@ class AsyncHeadersWithStreamingResponse:
     def direction(
         self,
         *,
-        x_retry_control: str | UNSET = UNSET,
+        X_Retry_Control: str | UNSET = UNSET,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /direction."""
         return self._core.stream(
             _operations.OPERATION_8,
-            (x_retry_control,),
+            (X_Retry_Control,),
             options=options,
             response_media_type=response_media_type,
         )

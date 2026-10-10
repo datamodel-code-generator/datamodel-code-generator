@@ -369,10 +369,10 @@ def _head_calls(api: Any, pet: object, *, asynchronous: bool) -> dict[str, Calla
     if asynchronous:
 
         async def buffered() -> bytes:
-            return (await pets.with_raw_response.head_pet(pet_id=pet)).body_bytes
+            return (await pets.with_raw_response.head_pet(petId=pet)).body_bytes
 
         async def streaming() -> bytes:
-            async with pets.with_streaming_response.head_pet(pet_id=pet) as response:
+            async with pets.with_streaming_response.head_pet(petId=pet) as response:
                 return await response.read()
 
         async def escape() -> bytes:
@@ -380,21 +380,21 @@ def _head_calls(api: Any, pet: object, *, asynchronous: bool) -> dict[str, Calla
             return response.body_bytes
 
         return {
-            "typed": lambda: pets.head_pet(pet_id=pet),
-            "response": lambda: pets.with_response.head_pet(pet_id=pet),
+            "typed": lambda: pets.head_pet(petId=pet),
+            "response": lambda: pets.with_response.head_pet(petId=pet),
             "raw": buffered,
             "stream": streaming,
             "escape": escape,
         }
 
     def streamed() -> bytes:
-        with pets.with_streaming_response.head_pet(pet_id=pet) as response:
+        with pets.with_streaming_response.head_pet(petId=pet) as response:
             return response.read()
 
     return {
-        "typed": lambda: pets.head_pet(pet_id=pet),
-        "response": lambda: pets.with_response.head_pet(pet_id=pet),
-        "raw": lambda: pets.with_raw_response.head_pet(pet_id=pet).body_bytes,
+        "typed": lambda: pets.head_pet(petId=pet),
+        "response": lambda: pets.with_response.head_pet(petId=pet),
+        "raw": lambda: pets.with_raw_response.head_pet(petId=pet).body_bytes,
         "stream": streamed,
         "escape": lambda: api.request_raw("HEAD", "https://api.example.com/v1/pets/3").body_bytes,
     }

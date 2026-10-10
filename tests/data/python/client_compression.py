@@ -150,7 +150,7 @@ def _signed(harness: _Harness, lines: list[str]) -> None:
 
     with harness.client(auth=_HeaderSigner()) as api:
         exchange.respond(digested)
-        record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed", content_length=harness.length(6)))
+        record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed", Content_Length=harness.length(6)))
         file = io.BytesIO(b"file")
         exchange.respond(raw_response(204))
         record(lines, "signed file", lambda: api.items.put_blob(body=file))
@@ -177,23 +177,23 @@ def _framing(harness: _Harness, lines: list[str]) -> None:
     length = harness.length(6)
     with harness.client() as api:
         exchange.respond(sized, chunked)
-        record(lines, "typed bytes length", lambda: api.items.put_blob(body=b"framed", content_length=length))
+        record(lines, "typed bytes length", lambda: api.items.put_blob(body=b"framed", Content_Length=length))
         record(
             lines,
             "typed file length",
-            lambda: api.items.put_blob(body=io.BytesIO(b"framed"), content_length=length),
+            lambda: api.items.put_blob(body=io.BytesIO(b"framed"), Content_Length=length),
         )
 
     async def asynchronous() -> None:
         async with harness.async_client() as api:
             exchange.respond(sized, chunked)
             await arecord(
-                lines, "async typed bytes length", lambda: api.items.put_blob(body=b"framed", content_length=length)
+                lines, "async typed bytes length", lambda: api.items.put_blob(body=b"framed", Content_Length=length)
             )
             await arecord(
                 lines,
                 "async typed file length",
-                lambda: api.items.put_blob(body=io.BytesIO(b"framed"), content_length=length),
+                lambda: api.items.put_blob(body=io.BytesIO(b"framed"), Content_Length=length),
             )
 
     run(asynchronous)

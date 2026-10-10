@@ -43,7 +43,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
         def get_pet(self, **arguments: object) -> object:
             calls.append(f"get_pet({', '.join(f'{key}={_plain(value)!r}' for key, value in arguments.items())})")
-            if arguments["pet_id"] == 1:
+            if arguments["petId"] == 1:
                 return {"petType": "cat", "name": "Mimi"}
             return {"petType": "dog", "bark": True}
 
