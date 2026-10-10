@@ -43,12 +43,12 @@ secret
 id
   Field required [type=missing, input_value={'title': 5}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing
-title
-  Input should be a valid string [type=string_type, input_value=5, input_type=int]
-    For further information visit https://errors.pydantic.dev/<version>/v/string_type
 secret
   Field required [type=missing, input_value={'title': 5}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
+    For further information visit https://errors.pydantic.dev/<version>/v/missing
+title
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] invalid_value
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
   store failed ! InternalServerError: Error code: 500 - down [operation_id='storeDocument', status_code=500, body='down', body_bytes=b'down', truncated=False]

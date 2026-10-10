@@ -64,6 +64,7 @@ from tests.main.conftest import (
     BLACK_PY314_SKIP,
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
+    EXPERIMENTAL_MISSING_IMPORT_WARNING,
     LEGACY_BLACK_SKIP,
     MSGSPEC_LEGACY_BLACK_SKIP,
     OPEN_API_DATA_PATH,
@@ -3089,6 +3090,7 @@ def test_main_openapi_nullable(output_file: Path) -> None:
     )
 
 
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_main_openapi_use_missing_sentinel_nullable_keyword(output_file: Path) -> None:
     """Test --use-missing-sentinel preserves OpenAPI nullable keyword fields."""
     run_main_and_assert(

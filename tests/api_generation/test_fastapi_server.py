@@ -15,6 +15,7 @@ from tests.data.python.fastapi_openapi import SCENARIOS, fastapi_openapi_report
 from tests.data.python.fastapi_server import fastapi_server_report
 from tests.data.python.fastapi_upstream import fastapi_upstream_report
 from tests.data.python.model_codec_builtin import builtin_codec_report, builtin_codec_startup_report
+from tests.main.conftest import EXPERIMENTAL_MISSING_IMPORT_WARNING
 
 DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs/pydantic"
@@ -95,7 +96,7 @@ def test_text_charsets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         ("pets", "pets-noalias-forbid"),
         ("pets", "pets-generator"),
         ("pets", "pets-serialization"),
-        ("pets", "pets-missing"),
+        pytest.param("pets", "pets-missing", marks=EXPERIMENTAL_MISSING_IMPORT_WARNING),
         ("pets", "pets-strict"),
         ("pets", "pets-forbid"),
         ("pets", "pets-allow"),
