@@ -1,7 +1,6 @@
 # publication-modes
 chmod . 0750
 generate
-  returned None
 tree
   models.py
   server/README.md
@@ -23,7 +22,6 @@ mode server/__init__.py: 0640
 mode server/README.md: 0640
 chmod models.py 0604
 generate
-  returned None
 tree
   models.py
   server/README.md

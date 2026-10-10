@@ -1,7 +1,7 @@
 # nested-mount-point
 mkdir server/routers
 generate
-  OSError: [Errno 18] Invalid cross-device link
+  Error: could not publish batch output: [Errno 18] Invalid cross-device link
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 tree
 leftovers []

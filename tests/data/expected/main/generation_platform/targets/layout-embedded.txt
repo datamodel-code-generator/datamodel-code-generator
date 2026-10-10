@@ -1,6 +1,5 @@
 # layout-embedded
 generate
-  returned None
 tree
   models.py
   server/README.md
@@ -23,16 +22,18 @@ show server/routers/pets.py
   | 
   | """Endpoints of the pets operations; regenerate them instead of editing."""
   | 
+  | from collections.abc import Sequence
+  | from typing import Annotated, Final
+  | 
+  | from example import models
+  | from fastapi import APIRouter, Body, params
+  | from fastapi.responses import Response
+  | 
   | from .._generated import contract
   | from .._generated.contract import OperationDependencies
   | from .._runtime.server.application import Wiring, build, checked
   | from .._runtime.server.responses import dispatch
   | from ..services import PetsService
-  | from collections.abc import Sequence
-  | from example import models
-  | from fastapi import APIRouter, Body, params
-  | from fastapi.responses import Response
-  | from typing import Annotated, Final
   | 
   | 
   | def _add_list_pets(

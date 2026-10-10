@@ -1,159 +1,113 @@
-"""Replay target scenarios through generate() and report the returned files, the written files, and failures."""
+"""Replay target scenarios on the command line and report what each run prints and the files it leaves."""
 
 from __future__ import annotations
 
+import io
 import json
 import re
 import shutil
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeAlias
-from urllib.parse import urlparse
+from typing import TYPE_CHECKING, Any
 
-import yaml
-
-from datamodel_code_generator import Error, GenerateConfig, generate
-from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
-from tests.data.python.client_generation import cyclic_input_failure
+from datamodel_code_generator.__main__ import Exit
+from datamodel_code_generator.util import get_yaml_backend
+from tests.main.conftest import run_main_with_args
 
 if TYPE_CHECKING:
     import pytest
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "targets"
 _PRIVATE = re.compile(r"(?<![0-9a-f])(?:[0-9a-f]{32}|[0-9a-f]{16})(?![0-9a-f])")
+_CHECKED = re.compile(r"^(?:(?P<kind>MISSING|EXTRA): |--- )(?P<path>\S+)")
+_MODEL: dict[str, Any] = {
+    "input_file_type": "openapi",
+    "output": "models.py",
+    "target_python_version": "3.11",
+    "disable_timestamp": True,
+    "formatters": ["builtin"],
+}
 _SERVER: dict[str, Any] = {
+    "generate_server": "fastapi",
     "server_output": "server",
     "server_package": "example.server",
     "server_model_package": "example.models",
 }
-Files: TypeAlias = dict[tuple[str, ...], str]
+_DEPENDENCY_NOTICE = "Add the runtime dependencies of "
+_TRACEBACK = "Traceback (most recent call last):"
 
 
-def _runtime(path: Path) -> bool:
-    return "_runtime" in path.parts
+def _runtime(path: str) -> bool:
+    return "_runtime" in Path(path).parts
 
 
-def _settings(model: dict[str, Any], server: dict[str, Any], root: Path, *, write: bool) -> GenerateConfig:
-    """Build the generate() configuration of a step: its model options and the server options of the example target.
+def _runtime_line(states: list[str]) -> list[str]:
+    return [f"  {len(states)} runtime modules {sorted(set(states))}"] if states else []
 
-    A `{root}` document of an operation reference names the working directory. Without `write`, the run has no output
-    and returns the files.
+
+def _options(values: dict[str, Any]) -> list[str]:
+    """Spell options as the command line takes them: a flag per true value, a JSON object per mapping.
+
+    A `{root}` document of an operation reference names the working directory.
     """
-    values = {"disable_timestamp": True, "formatters": [], **model}
-    converted: dict[str, Any] = {"target_python_version": "3.11", "generate_server": "fastapi"}
-    resolved = None
+    args: list[str] = []
     for key, value in values.items():
-        match key:
-            case "output" | "emit_model_metadata" | "lockfile" | "custom_template_dir":
-                converted[key] = None if value is None else Path(value)
-            case "resolved_lock":
-                resolved = value
+        flag = f"--{key.replace('_', '-')}"
+        match key, value:
+            case _, bool():
+                args.extend([flag] if value else [])
+            case "custom_formatters", list():
+                args.extend([flag, ",".join(value)])
+            case _, list():
+                args.extend([flag, *value])
+            case _, dict():
+                spelled = {name.replace("{root}", Path.cwd().as_uri()): item for name, item in value.items()}
+                args.extend([flag, json.dumps(spelled)])
             case _:
-                converted[key] = value
-    if not write:
-        converted["output"] = None
-    for key, value in server.items():
-        match key:
-            case "server_operation_names" | "server_primary_responses":
-                converted[key] = {name.replace("{root}", Path.cwd().as_uri()): item for name, item in value.items()}
-            case _:
-                converted[key] = value
-    config = GenerateConfig(**converted)
-    if resolved is not None:
-        config.resolve_remote_lock(
-            RemoteReferenceLock.open(root / "resolved.lock", update=resolved == "update", locked=False)
-        )
-    return config
+                args.extend([flag, str(value)])
+    return args
 
 
-def _input(value: dict[str, Any], server: str | None) -> object:
+def _input(value: dict[str, Any], server: str | None) -> list[str]:
     match value:
-        case {"path": str() as path}:
-            return Path("spec", path)
-        case {"text": str() as path}:
-            return Path("spec", path).read_text(encoding="utf-8")
-        case {"mapping": str() as path}:
-            return yaml.safe_load(Path("spec", path).read_text(encoding="utf-8"))
-        case {"list": list() as paths}:
-            return [Path("spec", path) for path in paths]
-        case {"directory": str() as path}:
-            return Path("spec", path)
+        case {"path": str() as path} | {"directory": str() as path}:
+            return ["--input", Path("spec", path).as_posix()]
         case {"url": str() as path}:
-            return urlparse(f"{server}/{path}")
+            return ["--url", f"{server}/{path}"]
+        case {"text": str()}:
+            return []
         case _:
             raise ValueError(value)
 
 
-def _runtime_line(actions: list[str]) -> list[str]:
-    return [f"  {len(actions)} runtime modules {sorted(set(actions))}"] if actions else []
+def _exit(value: str | dict[str, str]) -> Exit:
+    """Return the exit a run expects; a mapping names it per YAML backend, which may reject an input."""
+    return Exit[value if isinstance(value, str) else value[get_yaml_backend()]]
 
 
-def _step(case: dict[str, Any], overrides: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-    """Merge a step's overrides into its case: the case itself, the model options, and the server options."""
-    return (
-        {**case, **{key: value for key, value in overrides.items() if key not in {"model", "config"}}},
-        {"output": "models.py", **case.get("model", {}), **overrides.get("model", {})},
-        {**_SERVER, **case.get("config", {}), **overrides.get("config", {})},
-    )
+def _printed(stdout: str, stderr: str, root: Path) -> list[str]:
+    """Report the files a check names and what a run prints on stderr, leaving out diff bodies.
 
-
-def _written(parts: tuple[str, ...], model: dict[str, Any], server: dict[str, Any]) -> Path:
-    """Return where a write run puts the file a run without an output returns under parts."""
-    package, models = server["server_package"].split("."), server["server_model_package"].split(".")
-    if list(parts[: len(package)]) == package:
-        return Path(server["server_output"], *parts[len(package) :])
-    return Path(model["output"], *parts[len(models) :])
-
-
-def _state(location: Path, content: str, encoding: str) -> str:
-    if not location.is_file():
-        return "new"
-    return "unchanged" if location.read_text(encoding=encoding) == content else "changed"
-
-
-def _report_files(files: Files, model: dict[str, Any], server: dict[str, Any], lines: list[str]) -> None:
-    """Report each returned file as new, changed, or unchanged against the file a write run would replace."""
-    encoding = model.get("encoding", "utf-8")
-    states = {
-        (location := _written(parts, model, server)).as_posix(): _state(
-            location, text, encoding if parts[-1].endswith(".py") else "utf-8"
-        )
-        for parts, text in files.items()
-    }
-    lines.extend(f"  {state} {path}" for path, state in states.items() if not _runtime(Path(path)))
-    lines.extend(_runtime_line([state for path, state in states.items() if _runtime(Path(path))]))
-
-
-def _run(
-    case: dict[str, Any], overrides: dict[str, Any], root: Path, server: str | None, *, write: bool
-) -> Files | str | None:
-    spec, model, config = _step(case, overrides)
-    try:
-        return generate(_input(spec["input"], server), config=_settings(model, config, root, write=write))
-    except (Error, RemoteLockError, OSError, UnicodeError) as error:
-        if case["input"] in ({"path": "input-cycle-dict.yaml"}, {"path": "input-cycle-reference.yaml"}):
-            if not isinstance(error, Error):
-                raise
-            cycles = {
-                "input-cycle-dict.yaml": ("input-cycle-dict.yaml", "/x-cycle/self", (12, 10)),
-                "input-cycle-list.yaml": ("input-cycle-list.yaml", "/x-cycle/0", (12, 10)),
-                "input-cycle-mutual.yaml": (
-                    "input-cycle-mutual.yaml",
-                    "/x-outer/nested/child/back~1to~0outer/0",
-                    (13, 11),
-                ),
-                "input-cycle-reference.yaml": ("input-cycle-reference-model.yaml", "/x-cycle/self", (6, 10)),
-            }
-            filename, pointer, location = cycles[spec["input"]["path"]]
-            return "  " + cyclic_input_failure(error, source=filename, pointer=pointer, location=location)
-        name = "Error" if isinstance(error, Error) else type(error).__name__
-        return (
-            f"  {name}: {error}"
-            .replace(root.resolve().as_posix(), "<root>")
-            .replace(str(root.resolve()), "<root>")
-            .replace("\\", "/")
-        )
+    Copied runtime modules are counted. The runtime dependency notice is pinned with the command line's own output,
+    and the frames of a traceback name the checkout, so both are left out.
+    """
+    lines, runtime = [], []
+    for line in stdout.splitlines():
+        if (found := _CHECKED.match(line)) is None:
+            continue
+        if _runtime(found["path"]):
+            runtime.append(found["kind"] or "changed")
+        else:
+            lines.append(f"  {line}")
+    lines.extend(_runtime_line(runtime))
+    errors = stderr.replace(root.resolve().as_posix(), "<root>").replace(str(root.resolve()), "<root>")
+    skipped = False
+    for line in filter(None, errors.replace("\\", "/").splitlines()):
+        skipped = line.startswith(_DEPENDENCY_NOTICE) or (skipped and line.startswith("  "))
+        lines.extend([] if skipped else [f"  {line}"])
+        skipped = skipped or line == _TRACEBACK
+    return lines
 
 
 @dataclass
@@ -163,42 +117,35 @@ class _Scenario:
     case: dict[str, Any]
     root: Path
     monkeypatch: pytest.MonkeyPatch
+    capsys: pytest.CaptureFixture[str]
     server: str | None
     lines: list[str] = field(default_factory=list)
-    files: Files | None = None
-    remembered: dict[str, Files] = field(default_factory=dict)
 
-    @property
-    def current(self) -> Files:
-        if self.files is None:
-            raise AssertionError(self.lines)
-        return self.files
+    def _run(self, overrides: dict[str, Any], *, check: bool) -> Exit:
+        """Run the command line with the case's options and a step's overrides, reporting what it prints."""
+        source = overrides.get("input", self.case["input"])
+        model = {**_MODEL, **self.case.get("model", {}), **overrides.get("model", {})}
+        server = {**_SERVER, **self.case.get("config", {}), **overrides.get("config", {})}
+        args = [*_input(source, self.server), *_options(model), *_options(server), *(["--check"] if check else [])]
+        if "text" in source:
+            text = Path("spec", source["text"]).read_text(encoding="utf-8")
+            self.monkeypatch.setattr("sys.stdin", io.StringIO(text))
+        self.capsys.readouterr()
+        exit_ = run_main_with_args(args, expected_exit=_exit(overrides.get("exit", "OK")))
+        captured = self.capsys.readouterr()
+        self.lines.extend(_printed(captured.out, captured.err, self.root))
+        return exit_
 
-    def render(self, overrides: dict[str, Any]) -> None:
-        """Generate without an output, reporting the returned files."""
-        self.lines.append("render")
-        match _run(self.case, overrides, self.root, self.server, write=False):
-            case str() as failure:
-                self.files = None
-                self.lines.append(failure)
-            case dict() as files:
-                self.files = files
-                _, model, server = _step(self.case, overrides)
-                _report_files(files, model, server, self.lines)
-            case report:
-                raise AssertionError(report)
+    def check(self, overrides: dict[str, Any]) -> None:
+        """Check the outputs against a run with the step's options, reporting the files it would write."""
+        self.lines.append("check")
+        self._run(overrides, check=True)
 
     def generate(self, overrides: dict[str, Any]) -> None:
-        """Generate into the outputs, reporting the tree they leave."""
+        """Generate into the outputs, reporting the tree a successful run leaves."""
         self.lines.append("generate")
-        match _run(self.case, overrides, self.root, self.server, write=True):
-            case str() as failure:
-                self.lines.append(failure)
-            case None:
-                self.lines.append("  returned None")
-                self.tree(None)
-            case project:
-                raise AssertionError(project)
+        if self._run(overrides, check=False) is Exit.OK:
+            self.tree(None)
 
     def chmod(self, value: list[Any]) -> None:
         path, mode = value
@@ -245,13 +192,11 @@ class _Scenario:
     def tree(self, _: None) -> None:
         self.lines.append("tree")
         files = [
-            path.relative_to(self.root)
+            path.relative_to(self.root).as_posix()
             for path in self.root.rglob("*")
             if path.is_file() and path.relative_to(self.root).parts[0] not in {"spec", "templates"}
         ]
-        self.lines.extend(
-            sorted(f"  {_PRIVATE.sub('<private>', path.as_posix())}" for path in files if not _runtime(path))
-        )
+        self.lines.extend(sorted(f"  {_PRIVATE.sub('<private>', path)}" for path in files if not _runtime(path)))
         self.lines.extend(_runtime_line(["present" for path in files if _runtime(path)]))
 
     def write(self, value: list[str]) -> None:
@@ -264,34 +209,32 @@ class _Scenario:
         (self.root / path).unlink()
         self.lines.append(f"remove {path}")
 
-    def remember(self, name: str) -> None:
-        self.remembered[name] = self.current
-
-    def compare(self, name: str) -> None:
-        self.lines.append(f"files identical to {name}: {self.current == self.remembered[name]}")
-
     def relocate(self, name: str) -> None:
+        """Copy the checkout to a directory below it and check the copy there, where nothing may differ."""
         other = self.root / name
         sources = list(self.root.iterdir())
         other.mkdir()
         for source in sources:
             (shutil.copytree if source.is_dir() else shutil.copy2)(source, other / source.name)
         self.monkeypatch.chdir(other)
-        match _run(self.case, {}, other, self.server, write=False):
-            case dict() as relocated:
-                self.lines.append(f"relocated files identical: {relocated == self.current}")
-            case failure:
-                raise AssertionError(failure)
+        self.lines.append(f"check in {name}")
+        self._run({}, check=True)
         self.monkeypatch.chdir(self.root)
 
 
-def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch, server: str | None = None) -> str:
-    """Run one scenario's renders, publications, and edits, reporting every observable outcome."""
+def target_render_report(
+    case_name: str,
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    server: str | None = None,
+) -> str:
+    """Run one scenario's checks, publications, and edits, reporting every observable outcome."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     shutil.copytree(SOURCE / "spec", root / "spec")
     shutil.copytree(SOURCE / "templates", root / "templates")
     monkeypatch.chdir(root)
-    scenario = _Scenario(case, root, monkeypatch, server, [f"# {case_name}"])
+    scenario = _Scenario(case, root, monkeypatch, capsys, server, [f"# {case_name}"])
     for step in case["steps"]:
         ((name, value),) = step.items()
         with warnings.catch_warnings(record=True) as recorded:

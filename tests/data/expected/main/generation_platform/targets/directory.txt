@@ -1,6 +1,6 @@
 # directory
 mkdir server/routers/pets.py
 generate
-  IsADirectoryError: [Errno 21] Is a directory: '<root>/server/routers/pets.py'
+  Error: could not publish batch output: [Errno 21] Is a directory: '<root>/server/routers/pets.py'
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 tree
