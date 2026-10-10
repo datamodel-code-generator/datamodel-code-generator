@@ -84,6 +84,7 @@ PATCH_CALLS = frozenset({
 PATCH_TARGET_KEYWORDS = frozenset({"target", "in_dict"})
 REGISTRY_PATCH_CALLS = frozenset({("mocker", "patch", "dict"), ("unittest", "mock", "patch", "dict")})
 SETATTR_CALLS = frozenset({("builtins", "delattr"), ("builtins", "setattr"), ("delattr",), ("setattr",)})
+TYPE_CALLS = frozenset({("builtins", "type"), ("type",)})
 GETATTR_CALLS = frozenset({("builtins", "getattr"), ("getattr",)})
 IMPORT_MODULE_CALL = ("importlib", "import_module")
 IMPORT_CALLS = frozenset({IMPORT_MODULE_CALL, ("__import__",), ("builtins", "__import__")})
@@ -737,15 +738,50 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         self.reached[key] = reached
         return reached
 
-    def imported_from_outside(self, target: ast.expr, scope: _Scope) -> bool:
-        """Whether a patch target is a dotted string or an imported name from outside the tests/ package."""
+    def outside_tests(self, name: str) -> bool:
+        """Whether a dotted name resolves to a module or object outside the tests/ package."""
+        return self.resolve(tuple(name.split(".")))[0] != "tests"
+
+    def imported_from_outside(
+        self,
+        target: ast.expr,
+        scope: _Scope,
+        *,
+        instances: bool = False,
+        seen: frozenset[tuple[int, str]] = frozenset(),
+    ) -> bool:
+        """Whether a patch target comes from outside the tests/ package.
+
+        That is a dotted string, an imported name or a name bound to one, a module importlib imports, or the type of
+        an object such a name constructs. With instances, an object a call to such a name returns counts too.
+        """
         if (text := _complete_text(target)) is not None:
-            return self.resolve(tuple(text.split(".")))[0] != "tests"
-        if not (chain := _attribute_chain(target)) or (owner := scope.owner(chain[0])) is None:
+            return self.outside_tests(text)
+        if isinstance(target, ast.Call):
+            return self.returned_from_outside(target, scope, instances=instances, seen=seen)
+        chain = _attribute_chain(target)
+        if not chain or (owner := scope.owner(chain[0])) is None or (key := (id(owner), chain[0])) in seen:
             return False
         return any(
-            isinstance(value, tuple) and self.resolve(value)[0] != "tests" for value, _ in owner.bindings[chain[0]]
+            self.resolve(value)[0] != "tests"
+            if isinstance(value, tuple)
+            else value is not None
+            and self.imported_from_outside(value, value_scope, instances=instances, seen=seen | {key})
+            for value, value_scope in owner.bindings[chain[0]]
         )
+
+    def returned_from_outside(
+        self, call: ast.Call, scope: _Scope, *, instances: bool, seen: frozenset[tuple[int, str]]
+    ) -> bool:
+        """Whether a call imports a module, or returns the type of or an instance from, something outside tests/."""
+        if not (call_chain := _attribute_chain(call.func)):
+            return False
+        function = self.resolve(call_chain)
+        if function in IMPORT_CALLS:
+            return (module := _imported_name(call, function)) is not None and self.outside_tests(module)
+        if function in TYPE_CALLS and len(call.args) == 1:
+            return self.imported_from_outside(call.args[0], scope, instances=True, seen=seen)
+        return instances and self.imported_from_outside(call.func, scope, seen=seen)
 
     def replaces_internal_module_entry(self, function: tuple[str, ...], call: ast.Call, target: ast.expr) -> bool:
         """Whether a patch of sys.modules sets or removes a package or generated runtime module."""
@@ -819,7 +855,14 @@ class _ModuleAnalyzer(ast.NodeVisitor):
                 or self.replaces_internal_module_entry(function, node, target)
                 or (self.platform and self.imported_from_outside(target, scope))
             )
-        return function in SETATTR_CALLS and bool(node.args) and self.reaches(node.args[0], scope, instances=False)
+        return (
+            function in SETATTR_CALLS
+            and bool(node.args)
+            and (
+                self.reaches(node.args[0], scope, instances=False)
+                or (self.platform and self.imported_from_outside(node.args[0], scope))
+            )
+        )
 
     def dynamic_private_access(self, function: tuple[str, ...], node: ast.Call) -> str | None:
         """Return the private module or name an import or getattr call reaches with static strings."""
@@ -903,9 +946,10 @@ class _ModuleAnalyzer(ast.NodeVisitor):
             replaced = (
                 _canonical_chain(target.value, self.aliases) == SYS_MODULES
                 and (text := _complete_text(target.slice)) is not None
-                and self.reaches_text(text)
+                and (self.reaches_text(text) or (self.platform and self.outside_tests(text)))
                 if isinstance(target, ast.Subscript)
                 else self.reaches(target.value, scope, instances=False)
+                or (self.platform and self.imported_from_outside(target.value, scope))
             )
             if replaced:
                 self.records.append((NORMAL_PATH_MOCK, target, scope, None))
@@ -2234,6 +2278,7 @@ def test_collect_findings_reports_normal_path_mocks(tmp_path: Path) -> None:
 
 
 FOREIGN_PATCH_PROBE = """\
+import importlib
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -2248,7 +2293,7 @@ class _Local:
     pass
 
 
-def test_faults(monkeypatch, fixture_object):
+def test_faults(monkeypatch, fixture_object, generated):
     patch.object(httpx2.HTTPTransport, "handle_request")
     patch.object(Path, "read_bytes")
     monkeypatch.setattr("sys.stdin", None)
@@ -2259,6 +2304,20 @@ def test_faults(monkeypatch, fixture_object):
     monkeypatch.setattr(fixture_object, "value", None)
     monkeypatch.setattr(unbound, "value", None)
     monkeypatch.setattr(_Local(), "value", None)
+    setattr(httpx2.HTTPTransport, "handle_request", None)
+    httpx2.HTTPTransport.handle_request = None
+    sys.modules["h2"] = None
+    sys.modules[generated] = None
+    transport = httpx2.HTTPTransport
+    patch.object(transport, "handle_request")
+    patch.object(importlib.import_module("h2.connection"), "H2Connection")
+    client = httpx2.Client()
+    patch.object(type(client), "send")
+    local = _Local()
+    patch.object(type(local), "value")
+    local.value = None
+    loop = loop
+    patch.object(loop, "value")
 
 
 @pytest.mark.abnormal_path("the transport fails only on a broken network")
@@ -2270,14 +2329,22 @@ def test_marked():
 def test_collect_findings_reports_foreign_patches_in_platform_modules(tmp_path: Path) -> None:
     """Platform tests and helpers patch nothing imported from outside tests/ unless marked as an abnormal path.
 
+    Patch calls, setattr, attribute assignments, and sys.modules entries count, through aliases, importlib, and type().
+
     Other test modules keep the narrower rule, which reports only patches that replace package internals.
     """
     platform = ("api_generation/test_faults.py", "data/generation_platform/faults.py")
     statements = (
-        '16 test_faults: patch.object(httpx2.HTTPTransport, "handle_request")',
-        '17 test_faults: patch.object(Path, "read_bytes")',
-        '18 test_faults: monkeypatch.setattr("sys.stdin", None)',
-        '19 test_faults: monkeypatch.setitem(sys.modules, "h2", None)',
+        '17 test_faults: patch.object(httpx2.HTTPTransport, "handle_request")',
+        '18 test_faults: patch.object(Path, "read_bytes")',
+        '19 test_faults: monkeypatch.setattr("sys.stdin", None)',
+        '20 test_faults: monkeypatch.setitem(sys.modules, "h2", None)',
+        '27 test_faults: setattr(httpx2.HTTPTransport, "handle_request", None)',
+        "28 test_faults: httpx2.HTTPTransport.handle_request",
+        '29 test_faults: sys.modules["h2"]',
+        '32 test_faults: patch.object(transport, "handle_request")',
+        '33 test_faults: patch.object(importlib.import_module("h2.connection"), "H2Connection")',
+        '35 test_faults: patch.object(type(client), "send")',
     )
     findings = _probe_findings(tmp_path, dict.fromkeys(("test_other.py", *platform), FOREIGN_PATCH_PROBE))
 
