@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 from typing import TYPE_CHECKING, Any
 
@@ -31,7 +30,7 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
     with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _cursors(harness, api, exchange, lines)
         _counts(api, exchange, lines)
-        _urls(harness, api, exchange, lines)
+        _urls(api, exchange, lines)
         _bodies(harness, api, exchange, lines)
         _limits(harness, api, exchange, lines)
     run(lambda: _async_resume(harness, lines))
@@ -123,7 +122,7 @@ def _counts(api: Any, exchange: Exchange, lines: list[str]) -> None:
         drained(lines, f"total resumed counts from its page to {label}", helper.resume(2))
 
 
-def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _urls(api: Any, exchange: Exchange, lines: list[str]) -> None:
     for name, responder in (
         ("follow", user_page("1", next=f"{_SERVER}/users?cursor=a&api_key=server-secret")),
         ("linked", headed_page("1", headers=(("Link", "<?page=2&api_key=server-secret>; rel=next"),))),

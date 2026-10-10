@@ -28,16 +28,20 @@ class Chunks:
     """A caller-owned binary iterable for multipart and request examples."""
 
     def __init__(self, lines: list[str], chunks: tuple[bytes, ...], closing: BaseException | None = None) -> None:
+        """Hold the chunks, the lines a close records to, and the error a close raises."""
         self.lines, self.chunks, self.closing = lines, chunks, closing
 
     def __iter__(self) -> Iterator[bytes]:
+        """Yield the chunks."""
         yield from self.chunks
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
+        """Yield the chunks asynchronously."""
         for chunk in self.chunks:
             yield chunk
 
     def close(self) -> None:
+        """Record the close, raising the configured error."""
         self.lines.append("  caller chunks closed")
         if self.closing is not None:
             raise self.closing
@@ -47,9 +51,11 @@ class Reader:
     """A caller-owned readable object with no position."""
 
     def __init__(self, content: bytes) -> None:
+        """Read from the content."""
         self.file = io.BytesIO(content)
 
     def read(self, size: int = -1, /) -> bytes:
+        """Read up to size bytes."""
         return self.file.read(size)
 
 
@@ -57,15 +63,18 @@ class AsyncReader:
     """A caller-owned async file that also iterates by line, as anyio and aiofiles files do."""
 
     def __init__(self, content: bytes) -> None:
+        """Read from the content, recording the sizes asked for."""
         self.file = io.BytesIO(content)
         self.sizes: list[int] = []
         self.iterated = False
 
     async def read(self, size: int = -1, /) -> bytes:
+        """Read up to size bytes, recording the size."""
         self.sizes.append(size)
         return self.file.read(size)
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
+        """Yield the lines, recording that the file was iterated."""
         self.iterated = True
         for line in self.file:
             yield line
@@ -75,9 +84,11 @@ class BytesPath:
     """A path whose file system representation is bytes."""
 
     def __init__(self, path: Path) -> None:
+        """Represent the path."""
         self.path = path
 
     def __fspath__(self) -> bytes:
+        """Return the path encoded as bytes."""
         return os.fsencode(self.path)
 
 

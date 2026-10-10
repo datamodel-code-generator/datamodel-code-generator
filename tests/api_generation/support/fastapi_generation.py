@@ -110,9 +110,9 @@ def fastapi_render(
     """Render one fixture for each of its backends, returning a report, every backend's Python modules, and READMEs.
 
     The report lists every file a render returns. The READMEs, under their backend's directory, are those of the
-    backends the case's `readme` names. The report is headed by the case's `expected` name, or its own. With builtin_sources, a custom template directory
-    holds a copy of the builtin server templates, so that every role renders from its Jinja source instead of its
-    compiled renderer.
+    backends the case's `readme` names. The report is headed by the case's `expected` name, or its own. With
+    builtin_sources, a custom template directory holds a copy of the builtin server templates, so that every role
+    renders from its Jinja source instead of its compiled renderer.
     """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case.get('expected', case_name)}"]

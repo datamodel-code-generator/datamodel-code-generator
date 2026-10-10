@@ -157,7 +157,7 @@ class _RawHandler(BaseRequestHandler):
                     for line in head.split(b"\r\n")
                     if line.lower().startswith(b"sec-websocket-key:")
                 )
-                accept = base64.b64encode(hashlib.sha1(key + _GUID).digest())  # noqa: S324
+                accept = base64.b64encode(hashlib.sha1(key + _GUID).digest())
                 stream.sendall(reply.replace(b"{accept}", accept))
                 socket.socket.sendall(stream, self.server.garbled)
             threading.Thread(target=self._released, args=(stream,), daemon=True).start()
@@ -170,14 +170,11 @@ class _RawHandler(BaseRequestHandler):
         finally:
             stream.close()
 
-
     def _released(self, stream: socket.socket) -> None:
         """Hang up once the peer is released, which ends the read loop; the TLS state is left to the reading thread."""
         self.server.release.wait()
-        try:
+        with suppress(OSError):
             socket.socket.shutdown(stream, socket.SHUT_RDWR)
-        except OSError:
-            pass
 
 
 class RawPeer(ThreadingTCPServer):
@@ -234,10 +231,8 @@ def _pipe(source: socket.socket, target: socket.socket) -> None:
         pass
     finally:
         for end in (source, target):
-            try:
+            with suppress(OSError):
                 end.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
 
 
 class _ProxyHandler(BaseRequestHandler):

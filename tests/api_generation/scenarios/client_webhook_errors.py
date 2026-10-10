@@ -52,8 +52,10 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         lines.extend((
             f"  {type(error).__name__}: base={type(error).__bases__[0].__name__} reason={error.reason}",
             f"    fields={','.join(sorted(vars(error)))}",
-            f"    context={error.info is info}/{error.cause is cause} "
-            f"retained={all(getattr(error, key) == value for key, value in fields.items())}",
+            (
+                f"    context={error.info is info}/{error.cause is cause} "
+                f"retained={all(getattr(error, key) == value for key, value in fields.items())}"
+            ),
             f"    str={error} secret={secret in str(error) or secret in repr(error)}",
         ))
     field_path = [secret]

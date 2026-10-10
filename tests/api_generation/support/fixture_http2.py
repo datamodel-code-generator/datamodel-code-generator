@@ -49,6 +49,7 @@ class Http2Fixture(ThreadingTCPServer):
     daemon_threads = True
 
     def __init__(self, delay: float) -> None:
+        """Listen on localhost, delaying each body by the given seconds."""
         authority = trustme.CA()
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.minimum_version = ssl.TLSVersion.TLSv1_2

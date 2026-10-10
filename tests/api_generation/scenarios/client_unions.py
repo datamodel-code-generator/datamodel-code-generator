@@ -86,7 +86,8 @@ def copied_unions(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         calls = [
-            (label, json_response(200, payload), getattr(api.default, operation)) for operation, label, payload in _COPIES
+            (label, json_response(200, payload), getattr(api.default, operation))
+            for operation, label, payload in _COPIES
         ]
         calls.extend(
             (
@@ -96,8 +97,10 @@ def copied_unions(package: ModuleType, lines: list[str]) -> None:
             )
             for payload in ({"kind": "kitty"}, {"kind": "doggo", "bark": False})
         )
-        calls.append(("item without its count", raw_response(204), lambda: api.default.create_item(name="n")))
-        calls.append(("item with its count", raw_response(204), lambda: api.default.create_item(name="n", count=1)))
+        calls.extend((
+            ("item without its count", raw_response(204), lambda: api.default.create_item(name="n")),
+            ("item with its count", raw_response(204), lambda: api.default.create_item(name="n", count=1)),
+        ))
         for label, answer, call in calls:
             exchange.respond(answer)
             record(lines, label, call)

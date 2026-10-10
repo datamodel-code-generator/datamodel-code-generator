@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime  # noqa: TC003 - msgspec resolves the struct annotations at runtime
 from typing import Annotated
 
 import msgspec
@@ -75,6 +75,7 @@ class CheckedTicket:
     label: str | int | None = None
 
     def __post_init__(self) -> None:
+        """Refuse the bad label."""
         if self.label == "bad":
             raise ValueError(self.label)
 
@@ -131,7 +132,7 @@ class NumberShelf(TypedDict, extra_items=int):
     label: NotRequired[str]
 
 
-class MissingShelf(TypedDict, extra_items="Missing"):
+class MissingShelf(TypedDict, extra_items="Missing"):  # noqa: F821
     """Name extra items that do not exist."""
 
     label: NotRequired[str]

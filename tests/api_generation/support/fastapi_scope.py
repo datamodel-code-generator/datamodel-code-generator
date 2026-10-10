@@ -84,8 +84,8 @@ def _cli(root: Path, name: str, backend: str) -> str:
 
 def _ordinary(root: Path) -> str:
     """Generate models without a target through generate() and the command line, naming the target modules loaded."""
-    from datamodel_code_generator import generate  # noqa: PLC0415
-    from datamodel_code_generator.__main__ import main  # noqa: PLC0415
+    from datamodel_code_generator import generate
+    from datamodel_code_generator.__main__ import main
 
     generated = generate(root / "primitive.yaml", input_file_type="openapi", server_layout="single")
     arguments = ["--input", str(root / "primitive.yaml"), "--input-file-type", "openapi"]

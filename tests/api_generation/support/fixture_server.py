@@ -48,7 +48,7 @@ class Injected:
 
 @cache
 def _contexts() -> tuple[ssl.SSLContext, ssl.SSLContext]:
-    """Return the server context of a private CA's certificate for the fixture hosts, and a client context trusting it."""
+    """Return the fixture hosts' server context, certified by a private CA, and a client context trusting that CA."""
     authority = trustme.CA()
     server = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     server.minimum_version = ssl.TLSVersion.TLSv1_2
@@ -58,24 +58,24 @@ def _contexts() -> tuple[ssl.SSLContext, ssl.SSLContext]:
     return server, client
 
 
-class _Aborted(Exception):
+class _AbortedError(Exception):
     """A request whose client stopped sending before its body ended."""
 
 
 def _read(handler: BaseHTTPRequestHandler, size: int) -> bytes:
     if len(data := handler.rfile.read(size)) != size:
-        raise _Aborted
+        raise _AbortedError
     return data
 
 
 def _line(handler: BaseHTTPRequestHandler) -> bytes:
     if not (line := handler.rfile.readline()).endswith(b"\n"):
-        raise _Aborted
+        raise _AbortedError
     return line
 
 
 def _body(handler: BaseHTTPRequestHandler) -> bytes:
-    """Read a request body framed by its length or by chunks, raising _Aborted when it ends early."""
+    """Read a request body framed by its length or by chunks, raising _AbortedError when it ends early."""
     if handler.headers.get("transfer-encoding", "").lower() != "chunked":
         return _read(handler, int(handler.headers.get("content-length", "0")))
     parts: list[bytes] = []
@@ -101,7 +101,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _answer(self) -> None:
         try:
             content = _body(self)
-        except (_Aborted, ValueError):
+        except (_AbortedError, ValueError):
             self.close_connection = True
             return
         request = httpx2.Request(
@@ -141,7 +141,7 @@ class _Handler(BaseHTTPRequestHandler):
         if not framed:
             self.wfile.write(_CHUNK_END)
 
-    do_GET = do_HEAD = do_POST = do_PUT = do_PATCH = do_DELETE = do_OPTIONS = _answer
+    do_GET = do_HEAD = do_POST = do_PUT = do_PATCH = do_DELETE = do_OPTIONS = _answer  # noqa: N815
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
         """Keep the scenario report free of access logs."""

@@ -15,7 +15,13 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 
 from tests.api_generation.support.client_generation import SOURCE, copy_references, generate_client
-from tests.api_generation.support.fixture_server import AsyncLocalTransport, FixtureServer, Injected, LocalTransport, stop_servers
+from tests.api_generation.support.fixture_server import (
+    AsyncLocalTransport,
+    FixtureServer,
+    Injected,
+    LocalTransport,
+    stop_servers,
+)
 from tests.api_generation.support.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -154,9 +160,7 @@ def request_body(package: ModuleType, operation_id: str, media_type: str | None,
     return _operation(package, operation_id).body.select(operation_id, media_type).restored(wire)
 
 
-def form_part(
-    package: ModuleType, operation_id: str, name: str, wire: object, media_type: str | None = None
-) -> object:
+def form_part(package: ModuleType, operation_id: str, name: str, wire: object, media_type: str | None = None) -> object:
     """Return the native value a form-data member's wire value builds: a declared member's, or another part's."""
     media = _operation(package, operation_id).body.select(operation_id, media_type)
     form = media.form
@@ -170,7 +174,7 @@ def describe(value: object) -> str:
             details = ", ".join(
                 f"{name}={getattr(value, name)!r}"
                 for name in _ERROR_FIELDS
-                if getattr(value, name, None) not in (None, ())
+                if getattr(value, name, None) not in (None, ())  # noqa: PLR6201 - a field value may be unhashable
             )
             code = f" {value.reason}" if getattr(value, "reason", None) is not None else ""
             notes = "".join(f" note={note!r}" for note in getattr(value, "__notes__", ()))
@@ -187,6 +191,7 @@ def describe(value: object) -> str:
 
 
 def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
+    """Record a call's described result or failure under a label, returning the result."""
     try:
         result = call()
     except Exception as error:  # noqa: BLE001
@@ -215,6 +220,7 @@ async def aoutcome(call: Callable[[], Any]) -> str:
 
 
 async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> object:
+    """Record an awaited call's described result or failure under a label, returning the result."""
     try:
         result = await call()
     except Exception as error:  # noqa: BLE001
@@ -270,7 +276,8 @@ def failing(error: type[httpx2.TransportError]) -> Callable[[httpx2.Request], ht
     """Return an injected responder that fails with a transport error before any response."""
 
     def fail(request: httpx2.Request) -> httpx2.Response:
-        raise error("failed", request=request)
+        msg = "failed"
+        raise error(msg, request=request)
 
     return Injected(fail)
 
@@ -315,6 +322,7 @@ def import_generated_client(package: str) -> ModuleType:
 
 def client_copied_runtime_report(root: Path) -> str:
     """Call a generated client and locate every runtime module that call actually imported."""
+
     def scenario(package: ModuleType, lines: list[str]) -> None:
         exchange = Exchange([])
         exchange.respond(json_response(200, {"id": 7, "name": "copied"}))
@@ -329,8 +337,13 @@ def client_copied_runtime_report(root: Path) -> str:
         ]
         from pathlib import Path
 
-        lines.append(f"  runtime copied {bool(runtime) and all(Path(module.__file__).is_relative_to(root) for module in runtime)}")
-        lines.append(f"  server failures {server.failures if server else []}")
+        lines.extend((
+            (
+                "  runtime copied "
+                f"{bool(runtime) and all(Path(module.__file__).is_relative_to(root) for module in runtime)}"
+            ),
+            f"  server failures {server.failures if server else []}",
+        ))
 
     return generated("pets", "pydantic_v2.BaseModel", root, scenario)
 

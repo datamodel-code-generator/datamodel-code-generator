@@ -109,8 +109,10 @@ RFC_4231: Final = tuple(
             b"\x0b" * 20,
             b"Hi There",
             "sha512",
-            "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb6"
-            "1f1702e696c203a126854",
+            (
+                "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb6"
+                "1f1702e696c203a126854"
+            ),
         ),
         (
             2,
@@ -124,8 +126,10 @@ RFC_4231: Final = tuple(
             b"Jefe",
             b"what do ya want for nothing?",
             "sha512",
-            "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a"
-            "6b4b636e070a38bce737",
+            (
+                "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a"
+                "6b4b636e070a38bce737"
+            ),
         ),
         (
             6,
@@ -139,8 +143,10 @@ RFC_4231: Final = tuple(
             b"\xaa" * 131,
             b"Test Using Larger Than Block-Size Key - Hash Key First",
             "sha512",
-            "80b24263c7c1a3ebb71493c1dd7be8b49b46d1f41b4aeec1121b013783f8f3526b56d037e05f2598bd0fd2215d6a1e5295e64f73f63f0"
-            "aec8b915a985d786598",
+            (
+                "80b24263c7c1a3ebb71493c1dd7be8b49b46d1f41b4aeec1121b013783f8f3526b56d037e05f2598bd0fd2215d6a1e5295e64f73f63f0"
+                "aec8b915a985d786598"
+            ),
         ),
     )
 )
@@ -233,8 +239,10 @@ LAST_BYTE_CHANGED: Final = (
         headers=(
             (
                 "X-Signature",
-                "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914e"
-                "eb61f1702e696c203a126855",
+                (
+                    "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914e"
+                    "eb61f1702e696c203a126855"
+                ),
             ),
         ),
     ),
@@ -392,7 +400,7 @@ def _rejections(hooks: Webhooks) -> None:
 def _windows(hooks: Webhooks) -> None:
     """Accept both inclusive timestamp boundaries and refuse one microsecond beyond, with exact tolerances."""
     stamp = STANDARD.now
-    for label, now, options in (
+    for label, now, settings in (
         ("300 seconds past", stamp + timedelta(seconds=300), {}),
         ("past bound exceeded", stamp + timedelta(seconds=300) + _MICROSECOND, {}),
         ("30 seconds future", stamp - timedelta(seconds=30), {}),
@@ -404,7 +412,7 @@ def _windows(hooks: Webhooks) -> None:
         ("fractional tolerance exceeded", stamp + timedelta(seconds=0.5) + _MICROSECOND, {"past_tolerance": 0.5}),
         ("offset clock", stamp.astimezone(timezone(timedelta(hours=9))), {}),
     ):
-        options = {"options": hooks.protocols.WebhookOptions(**options)} if options else {}
+        options = {"options": hooks.protocols.WebhookOptions(**settings)} if settings else {}
         hooks.check(label, STANDARD, now=now, **options)
     beyond = STANDARD.changed("webhook-timestamp", "253402300800")
     hooks.check("timestamp after datetime.max", STANDARD, headers=beyond, now=datetime.max.replace(tzinfo=_UTC))
@@ -552,7 +560,7 @@ def _secrecy(hooks: Webhooks) -> None:
     ):
         try:
             helper.verify(vector.body, headers, keys, now=vector.now)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # ruff: ignore[blind-except]  # noqa: PERF203
             hooks.lines.append(f"  {label} ! {describe(error)} context={error.__context__!r}")
             texts.extend(reachable(error, set()))
     hooks.lines.append(f"  markers shown={[text for text in texts if 'MARKER' in text]}")

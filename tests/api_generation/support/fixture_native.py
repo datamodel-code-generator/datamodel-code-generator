@@ -59,7 +59,7 @@ class _Handler(BaseRequestHandler):
             if outgoing:
                 stream.sendall(outgoing)
 
-    def _http1(self, stream: ssl.SSLSocket) -> None:
+    def _http1(self, stream: ssl.SSLSocket) -> None:  # noqa: PLR0912, PLR0914
         while True:
             data = b""
             while b"\r\n\r\n" not in data:
@@ -141,6 +141,7 @@ class NativeFixture(ThreadingTCPServer):
     def __init__(
         self, *, http2: bool = False, proxy: str | None = None, malformed: bool = False, ipv6: bool = False
     ) -> None:
+        """Listen as a TLS origin, or as a proxy of the given kind, optionally over HTTP/2 or IPv6, or malformed."""
         authority = trustme.CA(organization_name="dcg native test", organization_unit_name="TLS CA environment")
         self.ca_pem = authority.cert_pem.bytes()
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

@@ -16,7 +16,6 @@ import asyncio
 import copy
 import pickle
 from dataclasses import dataclass
-from datetime import datetime
 from itertools import starmap
 from typing import TYPE_CHECKING, Any, Final, get_type_hints
 
@@ -25,7 +24,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_public_key
 
-from tests.api_generation.support.client_runtime import describe, record
 from tests.api_generation.scenarios.client_webhooks import (
     GITHUB,
     PUBLIC_MODULES,
@@ -36,8 +34,10 @@ from tests.api_generation.scenarios.client_webhooks import (
     imports,
     reachable,
 )
+from tests.api_generation.support.client_runtime import describe, record
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from types import ModuleType
 
 _WYCHEPROOF_KEY: Final = load_pem_public_key(
@@ -100,7 +100,7 @@ class Signed:
     now: datetime
     key_id: str = "active"
 
-    changed = Vector.changed
+    changed = Vector.changed  # noqa: RUF045
 
 
 RFC_8032: Final = (
@@ -112,8 +112,10 @@ RFC_8032: Final = (
         headers=(
             (
                 "X-Signature",
-                "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46b"
-                "d25bf5f0595bbe24655141438e7a100b",
+                (
+                    "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46b"
+                    "d25bf5f0595bbe24655141438e7a100b"
+                ),
             ),
         ),
         now=STANDARD.now,
@@ -126,8 +128,10 @@ RFC_8032: Final = (
         headers=(
             (
                 "X-Signature",
-                "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c"
-                "387b2eaeb4302aeeb00d291612bb0c00",
+                (
+                    "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c"
+                    "387b2eaeb4302aeeb00d291612bb0c00"
+                ),
             ),
         ),
         now=STANDARD.now,
@@ -510,7 +514,7 @@ def _secrecy(hooks: PublicKeyWebhooks) -> None:
     ):
         try:
             helper.verify(body, list(vector.headers), keys, now=vector.now)
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # ruff: ignore[blind-except]  # noqa: PERF203
             hooks.lines.append(f"  {label} ! {describe(error)} context={error.__context__!r}")
             texts.extend(reachable(error, set()))
     hooks.lines.append(f"  markers shown={[text for text in texts if _MARKER in text]} calls={recorded.calls}")

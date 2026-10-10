@@ -23,7 +23,6 @@ from itertools import starmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.api_generation.support.client_runtime import describe, record
 from tests.api_generation.scenarios.client_webhooks import (
     GITHUB,
     STANDARD,
@@ -32,6 +31,7 @@ from tests.api_generation.scenarios.client_webhooks import (
     reachable,
     shown,
 )
+from tests.api_generation.support.client_runtime import describe, record
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -180,16 +180,18 @@ class Contracts:
         if len(signatures) > limits.max_signatures:
             raise self.errors.ProtocolDataError(reason="too_large")
         if not keys.keys:
-            raise self.rejection("missing_key")
+            msg = "missing_key"
+            raise self.rejection(msg)
         for key in keys.keys:
             expected = hmac.new(key.secret, signed, "sha256").digest()
             if any(hmac.compare_digest(expected, signature) for signature in signatures):
                 return key.name
-        raise self.rejection("invalid_signature")
+        msg = "invalid_signature"
+        raise self.rejection(msg)
 
 
 class StripeVerifier(Contracts):
-    """Verify `Stripe-Signature: t=<seconds>,v1=<hex>[,v1=<hex>...]` over `<t>.<raw body>`; other schemes are skipped."""
+    """Verify `Stripe-Signature: t=<seconds>,v1=<hex>[,v1=<hex>...]` over `<t>.<raw body>`; skip other schemes."""
 
     def verify(self, raw_body: bytes, ordered_headers: Any, keys: Any, now: datetime, limits: Any) -> Any:
         """Return the timestamp and the matched key, or raise the scheme's verification error."""
@@ -511,7 +513,7 @@ def _fenced(hooks: Adapters, label: str, vector: Vector, verifier: Any) -> None:
         hooks.lines.append(f"  {label} async = {results[1]}")
 
 
-class _Truthy(str):
+class _Truthy(str):  # noqa: FURB189 - the verifier must accept a real str subclass
     """A string that claims to be nonempty."""
 
     __slots__ = ()
@@ -521,7 +523,7 @@ class _Truthy(str):
         return True
 
 
-class _Raising(str):
+class _Raising(str):  # noqa: FURB189 - the verifier must accept a real str subclass
     """A string whose truth test raises."""
 
     __slots__ = ()

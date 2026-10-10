@@ -551,7 +551,7 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
     step(lines, "resume", lambda: helper.resume(harness.source(), handle.checkpoint()))
     lines.append("a completion whose deadline passes while the server answers it, keeping its answer")
     ticks = [0.0]
-    clock = harness.options.Clock(monotonic=lambda: ticks[0], time=lambda: 0.0)
+    harness.options.Clock(monotonic=lambda: ticks[0], time=lambda: 0.0)
 
     def late(request: httpx2.Request) -> httpx2.Response:
         ticks[0] += 60
@@ -627,7 +627,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     lines.append(f"  {server.stored(f'u{len(server.uploads)}')}")
 
 
-def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise the upload lifecycle in one scenario.
+def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
     """Resume a checkpoint with zero creates after checking its source, and refuse checkpoints of another kind."""
     helper, finish = api.protocols.files.upload, api.protocols.files.finish
     lines.append("checkpoint, store as JSON text, and resume")

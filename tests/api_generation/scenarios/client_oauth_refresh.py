@@ -114,11 +114,11 @@ def _expiry(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: li
 
 
 def _callbacks(package: ModuleType, auth: ModuleType, exchange: Exchange, lines: list[str]) -> None:
-    def failed(tokens: object) -> None:
+    def failed(tokens: object) -> None:  # noqa: ARG001
         msg = "store unavailable"
         raise OSError(msg)
 
-    async def pending(tokens: object) -> None:
+    async def pending(tokens: object) -> None:  # noqa: RUF029
         del tokens
 
     clock = _Clock(importlib.import_module(f"{package.__name__}.options"))
@@ -163,7 +163,7 @@ async def _async_refresh(package: ModuleType, auth: ModuleType, lines: list[str]
     exchange = Exchange(lines)
     saved: list[str] = []
 
-    async def save(tokens: Any) -> None:
+    async def save(tokens: Any) -> None:  # noqa: RUF029
         saved.append(_set(tokens))
 
     clock = _Clock(importlib.import_module(f"{package.__name__}.options"))
@@ -180,7 +180,7 @@ async def _async_refresh(package: ModuleType, auth: ModuleType, lines: list[str]
             lines.append(f"  async invalid grant ! {failure_line(error)}")
     lines.append(f"  async saved {saved}")
 
-    async def failed(tokens: Any) -> None:
+    async def failed(tokens: Any) -> None:  # noqa: ARG001, RUF029
         msg = "store unavailable"
         raise OSError(msg)
 

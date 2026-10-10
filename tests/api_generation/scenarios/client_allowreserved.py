@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import sys
 from functools import partial
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from tests.api_generation.support.client_generation import SOURCE, Modules, generate_client, render_client
@@ -25,6 +24,7 @@ from tests.api_generation.support.generated_packages import forget_generated
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
     from types import ModuleType
 
     import httpx2

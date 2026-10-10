@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from tests.api_generation.support.client_generation import SOURCE, publication_client
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 PROFILES = json.loads((SOURCE / "publication" / "profiles.json").read_text(encoding="utf-8"))
 
@@ -22,7 +25,9 @@ def client_capability_report(profile: str, root: Path) -> str:
         if path.suffix != ".py":
             continue
         if "_runtime" in path.parts:
-            runtime[path.relative_to("publication_client/_runtime").as_posix()] = len((artifact.content or b"").splitlines())
+            runtime[path.relative_to("publication_client/_runtime").as_posix()] = len(
+                (artifact.content or b"").splitlines()
+            )
         elif all(not part.startswith("_") or part == "__init__.py" for part in path.parts):
             public.append(path.as_posix())
     return "\n".join([

@@ -85,8 +85,7 @@ def _drained(lines: list[str], label: str, events: Iterable[Any]) -> None:
     """Report every event a stream yields, then its end or the failure that stopped it."""
     lines.append(f"  {label}")
     try:
-        for event in events:
-            lines.append(f"    {_event(event)}")
+        lines.extend(f"    {_event(event)}" for event in events)
     except Exception as error:  # noqa: BLE001
         lines.append(f"    ! {describe(error)}")
         return
@@ -98,7 +97,7 @@ async def _adrained(lines: list[str], label: str, events: AsyncIterator[Any]) ->
     lines.append(f"  {label}")
     try:
         async for event in events:
-            lines.append(f"    {_event(event)}")
+            lines.append(f"    {_event(event)}")  # noqa: PERF401 - interleave with what the stream reports as it ends
     except Exception as error:  # noqa: BLE001
         lines.append(f"    ! {describe(error)}")
         return
@@ -110,8 +109,10 @@ def _pieces(content: bytes, size: int) -> tuple[bytes, ...]:
 
 
 class _Body(httpx2.SyncByteStream, httpx2.AsyncByteStream):
-    """A response body that yields its chunks, raises a failure placed among them, runs a probe placed between them,
-    awaiting what an asyncio probe returns, and reports its close."""
+    """A response body that yields its chunks, raising failures and running probes placed among them.
+
+    It awaits what an asyncio probe returns, and reports its close.
+    """
 
     def __init__(self, lines: list[str], chunks: tuple[object, ...]) -> None:
         self.lines = lines
@@ -652,14 +653,15 @@ def _decode_failure(lines: list[str], label: str, stream: Any) -> None:
     """Report the records a stream yields before its decode failure, with the failure's raw prefix and cause."""
     lines.append(f"  {label}")
     try:
-        for event in stream:
-            lines.append(f"    {_event(event)}")
+        lines.extend(f"    {_event(event)}" for event in stream)
     except Exception as error:  # noqa: BLE001
-        lines.append(f"    ! {describe(error)}")
-        lines.append(
-            f"    raw prefix {error.body_bytes!r} cause {type(error.cause).__name__} "
-            f"context {type(error.__context__).__name__}"
-        )
+        lines.extend((
+            f"    ! {describe(error)}",
+            (
+                f"    raw prefix {error.body_bytes!r} cause {type(error.cause).__name__} "
+                f"context {type(error.__context__).__name__}"
+            ),
+        ))
 
 
 def ndjson(package: ModuleType, lines: list[str]) -> None:

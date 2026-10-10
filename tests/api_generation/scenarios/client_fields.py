@@ -99,7 +99,10 @@ def _sent(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> 
             ),
         ),
         ("create from form fields", lambda: pets.create_pet(name="Mimi", pet_tag="t", media_type=_FORM)),
-        ("create from a body", lambda: pets.create_pet(body=context.models.NewPet(name="Mimi", kind=kind), media_type=_JSON)),
+        (
+            "create from a body",
+            lambda: pets.create_pet(body=context.models.NewPet(name="Mimi", kind=kind), media_type=_JSON),
+        ),
         (
             "create from fields and an UNSET body",
             lambda: pets.create_pet(body=unset, name="Mimi", kind=kind, media_type=_JSON),
@@ -117,8 +120,14 @@ def _sent(context: _Fields, pets: Any, exchange: Exchange, lines: list[str]) -> 
     ):
         _exchanged(exchange, lines, label, call, json_response(201, _CREATED))
     for label, call in (
-        ("log a visit giving nothing of a required body", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), media_type=_JSON)),
-        ("log a visit with renamed options", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), visit_options=["a"], media_type=_JSON)),
+        (
+            "log a visit giving nothing of a required body",
+            lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), media_type=_JSON),
+        ),
+        (
+            "log a visit with renamed options",
+            lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), visit_options=["a"], media_type=_JSON),
+        ),
         ("log a visit as text", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), body="n", media_type=_TEXT)),
         ("set an owner, which takes only a body", lambda: pets.set_owner(petId=context.pet_id("OwnerPut"), body=owner)),
         ("create an owner from fields of a body that may be null", lambda: pets.create_owner(email="e")),
@@ -138,11 +147,14 @@ def _refused(context: _Fields, api: Any, exchange: Exchange, lines: list[str]) -
         ("fields missing every required one", lambda: pets.create_pet(pet_tag="t", media_type=_JSON)),
         ("a field of another media", lambda: pets.create_pet(name="Mimi", kind=kind, media_type=_FORM)),
         ("fields without a media type", lambda: pets.create_pet(name="Mimi", kind=kind)),
-        ("nothing without a media type", lambda: pets.create_pet()),
+        ("nothing without a media type", pets.create_pet),
         ("fields for text", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), note="n", media_type=_TEXT)),
-        ("fields of an undeclared media", lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), note="n", media_type="application/xml")),
+        (
+            "fields of an undeclared media",
+            lambda: pets.log_visit(petId=context.pet_id("VisitsPost"), note="n", media_type="application/xml"),
+        ),
         ("a body field of a body-only operation", lambda: pets.set_owner(petId=context.pet_id("OwnerPut"), email="e")),
-        ("an owner giving nothing", lambda: pets.create_owner()),
+        ("an owner giving nothing", pets.create_owner),
         ("a null owner and fields", lambda: pets.create_owner(body=context.no_owner(), email="e")),
         (
             "a streamed body and fields",
@@ -237,6 +249,7 @@ async def _async_fields(context: _Fields, lines: list[str]) -> None:
         refused = pets.create_pet(body=body, name="Mimi", media_type=_JSON)
         lines.append("  async fields refused once awaited: made a coroutine")
         await arecord(lines, "async a body and fields", lambda: refused)
+
         async def raw() -> object:
             return await (await pets.with_raw_response.create_pet(name="Mimi", kind=kind, media_type=_JSON)).json()
 
@@ -268,7 +281,7 @@ def optional_models(package: ModuleType, lines: list[str]) -> None:
                 lambda: pets.create_pet(name="Mimi", media_type=_JSON),
                 json_response(201, _CREATED),
             ),
-            ("create an owner giving nothing", lambda: pets.create_owner(), raw_response(204)),
+            ("create an owner giving nothing", pets.create_owner, raw_response(204)),
         ):
             _exchanged(exchange, lines, label, call, answer)
         _exchanged(

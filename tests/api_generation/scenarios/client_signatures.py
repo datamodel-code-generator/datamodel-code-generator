@@ -6,7 +6,6 @@ import importlib
 import inspect
 from typing import TYPE_CHECKING, Any, Final
 
-import httpx2
 import typing_extensions
 
 from tests.api_generation.support.client_runtime import Exchange, argument, json_response, record, run
@@ -46,7 +45,7 @@ def _introspection(api: Any, lines: list[str], mode: str) -> None:
     """Report each view's real signature, the logical keywords its hints declare, and whether it is a coroutine."""
     for view in _VIEWS:
         method = _view(api, view).get_pet
-        unbound = getattr(type(_view(api, view)), "get_pet")
+        unbound = type(_view(api, view)).get_pet
         lines.extend((
             f"  {mode}{view or 'plain'} get_pet ({_parameters(method)}) unbound ({_parameters(unbound)})",
             f"    keywords {_keywords(method)} coroutine {inspect.iscoroutinefunction(method)}",
@@ -64,7 +63,7 @@ def _refused(lines: list[str], label: str, call: Callable[[], object], exchange:
 
 def signatures(package: ModuleType, lines: list[str]) -> None:
     """Expose, call, forward, and refuse the keyword arguments of the same operations in either style."""
-    types, options = (importlib.import_module(f"{package.__name__}.{name}") for name in ("types.pets", "options"))
+    _types, options = (importlib.import_module(f"{package.__name__}.{name}") for name in ("types.pets", "options"))
     trace = argument(package, "listPets", "header", "X-Trace", "t1")
     pet = argument(package, "getPet", "path", "petId", 3)
     exchange = Exchange(lines)
@@ -82,12 +81,12 @@ def signatures(package: ModuleType, lines: list[str]) -> None:
         )
         for label, call in (
             ("list with an unknown keyword", lambda: api.pets.list_pets(X_Trace=trace, color="red")),
-            ("list without its required keyword", lambda: api.pets.list_pets()),
+            ("list without its required keyword", api.pets.list_pets),
             (
                 "raw list with an unknown keyword",
                 lambda: api.pets.with_raw_response.list_pets(X_Trace=trace, color="red"),
             ),
-            ("streaming list without its required keyword", lambda: api.pets.with_streaming_response.list_pets()),
+            ("streaming list without its required keyword", api.pets.with_streaming_response.list_pets),
         ):
             _refused(lines, label, call, exchange)
     http.close()

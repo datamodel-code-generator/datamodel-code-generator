@@ -39,12 +39,12 @@ def _refusing(request: httpx2.Request) -> httpx2.Response:
 
 
 @Injected
-def _interrupting(request: httpx2.Request) -> httpx2.Response:
+def _interrupting(request: httpx2.Request) -> httpx2.Response:  # noqa: ARG001
     raise KeyboardInterrupt
 
 
 @Injected
-def _cancelling(request: httpx2.Request) -> httpx2.Response:
+def _cancelling(request: httpx2.Request) -> httpx2.Response:  # noqa: ARG001
     raise asyncio.CancelledError
 
 
@@ -257,7 +257,7 @@ def _unread_close(package: ModuleType, lines: list[str], pet: object) -> None:
 
     with httpx2.Client(transport=httpx2.MockTransport(answer)) as http, package.Client(http_client=http) as api:
         manager = api.pets.with_streaming_response.get_pet(petId=pet)
-        closing = manager.__enter__()
+        closing = manager.__enter__()  # noqa: PLC2801
         record(lines, "stream closed unread whose close fails", closing.close)
         record(lines, "its block left after it", lambda: manager.__exit__(None, None, None))
 
@@ -363,9 +363,7 @@ async def _async_faults(api: Any, exchange: Exchange, lines: list[str], pet: obj
     )
     await arecord(lines, "async raw request to no URL", lambda: api.request_raw("GET", "not a url"))
     exchange.respond(_refusing, _refusing, _refusing)
-    await arecord(
-        lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(petId=pet)
-    )
+    await arecord(lines, "async raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(petId=pet))
     exchange.respond(_cancelling)
     try:
         await api.pets.get_pet(petId=pet)
@@ -447,7 +445,7 @@ async def _cancelled_failures(package: ModuleType, lines: list[str]) -> None:
             package.AsyncClient(http_client=http) as api,
         ):
             manager = api.pets.with_streaming_response.get_pet(petId=pet) if mode == "stream-read" else None
-            handle = None if manager is None else await manager.__aenter__()
+            handle = None if manager is None else await manager.__aenter__()  # noqa: PLC2801
             match mode:
                 case "typed-send" | "typed-read":
                     caller = asyncio.create_task(api.pets.get_pet(petId=pet))
@@ -459,7 +457,7 @@ async def _cancelled_failures(package: ModuleType, lines: list[str]) -> None:
             caller.cancel()
             try:
                 await caller
-            except (asyncio.CancelledError, Exception) as error:
+            except (asyncio.CancelledError, Exception) as error:  # noqa: BLE001
                 lines.append(
                     f"  {mode} failing as it is cancelled={type(error).__name__} stopped={body.stopped.is_set()}"
                 )

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import threading
 from dataclasses import dataclass
@@ -13,6 +12,7 @@ import httpx2
 from tests.api_generation.support.client_runtime import json_response
 
 if TYPE_CHECKING:
+    import asyncio
     from collections.abc import Callable
 
 _FIELDS: Final = ("reason", "status_code", "oauth_error", "field_path")
@@ -24,7 +24,7 @@ def failure_line(error: BaseException) -> str:
     parts = [type(error).__name__]
     for name in _FIELDS:
         value = getattr(error, name, None)
-        if value not in (None, (), False):
+        if value not in (None, (), False):  # noqa: PLR6201 - a field value may be unhashable
             parts.append(f"{name}={getattr(value, 'value', value)}")
     if (cause := getattr(error, "cause", None)) is not None:
         parts.append(f"cause={type(cause).__name__}")
@@ -52,6 +52,7 @@ class Response:
     body: bytes = b""
 
     def __call__(self, request: httpx2.Request) -> httpx2.Response:
+        """Answer the token request with the scripted status and body."""
         return httpx2.Response(
             self.status, headers={"content-type": "application/json"}, content=self.body, request=request
         )
@@ -73,6 +74,7 @@ class Script(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
     def __init__(
         self, *replies: Callable[[httpx2.Request], httpx2.Response] | BaseException, hold: asyncio.Event | None = None
     ) -> None:
+        """Answer from the replies in order, holding asyncio requests on the event when one is given."""
         self.replies = list(replies)
         self.sends = 0
         self.hold = hold
@@ -89,10 +91,12 @@ class Script(httpx2.BaseTransport, httpx2.AsyncBaseTransport):
         return reply(request)
 
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
+        """Answer a token request with the next scripted reply."""
         self.entered.set()
         return self._reply(request)
 
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
+        """Answer a token request with the next scripted reply, once the hold is released."""
         self.entered.set()
         if (hold := self.hold) is not None:
             await hold.wait()

@@ -105,7 +105,8 @@ def parameter_encoding_report(path: Path) -> str:
     """Encode official style examples and boundary values, keeping exact number lexemes, then decode them again."""
     fixture = json.loads(path.read_bytes(), parse_float=Decimal)
     lines = [
-        f"{_label(parameter_plan(case['plan']))}: {attempt(lambda case=case: _round_trip(parameter_plan(case['plan']), case['value']))}"
+        f"{_label(parameter_plan(case['plan']))}: "
+        f"{attempt(lambda case=case: _round_trip(parameter_plan(case['plan']), case['value']))}"
         for case in (*fixture["encode"], *fixture["failures"])
     ]
     lines.extend(
@@ -113,7 +114,8 @@ def parameter_encoding_report(path: Path) -> str:
         for plan in fixture["invalid_plans"]
     )
     lines.extend(
-        f"path text {_label(parameter_plan(case['plan']))}: {attempt(lambda case=case: path_text(parameter_plan(case['plan']), case['value']))}"
+        f"path text {_label(parameter_plan(case['plan']))}: "
+        f"{attempt(lambda case=case: path_text(parameter_plan(case['plan']), case['value']))}"
         for case in fixture["path_texts"]
     )
     python_values = [
@@ -128,7 +130,8 @@ def parameter_encoding_report(path: Path) -> str:
         ({"location": "query", "name": "i", "style": "form", "explode": True, "kind": "integer"}, Decimal("NaN")),
     ]
     lines.extend(
-        f"python {_label(parameter_plan(data))}: {attempt(lambda data=data, value=value: _round_trip(parameter_plan(data), value))}"
+        f"python {_label(parameter_plan(data))}: "
+        f"{attempt(lambda data=data, value=value: _round_trip(parameter_plan(data), value))}"
         for data, value in python_values
     )
     return "\n".join(lines) + "\n"
@@ -162,7 +165,8 @@ def parameter_decoding_report(path: Path) -> str:
         plan = parameter_plan(case["plan"])
         raw = _fixture_raw(case["raw"])
         lines.append(
-            f"{_label(plan)} {_json(case['raw'])}: {attempt(lambda plan=plan, raw=raw: _decoded(decode_parameter(plan, raw_parameter(plan, raw))))}"
+            f"{_label(plan)} {_json(case['raw'])}: "
+            f"{attempt(lambda plan=plan, raw=raw: _decoded(decode_parameter(plan, raw_parameter(plan, raw))))}"
         )
     return "\n".join(lines) + "\n"
 

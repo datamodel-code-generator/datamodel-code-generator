@@ -25,7 +25,8 @@ class _Positionless(io.BytesIO):
     """A readable file with no available tell operation."""
 
     def tell(self) -> int:
-        raise io.UnsupportedOperation("position unavailable")
+        msg = "position unavailable"
+        raise io.UnsupportedOperation(msg)
 
 
 class _RewindFailure(io.BytesIO):
@@ -38,15 +39,17 @@ class _RewindFailure(io.BytesIO):
     def seek(self, offset: int, whence: int = 0, /) -> int:
         self.seeks += 1
         if self.seeks > 2:
-            raise OSError("rewind failed")
+            msg = "rewind failed"
+            raise OSError(msg)
         return super().seek(offset, whence)
 
 
 class _ReadFailure(io.BytesIO):
     """A conventional binary file whose read fails."""
 
-    def read(self, size: int | None = -1, /) -> bytes:
-        raise OSError("read failed")
+    def read(self, size: int | None = -1, /) -> bytes:  # noqa: ARG002
+        msg = "read failed"
+        raise OSError(msg)
 
 
 class _Unclosable(io.BytesIO):
@@ -54,7 +57,8 @@ class _Unclosable(io.BytesIO):
 
     def close(self) -> None:
         super().close()
-        raise OSError("close failed")
+        msg = "close failed"
+        raise OSError(msg)
 
 
 class _Held(io.BytesIO):
@@ -107,8 +111,10 @@ def _opening(paths: tuple[Path, ...], files: list[Any], make: Callable[[], objec
 
 def _closed(lines: list[str], label: str, error: Exception | None, files: list[_Unclosable]) -> None:
     secondary = list(getattr(error, "__notes__", ()))
-    lines.append(f"  {label} returned" if error is None else f"  {label} ! {describe(error)}")
-    lines.append(f"    secondary={secondary} closed={[file.closed for file in files]}")
+    lines.extend((
+        f"  {label} returned" if error is None else f"  {label} ! {describe(error)}",
+        f"    secondary={secondary} closed={[file.closed for file in files]}",
+    ))
     files.clear()
 
 
@@ -145,7 +151,7 @@ def _close_faults(package: ModuleType, data: dict[str, Any], lines: list[str]) -
             (
                 "close failure entering a stream",
                 _STORED,
-                lambda: api.with_streaming_response.request_raw("PUT", data["url"], body=path).__enter__(),
+                lambda: api.with_streaming_response.request_raw("PUT", data["url"], body=path).__enter__(),  # noqa: PLC2801
             ),
         ):
             exchange.respond(response)
@@ -192,7 +198,7 @@ async def _async_close_faults(package: ModuleType, data: dict[str, Any], lines: 
                 (
                     "async close failure entering a stream",
                     _STORED,
-                    lambda: api.with_streaming_response.request_raw("PUT", data["url"], body=path).__aenter__(),
+                    lambda: api.with_streaming_response.request_raw("PUT", data["url"], body=path).__aenter__(),  # noqa: PLC2801
                 ),
             ):
                 exchange.respond(response)

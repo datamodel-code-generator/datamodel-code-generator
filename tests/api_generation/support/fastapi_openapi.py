@@ -66,12 +66,12 @@ def _stand_in(protocol: type) -> object:
     def method(name: str) -> Callable[..., object]:
         if inspect.iscoroutinefunction(getattr(protocol, name)):
 
-            async def answer_later(self: object, **_: object) -> None:
+            async def answer_later(self: object, **_: object) -> None:  # noqa: ARG001, RUF029
                 return None
 
             return answer_later
 
-        def answer(self: object, **_: object) -> None:
+        def answer(self: object, **_: object) -> None:  # noqa: ARG001
             return None
 
         return answer
@@ -80,7 +80,7 @@ def _stand_in(protocol: type) -> object:
     return type(f"StandIn{protocol.__name__}", (protocol,), methods)()
 
 
-def _connected(builder: Callable[..., Any], **settings: Any) -> Any:  # noqa: ANN401
+def _connected(builder: Callable[..., Any], **settings: Any) -> Any:
     """Call a generated builder with a stand-in for each service it takes, and an authorize callback if it needs one."""
     services = {
         name: _stand_in(typing.get_origin(parameter.annotation) or parameter.annotation)
@@ -90,7 +90,7 @@ def _connected(builder: Callable[..., Any], **settings: Any) -> Any:  # noqa: AN
         and name != "authorize"
     }
     if "authorize" in inspect.signature(builder).parameters:
-        settings.setdefault("authorize", lambda requirement_sets, credentials: None)
+        settings.setdefault("authorize", lambda requirement_sets, credentials: None)  # noqa: ARG005
     return builder(**services, **settings)
 
 

@@ -31,7 +31,8 @@ class _File(io.BytesIO):
 
     def seek(self, offset: int, whence: int = 0, /) -> int:
         if not self.can_seek:
-            raise io.UnsupportedOperation("not seekable")
+            msg = "not seekable"
+            raise io.UnsupportedOperation(msg)
         return super().seek(offset, whence)
 
     def read(self, size: int | None = -1, /) -> bytes:

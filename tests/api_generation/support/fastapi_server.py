@@ -8,10 +8,10 @@ import json
 import shutil
 import sys
 from functools import partial
+from itertools import starmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from fastapi import FastAPI
 from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
     import pytest
+    from fastapi import FastAPI
 
 
 def _models(case: dict[str, Any], package: str) -> str:
@@ -81,7 +82,7 @@ class _WithoutRawPath:
     def __init__(self, app: FastAPI) -> None:
         self.app = app
 
-    async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:  # noqa: ANN401
+    async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
         headers = dict(scope.get("headers", ()))
         if b"x-without-raw-path" in headers:
             scope = {key: value for key, value in scope.items() if key != "raw_path"}
@@ -161,7 +162,7 @@ def _build(label: str, build: Callable[[], object]) -> str:
     return f"build {label}: ok"
 
 
-def _serve(  # noqa: PLR0913
+def _serve(
     server: ModuleType,
     app_case: dict[str, Any],
     sets: dict[str, Any],
@@ -216,7 +217,7 @@ def fastapi_server_report(
             built = services.applications(server, sets) if hasattr(services, "applications") else {}
             lines.extend(_build(name, partial(server.build_router, **sets[name])) for name in case.get("builds", ()))
             if hasattr(services, "builds"):
-                lines.extend(_build(label, build) for label, build in services.builds(server, models, calls))
+                lines.extend(starmap(_build, services.builds(server, models, calls)))
             for app_case in case.get("apps", [{"set": "default", "requests": case.get("requests", [])}]):
                 if "apps" in case:
                     lines.append(f"app {app_case['set']}")

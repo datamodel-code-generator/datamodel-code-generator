@@ -328,7 +328,7 @@ def _closing(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         record(lines, "item after the closed client", lambda: next(pager))
 
 
-async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise pagination session limits together.
+async def _async_sessions(harness: Harness, lines: list[str]) -> None:
     """Bound asyncio pages by their session and fail the pager where a page fails or its task is cancelled."""
     package, options, protocols = harness.package, harness.options, harness.protocols
     values = json.loads(

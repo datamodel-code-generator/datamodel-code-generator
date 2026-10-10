@@ -9,7 +9,16 @@ from typing import TYPE_CHECKING, Any
 
 import httpx2
 
-from tests.api_generation.support.client_runtime import Exchange, aoutcome, arecord, injected, outcome, raw_response, record, run
+from tests.api_generation.support.client_runtime import (
+    Exchange,
+    aoutcome,
+    arecord,
+    injected,
+    outcome,
+    raw_response,
+    record,
+    run,
+)
 from tests.api_generation.support.fixture_http2 import Http2Fixture
 
 if TYPE_CHECKING:
@@ -45,7 +54,8 @@ class _ReadCapFailure(httpx2.SyncByteStream, httpx2.AsyncByteStream):
     def __iter__(self) -> Iterator[bytes]:
         self.seen.append(self.request.extensions["timeout"]["read"])
         yield b"partial"
-        raise httpx2.ReadError("stream read failed")
+        msg = "stream read failed"
+        raise httpx2.ReadError(msg)
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         for chunk in self:
@@ -290,7 +300,8 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
                 lines.append(f"  async stream close failure primary={primary} {await aoutcome(response.read)}")
             lines.append(f"  async stream close count {body.closes}")
     lines.append(
-        f"  async buffered survives close {await saved.read()!r} {await saved.json()!r} {[part async for part in saved.iter_bytes()]!r}"
+        f"  async buffered survives close {await saved.read()!r} {await saved.json()!r} "
+        f"{[part async for part in saved.iter_bytes()]!r}"
     )
     await _async_interruptions(package, lines)
     await _async_http2(package, lines)
@@ -320,6 +331,15 @@ async def _cancelled_read(api: Any, options: ModuleType, body: _WaitingBody, act
         lines.append(f"  async stream cancel {action} propagated {error.args} released {body.closes}")
 
 
+async def _consume(raw: Any, action: str) -> None:
+    """Iterate a streamed response's bytes, or call the action that reads or closes it."""
+    if action == "iter_bytes":
+        async for _ in raw.iter_bytes():
+            pass
+    else:
+        await getattr(raw, action)()
+
+
 async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
     """Interrupt async body reads and closes, and cancel a reader while its interrupted response closes."""
     options = importlib.import_module(f"{package.__name__}.options")
@@ -334,11 +354,7 @@ async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
                     "https://example.com/interruption",
                     options=options.RequestOptions(max_retries=0),
                 ) as raw:
-                    if action == "iter_bytes":
-                        async for _ in raw.iter_bytes():
-                            pass
-                    else:
-                        await getattr(raw, action)()
+                    await _consume(raw, action)
             except _Stop as error:
                 lines.append(
                     f"  async stream interruption {action} original"

@@ -23,7 +23,6 @@ from tests.assert_helper_allowlists import (
     ALLOWLISTS,
     FROZEN_EXEMPT_FILES,
     FROZEN_UNCOVERED_FILES,
-    FROZEN_UNLINTED_FILES,
 )
 from tests.conftest import (
     HttpxGetMockFactory,
@@ -216,9 +215,9 @@ MALFORMED_ALLOWLIST_FAILURE_MESSAGE = (
     "Allowlist groups are sorted, have a reason, and every entry appears in exactly one group:"
 )
 EXCLUSION_FAILURE_MESSAGE = (
-    "The ruff extend-exclude and coverage run.omit entries under tests/api_generation/support and "
-    "tests/api_generation/scenarios match FROZEN_UNLINTED_FILES and FROZEN_UNCOVERED_FILES, which only shrink: a new "
-    "helper module is linted and covered from its first commit, and a module leaves its list when it is clean:"
+    "Ruff lints every module under tests/api_generation/support and tests/api_generation/scenarios, so extend-exclude "
+    "names none of them; their coverage run.omit entries match FROZEN_UNCOVERED_FILES, which only shrinks: a new "
+    "helper module is covered from its first commit, and a module leaves the list when it is covered:"
 )
 EXEMPTION_FAILURE_MESSAGE = (
     f"{DIRECT_ASSERT_EXEMPT_FILES_INI} matches FROZEN_EXEMPT_FILES, which only shrinks, and every exempt file still "
@@ -1241,11 +1240,11 @@ def test_direct_assert_exemptions_stay_frozen(pytestconfig: pytest.Config) -> No
 
 
 def test_helper_exclusions_stay_frozen() -> None:
-    """The ruff and coverage exclusions of platform helper modules never grow and name only existing files."""
+    """Platform helper modules are never excluded from ruff, and their coverage exclusions never grow."""
     unlinted, uncovered = _configured_helper_exclusions(TESTS_ROOT.parent / "pyproject.toml")
     if not (
         problems := [
-            *_helper_exclusion_problems(TESTS_ROOT, unlinted, FROZEN_UNLINTED_FILES, "FROZEN_UNLINTED_FILES"),
+            *(f"  tests/{path} is excluded from ruff" for path in sorted(unlinted)),
             *_helper_exclusion_problems(TESTS_ROOT, uncovered, FROZEN_UNCOVERED_FILES, "FROZEN_UNCOVERED_FILES"),
         ]
     ):

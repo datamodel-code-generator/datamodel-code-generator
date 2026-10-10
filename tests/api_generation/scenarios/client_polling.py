@@ -180,8 +180,7 @@ def _lifecycle(harness: Polling, api: Any, exchange: Exchange, lines: list[str])
     step(lines, "wait", handle.wait)
     step(lines, "wait again", handle.wait)
     step(lines, "status after success", handle.status)
-    lines.append(f"  progress {dict(handle.progress)!r}")
-    lines.append("poll one at a time")
+    lines.extend((f"  progress {dict(handle.progress)!r}", "poll one at a time"))
     exchange.respond(job("queued", 202), job("running"), job("done"), report(4))
     with helper.start(body=harness.body) as handle:
         step(lines, "status", handle.status)
@@ -370,8 +369,7 @@ def _failures(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
     step(lines, "poll again", handle.status)
     step(lines, "failed fetch", handle.wait)
     step(lines, "fetch again", handle.wait)
-    lines.append(f"  progress {dict(handle.progress)!r}")
-    lines.append("server delay of a failed result fetch")
+    lines.extend((f"  progress {dict(handle.progress)!r}", "server delay of a failed result fetch"))
     exchange.respond(job("queued", 202), job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
     handle = helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
     step(lines, "fetch answered with a server delay", handle.wait)
@@ -423,7 +421,7 @@ def _slept(harness: Polling, lines: list[str]) -> None:
         waits.append(duration)
         clock.value += duration
 
-    async def asleep(duration: float) -> None:
+    async def asleep(duration: float) -> None:  # noqa: RUF029
         sleep(duration)
 
     delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "12"})
@@ -520,7 +518,8 @@ async def _async_polling(harness: Polling, lines: list[str]) -> None:
         await asyncio.sleep(0)
         try:
             async with handle:
-                raise LookupError("block")
+                msg = "block"
+                raise LookupError(msg)  # noqa: TRY301
         except LookupError as error:
             lines.append(f"  block error kept: {error!r}")
         waiting.cancel()

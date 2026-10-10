@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from functools import partial
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs
 
 import httpx2
 
 from tests.api_generation.scenarios.client_pagination import Harness, adrained, afetched, drained, fetched
-from tests.api_generation.support.client_runtime import Exchange, raw_response, record, arecord, run
+from tests.api_generation.support.client_runtime import Exchange, arecord, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -71,10 +72,10 @@ def pagination_count_values(package: ModuleType, lines: list[str]) -> None:
         for label, helper, arguments in _value_calls(harness, api):
             if "40.5" not in label:
                 exchange.respond(_answer("query", True))
-            first = fetched(lines, label, lambda: helper.page(**arguments))
+            first = fetched(lines, label, partial(helper.page, **arguments))
             if first is not None:
                 exchange.respond(_answer("query", False))
-                fetched(lines, f"{label} next", lambda: helper.next_page(first))
+                fetched(lines, f"{label} next", partial(helper.next_page, first))
     run(lambda: _async_values(harness, lines))
 
 
@@ -97,10 +98,10 @@ async def _async_values(harness: Harness, lines: list[str]) -> None:
         for label, helper, arguments in _value_calls(harness, api):
             if "40.5" not in label:
                 exchange.respond(_answer("query", True))
-            first = await afetched(lines, f"async {label}", lambda: helper.page(**arguments))
+            first = await afetched(lines, f"async {label}", partial(helper.page, **arguments))
             if first is not None:
                 exchange.respond(_answer("query", False))
-                await afetched(lines, f"async {label} next", lambda: helper.next_page(first))
+                await afetched(lines, f"async {label} next", partial(helper.next_page, first))
 
 
 def _answer(location: str, more: bool) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -171,10 +172,10 @@ def pagination_count_defaults(package: ModuleType, lines: list[str]) -> None:
         for label, location, helper, arguments, sends in _default_calls(harness, api):
             if sends:
                 exchange.respond(_answer(location, True))
-            first = fetched(lines, label, lambda: helper.page(**arguments))
+            first = fetched(lines, label, partial(helper.page, **arguments))
             if first is not None:
                 exchange.respond(_answer(location, False))
-                fetched(lines, f"{label} next", lambda: helper.next_page(first))
+                fetched(lines, f"{label} next", partial(helper.next_page, first))
         exchange.respond(_answer("query", True), _answer("query", False))
         drained(lines, "client default offset items", api.protocols.users.offsets.iterate())
     run(lambda: _async_defaults(harness, defaults, lines))
@@ -190,9 +191,9 @@ async def _async_defaults(harness: Harness, defaults: dict[str, Any], lines: lis
         for label, location, helper, arguments, sends in _default_calls(harness, api):
             if sends:
                 exchange.respond(_answer(location, True))
-            first = await afetched(lines, f"async {label}", lambda: helper.page(**arguments))
+            first = await afetched(lines, f"async {label}", partial(helper.page, **arguments))
             if first is not None:
                 exchange.respond(_answer(location, False))
-                await afetched(lines, f"async {label} next", lambda: helper.next_page(first))
+                await afetched(lines, f"async {label} next", partial(helper.next_page, first))
         exchange.respond(_answer("query", True), _answer("query", False))
         await adrained(lines, "async client default offset items", api.protocols.users.offsets.iterate())

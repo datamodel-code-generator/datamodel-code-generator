@@ -130,7 +130,7 @@ def _streamed(
 ) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of a chunked body; one that fails or acts mid-body runs in-process, as the client reads it."""
     headers = {"content-type": media, **options.pop("headers", {})}
-    responder = lambda request: httpx2.Response(status, headers=headers, stream=_Stream(chunks, **options))  # noqa: E731
+    responder = lambda _request: httpx2.Response(status, headers=headers, stream=_Stream(chunks, **options))  # noqa: E731
     return Injected(responder) if options.get("fail") or options.get("action") else responder
 
 
@@ -164,7 +164,7 @@ def raw(package: ModuleType, lines: list[str]) -> None:
 
 def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Keep a raw response's whole decoded body in memory, and an error body's prefix; raw bytes are not kept."""
-    errors, options, _, types = _modules(package)
+    errors, options, _, _types = _modules(package)
     pet, raw = _pet(package), api.pets.with_raw_response
     exchange.respond(_streamed(200, (_PET[:8], _PET[8:])))
     kept = raw.get_pet(petId=pet)
@@ -263,7 +263,7 @@ def _streaming(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     exchange.respond(_streamed(200, (_PET,)))
     try:
         with streaming.get_pet(petId=pet) as response:
-            raise Stop
+            raise Stop  # noqa: TRY301
     except Stop:
         record(lines, "stopped block read", response.read)
     exchange.respond(*(failing(httpx2.ConnectError) for _ in range(3)))
@@ -317,8 +317,10 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     plain.write_bytes(b"")
     permissions = stat.S_IMODE(target.stat().st_mode) == stat.S_IMODE(plain.stat().st_mode)
     plain.unlink()
-    lines.append(f"  downloaded {sink.getvalue()!r} open {not sink.closed} {target.read_bytes()!r} {_files(directory)}")
-    lines.append(f"  downloaded with the permissions of a new file {permissions}")
+    lines.extend((
+        f"  downloaded {sink.getvalue()!r} open {not sink.closed} {target.read_bytes()!r} {_files(directory)}",
+        f"  downloaded with the permissions of a new file {permissions}",
+    ))
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"[]",)), _streamed(200, (b"{", b"}"), fail=True))
     with streaming.get_pet(petId=pet) as response:
         lines.append(f"  existing {outcome(lambda: response.stream_to(target))} then read {response.read()!r}")
@@ -381,7 +383,7 @@ def _requests(api: Any, exchange: Exchange, lines: list[str]) -> None:
 
 
 def _handles(package: ModuleType, lines: list[str]) -> None:
-    """A root closes only its created client; a borrowed stream owns its own response."""
+    """Show that a root closes only its created client, and a borrowed stream owns its own response."""
     exchange = Exchange(lines)
     exchange.respond(_streamed(200, (_PET,), _JSON), _streamed(200, (_PET[:5], _PET[5:]), _JSON))
     with exchange.client() as native, package.Client(http_client=native) as api:
@@ -502,7 +504,7 @@ async def _async_streaming(
     exchange.respond(_streamed(200, (_PET,)))
     try:
         async with streaming.get_pet(petId=pet) as response:
-            raise Stop
+            raise Stop  # noqa: TRY301
     except Stop:
         await arecord(lines, "async stopped block read", response.read)
     await _async_download(streaming, pet, exchange, lines, directory)
@@ -558,7 +560,7 @@ async def _async_requests(api: Any, exchange: Exchange, lines: list[str]) -> Non
 
 
 async def _async_handles(package: ModuleType, lines: list[str]) -> None:
-    """A root closes only its created client; a borrowed stream owns its own response."""
+    """Show that a root closes only its created client, and a borrowed stream owns its own response."""
     exchange = Exchange(lines)
     exchange.respond(_streamed(200, (_PET,), _JSON), _streamed(200, (_PET[:5], _PET[5:]), _JSON))
     async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:

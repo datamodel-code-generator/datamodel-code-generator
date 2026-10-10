@@ -110,7 +110,7 @@ async def adrained(lines: list[str], label: str, values: AsyncIterator[Any]) -> 
     seen: list[str] = []
     try:
         async for value in values:
-            seen.append(_label(value))
+            seen.append(_label(value))  # noqa: PERF401 - keep the values seen before a failure
     except Exception as error:  # noqa: BLE001
         lines.append(f"  {label} {seen} ! {describe(error)}")
         return
@@ -207,7 +207,7 @@ def _modes(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     record(lines, "pages iter_pages again", lambda: list(pages.iter_pages()))
     items = helper.iterate()
     record(lines, "iterable", lambda: iter(items) is items)
-    record(lines, "items then pages", lambda: items.iter_pages())
+    record(lines, "items then pages", items.iter_pages)
     closed = helper.iterate()
     closed.iter_pages()
     closed.close()
@@ -236,7 +236,7 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     ):
         record(lines, label, lambda arguments=arguments: summary(harness.protocols.Page(**arguments)))
     record(lines, "page frozen", lambda: setattr(first, "data", None))
-    record(lines, "page equality", lambda: (first == first, first == second, hash(first) == hash(first)))
+    record(lines, "page equality", lambda: (first == first, first == second, hash(first) == hash(first)))  # noqa: PLR0124
 
 
 def _ends(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:

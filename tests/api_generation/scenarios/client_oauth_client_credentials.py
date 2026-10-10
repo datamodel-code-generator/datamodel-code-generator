@@ -278,7 +278,7 @@ async def _async_tokens(package: ModuleType, auth: ModuleType, lines: list[str])
     await _async_faults(package, auth, exchange, lines)
     async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=_provider(auth)) as api:
         exchange.respond(issued("access-a1"), _OK, _INVALID, issued("access-a2"), _OK)
-        lines.append(f"  async first = {await api.auth.oauth_read()!r}")
+        lines.append(f"  async first = {await api.auth.oauth_read()!r}")  # noqa: FURB113 - the next call logs between
         lines.append(f"  async renewed = {await api.auth.oauth_read()!r}")
     script = Script(token("access-gathered"))
     provider = _provider(auth, http_client=script.async_client())
@@ -291,7 +291,7 @@ async def _async_tokens(package: ModuleType, auth: ModuleType, lines: list[str])
     provider = _provider(auth, http_client=script.async_client())
     async with exchange.async_client() as http, package.AsyncClient(http_client=http, oauth=provider) as api:
         task = asyncio.create_task(api.auth.oauth_read())
-        while not script.entered.is_set():
+        while not script.entered.is_set():  # noqa: ASYNC110
             await asyncio.sleep(0)
         task.cancel()
         try:

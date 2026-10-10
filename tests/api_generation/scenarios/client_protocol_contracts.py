@@ -27,13 +27,22 @@ sys.path.insert(0, sys.argv[1])
 before = threading.active_count()
 for name in ('._runtime.client.errors', '._runtime.client.options', '.errors', '.options'):
     importlib.import_module(sys.argv[2] + name)
-loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if name.startswith(sys.argv[2] + '._runtime.protocols.'))
+loaded = sorted(
+    name.removeprefix(sys.argv[2] + '.')
+    for name in sys.modules
+    if name.startswith(sys.argv[2] + '._runtime.protocols.')
+)
 print('client imports load protocols=' + repr(loaded))
 errors = importlib.import_module(sys.argv[2] + '.errors')
 options = importlib.import_module(sys.argv[2] + '.options')
 print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors))))
-print('dir loads nothing=' + repr(sys.argv[2] + '._runtime.protocols.options' not in sys.modules and sys.argv[2] + '._runtime.protocols.errors' not in sys.modules))
-print('protocol errors loaded on use=' + repr(errors.SessionLimitError.__module__ == sys.argv[2] + '._runtime.protocols.errors'))
+print('dir loads nothing=' + repr(
+    sys.argv[2] + '._runtime.protocols.options' not in sys.modules
+    and sys.argv[2] + '._runtime.protocols.errors' not in sys.modules
+))
+print('protocol errors loaded on use=' + repr(
+    errors.SessionLimitError.__module__ == sys.argv[2] + '._runtime.protocols.errors'
+))
 print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors))))
 module = importlib.import_module(sys.argv[2] + '.protocols')
 optional = ('httpx2', 'httpcore2', 'cryptography', 'asyncio', 'pydantic', 'msgspec', 'anyio')
@@ -42,11 +51,15 @@ print('import threads unchanged=' + repr(threading.active_count() == before))
 print('replay loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.replay' in sys.modules))
 print('pagination loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.pagination' in sys.modules))
 pagination = importlib.import_module(sys.argv[2] + '._runtime.protocols.pagination')
-print('pagination types=' + repr(tuple(getattr(module, name) is getattr(pagination, name) for name in ('Page', 'Pager', 'AsyncPager'))))
+print('pagination types=' + repr(
+    tuple(getattr(module, name) is getattr(pagination, name) for name in ('Page', 'Pager', 'AsyncPager'))
+))
 print('pagination optional imports=' + repr([name for name in optional if name in sys.modules]))
 print('client protocols=' + repr(hasattr(importlib.import_module(sys.argv[2]).Client, 'protocols')))
 runtime = importlib.import_module(sys.argv[2] + '._runtime.protocols.options')
-print('option identities=' + repr((module.PaginationOptions is runtime.PaginationOptions, module.StreamOptions is runtime.StreamOptions)))
+print('option identities=' + repr(
+    (module.PaginationOptions is runtime.PaginationOptions, module.StreamOptions is runtime.StreamOptions)
+))
 print('construction threads unchanged=' + repr(threading.active_count() == before))
 """
 _CLIENT_PROBE: Final = """
@@ -55,7 +68,11 @@ import sys
 sys.path.insert(0, sys.argv[1])
 package = importlib.import_module(sys.argv[2])
 with package.Client(max_retries=1):
-    loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if name.startswith(sys.argv[2] + '._runtime.protocols.'))
+    loaded = sorted(
+        name.removeprefix(sys.argv[2] + '.')
+        for name in sys.modules
+        if name.startswith(sys.argv[2] + '._runtime.protocols.')
+    )
 print('configured client loads protocols=' + repr(loaded))
 """
 _RECORDS: Final = (
@@ -120,7 +137,7 @@ def protocol_contracts(package: ModuleType, lines: list[str]) -> None:
     _shapes(protocols, lines)
     _selectors(protocols, lines)
     _origins(protocols, lines)
-    _canonical_values(protocols, records, lines)
+    _canonical_values(records, lines)
     _snapshots(protocols, responses, lines)
     _option_matrix(protocols, options, lines)
     _client_options(package, protocols, options, lines)
@@ -149,8 +166,10 @@ def _shapes(protocols: ModuleType, lines: list[str]) -> None:
         parameters = inspect.signature(record_type).parameters.values()
         lines.extend((
             f"  {name} fields={tuple(item.name for item in fields(record_type))}",
-            f"  {name} keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)}"
-            f" hints={tuple(get_type_hints(record_type))}",
+            (
+                f"  {name} keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)}"
+                f" hints={tuple(get_type_hints(record_type))}"
+            ),
         ))
     literals = (
         ("HeaderSelector.occurrence", get_type_hints(protocols.HeaderSelector)["occurrence"]),
@@ -158,8 +177,10 @@ def _shapes(protocols: ModuleType, lines: list[str]) -> None:
         ("ProgressKey", protocols.ProgressKey),
     )
     lines.extend(f"  {label} values={get_args(hint)}" for label, hint in literals)
-    for alias in ("Selector", "RequestTarget"):
-        lines.append(f"  {alias} members={tuple(item.__name__ for item in get_args(getattr(protocols, alias)))}")
+    lines.extend(
+        f"  {alias} members={tuple(item.__name__ for item in get_args(getattr(protocols, alias)))}"
+        for alias in ("Selector", "RequestTarget")
+    )
     progress = protocols.ProtocolProgress
     lines.append(
         f"  ProtocolProgress mapping={get_origin(progress) is collections.abc.Mapping} "
@@ -226,7 +247,7 @@ def _selectors(protocols: ModuleType, lines: list[str]) -> None:
         ("header missing name", {}),
     ):
         record(lines, label, lambda arguments=arguments: protocols.HeaderSelector(**arguments))
-    record(lines, "status selector", lambda: protocols.StatusSelector())
+    record(lines, "status selector", protocols.StatusSelector)
     for location, name in (
         ("path", "petId"),
         ("query", "cursor"),
@@ -309,7 +330,7 @@ def _origins(protocols: ModuleType, lines: list[str]) -> None:
         )
 
 
-def _canonical_values(protocols: ModuleType, records: ModuleType, lines: list[str]) -> None:
+def _canonical_values(records: ModuleType, lines: list[str]) -> None:
     """Encode resume state values as canonical JSON and refuse what JSON cannot hold."""
     cycle: list[object] = []
     cycle.append(cycle)
@@ -324,7 +345,7 @@ def _canonical_values(protocols: ModuleType, records: ModuleType, lines: list[st
         ("whole float", 100.0),
         ("negative zero decimal", Decimal("-0")),
         ("exponent decimal", Decimal("1E+2")),
-        ("whole decimal", Decimal("7")),
+        ("whole decimal", Decimal(7)),
         ("large integer", 2**70),
         ("null", None),
         ("boolean", False),
@@ -373,8 +394,10 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
     state["status"] = "changed"
     lines.extend((
         f"  snapshot repr={snapshot!r}",
-        f"  snapshot secret={'secret' in repr(snapshot)} data identity={snapshot.data is data} "
-        f"response identity={snapshot.response is info}",
+        (
+            f"  snapshot secret={'secret' in repr(snapshot)} data identity={snapshot.data is data} "
+            f"response identity={snapshot.response is info}"
+        ),
         f"  snapshot state={type(snapshot.state).__name__} {dict(snapshot.state)!r}",
     ))
     record(lines, "snapshot frozen", lambda: setattr(snapshot, "terminal", True))
@@ -471,7 +494,7 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
         ("options", options),
         ("errors", importlib.import_module(f"{package.__name__}.errors")),
     ):
-        record(lines, f"unknown {label} attribute", lambda module=module: getattr(module, "MissingProtocolType"))
+        record(lines, f"unknown {label} attribute", lambda module=module: module.MissingProtocolType)
         record(
             lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")]
         )

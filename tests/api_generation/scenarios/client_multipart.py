@@ -28,11 +28,12 @@ if TYPE_CHECKING:
 class _AsyncFile:
     """An async file object: its `read` is a coroutine function."""
 
-    async def read(self, size: int = -1) -> bytes:
+    async def read(self, size: int = -1) -> bytes:  # noqa: ARG002
+        """Read nothing."""
         return b""
 
 
-async def _chunks() -> Any:
+async def _chunks() -> Any:  # noqa: RUF029
     for chunk in (b"s1", b"s2"):
         yield chunk
 
@@ -159,7 +160,8 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
     exchange.respond(raw_response(200, _nested(3000), form))
     lines.append(f"  profile read of deeply nested parts {outcome(api.forms.read_profile)}")
     mixed = (
-        b'--b1\r\nContent-Disposition: attachment; filename="a\\"b.txt"\r\nContent-Type: text/plain\r\nX-Trace: t\r\n\r\none'
+        b'--b1\r\nContent-Disposition: attachment; filename="a\\"b.txt"\r\n'
+        b"Content-Type: text/plain\r\nX-Trace: t\r\n\r\none"
         b"\r\n--b1\r\n\r\n\x00two\r\n\r\n"
         b'\r\n--b1\r\nContent-Disposition: form-data; filename="x; name=y"; name=third; filename=plain.bin\r\n\r\n3'
         b"\r\n--b1\r\nX-Only: 1\r\n"
@@ -174,7 +176,8 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
     lines.append(f"  parts read {_parts_of(data)}")
     first, second = data.parts[:2]
     lines.append(
-        f"  parts read again: {data == again} {hash(data) == hash(again)} {first == again.parts[0]} {hash(first) == hash(again.parts[0])} "
+        f"  parts read again: {data == again} {hash(data) == hash(again)} {first == again.parts[0]} "
+        f"{hash(first) == hash(again.parts[0])} "
         f"{first == second} {data == data.parts} {first == data}"
     )
     exchange.respond(raw_response(200, b"not multipart", "multipart/mixed; boundary=b1"))
@@ -291,7 +294,7 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
     for label, value in (("streamed parts", streamed), ("sized parts", sized), ("no parts", body(()))):
         exchange.respond(raw_response(204))
         record(lines, label, lambda value=value: api.forms.submit_parts(body=value))
-    record(lines, "no body", lambda: _answered(exchange, lambda: api.forms.submit_parts()))
+    record(lines, "no body", lambda: _answered(exchange, api.forms.submit_parts))
     for label, value in (
         ("part header naming the media type", body((field("a", "1", headers=(("Content-Type", "text/plain"),)),))),
         ("part media type as given", body((field("a", "1", content_type="not a media type"),))),
@@ -454,7 +457,7 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
 
 
 def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Send members in the parts their query styles give, without percent-encoding, and refuse names two members write."""
+    """Send members in the parts their query styles give, without percent-encoding; refuse names two members write."""
     bodies, options, _ = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
     sticker = {
@@ -533,7 +536,7 @@ def _answered(exchange: Exchange, call: Callable[[], object]) -> object:
 
 
 async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
-    bodies, _, types = _modules(package)
+    bodies, _, _types = _modules(package)
     exchange = Exchange(lines)
     http = exchange.async_client()
     body, field, file = bodies.AsyncMultipartBody, bodies.FieldPart, bodies.FilePart

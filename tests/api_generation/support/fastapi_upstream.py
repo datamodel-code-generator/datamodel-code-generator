@@ -30,7 +30,7 @@ class _Uploads:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    def upload(self, *, body: Any) -> Response:  # noqa: ANN401
+    def upload(self, *, body: Any) -> Response:
         self.calls.append(f"upload({body.file!r}, {type(body.note).__name__})")
         return Response(status_code=204)
 

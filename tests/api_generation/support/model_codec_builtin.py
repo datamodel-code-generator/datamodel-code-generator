@@ -167,7 +167,7 @@ def _text(lines: list[str], package: str) -> str:
     return "\n".join(lines).replace(f"{package}_models", "models") + "\n"
 
 
-def _native(value: object) -> str:
+def _native(value: object) -> str:  # noqa: PLR0911
     match value:
         case BaseModel():
             names = [*type(value).model_fields, *(value.model_extra or {})]
@@ -200,7 +200,7 @@ class _Runner:
         self.wire_only = wire_only
         self.results: dict[str, Any] = {}
 
-    def native(self, spec: object) -> object:
+    def native(self, spec: object) -> object:  # noqa: PLR0911, PLR0912
         match spec:
             case {"call": str(), "args": dict()}:
                 native = self.package.export(self.package.symbol(spec["call"]))
@@ -237,7 +237,7 @@ class _Runner:
                 pass
         return spec
 
-    def run(self, case: dict[str, Any]) -> str:
+    def run(self, case: dict[str, Any]) -> str:  # noqa: PLR0911
         codec = self.codecs[str(case["use"])]
         try:
             value = self.native(case.get("value"))
@@ -266,7 +266,7 @@ class _Runner:
                     result = codec.convert(value)
                 case _:
                     msg = f"Unknown native case operation: {case['op']}"
-                    raise ValueError(msg)
+                    raise ValueError(msg)  # noqa: TRY301
             self.results[str(case["name"])] = result
             encoded = json.dumps(
                 _unordered_json(result, codec.dump(result)), separators=(",", ":"), ensure_ascii=False, allow_nan=False
@@ -285,7 +285,7 @@ class _Runner:
             return type(error).__name__
 
 
-def _codecs(package: GeneratedCodecs, lines: list[str] | None = None, *, strategies: bool = False) -> dict[str, Any]:
+def _codecs(package: GeneratedCodecs, lines: list[str] | None = None) -> dict[str, Any]:
     """Read each statically constructed native codec, listing the backend when requested."""
     codecs = {}
     for index, key in enumerate(package.uses):
@@ -422,7 +422,9 @@ class _NativeServerCases:
         """Return the model the generated contract declares for one response of an operation."""
         contract = importlib.import_module(f"{self.package}._generated.contract")
         plans = next(
-            item for item in vars(contract).values() if getattr(item, "__doc__", None) == f"Plans of the {name} operation."
+            item
+            for item in vars(contract).values()
+            if getattr(item, "__doc__", None) == f"Plans of the {name} operation."
         )
         return plans.RESPONSES.responses[status].model
 
@@ -516,7 +518,7 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool 
         return _text([*lines, *_native_server_report(accepted, package, fixture)], package)
     with imported(accepted, package) as generated:
         try:
-            runner = _Runner(generated, _codecs(generated, lines, strategies=bool(fixture.get("strategies"))))
+            runner = _Runner(generated, _codecs(generated, lines))
         except TypeError:
             lines.append("native startup TypeError")
             return _text(lines, package)

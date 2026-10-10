@@ -5,6 +5,8 @@ from __future__ import annotations
 import importlib
 import json
 import re
+from functools import partial
+from itertools import starmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 from urllib.parse import urlencode
@@ -79,7 +81,7 @@ def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType,
     )
 
 
-def _framing(  # noqa: PLR0913, PLR0917
+def _framing(
     api: Any, exchange: Exchange, lines: list[str], options: ModuleType, bodies: ModuleType, package: ModuleType
 ) -> None:
     """Send an explicit Content-Type or Accept over the body's media type and a narrowed Accept, or remove them."""
@@ -163,7 +165,7 @@ def _framing(  # noqa: PLR0913, PLR0917
     )
 
 
-def _parts(  # noqa: PLR0913, PLR0917
+def _parts(
     labeled: Any, api: Any, exchange: Exchange, lines: list[str], options: ModuleType, bodies: ModuleType
 ) -> None:
     """Keep the parts' media type and boundary over a client's or a view's Content-Type, which only a call replaces."""
@@ -251,9 +253,9 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
         ):
             exchange.respond(raw_response(204, **({} if header is None else {"X-Value": header})))
             info = api.native_headers.with_raw_response.get_values().info
-            record(lines, label, lambda: types.decode_get_values_header(info, name="X-Value"))
+            record(lines, label, partial(types.decode_get_values_header, info, name="X-Value"))
             record(
-                lines, "missing optional JSON header", lambda: types.decode_get_values_header(info, name="X-Optional")
+                lines, "missing optional JSON header", partial(types.decode_get_values_header, info, name="X-Optional")
             )
         for name, value in (
             ("X-Count", "05"),
@@ -269,19 +271,19 @@ def native_boundaries(package: ModuleType, lines: list[str]) -> None:
         ):
             exchange.respond(raw_response(204, **{name: value}))
             info = api.native_headers.with_raw_response.get_values().info
-            record(lines, f"native {name} {value}", lambda: types.decode_get_values_header(info, name=name))
+            record(lines, f"native {name} {value}", partial(types.decode_get_values_header, info, name=name))
         source = Path(__file__).parents[2] / "data" / "generation_platform/client/native-text.json"
         cases = json.loads(source.read_text(encoding="utf-8"))
         for name, value in cases["headers"]:
             content = ((name.encode(), value.encode()),)
             exchange.respond(lambda _, content=content: httpx2.Response(204, headers=content))
             info = api.native_headers.with_raw_response.get_values().info
-            read = _text_outcome(lambda: types.decode_get_values_header(info, name=name))
+            read = _text_outcome(partial(types.decode_get_values_header, info, name=name))
             lines.append(f"  native {name} {value} {read}")
         for fields in cases["forms"]:
             exchange.respond(raw_response(200, urlencode(fields).encode(), "application/x-www-form-urlencoded"))
             lines.append(f"  native form {fields} {_text_outcome(api.native_headers.get_form)}")
-            parts = "".join(_PART.format(name, value) for name, value in fields.items())
+            parts = "".join(starmap(_PART.format, fields.items()))
             exchange.respond(raw_response(200, f"{parts}--b--\r\n".encode(), "multipart/form-data; boundary=b"))
             lines.append(f"  native parts {fields} {_text_outcome(api.native_headers.get_parts)}")
         run(lambda: _async_native_headers(package, types, lines))
@@ -297,4 +299,4 @@ async def _async_native_headers(package: ModuleType, types: ModuleType, lines: l
         exchange.respond(raw_response(204, **{"X-Count": "+1", "X-Entry": "value=known,unknown=extra"}))
         info = (await api.native_headers.with_raw_response.get_values()).info
         for name in ("X-Count", "X-Entry"):
-            record(lines, f"async native {name}", lambda: types.decode_get_values_header(info, name=name))
+            record(lines, f"async native {name}", partial(types.decode_get_values_header, info, name=name))

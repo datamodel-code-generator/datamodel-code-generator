@@ -142,7 +142,7 @@ def _chunks() -> Iterator[bytes]:
     yield from (b"chunk-", b"body")
 
 
-async def _achunks() -> AsyncIterator[bytes]:
+async def _achunks() -> AsyncIterator[bytes]:  # noqa: RUF029
     for chunk in (b"chunk-", b"body"):
         yield chunk
 
@@ -159,7 +159,7 @@ def _signing(package: ModuleType, options: ModuleType, lines: list[str]) -> None
         record(lines, "signed chunks", lambda: view.auth.signed_body(body=_chunks()))
         retried = options.RequestOptions(auth=signer, retry=options.RetryOptions(statuses={503}, initial_delay=0))
         record(lines, "signed retry", lambda: api.auth.signed_body(body=b"payload", options=retried))
-        record(lines, "signature replaces the credentials", lambda: view.auth.bearer())
+        record(lines, "signature replaces the credentials", view.auth.bearer)
     lines.append(f"  signatures {signer.signed}")
 
     async def asigned() -> None:

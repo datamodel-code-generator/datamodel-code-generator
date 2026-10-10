@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import importlib
 import itertools
-from contextlib import asynccontextmanager, contextmanager
 import json
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.api_generation.support.client_runtime import arecord, argument, describe, record, run
 from tests.api_generation.scenarios.client_streams import _event, _Feed, _Harness
+from tests.api_generation.support.client_runtime import arecord, argument, describe, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
@@ -235,7 +234,7 @@ def _slept(package: ModuleType, lines: list[str]) -> None:
         waits.append(duration)
         now[0] += duration
 
-    async def asleep(duration: float) -> None:
+    async def asleep(duration: float) -> None:  # noqa: RUF029
         sleep(duration)
 
     clock = options.Clock(monotonic=lambda: now[0], random=lambda: 0.5, sleep=sleep, asleep=asleep)

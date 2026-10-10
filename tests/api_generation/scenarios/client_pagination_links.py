@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -79,7 +78,7 @@ def pagination_links(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
         _urls(harness, api, exchange, lines)
-        _refusals(harness, api, exchange, lines)
+        _refusals(api, exchange, lines)
         _vectors(harness, api, exchange, lines)
         _bodies(harness, api, exchange, lines)
         _cycles(api, exchange, lines)
@@ -123,7 +122,7 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
         drained(lines, label, users.loose.iterate())
 
 
-def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _refusals(api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Refuse a URL with a fragment, user information, another scheme or origin, bad syntax, or too many bytes."""
     helper = api.protocols.users.follow
     for label, value in _URL_REFUSALS:

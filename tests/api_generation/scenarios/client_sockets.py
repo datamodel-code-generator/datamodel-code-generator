@@ -35,7 +35,10 @@ if TYPE_CHECKING:
     from websockets.sync.server import ServerConnection
 
 _JOINED: Final = json.dumps({"kind": "joined", "user": "ann"})
-_UPGRADE: Final = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
+_UPGRADE: Final = (
+    b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+    b"Sec-WebSocket-Accept: {accept}\r\n\r\n"
+)
 _LARGE: Final = "x" * (32 * 1024 * 1024)
 _PROBLEM: Final = (("Content-Type", "application/json"),)
 _INVALID: Final = (("WWW-Authenticate", 'Bearer error="invalid_token"'),)
@@ -50,6 +53,7 @@ def _described(value: object) -> str:
 
 
 def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
+    """Record a call's result or failure, naming a failure's cause by its class alone."""
     try:
         result = call()
     except Exception as error:  # noqa: BLE001
@@ -60,6 +64,7 @@ def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
 
 
 async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> object:
+    """Record an awaited call's result or failure, naming a failure's cause by its class alone."""
     try:
         result = await call()
     except Exception as error:  # noqa: BLE001
@@ -205,8 +210,10 @@ class _Harness:
         self.lines.extend(play.report() for play in plays)
 
     async def areport(self, *plays: Play) -> None:
-        """Report what the server saw in each play once it ended, waiting off the event loop so that the loop can
-        finish closing a connection meanwhile."""
+        """Report what the server saw in each play once it ended, waiting off the event loop.
+
+        The loop can so finish closing a connection meanwhile.
+        """
         for play in plays:
             await asyncio.to_thread(play.done.wait, 10)
         self.report(*plays)
@@ -407,8 +414,10 @@ def _limits(harness: _Harness, api: Any) -> None:
 
 
 def _clocked(harness: _Harness) -> None:
-    """Time a session's waits on the client's clock: a stepped clock expires an idle wait at once, and a frozen one
-    ends it, or the session's deadline, once as much real time passed.
+    """Time a session's waits on the client's clock.
+
+    A stepped clock expires an idle wait at once, and a frozen one ends it, or the session's deadline, once as much
+    real time passed.
     """
     lines, server, options = harness.lines, harness.server, harness.options
     ticks = itertools.count(step=30.0)
@@ -640,13 +649,15 @@ package = importlib.import_module(sys.argv[2])
 plans = importlib.import_module(sys.argv[2] + '.protocols._plans')
 with package.Client() as client:
     client.protocols.rooms.chat
-    print('WebSocket library loaded by the plans=' + repr('wsproto' in sys.modules) + ' ' + type(plans.SOCKET_0).__name__)
+    print(
+        'WebSocket library loaded by the plans=' + repr('wsproto' in sys.modules) + ' ' + type(plans.SOCKET_0).__name__
+    )
     print('websockets library loaded=' + repr('websockets' in sys.modules))
 """
 
 
 def _imports(package: ModuleType, lines: list[str]) -> None:
-    """Import a WebSocket package, its plans, and a client's helpers in a fresh process, which never loads websockets."""
+    """Import a WebSocket package, its plans, and a client's helpers in a fresh process that never loads websockets."""
     location = Path(str(package.__file__)).parent.parent
     completed = subprocess.run(
         [sys.executable, "-I", "-c", _IMPORT_PROBE, str(location), package.__name__],
@@ -758,7 +769,10 @@ def _handshakes(harness: _Harness) -> None:
     """
     lines, options = harness.lines, harness.options
     once = options.RequestOptions(max_retries=0)
-    accept = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n"
+    accept = (
+        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+        b"Sec-WebSocket-Accept: {accept}\r\n"
+    )
     for label, reply, arguments in (
         ("open timeout", None, {"ws_options": harness.ws(open_timeout=1.0)}),
         ("closed before a response", b"", {}),
@@ -770,7 +784,10 @@ def _handshakes(harness: _Harness) -> None:
         ),
         (
             "wrong accept",
-            b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: wrong\r\n\r\n",
+            (
+                b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                b"Sec-WebSocket-Accept: wrong\r\n\r\n"
+            ),
             {},
         ),
         ("subprotocol not offered", accept + b"Sec-WebSocket-Protocol: other\r\n\r\n", {}),
@@ -965,7 +982,7 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
         (play,) = server.play(Play())
         try:
             async with chat.connect(room=harness.room()) as session:
-                raise raised
+                raise raised  # noqa: TRY301
         except raised as failure:
             lines.append(f"  async block's own failure left the block {type(failure).__name__} {session!r}")
         await harness.areport(play)
@@ -973,7 +990,7 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
     entered = asyncio.Event()
 
     async def block() -> None:
-        async with chat.connect(room=harness.room()) as session:
+        async with chat.connect(room=harness.room()):
             entered.set()
             await asyncio.Event().wait()
 
@@ -1016,8 +1033,9 @@ async def _async_steps(harness: _Harness, api: Any) -> None:
 
 
 async def _async_peers(harness: _Harness) -> None:
-    """Close a client under an open asyncio session, fail a session at a record that fails HTTPX2's reader, and fail
-    pings and sends a raw peer never answers.
+    """Close a client under an open asyncio session, and fail sessions at their peers.
+
+    A session fails at a record that fails HTTPX2's reader, and at pings and sends a raw peer never answers.
     """
     lines, options = harness.lines, harness.options
     harness.server.play(Play(talk=_sending(_JOINED)))
@@ -1028,7 +1046,8 @@ async def _async_peers(harness: _Harness) -> None:
             await arecord(lines, "async client close with a session open", api.aclose)
             await arecord(lines, "async receive after the client closed", session.receive)
     peer = RawPeer(
-        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
+        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+        b"Sec-WebSocket-Accept: {accept}\r\n\r\n"
     )
     try:
         async with (

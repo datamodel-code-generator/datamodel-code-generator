@@ -56,6 +56,13 @@ def _imports(package: ModuleType, lines: list[str]) -> None:
     lines.extend(f"  {line}" for line in completed.stdout.splitlines())
 
 
+def _keyword_only(record_type: type) -> bool:
+    """Whether a record type takes only keyword arguments."""
+    return all(
+        item.kind is inspect.Parameter.KEYWORD_ONLY for item in inspect.signature(record_type).parameters.values()
+    )
+
+
 def _records(protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Preserve opaque identities, expose the declared fields, and reject mutation or positional records."""
     first, second = object(), object()
@@ -121,23 +128,25 @@ def _records(protocols: ModuleType, options: ModuleType, lines: list[str]) -> No
         "ResolvedWebhookOptions",
     ):
         record_type = getattr(protocols, name)
-        lines.append(f"  {name} fields={tuple(item.name for item in fields(record_type))}")
-        lines.append(
-            f"  {name} keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in inspect.signature(record_type).parameters.values())}"
-        )
-        lines.append(f"  {name} hints={tuple(get_type_hints(record_type))}")
+        lines.extend((
+            f"  {name} fields={tuple(item.name for item in fields(record_type))}",
+            f"  {name} keyword-only={_keyword_only(record_type)}",
+            f"  {name} hints={tuple(get_type_hints(record_type))}",
+        ))
     key_parameter = protocols.KeySet.__parameters__[0]
     event_parameter = protocols.VerifiedWebhook.__parameters__[0]
-    lines.append(f"  key variance={key_parameter.__covariant__}/{key_parameter.__contravariant__}")
-    lines.append(f"  event covariance={event_parameter.__covariant__}")
+    lines.extend((
+        f"  key variance={key_parameter.__covariant__}/{key_parameter.__contravariant__}",
+        f"  event covariance={event_parameter.__covariant__}",
+    ))
     key_hint = get_type_hints(protocols.KeySet)["keys"]
     lines.append(f"  key tuple hint={get_origin(key_hint) is tuple}/{get_args(key_hint) == (key_parameter, Ellipsis)}")
     verifier_hints = get_type_hints(protocols.Verifier.verify)
-    lines.append(f"  verifier key identity={protocols.Verifier.__parameters__[0] is key_parameter}")
-    lines.append(
-        f"  verifier hints={tuple(verifier_hints)} result={verifier_hints['return'] is protocols.VerifiedSignature}"
-    )
-    lines.append(f"  verifier synchronous={not inspect.iscoroutinefunction(protocols.Verifier.verify)}")
+    lines.extend((
+        f"  verifier key identity={protocols.Verifier.__parameters__[0] is key_parameter}",
+        f"  verifier hints={tuple(verifier_hints)} result={verifier_hints['return'] is protocols.VerifiedSignature}",
+        f"  verifier synchronous={not inspect.iscoroutinefunction(protocols.Verifier.verify)}",
+    ))
     record(lines, "unknown protocol attribute", lambda: protocols.MissingWebhookType)
 
 

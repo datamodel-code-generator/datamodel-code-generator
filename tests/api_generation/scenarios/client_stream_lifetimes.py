@@ -154,7 +154,7 @@ class _HeldFile(io.FileIO):
         super().close()
 
 
-def _denied(path: Path, *, missing_ok: bool = False) -> None:
+def _denied(path: Path, *, missing_ok: bool = False) -> None:  # noqa: ARG001
     raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
 
 
@@ -300,7 +300,7 @@ def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
         streaming = api.with_streaming_response
         exchange.respond(_body(), raw_response(200, b"pong", "text/plain"))
         with streaming.request_raw("GET", _URL) as response, pytest.MonkeyPatch.context() as fault:
-            fault.setattr(os, "fdopen", lambda handle, mode: _FullDisk(handle, 0, _free()))
+            fault.setattr(os, "fdopen", lambda handle, mode: _FullDisk(handle, 0, _free()))  # noqa: ARG005
             failed = outcome(lambda: response.stream_to(target))
             lines.append(f"  sync full disk {failed} then {api.request_raw('GET', _URL).read()!r} {_files(directory)}")
         exchange.respond(_body())
@@ -338,7 +338,7 @@ def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
     http.close()
 
 
-def _unopenable(handle: int, mode: str) -> BinaryIO:
+def _unopenable(handle: int, mode: str) -> BinaryIO:  # noqa: ARG001
     raise OSError(errno.EMFILE, os.strerror(errno.EMFILE))
 
 
@@ -348,7 +348,7 @@ class _Sink(io.RawIOBase):
     def writable(self) -> bool:
         return True
 
-    def write(self, data: Any) -> int:
+    def write(self, data: Any) -> int:  # noqa: ARG002
         raise OSError(errno.EIO, os.strerror(errno.EIO))
 
 
@@ -459,7 +459,7 @@ async def _async_owned(package: ModuleType, lines: list[str]) -> None:
     await http.aclose()
 
 
-async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> None:
+async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> None:  # noqa: PLR0914
     """Download whole bodies on the handle's disk thread, then show the thread gone."""
     exchange = Exchange([])
     http = exchange.async_client(1)
@@ -483,7 +483,8 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
         async with streaming.request_raw("GET", _URL) as response:
             await response.stream_to(str(coded))
         lines.append(
-            f"  async download identity {identity.read_bytes() == _DATA} gzip {coded.read_bytes() == _DATA} again {again}"
+            f"  async download identity {identity.read_bytes() == _DATA} gzip {coded.read_bytes() == _DATA} "
+            f"again {again}"
         )
         exchange.respond(raw_response(200))
         async with streaming.request_raw("GET", _URL) as response:
@@ -551,13 +552,13 @@ async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], direct
                     task.cancel()
                 gate.released.set()
                 try:
-                    result = await aoutcome(lambda: task)
+                    result = await aoutcome(lambda task=task: task)
                 except asyncio.CancelledError as error:
                     result = f"CancelledError notes {error.__dict__.get('__notes__', [])}"
-                left = [path.name.endswith(".part") for path in directory.iterdir()]
+                left = [path.name.endswith(".part") for path in directory.iterdir()]  # noqa: ASYNC240
             if chunks is not None:
                 result += f" then read {await _drained(chunks)}"
-        for path in directory.glob("*.part"):
+        for path in directory.glob("*.part"):  # noqa: ASYNC240
             path.unlink()
         lines.append(f"  async {label} {result} partial files {left.count(True)}")
     gate, events = _Gate(), []
@@ -587,7 +588,7 @@ async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directo
         exchange.respond(responder, raw_response(200, b"pong", "text/plain"))
         async with streaming.request_raw("GET", _URL) as response:
             with pytest.MonkeyPatch.context() as fault:
-                fault.setattr(os, "fdopen", lambda handle, mode, room=room, slow=slow: _FullDisk(handle, room, slow))
+                fault.setattr(os, "fdopen", lambda handle, mode, room=room, slow=slow: _FullDisk(handle, room, slow))  # noqa: ARG005
                 failed = await aoutcome(lambda: response.stream_to(target))
             after = await (await api.request_raw("GET", _URL)).read()
             lines.append(f"  async full disk room {room} {failed} then {after!r} {_files(directory)}")
@@ -650,7 +651,7 @@ async def _stopped_downloads(package: ModuleType, lines: list[str], directory: P
             if label == "cancelled":
                 task.cancel()
             try:
-                result = await aoutcome(lambda: task)
+                result = await aoutcome(lambda task=task: task)
             except asyncio.CancelledError:
                 result = "CancelledError"
             gate.set()

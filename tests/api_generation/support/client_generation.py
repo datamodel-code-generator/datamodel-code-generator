@@ -465,7 +465,9 @@ def client_api_report(root: Path) -> str:
     }
     with _working_directory({"cwd": True}, root):
         returned = generate(source, **options)
-        lines = [f"returned without an output {sorted('/'.join(parts) for parts in returned if '_runtime' not in parts)}"]
+        lines = [
+            f"returned without an output {sorted('/'.join(parts) for parts in returned if '_runtime' not in parts)}"
+        ]
         for _ in range(2):
             result = generate(source, output=root / "models.py", **options)
             files = sorted(

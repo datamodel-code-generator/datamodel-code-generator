@@ -46,14 +46,18 @@ def text_charsets(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
             with TestClient(server.create_app(service=Service())) as api:
                 for case in cases["inputs"]:
                     lines.append(f"> {case['media']} {case['hex']}")
-                    response = api.post("/input", headers={"Content-Type": case["media"]}, content=bytes.fromhex(case["hex"]))
+                    response = api.post(
+                        "/input", headers={"Content-Type": case["media"]}, content=bytes.fromhex(case["hex"])
+                    )
                     lines.append(f"< {response.status_code}")
                 for label in cases["labels"]:
                     lines.append(f"> label {label}")
                     response = api.get(f"/labels/{label}")
                     lines.append(f"< {response.status_code}")
                 response = api.get("/primary")
-                lines.append(f"< primary {response.status_code} {response.headers['content-type']} {response.content!r}")
+                lines.append(
+                    f"< primary {response.status_code} {response.headers['content-type']} {response.content!r}"
+                )
         finally:
             forget_generated(package)
     return "\n".join(lines) + "\n"

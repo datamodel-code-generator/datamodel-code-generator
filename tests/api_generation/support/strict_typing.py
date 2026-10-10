@@ -32,7 +32,10 @@ def _run(command: list[str | Path], root: Path) -> subprocess.CompletedProcess[s
 
 def _diagnostics(completed: subprocess.CompletedProcess[str], found: Found) -> Found:
     if completed.returncode != (1 if found else 0):
-        msg = f"The checker exited with {completed.returncode} for {len(found)} errors:\n{completed.stdout}{completed.stderr}"
+        msg = (
+            f"The checker exited with {completed.returncode} for {len(found)} errors:\n"
+            f"{completed.stdout}{completed.stderr}"
+        )
         raise RuntimeError(msg)
     return found
 
@@ -65,11 +68,17 @@ def _pyright(root: Path, targets: list[str]) -> Found:
         }),
         encoding="utf-8",
     )
-    completed = _run([*PYRIGHT, "--outputjson", "--pythonpath", sys.executable, "--project", "pyrightconfig.json"], root)
+    completed = _run(
+        [*PYRIGHT, "--outputjson", "--pythonpath", sys.executable, "--project", "pyrightconfig.json"], root
+    )
     return _diagnostics(
         completed,
         [
-            (Path(item["file"]).relative_to(root.resolve()).as_posix(), item["range"]["start"]["line"] + 1, item["rule"])
+            (
+                Path(item["file"]).relative_to(root.resolve()).as_posix(),
+                item["range"]["start"]["line"] + 1,
+                item["rule"],
+            )
             for item in json.loads(completed.stdout)["generalDiagnostics"]
             if item["severity"] == "error"
         ],
@@ -111,7 +120,9 @@ def checked(root: Path, targets: list[str], label: str) -> list[str]:
 
 def marked_lines(path: Path) -> set[int]:
     """Return the lines of a negative sample that end with ``# error``, each of which must hold one error."""
-    return {index for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1) if line.endswith("# error")}
+    return {
+        index for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1) if line.endswith("# error")
+    }
 
 
 def negative(root: Path, sample: str, marked: set[int]) -> list[str]:

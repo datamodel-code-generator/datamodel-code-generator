@@ -4,12 +4,21 @@ from __future__ import annotations
 
 import importlib
 from datetime import datetime, timezone
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
 from tests.api_generation.scenarios.client_pagination import item_id
-from tests.api_generation.support.client_runtime import Exchange, argument, describe, json_response, raw_response, record, run
+from tests.api_generation.support.client_runtime import (
+    Exchange,
+    argument,
+    describe,
+    json_response,
+    raw_response,
+    record,
+    run,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -296,12 +305,8 @@ def _fresh(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> No
         argument = cache.user_id(30 + index)
         settings = None if limits is None else cache.protocols.CacheOptions(max_ttl=limits)
         exchange.respond(user(30 + index, etag='"e"', **headers), *((not_modified(etag='"e"'),) if stale else ()))
-        fetched(
-            lines, f"{label} stored", lambda argument=argument: helper.fetch(userId=argument, cache_options=settings)
-        )
-        fetched(
-            lines, f"{label} again", lambda argument=argument: helper.fetch(userId=argument, cache_options=settings)
-        )
+        fetched(lines, f"{label} stored", partial(helper.fetch, userId=argument, cache_options=settings))
+        fetched(lines, f"{label} again", partial(helper.fetch, userId=argument, cache_options=settings))
     listing = api.protocols.users.listing
     exchange.respond(json_response(200, {"data": [{"id": 1, "name": "a"}]}, **{"cache-control": "max-age=60"}))
     fetched(lines, "list miss", listing.fetch)
@@ -404,8 +409,8 @@ def _vary(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> Non
     )):
         argument = cache.user_id(40 + index)
         exchange.respond(user(1, vary=header, **{"cache-control": "max-age=60"}), *(() if stored else (user(1),)))
-        fetched(lines, label, lambda: helper.fetch(userId=argument))
-        fetched(lines, f"{label} again", lambda: helper.fetch(userId=argument))
+        fetched(lines, label, partial(helper.fetch, userId=argument))
+        fetched(lines, f"{label} again", partial(helper.fetch, userId=argument))
 
 
 def _miss(exchange: Exchange, call: Callable[[], Any]) -> Any:
@@ -433,10 +438,10 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         argument = cache.user_id(10)
         settings = None if limits is None else cache.protocols.CacheOptions(max_entry_bytes=limits)
         exchange.respond(user(10, etag='"s"', **{"cache-control": "max-age=0"}), response)
-        fetched(lines, f"{label} after stale", lambda: helper.fetch(userId=argument))
-        fetched(lines, label, lambda argument=argument: helper.fetch(userId=argument, cache_options=settings))
+        fetched(lines, f"{label} after stale", partial(helper.fetch, userId=argument))
+        fetched(lines, label, partial(helper.fetch, userId=argument, cache_options=settings))
         exchange.respond(user(10))
-        fetched(lines, f"{label} next", lambda argument=argument: helper.fetch(userId=argument))
+        fetched(lines, f"{label} next", partial(helper.fetch, userId=argument))
     eleven = cache.user_id(11)
     exchange.respond(
         user(11, **{"cache-control": "max-age=0"}, etag='"k"'),
@@ -488,7 +493,7 @@ def _directives(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) 
     ):
         if response is not None:
             exchange.respond(response)
-        fetched(lines, label, lambda: helper.fetch(userId=sixteen, options=cache.headers(**headers)))
+        fetched(lines, label, partial(helper.fetch, userId=sixteen, options=cache.headers(**headers)))
     fetched(lines, "still fresh", lambda: helper.fetch(userId=sixteen))
 
 
@@ -509,7 +514,7 @@ def _validators(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) 
         ("other caller validator", {"If_None_Match": '"h"'}),
         ("other caller date", {"If_Modified_Since": _PAST}),
     ):
-        fetched(lines, label, lambda: helper.fetch(userId=seventeen, options=cache.headers(**headers)))
+        fetched(lines, label, partial(helper.fetch, userId=seventeen, options=cache.headers(**headers)))
     cold = cache.user_id(18)
     exchange.respond(not_modified(etag='"g"'))
     fetched(lines, "cold 304", lambda: helper.fetch(userId=cold, options=matching))
@@ -688,17 +693,21 @@ async def _async_memory(cache: Caching, lines: list[str]) -> None:
     view = importlib.import_module(f"{cache.package.__name__}.responses").HeadersView
     store = protocols.AsyncMemoryCacheStore(max_entries=2)
     stored = protocols.CacheEntry(headers=view(), **_stamp())
-    lines.append(f"  async memory missing {await store.get(b'k')}")
-    lines.append(f"  async memory set {await store.set(b'k', stored)}")
-    lines.append(f"  async memory get {(await store.get(b'k')) is stored}")
+    lines.extend((
+        f"  async memory missing {await store.get(b'k')}",
+        f"  async memory set {await store.set(b'k', stored)}",
+        f"  async memory get {await store.get(b'k') is stored}",
+    ))
     await store.set(b"x", stored)
     await store.set(b"k", stored)
     await store.set(b"y", stored)
-    lines.append(f"  async memory evicted {await store.get(b'x')}")
-    lines.append(f"  async memory kept {(await store.get(b'k')) is stored}")
-    lines.append(f"  async memory delete {await store.delete(b'k')}")
-    lines.append(f"  async memory repeated delete {await store.delete(b'k')}")
-    lines.append(f"  async memory deleted {await store.get(b'k')}")
+    lines.extend((
+        f"  async memory evicted {await store.get(b'x')}",
+        f"  async memory kept {await store.get(b'k') is stored}",
+        f"  async memory delete {await store.delete(b'k')}",
+        f"  async memory repeated delete {await store.delete(b'k')}",
+        f"  async memory deleted {await store.get(b'k')}",
+    ))
 
 
 def _runtime(package: ModuleType, name: str) -> ModuleType:
