@@ -101,6 +101,7 @@ from tests.main.conftest import (
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPECTED_MAIN_PATH,
+    EXPERIMENTAL_MISSING_IMPORT_WARNING,
     GRAPHQL_DATA_PATH,
     JSON_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -1073,6 +1074,7 @@ difference between an omitted field and a nullable field set to `None`.""",
     golden_output="jsonschema/missing_sentinel.py",
     related_options=["--target-pydantic-version", "--strict-nullable"],
 )
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_main_jsonschema_use_missing_sentinel(output_file: Path) -> None:
     """Use Pydantic's MISSING sentinel for optional fields without defaults.
 
@@ -1099,6 +1101,38 @@ def test_main_jsonschema_use_missing_sentinel(output_file: Path) -> None:
         expected_attribute_path=("nullableUnrequired",),
         expected_attribute_value=None,
     )
+
+
+def test_main_jsonschema_use_missing_sentinel_target_pydantic_214(output_file: Path) -> None:
+    """Import MISSING from pydantic for --target-pydantic-version 2.14, where the experimental path is deprecated."""
+    runs = installed_pydantic_runs_target(TargetPydanticVersion.V2_14.value)
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "missing_sentinel.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="missing_sentinel_target_2_14.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-missing-sentinel",
+            "--target-pydantic-version",
+            TargetPydanticVersion.V2_14.value,
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not runs,
+    )
+    if runs:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="missing_sentinel_target_2_14",
+            model_name="MissingSentinel",
+            valid_json='{"required": 1, "requiredNullable": null, "nullableUnrequired": null}',
+            invalid_json='{"required": 1, "requiredNullable": null, "unrequired": null}',
+            expected_error_type="int_type",
+            expected_attribute_path=("nullableUnrequired",),
+            expected_attribute_value=None,
+        )
 
 
 def test_main_jsonschema_use_missing_sentinel_no_union_operator(output_file: Path) -> None:
@@ -15788,8 +15822,8 @@ def test_main_rust_unsupported_pattern(
 def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file: str, output_file: Path) -> None:
     """Patterns pydantic never compiles as string patterns keep pydantic-core's default regex engine.
 
-    The ``uri`` pattern is dropped for ``AnyUrl`` and pydantic ignores ``bytes`` patterns, so the
-    model keeps Rust semantics: Unicode classes compile and ``$`` does not match before a final newline.
+    The ``uri`` pattern is dropped for ``AnyUrl``, so the model keeps Rust semantics: Unicode classes
+    compile and ``$`` does not match before a final newline.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_non_string.json",
@@ -15809,6 +15843,30 @@ def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file
         expected_error_type="string_pattern_mismatch",
         expected_attribute_path=("code",),
         expected_attribute_value="abc",
+    )
+
+
+@pytest.mark.parametrize(
+    ("args", "expected_file"),
+    [
+        ([], "rust_unsupported_pattern_bytes_pydantic_v2.py"),
+        (["--use-annotated"], "rust_unsupported_pattern_bytes_pydantic_v2_annotated.py"),
+        (["--field-constraints"], "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py"),
+    ],
+)
+def test_main_rust_unsupported_pattern_bytes(args: list[str], expected_file: str, output_file: Path) -> None:
+    """Emitted ``bytes`` patterns select Python's regex engine like string patterns, as Pydantic 2.14 compiles them.
+
+    Without ``--use-annotated`` or ``--field-constraints`` the pattern is dropped, so the default engine stays.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_bytes.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
+        force_exec_validation=True,
     )
 
 
