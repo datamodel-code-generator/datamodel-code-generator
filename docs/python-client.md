@@ -3040,7 +3040,7 @@ released in `finally`; a release failure is named in the notes of the primary er
 The client templates come from [`--custom-template-dir`](cli-reference/template-customization.md#custom-template-dir),
 as model templates do: the files of its `client` directory replace the builtin roles of the same name:
 `facade.jinja2` (the package initializers and the public modules `options`, `errors`, `responses`, `auth`, `bodies`,
-`model_codecs`, and `protocols`), `client.jinja2` (`_client.py` and `_async_client.py`), `resource.jinja2` (each
+`model_codecs`, and `protocols`, and the webhook packages' initializers and `webhooks/keys.py`), `client.jinja2` (`_client.py` and `_async_client.py`), `resource.jinja2` (each
 resource's `_sync.py` and `_async.py`), `types.jinja2` (each resource's `types/<resource>/_operations.py`, and the
 helper and webhook modules), `arguments.jinja2` (`_generated/client_arguments.py`), `operations.jinja2`
 (`_operations.py`), `security.jinja2` (`_generated/security.py`), `readme.jinja2`, and `runtime.jinja2` (the runtime
@@ -3054,7 +3054,8 @@ The values a role receives can change while client generation is experimental, a
 builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
 compare an override with the current builtin template after an upgrade. The templates write every module, class,
 function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
-Each role receives these top-level values, where `imports` is the module's import block:
+Each role receives these top-level values, where `imports` is the module's import block and the facade's `module`,
+which the builtin template does not use, is the module's dotted path in the package, empty for the package itself:
 
 | Role | Values |
 | --- | --- |

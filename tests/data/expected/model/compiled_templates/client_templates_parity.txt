@@ -26,6 +26,12 @@ KEYWORDS_0: Final = Keywords(
     (),
 )
 
+
+KEYWORDS_1: Final = Keywords(
+    method='get_pet',
+    names=('petId',),
+)
+
 === arguments.jinja2 / empty
 """The keyword arguments 日本 that unpacked operation methods take."""
 
@@ -1726,6 +1732,12 @@ ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
 OPERATION_0: Final = SecurityBinding(
     schemes=(_SCHEME_0,),
     alternatives=((),),
+)
+
+
+OPERATION_1: Final = SecurityBinding(
+    (_SCHEME_1,),
+    (),
 )
 
 === security.jinja2 / empty

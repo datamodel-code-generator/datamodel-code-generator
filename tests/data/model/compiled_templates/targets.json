@@ -56,6 +56,21 @@
                   "value": "()"
                 }
               ]
+            },
+            {
+              "name": "KEYWORDS_1",
+              "annotation": "Final",
+              "constructor": "Keywords",
+              "arguments": [
+                {
+                  "keyword": "method",
+                  "value": "'get_pet'"
+                },
+                {
+                  "keyword": "names",
+                  "value": "('petId',)"
+                }
+              ]
             }
           ]
         }
@@ -1399,6 +1414,21 @@
                 {
                   "keyword": "alternatives",
                   "value": "((),)"
+                }
+              ]
+            },
+            {
+              "name": "OPERATION_1",
+              "annotation": "Final",
+              "constructor": "SecurityBinding",
+              "arguments": [
+                {
+                  "keyword": "",
+                  "value": "(_SCHEME_1,)"
+                },
+                {
+                  "keyword": "",
+                  "value": "()"
                 }
               ]
             }
