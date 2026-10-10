@@ -1,1 +1,2 @@
-Error: --client-operations[0].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean; --client-operations[1].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean; --client-operations[2].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean
+generate()
+  Error: --client-operations['/paths/~1pets/get'].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean; --client-operations['/paths/~1pets~1{petId}/get'].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean; --client-operations['/paths/~1pets~1{petId}/delete'].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean

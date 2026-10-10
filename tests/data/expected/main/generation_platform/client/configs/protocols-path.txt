@@ -1,11 +1,12 @@
-output=PurePosixPath('client')
-package='client'
-model_package='models'
-transport='httpx2'
-resource_names=()
-operations=()
-signature_style='explicit'
-body_arguments='body'
-default_base_url=None
-server_base_url=None
-protocols=PurePosixPath('protocols/disabled.json')
+records
+  output=PurePosixPath('client')
+  package='client'
+  model_package='models'
+  transport='httpx2'
+  resource_names=()
+  operations=()
+  signature_style='explicit'
+  body_arguments='body'
+  default_base_url=None
+  server_base_url=None
+  protocols=PurePosixPath('protocols/disabled.json')
