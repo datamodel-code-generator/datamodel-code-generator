@@ -21,6 +21,7 @@ from datamodel_code_generator import (
     Error,
     InputFileType,
     InvalidFileFormatError,
+    SchemaResourceRefWarning,
     YamlValue,
     generate,
 )
@@ -1590,11 +1591,19 @@ def test_local_http_ref_errors_omit_credentials_and_query(
             "Unsupported URL scheme. Supported: http, https, file. --input=ftp://example.com/schema.json\n",
         ),
         (
+            "ftp://alice:s3cr3t/@example.com/schema?token=SECRET",
+            "Unsupported URL scheme. Supported: http, https, file. --input=ftp://***@example.com/schema\n",
+        ),
+        (
+            "ftp://alice:s3?cr3t@example.com/schema",
+            "Unsupported URL scheme. Supported: http, https, file. --input=ftp://***\n",
+        ),
+        (
             "https://user:secret@[bad/schema.json?token=SECRET",
             "Invalid URL: https://[bad/schema.json: Invalid IPv6 URL\n",
         ),
     ],
-    ids=("blocked-host", "unsupported-scheme", "malformed"),
+    ids=("blocked-host", "unsupported-scheme", "ambiguous-userinfo", "userinfo-with-delimiter", "malformed"),
 )
 def test_remote_url_errors_omit_credentials_and_query(
     url: str,
@@ -1632,6 +1641,43 @@ def test_remote_fetch_errors_omit_credentials_and_query(
         capsys=capsys,
         expected_stderr=f"HTTP 404 error fetching {local_http_server}/missing.json\n",
     )
+
+
+def test_remote_resource_ref_warning_omits_credentials_and_query(
+    local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
+    tmp_path: Path,
+) -> None:
+    """Name a credential-bearing reference to an in-document $id by its URL without userinfo or query."""
+    origin = local_http_server.removeprefix("http://")
+    url = f"http://user:secret@{origin}/pet.json?token=SECRET"
+    api = tmp_path / "api.yaml"
+    api.write_text(
+        yaml.safe_dump({
+            "openapi": "3.1.0",
+            "info": {"title": "Remote ids", "version": "1.0"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "Pet": {"$id": url, "type": "object", "properties": {"name": {"type": "string"}}},
+                    "Owner": {"type": "object", "properties": {"pet": {"$ref": url}}},
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    with pytest.warns(
+        SchemaResourceRefWarning,
+        match=(
+            rf"^\$ref '{re.escape(local_http_server)}/pet\.json' in api\.yaml loads the referenced document for "
+            r"compatibility, but JSON Schema resolves it to the schema with that \$id at '#/components/schemas/Pet'\. "
+        ),
+    ):
+        run_main_and_assert(
+            input_path=api,
+            output_path=tmp_path / "model.py",
+            input_file_type="openapi",
+            extra_args=["--allow-remote-refs", "--allow-private-network"],
+        )
 
 
 @pytest.mark.parametrize("strict_refs", [False, True], ids=("warning", "strict"))

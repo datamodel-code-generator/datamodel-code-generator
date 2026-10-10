@@ -12281,15 +12281,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if not self._lenient_pointer_exists(document, reference):
                 return target if self._lenient_pointer_exists(document, target) else reference
             message = (
-                f"$ref {reference!r} in {source} is resolved against the document for compatibility, but JSON "
-                f"Schema resolves it against the enclosing $id, to {target!r}."
+                f"$ref {redact_url(reference)!r} in {source} is resolved against the document for compatibility, "
+                f"but JSON Schema resolves it against the enclosing $id, to {redact_url(target)!r}."
             )
         else:
             if not self._loads_document(urljoin(self._schema_resource_root_bases[document], reference)):
                 return target
             message = (
-                f"$ref {reference!r} in {source} loads the referenced document for compatibility, but JSON Schema "
-                f"resolves it to the schema with that $id at {target!r}."
+                f"$ref {redact_url(reference)!r} in {source} loads the referenced document for compatibility, "
+                f"but JSON Schema resolves it to the schema with that $id at {redact_url(target)!r}."
             )
         self._resource_ref_warnings.add(f"{message} Update the reference or the $id so that both name one schema.")
         return reference
