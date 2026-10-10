@@ -52,6 +52,7 @@ class TypeAliasTypeBackport(TypeAliasBase):
     TEMPLATE_FILE_PATH: ClassVar[str] = "TypeAliasType.jinja2"
     BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_TYPE_ALIAS_TYPE,)
+    DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = True
 
 
 class TypeStatement(TypeAliasBase):

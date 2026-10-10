@@ -12012,6 +12012,110 @@ def test_main_jsonschema_type_alias_py312(output_file: Path) -> None:
     )
 
 
+@pytest.mark.skipif(
+    int(black.__version__.split(".")[0]) < 23,
+    reason="Installed black doesn't support the new 'type' statement",
+)
+@pytest.mark.parametrize(
+    ("input_file", "output_model_type", "target_python_version", "options", "expected_file"),
+    [
+        ("container", "pydantic_v2.BaseModel", "3.10", (), "type_alias_recursive_container.py"),
+        ("container", "pydantic_v2.BaseModel", "3.12", (), "type_alias_recursive_container_py312.py"),
+        (
+            "container",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ("--no-use-standard-collections",),
+            "type_alias_recursive_container_typing_collections.py",
+        ),
+        (
+            "container",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ("--target-pydantic-version", "2"),
+            "type_alias_recursive_container_pydantic_2_0.py",
+        ),
+        (
+            "container",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ("--formatters", "ruff-check", "ruff-format"),
+            "type_alias_recursive_container_ruff.py",
+        ),
+        ("container", "pydantic_v2.dataclass", "3.11", (), "type_alias_recursive_container_pydantic_dataclass.py"),
+        (
+            "container",
+            "dataclasses.dataclass",
+            "3.11",
+            ("--use-type-alias-type",),
+            "type_alias_recursive_container_dataclass.py",
+        ),
+        (
+            "container",
+            "typing.TypedDict",
+            "3.11",
+            ("--use-type-alias-type",),
+            "type_alias_recursive_container_typed_dict.py",
+        ),
+        (
+            "container",
+            "msgspec.Struct",
+            "3.11",
+            ("--use-type-alias-type",),
+            "type_alias_recursive_container_msgspec.py",
+        ),
+        (
+            "collapse",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ("--collapse-root-models",),
+            "type_alias_recursive_container_collapse.py",
+        ),
+        (
+            "collapse",
+            "pydantic_v2.BaseModel",
+            "3.11",
+            ("--collapse-root-models", "--disable-future-imports"),
+            "type_alias_recursive_container_collapse_no_future.py",
+        ),
+        (
+            "collapse",
+            "dataclasses.dataclass",
+            "3.11",
+            ("--use-type-alias-type", "--collapse-root-models", "--disable-future-imports"),
+            "type_alias_recursive_container_collapse_dataclass.py",
+        ),
+    ],
+)
+def test_main_jsonschema_type_alias_recursive_container(
+    output_file: Path,
+    input_file: str,
+    output_model_type: str,
+    target_python_version: str,
+    options: tuple[str, ...],
+    expected_file: str,
+) -> None:
+    """Quote the containers of a TypeAliasType value that recurse into its own alias cycle."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"type_alias_recursive_{input_file}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--use-type-alias",
+            *options,
+            "--target-python-version",
+            target_python_version,
+            "--output-model-type",
+            output_model_type,
+            "--enum-field-as-literal",
+            "all",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-type-alias-type"],
     option_description="""Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental).
