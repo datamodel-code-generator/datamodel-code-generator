@@ -352,6 +352,15 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     return _CALL_ID.sub("<call>", "\n".join(lines)) + "\n"
 
 
+def agreeing_backends(reports: dict[str, str]) -> str:
+    """Join backend reports, printing one section under a header naming every backend whose report agrees."""
+    sections: dict[tuple[str, str], list[str]] = {}
+    for backend, report in reports.items():
+        header, _, body = report.partition("\n")
+        sections.setdefault((header.removesuffix(f" {backend}"), body), []).append(backend)
+    return "".join(f"{title} {', '.join(backends)}\n{body}" for (title, body), backends in sections.items())
+
+
 def run(coroutine: Callable[[], Any]) -> None:
     """Run an async scenario to completion."""
     asyncio.run(coroutine())
