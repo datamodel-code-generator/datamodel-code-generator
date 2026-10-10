@@ -1,8 +1,7 @@
 # session-nullable-root-alias
 render pydantic_v2.BaseModel plain
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/plain
 change pydantic_v2.BaseModel plain wrapper-0
   @@ -15 +15 @@
   -Nullable = RootModel[str | None]
@@ -25,9 +24,7 @@ change pydantic_v2.BaseModel plain wrapper-4
   +Nullable = RootModel[str]
 render pydantic_v2.BaseModel collapsed
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/plain
 render pydantic_v2.BaseModel annotated-remapped
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/plain

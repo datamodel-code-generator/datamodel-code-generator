@@ -1,127 +1,46 @@
 # session-legacy-parameters
 render pydantic_v2.BaseModel paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py pydantic_v2_BaseModel/paths
 render pydantic_v2.BaseModel parameters
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py pydantic_v2_BaseModel/paths
 render pydantic_v2.BaseModel api
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py pydantic_v2_BaseModel/paths
 render pydantic_v2.dataclass paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py pydantic_v2_dataclass/paths
 render pydantic_v2.dataclass parameters
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py pydantic_v2_dataclass/paths
 render pydantic_v2.dataclass api
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py pydantic_v2_dataclass/paths
 render dataclasses.dataclass paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
-  map models:Item x=x
+  model_bindings.py dataclasses_dataclass/paths
 render dataclasses.dataclass parameters
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
-  map models:Item x=x
+  model_bindings.py dataclasses_dataclass/paths
 render dataclasses.dataclass api
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
-  map models:Item x=x
+  model_bindings.py dataclasses_dataclass/paths
 render typing.TypedDict paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
-  map models:Item x=x
+  model_bindings.py typing_TypedDict/paths
 render typing.TypedDict parameters
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
-  map models:Item x=x
+  model_bindings.py typing_TypedDict/paths
 render typing.TypedDict api
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
-  map models:Item x=x
+  model_bindings.py typing_TypedDict/paths
 render msgspec.Struct paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py msgspec_Struct/paths
 render msgspec.Struct parameters
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py msgspec_Struct/paths
 render msgspec.Struct api
   models.py
-  model_bindings.py
-  codec_0 models.FieldXGetQueryQParameter
-  codec_1 models.FieldXGetQueryOptionalParameter
-  codec_2 models.FieldXGetQueryFilterParameter
-  codec_3 models.LimitParameter
-  codec_4 models.Item
+  model_bindings.py msgspec_Struct/paths

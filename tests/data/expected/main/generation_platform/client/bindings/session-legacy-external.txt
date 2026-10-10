@@ -1,28 +1,16 @@
 # session-legacy-external
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.FieldExternalPostRequestItem
-  codec_1 models.FieldExternalPostResponseItem
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.FieldExternalPostRequestItem
-  codec_1 models.FieldExternalPostResponseItem
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.FieldExternalPostRequestItem
-  codec_1 models.FieldExternalPostResponseItem
-  map models:FieldExternalPostResponseItem wire-name=wire_name
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.FieldExternalPostRequestItem
-  codec_1 models.FieldExternalPostResponseItem
-  map models:FieldExternalPostResponseItem wire-name=wire-name
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.FieldExternalPostRequestItem
-  codec_1 models.FieldExternalPostResponseItem
+  model_bindings.py msgspec_Struct/default

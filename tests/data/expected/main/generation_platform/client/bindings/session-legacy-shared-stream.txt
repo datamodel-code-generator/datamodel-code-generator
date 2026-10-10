@@ -1,49 +1,20 @@
 # session-legacy-shared-stream
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequestItem
-  codec_1 models.SharedResponseItem
-  codec_2 models.SharedResponseItem
-  codec_3 models.SharedRequestItem
-  codec_4 models.SharedResponseItem
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default corrupt-root
   unchanged
 change pydantic_v2.BaseModel default corrupt-item
   unchanged
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequestItem
-  codec_1 models.SharedResponseItem
-  codec_2 models.SharedResponseItem
-  codec_3 models.SharedRequestItem
-  codec_4 models.SharedResponseItem
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequestItem
-  codec_1 models.SharedResponseItem
-  codec_2 models.SharedResponseItem
-  codec_3 models.SharedRequestItem
-  codec_4 models.SharedResponseItem
-  map models:SharedRequestItem value=value
-  map models:SharedResponseItem value=value
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequestItem
-  codec_1 models.SharedResponseItem
-  codec_2 models.SharedResponseItem
-  codec_3 models.SharedRequestItem
-  codec_4 models.SharedResponseItem
-  map models:SharedRequestItem value=value
-  map models:SharedResponseItem value=value
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequestItem
-  codec_1 models.SharedResponseItem
-  codec_2 models.SharedResponseItem
-  codec_3 models.SharedRequestItem
-  codec_4 models.SharedResponseItem
+  model_bindings.py msgspec_Struct/default
