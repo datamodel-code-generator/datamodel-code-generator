@@ -13,13 +13,13 @@ import pytest
 
 from datamodel_code_generator import generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
-from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content
-from tests.data.python.client_generation import (
+from tests.api_generation.support.client_generation import (
     client_cli_arguments,
     client_cli_modules,
     client_generate_options,
     prepare_client_case,
 )
+from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content
 from tests.main.conftest import run_main_and_assert, run_main_with_args, run_main_with_system_exit
 
 DATA = Path(__file__).parents[1] / "data"

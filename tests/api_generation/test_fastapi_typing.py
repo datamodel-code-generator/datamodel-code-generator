@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import DataModelType
+from tests.api_generation.support.fastapi_typing import fastapi_typing_report, fastapi_update_report
 from tests.conftest import assert_output
-from tests.data.python.fastapi_typing import fastapi_typing_report, fastapi_update_report
 
 EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "fastapi" / "typing"
 ENABLED = "DATAMODEL_CODE_GENERATOR_FASTAPI_TYPING_E2E"

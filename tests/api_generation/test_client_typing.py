@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import DataModelType
+from tests.api_generation.support.client_typing import client_regenerated_typing_report, client_typing_report
 from tests.conftest import assert_output
-from tests.data.python.client_typing import client_regenerated_typing_report, client_typing_report
 
 EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "client" / "typing"
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"

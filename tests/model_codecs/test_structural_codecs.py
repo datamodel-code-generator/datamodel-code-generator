@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.api_generation.support.model_codec_builtin import builtin_codec_report, builtin_codec_startup_report
 from tests.conftest import assert_output
-from tests.data.python.model_codec_builtin import builtin_codec_report, builtin_codec_startup_report
 
 if TYPE_CHECKING:
     from pathlib import Path as PathType

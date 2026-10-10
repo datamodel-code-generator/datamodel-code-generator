@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.api_generation.support.client_generation import client_metadata_cycle_diagnostic_report
 from tests.conftest import assert_output
-from tests.data.python.client_generation import client_metadata_cycle_diagnostic_report
 
 
 @pytest.mark.parametrize(

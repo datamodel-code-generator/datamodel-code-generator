@@ -48,7 +48,7 @@ def test_client_install(
         pytest.skip("DATAMODEL_CODE_GENERATOR_CLIENT_INSTALL_E2E enables installing generated clients")
     import httpx2
 
-    from tests.data.python.fixture_server import FixtureServer, _contexts, stop_servers
+    from tests.api_generation.support.fixture_server import FixtureServer, _contexts, stop_servers
 
     case = json.loads((PUBLICATION / "profiles.json").read_text(encoding="utf-8"))[profile]
     shutil.copy2(PUBLICATION / "pyproject-host.toml", tmp_path / "pyproject.toml")

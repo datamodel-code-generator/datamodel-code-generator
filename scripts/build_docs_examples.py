@@ -155,7 +155,7 @@ def blocks(path: Path | str, *needles: str, limit: int | None = None, separator:
 
 def client_blocks(case_name: str, module: str, *needles: str, limit: int | None = None, separator: str = "\n\n") -> str:
     """Render a tested client's module and select its documentation blocks without package snapshots."""
-    from tests.data.python.client_generation import render_client  # ruff: ignore[import-outside-top-level]
+    from tests.api_generation.support.client_generation import render_client  # ruff: ignore[import-outside-top-level]
 
     case = json.loads(read_text(CLIENT_DATA / "cases.json"))[case_name]
     _, modules = render_client(

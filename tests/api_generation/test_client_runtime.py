@@ -9,10 +9,10 @@ import pytest
 
 pytest.importorskip("httpx2")
 
+from tests.api_generation.scenarios.client_allowreserved import reserved_version_report
+from tests.api_generation.support.client_runtime import client_copied_runtime_report
+from tests.api_generation.support.client_scenarios import BACKENDS, SCENARIOS, client_runtime_report
 from tests.conftest import assert_generated_modules_output, assert_output
-from tests.data.python.client_allowreserved import reserved_version_report
-from tests.data.python.client_runtime import client_copied_runtime_report
-from tests.data.python.client_scenarios import BACKENDS, SCENARIOS, client_runtime_report
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/runtime"
 

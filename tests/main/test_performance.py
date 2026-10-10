@@ -1113,7 +1113,7 @@ def target_render(
     request: pytest.FixtureRequest, tmp_path: Path, target_size: str, monkeypatch: pytest.MonkeyPatch
 ) -> Callable[[], Any]:
     """Prepare source and target configurations before benchmark timing, rendering from the temporary directory."""
-    from tests.data.python.target_performance import target_render_call
+    from tests.api_generation.support.target_performance import target_render_call
 
     monkeypatch.chdir(tmp_path)
     return target_render_call(request.param, target_size, tmp_path)
@@ -1136,7 +1136,7 @@ def test_perf_target_render(target_render: Callable[[], Any]) -> None:
 @pytest.fixture(params=["sync", "async"])
 def client_calls(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[Callable[[], Any]]:
     """Generate and import the shipped runtime, and prepare clients before timing their public calls."""
-    from tests.data.python.target_performance import generated_client_calls
+    from tests.api_generation.support.target_performance import generated_client_calls
 
     with generated_client_calls(tmp_path) as calls:
         yield calls[request.param]
