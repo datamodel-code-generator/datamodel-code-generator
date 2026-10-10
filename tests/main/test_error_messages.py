@@ -1591,6 +1591,10 @@ def test_local_http_ref_errors_omit_credentials_and_query(
             "Unsupported URL scheme. Supported: http, https, file. --input=ftp://example.com/schema.json\n",
         ),
         (
+            "ftp://cdn.example/@scope/pkg/schema.json?token=SECRET",
+            "Unsupported URL scheme. Supported: http, https, file. --input=ftp://cdn.example/@scope/pkg/schema.json\n",
+        ),
+        (
             "ftp://alice:s3cr3t/@example.com/schema?token=SECRET",
             "Unsupported URL scheme. Supported: http, https, file. --input=ftp://***@example.com/schema\n",
         ),
@@ -1603,7 +1607,14 @@ def test_local_http_ref_errors_omit_credentials_and_query(
             "Invalid URL: https://[bad/schema.json: Invalid IPv6 URL\n",
         ),
     ],
-    ids=("blocked-host", "unsupported-scheme", "ambiguous-userinfo", "userinfo-with-delimiter", "malformed"),
+    ids=(
+        "blocked-host",
+        "unsupported-scheme",
+        "scoped-path",
+        "ambiguous-userinfo",
+        "userinfo-with-delimiter",
+        "malformed",
+    ),
 )
 def test_remote_url_errors_omit_credentials_and_query(
     url: str,
@@ -1620,17 +1631,24 @@ def test_remote_url_errors_omit_credentials_and_query(
     )
 
 
+@pytest.mark.parametrize(
+    ("userinfo", "path"),
+    [("user:secret@", "missing.json"), ("", "@scope/pkg/missing.json")],
+    ids=("credentials", "scoped-path"),
+)
 def test_remote_fetch_errors_omit_credentials_and_query(
     local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
+    userinfo: str,
+    path: str,
 ) -> None:
-    """Name a failed fetch by the URL without its userinfo, query or fragment."""
+    """Name a failed fetch by the URL without its userinfo, query or fragment, keeping an `@` in its path."""
     origin = local_http_server.removeprefix("http://")
     run_main_with_args(
         [
             "--url",
-            f"http://user:secret@{origin}/missing.json?token=SECRET#/x",
+            f"http://{userinfo}{origin}/{path}?token=SECRET#/x",
             "--input-file-type",
             "jsonschema",
             "--allow-private-network",
@@ -1639,7 +1657,7 @@ def test_remote_fetch_errors_omit_credentials_and_query(
         ],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr=f"HTTP 404 error fetching {local_http_server}/missing.json\n",
+        expected_stderr=f"HTTP 404 error fetching {local_http_server}/{path}\n",
     )
 
 
