@@ -12,7 +12,7 @@ from typing import Literal
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncBinaryBody
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
 from ...types.retry import (
     GetKeyedSafeResponse,
@@ -55,7 +55,9 @@ class AsyncRetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetSafeResponse:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return (await self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -66,12 +68,14 @@ class AsyncRetryResource:
     async def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostUnsafeResponse:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return (await self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -84,12 +88,14 @@ class AsyncRetryResource:
     async def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostIdempotentResponse:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return (await self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -102,12 +108,14 @@ class AsyncRetryResource:
     async def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostKeyedResponse:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return (await self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -120,12 +128,14 @@ class AsyncRetryResource:
     async def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostKeyOnlyResponse:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return (await self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -141,7 +151,9 @@ class AsyncRetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetNeverResponse:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return (await self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -152,12 +164,14 @@ class AsyncRetryResource:
     async def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> PostNeverResponse:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return (await self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -173,7 +187,9 @@ class AsyncRetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetVendorResponse:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return (await self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -187,7 +203,9 @@ class AsyncRetryResource:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetKeyedSafeResponse:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return (await self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -209,7 +227,9 @@ class AsyncRetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetSafeResponse]:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return await self._core.execute(
             _operations.OPERATION_0,
             (),
@@ -220,12 +240,14 @@ class AsyncRetryWithResponse:
     async def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostUnsafeResponse]:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return await self._core.execute(
             _operations.OPERATION_1,
             (),
@@ -238,12 +260,14 @@ class AsyncRetryWithResponse:
     async def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostIdempotentResponse]:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return await self._core.execute(
             _operations.OPERATION_2,
             (),
@@ -256,12 +280,14 @@ class AsyncRetryWithResponse:
     async def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostKeyedResponse]:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return await self._core.execute(
             _operations.OPERATION_3,
             (),
@@ -274,12 +300,14 @@ class AsyncRetryWithResponse:
     async def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostKeyOnlyResponse]:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return await self._core.execute(
             _operations.OPERATION_4,
             (),
@@ -295,7 +323,9 @@ class AsyncRetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetNeverResponse]:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return await self._core.execute(
             _operations.OPERATION_5,
             (),
@@ -306,12 +336,14 @@ class AsyncRetryWithResponse:
     async def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[PostNeverResponse]:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return await self._core.execute(
             _operations.OPERATION_6,
             (),
@@ -327,7 +359,9 @@ class AsyncRetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetVendorResponse]:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return await self._core.execute(
             _operations.OPERATION_7,
             (),
@@ -341,7 +375,9 @@ class AsyncRetryWithResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetKeyedSafeResponse]:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return await self._core.execute(
             _operations.OPERATION_8,
             (),
@@ -363,7 +399,9 @@ class AsyncRetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_0,
             (),
@@ -374,12 +412,14 @@ class AsyncRetryWithRawResponse:
     async def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_1,
             (),
@@ -392,12 +432,14 @@ class AsyncRetryWithRawResponse:
     async def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_2,
             (),
@@ -410,12 +452,14 @@ class AsyncRetryWithRawResponse:
     async def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_3,
             (),
@@ -428,12 +472,14 @@ class AsyncRetryWithRawResponse:
     async def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_4,
             (),
@@ -449,7 +495,9 @@ class AsyncRetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_5,
             (),
@@ -460,12 +508,14 @@ class AsyncRetryWithRawResponse:
     async def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_6,
             (),
@@ -481,7 +531,9 @@ class AsyncRetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_7,
             (),
@@ -495,7 +547,9 @@ class AsyncRetryWithRawResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return await self._core.execute_raw(
             _operations.OPERATION_8,
             (),
@@ -517,7 +571,9 @@ class AsyncRetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /safe."""
+        """
+        Call GET /safe.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
             (),
@@ -528,12 +584,14 @@ class AsyncRetryWithStreamingResponse:
     def post_unsafe(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /unsafe."""
+        """
+        Call POST /unsafe.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (),
@@ -546,12 +604,14 @@ class AsyncRetryWithStreamingResponse:
     def post_idempotent(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /idempotent."""
+        """
+        Call POST /idempotent.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (),
@@ -564,12 +624,14 @@ class AsyncRetryWithStreamingResponse:
     def post_keyed(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /keyed."""
+        """
+        Call POST /keyed.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (),
@@ -582,12 +644,14 @@ class AsyncRetryWithStreamingResponse:
     def post_key_only(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /key-only."""
+        """
+        Call POST /key-only.
+        """
         return self._core.stream(
             _operations.OPERATION_4,
             (),
@@ -603,7 +667,9 @@ class AsyncRetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /never."""
+        """
+        Call GET /never.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
             (),
@@ -614,12 +680,14 @@ class AsyncRetryWithStreamingResponse:
     def post_never(
         self,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call POST /never."""
+        """
+        Call POST /never.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (),
@@ -635,7 +703,9 @@ class AsyncRetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /vendor."""
+        """
+        Call GET /vendor.
+        """
         return self._core.stream(
             _operations.OPERATION_7,
             (),
@@ -649,7 +719,9 @@ class AsyncRetryWithStreamingResponse:
         response_media_type: Literal['text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Call GET /keyed-safe."""
+        """
+        Call GET /keyed-safe.
+        """
         return self._core.stream(
             _operations.OPERATION_8,
             (),

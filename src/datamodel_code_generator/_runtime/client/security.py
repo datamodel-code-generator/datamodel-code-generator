@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from functools import lru_cache
-from typing import Final, Literal, TypeAlias
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
-CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+
+    import httpx2
+
+    from .client import AsyncSend, Send
+    from .urls import Origin
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -21,9 +26,11 @@ class SecurityScheme:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class UnavailableSecurityScheme:
-    """A declared name whose unsupported or unresolved scheme cannot supply credentials."""
+    """A declared name whose unsupported or unresolved scheme cannot supply credentials, at no position."""
 
     name: str
+    location: None = field(default=None, init=False, repr=False)
+    wire_name: str = field(default="", init=False, repr=False)
 
 
 SecuritySchemeEntry: TypeAlias = SecurityScheme | UnavailableSecurityScheme
@@ -45,15 +52,40 @@ class SecurityBinding:
     alternatives: tuple[tuple[SecurityRequirement, ...], ...]
 
 
-@lru_cache(maxsize=32)
-def secret_names(schemes: tuple[SecuritySchemeEntry, ...]) -> tuple[frozenset[str], frozenset[str]]:
-    """Return the lowercase header names and the query names that carry credentials in a package's requests.
+Placement: TypeAlias = tuple[SecurityScheme, object]
 
-    They are the credential and cookie headers and the positions of the package's declared security schemes, however
-    a request came to fill them.
-    """
-    declared = [scheme for scheme in schemes if isinstance(scheme, SecurityScheme)]
-    return (
-        CREDENTIAL_HEADERS.union(scheme.wire_name.lower() for scheme in declared if scheme.location == "header"),
-        frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
-    )
+
+class Credentials:
+    """The credentials a generated client was given, by scheme name; the package's auth module places them."""
+
+    def __init__(self, values: Mapping[str, object]) -> None:
+        """Keep the credentials given, leaving out None."""
+        self.values = {name: value for name, value in values.items() if value is not None}
+
+    def selected(self, binding: SecurityBinding) -> tuple[Placement, ...] | None:
+        """Return the placements of an operation's first credentialed alternative the credentials satisfy, or None.
+
+        An anonymous alternative, and an operation declaring empty security, take none, and an anonymous alternative
+        applies only when no other alternative is satisfied.
+        """
+        values = self.values
+        anonymous = not binding.alternatives
+        for alternative in binding.alternatives:
+            if not alternative:
+                anonymous = True
+            elif all(item.scheme.name in values for item in alternative):
+                return tuple((item.scheme, values[item.scheme.name]) for item in alternative)
+        return () if anonymous else None
+
+    def auth(  # noqa: PLR0913
+        self,
+        placements: tuple[Placement, ...],
+        *,
+        origin: Origin | None,
+        replayable: Callable[[httpx2.Request], bool],
+        challenge_less: bool,
+        send: Send | None = None,
+        async_send: AsyncSend | None = None,
+    ) -> httpx2.Auth:
+        """Return the HTTPX2 Auth that places a call's credentials on its requests."""
+        raise NotImplementedError

@@ -11,22 +11,16 @@ import models
 
 from .._runtime.model_codecs.native import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldSearchGetQuerystringCriteriaParameter]] = PydanticCodec(
-    models.FieldSearchGetQuerystringCriteriaParameter,
-)
+codec_0: Final[PydanticCodec[models.FieldSearchGetQuerystringCriteriaParameter]] = PydanticCodec(models.FieldSearchGetQuerystringCriteriaParameter)
 """Codec of /paths/~1search/get parameter (request querystring criteria application/x-www-form-urlencoded)."""
 
 codec_1: Final[PydanticCodec[models.FieldSearchGetResponse]] = PydanticCodec(models.FieldSearchGetResponse)
 """Codec of /paths/~1search/get response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticCodec[models.FieldSearchGetResponse200XNextHeader]] = PydanticCodec(
-    models.FieldSearchGetResponse200XNextHeader,
-)
+codec_2: Final[PydanticCodec[models.FieldSearchGetResponse200XNextHeader]] = PydanticCodec(models.FieldSearchGetResponse200XNextHeader)
 """Codec of /paths/~1search/get response_header (response X-Next 200)."""
 
-codec_3: Final[PydanticCodec[models.FieldLookupGetQuerystringFilterParameter]] = PydanticCodec(
-    models.FieldLookupGetQuerystringFilterParameter,
-)
+codec_3: Final[PydanticCodec[models.FieldLookupGetQuerystringFilterParameter]] = PydanticCodec(models.FieldLookupGetQuerystringFilterParameter)
 """Codec of /paths/~1lookup/get parameter (request querystring filter application/json)."""
 
 codec_4: Final[PydanticCodec[models.FieldLookupGetResponse]] = PydanticCodec(models.FieldLookupGetResponse)

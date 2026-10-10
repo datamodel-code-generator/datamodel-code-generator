@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: Cyclic type spellings
+  version: "1"
+servers:
+  - url: https://spellings.example.com
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: kind
+          in: query
+          schema: {$ref: "#/components/schemas/Kind"}
+      responses:
+        "200":
+          description: One page of items.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Page"}
+    post:
+      operationId: addItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/items.Item"}
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Kind:
+      type: string
+      enum: [book, disc]
+    Page:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/items.Item"}
+    items.Item:
+      type: object
+      required: [kind]
+      properties:
+        kind: {$ref: "#/components/schemas/Kind"}
+        name: {type: string}

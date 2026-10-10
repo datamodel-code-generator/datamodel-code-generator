@@ -40,28 +40,26 @@ ty samples/codecs_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0
   49 invalid-assignment
 samples/negative.py: 7 marked lines
 mypy samples/negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
-  11 assignment
-  12 dict-item
-  13 list-item
-  15 dict-item
-  16 call-overload
-  17 call-overload
-  18 arg-type
-pyright samples/negative.py: 5/7 marked lines with one error, 0 elsewhere, 0 in other files
-  11 reportAssignmentType
+  12 assignment
+  13 dict-item
+  14 list-item
+  16 assignment
+  17 arg-type
+  18 assignment
+  19 arg-type
+pyright samples/negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
   12 reportAssignmentType
   13 reportAssignmentType
-  15 reportAssignmentType
-  16 reportArgumentType
-  16 reportCallIssue
+  14 reportAssignmentType
+  16 reportAssignmentType
   17 reportArgumentType
-  17 reportCallIssue
-  18 reportArgumentType
+  18 reportAssignmentType
+  19 reportArgumentType
 ty samples/negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
-  11 invalid-assignment
   12 invalid-assignment
   13 invalid-assignment
-  15 invalid-assignment
-  16 no-matching-overload
-  17 no-matching-overload
-  18 invalid-argument-type
+  14 invalid-assignment
+  16 invalid-assignment
+  17 invalid-argument-type
+  18 invalid-assignment
+  19 invalid-argument-type

@@ -587,19 +587,19 @@
       [
         "client",
         "resources",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "__init__.py"
       ],
       [
         "client",
         "resources",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "_async.py"
       ],
       [
         "client",
         "resources",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "_sync.py"
       ],
       [
@@ -655,13 +655,13 @@
       [
         "client",
         "types",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "__init__.py"
       ],
       [
         "client",
         "types",
-        "u30e6_u30fc_u30b6_u30fc",
+        "ユーザー",
         "_operations.py"
       ],
       [
@@ -741,7 +741,26 @@
     }
   },
   "name-errors": {
-    "input": "name-errors.yaml"
+    "input": "name-errors.yaml",
+    "model": {"aliases": {"petId": "pet id"}},
+    "config": {
+      "operations": [
+        {"ref": "/paths/~1close/get", "name": "with_options"},
+        {
+          "ref": "/paths/~1view/get",
+          "parameter_names": [
+            {"in_": "query", "name": "body", "python_name": "options"},
+            {"in_": "query", "name": "user-id", "python_name": "uid"},
+            {"in_": "header", "name": "user_id", "python_name": "uid"}
+          ]
+        }
+      ]
+    }
+  },
+  "method-collisions-suffix": {
+    "input": "method-collisions.yaml",
+    "model": {"duplicate_name_suffix": {"model": "Variant"}},
+    "modules": [["client", "types", "default", "_operations.py"]]
   },
   "child-collision": {
     "input": "names.yaml",
@@ -766,6 +785,9 @@
   },
   "codec-errors": {
     "input": "codec-errors.yaml"
+  },
+  "cookie-names": {
+    "input": "cookie-names.yaml"
   },
   "setting-errors": {
     "input": "pets.yaml",
@@ -797,8 +819,39 @@
       ]
     }
   },
+  "naming": {
+    "input": "naming.yaml",
+    "model": {"aliases": {"NewItem.itemCount": "count", "itemCount": "flat_count"}},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
+  },
+  "naming-snake": {
+    "input": "naming.yaml",
+    "model": {"snake_case_field": true},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
+  },
+  "naming-parent-prefixed": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "parent-prefixed"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
+  "naming-full-path": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "full-path"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
+  "naming-primary-first": {
+    "input": "naming-refs.yaml",
+    "references": ["naming-refs-shared.yaml"],
+    "model": {"naming_strategy": "primary-first"},
+    "modules": false
+  },
   "method-collisions": {
-    "input": "method-collisions.yaml"
+    "input": "method-collisions.yaml",
+    "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
   },
   "reference-errors": {
     "input": "pets.yaml",
@@ -842,6 +895,16 @@
         "/none"
       ]
     }
+  },
+  "empty-security": {
+    "input": "empty-security.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
   },
   "evolution": {
     "input": "evolution.yaml",
@@ -926,7 +989,8 @@
   "references": {
     "input": "references.yaml",
     "references": [
-      "references-library.yaml"
+      "references-library.yaml",
+      "references-metadata.yaml"
     ],
     "modules": [
       [
@@ -943,7 +1007,8 @@
   "self-references": {
     "input": "self-references.yaml",
     "references": [
-      "references-library.yaml"
+      "references-library.yaml",
+      "references-metadata.yaml"
     ],
     "modules": false,
     "model": {
@@ -1262,6 +1327,7 @@
   },
   "fields-errors": {
     "input": "fields.yaml",
+    "model": {"aliases": {"NewPet.owner": "media_type"}},
     "config": {
       "body_arguments": "both",
       "operations": [
@@ -1286,7 +1352,7 @@
             {
               "media_type": "application/json",
               "name": "birthDate",
-              "python_name": "kind"
+              "python_name": "tag"
             }
           ]
         },
@@ -1449,6 +1515,123 @@
       "body_arguments": "both"
     },
     "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "type-spellings-exact": {
+    "input": "type-spellings-exact.yaml",
+    "references": [
+      "protocols/type-spellings-exact.json"
+    ],
+    "cwd": true,
+    "model": {
+      "output": "models",
+      "use_exact_imports": true
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-exact.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ]
+  },
+  "type-spellings-legacy": {
+    "input": "type-spellings-legacy.yaml",
+    "references": [
+      "protocols/type-spellings-legacy.json"
+    ],
+    "model": {
+      "use_union_operator": false,
+      "use_standard_collections": false
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-legacy.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ]
+    ]
+  },
+  "type-spellings-reuse": {
+    "input": "type-spellings-reuse.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "reuse_model": true
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "type-spellings-cycle": {
+    "input": "type-spellings-cycle.yaml",
+    "cwd": true,
+    "model": {
+      "output": "models"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
       [
         "client",
         "resources",
@@ -1760,7 +1943,7 @@
           }
         },
         {
-          "ref": "/paths/~1external-query/post",
+          "ref": "/paths/~1external-explicit/post",
           "runtime": {
             "idempotency": {
               "header_name": "X-Idempotency"
@@ -1795,7 +1978,7 @@
           }
         },
         {
-          "ref": "/paths/~1external-explicit/post",
+          "ref": "/paths/~1external-query/post",
           "runtime": {
             "idempotency": {
               "header_name": "X-Idempotency"
@@ -1972,6 +2155,10 @@
   },
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
+  },
+  "credential-name-errors": {
+    "input": "credential-name-errors.yaml",
+    "modules": [["client", "_client.py"], ["client", "auth.py"]]
   },
   "auth-context": {
     "input": "auth-context.yaml",
@@ -3246,6 +3433,10 @@
       "protocols": "protocols/unsupported.json",
       "operations": [
         {
+          "ref": "/paths/~1tags/get",
+          "parameter_names": [{"in_": "query", "name": "items", "python_name": "items"}]
+        },
+        {
           "ref": "/paths/~1labels/get",
           "parameter_names": [
             {
@@ -4048,6 +4239,36 @@
     },
     "modules": false
   },
+  "protocols-pagination-wrapper-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-wrapper-checks.json"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "config": {
+      "protocols": "protocols/pagination-wrapper-checks.json"
+    },
+    "modules": false
+  },
+  "protocols-pagination-strict-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-counts.json"
+    ],
+    "model": {
+      "strict_types": [
+        "int",
+        "float",
+        "bool"
+      ]
+    },
+    "config": {
+      "protocols": "protocols/pagination-counts.json"
+    },
+    "modules": false
+  },
   "pagination-links": {
     "input": "pagination-links.yaml",
     "references": [
@@ -4721,7 +4942,17 @@
       "protocols/uploads-oauth.json"
     ],
     "config": {
-      "protocols": "protocols/uploads-oauth.json"
+      "protocols": "protocols/uploads-oauth.json",
+      "operations": [
+        {
+          "ref": "/paths/~1files/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key"
+            }
+          }
+        }
+      ]
     },
     "backends": [
       "pydantic_v2.BaseModel"
@@ -4846,18 +5077,51 @@
       ]
     }
   },
+  "docstrings": {
+    "input": "docstrings.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "use_schema_description": true,
+      "use_single_line_docstring": true
+    }
+  },
   "templates": {
     "input": "pets.yaml",
     "references": [
+      "templates/custom/client/client.jinja2",
+      "templates/custom/client/facade.jinja2",
+      "templates/custom/client/readme.jinja2",
       "templates/custom/client/resource.jinja2",
-      "templates/custom/client/readme.jinja2"
+      "templates/custom/client/runtime.jinja2",
+      "templates/custom/client/types.jinja2"
     ],
     "modules": [
+      [
+        "client",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "_client.py"
+      ],
       [
         "client",
         "resources",
         "pets",
         "_sync.py"
+      ],
+      [
+        "client",
+        "types",
+        "pets",
+        "_operations.py"
       ]
     ],
     "cwd": true,
@@ -4868,6 +5132,262 @@
           "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it."
         }
       }
+    }
+  },
+  "templates-helpers": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.json",
+      "templates/custom/client/helper_plans.jinja2",
+      "templates/custom/client/helpers.jinja2",
+      "templates/custom/client/model_bindings.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it."
+        }
+      }
+    }
+  },
+  "templates-webhooks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhooks.json",
+      "templates/custom/client/webhook.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/webhooks.json"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom"
+    }
+  },
+  "type-checking-imports": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking"
+    }
+  },
+  "type-checking-imports-on": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": true
+    }
+  },
+  "type-checking-imports-off": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": false
     }
   },
   "templates-missing": {
@@ -4920,6 +5440,12 @@
       "custom_template_dir": "templates/not-found"
     }
   },
+  "output-required": {
+    "input": "pets.yaml",
+    "model": {
+      "output": null
+    }
+  },
   "api-scope-required": {
     "input": "pets.yaml",
     "model": {
@@ -4964,5 +5490,156 @@
       ]
     ],
     "expected": "caching"
+  },
+  "discriminator-copies": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-variants": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "discriminator-reuse": {
+    "input": "discriminator-copies.yaml",
+    "backends": [
+      "typing.TypedDict",
+      "dataclasses.dataclass"
+    ],
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    },
+    "model": {
+      "reuse_model": true
+    }
+  },
+  "parameter-content-defaults-30": {
+    "input": "parameter-content-defaults-30.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "parameter-content-defaults-31": {
+    "input": "parameter-content-defaults-31.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "media-item-parts": {
+    "input": "media-item-parts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-referenced-items": {
+    "input": "multipart-referenced-items.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "fingerprint-nested": {
+    "input": "fingerprint-nested.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "fingerprint-nested-changed": {
+    "input": "fingerprint-nested-changed.yaml",
+    "references": [
+      "protocols/fingerprint-nested.json"
+    ],
+    "config": {
+      "protocols": "protocols/fingerprint-nested.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "type-spellings-bound": {
+    "input": "type-spellings-bound.yaml",
+    "model": {
+      "collapse_root_models": true,
+      "use_annotated": true,
+      "use_standard_collections": false,
+      "field_constraints": true
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
   }
 }

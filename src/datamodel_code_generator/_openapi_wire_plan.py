@@ -1,17 +1,12 @@
-"""Plan offline wire schemas, static pattern checks, and parameter codecs from an accepted batch."""
+"""Plan the parameter, header and form codecs of an accepted batch from its recorded encoding facts."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from contextlib import suppress
 from dataclasses import dataclass, replace
-from enum import Enum
+from functools import cached_property
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
-from urllib.parse import quote, unquote, urldefrag, urljoin
 
-from datamodel_code_generator._codec_type_source import LeafStep, LexicalKinds
-from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     LexicalKind,
@@ -24,27 +19,43 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     ValueShape,
     builtin_content,
 )
-from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue, escape_pointer_token, freeze_wire
 from datamodel_code_generator._target_contract import (
     BindingReason,
+    BuiltinType,
+    ConstructorType,
+    EncodingFacts,
+    GeneratedEnumMember,
+    GeneratedSymbolType,
     GeneratedTypeContractBatch,
+    GenericType,
+    ImportedType,
+    KindSite,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
+    LiteralType,
+    NoneType,
     OperationContract,
     OperationId,
-    SourceDocumentId,
     SourceLocation,
+    TextShape,
     TypeUseId,
+    UnionType,
     WireDeclaration,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Collection, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator._openapi_generation import SourceLease
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator._target_contract import FieldUseBinding, FrozenLiteral, TypeUseBinding
+    from datamodel_code_generator._target_contract import (
+        FieldUseBinding,
+        FinalModelSymbol,
+        FrozenLiteral,
+        LeafStep,
+        MemberShape,
+        TypeUseBinding,
+        TypeView,
+    )
 
 CodecReason: TypeAlias = (
     BindingReason
@@ -53,40 +64,9 @@ CodecReason: TypeAlias = (
         "MC_BINDING_MISSING",
         "MC_CODEC_UNSUPPORTED",
         "MC_PARAMETER_ENCODING",
-        "MC_SCHEMA_DIALECT",
     ]
 )
 
-LOGICAL_ROOT: Final = "https://dcg.invalid/inputs/"
-_JSON_SCHEMA_2020_12: Final = "https://json-schema.org/draft/2020-12/schema"
-_OAS_DIALECT_PREFIXES: Final = (
-    "https://spec.openapis.org/oas/3.1/dialect/",
-    "https://spec.openapis.org/oas/3.2/dialect/",
-)
-_FRAGMENT_SAFE: Final = "/?:@!$&'()*+,;=~"
-SCHEMA_VALUE_KEYWORDS: Final = frozenset({
-    "additionalProperties",
-    "contains",
-    "contentSchema",
-    "else",
-    "if",
-    "items",
-    "not",
-    "propertyNames",
-    "then",
-    "unevaluatedItems",
-    "unevaluatedProperties",
-})
-SCHEMA_MAP_KEYWORDS: Final = frozenset({"$defs", "definitions", "dependentSchemas", "patternProperties", "properties"})
-SCHEMA_ARRAY_KEYWORDS: Final = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
-_UNSUPPORTED_KEYWORDS: Final = frozenset({
-    "$dynamicAnchor",
-    "$dynamicRef",
-    "$recursiveAnchor",
-    "$recursiveRef",
-    "additionalItems",
-    "dependencies",
-})
 _LOCATIONS: Final[dict[object, ParameterLocation]] = {
     "path": "path",
     "query": "query",
@@ -95,17 +75,44 @@ _LOCATIONS: Final[dict[object, ParameterLocation]] = {
     "cookie": "cookie",
 }
 _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple", "cookie": "form"}
-_NULL: Final = frozenset({"null"})
-_ARRAY: Final = frozenset({"array"})
-_OBJECT: Final = frozenset({"object"})
 _STRING: Final = frozenset({"string"})
-_ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
-_SCALAR_KINDS: Final[dict[type, Literal["bool", "int", "float", "str"]]] = {
-    bool: "bool",
-    int: "int",
-    float: "float",
-    str: "str",
+_LITERAL_KINDS: Final[dict[str, LexicalKind]] = {"bool": "boolean", "float": "number", "int": "integer"}
+_LEXICAL_KINDS: Final[dict[tuple[str | None, str], LexicalKind | None]] = {
+    (None, "bool"): "boolean",
+    (None, "float"): "number",
+    (None, "int"): "integer",
+    (None, "dict"): None,
+    (None, "frozenset"): None,
+    (None, "list"): None,
+    (None, "set"): None,
+    (None, "tuple"): None,
+    ("pydantic", "StrictBool"): "boolean",
+    ("pydantic", "NegativeFloat"): "number",
+    ("pydantic", "NonNegativeFloat"): "number",
+    ("pydantic", "NonPositiveFloat"): "number",
+    ("pydantic", "PositiveFloat"): "number",
+    ("pydantic", "StrictFloat"): "number",
+    ("pydantic", "NegativeInt"): "integer",
+    ("pydantic", "NonNegativeInt"): "integer",
+    ("pydantic", "NonPositiveInt"): "integer",
+    ("pydantic", "PositiveInt"): "integer",
+    ("pydantic", "StrictInt"): "integer",
 }
+_ARGUMENTS: Final[dict[LeafStep, tuple[int, frozenset[tuple[str | None, str]]]]] = {
+    "items": (
+        1,
+        frozenset({
+            (None, "frozenset"),
+            (None, "list"),
+            (None, "set"),
+            ("collections.abc", "Sequence"),
+            ("typing", "Sequence"),
+        }),
+    ),
+    "values": (2, frozenset({(None, "dict"), ("collections.abc", "Mapping"), ("typing", "Mapping")})),
+}
+_INTEGER_NUMBER: Final = frozenset({"integer", "number"})
+_WRAPPERS: Final = frozenset({"alias", "root"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,61 +126,17 @@ class CodecDiagnostic:
     uses: tuple[TypeUseId, ...] = ()
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SchemaResource:
-    """One normalized 2020-12 resource, with the pointers of the schema roots it contains."""
-
-    uri: str
-    contents: WireValue
-    roots: tuple[str, ...] = ("",)
-
-
 @dataclass(frozen=True, slots=True)
 class WirePlan:
-    """Keep bundled normalized schema resources, per-use schema IDs, parameter plans, and bound lexical kinds."""
+    """Keep the parameter, header and form plans of the planned operations, and the bound lexical kinds."""
 
-    resources: tuple[SchemaResource, ...]
-    schema_ids: tuple[tuple[TypeUseId, str], ...]
     parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
     kinds: LexicalKinds
-    documents: tuple[tuple[SourceDocumentId, str], ...] = ()
     version: str = ""
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
     styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
-
-    def schema(self, location: SourceLocation) -> tuple[SourceLocation, Mapping[str, WireValue]]:
-        """Return the normalized schema object at a location, following whole-schema references."""
-        value = self._node(location)
-        schema: Mapping[str, WireValue] = value if isinstance(value, Mapping) else {}
-        uri, fragment = urldefrag(str(schema.get("$ref", "")))
-        target = next((document for document, logical in self.documents if logical == uri), None)
-        if target is None or len(schema) != 1:
-            return location, schema
-        return self.schema(SourceLocation(target, unquote(fragment), "schema"))
-
-    def default(self, location: SourceLocation) -> LiteralScalar | None:
-        """Return the default a schema declares when it is a JSON boolean, number, or string."""
-        value = self.schema(location)[1].get("default")
-        kind = _SCALAR_KINDS.get(type(value))
-        return None if kind is None else LiteralScalar(kind, cast("bool | int | float | str", value))
-
-    def _node(self, location: SourceLocation) -> WireValue:
-        """Return the bundled value at a location, or None when the bundle holds nothing there."""
-        documents = dict(self.documents)
-        value: WireValue = next(
-            (resource.contents for resource in self.resources if resource.uri == documents.get(location.document)), None
-        )
-        for token in _tokens(location.pointer):
-            value = (
-                value.get(token)
-                if isinstance(value, Mapping)
-                else value[int(token)]
-                if isinstance(value, tuple) and token.isdigit() and int(token) < len(value)
-                else None
-            )
-        return value
 
 
 class _PlanError(Exception):
@@ -182,262 +145,19 @@ class _PlanError(Exception):
         self.diagnostic = CodecDiagnostic(code, source, message)
 
 
-class _Omit(Enum):
-    OMIT = "omit"
-
-
-def _at(location: SourceLocation, *tokens: str | int) -> SourceLocation:
-    return replace(location, pointer=location.pointer + "".join(f"/{escape_pointer_token(token)}" for token in tokens))
-
-
-def _tokens(pointer: str) -> list[str]:
-    return [token.replace("~1", "/").replace("~0", "~") for token in pointer[1:].split("/")] if pointer else []
-
-
-def _enclosing(roots: Mapping[str, object], pointer: str) -> str | None:
-    while pointer not in roots:
-        if not pointer:
-            return None
-        pointer = pointer[: pointer.rfind("/")]
-    return pointer
-
-
 def _fact(declaration: WireDeclaration, key: str) -> object:
     return next(
         (value.value for name, value in declaration.facts if name == key and isinstance(value, LiteralScalar)), None
     )
 
 
-def _supported_dialect(dialect: str) -> bool:
-    return dialect == _JSON_SCHEMA_2020_12 or dialect.startswith(_OAS_DIALECT_PREFIXES)
-
-
-def _logical(
-    batch: GeneratedTypeContractBatch, pointers: Mapping[SourceDocumentId, str]
-) -> dict[SourceDocumentId, str]:
-    logical: dict[SourceDocumentId, str] = {}
-    seen: dict[str, int] = {}
-    for document in batch.documents:
-        base = f"{LOGICAL_ROOT}{pointers[document.id].removeprefix('/inputs/')}"
-        count = seen[base] = seen.get(base, -1) + 1
-        logical[document.id] = base if not count else f"{base}/{count}"
-    return logical
-
-
 class _WirePlanner:
-    def __init__(
-        self,
-        batch: GeneratedTypeContractBatch,
-        lease: SourceLease,
-        pointers: Mapping[SourceDocumentId, str],
-    ) -> None:
+    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
         self.batch = batch
-        self.lease = lease
         self.kinds = LexicalKinds(batch)
-        self.logical = _logical(batch, pointers)
-        self.retrieval = {document.uri: document.id for document in batch.documents}
-        self.bases = {document.id: document.uri for document in batch.documents}
         self.diagnostics: list[CodecDiagnostic] = []
-        self.roots: dict[SourceDocumentId, dict[str, JSONValue]] = {}
-        self.pending: list[SourceLocation] = []
-        self.aliases: dict[str, SourceDocumentId] = {}
-        self.containers: set[SourceDocumentId] = set()
-        for document in batch.documents:
-            match lease.borrow(SourceLocation(document.id, "", "schema")):
-                case {"openapi": _}:
-                    self.containers.add(document.id)
-                case {"$id": str() as identifier}:
-                    self.aliases[urljoin(document.uri, identifier)] = document.id
-                case _:
-                    pass
-        root = batch.documents[0].id
-        specification = lease.borrow(SourceLocation(root, "", "schema"))
-        settings = specification if isinstance(specification, dict) else {}
-        self.version = str(settings.get("openapi", ""))
-        self.legacy = self.version.startswith("3.0")
-        if isinstance(dialect := settings.get("jsonSchemaDialect"), str) and not _supported_dialect(dialect):
-            self.report(
-                "MC_SCHEMA_DIALECT",
-                SourceLocation(root, "/jsonSchemaDialect", "schema"),
-                "The default schema dialect is not builtin",
-            )
-
-    def report(self, code: CodecReason, source: SourceLocation, message: str) -> None:
-        if (diagnostic := CodecDiagnostic(code, source, message)) not in self.diagnostics:
-            self.diagnostics.append(diagnostic)
-
-    def schema_id(self, location: SourceLocation) -> str:
-        return f"{self.logical[location.document]}#{quote(location.pointer, safe=_FRAGMENT_SAFE)}"
-
-    def root(self, location: SourceLocation) -> str:
-        self.pending.append(location)
-        while self.pending:
-            current = self.pending.pop()
-            roots = self.roots.setdefault(current.document, {})
-            if current.pointer not in roots:
-                roots[current.pointer] = self.schema(self.lease.borrow(current), current)
-        return self.schema_id(location)
-
-    def resolve(self, reference: str, location: SourceLocation) -> SourceLocation:
-        uri, fragment = urldefrag(urljoin(self.bases[location.document], reference))
-        if (document := self.aliases.get(uri, self.retrieval.get(uri))) is None:
-            raise _PlanError(
-                code="BND_UNRESOLVED_REFERENCE",
-                source=location,
-                message="A schema reference targets an unobserved document",
-            )
-        target = SourceLocation(document, unquote(fragment), "schema")
-        try:
-            self.lease.borrow(target)
-        except BindingCaptureError:
-            raise _PlanError(
-                code="BND_UNRESOLVED_REFERENCE", source=location, message="A schema reference pointer does not exist"
-            ) from None
-        return target
-
-    def reference(self, reference: YamlValue, location: SourceLocation) -> JSONValue:
-        if not isinstance(reference, str):
-            self.report("MC_SCHEMA_DIALECT", location, "A schema reference must be a string")
-            return None
-        try:
-            target = self.resolve(reference, location)
-        except _PlanError as error:
-            self.report(error.diagnostic.code, location, error.diagnostic.message)
-            return reference
-        self.pending.append(target)
-        return self.schema_id(target)
-
-    def schema(self, value: YamlValue, location: SourceLocation) -> JSONValue:
-        if isinstance(value, bool):
-            return value
-        if not isinstance(value, dict):
-            self.report("MC_SCHEMA_DIALECT", location, "A schema must be an object or a boolean")
-            return None
-        self.check_identity(value, location)
-        if self.legacy and "$ref" in value:
-            return {"$ref": self.reference(value["$ref"], _at(location, "$ref"))}
-        normalized = {
-            str(key): member
-            for key, item in value.items()
-            if (member := self.member(str(key), item, _at(location, str(key)))) is not _Omit.OMIT
-        }
-        if self.legacy:
-            _legacy_keywords(value, normalized)
-        return normalized
-
-    def check_identity(self, value: Mapping[str, YamlValue], location: SourceLocation) -> None:
-        if "$id" in value and (location.pointer or location.document in self.containers):
-            self.report(
-                "MC_SCHEMA_DIALECT",
-                _at(location, "$id"),
-                "Embedded schema resources are not supported",
-            )
-        if "$anchor" in value and location.document in self.containers:
-            self.report(
-                "MC_SCHEMA_DIALECT",
-                _at(location, "$anchor"),
-                "Schema anchors in OpenAPI documents are not supported",
-            )
-        if isinstance(dialect := value.get("$schema"), str) and not _supported_dialect(dialect):
-            self.report("MC_SCHEMA_DIALECT", _at(location, "$schema"), "The schema dialect is not builtin")
-
-    def member(self, key: str, item: YamlValue, at: SourceLocation) -> JSONValue | _Omit:
-        normalized: JSONValue | _Omit = _Omit.OMIT
-        match key, item:
-            case "$ref", _:
-                normalized = self.reference(item, at)
-            case "$id" | "$anchor" | "$schema", _:
-                pass
-            case _, _ if key in _UNSUPPORTED_KEYWORDS:
-                self.report("MC_SCHEMA_DIALECT", at, f"Keyword {key} is not supported")
-            case "items", list():
-                self.report("MC_SCHEMA_DIALECT", at, "Array-form items is not supported")
-            case "nullable", _ if self.legacy:
-                pass
-            case "exclusiveMinimum" | "exclusiveMaximum", bool():
-                if not self.legacy:
-                    self.report("MC_SCHEMA_DIALECT", at, "Boolean exclusive bounds belong to OpenAPI 3.0")
-            case _:
-                normalized = self.applicator(key, item, at)
-        return normalized
-
-    def applicator(self, key: str, item: YamlValue, at: SourceLocation) -> JSONValue:
-        match item:
-            case dict() if key in SCHEMA_MAP_KEYWORDS:
-                return {str(name): self.schema(child, _at(at, str(name))) for name, child in item.items()}
-            case list() if key in SCHEMA_ARRAY_KEYWORDS:
-                return [self.schema(child, _at(at, index)) for index, child in enumerate(item)]
-            case _ if key in SCHEMA_VALUE_KEYWORDS:
-                return self.schema(item, at)
-            case _:
-                return self.data(item, at)
-
-    def data(self, value: YamlValue, location: SourceLocation) -> JSONValue:
-        match value:
-            case dict():
-                return {str(key): self.data(item, _at(location, str(key))) for key, item in value.items()}
-            case list():
-                return [self.data(item, _at(location, index)) for index, item in enumerate(value)]
-            case float() if not isfinite(value):
-                self.report("MC_SCHEMA_DIALECT", location, "A schema value must be a finite JSON number")
-                return None
-            case _:
-                return value
-
-    def resources(self) -> tuple[SchemaResource, ...]:
-        resources: list[SchemaResource] = []
-        for document, roots in sorted(self.roots.items(), key=lambda item: self.logical[item[0]]):
-            covered = tuple(
-                pointer
-                for pointer in sorted(roots)
-                if not pointer or _enclosing(roots, pointer[: pointer.rfind("/")]) is None
-            )
-            if covered == ("",):
-                resources.append(SchemaResource(uri=self.logical[document], contents=freeze_wire(roots[""])))
-                continue
-            container: JSONValue = None
-            for pointer in covered:
-                container = self.place(
-                    container, SourceLocation(document, "", "schema"), _tokens(pointer), roots[pointer]
-                )
-            resources.append(SchemaResource(uri=self.logical[document], contents=freeze_wire(container), roots=covered))
-        return tuple(resources)
-
-    def place(self, container: JSONValue, location: SourceLocation, tokens: list[str], value: JSONValue) -> JSONValue:
-        if not tokens:
-            return value
-        head, *rest = tokens
-        child = _at(location, head)
-        if isinstance(self.lease.borrow(location), list):
-            index = int(head)
-            items = container if isinstance(container, list) else []
-            items.extend([None] * (index + 1 - len(items)))
-            items[index] = self.place(items[index], child, rest, value)
-            return items
-        members = container if isinstance(container, dict) else {}
-        members[head] = self.place(members.get(head), child, rest, value)
-        return members
-
-    def resolved(self, location: SourceLocation) -> tuple[Mapping[str, YamlValue], SourceLocation]:
-        seen: set[SourceLocation] = set()
-        while True:
-            value: YamlValue = None
-            with suppress(BindingCaptureError):
-                value = self.lease.borrow(location)
-            if not isinstance(value, dict):
-                return {}, location
-            if not isinstance(reference := value.get("$ref"), str) or location in seen:
-                return value, location
-            seen.add(location)
-            location = self.resolve(reference, _at(location, "$ref"))
-
-
-def _legacy_keywords(raw: Mapping[str, YamlValue], normalized: dict[str, JSONValue]) -> None:
-    if raw.get("nullable") is True and isinstance(kind := raw.get("type"), str):
-        normalized["type"] = [kind, "null"]
-    for exclusive, inclusive in (("exclusiveMinimum", "minimum"), ("exclusiveMaximum", "maximum")):
-        if raw.get(exclusive) is True and inclusive in normalized:
-            normalized[exclusive] = normalized.pop(inclusive)
+        self.version = batch.openapi
+        self.uses = {use.id: use for use in batch.type_uses}
 
 
 def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
@@ -453,32 +173,24 @@ def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
     return tuple(found)
 
 
-def plan_wire(  # noqa: PLR0913
+def plan_wire(
     batch: GeneratedTypeContractBatch,
-    lease: SourceLease,
     uses: Sequence[TypeUseId] | None = None,
     *,
     operations: Collection[OperationId] | None = None,
-    documents: Mapping[SourceDocumentId, str],
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
 ) -> WirePlan:
-    """Build normalized offline schemas and parameter plans for the requested uses and operations.
+    """Build the parameter plans of the requested operations and the plans of their requested encoding headers.
 
-    The document pointers of the target manifest, such as `/inputs/documents/<index>`, name the bundled resources,
-    so schema references match the manifest. The uses of URL-encoded bodies named in `forms`
-    get their member plans, and each member their encoding names the plan of a query parameter; the form-data uses
-    named in `styles` get the query parameter plan of each member their encodings give a style.
+    The uses of URL-encoded bodies named in `forms` get their member plans, and each member their encoding names the
+    plan of a query parameter; the form-data uses named in `styles` get the query parameter plan of each member their
+    encodings give a style.
     """
     forms = forms or {}
     styles = styles or {}
-    planner = _WirePlanner(batch, lease, documents)
+    planner = _WirePlanner(batch)
     requested = None if uses is None else frozenset(uses)
-    schema_ids = tuple(
-        (binding.id, planner.root(binding.schema))
-        for binding in batch.type_uses
-        if binding.schema is not None and (requested is None or binding.id in requested)
-    )
     planned = [operation for operation in batch.operations if operations is None or operation.id in operations]
     parameters = tuple((operation.id, _parameters(planner, operation)) for operation in planned)
     headers = tuple(
@@ -496,12 +208,9 @@ def plan_wire(  # noqa: PLR0913
         if use.id in styles and (style := _styles(planner, use, styles[use.id])) is not None
     )
     return WirePlan(
-        planner.resources(),
-        schema_ids,
         parameters,
         tuple(planner.diagnostics),
         planner.kinds,
-        tuple(sorted(planner.logical.items())),
         planner.version,
         headers,
         planned_forms,
@@ -514,12 +223,12 @@ def _form(
 ) -> tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]] | None:
     """Return the member plans of a URL-encoded use: each member's field, or the parameter plan its encoding gives."""
     try:
-        location = _schema_location(planner, (use.id,), use.id.use_site)
+        bound = _schema_use(planner, (use.id,), use.id.use_site)
         styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
-        _, _, fields, additional = _shape(planner, location, form=True, skip=frozenset(styled))
+        _, _, fields, additional = _shape(planner, _encoded(bound).form, skip=frozenset(styled))
         members = {name: schema for name, schema, _ in property_members(use)}
-        encoded = tuple(_encoding(planner, members, declaration) for declaration in styled.values())
-        _distinct(location, [field.name for field in fields], encoded)
+        encoded = tuple(_encoding(planner, bound, members, declaration) for declaration in styled.values())
+        _distinct(_located(bound), [field.name for field in fields], encoded)
     except _PlanError as error:
         _refused(planner, use, error)
         return None
@@ -531,11 +240,11 @@ def _styles(
 ) -> tuple[TypeUseId, tuple[ParameterPlan, ...]] | None:
     """Return the query parameter plans of the form-data members whose encodings name a style or its options."""
     try:
-        location = _schema_location(planner, (use.id,), use.id.use_site)
+        bound = _schema_use(planner, (use.id,), use.id.use_site)
         members = {name: schema for name, schema, _ in property_members(use)}
-        encoded = tuple(_encoding(planner, members, declaration) for declaration in encodings)
+        encoded = tuple(_encoding(planner, bound, members, declaration) for declaration in encodings)
         styled = {plan.name for plan in encoded}
-        _distinct(location, [name for name in members if name not in styled], encoded)
+        _distinct(_located(bound), [name for name in members if name not in styled], encoded)
     except _PlanError as error:
         _refused(planner, use, error)
         return None
@@ -572,7 +281,9 @@ def _styled(encoding: WireDeclaration) -> bool:
     return any(_fact(encoding, key) is not None for key in ("style", "explode", "allowReserved", "contentType"))
 
 
-def _encoding(planner: _WirePlanner, members: Mapping[str, SourceLocation], encoding: WireDeclaration) -> ParameterPlan:
+def _encoding(
+    planner: _WirePlanner, form: TypeUseBinding, members: Mapping[str, SourceLocation], encoding: WireDeclaration
+) -> ParameterPlan:
     """Return the query parameter plan of a form member: its style, or its content when only that is named.
 
     A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes.
@@ -593,7 +304,7 @@ def _encoding(planner: _WirePlanner, members: Mapping[str, SourceLocation], enco
                     message="The member content has no builtin encoding",
                 )
             return ParameterPlan(location="query", name=name, content_media_type=media)
-        shape, kind, fields, additional = _shape(planner, member, form=False)
+        shape, kind, fields, additional = _shape(planner, _member_shape(form, member))
         chosen = str(style or "form")
         return ParameterPlan(
             location="query",
@@ -682,9 +393,7 @@ def _requirement_names(value: FrozenLiteral | None) -> list[str]:
 
 def auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
     """Return the locations and names of the apiKey credentials the operation's security requirements send."""
-    document = (
-        operation.declaration.location.document if operation.security_declared else operation.id.use_site.document
-    )
+    document = operation.id.use_site.document
     schemes = {scheme.name: scheme for scheme in batch.security_schemes if scheme.use_site.document == document}
     requirements = next((value for name, value in operation.facts if name == "security"), None)
     return list(
@@ -764,10 +473,10 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
     location = _LOCATIONS[_fact(declaration, "in")]
     name = declaration.name or ""
     required = _fact(declaration, "required") is True
+    _finite(planner, declaration)
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
-    schema = _schema_location(planner, declaration.schemas, source)
-    shape, kind, fields, additional = _shape(planner, schema, form=False)
+    shape, kind, fields, additional = _shape(planner, _encoded(_schema_use(planner, declaration.schemas, source)).value)
     style = str(_fact(declaration, "style") or _DEFAULT_STYLES[location])
     if style == "cookie" and not planner.version.startswith("3.2"):
         raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message="Cookie style requires OpenAPI 3.2")
@@ -810,11 +519,9 @@ def _content_parameter(
     content = declaration.children[0]
     kind = media_kind(media)
     if kind == "form":
-        _, _, fields, additional = _shape(planner, _schema_location(planner, content.schemas, source), form=True)
+        _, _, fields, additional = _shape(planner, _encoded(_schema_use(planner, content.schemas, source)).form)
     elif (
-        kind == "text"
-        and content.schemas
-        and _kinds(planner, _schema_location(planner, content.schemas, source)) != _STRING
+        kind == "text" and content.schemas and _encoded(_schema_use(planner, content.schemas, source)).types != _STRING
     ):
         raise _PlanError(
             code="MC_PARAMETER_ENCODING", source=source, message="Text parameter content requires a string schema"
@@ -824,129 +531,226 @@ def _content_parameter(
     )
 
 
-def _schema_location(planner: _WirePlanner, uses: tuple[TypeUseId, ...], source: SourceLocation) -> SourceLocation:
-    if (
-        schema := next((item.schema for item in planner.batch.type_uses if item.id in uses and item.schema), None)
-    ) is None:
+def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:
+    """Refuse a parameter whose schema declares a non-finite default, which no JSON number or parameter text writes."""
+    for use in (planner.uses[item] for item in _uses(declaration) if item in planner.uses):
+        if isinstance(value := getattr(use.default, "value", None), float) and not isfinite(value):
+            location = _located(use)
+            raise _PlanError(
+                code="MC_PARAMETER_ENCODING",
+                source=replace(location, pointer=f"{location.pointer}/default"),
+                message="A schema value must be a finite JSON number",
+            )
+
+
+def _schema_use(planner: _WirePlanner, uses: tuple[TypeUseId, ...], source: SourceLocation) -> TypeUseBinding:
+    """Return the first of a declaration's type uses that has a schema."""
+    if (use := next((item for item in planner.batch.type_uses if item.id in uses and item.schema), None)) is None:
         raise _PlanError(
             code="MC_PARAMETER_ENCODING", source=source, message="A style-based parameter requires a schema"
         )
-    return schema
+    return use
 
 
-def _kinds(planner: _WirePlanner, location: SourceLocation) -> frozenset[str] | None:
-    value, location = planner.resolved(location)
-    kinds: frozenset[str] | None = None
-    match value.get("type"):
-        case str() as single:
-            kinds = frozenset({single})
-        case list() as many:
-            kinds = frozenset(str(item) for item in many)
-        case _:
-            pass
-    if kinds is None and isinstance(values := value.get("enum", [value["const"]] if "const" in value else None), list):
-        kinds = frozenset(_json_kind(item) for item in values)
-    for keyword in ("allOf", "anyOf", "oneOf"):
-        branches = value.get(keyword)
-        if not isinstance(branches, list) or not branches:
-            continue
-        found_kinds = [_kinds(planner, _at(location, keyword, index)) for index in range(len(branches))]
-        if keyword == "allOf":
-            for found in found_kinds:
-                kinds = found if kinds is None else kinds if found is None else kinds & found
-        elif all(found is not None for found in found_kinds):
-            union = frozenset[str]().union(*(found for found in found_kinds if found is not None))
-            kinds = union if kinds is None else kinds & union
-    return kinds
+def _located(use: TypeUseBinding) -> SourceLocation:
+    return use.schema or use.id.use_site
 
 
-def _json_kind(value: object) -> str:
-    match value:
-        case bool():
-            return "boolean"
-        case int():
-            return "integer"
-        case float():
-            return "number"
-        case None:
-            return "null"
-        case str():
-            return "string"
-        case _:
-            return "object"
+def _encoded(use: TypeUseBinding) -> EncodingFacts:
+    """Return how a use's schema is written as text, as the walk recorded it on acquiring the schema."""
+    return cast("EncodingFacts", use.encoding)
 
 
-def _kind(
-    planner: _WirePlanner, source: SourceLocation, *leaves: tuple[SourceLocation, tuple[LeafStep, ...]]
-) -> LexicalKind:
+def _member_shape(form: TypeUseBinding, member: SourceLocation) -> TextShape:
+    """Return how one member of a form is written as a parameter value, as the walk recorded it."""
+    found = dict(_encoded(form).members).get(member)
+    return TextShape("scalar", KindSite(member, ((member, ()),))) if found is None else found
+
+
+def _kind(planner: _WirePlanner, site: KindSite) -> LexicalKind:
     """Return the kind of a text leaf by the final type bound for it, at one of its places.
 
     A leaf bound to no type, to a model or a container, or to values of several kinds no text reaches, is refused.
     """
-    if (kind := planner.kinds.at(*leaves)) is None:
+    if (kind := planner.kinds.at(*site.leaves)) is None:
         raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=source, message="A parameter value needs one unambiguous scalar kind"
+            code="MC_PARAMETER_ENCODING",
+            source=site.source,
+            message="A parameter value needs one unambiguous scalar kind",
         )
     return kind
 
 
 def _shape(
-    planner: _WirePlanner, location: SourceLocation, *, form: bool, skip: frozenset[str] = frozenset()
+    planner: _WirePlanner, shape: TextShape, *, skip: frozenset[str] = frozenset()
 ) -> tuple[ValueShape, LexicalKind, tuple[FieldPlan, ...], FieldPlan | None]:
-    source = location
-    value, location = planner.resolved(location)
-    kinds = (_kinds(planner, location) or frozenset()) - _NULL
-    if kinds == _ARRAY and not form:
-        return "array", _kind(planner, _at(location, "items"), (source, _ITEMS), (location, _ITEMS)), (), None
-    if kinds != _OBJECT:
-        if form:
-            raise _PlanError(
-                code="MC_PARAMETER_ENCODING", source=location, message="A URL-encoded value must be an object"
-            )
-        return "scalar", _kind(planner, location, (source, ()), (location, ())), (), None
-    if "patternProperties" in value:
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING",
-            source=location,
-            message="Pattern properties have no builtin parameter encoding",
-        )
-    properties = value.get("properties")
-    fields = tuple(
-        _field(planner, _at(location, "properties", name), name, source, location, form=form)
-        for name in (properties if isinstance(properties, dict) else {})
-        if name not in skip
-    )
-    return (
-        "object",
-        "string",
-        fields,
-        _additional(planner, value.get("additionalProperties", True), source, location, form=form),
-    )
+    """Return a value's shape, its kind, and its members' plans, those named in `skip` left out.
 
-
-def _additional(
-    planner: _WirePlanner, schema: YamlValue, source: SourceLocation, location: SourceLocation, *, form: bool
-) -> FieldPlan | None:
-    if schema is False:
-        return None
-    if schema is True or schema == {}:
-        return FieldPlan("", "string")
-    return _field(planner, _at(location, "additionalProperties"), "", source, location, form=form)
-
-
-def _field(
-    planner: _WirePlanner, location: SourceLocation, name: str, *owners: SourceLocation, form: bool
-) -> FieldPlan:
-    """Return a member's plan: its kind by the type bound at its schema, or as a value of a mapping bound at an owner.
-
-    An array member of a form repeats, in its items' kind.
+    The members come first, in their order, then why the value has no builtin encoding, then any other property.
     """
-    _, resolved = planner.resolved(location)
-    steps: tuple[LeafStep, ...] = ()
-    source = location
-    if repeated := form and (_kinds(planner, location) or frozenset()) - _NULL == _ARRAY:
-        steps, source = _ITEMS, _at(resolved, "items")
-    kind = _kind(
-        planner, source, (location, steps), (resolved, steps), *((owner, ("values", *steps)) for owner in owners)
+    fields = tuple(_field(planner, member) for member in shape.members if member.name not in skip)
+    if (problem := shape.problem) is not None:
+        source, message = problem
+        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=message)
+    if shape.shape == "object":
+        return "object", "string", fields, None if shape.additional is None else _field(planner, shape.additional)
+    return shape.shape, _kind(planner, cast("KindSite", shape.kind)), (), None
+
+
+def _field(planner: _WirePlanner, member: MemberShape) -> FieldPlan:
+    """Return a member's plan: any string without a kind of its own, a repeated array member in its items' kind."""
+    return FieldPlan(
+        member.name, "string" if member.kind is None else _kind(planner, member.kind), repeated=member.repeated
     )
-    return FieldPlan(name, kind, repeated=repeated)
+
+
+class LexicalKinds:
+    """Read the lexical kind of a text leaf from the final type the model generator bound at its schema.
+
+    An int, float or bool leaf has its own kind: as the builtin, a constrained or strict form of it, or the member
+    type of an enum or literal. The text of any other scalar leaf is the model's to read, and so is that of a union
+    with such a leaf. A model, a container, null alone, an enum or literal of several kinds, and a union of several
+    kinds none of which reads text as it is, have no kind.
+    """
+
+    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
+        """Keep the batch whose schema uses, symbols and root values the first lookups index."""
+        self._batch = batch
+
+    @cached_property
+    def _types(self) -> dict[tuple[int, str], TypeView | None]:
+        return {
+            (use.id.use_site.document, use.id.use_site.pointer): use.type
+            for use in self._batch.type_uses
+            if use.id.role == "schema" and use.id.projection == "value" and use.id.direction == "neutral"
+        }
+
+    @cached_property
+    def _symbols(self) -> dict[int, FinalModelSymbol]:
+        return {symbol.id: symbol for symbol in self._batch.symbols}
+
+    @cached_property
+    def _roots(self) -> dict[int, TypeView]:
+        return {
+            member.consumer: facts.type
+            for member in self._batch.fields
+            if member.member_kind == "root_value" and (facts := member.model_facts) is not None
+        }
+
+    def at(self, *leaves: tuple[SourceLocation, tuple[LeafStep, ...]]) -> LexicalKind | None:
+        """Return the kind of a leaf by the first of its places a type is bound for, if that type has one.
+
+        A place is a schema's location and the steps from the type bound there to the leaf: a list's items, then a
+        mapping's values. A leaf no place binds a type for has no kind.
+        """
+        value = next((found for leaf in leaves if (found := self._reached(*leaf)) is not None), None)
+        return _one_kind(set(self._leaves(value, frozenset())), mixed=True)
+
+    def of(self, value: TypeView, steps: tuple[LeafStep, ...] = ()) -> LexicalKind | None:
+        """Return the kind of the leaf the steps reach from a type, such as a model field's type."""
+        return _one_kind(set(self._leaves(self._stepped(value, steps), frozenset())), mixed=True)
+
+    def _reached(self, location: SourceLocation, steps: tuple[LeafStep, ...]) -> TypeView | None:
+        return self._stepped(self._types.get((location.document, location.pointer)), steps)
+
+    def _stepped(self, value: TypeView | None, steps: tuple[LeafStep, ...]) -> TypeView | None:
+        for step in steps:
+            value = self._argument(value, *_ARGUMENTS[step])
+        return value
+
+    def _argument(
+        self, value: TypeView | None, count: int, containers: frozenset[tuple[str | None, str]]
+    ) -> TypeView | None:
+        """Return the last argument of a container type, through aliases, root models and a union with None alone."""
+        seen: set[int] = set()
+        while True:
+            if isinstance(value, UnionType) and len(present := _present(value)) == 1:
+                value = present[0]
+            elif (
+                isinstance(value, GeneratedSymbolType)
+                and value.symbol not in seen
+                and self._symbols[value.symbol].kind in _WRAPPERS
+            ):
+                seen.add(value.symbol)
+                value = self._roots.get(value.symbol)
+            else:
+                return (
+                    value.arguments[-1]
+                    if isinstance(value, GenericType)
+                    and len(value.arguments) == count
+                    and _type_name(value.base) in containers
+                    else None
+                )
+
+    def _leaves(self, value: TypeView | None, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
+        match value:
+            case NoneType():
+                pass
+            case ConstructorType():
+                yield from self._leaves(value.callable if value.base is None else value.base, seen)
+            case UnionType():
+                for member in value.members:
+                    yield from self._leaves(member, seen)
+            case LiteralType():
+                yield _one_kind(
+                    {
+                        kind
+                        for item in value.values
+                        for kind in (
+                            self._leaves(GeneratedSymbolType(item.symbol), seen)
+                            if isinstance(item, GeneratedEnumMember)
+                            else _literal_kinds(item)
+                        )
+                    },
+                    mixed=False,
+                )
+            case GeneratedSymbolType():
+                yield from self._symbol(self._symbols[value.symbol], seen)
+            case BuiltinType() | ImportedType():
+                yield _LEXICAL_KINDS.get(_type_name(value), "string")
+            case None | GenericType():
+                yield None
+            case _:
+                yield "string"
+
+    def _symbol(self, symbol: FinalModelSymbol, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
+        if symbol.kind == "enum":
+            yield _one_kind({kind for item in symbol.values for kind in _literal_kinds(item)}, mixed=False)
+        elif symbol.kind in _WRAPPERS and symbol.id not in seen:
+            yield from self._leaves(self._roots.get(symbol.id), seen | {symbol.id})
+        else:
+            yield None
+
+
+def _present(value: UnionType) -> list[TypeView]:
+    return [member for member in value.members if not isinstance(member, NoneType)]
+
+
+def _type_name(value: TypeView) -> tuple[str | None, str]:
+    """Return the module and name of a builtin or imported type, or no name for any other type."""
+    return (
+        (None, value.name)
+        if isinstance(value, BuiltinType)
+        else (value.import_.from_, value.import_.import_)
+        if isinstance(value, ImportedType)
+        else (None, "")
+    )
+
+
+def _literal_kinds(value: LiteralScalar | None) -> Iterator[LexicalKind | None]:
+    """Yield the kind of one literal or enum member value: none for null, and None for one that is no scalar."""
+    if value is None or value.kind != "none":
+        yield None if value is None else _LITERAL_KINDS.get(value.kind, "string")
+
+
+def _one_kind(kinds: set[LexicalKind | None], *, mixed: bool) -> LexicalKind | None:
+    """Return the one kind of a leaf's kinds, taking an int beside a float as a number.
+
+    Several other kinds are the string kind when `mixed` admits them and one of them is the string kind, whose leaf
+    reads the text as it is; the members of one enum or literal admit none. A leaf of null alone has no kind.
+    """
+    if kinds == _INTEGER_NUMBER:
+        return "number"
+    if len(kinds) == 1:
+        return kinds.pop()
+    return "string" if mixed and "string" in kinds and None not in kinds else None

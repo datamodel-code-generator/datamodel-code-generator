@@ -11,9 +11,7 @@ import models
 
 from .._runtime.model_codecs.native import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldSubscriptionsPostQueryDryRunParameter]] = PydanticCodec(
-    models.FieldSubscriptionsPostQueryDryRunParameter,
-)
+codec_0: Final[PydanticCodec[models.FieldSubscriptionsPostQueryDryRunParameter]] = PydanticCodec(models.FieldSubscriptionsPostQueryDryRunParameter)
 """Codec of /paths/~1subscriptions/post parameter (request query dry_run)."""
 
 codec_1: Final[PydanticCodec[models.Subscription]] = PydanticCodec(models.Subscription)

@@ -7,61 +7,35 @@ dependencies
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
-  client/auth.py: 490
-  client/auth_challenges.py: 99
-  client/auth_policy.py: 675
-  client/bodies.py: 1454
-  client/body_sources.py: 419
-  client/client.py: 3944
-  client/codecs.py: 95
-  client/coding.py: 171
-  client/disk.py: 75
-  client/errors.py: 779
-  client/events.py: 530
-  client/hooks.py: 149
-  client/logical.py: 288
+  client/auth.py: 334
+  client/client.py: 1801
+  client/content.py: 102
+  client/errors.py: 306
+  client/logical.py: 230
   client/media.py: 77
-  client/multipart.py: 1010
-  client/native.py: 163
-  client/operations.py: 930
-  client/options.py: 724
+  client/native.py: 146
+  client/operations.py: 839
+  client/options.py: 300
   client/paths.py: 40
-  client/raw.py: 985
-  client/redirects.py: 91
-  client/responses.py: 88
-  client/retry.py: 335
-  client/scopes.py: 29
-  client/security.py: 62
-  client/timing.py: 171
-  client/urls.py: 85
+  client/positions.py: 79
+  client/raw.py: 710
+  client/responses.py: 87
+  client/retry.py: 316
+  client/security.py: 94
+  client/timing.py: 144
+  client/urls.py: 80
   model_codecs/__init__.py: 2
-  model_codecs/errors.py: 55
-  model_codecs/media.py: 406
+  model_codecs/errors.py: 18
+  model_codecs/media.py: 300
   model_codecs/native.py: 172
-  model_codecs/parameters.py: 676
-  model_codecs/unset.py: 26
-  model_codecs/wire.py: 144
-  protocols/__init__.py: 4
-  protocols/caches.py: 139
-  protocols/errors.py: 1235
-  protocols/names.py: 29
-  protocols/options.py: 467
-  protocols/origins.py: 45
-  protocols/records.py: 311
-  protocols/references.py: 16
-  protocols/resume.py: 176
-  protocols/sources.py: 43
-  protocols/websocket_types.py: 220
-total 47 modules, 18130 lines
+  model_codecs/parameters.py: 312
+  model_codecs/unset.py: 11
+total 25 modules, 6506 lines
 public files
   publication_client/__init__.py
-  publication_client/auth.py
-  publication_client/bodies.py
   publication_client/errors.py
-  publication_client/hooks.py
   publication_client/model_codecs.py
   publication_client/options.py
-  publication_client/protocols/__init__.py
   publication_client/resources/__init__.py
   publication_client/resources/pets/__init__.py
   publication_client/responses.py

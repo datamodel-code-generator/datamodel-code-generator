@@ -7,231 +7,87 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import plan_oas32_models
+from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
 from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
-from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1search/get',
-    '/paths/~1spread/get',
-    '/paths/~1raw/post',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1search/get': Sequence[Dependency],
-        '/paths/~1spread/get': Sequence[Dependency],
-        '/paths/~1raw/post': Sequence[Dependency],
+        'get_search': Sequence[params.Depends],
+        'get_spread': Sequence[params.Depends],
+        'post_raw': Sequence[params.Depends],
     },
     total=False,
 )
 
 
 class GetSearch:
-    """Plans of the get__search operation."""
+    """Plans of the get_search operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__search',
-        key='/paths/~1search/get',
-        service='untagged',
-        keywords=('query', 'theme', 'prefs'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
-        """The adapter parameters of get__search."""
+        """The adapter parameters of get_search."""
 
-        query: plan_oas32_models.FieldSearchGetQuerystringQueryParameter | Unset
-        prefs: plan_oas32_models.FieldSearchGetCookiePrefsParameter | Unset
+        query: plan_oas32_models.FieldSearchGetQuerystringQueryParameter | None
+        prefs: plan_oas32_models.FieldSearchGetCookiePrefsParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='query',
-                plan=ParameterPlan(
-                    location='querystring',
-                    name='query',
-                    content_media_type='application/x-www-form-urlencoded',
-                    fields=(
-                        FieldPlan('q', 'string'),
-                        FieldPlan('tags', 'string', repeated=True),
-                        FieldPlan('n', 'integer'),
-                    ),
-                ),
-                adapter=TypeAdapter(plan_oas32_models.FieldSearchGetQuerystringQueryParameter),
-            ),
-            ParameterArgument(
-                name='prefs',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='prefs',
-                    style='cookie',
-                    explode=True,
-                    shape='object',
-                    fields=(FieldPlan('a', 'string'),),
-                    reserved_names=('theme',),
-                ),
-                adapter=TypeAdapter(plan_oas32_models.FieldSearchGetCookiePrefsParameter),
-            ),
-        ),
+        arguments=(ParameterArgument(name='query', plan=ParameterPlan(location='querystring', name='query', content_media_type='application/x-www-form-urlencoded', fields=(FieldPlan('q', 'string'), FieldPlan('tags', 'string', repeated=True), FieldPlan('n', 'integer'))), adapter=TypeAdapter(plan_oas32_models.FieldSearchGetQuerystringQueryParameter)), ParameterArgument(name='prefs', plan=ParameterPlan(location='cookie', name='prefs', style='cookie', explode=True, shape='object', fields=(FieldPlan('a', 'string'),), reserved_names=('theme',)), adapter=TypeAdapter(plan_oas32_models.FieldSearchGetCookiePrefsParameter))),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class GetSpread:
-    """Plans of the get__spread operation."""
+    """Plans of the get_spread operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get__spread',
-        key='/paths/~1spread/get',
-        service='untagged',
-        keywords=('extra', 'window', 'jar', 'crumbs', 'x_counts', 'x_tallies'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
-        """The adapter parameters of get__spread."""
+        """The adapter parameters of get_spread."""
 
-        extra: plan_oas32_models.FieldSpreadGetQueryExtraParameter | Unset
-        window: plan_oas32_models.FieldSpreadGetQueryWindowParameter | Unset
-        jar: plan_oas32_models.FieldSpreadGetCookieJarParameter | Unset
-        crumbs: plan_oas32_models.FieldSpreadGetCookieCrumbsParameter | Unset
-        x_counts: dict[str, int] | Unset
-        x_tallies: dict[str, int] | Unset
+        extra: plan_oas32_models.FieldSpreadGetQueryExtraParameter | None
+        window: plan_oas32_models.FieldSpreadGetQueryWindowParameter | None
+        jar: plan_oas32_models.FieldSpreadGetCookieJarParameter | None
+        crumbs: plan_oas32_models.FieldSpreadGetCookieCrumbsParameter | None
+        X_Counts: dict[str, int] | None
+        X_Tallies: dict[str, int] | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='extra',
-                plan=ParameterPlan(
-                    location='query',
-                    name='extra',
-                    style='form',
-                    explode=True,
-                    shape='object',
-                    additional=FieldPlan('', 'string'),
-                    reserved_names=('limit', 'offset', 'window'),
-                ),
-                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetQueryExtraParameter),
-            ),
-            ParameterArgument(
-                name='window',
-                plan=ParameterPlan(
-                    location='query',
-                    name='window',
-                    style='form',
-                    explode=True,
-                    shape='object',
-                    fields=(
-                        FieldPlan('limit', 'integer'),
-                        FieldPlan('offset', 'integer'),
-                    ),
-                    reserved_names=('extra',),
-                ),
-                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetQueryWindowParameter),
-            ),
-            ParameterArgument(
-                name='jar',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='jar',
-                    style='form',
-                    explode=True,
-                    shape='object',
-                    additional=FieldPlan('', 'string'),
-                    reserved_names=('crumbs', 'flavor'),
-                ),
-                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetCookieJarParameter),
-            ),
-            ParameterArgument(
-                name='crumbs',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='crumbs',
-                    style='cookie',
-                    explode=True,
-                    shape='object',
-                    fields=(FieldPlan('flavor', 'string'),),
-                    reserved_names=('jar',),
-                ),
-                adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetCookieCrumbsParameter),
-            ),
-            ParameterArgument(
-                name='x_counts',
-                plan=ParameterPlan(
-                    location='header',
-                    name='X-Counts',
-                    style='simple',
-                    explode=True,
-                    shape='object',
-                    additional=FieldPlan('', 'integer'),
-                    reserved_names=('X-Tallies',),
-                ),
-                adapter=TypeAdapter(dict[str, int]),
-            ),
-            ParameterArgument(
-                name='x_tallies',
-                plan=ParameterPlan(
-                    location='header',
-                    name='X-Tallies',
-                    style='simple',
-                    explode=True,
-                    shape='object',
-                    additional=FieldPlan('', 'integer'),
-                    reserved_names=('X-Counts',),
-                ),
-                adapter=TypeAdapter(dict[str, int]),
-            ),
-        ),
+        arguments=(ParameterArgument(name='extra', plan=ParameterPlan(location='query', name='extra', style='form', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('limit', 'offset', 'window')), adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetQueryExtraParameter)), ParameterArgument(name='window', plan=ParameterPlan(location='query', name='window', style='form', explode=True, shape='object', fields=(FieldPlan('limit', 'integer'), FieldPlan('offset', 'integer')), reserved_names=('extra',)), adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetQueryWindowParameter)), ParameterArgument(name='jar', plan=ParameterPlan(location='cookie', name='jar', style='form', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('crumbs', 'flavor')), adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetCookieJarParameter)), ParameterArgument(name='crumbs', plan=ParameterPlan(location='cookie', name='crumbs', style='cookie', explode=True, shape='object', fields=(FieldPlan('flavor', 'string'),), reserved_names=('jar',)), adapter=TypeAdapter(plan_oas32_models.FieldSpreadGetCookieCrumbsParameter)), ParameterArgument(name='X_Counts', plan=ParameterPlan(location='header', name='X-Counts', style='simple', explode=True, shape='object', additional=FieldPlan('', 'integer'), reserved_names=('X-Tallies',)), adapter=TypeAdapter(dict[str, int])), ParameterArgument(name='X_Tallies', plan=ParameterPlan(location='header', name='X-Tallies', style='simple', explode=True, shape='object', additional=FieldPlan('', 'integer'), reserved_names=('X-Counts',)), adapter=TypeAdapter(dict[str, int]))),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
 
 
 class PostRaw:
-    """Plans of the post__raw operation."""
+    """Plans of the post_raw operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='post__raw',
-        key='/paths/~1raw/post',
-        service='untagged',
-        keywords=('querystring_body', 'note'),
-    )
     @dataclass(frozen=True, slots=True, kw_only=True)
     class Parameters:
-        """The adapter parameters of post__raw."""
+        """The adapter parameters of post_raw."""
 
-        querystring_body: plan_oas32_models.FieldRawPostQuerystringBodyParameter | Unset
-        note: str | Unset
+        body_1: plan_oas32_models.FieldRawPostQuerystringBodyParameter | None
+        note: str | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='querystring_body',
-                plan=ParameterPlan(
-                    location='querystring',
-                    name='body',
-                    content_media_type='application/json',
-                ),
-                adapter=TypeAdapter(plan_oas32_models.FieldRawPostQuerystringBodyParameter),
-            ),
-            ParameterArgument(
-                name='note',
-                plan=ParameterPlan(
-                    location='header',
-                    name='note',
-                    content_media_type='text/plain',
-                ),
-                adapter=TypeAdapter(str),
-            ),
-        ),
+        arguments=(ParameterArgument(name='body_1', plan=ParameterPlan(location='querystring', name='body', content_media_type='application/json'), adapter=TypeAdapter(plan_oas32_models.FieldRawPostQuerystringBodyParameter)), ParameterArgument(name='note', plan=ParameterPlan(location='header', name='note', content_media_type='text/plain'), adapter=TypeAdapter(str))),
         record=Parameters,
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )

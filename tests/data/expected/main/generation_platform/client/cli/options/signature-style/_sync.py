@@ -45,8 +45,13 @@ class PetsResource:
         """The same operations, returning blocks that send each call on entry and stream its response."""
         return PetsWithStreamingResponse(self._core)
 
-    def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> ListPetsResponse:
-        """List the pets."""
+    def list_pets(
+        self,
+        **kwargs: Unpack[Operation0Arguments],
+    ) -> ListPetsResponse:
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_0,
@@ -59,7 +64,9 @@ class PetsResource:
         self,
         **kwargs: Unpack[Operation1Arguments],
     ) -> CreatePetResponse:
-        """Create a pet."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
@@ -82,7 +89,9 @@ class PetsWithResponse:
         self,
         **kwargs: Unpack[Operation0Arguments],
     ) -> Response[ListPetsResponse]:
-        """List the pets."""
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_0,
@@ -95,7 +104,9 @@ class PetsWithResponse:
         self,
         **kwargs: Unpack[Operation1Arguments],
     ) -> Response[CreatePetResponse]:
-        """Create a pet."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.execute(
             _operations.OPERATION_1,
@@ -114,8 +125,13 @@ class PetsWithRawResponse:
         """Keep the client core the operations send through."""
         self._core = core
 
-    def list_pets(self, **kwargs: Unpack[Operation0Arguments]) -> RawResponse:
-        """List the pets."""
+    def list_pets(
+        self,
+        **kwargs: Unpack[Operation0Arguments],
+    ) -> RawResponse:
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_0,
@@ -124,8 +140,13 @@ class PetsWithRawResponse:
             response_media_type=kwargs.get('response_media_type'),
         )
 
-    def create_pet(self, **kwargs: Unpack[Operation1Arguments]) -> RawResponse:
-        """Create a pet."""
+    def create_pet(
+        self,
+        **kwargs: Unpack[Operation1Arguments],
+    ) -> RawResponse:
+        """
+        Call POST /pets.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.execute_raw(
             _operations.OPERATION_1,
@@ -148,7 +169,9 @@ class PetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation0Arguments],
     ) -> AbstractContextManager[RawResponse]:
-        """List the pets."""
+        """
+        Call GET /pets.
+        """
         KEYWORDS_0.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_0,
@@ -161,7 +184,9 @@ class PetsWithStreamingResponse:
         self,
         **kwargs: Unpack[Operation1Arguments],
     ) -> AbstractContextManager[RawResponse]:
-        """Create a pet."""
+        """
+        Call POST /pets.
+        """
         KEYWORDS_1.check(kwargs)
         return self._core.stream(
             _operations.OPERATION_1,

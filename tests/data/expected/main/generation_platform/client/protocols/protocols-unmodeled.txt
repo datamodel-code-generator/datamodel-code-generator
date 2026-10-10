@@ -1,5 +1,3 @@
 # protocols-unmodeled
 render pydantic_v2.BaseModel
-  APIGenerationError
-  BND_MODEL_SCOPE_REQUIRED binding /x-messages/Event: The use has no generated native type
-  BND_MODEL_SCOPE_REQUIRED binding /x-messages/Note: The use has no generated native type
+  Error: /x-messages/Event: The use has no generated native type; /x-messages/Note: The use has no generated native type

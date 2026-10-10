@@ -27,38 +27,8 @@ OPERATION_0: Final[OperationPlan[ListPetsResponse]] = OperationPlan(
     method='GET',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_3),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='limit',
-                style='form',
-                explode=True,
-                kind='integer',
-                reserved_names=('page',),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='page',
-                style='form',
-                explode=True,
-                kind='integer',
-                reserved_names=('limit',),
-            ),
-            codec=model_bindings.codec_1,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='X-Trace', style='simple'),
-            codec=model_bindings.codec_2,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_3),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('page',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='page', style='form', explode=True, kind='integer', reserved_names=('limit',)), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='header', name='X-Trace', style='simple'), codec=model_bindings.codec_2)),
     security=security.OPERATION_0,
 )
 
@@ -67,32 +37,9 @@ OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     method='POST',
     path='/pets',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('201', 'application/json', 'json', model_bindings.codec_7),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='header',
-                name='X-Trace',
-                style='simple',
-                reserved_names=('X-Library-Key',),
-            ),
-            codec=model_bindings.codec_5,
-        ),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='application/json',
-                kind='json',
-                codec=model_bindings.codec_6,
-            ),
-        ),
-        default='application/json',
-        required=True,
-    ),
+    responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_7),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='X-Trace', style='simple', reserved_names=('X-Library-Key',)), codec=model_bindings.codec_5),),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_6),), default='application/json', required=True),
     security=security.OPERATION_1,
 )
 
@@ -101,21 +48,7 @@ OPERATION_2: Final[OperationPlan[ListOwnersResponse]] = OperationPlan(
     method='GET',
     path='/owners',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (model_branch('200', 'application/json', 'json', model_bindings.codec_9),),
-        (),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='limit',
-                style='form',
-                explode=True,
-                kind='integer',
-            ),
-            codec=model_bindings.codec_8,
-        ),
-    ),
+    responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_9),), ()),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('metadata_key',)), codec=model_bindings.codec_8),),
     security=security.OPERATION_2,
 )

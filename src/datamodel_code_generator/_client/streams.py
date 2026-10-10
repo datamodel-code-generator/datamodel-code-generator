@@ -24,7 +24,6 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
 )
 from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._target_contract import DeclarationId, SourceLocation, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
@@ -36,7 +35,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
 
 __all__ = ("StreamSpec", "plan_streams", "stream_uses")
 
@@ -60,7 +58,7 @@ class StreamSpec:
     """A stream helper ready to render: its operation and stream media, each event and error schema's use, its schemas.
 
     `media` is the event stream or NDJSON media type the operation declares in `response`, which the helper requests.
-    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the manifest
+    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the source
     reference of every schema the helper decodes, in the order of its settings. A helper declaring resumption reopens
     its stream with `reopen`, requesting the `reopen_media` its `reopen_response` declares.
     """
@@ -138,22 +136,17 @@ def _media_problem(helper: Helper) -> str | None:
 class _Streams:
     """Check every enabled stream helper against its operation and bind the schemas of its events."""
 
-    def __init__(self, protocols: Protocols, request: TargetRequest, wire: WirePlan) -> None:
-        """Index the documents by manifest pointer and the value use of each schema by its location and direction."""
+    def __init__(self, protocols: Protocols, request: TargetRequest) -> None:
+        """Index the documents by pointer and the value use of each schema by its location and direction."""
         self.protocols = protocols
         self.request = request
-        self.wire = wire
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
         self.schemas = schema_uses(request.batch.type_uses)
 
     def location(self, reference: SchemaRef) -> SourceLocation | None:
-        """Return the resolved location of a schema reference, or None when its document has no such pointer."""
+        """Return the location of a schema reference, or None when its document has no such pointer."""
         location = SourceLocation(self.documents[self.protocols.documents[reference]], reference.pointer, "schema")
-        try:
-            self.request.lease.borrow(location)
-        except BindingCaptureError:
-            return None
-        return self.wire.schema(location)[0]
+        return location if self.request.lease.exists(location) else None
 
     def helper(
         self, helper: Helper, spec: OperationSpec, reopen: OperationSpec | None
@@ -244,7 +237,7 @@ class _Streams:
 
 
 def stream_uses(
-    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest, wire: WirePlan
+    protocols: Protocols | None, plan: ClientPlan, request: TargetRequest
 ) -> tuple[tuple[StreamSpec, ...], tuple[TypeUseBinding, ...], dict[str, list[Diagnostic]]]:
     """Check every enabled stream helper before its codecs are planned, returning the helpers, uses, and problems.
 
@@ -252,7 +245,7 @@ def stream_uses(
     """
     if protocols is None:
         return (), (), {}
-    streams = _Streams(protocols, request, wire)
+    streams = _Streams(protocols, request)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[StreamSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
@@ -273,7 +266,6 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
     problems: dict[str, list[Diagnostic]],
 ) -> tuple[StreamSpec, ...]:
@@ -284,7 +276,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     """
     if protocols is None or not specs:
         return ()
-    pages = _Pages(protocols, plan, facts, codecs, wire, request)
+    pages = _Pages(protocols, plan, facts, codecs, request)
     polls = _Polls(pages, {spec.contract.id: spec for spec in plan.operations}, protocols)
     planned: list[StreamSpec] = []
     for spec in specs:
@@ -384,13 +376,12 @@ def _read(
     declared = False
     for _, use in spec.events:
         location = cast("SourceLocation", use.schema)
-        if (member := pages.declared(location, pointer)) is None:
+        if (types := pages.declared(use.type, pointer)) == "absent":
             if inherit:
                 continue
             message = f"The cursor pointer {pointer!r} of {name!r} names no property of {location.pointer!r}"
             return _problem("E_CONFIG_VALUE", "config", f"{at}.pointer", message, spec.operation)
         declared = True
-        types = pages.types(member)
         found = None if types is None or found is None else found | types
     if not declared:
         message = f"The cursor pointer {pointer!r} of {name!r} names no property of any event schema"
@@ -404,12 +395,12 @@ def _discriminated(helper: Helper, spec: StreamSpec, pages: _Pages) -> Iterator[
     if not isinstance(schema, dict) or (selector := schema["discriminator"])["from"] != "body":
         return
     pointer, where = selector["pointer"], f"{helper.at}.event_schema.discriminator.pointer"
-    for location in dict.fromkeys(use.schema for use in spec.uses if use.schema is not None):
+    for location, value in {use.schema: use.type for use in spec.uses if use.schema is not None}.items():
         label = location.pointer
-        if (member := pages.declared(location, pointer)) is None:
+        if (types := pages.declared(value, pointer)) == "absent":
             message = f"The discriminator pointer {pointer!r} of {helper.name!r} names no property of {label!r}"
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)
-        elif (types := pages.types(member)) is not None and "string" not in types:
+        elif types is not None and "string" not in types:
             message = (
                 f"The discriminator of {helper.name!r} reads {_listed(sorted(types))} values from {label!r}, where "
                 "only string values fit"

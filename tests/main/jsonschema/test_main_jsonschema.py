@@ -101,6 +101,7 @@ from tests.main.conftest import (
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPECTED_MAIN_PATH,
+    EXPERIMENTAL_MISSING_IMPORT_WARNING,
     GRAPHQL_DATA_PATH,
     JSON_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -285,6 +286,7 @@ def _keep_model_order_field_references_expected_file(
 
 
 def _install_test_my_app(base_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make a `my_app` package importable for one test; the module cache gets its earlier entry back afterwards."""
     package_dir = base_dir / "my_app"
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text(
@@ -303,6 +305,8 @@ class B(BaseModel):
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(base_dir))
+    monkeypatch.setitem(sys.modules, "my_app", None)
+    monkeypatch.delitem(sys.modules, "my_app")
 
 
 def _run_jsonschema_dict(
@@ -1070,6 +1074,7 @@ difference between an omitted field and a nullable field set to `None`.""",
     golden_output="jsonschema/missing_sentinel.py",
     related_options=["--target-pydantic-version", "--strict-nullable"],
 )
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_main_jsonschema_use_missing_sentinel(output_file: Path) -> None:
     """Use Pydantic's MISSING sentinel for optional fields without defaults.
 
@@ -1096,6 +1101,38 @@ def test_main_jsonschema_use_missing_sentinel(output_file: Path) -> None:
         expected_attribute_path=("nullableUnrequired",),
         expected_attribute_value=None,
     )
+
+
+def test_main_jsonschema_use_missing_sentinel_target_pydantic_214(output_file: Path) -> None:
+    """Import MISSING from pydantic for --target-pydantic-version 2.14, where the experimental path is deprecated."""
+    runs = installed_pydantic_runs_target(TargetPydanticVersion.V2_14.value)
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "missing_sentinel.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="missing_sentinel_target_2_14.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-missing-sentinel",
+            "--target-pydantic-version",
+            TargetPydanticVersion.V2_14.value,
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not runs,
+    )
+    if runs:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="missing_sentinel_target_2_14",
+            model_name="MissingSentinel",
+            valid_json='{"required": 1, "requiredNullable": null, "nullableUnrequired": null}',
+            invalid_json='{"required": 1, "requiredNullable": null, "unrequired": null}',
+            expected_error_type="int_type",
+            expected_attribute_path=("nullableUnrequired",),
+            expected_attribute_value=None,
+        )
 
 
 def test_main_jsonschema_use_missing_sentinel_no_union_operator(output_file: Path) -> None:
@@ -13043,6 +13080,38 @@ def test_main_jsonschema_reuse_scope_tree_exact_imports(output_dir: Path) -> Non
 @pytest.mark.parametrize(
     ("expected_name", "extra_args"),
     [
+        pytest.param("reuse_scope_tree_shared_module_name", ["--shared-module-name", "common"], id="named"),
+        pytest.param(
+            "reuse_scope_tree_shared_module_name_dotted",
+            ["--shared-module-name", "shared.types", "--treat-dot-as-module"],
+            id="dotted",
+        ),
+    ],
+)
+def test_main_jsonschema_reuse_scope_tree_shared_module_name(
+    expected_name: str, extra_args: list[str], output_dir: Path
+) -> None:
+    """Name the module that tree-scope reuse moves shared models to, as a module or a dotted package path."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
+        output_path=output_dir,
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
         pytest.param("reuse_scope_tree_cross_module_users", [], id="inherit"),
         pytest.param("reuse_scope_tree_cross_module_users_collapsed", ["--collapse-reuse-models"], id="collapse"),
     ],
@@ -15815,8 +15884,8 @@ def test_main_rust_unsupported_pattern(
 def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file: str, output_file: Path) -> None:
     """Patterns pydantic never compiles as string patterns keep pydantic-core's default regex engine.
 
-    The ``uri`` pattern is dropped for ``AnyUrl`` and pydantic ignores ``bytes`` patterns, so the
-    model keeps Rust semantics: Unicode classes compile and ``$`` does not match before a final newline.
+    The ``uri`` pattern is dropped for ``AnyUrl``, so the model keeps Rust semantics: Unicode classes
+    compile and ``$`` does not match before a final newline.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_non_string.json",
@@ -15836,6 +15905,30 @@ def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file
         expected_error_type="string_pattern_mismatch",
         expected_attribute_path=("code",),
         expected_attribute_value="abc",
+    )
+
+
+@pytest.mark.parametrize(
+    ("args", "expected_file"),
+    [
+        ([], "rust_unsupported_pattern_bytes_pydantic_v2.py"),
+        (["--use-annotated"], "rust_unsupported_pattern_bytes_pydantic_v2_annotated.py"),
+        (["--field-constraints"], "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py"),
+    ],
+)
+def test_main_rust_unsupported_pattern_bytes(args: list[str], expected_file: str, output_file: Path) -> None:
+    """Emitted ``bytes`` patterns select Python's regex engine like string patterns, as Pydantic 2.14 compiles them.
+
+    Without ``--use-annotated`` or ``--field-constraints`` the pattern is dropped, so the default engine stays.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_bytes.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
+        force_exec_validation=True,
     )
 
 
@@ -16249,7 +16342,11 @@ def test_main_root_model_config_frozen(output_file: Path) -> None:
 
 The `--naming-strategy parent-prefixed` flag prefixes model names with their
 parent model name when duplicates occur. For example, if both `Order` and
-`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.""",
+`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
+
+Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
+names, with the resource or router group as the parent of a method and the method as the parent of an argument;
+under `primary-first`, a primary name is one the root document declares.""",
     input_schema="jsonschema/naming_strategy/input.json",
     cli_args=["--naming-strategy", "parent-prefixed"],
     golden_output="main/jsonschema/naming_strategy/parent_prefixed/output.py",

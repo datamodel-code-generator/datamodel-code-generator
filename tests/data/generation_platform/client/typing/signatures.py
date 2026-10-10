@@ -14,7 +14,7 @@ from pets_models import FieldPetsGetHeaderXTraceParameter
 class ListArguments(TypedDict):
     """Keywords of list_pets that a caller declares for itself."""
 
-    x_trace: FieldPetsGetHeaderXTraceParameter
+    X_Trace: FieldPetsGetHeaderXTraceParameter
     options: NotRequired[RequestOptions | None]
 
 

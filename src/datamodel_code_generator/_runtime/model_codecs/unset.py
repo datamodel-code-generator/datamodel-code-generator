@@ -2,22 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import Final, Literal
+from typing_extensions import Sentinel
 
-
-class Unset(Enum):
-    """Mark an omitted HTTP value, distinct from JSON null and native model sentinels."""
-
-    UNSET = "UNSET"
-
-    def __repr__(self) -> str:
-        """Render the marker by its public name."""
-        return "UNSET"
-
-    def __bool__(self) -> Literal[False]:
-        """Treat omission as falsy, like an absent value."""
-        return False
-
-
-UNSET: Final = Unset.UNSET
+UNSET = Sentinel("UNSET")
+"""Mark an omitted HTTP value, distinct from JSON null and native model sentinels; annotate it as `X | UNSET`."""

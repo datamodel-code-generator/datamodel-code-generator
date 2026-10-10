@@ -86,11 +86,12 @@ run on. Pass `--target-pydantic-version 2` when the generated code must also run
 
 When the target is unset:
 
-- **Feature forms** use the newest supported forms, the same as the newest choice (`2.12`).
+- **Feature forms** use the newest supported forms, the same as `2.12`.
 - **Config key naming** is unchanged: `--allow-population-by-field-name` emits `populate_by_name=True`, as with `2`.
-  Only an explicit `2.11` or `2.12` emits `validate_by_name=True`.
+  Only an explicit `2.11`, `2.12` or `2.14` emits `validate_by_name=True`.
+- **`--use-missing-sentinel`** keeps the experimental `pydantic.experimental.missing_sentinel` import, as with `2.12`.
 
-| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12` |
+| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
 | `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
@@ -101,11 +102,15 @@ When the target is unset:
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
 | `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
 
-| Config key naming | Unset, `2` | `2.11`, `2.12` |
+| Config key naming | Unset, `2` | `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | `--allow-population-by-field-name` | `populate_by_name=True` | `validate_by_name=True` |
 
 `2.12` also enables options that need Pydantic 2.12, such as `--use-missing-sentinel`.
+
+| `--use-missing-sentinel` import | Unset, `2.12` | `2.14` |
+| --- | --- | --- |
+| `MISSING` (2.14 deprecates the experimental path) | `from pydantic.experimental.missing_sentinel import MISSING` | `from pydantic import MISSING` |
 
 With `2` and `--use-annotated`, a `BaseModel` or `RootModel` field whose type names a model defined later in the same
 module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11 cannot evaluate such an

@@ -10,99 +10,99 @@
   verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
   verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return']
   Standard Webhooks specification example, also in Svix's 'Verifying Webhooks Manually' documentation = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  GitHub 'Validating webhook deliveries', the test values for verifying an implementation = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  RFC 4231 section 4 test case 1 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  RFC 4231 section 4 test case 1 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  RFC 4231 section 4 test case 2 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  RFC 4231 section 4 test case 2 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  RFC 4231 section 4 test case 6 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  RFC 4231 section 4 test case 6 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
+  GitHub 'Validating webhook deliveries', the test values for verifying an implementation = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  RFC 4231 section 4 test case 1 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  RFC 4231 section 4 test case 1 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  RFC 4231 section 4 test case 2 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  RFC 4231 section 4 test case 2 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  RFC 4231 section 4 test case 6 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  RFC 4231 section 4 test case 6 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
   printf 'msg_replay3000.32503680000.{"test": 1}' | openssl dgst -sha256 -mac HMAC -macopt hexkey:31f290f6bf06298aab4f08d43c3f082cf648a362da2da4b0 -binary | openssl base64 -A = Message Message(test=1) delivery_id='msg_replay3000' timestamp=3000-01-01T00:00:00+00:00 matched_key_id='active'
   printf 'msg_latest.253402300799.{"test": 9}' | openssl dgst -sha256 -mac HMAC -macopt hexkey:31f290f6bf06298aab4f08d43c3f082cf648a362da2da4b0 -binary | openssl base64 -A = Message Message(test=9) delivery_id='msg_latest' timestamp=9999-12-31T23:59:59+00:00 matched_key_id='active'
   printf '{"id": "d-1"}' | openssl dgst -sha256 -hmac callback-secret = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   printf '{"radius": 1.5}' | openssl dgst -sha256 -hmac shape-secret = Shape Shape(root=Circle(radius=1.5)) delivery_id=None timestamp=None matched_key_id='active'
   printf '{"side": 2}' | openssl dgst -sha256 -hmac shape-secret = Shape Shape(root=Square(side=2.0)) delivery_id=None timestamp=None matched_key_id='active'
   printf '1614265330.{"test": 2432232314}' | openssl dgst -sha256 -hmac whsec_adapter_secret = Message Message(test=2432232314) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  Stripe changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  Stripe incomplete field = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  Stripe repeated timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  Stripe no timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  Stripe no signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  Stripe nondecimal timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  Stripe other version = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  Stripe changed body = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  Stripe incomplete field = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  Stripe repeated timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  Stripe no timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  Stripe no signature = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  Stripe nondecimal timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  Stripe other version = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
   Stripe rotated signatures = Message Message(test=2432232314) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  Stripe expired = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  Stripe expired = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   Stripe repeated independently = Message Message(test=2432232314) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026'
-  one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  trailing newline = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  new timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  new delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  GitHub changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  RFC 4231 test case 1 HMAC-SHA256 with the last signature byte changed from f7 to f6 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  RFC 4231 test case 1 HMAC-SHA512 with the last signature byte changed from 54 to 55 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  one changed body byte = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  trailing newline = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  new timestamp = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  new delivery id = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  GitHub changed body = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  RFC 4231 test case 1 HMAC-SHA256 with the last signature byte changed from f7 to f6 = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  RFC 4231 test case 1 HMAC-SHA512 with the last signature byte changed from 54 to 55 = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
   300 seconds past = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  past bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  past bound exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   30 seconds future = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  future bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  future bound exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   zero past tolerance = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  zero past tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  zero future tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  zero past tolerance exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
+  zero future tolerance exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   fractional tolerance = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  fractional tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  fractional tolerance exceeded = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   offset clock = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  timestamp after datetime.max = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  earliest clock = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
+  timestamp after datetime.max = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
+  earliest clock = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
   bad signature first = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   signature header twice = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   rotated to the new key = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   both keys match = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='first'
-  only the retired key = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  uppercase hex = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error
-  other version prefix = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  unpadded base64 = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  short signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  empty element = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  prefix only = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  no signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  hexadecimal timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  signed timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  spaced timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  twenty digit timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  no timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  delivery id with obs-text = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  no delivery id = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  repeated timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  odd hex = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  malformed before window = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  window before signature = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error
-  nine signatures = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=8, observed=9) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='signatures', unit='items', limit=8, observed=9] protocol_size_error
-  nine malformed signatures = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=8, observed=9) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='signatures', unit='items', limit=8, observed=9] protocol_size_error
-  nine keys = ProtocolSizeError: ProtocolSizeError(kind='keys', limit=8, observed=9) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='keys', unit='items', limit=8, observed=9] protocol_size_error
+  only the retired key = ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature
+  empty key set = ProtocolDataError: ProtocolDataError(reason='missing_key') [] missing_key
+  uppercase hex = ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
+  other version prefix = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  unpadded base64 = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  short signature = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  empty element = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  prefix only = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  no signature = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  hexadecimal timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  signed timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  spaced timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  twenty digit timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  no timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  delivery id with obs-text = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  no delivery id = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  repeated timestamp = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  odd hex = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  malformed before window = ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature
+  window before signature = ProtocolDataError: ProtocolDataError(reason='timestamp_window') [] timestamp_window
+  nine signatures = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
+  nine malformed signatures = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
+  nine keys = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
   nine keys allowed = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0'
   body limit = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  body over limit = ProtocolSizeError: ProtocolSizeError(kind='body', limit=19, observed=20) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='body', unit='bytes', limit=19, observed=20] protocol_size_error
+  body over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
   header limit = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  headers over limit = ProtocolSizeError: ProtocolSizeError(kind='headers', limit=128, observed=129) [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, kind='headers', unit='bytes', limit=128, observed=129] protocol_size_error
+  headers over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
   one signature allowed = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  text body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  bytearray body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header lists = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header bytes = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  header triple = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  key tuple = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='keys') [field_path=('keys',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  naive now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='now') [field_path=('now',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  text now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='now') [field_path=('now',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  text body and naive now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  options mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  foreign key = ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='keys.0') [field_path=('keys', '0'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] wrong_capability
-  repeated key id = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='keys.1.id') [field_path=('keys', '1', 'id'), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  text body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
+  bytearray body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
+  header mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  header lists = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  header bytes = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  header triple = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  key tuple = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='keys') [field_path=('keys',)] invalid_value
+  naive now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='now') [field_path=('now',)] invalid_value
+  text now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='now') [field_path=('now',)] invalid_value
+  text body and naive now = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
+  options mapping = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
+  foreign key = ConfigurationError: ConfigurationError(reason='wrong_capability', field_path='keys.0') [field_path=('keys', '0')] wrong_capability
+  repeated key id = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='keys.1.id') [field_path=('keys', '1', 'id')] invalid_value
   key integer id ! TypeError: id must be a string []
-  key empty id ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  key id with NUL ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  key id with CR ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
-  key id with LF ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',), delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] invalid_value
+  key empty id ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',)] invalid_value
+  key id with NUL ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',)] invalid_value
+  key id with CR ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',)] invalid_value
+  key id with LF ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='id') [field_path=('id',)] invalid_value
   key bytearray secret ! TypeError: secret must be bytes []
   key text secret ! TypeError: secret must be bytes []
   key empty secret = HmacKey(id='key')
@@ -113,8 +113,8 @@
   key pickling ! TypeError: HmacKey cannot be pickled []
   key copies are the key=True
   key public names=['HmacKey']
-  marker event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
-  marker JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] protocol_data_error context=None
-  marker signature ! WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error context=None
-  marker key ! WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] webhook_verification_error context=None
+  marker event ! ProtocolDataError: ProtocolDataError(reason='value') [] value context=None
+  marker JSON ! ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed context=None
+  marker signature ! ProtocolDataError: ProtocolDataError(reason='malformed_signature') [] malformed_signature context=None
+  marker key ! ProtocolDataError: ProtocolDataError(reason='invalid_signature') [] invalid_signature context=None
   markers shown=[]

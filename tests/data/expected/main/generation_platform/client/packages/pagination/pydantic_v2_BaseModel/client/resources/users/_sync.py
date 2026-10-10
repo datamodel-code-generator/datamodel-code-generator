@@ -9,11 +9,11 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
-from models import UserQuery as _dcg_type_0
+import models
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.users import ListUsersResponse, SearchUsersResponse
 
@@ -43,16 +43,18 @@ class UsersResource:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListUsersResponse:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         ).data
@@ -60,13 +62,15 @@ class UsersResource:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        cursor: str | UNSET = UNSET,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchUsersResponse:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (cursor,),
@@ -87,16 +91,18 @@ class UsersWithResponse:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListUsersResponse]:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return self._core.execute(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         )
@@ -104,13 +110,15 @@ class UsersWithResponse:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        cursor: str | UNSET = UNSET,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchUsersResponse]:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
             (cursor,),
@@ -131,16 +139,18 @@ class UsersWithRawResponse:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         )
@@ -148,13 +158,15 @@ class UsersWithRawResponse:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        cursor: str | UNSET = UNSET,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
             (cursor,),
@@ -175,16 +187,18 @@ class UsersWithStreamingResponse:
     def list_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        limit: int | Unset = UNSET,
-        x_snapshot: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
+        limit: int | UNSET = UNSET,
+        X_Snapshot: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /users."""
+        """
+        Call GET /users.
+        """
         return self._core.stream(
             _operations.OPERATION_0,
-            (cursor, limit, x_snapshot),
+            (cursor, limit, X_Snapshot),
             options=options,
             response_media_type=response_media_type,
         )
@@ -192,13 +206,15 @@ class UsersWithStreamingResponse:
     def search_users(
         self,
         *,
-        cursor: str | Unset = UNSET,
-        body: _dcg_type_0,
+        cursor: str | UNSET = UNSET,
+        body: models.UserQuery,
         media_type: Literal['application/json'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call POST /users/search."""
+        """
+        Call POST /users/search.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
             (cursor,),

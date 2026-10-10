@@ -8,9 +8,9 @@ This page lists features that are available but still experimental.
 |----|------|--------|-------|----------|
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
-| `cli-option.generate-client` | cli-option | `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)` | 0.84.0 | - |
+| `cli-option.generate-client` | cli-option | `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
-| `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys)` | 0.84.0 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
@@ -23,8 +23,6 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
-| `python-api.client` | python-api | `datamodel_code_generator.client and datamodel_code_generator.api_types` | 0.84.0 | - |
-| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.84.0 | - |
 
 ## Details
 
@@ -51,12 +49,12 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 ### `cli-option.generate-client`
 
 - **Kind:** cli-option
-- **Target:** `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys)`
+- **Target:** `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)`
 - **Since:** 0.84.0
 
 HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
 
---generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --output-format json, and the uv add notice on stderr work as with --generate-server. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --diff-against, --watch, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.generate-schema-validators`
 
@@ -71,12 +69,12 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 ### `cli-option.generate-server`
 
 - **Kind:** cli-option
-- **Target:** `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys)`
+- **Target:** `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)`
 - **Since:** 0.84.0
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
---generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --output-format json uses the model generation and check payloads, and generation prints a uv add command to stderr. It needs Python 3.11 or later, both to run and as --target-python-version.
+--generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --diff-against compares the files two inputs render, --watch regenerates after input changes, --output-format json uses the model generation, check, and input-diff payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 
@@ -104,7 +102,7 @@ The only currently implemented backend is 'pydantic-v2', which preserves the exi
 - **Target:** `--use-missing-sentinel`
 - **Since:** 0.66.1
 
-Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel.
+Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.
 
 The option requires Pydantic v2 BaseModel output and a target Pydantic version that supports the MISSING sentinel.
 
@@ -197,23 +195,3 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
-
-### `python-api.client`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.client and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The HTTPX2 client target is experimental; its entry points, settings, templates, and generated package may change.
-
-generate_client and render_client generate the models and an HTTPX2 client package from one OpenAPI document with the api scope, configured by ClientGenerationConfig. They need Python 3.11 or later, both to run and as model_config.target_python_version.
-
-### `python-api.fastapi-server`
-
-- **Kind:** python-api
-- **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
-- **Since:** 0.84.0
-
-The FastAPI server target is experimental; its entry points, settings, templates, generated package, and served OpenAPI document may change.
-
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves FastAPI's own OpenAPI document with the source document's metadata. They need Python 3.11 or later, both to run and as model_config.target_python_version.

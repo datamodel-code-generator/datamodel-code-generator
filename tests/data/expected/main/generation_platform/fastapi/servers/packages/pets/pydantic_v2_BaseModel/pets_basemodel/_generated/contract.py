@@ -6,35 +6,22 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Final, Literal, TypeAlias, TypedDict
+from typing import Final, TypedDict
 
 import pets_basemodel_models
-from pydantic import TypeAdapter
+from fastapi import params
 
-from .._runtime.model_codecs.parameters import ParameterPlan
-from .._runtime.model_codecs.unset import Unset
-from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import Declared, OperationResponses
 
-OperationKey: TypeAlias = Literal[
-    '/paths/~1pets/get',
-    '/paths/~1pets/post',
-    '/paths/~1pets~1mine/get',
-    '/paths/~1pets~1{petId}/get',
-    '/paths/~1pets~1{petId}/delete',
-    '/paths/~1store~1inventory/get',
-]
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        '/paths/~1pets/get': Sequence[Dependency],
-        '/paths/~1pets/post': Sequence[Dependency],
-        '/paths/~1pets~1mine/get': Sequence[Dependency],
-        '/paths/~1pets~1{petId}/get': Sequence[Dependency],
-        '/paths/~1pets~1{petId}/delete': Sequence[Dependency],
-        '/paths/~1store~1inventory/get': Sequence[Dependency],
+        'list_pets': Sequence[params.Depends],
+        'create_pet': Sequence[params.Depends],
+        'list_my_pets': Sequence[params.Depends],
+        'get_pet': Sequence[params.Depends],
+        'delete_pet': Sequence[params.Depends],
+        'get_inventory': Sequence[params.Depends],
     },
     total=False,
 )
@@ -43,132 +30,47 @@ OperationDependencies = TypedDict(
 class ListPets:
     """Plans of the list_pets operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_pets',
-        key='/paths/~1pets/get',
-        service='pets',
-        keywords=('limit', 'tags', 'kind', 'x_request_id', 'since', 'session'),
-    )
-    @dataclass(frozen=True, slots=True, kw_only=True)
-    class Parameters:
-        """The adapter parameters of list_pets."""
-
-        session: str | Unset
-
-    PARAMETERS: Final = ParameterAdapter(
-        arguments=(
-            ParameterArgument(
-                name='session',
-                plan=ParameterPlan(
-                    location='cookie',
-                    name='session',
-                    style='form',
-                    explode=True,
-                ),
-                adapter=TypeAdapter(str),
-            ),
-        ),
-        record=Parameters,
-    )
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(pets_basemodel_models.FieldPetsGetResponse),
-            ),
-            'default': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(pets_basemodel_models.Error),
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.FieldPetsGetResponse), 'default': Declared(media_type='application/json', model=pets_basemodel_models.Error)},
     )
 
 
 class CreatePet:
     """Plans of the create_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='create_pet',
-        key='/paths/~1pets/post',
-        service='pets',
-        keywords=('body',),
-    )
     RESPONSES: Final = OperationResponses(
-        responses={
-            '201': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(pets_basemodel_models.Pet),
-            ),
-        },
+        responses={'201': Declared(media_type='application/json', model=pets_basemodel_models.Pet)},
     )
 
 
 class ListMyPets:
     """Plans of the list_my_pets operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='list_my_pets',
-        key='/paths/~1pets~1mine/get',
-        service='pets',
-    )
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(pets_basemodel_models.FieldPetsMineGetResponse),
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.FieldPetsMineGetResponse)},
     )
 
 
 class GetPet:
     """Plans of the get_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get_pet',
-        key='/paths/~1pets~1{petId}/get',
-        service='pets',
-        keywords=('pet_id',),
-    )
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(pets_basemodel_models.Pet),
-            ),
-            '404': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(pets_basemodel_models.Error),
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.Pet), '404': Declared(media_type='application/json', model=pets_basemodel_models.Error)},
     )
 
 
 class DeletePet:
     """Plans of the delete_pet operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='delete_pet',
-        key='/paths/~1pets~1{petId}/delete',
-        service='pets',
-        keywords=('pet_id',),
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
     )
-    RESPONSES: Final = OperationResponses(responses={'204': Declared()}, primary=204)
 
 
 class GetInventory:
     """Plans of the get_inventory operation."""
 
-    OPERATION: Final = OperationPlan(
-        name='get_inventory',
-        key='/paths/~1store~1inventory/get',
-        service='store',
-    )
     RESPONSES: Final = OperationResponses(
-        responses={
-            '200': Declared(
-                media_type='application/json',
-                adapter=TypeAdapter(pets_basemodel_models.FieldStoreInventoryGetResponse),
-            ),
-        },
+        responses={'200': Declared(media_type='application/json', model=pets_basemodel_models.FieldStoreInventoryGetResponse)},
     )

@@ -1,0 +1,13 @@
+# naming-full-path pydantic_v2.BaseModel
+  > GET https://api.example.com/items/1?itemId=2&page%5Bsize%5D=10&2fa=t&class=c&options=o&body=b&self=s&itemId_1=5
+    [host: api.example.com, accept-encoding: gzip, deflate, itemid: 3, x-request-id: rid, cookie: sessionId=sid] b''
+  get an item = None
+  > POST https://api.example.com/items?name=q
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 26, x-timeout-key: key] b'{"name":"n","itemCount":2}'
+  create an item from fields = None
+  > DELETE https://api.example.com/items/4/tags
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  delete an item's tags = None
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  check the health = None

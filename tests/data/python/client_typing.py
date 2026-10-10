@@ -6,11 +6,9 @@ import json
 import shutil
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
-from datamodel_code_generator._api_generation import generate_target
-from datamodel_code_generator._client.target import ClientTarget
+from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
-from tests.data.python.client_generation import SOURCE, client_config, copy_references
+from tests.data.python.client_generation import SOURCE, client_options, copy_references
 from tests.data.python.strict_typing import checked, marked_lines, negative
 
 if TYPE_CHECKING:
@@ -27,24 +25,25 @@ def client_typing_report(
     *,
     package_targets: tuple[str, ...] = ("pets",),
 ) -> str:
-    """Check a case's package with the positive samples, then their negative samples line by line."""
+    """Check a case's package with the positive samples, then their negative samples line by line.
+
+    A case whose models name an output directory writes them as the `pets_models` package.
+    """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     copy_references(case, root)
-    generate_target(
+    model = dict(case.get("model", {}))
+    modular = model.pop("output", None) is not None
+    generate(
         shutil.copy2(SOURCE / case["input"], root / "api.yaml"),
-        model_config=GenerateConfig(
-            output=root / "pets_models.py",
+        config=GenerateConfig(
+            output=root / ("pets_models" if modular else "pets_models.py"),
             input_file_type="openapi",
             target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=backend,
-            formatters=[Formatter.BUILTIN],
-            **case.get("model", {}),
+            **{"formatters": [Formatter.BUILTIN], **model},
+            **client_options(case.get("config", {}), root, "pets"),
         ),
-        config=client_config(
-            {"output": "pets", "package": "pets", "model_package": "pets_models", **case.get("config", {})}, root
-        ),
-        generator=ClientTarget(),
     )
     for sample in samples:
         for name in (f"{sample}.py", f"{sample}_negative.py"):
@@ -60,18 +59,17 @@ def client_typing_report(
 
 def _generate_pets(source: Path, root: Path) -> None:
     """Generate the Pydantic v2 `pets` package of one API version under a root, replacing the earlier version."""
-    generate_target(
+    generate(
         shutil.copy2(source, root / "api.yaml"),
-        model_config=GenerateConfig(
+        config=GenerateConfig(
             output=root / "pets_models.py",
             input_file_type="openapi",
             target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=DataModelType.PydanticV2BaseModel,
             formatters=[Formatter.BUILTIN],
+            **client_options({}, root, "pets"),
         ),
-        config=client_config({"output": "pets", "package": "pets", "model_package": "pets_models"}, root),
-        generator=ClientTarget(),
     )
 
 

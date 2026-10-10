@@ -1,25 +1,44 @@
 # parameters
 serve pydantic_v2.BaseModel
-service UntaggedService: get_file, get_item, get_menu, get_note, get_ratios, get_sizes, repeat, search
+service UntaggedService: get_codes, get_file, get_item, get_menu, get_note, get_ratios, get_sizes, repeat, search
 service UntaggedService without its methods: TypeError
 > GET /search
 < 422 application/json [{"type": "missing", "loc": ["cookie", "session"]}]
 > GET /search
 < 422 application/json [{"type": "string_too_short", "loc": ["cookie", "session"]}]
 > GET /search
-  search(session='abc', code='AB', filter=UNSET, ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=None, ids=None, X_Ids=[3], blob=None, note=None)
 < 204 - b''
+> GET /search
+  search(session='a%20b%2Bc', code='AB', filter=None, ids=None, X_Ids=[3], blob=None, note=None)
+< 204 - b''
+> GET /search
+  search(session='50%off', code='AB', filter=None, ids=None, X_Ids=[3], blob=None, note=None)
+< 204 - b''
+> GET /search
+  search(session='a b', code='AB', filter=None, ids=None, X_Ids=[3], blob=None, note=None)
+< 204 - b''
+> GET /search
+  search(session='two', code='AB', filter=None, ids=None, X_Ids=[3], blob=None, note=None)
+< 204 - b''
+> GET /search
+< 422 application/json [{"type": "string_too_short", "loc": ["cookie", "session"]}]
 > GET /search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi
 < 422 application/json [{"type": "missing", "loc": ["query", "filter", "id"]}]
 > GET /search?code=ab&ids=1,x&blob=%7B%22b%22%3A1%7D
 < 422 application/json [{"type": "int_parsing", "loc": ["query", "ids", 1]}, {"type": "extra_forbidden", "loc": ["query", "blob", "b"]}]
 > GET /search?blob=%7B
 < 422 application/json [{"type": "json_invalid", "loc": ["query", "blob"]}]
+> GET /search?blob=%7B%22a%22%3A1%2C%22a%22%3A2%7D
+  search(session='abc', code='AB', filter=None, ids=None, X_Ids=[3], blob=Blob(a=2), note=None)
+< 204 - b''
+> GET /search?ids=1,%zz
+< 400 application/json {"detail":"Invalid request"}
 > GET /search?code=A&code=B
-  search(session='abc', code='B', filter=UNSET, ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='B', filter=None, ids=None, X_Ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /search?filter%5Bname%5D=n&filter%5Bid%5D=1
-  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=None, X_Ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /ratios?ratios=1&ratios=2.5
   get_ratios(ratios=[1.0, 2.5], limits=[1, 2])
@@ -36,13 +55,21 @@ service UntaggedService without its methods: TypeError
 > GET /ratios?ratios=1&limits=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limits", 0]}]
 > GET /sizes
-  get_sizes(size=10, words=['a', 'b'], one='x', least=7)
+  get_sizes(size=10, words=['a', 'b'], one='x', least=7, cap=None)
 < 204 - b''
 > GET /sizes?size=3&words=x&words=y
-  get_sizes(size=3, words=['x', 'y'], one='x', least=7)
+  get_sizes(size=3, words=['x', 'y'], one='x', least=7, cap=None)
+< 204 - b''
+> GET /sizes?cap=4
+  get_sizes(size=10, words=['a', 'b'], one='x', least=7, cap=4)
 < 204 - b''
 > GET /sizes?size=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "size"]}]
+> GET /codes
+< 422 application/json [{"type": "missing", "loc": ["header", "X-Codes"]}]
+> GET /codes
+  get_codes(X_Codes=[1, 2])
+< 204 - b''
 > GET /repeat/1/again/1
   repeat(id=1)
 < 204 - b''
@@ -76,10 +103,10 @@ service UntaggedService without its methods: TypeError
 > GET /men%C3%BC/Tea
 < 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "item"]}]
 > GET /items/1?mode=1
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=<FieldItemsLevelGetQueryModeParameter.integer_1: 1>, ratio=UNSET, x_flag=UNSET, kind=UNSET, tier=UNSET, levels=UNSET)
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=<FieldItemsLevelGetQueryModeParameter.integer_1: 1>, ratio=None, X_Flag=None, kind=None, tier=None, levels=None)
 < 204 - b''
 > GET /items/2?mode=2&ratio=1.5&kind=b
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_2: 2>, mode=<FieldItemsLevelGetQueryModeParameter.integer_2: 2>, ratio=<FieldItemsLevelGetQueryRatioParameter.number_1_5: 1.5>, x_flag=True, kind=<FieldItemsLevelGetQueryKindParameter.b: 'b'>, tier=UNSET, levels=UNSET)
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_2: 2>, mode=<FieldItemsLevelGetQueryModeParameter.integer_2: 2>, ratio=<FieldItemsLevelGetQueryRatioParameter.number_1_5: 1.5>, X_Flag=True, kind=<FieldItemsLevelGetQueryKindParameter.b: 'b'>, tier=None, levels=None)
 < 204 - b''
 > GET /items/3
 < 422 application/json [{"type": "enum", "loc": ["path", "level"]}]
@@ -92,24 +119,24 @@ service UntaggedService without its methods: TypeError
 > GET /items/1?kind=c
 < 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
 > GET /items/1?tier=2
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=UNSET, ratio=UNSET, x_flag=UNSET, kind=UNSET, tier=<FieldItemsLevelGetQueryTierParameter1.integer_2: 2>, levels=UNSET)
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=None, ratio=None, X_Flag=None, kind=None, tier=<FieldItemsLevelGetQueryTierParameter1.integer_2: 2>, levels=None)
 < 204 - b''
 > GET /items/1?levels=1&levels=2
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=UNSET, ratio=UNSET, x_flag=UNSET, kind=UNSET, tier=UNSET, levels=[<FieldItemsLevelGetQueryLevelsParameterEnum.integer_1: 1>, <FieldItemsLevelGetQueryLevelsParameterEnum.integer_2: 2>])
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=None, ratio=None, X_Flag=None, kind=None, tier=None, levels=[<FieldItemsLevelGetQueryLevelsParameterEnum.integer_1: 1>, <FieldItemsLevelGetQueryLevelsParameterEnum.integer_2: 2>])
 < 204 - b''
 > GET /search?filter[name]=n&filter[unknown]=extra
 < 422 application/json [{"type": "missing", "loc": ["query", "filter", "id"]}, {"type": "extra_forbidden", "loc": ["query", "filter", "unknown"]}]
 > GET /search?filter[name]=n&filter[id]=05
-  search(session='abc', code='AB', filter=Filter(id=5, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=Filter(id=5, name='n'), ids=None, X_Ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /search?filter[name]=n&filter[id]=%2B1
-  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=None, X_Ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /search?filter[name]=n&filter[id]=1.0
-  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=UNSET, x_ids=[3], blob=UNSET, note=UNSET)
+  search(session='abc', code='AB', filter=Filter(id=1, name='n'), ids=None, X_Ids=[3], blob=None, note=None)
 < 204 - b''
 > GET /items/1?ratio=2.2
-  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=UNSET, ratio=<FieldItemsLevelGetQueryRatioParameter.number_2_2: 2.2>, x_flag=UNSET, kind=UNSET, tier=UNSET, levels=UNSET)
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=None, ratio=<FieldItemsLevelGetQueryRatioParameter.number_2_2: 2.2>, X_Flag=None, kind=None, tier=None, levels=None)
 < 204 - b''
 > GET /items/1?ratio=%EF%BC%92.%EF%BC%92
 < 422 application/json [{"type": "enum", "loc": ["query", "ratio"]}]

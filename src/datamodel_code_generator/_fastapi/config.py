@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import OperationRef
-from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._target_config import (
     TargetConfig,
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
 )
+from datamodel_code_generator._target_naming import explicit_name
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
@@ -24,7 +24,6 @@ HandlerMode: TypeAlias = Literal["sync", "async"]
 BodyMode: TypeAlias = Literal["typed", "request"]
 
 _PARAMETER_LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
-_LAYOUTS: Final = frozenset({"routers", "single"})
 _HANDLER_MODES: Final = frozenset({"sync", "async"})
 _BODY_MODES: Final = frozenset({"typed", "request"})
 _MIN_STATUS: Final = 100
@@ -60,24 +59,16 @@ class FastAPIConfig(TargetConfig):
         """Freeze the given mappings, then reject values the server settings do not allow."""
         for name in ("handler_modes", "body_modes", "primary_responses", "operation_names", "router_names"):
             object.__setattr__(self, name, _frozen(getattr(self, name)))
-        names: object = self.parameter_names
-        if _is_mapping(names):
-            object.__setattr__(
-                self, "parameter_names", MappingProxyType({key: _frozen(value) for key, value in names.items()})
-            )
+        object.__setattr__(
+            self,
+            "parameter_names",
+            MappingProxyType({key: _frozen(value) for key, value in self.parameter_names.items()}),
+        )
         TargetConfig.__post_init__(self)
 
     def _problems(self) -> Iterator[Diagnostic]:
         yield from TargetConfig._problems(self)  # noqa: SLF001
-        if self.layout not in _LAYOUTS:
-            yield _diagnostic("E_CONFIG_VALUE", "layout", "layout must be 'routers' or 'single'")
-        if self.handler_mode not in _HANDLER_MODES:
-            yield _diagnostic("E_CONFIG_VALUE", "handler_mode", "handler_mode must be 'sync' or 'async'")
         yield from _selector_problems(self.handler_modes, "handler_modes", lambda value: value in _HANDLER_MODES)
-        if not _is_bool(self.include_request):
-            yield _diagnostic("E_CONFIG_VALUE", "include_request", "include_request must be a boolean")
-        if self.body_mode not in _BODY_MODES:
-            yield _diagnostic("E_CONFIG_VALUE", "body_mode", "body_mode must be 'typed' or 'request'")
         yield from _selector_problems(self.body_modes, "body_modes", lambda value: value in _BODY_MODES)
         yield from _selector_problems(self.primary_responses, "primary_responses", _response_choice)
         yield from _selector_problems(self.operation_names, "operation_names", _identifier)
@@ -90,16 +81,12 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
     return isinstance(value, Mapping)
 
 
-def _is_bool(value: object) -> TypeIs[bool]:
-    return isinstance(value, bool)
-
-
 def _frozen(value: object) -> object:
     return MappingProxyType(dict(value)) if _is_mapping(value) else value
 
 
 def _identifier(value: object) -> bool:
-    return isinstance(value, str) and explicit(value)
+    return explicit_name(value)
 
 
 def _router_names_valid(value: object) -> bool:
@@ -129,10 +116,9 @@ def _parameter_names(value: object) -> bool:
     )
 
 
-def _selector_problems(value: object, name: str, valid: Callable[[object], bool]) -> Iterator[Diagnostic]:
-    if not _is_mapping(value):
-        yield _diagnostic("E_CONFIG_VALUE", name, f"{name} must map operation selectors to values")
-        return
+def _selector_problems(
+    value: Mapping[OperationSelector, object], name: str, valid: Callable[[object], bool]
+) -> Iterator[Diagnostic]:
     for key, item in value.items():
         if not isinstance(key, (str, OperationRef)) or not valid(item):
             yield _diagnostic("E_CONFIG_VALUE", name, f"{name} has an invalid entry")

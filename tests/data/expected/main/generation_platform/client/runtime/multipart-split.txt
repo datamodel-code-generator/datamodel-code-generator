@@ -1,8 +1,8 @@
-# multipart-split dataclasses.dataclass
+# multipart-split dataclasses.dataclass, msgspec.Struct
   split note part = NoteRequest(text='n', secret='s')
   split spare part = NoteRequest(text='s', secret='s')
   > POST https://api.example.com/uploads
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 465] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\nContent-Type: application/json\r\n\r\n{"text":"n","secret":"s"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="spare"\r\nContent-Type: application/json\r\n\r\n{"text":"s","secret":"s"}\r\n--<boundary>--\r\n'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 453] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\nContent-Type: application/json\r\n\r\n{"text":"n","secret":"s"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="spare"\r\nContent-Type: application/json\r\n\r\n{"text":"s","secret":"s"}\r\n--<boundary>--\r\n'
   split parts sent = None
   > GET https://api.example.com/uploads
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
@@ -11,17 +11,8 @@
   split note part = {'text': 'n', 'secret': 's'}
   split spare part = {'text': 's', 'secret': 's'}
   > POST https://api.example.com/uploads
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 465] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\nContent-Type: application/json\r\n\r\n{"text":"n","secret":"s"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="spare"\r\nContent-Type: application/json\r\n\r\n{"text":"s","secret":"s"}\r\n--<boundary>--\r\n'
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 453] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\nContent-Type: application/json\r\n\r\n{"text":"n","secret":"s"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="spare"\r\nContent-Type: application/json\r\n\r\n{"text":"s","secret":"s"}\r\n--<boundary>--\r\n'
   split parts sent = None
   > GET https://api.example.com/uploads
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   split parts read = [('photo', b'\x89PNG'), ('note', {'text': 't', 'id': 1}), ('spare', {'text': 's', 'id': 2})]
-# multipart-split msgspec.Struct
-  split note part = NoteRequest(text='n', secret='s')
-  split spare part = NoteRequest(text='s', secret='s')
-  > POST https://api.example.com/uploads
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 465] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\nContent-Type: application/json\r\n\r\n{"text":"n","secret":"s"}\r\n--<boundary>\r\nContent-Disposition: form-data; name="spare"\r\nContent-Type: application/json\r\n\r\n{"text":"s","secret":"s"}\r\n--<boundary>--\r\n'
-  split parts sent = None
-  > GET https://api.example.com/uploads
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  split parts read = [('photo', b'\x89PNG'), ('note', NoteResponse(text='t', id=1)), ('spare', NoteResponse(text='s', id=2))]

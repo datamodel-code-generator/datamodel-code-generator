@@ -6,11 +6,15 @@ from pathlib import Path
 
 import pytest
 
-from tests.conftest import assert_generated_modules_output, assert_output
+from tests.conftest import (
+    assert_exact_directory_content,
+    assert_generated_modules_output,
+    assert_output,
+    write_generated_modules,
+)
 from tests.data.python.fastapi_acceptance import fastapi_checkout_report, fastapi_scope_report
 from tests.data.python.fastapi_generation import (
     fastapi_api_report,
-    fastapi_config_report,
     fastapi_render,
 )
 
@@ -37,14 +41,17 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "single",
         "encoding",
         "route-errors",
+        "relative-override",
         "name-errors",
         "group-errors",
         "repeat-32",
         "media-errors",
+        "parameter-errors",
         "selector-errors",
         "primary-errors",
         "backend-errors",
         "codec-errors",
+        "cookie-names",
         "unbound-body",
         "argument-errors",
         "security",
@@ -57,16 +64,19 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "scheme-names",
         "services",
         "empty",
+        "docstrings",
         "templates",
         "template-invalid",
     ],
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:
     """Plan each operation's parameters, body, and responses, and render the package they need."""
-    report, rendered = fastapi_render(case, tmp_path)
+    report, rendered, documented = fastapi_render(case, tmp_path / "render")
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
+    write_generated_modules(tmp_path / "documents", documented)
+    assert_exact_directory_content(tmp_path / "documents", EXPECTED / "packages" / case, "*.md")
 
 
 @pytest.mark.parametrize(
@@ -78,6 +88,9 @@ def test_fastapi_render(case: str, tmp_path: Path) -> None:
         ("empty", True),
         ("single", True),
         ("security", True),
+        ("callbacks", True),
+        ("scheme-names", True),
+        ("docstrings", True),
         ("self-references", False),
         ("template-missing", False),
     ],
@@ -88,24 +101,17 @@ def test_fastapi_template_fallback(case: str, *, builtin_sources: bool, tmp_path
     The copies live in the fastapi directory of a custom template directory; a custom template directory without one
     falls back to the builtin roles. Each case reports under the name of the case it equals.
     """
-    report, rendered = fastapi_render(case, tmp_path, builtin_sources=builtin_sources)
+    report, rendered, documented = fastapi_render(case, tmp_path / "render", builtin_sources=builtin_sources)
     expected = report.splitlines()[0].removeprefix("# ")
     assert_output(report, EXPECTED / f"{expected}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
-
-
-@pytest.mark.parametrize(
-    "case",
-    ["defaults", "values", "invalid-values", "invalid-shapes", "invalid-mappings"],
-)
-def test_fastapi_config(case: str, tmp_path: Path) -> None:
-    """Construct the server settings, freezing their mappings and reporting every invalid value."""
-    assert_output(fastapi_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+    write_generated_modules(tmp_path / "documents", documented)
+    assert_exact_directory_content(tmp_path / "documents", EXPECTED / "packages" / expected, "*.md")
 
 
 def test_fastapi_api(tmp_path: Path) -> None:
-    """Resolve the public annotations, render and generate twice, then warn about each package's edited file."""
+    """Return the files without an output, generate twice, then restore an edited package file."""
     assert_output(fastapi_api_report(tmp_path), EXPECTED / "api.txt")
 
 

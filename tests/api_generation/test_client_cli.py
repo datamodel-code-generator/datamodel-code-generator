@@ -5,14 +5,21 @@ from __future__ import annotations
 import ast
 import json
 import shutil
+import warnings
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from datamodel_code_generator import generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content
-from tests.data.python.client_generation import client_cli_arguments, client_cli_modules, prepare_client_case
+from tests.data.python.client_generation import (
+    client_cli_arguments,
+    client_cli_modules,
+    client_generate_options,
+    prepare_client_case,
+)
 from tests.main.conftest import run_main_and_assert, run_main_with_args, run_main_with_system_exit
 
 DATA = Path(__file__).parents[1] / "data"
@@ -29,7 +36,6 @@ CLIENT = ["--generate-client", "httpx2", "--client-output", "client", *PACKAGES]
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *CLIENT]
 DOC_INPUT = "generation_platform/client/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/client/cli/options"
-CONFLICT = "Error: --generate-client cannot be used with"
 SYNC = "client/resources/pets/_sync.py"
 
 assert_file_content = create_assert_file_content(EXPECTED)
@@ -103,21 +109,61 @@ def test_client_cli_generate(
     )
 
 
-@pytest.mark.parametrize("form", ["pyproject", "options"])
+@pytest.mark.parametrize("job", [[], ["--job", "client"]], ids=["options", "job"])
+def test_client_cli_nested_models(
+    job: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep the models inside the client package, from options or a job: one tree to write and to check."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, *(["pyproject-nested-jobs.toml"] if job else []))
+    arguments = job or [
+        *("--input", "options.yaml", "--input-file-type", "openapi", "--output", "client/models.py"),
+        *OPTIONS,
+        *CLIENT,
+        *("--client-model-package", "client.models"),
+    ]
+    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES)
+    assert_file_content(tmp_path / "client" / "models.py", "cli/options/models.py")
+    run_main_with_args([*arguments, "--check"], capsys=capsys, assert_no_stderr=True)
+    (tmp_path / "client" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
+    (tmp_path / "client" / "models.py").unlink()
+    run_main_with_args(
+        [*arguments, "--check"],
+        expected_exit=Exit.DIFF,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "check-nested.txt",
+        assert_no_stderr=True,
+    )
+
+
+@pytest.mark.parametrize("form", ["pyproject", "options", "python", "loaded"])
 @pytest.mark.parametrize("case", ["pets-unpack", "retries", "compression", "auth", "media", "fields"])
 def test_client_cli_equivalence(
     case: str, form: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the package the Python settings of a case render, from its pyproject.toml keys or the same options.
+    """Write the package the Python settings of a case render, from its pyproject.toml keys, options, or generate().
 
-    Tables of pyproject.toml are inline JSON on the command line.
+    Tables of pyproject.toml are inline JSON on the command line and mappings in generate(), which also loads the
+    keys from another directory.
     """
     monkeypatch.chdir(tmp_path)
     prepare_client_case(case, tmp_path)
     pyproject = CLI / f"pyproject-{case}.toml"
-    if form == "pyproject":
-        shutil.copy2(pyproject, tmp_path / "pyproject.toml")
-    run_main_with_args([] if form == "pyproject" else client_cli_arguments(pyproject), capsys=capsys)
+    match form:
+        case "pyproject":
+            shutil.copy2(pyproject, tmp_path / "pyproject.toml")
+            run_main_with_args([], capsys=capsys)
+        case "options":
+            run_main_with_args(client_cli_arguments(pyproject), capsys=capsys)
+        case "python":
+            source, options = client_generate_options(pyproject, tmp_path)
+            generate(source, **options)
+        case _:
+            shutil.copy2(pyproject, tmp_path / "pyproject.toml")
+            source, _ = client_generate_options(pyproject, tmp_path)
+            (elsewhere := tmp_path / "elsewhere").mkdir()
+            monkeypatch.chdir(elsewhere)
+            generate(tmp_path / source, config=load_pyproject_config(tmp_path))
     expected, modules = client_cli_modules(case, tmp_path)
     assert_generated_modules_output(modules, EXPECTED / "packages" / expected / "pydantic_v2_BaseModel")
 
@@ -526,7 +572,7 @@ def test_client_cli_generation_json(
 @pytest.mark.parametrize(
     ("arguments", "stderr"),
     [
-        (["--watch"], f"{CONFLICT} --watch\n"),
+        (["--watch", "--check"], "Error: --watch and --check cannot be used together\n"),
         (
             ["--update-lock", "--lockfile", "client/api.lock"],
             "Remote lock for 'command' ({lock}) overlaps client output for 'command': {client}\n",
@@ -541,7 +587,7 @@ def test_client_cli_conflicts(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse options the client cannot honor, and a remote lock inside the client output, as for the server."""
+    """Refuse the model mode conflicts, and a remote lock inside the client output, as for the server."""
     monkeypatch.chdir(tmp_path)
     root = tmp_path.resolve()
     run_main_and_assert(
@@ -575,6 +621,31 @@ def test_client_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], monk
     )
 
 
+def test_client_cli_shadowed_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Report a client module beside a package of its name, on the run that writes it and on an unchanged one.
+
+    --check, which writes nothing, reports none.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    (package := tmp_path / SYNC.removesuffix(".py")).mkdir(parents=True)
+    (package / "__init__.py").touch()
+    lines = []
+    for run, options, expected_exit in (
+        ("first", [], Exit.OK),
+        ("unchanged", [], Exit.OK),
+        ("check", ["--check"], Exit.DIFF),
+    ):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", UserWarning)
+            run_main_with_args(["--input", "options.yaml", *DOC_OPTIONS, *options], expected_exit=expected_exit)
+        lines.append(f"# {run} run")
+        lines.extend(
+            f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-module.txt")
+
+
 def test_client_cli_shared_models_jobs(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -595,7 +666,11 @@ def test_client_cli_shared_models_jobs(
 @pytest.mark.parametrize(
     ("pyproject", "arguments", "stderr"),
     [
-        ("pyproject-jobs.toml", ["--all-jobs", "--watch"], f"{CONFLICT} --watch\n"),
+        (
+            "pyproject-jobs.toml",
+            ["--all-jobs", "--watch", "--check"],
+            "Error: --watch and --check cannot be used together\n",
+        ),
         (
             "pyproject-model-jobs.toml",
             ["--all-jobs", "--client-body-arguments", "both"],

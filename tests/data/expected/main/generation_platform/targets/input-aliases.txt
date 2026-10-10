@@ -1,70 +1,58 @@
 # input-aliases
-render
-  target=fastapi schema_version=1
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/untagged.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['write']
-{
-  "files": {
-    "README.md": "sha256:5b0190dcc6f47c4a5551ea277e262acf508c2ee0dedf21018528ff6eb601bde0",
-    "__init__.py": "sha256:ad3ab8d54e888944539ff89e667c84aaacaf21fcf854ac56900e7cb4e496b36f",
-    "_generated/__init__.py": "sha256:b862532d1a75f58e094c71836cf6bc843e3cae82e84cbe5689300496f51fbc20",
-    "_generated/contract.py": "sha256:1aa389265fedb50bb791902bcce421e41457dff282af72ed85dc31086a175cdd",
-    "application.py": "sha256:ef5b3883a2aee12f240e3c7d2a248af6ff17471e3fe92ff08f0649c58233645f",
-    "errors.py": "sha256:3148fd3548fc580bc8d276c6f769656c55ecf215bfe52e6c437e4b70c9117cb1",
-    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "routers/__init__.py": "sha256:21a06f88c6ae67e83cb21b7f4c68f4de3778cc237661e105203d986f9c8e6f9e",
-    "routers/untagged.py": "sha256:f42960292fbff995cb0b8948a7c3de90dec15abc5ed5868198f6565581093538",
-    "services.py": "sha256:fc331f02ac0ed1cfadf27ffd6d89c344174b457e7733055f40cdf1183ae86751"
-  },
-  "format": 1,
-  "generator": {
-    "name": "datamodel-code-generator",
-    "version": "<masked>"
-  },
-  "model": {
-    "output": "../models.py",
-    "sha256": "<sha256>"
-  },
-  "target": {
-    "kind": "fastapi",
-    "package": "example.server"
-  }
-}
+check
+  MISSING: server/__init__.py (should be generated)
+  MISSING: server/_generated/__init__.py (should be generated)
+  MISSING: server/_generated/contract.py (should be generated)
+  MISSING: server/_generated/openapi.py (should be generated)
+  MISSING: server/application.py (should be generated)
+  MISSING: server/routers/__init__.py (should be generated)
+  MISSING: server/routers/untagged.py (should be generated)
+  MISSING: server/services.py (should be generated)
+  MISSING: server/README.md (file does not exist but should be generated)
+  MISSING: server/py.typed (file does not exist but should be generated)
+  5 runtime modules ['MISSING']
+  DocumentationAnnotationWarning: server: /x-shared/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-shared/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/2: The served document leaves out 2, which has no JSON form
 generate
-  returned None
 tree
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  5 runtime modules ['present']
+  DocumentationAnnotationWarning: server: /x-shared/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-shared/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/first/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/second/values/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/0/2: The served document leaves out 2, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/1: The served document leaves out 1, which has no JSON form
+  DocumentationAnnotationWarning: server: /x-repeated/list/1/2: The served document leaves out 2, which has no JSON form
 tree
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  5 runtime modules ['present']

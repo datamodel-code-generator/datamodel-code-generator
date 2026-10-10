@@ -3,19 +3,19 @@ serve pydantic_v2.BaseModel
 service UntaggedService: get_values
 service UntaggedService without its methods: TypeError
 > GET /values?amount=12345678901234567890.123&step=0.25&ratio=0.5&level=2&mixed=5
-  get_values(amount=Decimal('12345678901234567890.123'), amounts=UNSET, x_amounts=UNSET, step=Decimal('0.25'), steps=UNSET, ratio=<FieldValuesGetQueryRatioParameter.number_0_5: 0.5>, level=<FieldValuesGetQueryLevelParameter.integer_2: 2>, mixed='5', mixeds=UNSET, codes=UNSET, counts=UNSET, filter=UNSET)
+  get_values(amount=Decimal('12345678901234567890.123'), amounts=None, X_Amounts=None, step=Decimal('0.25'), steps=None, ratio=<FieldValuesGetQueryRatioParameter.number_0_5: 0.5>, level=<FieldValuesGetQueryLevelParameter.integer_2: 2>, mixed='5', mixeds=None, codes=None, counts=None, filter=None)
 < 204 - b''
 > GET /values?amount=1.50&step=12345678901234567890.12&level=1&mixed=abc
-  get_values(amount=Decimal('1.50'), amounts=UNSET, x_amounts=UNSET, step=Decimal('12345678901234567890.12'), steps=UNSET, ratio=UNSET, level=<FieldValuesGetQueryLevelParameter.integer_1: 1>, mixed='abc', mixeds=UNSET, codes=UNSET, counts=UNSET, filter=UNSET)
+  get_values(amount=Decimal('1.50'), amounts=None, X_Amounts=None, step=Decimal('12345678901234567890.12'), steps=None, ratio=None, level=<FieldValuesGetQueryLevelParameter.integer_1: 1>, mixed='abc', mixeds=None, codes=None, counts=None, filter=None)
 < 204 - b''
 > GET /values?amounts=12345678901234567890.123,1.50&steps=12345678901234567890.12,0.25&mixeds=5,abc&codes=AB,C&counts=1,2
-  get_values(amount=UNSET, amounts=[Decimal('12345678901234567890.123'), Decimal('1.50')], x_amounts=[Decimal('12345678901234567890.123'), Decimal('1.50')], step=UNSET, steps=[Decimal('12345678901234567890.12'), Decimal('0.25')], ratio=UNSET, level=UNSET, mixed=UNSET, mixeds=['5', 'abc'], codes=['AB', 'C'], counts=[1, 2], filter=UNSET)
+  get_values(amount=None, amounts=[Decimal('12345678901234567890.123'), Decimal('1.50')], X_Amounts=[Decimal('12345678901234567890.123'), Decimal('1.50')], step=None, steps=[Decimal('12345678901234567890.12'), Decimal('0.25')], ratio=None, level=None, mixed=None, mixeds=['5', 'abc'], codes=['AB', 'C'], counts=[1, 2], filter=None)
 < 204 - b''
 > GET /values?filter%5Bprice%5D=12345678901234567890.123&filter%5Bcount%5D=3
-  get_values(amount=UNSET, amounts=UNSET, x_amounts=UNSET, step=UNSET, steps=UNSET, ratio=UNSET, level=UNSET, mixed=UNSET, mixeds=UNSET, codes=UNSET, counts=UNSET, filter=Filter(price=Decimal('12345678901234567890.123'), count=3))
+  get_values(amount=None, amounts=None, X_Amounts=None, step=None, steps=None, ratio=None, level=None, mixed=None, mixeds=None, codes=None, counts=None, filter=Filter(price=Decimal('12345678901234567890.123'), count=3))
 < 204 - b''
 > GET /values?ratio=2.2
-  get_values(amount=UNSET, amounts=UNSET, x_amounts=UNSET, step=UNSET, steps=UNSET, ratio=<FieldValuesGetQueryRatioParameter.number_2_2: 2.2>, level=UNSET, mixed=UNSET, mixeds=UNSET, codes=UNSET, counts=UNSET, filter=UNSET)
+  get_values(amount=None, amounts=None, X_Amounts=None, step=None, steps=None, ratio=<FieldValuesGetQueryRatioParameter.number_2_2: 2.2>, level=None, mixed=None, mixeds=None, codes=None, counts=None, filter=None)
 < 204 - b''
 > GET /values?amount=abc
 < 422 application/json [{"type": "decimal_parsing", "loc": ["query", "amount"]}]

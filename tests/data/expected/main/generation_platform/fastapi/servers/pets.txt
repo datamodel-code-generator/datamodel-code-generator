@@ -4,23 +4,19 @@ service PetsService: create_pet, delete_pet, get_pet, list_my_pets, list_pets
 service PetsService without its methods: TypeError
 service StoreService: get_inventory
 service StoreService without its methods: TypeError
-build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
-build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
-build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
+build missing: AttributeError: 'object' object has no attribute 'get_inventory'
 > GET /pets
-  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, X_Request_Id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a%20b')
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?kind=bird
 < 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
 > GET /pets?limit=99
-  list_pets(limit=99, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=99, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
 < 500 application/json {"code":1,"message":"Too many"}
 > POST /pets
   create_pet(body=NewPet(name='Tom', tag=None))
@@ -31,38 +27,38 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
   list_my_pets()
 < 200 application/json [{"id":1,"name":"Mimi","tag":null}]
 > GET /pets/1
-  get_pet(pet_id=1)
+  get_pet(petId=1)
 < 200 application/json {"id":1,"name":"Mimi","tag":"cat"}
 > GET /pets/7
-  get_pet(pet_id=7)
+  get_pet(petId=7)
 < 404 application/json {"code":404,"message":"Not found"}
 > GET /pets/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "petId"]}]
 > DELETE /pets/2
-  delete_pet(pet_id=2)
+  delete_pet(petId=2)
 < 204 - b''
 > DELETE /pets/7
-  delete_pet(pet_id=7)
+  delete_pet(petId=7)
 < 404 application/json {"code":404,"message":"Gone"}
 > GET /store/inventory
   get_inventory()
 < 200 application/json {"available":2}
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=UNSET)
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, X_Request_Id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=101
 < 422 application/json [{"type": "less_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?limit=two
 < 422 application/json [{"type": "int_parsing", "loc": ["query", "limit"]}]
 > GET /pets?limit=1&limit=2
-  list_pets(limit=2, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=2, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?since=2024-01-01T00:00:00
 < 422 application/json [{"type": "timezone_aware", "loc": ["query", "since"]}]
 > GET /pets
 < 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
 > GET /pets?tags=a+b&tags=c%20d
-  list_pets(limit=20, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=['a b', 'c d'], kind=None, X_Request_Id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > POST /pets
 < 422 application/json [{"type": "missing", "loc": ["body", "tag"]}]
@@ -83,23 +79,19 @@ service PetsService: create_pet, delete_pet, get_pet, list_my_pets, list_pets
 service PetsService without its methods: TypeError
 service StoreService: get_inventory
 service StoreService without its methods: TypeError
-build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
-build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
-build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
-build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
+build missing: AttributeError: 'object' object has no attribute 'get_inventory'
 > GET /pets
-  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, X_Request_Id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a%20b')
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?kind=bird
 < 422 application/json [{"type": "enum", "loc": ["query", "kind"]}]
 > GET /pets?limit=99
-  list_pets(limit=99, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=99, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
 < 500 application/json {"code":1,"message":"Too many"}
 > POST /pets
   create_pet(body=NewPet(name='Tom', tag=None))
@@ -110,38 +102,38 @@ build signature: HandlerConfigurationError: The pets.get_pet method does not acc
   list_my_pets()
 < 200 application/json [{"id":1,"name":"Mimi","tag":null}]
 > GET /pets/1
-  get_pet(pet_id=1)
+  get_pet(petId=1)
 < 200 application/json {"id":1,"name":"Mimi","tag":"cat"}
 > GET /pets/7
-  get_pet(pet_id=7)
+  get_pet(petId=7)
 < 404 application/json {"code":404,"message":"Not found"}
 > GET /pets/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "petId"]}]
 > DELETE /pets/2
-  delete_pet(pet_id=2)
+  delete_pet(petId=2)
 < 204 - b''
 > DELETE /pets/7
-  delete_pet(pet_id=7)
+  delete_pet(petId=7)
 < 404 application/json {"code":404,"message":"Gone"}
 > GET /store/inventory
   get_inventory()
 < 200 application/json {"available":2}
 > GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
-  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=UNSET)
+  list_pets(limit=1, tags=['a', 'b'], kind=<FieldPetsGetQueryKindParameter.cat: 'cat'>, X_Request_Id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
 > GET /pets?limit=101
 < 422 application/json [{"type": "less_than_equal", "loc": ["query", "limit"]}]
 > GET /pets?limit=two
 < 422 application/json [{"type": "int_parsing", "loc": ["query", "limit"]}]
 > GET /pets?limit=1&limit=2
-  list_pets(limit=2, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=2, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > GET /pets?since=2024-01-01T00:00:00
 < 422 application/json [{"type": "timezone_aware", "loc": ["query", "since"]}]
 > GET /pets
 < 422 application/json [{"type": "uuid_parsing", "loc": ["header", "X-Request-Id"]}]
 > GET /pets?tags=a+b&tags=c%20d
-  list_pets(limit=20, tags=['a b', 'c d'], kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+  list_pets(limit=20, tags=['a b', 'c d'], kind=None, X_Request_Id=None, since=None, session=None)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
 > POST /pets
 < 422 application/json [{"type": "missing", "loc": ["body", "tag"]}]

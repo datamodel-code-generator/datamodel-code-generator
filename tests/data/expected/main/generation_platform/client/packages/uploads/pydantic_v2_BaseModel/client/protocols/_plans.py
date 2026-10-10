@@ -26,31 +26,10 @@ PLAN_0: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=4,
     partial_commit=True,
-    fingerprint='0a32bf7a99d76237adb5039234749d9505eb4cd12b627bc793d84e49f6dc2ffb',
     size=ParameterTarget(location='header', name='Upload-Length'),
     expires_at=HeaderSelector(name='Upload-Expires'),
-    probe_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='header', name='Tus-Resumable'),
-            literal='1.0.0',
-        ),
-    ),
-    append_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='header', name='Tus-Resumable'),
-            literal='1.0.0',
-        ),
-    ),
+    probe_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='Tus-Resumable'), literal='1.0.0')),
+    append_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='Tus-Resumable'), literal='1.0.0')),
     length=ParameterTarget(location='header', name='X-Chunk-Length'),
     checksum=ParameterTarget(location='header', name='Upload-Checksum'),
     checksum_algorithm='sha1',
@@ -71,36 +50,13 @@ PLAN_1: Final[UploadPlan[CompleteFileResponse, CreateFileResponse]] = UploadPlan
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=8,
     partial_commit=False,
-    fingerprint='c87700e1a50afd44a538a5a171e7894d4357e1196ec1ec4146a4f8c5ccd9e3fb',
     size=ParameterTarget(location='header', name='Upload-Length'),
     expires_at=BodySelector(pointer='/expires'),
-    probe_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
-    append_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='header', name='Tus-Resumable'),
-            literal='1.0.0',
-        ),
-    ),
+    probe_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')),),
+    append_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='Tus-Resumable'), literal='1.0.0')),
     completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1complete/post'),
     completion=_operations.OPERATION_5,
-    completion_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
+    completion_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')),),
 )
 
 
@@ -116,25 +72,8 @@ PLAN_2: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='query', name='offset'),
     max_chunk_bytes=4,
     partial_commit=False,
-    fingerprint='7ff1a3d8c11c5429b2566ba4cc78604a346c51857b2f7c6ceb4b84e8cc681dcf',
-    probe_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='header', name='Tus-Resumable'),
-            literal='1.0.0',
-        ),
-    ),
-    append_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
+    probe_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='Tus-Resumable'), literal='1.0.0')),
+    append_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')),),
     checksum=ParameterTarget(location='query', name='checksum'),
     checksum_algorithm='sha256',
     checksum_encoding='hex',

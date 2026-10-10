@@ -1,4 +1,3 @@
 # name-errors
 render pydantic_v2.BaseModel
-  Error: Several operation names become 'X1'
-  F_NAME_CONFLICT target: Several operation names become 'X1'
+  Error: Several operation names become 'x1'

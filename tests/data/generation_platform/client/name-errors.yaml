@@ -11,6 +11,13 @@ paths:
       responses:
         '204':
           description: Reserved.
+  /device:
+    get:
+      operationId: device
+      tags: [NUL]
+      responses:
+        '204':
+          description: A Windows device name.
   /blank:
     get:
       operationId: '---'

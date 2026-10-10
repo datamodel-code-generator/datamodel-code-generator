@@ -45,7 +45,9 @@ class ArchiveResource:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListArchiveResponse:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (cursor,),
@@ -68,7 +70,9 @@ class ArchiveWithResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListArchiveResponse]:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return self._core.execute(
             _operations.OPERATION_6,
             (cursor,),
@@ -91,7 +95,9 @@ class ArchiveWithRawResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_6,
             (cursor,),
@@ -114,7 +120,9 @@ class ArchiveWithStreamingResponse:
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /archive/{cursor}."""
+        """
+        Call GET /archive/{cursor}.
+        """
         return self._core.stream(
             _operations.OPERATION_6,
             (cursor,),

@@ -7,9 +7,11 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from models import Pet as _dcg_type_0
+import models
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.model_codecs.media import JSONValue
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.pagination import (
     Page,
     Pager,
@@ -18,8 +20,7 @@ from .._runtime.protocols.pagination import (
     iterate_pages,
     resume_pages,
 )
-from .._runtime.protocols.resume import ResumeState
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from ..types.pets import FindAllResponse
 from . import PaginationOptions, _plans
 
@@ -27,9 +28,9 @@ from . import PaginationOptions, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def pets(self) -> PetsProtocols:
@@ -60,12 +61,11 @@ class PetsAllPagination:
     def page(
         self,
         *,
-        limit: int | Unset = UNSET,
-        cursor: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_0, FindAllResponse]:
+    ) -> Page[models.Pet, FindAllResponse]:
         """Fetch the first page of GET /pets."""
         return first_page(
             self._core,
@@ -73,18 +73,16 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def iterate(
         self,
         *,
-        limit: int | Unset = UNSET,
-        cursor: str | Unset = UNSET,
+        limit: int | UNSET = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> Pager[_dcg_type_0, FindAllResponse]:
+    ) -> Pager[models.Pet, FindAllResponse]:
         """Return a pager over the items of GET /pets; it sends nothing until it is iterated."""
         return iterate_pages(
             self._core,
@@ -92,17 +90,15 @@ class PetsAllPagination:
             (limit, cursor),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def next_page(
         self,
-        page: Page[_dcg_type_0, FindAllResponse],
+        page: Page[models.Pet, FindAllResponse],
         *,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> Page[_dcg_type_0, FindAllResponse] | None:
+    ) -> Page[models.Pet, FindAllResponse] | None:
         """Fetch the page after a page of this helper, or return None after the last page."""
         return following_page(
             self._core,
@@ -110,23 +106,23 @@ class PetsAllPagination:
             page,
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
-        state: ResumeState,
+        state: JSONValue,
         *,
+        limit: int | UNSET = UNSET,
+        cursor: str | UNSET = UNSET,
         pagination_options: PaginationOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> Pager[_dcg_type_0, FindAllResponse]:
+    ) -> Pager[models.Pet, FindAllResponse]:
         """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
         return resume_pages(
             self._core,
             _plans.PLAN_0,
             state,
+            (limit, cursor),
             pagination_options=pagination_options,
             options=options,
-            session_options=session_options,
         )

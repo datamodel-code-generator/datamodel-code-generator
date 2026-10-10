@@ -12,7 +12,6 @@ import models
 from fastapi.responses import Response
 from typing_extensions import TypeVar
 
-from ._runtime.model_codecs.unset import Unset
 from ._runtime.server.responses import HTTPResult
 
 PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
@@ -26,28 +25,33 @@ class Service(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-        limit: int | Unset,
-        page: int | Unset,
-        x_trace: str | Unset,
-    ) -> models.PetsResponse | HTTPResult[models.PetsResponse] | Response: ...
+        limit: int | None,
+        page: int | None,
+        X_Trace: str | None,
+    ) -> models.PetsResponse | HTTPResult[models.PetsResponse] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
         self,
         *,
         principal: PrincipalT_contra,
-        x_trace: str | Unset,
+        X_Trace: str | None,
         body: models.Pet,
-    ) -> models.Pet | HTTPResult[models.Pet] | Response: ...
+    ) -> models.Pet | HTTPResult[models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     def list_owners(
         self,
         *,
         principal: PrincipalT_contra,
-        limit: int | Unset,
-    ) -> (
-        models.FieldOwnersGetResponse
-        | HTTPResult[models.FieldOwnersGetResponse]
-        | Response
-    ): ...
+        limit: int | None,
+    ) -> models.FieldOwnersGetResponse | HTTPResult[models.FieldOwnersGetResponse] | Response:
+        """
+        Handle GET /owners.
+        """

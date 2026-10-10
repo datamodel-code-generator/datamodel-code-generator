@@ -1,3 +1,3 @@
 # api-pointer-utf8
 render pydantic_v2.BaseModel default
-  diagnostic SchemaParseError: Error at schema path '#/components/schemas/%FF': API_REF_NONCANONICAL_POINTER: '#/components/schemas/%FF'
+  diagnostic Error: Error at schema path '#/components/schemas/%FF': API_REF_NONCANONICAL_POINTER: '#/components/schemas/%FF'
