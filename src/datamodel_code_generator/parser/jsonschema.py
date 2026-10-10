@@ -826,7 +826,7 @@ def _validate_external_ref(ref: str) -> None:
     """Reject references with more than one fragment delimiter."""
     if ref.count("#") <= 1:
         return
-    msg = f"Invalid external $ref: {ref}"
+    msg = f"Invalid external $ref: {redact_url(ref)}"
     raise Error(msg)
 
 
@@ -11681,22 +11681,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         assert self.http_local_ref_path is not None
         parsed = urlparse(ref)
         if parsed.scheme not in {"http", "https"}:  # pragma: no cover
-            msg = f"Unsupported local HTTP $ref URL: {ref}"
+            msg = f"Unsupported local HTTP $ref URL: {redact_url(ref)}"
             raise Error(msg)
 
         parts = [unquote(part) for part in parsed.path.split("/") if part]
-        if not parsed.netloc or any(part in {".", ".."} or "/" in part or "\\" in part for part in parts):
-            msg = f"Unsupported local HTTP $ref URL path: {ref}"
+        host = parsed.netloc.rpartition("@")[2]
+        if not host or any(part in {".", ".."} or "/" in part or "\\" in part for part in parts):
+            msg = f"Unsupported local HTTP $ref URL path: {redact_url(ref)}"
             raise Error(msg)
 
         base_path = self.http_local_ref_path.resolve()
-        relative_path = Path(parsed.netloc, *parts)
+        relative_path = Path(host, *parts)
         file_paths = [(base_path / relative_path).resolve()]
         if not parts or not Path(parts[-1]).suffix:
             file_paths.append((base_path / relative_path.with_name(f"{relative_path.name}.json")).resolve())
 
         if any(not file_path.is_relative_to(base_path) for file_path in file_paths):
-            msg = f"Unsupported local HTTP $ref URL path: {ref}"
+            msg = f"Unsupported local HTTP $ref URL path: {redact_url(ref)}"
             raise Error(msg)
 
         for file_path in file_paths:
@@ -11712,7 +11713,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     ),
                 )
 
-        msg = f"$ref local file not found for {ref}: tried {', '.join(str(path) for path in file_paths)}"
+        msg = f"$ref local file not found for {redact_url(ref)}: tried {', '.join(str(path) for path in file_paths)}"
         raise Error(msg)
 
     def _get_ref_body_from_url(self, ref: str) -> dict[str, YamlValue]:

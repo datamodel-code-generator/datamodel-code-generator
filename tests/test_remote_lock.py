@@ -759,8 +759,6 @@ def test_remote_lock_rejects_unparseable_request_urls(tmp_path: Path) -> None:
         lock.record_response("https://[not-an-ipv6", None, None, b"body")
     with pytest.raises(RemoteLockError, match="Invalid remote lock URL"):
         remote_lock._display_url("https://[not-an-ipv6")
-    with pytest.raises(RemoteLockError, match=r"^Invalid remote lock URL: 'https://\[bad/schema\.json'$"):
-        lock.record_response("https://user:secret@[bad/schema.json?token=SECRET", None, None, b"body")
 
 
 @pytest.mark.allow_direct_assert

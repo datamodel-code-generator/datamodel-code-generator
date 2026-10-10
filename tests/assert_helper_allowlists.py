@@ -291,7 +291,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "normal-path-mock:tests/main/test_error_messages.py::test_dangling_ref_warning_is_not_emitted_before_parsing_finishes",
         "normal-path-mock:tests/main/test_error_messages.py::test_external_ref_cache_type_error_is_not_misclassified",
         "normal-path-mock:tests/main/test_error_messages.py::test_external_ref_transport_type_error_is_not_misclassified",
-        "normal-path-mock:tests/main/test_error_messages.py::test_malformed_remote_ref_body_has_format_and_url_context",
         "normal-path-mock:tests/main/test_error_messages.py::test_parser_base_exception_is_not_translated",
         "normal-path-mock:tests/main/test_error_messages.py::test_parser_internal_missing_file_keeps_traceback",
         "normal-path-mock:tests/main/test_gc_tuning.py::test_generate_restores_gc_threshold_after_exception",
