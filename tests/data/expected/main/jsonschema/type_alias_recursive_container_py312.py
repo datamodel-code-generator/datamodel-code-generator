@@ -78,7 +78,7 @@ type Expr = int | list[Term]
 type Term = str | list[Factor] | list[Expr]
 
 
-type Factor = bool | list[Term]
+type Factor = bool | list[Term] | Chain
 
 
 type Chain = str | list[Link]

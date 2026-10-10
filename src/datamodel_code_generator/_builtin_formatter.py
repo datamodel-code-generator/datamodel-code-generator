@@ -795,6 +795,10 @@ def _is_union(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Union")
 
 
+def _is_optional(node: ast.AST) -> TypeGuard[ast.Subscript]:
+    return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Optional")
+
+
 _CONSTRAINED_CALL_NAMES = frozenset({"conbytes", "condecimal", "confloat", "conint", "conlist", "conset", "constr"})
 
 
@@ -1458,7 +1462,9 @@ def _format_subscript_value(
             and len(f"{continuation_indent}{element_source}{',' if trailing_comma else ''}") > line_length
         ):
             element_lines = _split_python_lines(
-                _format_subscript_value(element, continuation_indent, line_length, source, ",")
+                _format_subscript_value(
+                    element, continuation_indent, line_length, source, "," if trailing_comma else ""
+                )
             )
             formatted_lines.extend(_indent_first_line(element_lines, continuation_indent))
         else:
@@ -1477,6 +1483,8 @@ def _format_type_alias_type_argument(
         union_lines = _split_python_lines(_format_union_subscript(argument, continuation_indent, source, ",", 0))
         return _indent_first_line(union_lines, continuation_indent)
 
+    if _is_optional(argument):
+        return [_format_type_alias_argument_line(argument, continuation_indent, line_length, source)]
     argument_source = _source_segment(source, argument)
     if not _is_annotated(argument):
         return [f"{continuation_indent}{argument_source},"]
@@ -1502,7 +1510,12 @@ def _format_type_alias_type_call(call: ast.Call, indent: str, line_length: int, 
     can_inline_type_alias_arguments = (
         len(call.args) == TYPE_ALIAS_INLINE_ARGUMENT_COUNT
         and not call.keywords
-        and (_is_annotated(call.args[1]) or _is_union(call.args[1]) or _is_string_constant(call.args[1]))
+        and (
+            _is_annotated(call.args[1])
+            or _is_union(call.args[1])
+            or _is_optional(call.args[1])
+            or _is_string_constant(call.args[1])
+        )
         and "\n" not in inline_arguments
     )
     if can_inline_type_alias_arguments and len(f"{continuation_indent}{inline_arguments}") <= line_length:
@@ -1687,7 +1700,10 @@ def _format_generated_module_statement(  # noqa: PLR0911
             _is_union(argument)
             and (len(line) > line_length or argument.lineno != (argument.end_lineno or argument.lineno))
         )
-        or ((_is_annotated(argument) or _is_string_constant(argument)) and len(line) > line_length)
+        or (
+            (_is_annotated(argument) or _is_optional(argument) or _is_string_constant(argument))
+            and len(line) > line_length
+        )
         for argument in statement.value.args[1:]
     ):
         return _format_nested_annotated_type_alias_assignment(statement, statement.value, line, line_length, source)

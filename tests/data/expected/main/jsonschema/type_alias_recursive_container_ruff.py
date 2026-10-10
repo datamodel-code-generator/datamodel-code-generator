@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 from typing_extensions import TypeAliasType
 
 JsonValue = TypeAliasType(
     "JsonValue",
-    Optional[Union[str, float, bool, "list[JsonValue]", "dict[str, JsonValue]"]],
+    Union[str, float, bool, "list[JsonValue]", "dict[str, JsonValue]"] | None,
 )
 
 
@@ -22,18 +22,18 @@ class Leaf(BaseModel):
 Nested = TypeAliasType(
     "Nested",
     Annotated[
-        Union[int, "list[Nested]"], Field(..., description='Nested integer lists')
+        Union[int, "list[Nested]"], Field(..., description="Nested integer lists")
     ],
 )
 
 
 Quoted = TypeAliasType(
-    "Quoted", Union[str, 'list[Union[Literal["it\'s", \'\\\\d\'], Quoted]]']
+    "Quoted", Union[str, "list[Union[Literal[\"it's\", '\\\\d'], Quoted]]"]
 )
 
 
 Matrix = TypeAliasType(
-    "Matrix", Optional[Union[float, "list[Matrix]", "dict[str, list[Matrix]]"]]
+    "Matrix", Union[float, "list[Matrix]", "dict[str, list[Matrix]]"] | None
 )
 
 
@@ -59,12 +59,12 @@ class Document(BaseModel):
 
 Forest = TypeAliasType(
     "Forest",
-    Annotated[Union[str, "list[Tree]"], Field(..., description='Trees or a leaf name')],
+    Annotated[Union[str, "list[Tree]"], Field(..., description="Trees or a leaf name")],
 )
 
 
 Tree = TypeAliasType(
-    "Tree", Annotated[list[Forest], Field(..., description='Branches of a forest')]
+    "Tree", Annotated[list[Forest], Field(..., description="Branches of a forest")]
 )
 
 
@@ -95,10 +95,10 @@ Term = TypeAliasType("Term", Union[str, "list[Factor]", list[Expr]])
 Factor = TypeAliasType("Factor", Union[bool, list[Term], "Chain"])
 
 
-Chain = TypeAliasType("Chain", Union[str, list["Link"]])
+Chain = TypeAliasType("Chain", str | list["Link"])
 
 
-Link = TypeAliasType("Link", Union[int, list[Union[Chain, "Knot"]]])
+Link = TypeAliasType("Link", int | list[Union[Chain, "Knot"]])
 
 
 Knot = TypeAliasType("Knot", list[Chain])

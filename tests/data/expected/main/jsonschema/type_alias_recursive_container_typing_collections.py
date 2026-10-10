@@ -33,7 +33,7 @@ Quoted = TypeAliasType(
 
 
 Matrix = TypeAliasType(
-    "Matrix", Union[float, Optional["List[Matrix]"], "Dict[str, List[Matrix]]"]
+    "Matrix", Optional[Union[float, "List[Matrix]", "Dict[str, List[Matrix]]"]]
 )
 
 
@@ -92,7 +92,7 @@ Expr = TypeAliasType("Expr", Union[int, "List[Term]"])
 Term = TypeAliasType("Term", Union[str, "List[Factor]", List[Expr]])
 
 
-Factor = TypeAliasType("Factor", bool | List[Term])
+Factor = TypeAliasType("Factor", Union[bool, List[Term], "Chain"])
 
 
 Chain = TypeAliasType("Chain", Union[str, List["Link"]])

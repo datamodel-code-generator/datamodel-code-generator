@@ -11,7 +11,7 @@ from typing_extensions import TypeAliasType
 
 JsonValue = TypeAliasType(
     "JsonValue",
-    Optional[Union[str, float, bool, "list[JsonValue]", "dict[str, JsonValue]"]],
+    Optional[Union[str, float, bool, list["JsonValue"], dict[str, "JsonValue"]]],
 )
 
 
@@ -22,25 +22,25 @@ class Leaf(BaseModel):
 Nested = TypeAliasType(
     "Nested",
     Annotated[
-        Union[int, "list[Nested]"], Field(..., description='Nested integer lists')
+        Union[int, list["Nested"]], Field(..., description='Nested integer lists')
     ],
 )
 
 
 Quoted = TypeAliasType(
-    "Quoted", Union[str, 'list[Union[Literal["it\'s", \'\\\\d\'], Quoted]]']
+    "Quoted", Union[str, list[Union[Literal["it's", '\\d'], "Quoted"]]]
 )
 
 
 Matrix = TypeAliasType(
-    "Matrix", Optional[Union[float, "list[Matrix]", "dict[str, list[Matrix]]"]]
+    "Matrix", Union[float, list["Matrix"] | None, dict[str, list["Matrix"]]]
 )
 
 
-Pair = TypeAliasType("Pair", Union[str, "tuple[str, Pair]"])
+Pair = TypeAliasType("Pair", Union[str, tuple[str, "Pair"]])
 
 
-Branch = TypeAliasType("Branch", Union[Leaf, "list[Branch]"])
+Branch = TypeAliasType("Branch", Union[Leaf, list["Branch"]])
 
 
 class Document(BaseModel):
@@ -59,7 +59,7 @@ class Document(BaseModel):
 
 Forest = TypeAliasType(
     "Forest",
-    Annotated[Union[str, "list[Tree]"], Field(..., description='Trees or a leaf name')],
+    Annotated[Union[str, list["Tree"]], Field(..., description='Trees or a leaf name')],
 )
 
 
@@ -71,10 +71,10 @@ Tree = TypeAliasType(
 Grove = TypeAliasType("Grove", Union[int, "Hub", "Left"])
 
 
-Hub = TypeAliasType("Hub", Union["list[Left]", "list[Right]"])
+Hub = TypeAliasType("Hub", Union[list["Left"], list["Right"]])
 
 
-Left = TypeAliasType("Left", "list[Right]")
+Left = TypeAliasType("Left", list["Right"])
 
 
 Right = TypeAliasType("Right", list[Hub])
@@ -86,10 +86,10 @@ Node = TypeAliasType("Node", Union[int, "NodeList"])
 NodeList = TypeAliasType("NodeList", list[Node])
 
 
-Expr = TypeAliasType("Expr", Union[int, "list[Term]"])
+Expr = TypeAliasType("Expr", Union[int, list["Term"]])
 
 
-Term = TypeAliasType("Term", Union[str, "list[Factor]", list[Expr]])
+Term = TypeAliasType("Term", Union[str, list["Factor"], list[Expr]])
 
 
 Factor = TypeAliasType("Factor", Union[bool, list[Term], "Chain"])

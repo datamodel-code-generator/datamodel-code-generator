@@ -112,7 +112,8 @@
     "Factor": {
       "anyOf": [
         {"type": "boolean"},
-        {"type": "array", "items": {"$ref": "#/$defs/Term"}}
+        {"type": "array", "items": {"$ref": "#/$defs/Term"}},
+        {"$ref": "#/$defs/Chain"}
       ]
     },
     "Matrix": {

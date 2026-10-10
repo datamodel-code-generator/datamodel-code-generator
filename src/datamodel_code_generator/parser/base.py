@@ -71,7 +71,7 @@ from datamodel_code_generator._source import (
     _read_parser_source_data_from_path,
 )
 from datamodel_code_generator._template_data import copy_extra_template_data
-from datamodel_code_generator.enums import DefaultValueType, StrictTypes
+from datamodel_code_generator.enums import DefaultValueType, StrictTypes, _is_pydantic_version_at_least
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
     IMPORT_LITERAL,
@@ -172,6 +172,7 @@ _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
 _SOURCE_REFERENCE_PATH_KEY: Final = "_source_reference_path"
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
+_TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM: Final = "2.10"
 
 
 @dataclass(frozen=True, slots=True)
@@ -2315,6 +2316,49 @@ def _iter_outermost_containers(
         return
     for child in data_type.data_types:
         yield from _iter_outermost_containers(child, (*wrappers, data_type))
+
+
+def _only_groups_members(data_type: DataType) -> bool:
+    """Return whether the type only groups its members, so an enclosing union can hold them directly."""
+    return bool(data_type.data_types) and not (
+        data_type.type
+        or data_type.reference
+        or data_type.alias
+        or data_type.is_func
+        or data_type.kwargs
+        or data_type.python_type
+        or data_type.literals
+        or data_type.enum_member_literals
+        or data_type.dict_key
+        or data_type.discriminator
+        or data_type.use_serialize_as_any
+        or data_type.is_custom_type
+        or data_type.is_tuple
+        or data_type._is_forward_reference  # noqa: SLF001
+        or _is_generic_class_container(data_type)
+    )
+
+
+def _flatten_union_members(data_type: DataType) -> None:
+    """Hoist grouped members and their ``None`` into the union, so ruff finds no nested or repeated member to rewrite.
+
+    Ruff rewrites a union with a nested union or a repeated member into a ``|`` chain, which fails at runtime
+    once a member is a string.
+    """
+    members: list[DataType] = []
+    for member in data_type.data_types:
+        if member.is_optional:
+            member.is_optional = False
+            data_type.is_optional = True
+        if _only_groups_members(member):
+            _flatten_union_members(member)
+            data_type.is_optional = data_type.is_optional or member.is_optional
+            members.extend(member.data_types)
+        else:
+            members.append(member)
+    for member in members:
+        member.parent = data_type
+    data_type.data_types = members
 
 
 def _alias_reference_cycles(models: Sequence[DataModel]) -> dict[int, int]:
@@ -5061,37 +5105,55 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     unresolvable.add(cycle)
         return {alias: cycle for alias, cycle in cycles.items() if cycle not in unresolvable}
 
-    @staticmethod
-    def __defer_recursive_containers(
+    @classmethod
+    def __defer_recursive_containers(  # noqa: PLR0913
+        cls,
         field: DataModelFieldBase,
         model: DataModel,
+        *,
         alias_cycles: Mapping[int, int],
-        forward_references: Iterable[tuple[DataType, str]],
-    ) -> set[int]:
-        """Quote each outermost container that forward-references the model's cycle and return what it holds.
+        model_index: Mapping[str, int],
+        index: int,
+        generation_store: GenerationStore,
+    ) -> None:
+        """Quote each outermost container that forward-references the model's cycle, with its names unquoted.
 
+        Collapsed root models share nested types between their sites, so the field first gets its own copy.
         A string cannot be an operand of ``|``, so the container and its wrappers stop using the union operator.
         """
-        deferred: set[int] = set()
         if (cycle := alias_cycles.get(id(model))) is None:
-            return deferred
-        forward = {id(data_type) for data_type, _ in forward_references}
-        for container, wrappers, kinds in _iter_cycle_containers(field.data_type, cycle, alias_cycles, forward):
-            if True not in kinds:
-                continue
+            return
+        forward = {id(data_type) for data_type, _ in cls.__forward_references(field, model, model_index, index)}
+        if not any(
+            True in kinds for *_, kinds in _iter_cycle_containers(field.data_type, cycle, alias_cycles, forward)
+        ):
+            return
+        generation_store.replace_field_type(field, _copy_data_type(field.data_type))
+        forward = {id(data_type) for data_type, _ in cls.__forward_references(field, model, model_index, index)}
+        deferred = [
+            (container, wrappers)
+            for container, wrappers, kinds in _iter_cycle_containers(field.data_type, cycle, alias_cycles, forward)
+            if True in kinds
+        ]
+        for container, wrappers in deferred:
             container._set_forward_reference(True)  # noqa: FBT003, SLF001
             for quoted in (container, *wrappers):
                 quoted.use_union_operator = False
-            deferred.update(id(nested) for nested in container.all_data_types)
-        return deferred
+            for nested in container.all_data_types:
+                if (reference := nested.reference) and nested.alias == f'"{reference.short_name}"':
+                    nested.alias = reference.short_name
+        for root in deferred[0][1][:1]:
+            _flatten_union_members(root)
 
     @classmethod
-    def __update_type_aliases(
+    def __update_type_aliases(  # noqa: PLR0913
         cls,
         models: list[DataModel],
         pydantic_v2_root_model_type: type[DataModel] | None,
         *,
         use_deferred_annotations: bool = True,
+        defers_recursive_containers: bool,
+        generation_store: GenerationStore,
         can_retain_cache: bool,
     ) -> None:
         """Update type aliases and RootModels to properly handle forward references per PEP 484.
@@ -5128,14 +5190,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     continue
                 if not (forward_references := cls.__forward_references(field, model, model_index, i)):
                     continue
-                deferred: set[int] = set()
-                if model.DEFERS_RECURSIVE_TYPE_HINT:
+                for data_type, name in forward_references:
+                    data_type.alias = f'"{name}"'
+                    cls.__disable_union_operator_for_forward_ref(data_type)
+                if defers_recursive_containers and model.DEFERS_RECURSIVE_TYPE_HINT:
                     if alias_cycles is None:
                         alias_cycles = cls.__deferrable_alias_cycles(models, model_index)
-                    deferred = cls.__defer_recursive_containers(field, model, alias_cycles, forward_references)
-                for data_type, name in forward_references:
-                    data_type.alias = name if id(data_type) in deferred else f'"{name}"'
-                    cls.__disable_union_operator_for_forward_ref(data_type)
+                    cls.__defer_recursive_containers(
+                        field,
+                        model,
+                        alias_cycles=alias_cycles,
+                        model_index=model_index,
+                        index=i,
+                        generation_store=generation_store,
+                    )
                 has_aliased_forward_ref = True
 
             if has_aliased_forward_ref:
@@ -6390,6 +6458,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             models,
             self.pydantic_v2_root_model_type,
             use_deferred_annotations=use_deferred_annotations,
+            defers_recursive_containers=(target := self.target_pydantic_version) is None
+            or _is_pydantic_version_at_least(target, _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM),
+            generation_store=self.generation_store,
             can_retain_cache=can_retain_cache,
         )
         if not unused_models:

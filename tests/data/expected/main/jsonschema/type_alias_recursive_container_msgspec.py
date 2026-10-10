@@ -31,7 +31,7 @@ Quoted = TypeAliasType(
 
 
 Matrix = TypeAliasType(
-    "Matrix", Union[float, Optional["list[Matrix]"], "dict[str, list[Matrix]]"]
+    "Matrix", Optional[Union[float, "list[Matrix]", "dict[str, list[Matrix]]"]]
 )
 
 
@@ -87,7 +87,7 @@ Expr = TypeAliasType("Expr", Union[int, "list[Term]"])
 Term = TypeAliasType("Term", Union[str, "list[Factor]", list[Expr]])
 
 
-Factor = TypeAliasType("Factor", bool | list[Term])
+Factor = TypeAliasType("Factor", Union[bool, list[Term], "Chain"])
 
 
 Pair1 = TypeAliasType(
