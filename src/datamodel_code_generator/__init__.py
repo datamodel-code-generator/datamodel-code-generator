@@ -71,6 +71,9 @@ from datamodel_code_generator.enums import (
     AllOfMergeMode,
     AsyncAPIVersion,
     ClassNameAffixScope,
+    ClientBodyArguments,
+    ClientSignatureStyle,
+    ClientType,
     CollapseRootModelsNameStrategy,
     CustomFileHeaderMode,
     DataclassArguments,
@@ -90,6 +93,10 @@ from datamodel_code_generator.enums import (
     ReadOnlyWriteOnlyModelType,
     ReuseScope,
     SchemaValidatorType,
+    ServerBodyMode,
+    ServerHandlerMode,
+    ServerLayout,
+    ServerType,
     TargetPydanticVersion,
     VersionMode,
     XMLSchemaVersion,
@@ -246,7 +253,7 @@ GeneratedModules: TypeAlias = dict[tuple[str, ...], str]
 """Type alias for multiple generated modules.
 
 Maps module path tuples (e.g., ("models", "user.py")) to generated code strings.
-Returned by generate() when output=None and multiple modules are generated.
+Returned by generate() when output=None and multiple modules are generated, or a server or client package.
 """
 
 
@@ -564,6 +571,10 @@ class SchemaResourceRefWarning(UserWarning):
 
 class DefaultValueTypeWarning(UserWarning):
     """Warn that a generated default is still serialized instead of its runtime type."""
+
+
+class DocumentationAnnotationWarning(UserWarning):
+    """Warn that a served document leaves out an annotation that has no JSON form."""
 
 
 class InvalidClassNameError(Error):
@@ -1520,6 +1531,7 @@ def _emit_stdout_results(
 
 
 _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR = "Single-module output requires a file path, not a directory"
+_MODULAR_OUTPUT_FILE_ERROR = "Modular references require an output directory, not a file"
 _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file path, not a directory"
 
 
@@ -1546,8 +1558,7 @@ def _write_results_to_output(  # noqa: PLR0913
         modules: dict[Path, tuple[str, str, str | None]] = {output: (results, "", input_filename)}
     else:
         if output.suffix:
-            msg = "Modular references require an output directory, not a file"
-            raise Error(msg)
+            raise Error(_MODULAR_OUTPUT_FILE_ERROR)
         modules = {
             output.joinpath(*name): (
                 result.body,
@@ -1556,6 +1567,10 @@ def _write_results_to_output(  # noqa: PLR0913
             )
             for name, result in sorted(results.items())
         }
+    if config._logical_output is None and (isinstance(results, str) or output.is_dir()):  # noqa: SLF001
+        from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
+
+        warn_shadowed_modules(modules)
 
     for path, (body, future_imports, filename) in modules.items():
         if not path.parent.exists():
@@ -1681,15 +1696,20 @@ def _emit_results(  # noqa: PLR0913
             has_custom_file_header=has_custom_file_header,
         )
 
-    _write_results_to_output(
-        results,
-        output,
-        config,
-        input_filename=input_filename,
-        header_prefix=header_prefix,
-        header_suffix=header_suffix,
-        has_custom_file_header=has_custom_file_header,
-    )
+    try:
+        _write_results_to_output(
+            results,
+            output,
+            config,
+            input_filename=input_filename,
+            header_prefix=header_prefix,
+            header_suffix=header_suffix,
+            has_custom_file_header=has_custom_file_header,
+        )
+    except OSError as e:
+        if isinstance(results, str) or not output.is_file():
+            raise
+        raise Error(_MODULAR_OUTPUT_FILE_ERROR) from e
     if defer_formatting:
         _format_deferred_output(output, config, data_model_types, settings_path)
 
@@ -1721,6 +1741,10 @@ def generate(
     that module is absent. Explicit choices and paired dependency errors do not fall back. File URL reference
     joining uses a dependency-free local fast path.
 
+    ``generate_server`` or ``generate_client`` also generates a server or client package with the models (experimental),
+    configured by the ``server_*`` or ``client_*`` options; they take the values of their command-line options, with
+    JSON options as mappings. Without the selector those options have no effect.
+
     Args:
         input_: The input source (Path file input, string content, URL, dict,
             list of file paths, or MCP tools list when input_file_type is
@@ -1733,6 +1757,8 @@ def generate(
         - When output is None and single module: str (generated code)
         - When output is None and multiple modules: GeneratedModules (dict mapping
           module path tuples to generated code strings)
+        - When output is None and a server or client is generated: GeneratedModules with every model and package
+          file, each under the path its import path implies
 
     Raises:
         ValueError: If both config and **options are provided.
@@ -1747,6 +1773,10 @@ def generate(
 
         _rebuild_generate_config()
         config = _GenerateConfig.model_validate(options)
+    if config.generate_server is not None or config.generate_client is not None:
+        from datamodel_code_generator._target_selection import generate_selected_target  # noqa: PLC0415
+
+        return generate_selected_target(input_, config)
     config = _prepare_generate_facade_config(config)
 
     atomic_remote_update = (
@@ -1773,6 +1803,7 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
     from datamodel_code_generator.deprecations import warn_legacy_dependency  # ruff: ignore[import-outside-top-level]
 
     warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
+    warn_legacy_dependency("dependency.python-310-runtime", ".".join(map(str, sys.version_info[:3])), (3, 11, 0))
     config = _apply_generate_config_preset(config)
     config = _apply_missing_sentinel_config(config)
 
@@ -2869,6 +2900,9 @@ __all__ = [
     "AllOfMergeMode",
     "AsyncAPIVersion",
     "ClassNameAffixScope",
+    "ClientBodyArguments",
+    "ClientSignatureStyle",
+    "ClientType",
     "CollapseRootModelsNameStrategy",
     "CustomFileHeaderMode",
     "DanglingRefWarning",
@@ -2877,6 +2911,7 @@ __all__ = [
     "DefaultPutDict",
     "DefaultValueType",
     "DefaultValueTypeWarning",
+    "DocumentationAnnotationWarning",
     "Error",
     "FieldTypeCollisionStrategy",
     "GeneratedModules",
@@ -2900,6 +2935,10 @@ __all__ = [
     "SchemaParseError",
     "SchemaResourceRefWarning",
     "SchemaValidatorType",
+    "ServerBodyMode",
+    "ServerHandlerMode",
+    "ServerLayout",
+    "ServerType",
     "TargetPydanticVersion",
     "VersionMode",
     "XMLSchemaVersion",

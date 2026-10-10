@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
-from pets.errors import StreamRemoteError
-from pets.options import RequestOptions, SessionOptions
+from pets.errors import ProtocolDataError
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncEventStream,
     EventStream,
@@ -23,9 +23,8 @@ from typing_extensions import assert_type
 def events(client: Client, query: FeedQuery) -> None:
     """Yield typed events and their data, keep unknown events in the union, and read error events as object."""
     stream = client.protocols.events.messages.open(
-        stream_options=StreamOptions(idle_timeout=5, max_event_bytes=1024),
+        stream_options=StreamOptions(idle_timeout=5, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(stream, EventStream[Message])
     events: Iterator[StreamEvent[Message]] = stream
@@ -52,16 +51,16 @@ def events(client: Client, query: FeedQuery) -> None:
     wider: StreamEvent[object] = next(stream)
     try:
         next(client.protocols.events.typed.open())
-    except StreamRemoteError as error:
+    except ProtocolDataError as error:
         remote(error)
     stream.close()
     del events, progress, wider
 
 
-def remote(error: StreamRemoteError) -> None:
-    """Read an error event's data as object, never Any, and its SSE type."""
+def remote(error: ProtocolDataError) -> None:
+    """Read an error event's data as object, never Any, and its reason."""
     assert_type(error.data, object)
-    assert_type(error.event_type, str | None)
+    assert_type(error.reason, str)
 
 
 async def async_events(client: AsyncClient) -> None:

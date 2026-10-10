@@ -11,9 +11,7 @@ import models
 
 from .._runtime.model_codecs.native import PydanticDataclassCodec
 
-codec_0: Final[PydanticDataclassCodec[models.FieldPetsPostQueryTagParameter]] = PydanticDataclassCodec(
-    models.FieldPetsPostQueryTagParameter,
-)
+codec_0: Final[PydanticDataclassCodec[models.FieldPetsPostQueryTagParameter]] = PydanticDataclassCodec(models.FieldPetsPostQueryTagParameter)
 """Codec of /paths/~1pets/post parameter (request query tag)."""
 
 codec_1: Final[PydanticDataclassCodec[models.NewPet]] = PydanticDataclassCodec(models.NewPet)
@@ -25,51 +23,37 @@ codec_2: Final[PydanticDataclassCodec[models.PetForm]] = PydanticDataclassCodec(
 codec_3: Final[PydanticDataclassCodec[models.Pet]] = PydanticDataclassCodec(models.Pet)
 """Codec of /paths/~1pets/post response_body (response 201 application/json)."""
 
-codec_4: Final[PydanticDataclassCodec[models.FieldPetsPetIdPatchPathPetIdParameter]] = PydanticDataclassCodec(
-    models.FieldPetsPetIdPatchPathPetIdParameter,
-)
+codec_4: Final[PydanticDataclassCodec[models.FieldPetsPetIdPatchPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdPatchPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}/patch parameter (request path petId)."""
 
 codec_5: Final[PydanticDataclassCodec[models.PetPatch]] = PydanticDataclassCodec(models.PetPatch)
 """Codec of /paths/~1pets~1{petId}/patch request_body (request application/json)."""
 
-codec_6: Final[PydanticDataclassCodec[models.FieldPetsPetIdVisitsPostPathPetIdParameter]] = PydanticDataclassCodec(
-    models.FieldPetsPetIdVisitsPostPathPetIdParameter,
-)
+codec_6: Final[PydanticDataclassCodec[models.FieldPetsPetIdVisitsPostPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdVisitsPostPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1visits/post parameter (request path petId)."""
 
 codec_7: Final[PydanticDataclassCodec[models.Visit]] = PydanticDataclassCodec(models.Visit)
 """Codec of /paths/~1pets~1{petId}~1visits/post request_body (request application/json)."""
 
-codec_8: Final[PydanticDataclassCodec[models.FieldPetsPetIdOwnerPutPathPetIdParameter]] = PydanticDataclassCodec(
-    models.FieldPetsPetIdOwnerPutPathPetIdParameter,
-)
+codec_8: Final[PydanticDataclassCodec[models.FieldPetsPetIdOwnerPutPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdOwnerPutPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1owner/put parameter (request path petId)."""
 
 codec_9: Final[PydanticDataclassCodec[models.Owner]] = PydanticDataclassCodec(models.Owner)
 """Codec of /paths/~1pets~1{petId}~1owner/put request_body (request application/json)."""
 
-codec_10: Final[PydanticDataclassCodec[models.FieldOwnersPostRequest]] = PydanticDataclassCodec(
-    models.FieldOwnersPostRequest,
-)
+codec_10: Final[PydanticDataclassCodec[models.FieldOwnersPostRequest]] = PydanticDataclassCodec(models.FieldOwnersPostRequest)
 """Codec of /paths/~1owners/post request_body (request application/json)."""
 
-codec_11: Final[PydanticDataclassCodec[models.FieldPetsPetIdLabelsPutPathPetIdParameter]] = PydanticDataclassCodec(
-    models.FieldPetsPetIdLabelsPutPathPetIdParameter,
-)
+codec_11: Final[PydanticDataclassCodec[models.FieldPetsPetIdLabelsPutPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdLabelsPutPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1labels/put parameter (request path petId)."""
 
 codec_12: Final[PydanticDataclassCodec[models.Labels]] = PydanticDataclassCodec(models.Labels)
 """Codec of /paths/~1pets~1{petId}~1labels/put request_body (request application/json)."""
 
-codec_13: Final[PydanticDataclassCodec[models.FieldPetsPetIdPhotoPutPathPetIdParameter]] = PydanticDataclassCodec(
-    models.FieldPetsPetIdPhotoPutPathPetIdParameter,
-)
+codec_13: Final[PydanticDataclassCodec[models.FieldPetsPetIdPhotoPutPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdPhotoPutPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1photo/put parameter (request path petId)."""
 
-codec_14: Final[PydanticDataclassCodec[models.FieldPetsPetIdRecordsPutPathPetIdParameter]] = PydanticDataclassCodec(
-    models.FieldPetsPetIdRecordsPutPathPetIdParameter,
-)
+codec_14: Final[PydanticDataclassCodec[models.FieldPetsPetIdRecordsPutPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdRecordsPutPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1records/put parameter (request path petId)."""
 
 codec_15: Final[PydanticDataclassCodec[models.Pet]] = PydanticDataclassCodec(models.Pet)

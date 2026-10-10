@@ -1,26 +1,19 @@
-"""Native HTTP client construction, request cloning and conservative failure classification."""
+"""Native HTTP client construction and conservative failure classification."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import httpx2
 
-from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DeliveryState, SDKError
+from .errors import APIConnectionError, APITimeoutError, DecodeError
+from .logical import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Iterator
 
-    from .errors import IOPhase
-    from .options import ResolvedTransportOptions
+    from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
-
-_PHASES: Final[tuple[tuple[tuple[type[httpx2.TransportError], ...], IOPhase], ...]] = (
-    ((httpx2.ConnectError, httpx2.ConnectTimeout), "connect"),
-    ((httpx2.PoolTimeout,), "pool"),
-    ((httpx2.ReadError, httpx2.ReadTimeout, httpx2.RemoteProtocolError), "read"),
-    ((httpx2.WriteError, httpx2.WriteTimeout), "write"),
-)
 
 
 def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
@@ -28,48 +21,20 @@ def native_timeout(phases: ResolvedTimeoutOptions) -> dict[str, float | None]:
     return {"connect": phases.connect, "read": phases.read, "write": phases.write, "pool": phases.pool}
 
 
-def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> DeliveryState:
-    """Classify only by the public send boundary and native exception class."""
+def delivery(error: BaseException, *, send_started: bool, response_started: bool = False) -> Delivery:
+    """Classify how far a failed send got, only by the public send boundary and native exception class."""
     if response_started:
-        return DeliveryState.RESPONSE_STARTED
+        return Delivery.RESPONSE_STARTED
     if not send_started or isinstance(error, (httpx2.ConnectError, httpx2.ConnectTimeout, httpx2.PoolTimeout)):
-        return DeliveryState.NOT_SENT
-    return DeliveryState.MAYBE_SENT
+        return Delivery.NOT_SENT
+    return Delivery.MAYBE_SENT
 
 
-def native_error(error: Exception, *, send_started: bool, response_started: bool = False) -> SDKError:
+def native_error(error: Exception) -> APIConnectionError:
     """Convert an ordinary native failure; BaseException interruptions are never intercepted."""
-    state = delivery(error, send_started=send_started, response_started=response_started)
-    if isinstance(error, SDKError):
-        error.delivery_state = state
-        return error
-    phase = _phase(error)
     if isinstance(error, httpx2.TimeoutException):
-        return APITimeoutError(
-            phase=phase,
-            reason="phase_timeout",
-            effective_timeout=_expired_cap(error, phase),
-            delivery_state=state,
-            cause=error,
-        )
-    return APIConnectionError(phase=phase, delivery_state=state, cause=error)
-
-
-def _phase(error: Exception) -> IOPhase:
-    for kinds, phase in _PHASES:
-        if isinstance(error, kinds):
-            return phase
-    return "unknown"
-
-
-def _expired_cap(error: httpx2.TimeoutException, phase: IOPhase) -> float | None:
-    """Return the phase timeout the failed request carried, when the native error kept its request."""
-    try:
-        caps: object = error.request.extensions.get("timeout")
-    except RuntimeError:
-        return None
-    cap = cast("dict[str, object]", caps).get(phase) if isinstance(caps, dict) else None
-    return float(cap) if isinstance(cap, (int, float)) else None
+        return APITimeoutError(reason="phase_timeout", cause=error)
+    return APIConnectionError(cause=error)
 
 
 def transport_retry_reason(
@@ -94,21 +59,65 @@ def wire_fields(fields: Iterable[tuple[str, str]]) -> list[tuple[bytes, bytes]]:
     return [(name.encode(), value.encode()) for name, value in fields]
 
 
-def cloned(
-    request: httpx2.Request, *, url: str | None = None, headers: Iterable[tuple[str, str]] | None = None
-) -> httpx2.Request:
-    """Clone one native request while retaining its mode-correct stream and fixed timeout."""
-    return httpx2.Request(
-        request.method,
-        request.url if url is None else url,
-        headers=request.headers.raw if headers is None else wire_fields(headers),
-        stream=request.stream,
-        extensions=dict(request.extensions),
+def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> DecodeError:
+    return DecodeError(reason="malformed_coding", operation_id=operation_id, info=info, cause=error)
+
+
+class _Held(httpx2.SyncByteStream):
+    """Raw chunks of a response that HTTPX2 decodes, leaving the response's close to the SDK."""
+
+    def __init__(self, chunks: Iterator[bytes]) -> None:
+        self._chunks = chunks
+
+    def __iter__(self) -> Iterator[bytes]:
+        return self._chunks
+
+
+class _AsyncHeld(httpx2.AsyncByteStream):
+    """Raw asynchronous chunks of a response that HTTPX2 decodes, leaving the response's close to the SDK."""
+
+    def __init__(self, chunks: AsyncIterator[bytes]) -> None:
+        self._chunks = chunks
+
+    def __aiter__(self) -> AsyncIterator[bytes]:
+        return self._chunks
+
+
+def decoded_bytes(response: httpx2.Response, info: ResponseInfo, operation_id: str | None) -> Iterator[bytes]:
+    """Read the body once with HTTPX2 removing its content codings; a coding that does not decode is malformed.
+
+    The raw chunks pass through a response of their own, so decoding never closes the one the SDK releases.
+    """
+    if "content-encoding" not in response.headers:
+        yield from response_bytes(response)
+        return
+    decoding = httpx2.Response(response.status_code, headers=response.headers, stream=_Held(response_bytes(response)))
+    try:
+        yield from decoding.iter_bytes()
+    except httpx2.DecodingError as error:
+        raise _malformed(error, info, operation_id) from None
+
+
+async def async_decoded_bytes(
+    response: httpx2.Response, info: ResponseInfo, operation_id: str | None
+) -> AsyncIterator[bytes]:
+    """Read the asynchronous body once with HTTPX2 removing its content codings, as `decoded_bytes` does."""
+    if "content-encoding" not in response.headers:
+        async for chunk in async_response_bytes(response):
+            yield chunk
+        return
+    decoding = httpx2.Response(
+        response.status_code, headers=response.headers, stream=_AsyncHeld(async_response_bytes(response))
     )
+    try:
+        async for chunk in decoding.aiter_bytes():
+            yield chunk
+    except httpx2.DecodingError as error:
+        raise _malformed(error, info, operation_id) from None
 
 
 def response_bytes(response: httpx2.Response) -> Iterator[bytes]:
-    """Read raw stream bytes once, leaving the first native close to the SDK's finally."""
+    """Read the raw stream bytes, content codings included, once, leaving the native close to the SDK's finally."""
     if response.is_stream_consumed:
         raise httpx2.StreamConsumed
     response.is_stream_consumed = True
@@ -116,7 +125,7 @@ def response_bytes(response: httpx2.Response) -> Iterator[bytes]:
 
 
 async def async_response_bytes(response: httpx2.Response) -> AsyncIterator[bytes]:
-    """Read native asynchronous bytes without awaited EOF auto-close or native decompression."""
+    """Read the raw asynchronous bytes, content codings included, once, without awaited EOF auto-close."""
     if response.is_stream_consumed:
         raise httpx2.StreamConsumed
     response.is_stream_consumed = True
@@ -124,37 +133,11 @@ async def async_response_bytes(response: httpx2.Response) -> AsyncIterator[bytes
         yield chunk
 
 
-def native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
-    """Create an SDK-owned HTTPX2 client from resolved construction settings, refusing HTTP/2 without its extra."""
-    try:
-        return httpx2.Client(
-            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
-            proxy=transport.proxy,
-            trust_env=transport.trust_env,
-            http2=transport.http2,
-            limits=httpx2.Limits(
-                max_connections=transport.max_connections,
-                max_keepalive_connections=transport.max_keepalive_connections,
-                keepalive_expiry=transport.keepalive_expiry,
-            ),
-        )
-    except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), reason="unavailable", cause=error) from None
+def native_client() -> httpx2.Client:
+    """Create an SDK-owned HTTPX2 client: HTTPX2's defaults, with a 600 second timeout and 5 seconds to connect."""
+    return httpx2.Client(timeout=httpx2.Timeout(600.0, connect=5.0))
 
 
-def native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClient:
-    """Create an SDK-owned asyncio HTTPX2 client from resolved construction settings."""
-    try:
-        return httpx2.AsyncClient(
-            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
-            proxy=transport.proxy,
-            trust_env=transport.trust_env,
-            http2=transport.http2,
-            limits=httpx2.Limits(
-                max_connections=transport.max_connections,
-                max_keepalive_connections=transport.max_keepalive_connections,
-                keepalive_expiry=transport.keepalive_expiry,
-            ),
-        )
-    except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), reason="unavailable", cause=error) from None
+def native_async_client() -> httpx2.AsyncClient:
+    """Create an SDK-owned asyncio HTTPX2 client as `native_client` creates a synchronous one."""
+    return httpx2.AsyncClient(timeout=httpx2.Timeout(600.0, connect=5.0))

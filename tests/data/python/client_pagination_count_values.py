@@ -132,17 +132,19 @@ def _default_calls(harness: Harness, api: Any) -> Iterator[tuple[str, str, Any, 
     options = harness.options
     for location, name, keyword, helper_name, first in (
         ("query", "offset", "offset", "offsets", 40),
-        ("header", "X-Page", "x_page", "by_header", 5),
+        ("header", "X-Page", "X_Page", "by_header", 5),
     ):
-        field = "query" if location == "query" else "headers"
+        default, extra = (
+            ("default_query", "extra_query") if location == "query" else ("default_headers", "extra_headers")
+        )
         helper = getattr(api.protocols.users, helper_name)
-        view = api.with_options(options.RequestOptions(**{field: ((name.lower(), str(first + 10)),)}))
-        nested = view.with_options(options.RequestOptions(**{field: ((name, str(first + 20)),)}))
+        view = api.with_options(**{default: {name.lower(): str(first + 10)}})
+        nested = view.with_options(**{default: {name: str(first + 20)}})
         viewed, layered = (getattr(client.protocols.users, helper_name) for client in (view, nested))
         typed = harness.argument("listUsers", location, name, first + 30)
-        call = options.RequestOptions(**{field: ((name, str(first + 40)),)})
-        removed = options.RequestOptions(**{field: ((name, None),)})
-        cleared = api.with_options(removed)
+        call = options.RequestOptions(**{extra: {name: str(first + 40)}})
+        removed = options.RequestOptions(**{extra: {name: None}})
+        cleared = api.with_options(**{default: {name: None}})
         for label, selected, arguments, sends in (
             ("client", helper, {}, True),
             ("view", viewed, {}, True),
@@ -156,18 +158,16 @@ def _default_calls(harness: Harness, api: Any) -> Iterator[tuple[str, str, Any, 
         ):
             yield f"{location} {label}", location, selected, arguments, sends
         for text in ("forty", "40.5", "40.00000000000000000001", "NaN", "Infinity"):
-            invalid = api.with_options(options.RequestOptions(**{field: ((name, text),)}))
+            invalid = api.with_options(**{default: {name: text}})
             yield f"{location} invalid {text}", location, getattr(invalid.protocols.users, helper_name), {}, False
-        duplicate = api.with_options(options.RequestOptions(**{field: ((name, "40"), (name, "41"))}))
-        yield f"{location} duplicate", location, getattr(duplicate.protocols.users, helper_name), {}, False
 
 
 def pagination_count_defaults(package: ModuleType, lines: list[str]) -> None:
     """Continue from the effective first request without changing how the options layers choose that request."""
     harness = Harness(package)
-    defaults = harness.options.ClientOptions(query=(("offset", "40"),), headers=(("X-Page", "5"),))
+    defaults = {"default_query": {"offset": "40"}, "default_headers": {"X-Page": "5"}}
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=defaults) as api:
+    with exchange.client() as native, package.Client(http_client=native, **defaults) as api:
         for label, location, helper, arguments, sends in _default_calls(harness, api):
             if sends:
                 exchange.respond(_answer(location, True))
@@ -180,12 +180,12 @@ def pagination_count_defaults(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_defaults(harness, defaults, lines))
 
 
-async def _async_defaults(harness: Harness, defaults: Any, lines: list[str]) -> None:
+async def _async_defaults(harness: Harness, defaults: dict[str, Any], lines: list[str]) -> None:
     """Repeat all options layers through asyncio, including the review's first 40 then 42 request sequence."""
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as native,
-        harness.package.AsyncClient(http_client=native, options=defaults) as api,
+        harness.package.AsyncClient(http_client=native, **defaults) as api,
     ):
         for label, location, helper, arguments, sends in _default_calls(harness, api):
             if sends:

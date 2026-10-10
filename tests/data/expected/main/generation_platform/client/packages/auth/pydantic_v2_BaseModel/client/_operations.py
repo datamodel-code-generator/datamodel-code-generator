@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings, security
-from ._runtime.client.multipart import PartPlan
+from ._runtime.client.multipart import MultipartForm, PartPlan
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
@@ -56,13 +56,7 @@ OPERATION_0: Final[OperationPlan[InheritedAuthResponse]] = OperationPlan(
     method='GET',
     path='/inherited',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_0,
 )
 
@@ -71,13 +65,7 @@ OPERATION_1: Final[OperationPlan[AnonymousResponse]] = OperationPlan(
     method='GET',
     path='/anonymous',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_1,
 )
 
@@ -86,13 +74,7 @@ OPERATION_2: Final[OperationPlan[EmptySecurityResponse]] = OperationPlan(
     method='GET',
     path='/empty',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_2,
 )
 
@@ -101,13 +83,7 @@ OPERATION_3: Final[OperationPlan[OptionalAuthResponse]] = OperationPlan(
     method='GET',
     path='/optional',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_3,
 )
 
@@ -116,13 +92,7 @@ OPERATION_4: Final[OperationPlan[OptionalTokenFirstResponse]] = OperationPlan(
     method='GET',
     path='/optional-token-first',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_4,
 )
 
@@ -131,13 +101,7 @@ OPERATION_5: Final[OperationPlan[AndAuthResponse]] = OperationPlan(
     method='GET',
     path='/and',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_5,
 )
 
@@ -146,13 +110,7 @@ OPERATION_6: Final[OperationPlan[OrAuthResponse]] = OperationPlan(
     method='GET',
     path='/or',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_6,
 )
 
@@ -161,13 +119,7 @@ OPERATION_7: Final[OperationPlan[AuthorizationOrResponse]] = OperationPlan(
     method='GET',
     path='/authorization-or',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_7,
 )
 
@@ -176,13 +128,7 @@ OPERATION_8: Final[OperationPlan[ApiKeyHeaderResponse]] = OperationPlan(
     method='GET',
     path='/api-key/header',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_8,
 )
 
@@ -191,13 +137,7 @@ OPERATION_9: Final[OperationPlan[ApiKeyQueryResponse]] = OperationPlan(
     method='GET',
     path='/api-key/query',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_9,
 )
 
@@ -206,13 +146,7 @@ OPERATION_10: Final[OperationPlan[ApiKeyCookieResponse]] = OperationPlan(
     method='GET',
     path='/api-key/cookie',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_10,
 )
 
@@ -221,60 +155,8 @@ OPERATION_11: Final[OperationPlan[CookieParametersResponse]] = OperationPlan(
     method='GET',
     path='/api-key/cookie-parameters',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='cookie',
-                name='theme',
-                style='form',
-                explode=True,
-                required=True,
-                reserved_names=('session_key',),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='page',
-                style='form',
-                explode=True,
-                required=True,
-                kind='integer',
-                reserved_names=('filter', 'kind'),
-            ),
-            codec=model_bindings.codec_1,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='header',
-                name='X-Trace',
-                style='simple',
-                required=True,
-            ),
-            codec=model_bindings.codec_2,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='form',
-                explode=True,
-                shape='object',
-                fields=(FieldPlan('kind', 'string'),),
-                additional=FieldPlan('', 'string'),
-                reserved_names=('page',),
-            ),
-            codec=model_bindings.codec_3,
-        ),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='cookie', name='theme', style='form', explode=True, required=True, reserved_names=('session_key',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='page', style='form', explode=True, required=True, kind='integer', reserved_names=('filter', 'kind')), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='header', name='X-Trace', style='simple', required=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', explode=True, shape='object', fields=(FieldPlan('kind', 'string'),), additional=FieldPlan('', 'string'), reserved_names=('page',)), codec=model_bindings.codec_3)),
     security=security.OPERATION_11,
 )
 
@@ -283,13 +165,7 @@ OPERATION_12: Final[OperationPlan[BasicResponse]] = OperationPlan(
     method='GET',
     path='/basic',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_12,
 )
 
@@ -298,13 +174,7 @@ OPERATION_13: Final[OperationPlan[BearerResponse]] = OperationPlan(
     method='GET',
     path='/bearer',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_13,
 )
 
@@ -313,13 +183,7 @@ OPERATION_14: Final[OperationPlan[AliasAuthResponse]] = OperationPlan(
     method='GET',
     path='/alias',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_14,
 )
 
@@ -328,13 +192,7 @@ OPERATION_15: Final[OperationPlan[OauthReadResponse]] = OperationPlan(
     method='GET',
     path='/oauth/read',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_15,
 )
 
@@ -343,13 +201,7 @@ OPERATION_16: Final[OperationPlan[OauthScopesResponse]] = OperationPlan(
     method='GET',
     path='/oauth/scopes',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_16,
 )
 
@@ -358,13 +210,7 @@ OPERATION_17: Final[OperationPlan[OauthEmptyResponse]] = OperationPlan(
     method='GET',
     path='/oauth/empty',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_17,
 )
 
@@ -373,13 +219,7 @@ OPERATION_18: Final[OperationPlan[OpenidReadResponse]] = OperationPlan(
     method='GET',
     path='/openid/read',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_18,
 )
 
@@ -388,13 +228,7 @@ OPERATION_19: Final[OperationPlan[ChallengeLessResponse]] = OperationPlan(
     method='GET',
     path='/challenge-less',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     security=security.OPERATION_19,
     auth_challenge_less_401=True,
 )
@@ -404,17 +238,8 @@ OPERATION_20: Final[OperationPlan[UnsafeAuthResponse]] = OperationPlan(
     method='POST',
     path='/unsafe',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
-    body=RequestBody(
-        media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
-        default='application/octet-stream',
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
+    body=RequestBody(media=(BodyMedia(media_type='application/octet-stream', kind='binary'),), default='application/octet-stream'),
     security=security.OPERATION_20,
 )
 
@@ -423,17 +248,8 @@ OPERATION_21: Final[OperationPlan[IdempotentAuthResponse]] = OperationPlan(
     method='POST',
     path='/idempotent',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
-    body=RequestBody(
-        media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
-        default='application/octet-stream',
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
+    body=RequestBody(media=(BodyMedia(media_type='application/octet-stream', kind='binary'),), default='application/octet-stream'),
     retry_safety='idempotent',
     security=security.OPERATION_21,
 )
@@ -443,13 +259,7 @@ OPERATION_22: Final[OperationPlan[NeverAuthResponse]] = OperationPlan(
     method='GET',
     path='/never',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     retry_safety='never',
     security=security.OPERATION_22,
 )
@@ -459,13 +269,7 @@ OPERATION_23: Final[OperationPlan[VendorAuthResponse]] = OperationPlan(
     method='GET',
     path='/vendor',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
     retry_after_ms_header='X-Retry-In-Ms',
     should_retry_header='X-Retry-Permitted',
     security=security.OPERATION_23,
@@ -476,17 +280,8 @@ OPERATION_24: Final[OperationPlan[SignedBodyResponse]] = OperationPlan(
     method='PUT',
     path='/signed',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
-    body=RequestBody(
-        media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
-        default='application/octet-stream',
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
+    body=RequestBody(media=(BodyMedia(media_type='application/octet-stream', kind='binary'),), default='application/octet-stream'),
     security=security.OPERATION_24,
 )
 
@@ -495,27 +290,8 @@ OPERATION_25: Final[OperationPlan[SignedMultipartResponse]] = OperationPlan(
     method='POST',
     path='/signed-multipart',
     servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            binary_branch('200', 'application/octet-stream'),
-            binary_branch('default', 'application/octet-stream'),
-        ),
-        (binary_branch('default', 'application/octet-stream'),),
-    ),
-    body=RequestBody(
-        media=(
-            BodyMedia(
-                media_type='multipart/form-data',
-                kind='multipart',
-                parts=(
-                    PartPlan('file', file=True, required=True),
-                    PartPlan('note', codec=model_bindings.codec_4),
-                ),
-            ),
-        ),
-        default='multipart/form-data',
-        required=True,
-    ),
+    responses=ResponseDecoder((binary_branch('200', 'application/octet-stream'), binary_branch('default', 'application/octet-stream')), (binary_branch('default', 'application/octet-stream'),)),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('file'), PartPlan('note', codec=model_bindings.codec_4)))),), default='multipart/form-data', required=True),
     retry_safety='idempotent',
     security=security.OPERATION_25,
 )

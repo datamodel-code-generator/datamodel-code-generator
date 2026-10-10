@@ -14,11 +14,6 @@
       "type": "string",
       "format": "uri",
       "pattern": "^https://[\\w.-]{1,256}/$"
-    },
-    "blob": {
-      "type": "string",
-      "format": "binary",
-      "pattern": "^(a)\\1$"
     }
   }
 }

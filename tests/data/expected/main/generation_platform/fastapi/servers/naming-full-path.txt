@@ -1,0 +1,28 @@
+# naming-full-path
+serve pydantic_v2.BaseModel
+service CloseService: get_health
+service CloseService without its methods: TypeError
+service ItemStore1Service: delete_items_by_item_id_tags
+service ItemStore1Service without its methods: TypeError
+service ItemStoreService: get_item, item_store_get_item
+service ItemStoreService without its methods: TypeError
+service UntaggedService: x1, x_1
+service UntaggedService without its methods: TypeError
+> GET /items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5
+  get_item(itemId=1, item_store_get_item_itemId=2, item_store_get_item_itemId_1=3, X_Request_Id='rid', page_size_=10, field_2fa='t', class_='c', item_store_get_item_request='r', item_store_get_item_body='b', item_store_get_item_self='s', sessionId='sid', itemId_1=5)
+< 204 - b''
+> POST /items?name=q
+  item_store_get_item(name='q', body=NewItem(name='n', itemCount=2))
+< 204 - b''
+> DELETE /items/4/tags
+  delete_items_by_item_id_tags(itemId=4)
+< 204 - b''
+> GET /x1
+  x1()
+< 204 - b''
+> GET /x_1
+  x_1()
+< 204 - b''
+> GET /health
+  get_health()
+< 204 - b''

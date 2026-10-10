@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from shop_models import FieldOrdersGetResponse, Order
 
-from shop import Unset, create_app
+from shop import create_app
 from shop.services import OrdersService
 
 
 class Orders(OrdersService):
-    def list_orders(self, *, limit: int | Unset) -> FieldOrdersGetResponse:
+    def list_orders(self, *, limit: int | None) -> FieldOrdersGetResponse:
         orders = [Order(id=1, total=3), Order(id=2, total=5)]
-        return FieldOrdersGetResponse(orders if isinstance(limit, Unset) else orders[:limit])
+        return FieldOrdersGetResponse(orders if limit is None else orders[:limit])
 
     def get_order(self, *, id: int) -> Order:  # noqa: A002
         return Order(id=id, total=3)

@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info: {title: Docstrings, version: "1.0"}
+paths:
+  /notes:
+    get:
+      operationId: listNotes
+      summary: List the notes.
+      description: |-
+        Every note the caller may read, newest first.
+        A note's "body" may hold \ backslashes and """ quotes.
+      responses:
+        "204": {description: Listed.}
+    post:
+      operationId: createNote
+      summary: Create a note.
+      responses:
+        "204": {description: Created.}
+  /notes/{noteId}:
+    delete:
+      operationId: deleteNote
+      parameters:
+        - {name: noteId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Deleted.}

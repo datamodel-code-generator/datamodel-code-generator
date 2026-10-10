@@ -15,19 +15,20 @@ from math import isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias
 
-from datamodel_code_generator._api_manifest import canonical_bytes
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
+from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
+from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._target_documents import canonical_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
 
     from datamodel_code_generator._api_types import OperationSelector
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (
@@ -111,7 +112,7 @@ _ROOT: Final = "protocols"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
-_MAX_DEPTH: Final = 64
+_MAX_DEPTH: Final = CLIENT_PROTOCOLS_MAX_DEPTH
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
 
 
@@ -161,7 +162,7 @@ class EndCondition:
     """End a sequence when a selected value is missing, JSON null, or equals the given JSON value."""
 
     kind: Literal["missing", "null", "value"]
-    value: JSONValue | Unset = UNSET
+    value: JSONValue | UNSET = UNSET
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -452,7 +453,7 @@ class WebSocketHelper:
     """Open a WebSocket through an operation's handshake, and send and receive typed messages on it.
 
     The operation is a GET without a request body; the subprotocols are offered in order, one of which the server must
-    select when any is offered, and compression permits the caller's deflate.
+    select when any is offered.
     """
 
     kind: ClassVar[Literal["websocket"]] = "websocket"
@@ -461,7 +462,6 @@ class WebSocketHelper:
     send: WebSocketMessage
     receive: WebSocketMessage
     subprotocols: tuple[str, ...] = ()
-    compression: bool = False
     enabled: bool = True
 
 
@@ -786,18 +786,22 @@ def protocol_problems(configuration: ProtocolConfiguration) -> list[Diagnostic]:
 
 
 def load_protocols(
-    source: Path | ProtocolConfiguration, cwd: Path
+    source: Path | ProtocolConfiguration | Mapping[str, object], cwd: Path
 ) -> tuple[tuple[Helper, ...], Path, list[Diagnostic]]:
     """Read or project a helper configuration and validate it, with the directory its documents resolve against.
 
-    A file's relative documents resolve against its directory, and a Python record's against the working directory.
+    A file's relative documents resolve against its directory, and those of Python records or a JSON object against
+    the given working directory.
     """
-    if isinstance(source, ProtocolConfiguration):
-        tree, base, problems = project(source), cwd, []
-    else:
-        path = cwd / source.expanduser()
-        tree, problems = _read(path)
-        base = path.parent
+    match source:
+        case ProtocolConfiguration():
+            tree, base, problems = project(source), cwd, []
+        case Mapping():
+            tree, base, problems = source, cwd, []
+        case _:
+            path = cwd / source.expanduser()
+            tree, problems = _read(path)
+            base = path.parent
     if problems:
         return (), base, problems
     helpers, problems = validate(tree)
@@ -805,15 +809,20 @@ def load_protocols(
 
 
 def _read(path: Path) -> tuple[object, list[Diagnostic]]:
-    """Read a JSON object from a file as JSON configuration options read theirs, refusing deep nesting first."""
-    from datamodel_code_generator.json_config import JsonConfigError, validate_json_value_or_file  # noqa: PLC0415
+    """Read a helper file as --client-protocols reads it, with that option's messages."""
+    from datamodel_code_generator.json_config import (  # noqa: PLC0415
+        JsonConfigError,
+        JsonConfigSpecs,
+        load_json_config_field,
+    )
     from datamodel_code_generator.util import record_watch_dependency  # noqa: PLC0415
 
     record_watch_dependency(path)
     try:
-        return validate_json_value_or_file(str(path), option_name=_ROOT, max_depth=_MAX_DEPTH), []
+        return load_json_config_field("client_protocols", str(path)), []
     except JsonConfigError as error:
-        return None, [_diagnostic("E_CONFIG_VALUE", _ROOT, str(error))]
+        option = JsonConfigSpecs.by_field_name["client_protocols"].option_name
+        return None, [_diagnostic("E_CONFIG_VALUE", _ROOT, str(error).replace(option, _ROOT))]
 
 
 def validate(tree: object) -> tuple[tuple[Helper, ...], list[Diagnostic]]:
@@ -1440,7 +1449,6 @@ class _Validator:  # noqa: PLR0904
                 "enabled": (self.boolean, True),
                 "operation": (self.operation, REQUIRED),
                 "subprotocols": (self.subprotocols, ()),
-                "compression": (self.boolean, False),
                 "send": (self.message, REQUIRED),
                 "receive": (self.message, REQUIRED),
             },

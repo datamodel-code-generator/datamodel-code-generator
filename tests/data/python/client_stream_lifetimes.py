@@ -134,6 +134,26 @@ class _Gate:
             await asyncio.sleep(0.01)
 
 
+class _HeldFile(io.FileIO):
+    """A download file whose writes wait in their thread until the scenario lets them go."""
+
+    def __init__(self, handle: int, mode: str, gate: _Gate, events: list[str]) -> None:
+        super().__init__(handle, mode)
+        self.gate, self.events = gate, events
+
+    def write(self, data: Any) -> int:
+        self.events.append("write entered")
+        self.gate.hold()
+        size = super().write(data)
+        self.events.append("write left")
+        return size
+
+    def close(self) -> None:
+        if not self.closed:
+            self.events.append("closed")
+        super().close()
+
+
 def _denied(path: Path, *, missing_ok: bool = False) -> None:
     raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(path))
 
@@ -212,12 +232,12 @@ def _sync_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, 
 
     def typed_decode() -> str:
         exchange.respond(json_response(200, {"id": "x", "name": 1}))
-        return outcome(lambda: api.pets.get_pet(pet_id=pet))
+        return outcome(lambda: api.pets.get_pet(petId=pet))
 
     def retried() -> str:
         exchange.respond(raw_response(503, b"down", "text/plain"), json_response(200, _PET))
-        retry = options.RetryOptions(max_retries=1, initial_delay=0, jitter="none")
-        return outcome(lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(retry=retry)))
+        call = options.RequestOptions(max_retries=1, retry=options.RetryOptions(initial_delay=0, jitter="none"))
+        return outcome(lambda: api.pets.get_pet(petId=pet, options=call))
 
     def read_timeout() -> str:
         gate = threading.Event()
@@ -228,23 +248,17 @@ def _sync_cases(package: ModuleType, api: Any, exchange: Exchange) -> dict[str, 
         finally:
             gate.set()
 
-    def limit() -> str:
-        exchange.respond(_body())
-        with streaming.request_raw("GET", _URL, options=options.RequestOptions(max_stream_bytes=1000)) as response:
-            return outcome(lambda: list(response.iter_bytes()))
-
     return {
         "first chunk": first_chunk,
         "typed decode": typed_decode,
         "retried 503": retried,
         "read timeout": read_timeout,
-        "stream limit": limit,
     }
 
 
 def _read_timeout(options: ModuleType) -> object:
     """Return options whose native read timeout ends a stalled body."""
-    return options.RequestOptions(timeout=options.TimeoutOptions(read=0.5))
+    return options.RequestOptions(timeout=httpx2.Timeout(5.0, read=0.5))
 
 
 def _borrowed(package: ModuleType, lines: list[str]) -> None:
@@ -277,8 +291,8 @@ def _owned(package: ModuleType, lines: list[str]) -> None:
     http.close()
 
 
+@pytest.mark.abnormal_path("A full disk or an unopenable temporary file cannot be produced portably.")
 def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
-    options = _modules(package)[0]
     exchange = Exchange([])
     http = exchange.client(1)
     target = directory / "full.bin"
@@ -321,9 +335,6 @@ def _files_sync(package: ModuleType, lines: list[str], directory: Path) -> None:
         with streaming.request_raw("GET", _URL) as response:
             failed = outcome(lambda: response.stream_to(_Sink()))
             lines.append(f"  sync file object write {failed} then {api.request_raw('GET', _URL).read()!r}")
-        exchange.respond(_body())
-        with streaming.request_raw("GET", _URL, options=options.RequestOptions(max_stream_bytes=1000)) as response:
-            lines.append(f"  sync limit to path {outcome(lambda: response.stream_to(target))} {_files(directory)}")
     http.close()
 
 
@@ -356,12 +367,12 @@ def _async_cases(
 
     async def typed_decode() -> str:
         exchange.respond(json_response(200, {"id": "x", "name": 1}))
-        return await aoutcome(lambda: api.pets.get_pet(pet_id=pet))
+        return await aoutcome(lambda: api.pets.get_pet(petId=pet))
 
     async def retried() -> str:
         exchange.respond(raw_response(503, b"down", "text/plain"), json_response(200, _PET))
-        retry = options.RetryOptions(max_retries=1, initial_delay=0, jitter="none")
-        return await aoutcome(lambda: api.pets.get_pet(pet_id=pet, options=options.RequestOptions(retry=retry)))
+        call = options.RequestOptions(max_retries=1, retry=options.RetryOptions(initial_delay=0, jitter="none"))
+        return await aoutcome(lambda: api.pets.get_pet(petId=pet, options=call))
 
     async def cancelled() -> str:
         gate, started = threading.Event(), asyncio.Event()
@@ -394,18 +405,12 @@ def _async_cases(
         finally:
             gate.set()
 
-    async def limit() -> str:
-        exchange.respond(_body())
-        async with streaming.request_raw("GET", _URL, options=options.RequestOptions(max_stream_bytes=1000)) as raw:
-            return await aoutcome(lambda: _drained(raw.iter_bytes()))
-
     return {
         "first chunk": first_chunk,
         "typed decode": typed_decode,
         "retried 503": retried,
         "cancelled": cancelled,
         "read timeout": read_timeout,
-        "stream limit": limit,
     }
 
 
@@ -456,7 +461,6 @@ async def _async_owned(package: ModuleType, lines: list[str]) -> None:
 
 async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> None:
     """Download whole bodies on the handle's disk thread, then show the thread gone."""
-    options = _modules(package)[0]
     exchange = Exchange([])
     http = exchange.async_client(1)
     async with package.AsyncClient(http_client=http) as api:
@@ -481,14 +485,6 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
         lines.append(
             f"  async download identity {identity.read_bytes() == _DATA} gzip {coded.read_bytes() == _DATA} again {again}"
         )
-        exchange.respond(_gzipped())
-        limit = options.RequestOptions(max_stream_bytes=len(_DATA) // 2)
-        async with streaming.request_raw("GET", _URL, options=limit) as response:
-            try:
-                await response.stream_to(directory / "limited.bin")
-            except Exception as error:  # noqa: BLE001
-                limited = f"{type(error).__name__} {error.reason} {error.limit}"
-        lines.append(f"  async download gzip past its decoded limit {limited} {_files(directory)}")
         exchange.respond(raw_response(200))
         async with streaming.request_raw("GET", _URL) as response:
             await response.stream_to(directory / "empty.bin")
@@ -523,6 +519,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
     await http.aclose()
 
 
+@pytest.mark.abnormal_path("The disk thread cannot be held while it creates a file, nor its unlink denied, portably.")
 async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Stop downloads while or right after the disk thread creates their file, and keep nothing it created."""
     streaming, target = api.with_streaming_response, directory / "opening.bin"
@@ -563,8 +560,25 @@ async def _opening_faults(api: Any, exchange: Exchange, lines: list[str], direct
         for path in directory.glob("*.part"):
             path.unlink()
         lines.append(f"  async {label} {result} partial files {left.count(True)}")
+    gate, events = _Gate(), []
+    exchange.respond(_body())
+    async with streaming.request_raw("GET", _URL) as response:
+        with pytest.MonkeyPatch.context() as fault:
+            fault.setattr(os, "fdopen", lambda handle, mode: _HeldFile(handle, mode, gate, events))
+            task = asyncio.create_task(response.stream_to(target))
+            await gate.reached()
+            task.cancel()
+            await asyncio.sleep(0)
+            events.append(f"cancelled done={task.done()}")
+            gate.released.set()
+            try:
+                result = await aoutcome(lambda: task)
+            except asyncio.CancelledError:
+                result = "CancelledError"
+    lines.append(f"  async cancelled while writing {result} events {events} {_files(directory)}")
 
 
+@pytest.mark.abnormal_path("A full disk cannot be produced portably.")
 async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directory: Path) -> None:
     """Fail disk writes while a borrowed connection is held, ending the stream before the failure propagates."""
     streaming, target = api.with_streaming_response, directory / "full.bin"
@@ -591,19 +605,20 @@ async def _late_download(
 ) -> None:
     """Refuse a download to a path whose stream's total time passed on the client's clock, before any disk work."""
     options, now = _modules(package)[0], [0.0]
-    settings = options.ClientOptions(clock=options.Clock(monotonic=lambda: now[0]))
-    async with package.AsyncClient(http_client=http, options=settings) as api:
+    async with package.AsyncClient(http_client=http, clock=options.Clock(monotonic=lambda: now[0])) as api:
         exchange.respond(_body())
-        limit = options.RequestOptions(stream_total_timeout=5)
+        limit = options.RequestOptions(total_timeout=5)
         async with api.with_streaming_response.request_raw("GET", _URL, options=limit) as response:
             now[0] = 10.0
+            late = "returned"
             try:
                 await response.stream_to(directory / "late.bin")
             except Exception as error:  # noqa: BLE001
-                late = f"{type(error).__name__} {error.reason} {error.phase} status {error.info.status_code}"
-        lines.append(f"  async download past its stream deadline {late} {_files(directory)}")
+                late = f"{type(error).__name__} {error.reason} status {error.info.status_code}"
+        lines.append(f"  async download after its acquisition budget {late} {_files(directory)}")
 
 
+@pytest.mark.abnormal_path("The disk thread's first write is observable only by wrapping the file it opens.")
 async def _mid_body(task: asyncio.Task[None]) -> None:
     """Wait until the download wrote the body's first chunk to its temporary file, or until it ended."""
     loop, written = asyncio.get_running_loop(), asyncio.Event()

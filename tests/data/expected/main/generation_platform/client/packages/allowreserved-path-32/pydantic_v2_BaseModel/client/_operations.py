@@ -97,18 +97,7 @@ OPERATION_0: Final[OperationPlan[ReadSimpleScalarFalseResponse]] = OperationPlan
     path='/simple-scalar-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
-            ),
-            codec=model_bindings.codec_0,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, allow_reserved=True), codec=model_bindings.codec_0),),
 )
 
 OPERATION_1: Final[OperationPlan[ReadSimpleScalarFalseFalseResponse]] = OperationPlan(
@@ -117,17 +106,7 @@ OPERATION_1: Final[OperationPlan[ReadSimpleScalarFalseFalseResponse]] = Operatio
     path='/simple-scalar-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-            ),
-            codec=model_bindings.codec_1,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True), codec=model_bindings.codec_1),),
 )
 
 OPERATION_2: Final[OperationPlan[ReadSimpleScalarFalseAbsentResponse]] = OperationPlan(
@@ -136,17 +115,7 @@ OPERATION_2: Final[OperationPlan[ReadSimpleScalarFalseAbsentResponse]] = Operati
     path='/simple-scalar-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-            ),
-            codec=model_bindings.codec_2,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True), codec=model_bindings.codec_2),),
 )
 
 OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse]] = OperationPlan(
@@ -155,19 +124,7 @@ OPERATION_3: Final[OperationPlan[ReadSimpleArrayFalseResponse]] = OperationPlan(
     path='/simple-array-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_3,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, allow_reserved=True, shape='array'), codec=model_bindings.codec_3),),
 )
 
 OPERATION_4: Final[OperationPlan[ReadSimpleArrayFalseFalseResponse]] = OperationPlan(
@@ -176,18 +133,7 @@ OPERATION_4: Final[OperationPlan[ReadSimpleArrayFalseFalseResponse]] = Operation
     path='/simple-array-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_4,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, shape='array'), codec=model_bindings.codec_4),),
 )
 
 OPERATION_5: Final[OperationPlan[ReadSimpleArrayFalseAbsentResponse]] = OperationPlan(
@@ -196,18 +142,7 @@ OPERATION_5: Final[OperationPlan[ReadSimpleArrayFalseAbsentResponse]] = Operatio
     path='/simple-array-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_5,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, shape='array'), codec=model_bindings.codec_5),),
 )
 
 OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse]] = OperationPlan(
@@ -216,20 +151,7 @@ OPERATION_6: Final[OperationPlan[ReadSimpleArrayTrueResponse]] = OperationPlan(
     path='/simple-array-true/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                explode=True,
-                required=True,
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_6,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', explode=True, required=True, allow_reserved=True, shape='array'), codec=model_bindings.codec_6),),
 )
 
 OPERATION_7: Final[OperationPlan[ReadSimpleArrayTrueFalseResponse]] = OperationPlan(
@@ -238,19 +160,7 @@ OPERATION_7: Final[OperationPlan[ReadSimpleArrayTrueFalseResponse]] = OperationP
     path='/simple-array-true-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                explode=True,
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_7,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', explode=True, required=True, shape='array'), codec=model_bindings.codec_7),),
 )
 
 OPERATION_8: Final[OperationPlan[ReadSimpleArrayTrueAbsentResponse]] = OperationPlan(
@@ -259,19 +169,7 @@ OPERATION_8: Final[OperationPlan[ReadSimpleArrayTrueAbsentResponse]] = Operation
     path='/simple-array-true-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                explode=True,
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_8,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', explode=True, required=True, shape='array'), codec=model_bindings.codec_8),),
 )
 
 OPERATION_9: Final[OperationPlan[ReadSimpleObjectFalseResponse]] = OperationPlan(
@@ -280,21 +178,7 @@ OPERATION_9: Final[OperationPlan[ReadSimpleObjectFalseResponse]] = OperationPlan
     path='/simple-object-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_9,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_9),),
 )
 
 OPERATION_10: Final[OperationPlan[ReadSimpleObjectFalseFalseResponse]] = OperationPlan(
@@ -303,20 +187,7 @@ OPERATION_10: Final[OperationPlan[ReadSimpleObjectFalseFalseResponse]] = Operati
     path='/simple-object-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_10,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_10),),
 )
 
 OPERATION_11: Final[OperationPlan[ReadSimpleObjectFalseAbsentResponse]] = OperationPlan(
@@ -325,20 +196,7 @@ OPERATION_11: Final[OperationPlan[ReadSimpleObjectFalseAbsentResponse]] = Operat
     path='/simple-object-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_11,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_11),),
 )
 
 OPERATION_12: Final[OperationPlan[ReadSimpleObjectTrueResponse]] = OperationPlan(
@@ -347,22 +205,7 @@ OPERATION_12: Final[OperationPlan[ReadSimpleObjectTrueResponse]] = OperationPlan
     path='/simple-object-true/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                explode=True,
-                required=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_12,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', explode=True, required=True, allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_12),),
 )
 
 OPERATION_13: Final[OperationPlan[ReadSimpleObjectTrueFalseResponse]] = OperationPlan(
@@ -371,21 +214,7 @@ OPERATION_13: Final[OperationPlan[ReadSimpleObjectTrueFalseResponse]] = Operatio
     path='/simple-object-true-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                explode=True,
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_13,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', explode=True, required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_13),),
 )
 
 OPERATION_14: Final[OperationPlan[ReadSimpleObjectTrueAbsentResponse]] = OperationPlan(
@@ -394,21 +223,7 @@ OPERATION_14: Final[OperationPlan[ReadSimpleObjectTrueAbsentResponse]] = Operati
     path='/simple-object-true-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                explode=True,
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_14,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', explode=True, required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_14),),
 )
 
 OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse]] = OperationPlan(
@@ -417,18 +232,7 @@ OPERATION_15: Final[OperationPlan[ReadLabelScalarFalseResponse]] = OperationPlan
     path='/label-scalar-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                allow_reserved=True,
-            ),
-            codec=model_bindings.codec_15,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True, allow_reserved=True), codec=model_bindings.codec_15),),
 )
 
 OPERATION_16: Final[OperationPlan[ReadLabelScalarFalseFalseResponse]] = OperationPlan(
@@ -437,17 +241,7 @@ OPERATION_16: Final[OperationPlan[ReadLabelScalarFalseFalseResponse]] = Operatio
     path='/label-scalar-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-            ),
-            codec=model_bindings.codec_16,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True), codec=model_bindings.codec_16),),
 )
 
 OPERATION_17: Final[OperationPlan[ReadLabelScalarFalseAbsentResponse]] = OperationPlan(
@@ -456,17 +250,7 @@ OPERATION_17: Final[OperationPlan[ReadLabelScalarFalseAbsentResponse]] = Operati
     path='/label-scalar-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-            ),
-            codec=model_bindings.codec_17,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True), codec=model_bindings.codec_17),),
 )
 
 OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse]] = OperationPlan(
@@ -475,19 +259,7 @@ OPERATION_18: Final[OperationPlan[ReadLabelArrayFalseResponse]] = OperationPlan(
     path='/label-array-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_18,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True, allow_reserved=True, shape='array'), codec=model_bindings.codec_18),),
 )
 
 OPERATION_19: Final[OperationPlan[ReadLabelArrayFalseFalseResponse]] = OperationPlan(
@@ -496,18 +268,7 @@ OPERATION_19: Final[OperationPlan[ReadLabelArrayFalseFalseResponse]] = Operation
     path='/label-array-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_19,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True, shape='array'), codec=model_bindings.codec_19),),
 )
 
 OPERATION_20: Final[OperationPlan[ReadLabelArrayFalseAbsentResponse]] = OperationPlan(
@@ -516,18 +277,7 @@ OPERATION_20: Final[OperationPlan[ReadLabelArrayFalseAbsentResponse]] = Operatio
     path='/label-array-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_20,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True, shape='array'), codec=model_bindings.codec_20),),
 )
 
 OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse]] = OperationPlan(
@@ -536,20 +286,7 @@ OPERATION_21: Final[OperationPlan[ReadLabelArrayTrueResponse]] = OperationPlan(
     path='/label-array-true/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                explode=True,
-                required=True,
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_21,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', explode=True, required=True, allow_reserved=True, shape='array'), codec=model_bindings.codec_21),),
 )
 
 OPERATION_22: Final[OperationPlan[ReadLabelArrayTrueFalseResponse]] = OperationPlan(
@@ -558,19 +295,7 @@ OPERATION_22: Final[OperationPlan[ReadLabelArrayTrueFalseResponse]] = OperationP
     path='/label-array-true-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                explode=True,
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_22,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', explode=True, required=True, shape='array'), codec=model_bindings.codec_22),),
 )
 
 OPERATION_23: Final[OperationPlan[ReadLabelArrayTrueAbsentResponse]] = OperationPlan(
@@ -579,19 +304,7 @@ OPERATION_23: Final[OperationPlan[ReadLabelArrayTrueAbsentResponse]] = Operation
     path='/label-array-true-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                explode=True,
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_23,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', explode=True, required=True, shape='array'), codec=model_bindings.codec_23),),
 )
 
 OPERATION_24: Final[OperationPlan[ReadLabelObjectFalseResponse]] = OperationPlan(
@@ -600,21 +313,7 @@ OPERATION_24: Final[OperationPlan[ReadLabelObjectFalseResponse]] = OperationPlan
     path='/label-object-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_24,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True, allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_24),),
 )
 
 OPERATION_25: Final[OperationPlan[ReadLabelObjectFalseFalseResponse]] = OperationPlan(
@@ -623,20 +322,7 @@ OPERATION_25: Final[OperationPlan[ReadLabelObjectFalseFalseResponse]] = Operatio
     path='/label-object-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_25,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_25),),
 )
 
 OPERATION_26: Final[OperationPlan[ReadLabelObjectFalseAbsentResponse]] = OperationPlan(
@@ -645,20 +331,7 @@ OPERATION_26: Final[OperationPlan[ReadLabelObjectFalseAbsentResponse]] = Operati
     path='/label-object-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_26,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_26),),
 )
 
 OPERATION_27: Final[OperationPlan[ReadLabelObjectTrueResponse]] = OperationPlan(
@@ -667,22 +340,7 @@ OPERATION_27: Final[OperationPlan[ReadLabelObjectTrueResponse]] = OperationPlan(
     path='/label-object-true/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                explode=True,
-                required=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_27,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', explode=True, required=True, allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_27),),
 )
 
 OPERATION_28: Final[OperationPlan[ReadLabelObjectTrueFalseResponse]] = OperationPlan(
@@ -691,21 +349,7 @@ OPERATION_28: Final[OperationPlan[ReadLabelObjectTrueFalseResponse]] = Operation
     path='/label-object-true-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                explode=True,
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_28,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', explode=True, required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_28),),
 )
 
 OPERATION_29: Final[OperationPlan[ReadLabelObjectTrueAbsentResponse]] = OperationPlan(
@@ -714,21 +358,7 @@ OPERATION_29: Final[OperationPlan[ReadLabelObjectTrueAbsentResponse]] = Operatio
     path='/label-object-true-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='label',
-                explode=True,
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_29,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='label', explode=True, required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_29),),
 )
 
 OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse]] = OperationPlan(
@@ -737,18 +367,7 @@ OPERATION_30: Final[OperationPlan[ReadMatrixScalarFalseResponse]] = OperationPla
     path='/matrix-scalar-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                allow_reserved=True,
-            ),
-            codec=model_bindings.codec_30,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True, allow_reserved=True), codec=model_bindings.codec_30),),
 )
 
 OPERATION_31: Final[OperationPlan[ReadMatrixScalarFalseFalseResponse]] = OperationPlan(
@@ -757,17 +376,7 @@ OPERATION_31: Final[OperationPlan[ReadMatrixScalarFalseFalseResponse]] = Operati
     path='/matrix-scalar-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-            ),
-            codec=model_bindings.codec_31,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True), codec=model_bindings.codec_31),),
 )
 
 OPERATION_32: Final[OperationPlan[ReadMatrixScalarFalseAbsentResponse]] = OperationPlan(
@@ -776,17 +385,7 @@ OPERATION_32: Final[OperationPlan[ReadMatrixScalarFalseAbsentResponse]] = Operat
     path='/matrix-scalar-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-            ),
-            codec=model_bindings.codec_32,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True), codec=model_bindings.codec_32),),
 )
 
 OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse]] = OperationPlan(
@@ -795,19 +394,7 @@ OPERATION_33: Final[OperationPlan[ReadMatrixArrayFalseResponse]] = OperationPlan
     path='/matrix-array-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_33,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True, allow_reserved=True, shape='array'), codec=model_bindings.codec_33),),
 )
 
 OPERATION_34: Final[OperationPlan[ReadMatrixArrayFalseFalseResponse]] = OperationPlan(
@@ -816,18 +403,7 @@ OPERATION_34: Final[OperationPlan[ReadMatrixArrayFalseFalseResponse]] = Operatio
     path='/matrix-array-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_34,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True, shape='array'), codec=model_bindings.codec_34),),
 )
 
 OPERATION_35: Final[OperationPlan[ReadMatrixArrayFalseAbsentResponse]] = OperationPlan(
@@ -836,18 +412,7 @@ OPERATION_35: Final[OperationPlan[ReadMatrixArrayFalseAbsentResponse]] = Operati
     path='/matrix-array-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_35,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True, shape='array'), codec=model_bindings.codec_35),),
 )
 
 OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse]] = OperationPlan(
@@ -856,20 +421,7 @@ OPERATION_36: Final[OperationPlan[ReadMatrixArrayTrueResponse]] = OperationPlan(
     path='/matrix-array-true/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                explode=True,
-                required=True,
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_36,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', explode=True, required=True, allow_reserved=True, shape='array'), codec=model_bindings.codec_36),),
 )
 
 OPERATION_37: Final[OperationPlan[ReadMatrixArrayTrueFalseResponse]] = OperationPlan(
@@ -878,19 +430,7 @@ OPERATION_37: Final[OperationPlan[ReadMatrixArrayTrueFalseResponse]] = Operation
     path='/matrix-array-true-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                explode=True,
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_37,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', explode=True, required=True, shape='array'), codec=model_bindings.codec_37),),
 )
 
 OPERATION_38: Final[OperationPlan[ReadMatrixArrayTrueAbsentResponse]] = OperationPlan(
@@ -899,19 +439,7 @@ OPERATION_38: Final[OperationPlan[ReadMatrixArrayTrueAbsentResponse]] = Operatio
     path='/matrix-array-true-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                explode=True,
-                required=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_38,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', explode=True, required=True, shape='array'), codec=model_bindings.codec_38),),
 )
 
 OPERATION_39: Final[OperationPlan[ReadMatrixObjectFalseResponse]] = OperationPlan(
@@ -920,21 +448,7 @@ OPERATION_39: Final[OperationPlan[ReadMatrixObjectFalseResponse]] = OperationPla
     path='/matrix-object-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_39,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True, allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_39),),
 )
 
 OPERATION_40: Final[OperationPlan[ReadMatrixObjectFalseFalseResponse]] = OperationPlan(
@@ -943,20 +457,7 @@ OPERATION_40: Final[OperationPlan[ReadMatrixObjectFalseFalseResponse]] = Operati
     path='/matrix-object-false-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_40,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_40),),
 )
 
 OPERATION_41: Final[OperationPlan[ReadMatrixObjectFalseAbsentResponse]] = OperationPlan(
@@ -965,20 +466,7 @@ OPERATION_41: Final[OperationPlan[ReadMatrixObjectFalseAbsentResponse]] = Operat
     path='/matrix-object-false-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_41,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_41),),
 )
 
 OPERATION_42: Final[OperationPlan[ReadMatrixObjectTrueResponse]] = OperationPlan(
@@ -987,22 +475,7 @@ OPERATION_42: Final[OperationPlan[ReadMatrixObjectTrueResponse]] = OperationPlan
     path='/matrix-object-true/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                explode=True,
-                required=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_42,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', explode=True, required=True, allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_42),),
 )
 
 OPERATION_43: Final[OperationPlan[ReadMatrixObjectTrueFalseResponse]] = OperationPlan(
@@ -1011,21 +484,7 @@ OPERATION_43: Final[OperationPlan[ReadMatrixObjectTrueFalseResponse]] = Operatio
     path='/matrix-object-true-false/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                explode=True,
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_43,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', explode=True, required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_43),),
 )
 
 OPERATION_44: Final[OperationPlan[ReadMatrixObjectTrueAbsentResponse]] = OperationPlan(
@@ -1034,21 +493,7 @@ OPERATION_44: Final[OperationPlan[ReadMatrixObjectTrueAbsentResponse]] = Operati
     path='/matrix-object-true-absent/{wire-name}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='matrix',
-                explode=True,
-                required=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_44,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='matrix', explode=True, required=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_44),),
 )
 
 OPERATION_45: Final[OperationPlan[ReadQueryScalarFalseTrueResponse]] = OperationPlan(
@@ -1057,17 +502,7 @@ OPERATION_45: Final[OperationPlan[ReadQueryScalarFalseTrueResponse]] = Operation
     path='/read-query-scalar-false-true',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='q',
-                style='form',
-                allow_reserved=True,
-            ),
-            codec=model_bindings.codec_45,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', allow_reserved=True), codec=model_bindings.codec_45),),
 )
 
 OPERATION_46: Final[OperationPlan[ReadQueryScalarFalseFalseResponse]] = OperationPlan(
@@ -1076,12 +511,7 @@ OPERATION_46: Final[OperationPlan[ReadQueryScalarFalseFalseResponse]] = Operatio
     path='/read-query-scalar-false-false',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='query', name='q', style='form'),
-            codec=model_bindings.codec_46,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form'), codec=model_bindings.codec_46),),
 )
 
 OPERATION_47: Final[OperationPlan[ReadQueryScalarFalseAbsentResponse]] = OperationPlan(
@@ -1090,12 +520,7 @@ OPERATION_47: Final[OperationPlan[ReadQueryScalarFalseAbsentResponse]] = Operati
     path='/read-query-scalar-false-absent',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='query', name='q', style='form'),
-            codec=model_bindings.codec_47,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form'), codec=model_bindings.codec_47),),
 )
 
 OPERATION_48: Final[OperationPlan[ReadQueryScalarTrueTrueResponse]] = OperationPlan(
@@ -1104,18 +529,7 @@ OPERATION_48: Final[OperationPlan[ReadQueryScalarTrueTrueResponse]] = OperationP
     path='/read-query-scalar-true-true',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='q',
-                style='form',
-                explode=True,
-                allow_reserved=True,
-            ),
-            codec=model_bindings.codec_48,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', explode=True, allow_reserved=True), codec=model_bindings.codec_48),),
 )
 
 OPERATION_49: Final[OperationPlan[ReadQueryScalarTrueFalseResponse]] = OperationPlan(
@@ -1124,12 +538,7 @@ OPERATION_49: Final[OperationPlan[ReadQueryScalarTrueFalseResponse]] = Operation
     path='/read-query-scalar-true-false',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='query', name='q', style='form', explode=True),
-            codec=model_bindings.codec_49,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', explode=True), codec=model_bindings.codec_49),),
 )
 
 OPERATION_50: Final[OperationPlan[ReadQueryScalarTrueAbsentResponse]] = OperationPlan(
@@ -1138,12 +547,7 @@ OPERATION_50: Final[OperationPlan[ReadQueryScalarTrueAbsentResponse]] = Operatio
     path='/read-query-scalar-true-absent',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='query', name='q', style='form', explode=True),
-            codec=model_bindings.codec_50,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', explode=True), codec=model_bindings.codec_50),),
 )
 
 OPERATION_51: Final[OperationPlan[ReadQueryArrayFalseTrueResponse]] = OperationPlan(
@@ -1152,18 +556,7 @@ OPERATION_51: Final[OperationPlan[ReadQueryArrayFalseTrueResponse]] = OperationP
     path='/read-query-array-false-true',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='q',
-                style='form',
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_51,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', allow_reserved=True, shape='array'), codec=model_bindings.codec_51),),
 )
 
 OPERATION_52: Final[OperationPlan[ReadQueryArrayFalseFalseResponse]] = OperationPlan(
@@ -1172,12 +565,7 @@ OPERATION_52: Final[OperationPlan[ReadQueryArrayFalseFalseResponse]] = Operation
     path='/read-query-array-false-false',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
-            codec=model_bindings.codec_52,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', shape='array'), codec=model_bindings.codec_52),),
 )
 
 OPERATION_53: Final[OperationPlan[ReadQueryArrayFalseAbsentResponse]] = OperationPlan(
@@ -1186,12 +574,7 @@ OPERATION_53: Final[OperationPlan[ReadQueryArrayFalseAbsentResponse]] = Operatio
     path='/read-query-array-false-absent',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='query', name='q', style='form', shape='array'),
-            codec=model_bindings.codec_53,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', shape='array'), codec=model_bindings.codec_53),),
 )
 
 OPERATION_54: Final[OperationPlan[ReadQueryArrayTrueTrueResponse]] = OperationPlan(
@@ -1200,19 +583,7 @@ OPERATION_54: Final[OperationPlan[ReadQueryArrayTrueTrueResponse]] = OperationPl
     path='/read-query-array-true-true',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='q',
-                style='form',
-                explode=True,
-                allow_reserved=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_54,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', explode=True, allow_reserved=True, shape='array'), codec=model_bindings.codec_54),),
 )
 
 OPERATION_55: Final[OperationPlan[ReadQueryArrayTrueFalseResponse]] = OperationPlan(
@@ -1221,18 +592,7 @@ OPERATION_55: Final[OperationPlan[ReadQueryArrayTrueFalseResponse]] = OperationP
     path='/read-query-array-true-false',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='q',
-                style='form',
-                explode=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_55,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', explode=True, shape='array'), codec=model_bindings.codec_55),),
 )
 
 OPERATION_56: Final[OperationPlan[ReadQueryArrayTrueAbsentResponse]] = OperationPlan(
@@ -1241,18 +601,7 @@ OPERATION_56: Final[OperationPlan[ReadQueryArrayTrueAbsentResponse]] = Operation
     path='/read-query-array-true-absent',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='q',
-                style='form',
-                explode=True,
-                shape='array',
-            ),
-            codec=model_bindings.codec_56,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='q', style='form', explode=True, shape='array'), codec=model_bindings.codec_56),),
 )
 
 OPERATION_57: Final[OperationPlan[ReadQueryObjectFalseTrueResponse]] = OperationPlan(
@@ -1261,20 +610,7 @@ OPERATION_57: Final[OperationPlan[ReadQueryObjectFalseTrueResponse]] = Operation
     path='/read-query-object-false-true',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='form',
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_57,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_57),),
 )
 
 OPERATION_58: Final[OperationPlan[ReadQueryObjectFalseFalseResponse]] = OperationPlan(
@@ -1283,19 +619,7 @@ OPERATION_58: Final[OperationPlan[ReadQueryObjectFalseFalseResponse]] = Operatio
     path='/read-query-object-false-false',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='form',
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_58,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_58),),
 )
 
 OPERATION_59: Final[OperationPlan[ReadQueryObjectFalseAbsentResponse]] = OperationPlan(
@@ -1304,19 +628,7 @@ OPERATION_59: Final[OperationPlan[ReadQueryObjectFalseAbsentResponse]] = Operati
     path='/read-query-object-false-absent',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='form',
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_59,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_59),),
 )
 
 OPERATION_60: Final[OperationPlan[ReadQueryObjectTrueTrueResponse]] = OperationPlan(
@@ -1325,21 +637,7 @@ OPERATION_60: Final[OperationPlan[ReadQueryObjectTrueTrueResponse]] = OperationP
     path='/read-query-object-true-true',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='form',
-                explode=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_60,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', explode=True, allow_reserved=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_60),),
 )
 
 OPERATION_61: Final[OperationPlan[ReadQueryObjectTrueFalseResponse]] = OperationPlan(
@@ -1348,20 +646,7 @@ OPERATION_61: Final[OperationPlan[ReadQueryObjectTrueFalseResponse]] = Operation
     path='/read-query-object-true-false',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='form',
-                explode=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_61,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', explode=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_61),),
 )
 
 OPERATION_62: Final[OperationPlan[ReadQueryObjectTrueAbsentResponse]] = OperationPlan(
@@ -1370,20 +655,7 @@ OPERATION_62: Final[OperationPlan[ReadQueryObjectTrueAbsentResponse]] = Operatio
     path='/read-query-object-true-absent',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='form',
-                explode=True,
-                shape='object',
-                fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_62,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='form', explode=True, shape='object', fields=(FieldPlan('left-key', 'string'), FieldPlan('right', 'string')), additional=FieldPlan('', 'string')), codec=model_bindings.codec_62),),
 )
 
 OPERATION_63: Final[OperationPlan[ReadDeepObjectResponse]] = OperationPlan(
@@ -1392,21 +664,7 @@ OPERATION_63: Final[OperationPlan[ReadDeepObjectResponse]] = OperationPlan(
     path='/deep',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='filter',
-                style='deepObject',
-                explode=True,
-                allow_reserved=True,
-                shape='object',
-                fields=(FieldPlan('k', 'string'),),
-                additional=FieldPlan('', 'string'),
-            ),
-            codec=model_bindings.codec_63,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='filter', style='deepObject', explode=True, allow_reserved=True, shape='object', fields=(FieldPlan('k', 'string'),), additional=FieldPlan('', 'string')), codec=model_bindings.codec_63),),
 )
 
 OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse]] = OperationPlan(
@@ -1415,21 +673,7 @@ OPERATION_64: Final[OperationPlan[ReadHeadersAndCookiesResponse]] = OperationPla
     path='/controls',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='X-Wire', style='simple'),
-            codec=model_bindings.codec_64,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='cookie',
-                name='session',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_65,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='header', name='X-Wire', style='simple'), codec=model_bindings.codec_64), ParameterSpec(plan=ParameterPlan(location='cookie', name='session', style='form', explode=True), codec=model_bindings.codec_65)),
 )
 
 OPERATION_65: Final[OperationPlan[ReadTextResponse]] = OperationPlan(
@@ -1438,17 +682,7 @@ OPERATION_65: Final[OperationPlan[ReadTextResponse]] = OperationPlan(
     path='/text/{key}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='key',
-                required=True,
-                content_media_type='text/plain',
-            ),
-            codec=model_bindings.codec_66,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='key', required=True, content_media_type='text/plain'), codec=model_bindings.codec_66),),
 )
 
 OPERATION_66: Final[OperationPlan[ReadJsonResponse]] = OperationPlan(
@@ -1457,17 +691,7 @@ OPERATION_66: Final[OperationPlan[ReadJsonResponse]] = OperationPlan(
     path='/json/{key}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='key',
-                required=True,
-                content_media_type='application/json',
-            ),
-            codec=model_bindings.codec_67,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='key', required=True, content_media_type='application/json'), codec=model_bindings.codec_67),),
 )
 
 OPERATION_67: Final[OperationPlan[ReadSuffixResponse]] = OperationPlan(
@@ -1476,18 +700,7 @@ OPERATION_67: Final[OperationPlan[ReadSuffixResponse]] = OperationPlan(
     path='/suffix/{wire-name}.json',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
-            ),
-            codec=model_bindings.codec_68,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, allow_reserved=True), codec=model_bindings.codec_68),),
 )
 
 OPERATION_68: Final[OperationPlan[ReadCompositeResponse]] = OperationPlan(
@@ -1496,16 +709,5 @@ OPERATION_68: Final[OperationPlan[ReadCompositeResponse]] = OperationPlan(
     path='/composite/prefix{wire-name}suffix',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='wire-name',
-                style='simple',
-                required=True,
-                allow_reserved=True,
-            ),
-            codec=model_bindings.codec_69,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='wire-name', style='simple', required=True, allow_reserved=True), codec=model_bindings.codec_69),),
 )

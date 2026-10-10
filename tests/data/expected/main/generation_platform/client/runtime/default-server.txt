@@ -2,3 +2,4 @@
   > GET https://default.example.com/base/status
     [host: default.example.com, accept-encoding: gzip, deflate] b''
   status = None
+  raw body other than bytes ! DecodeError: DecodeError(reason='unencodable', location='body') [location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A raw body must be bytes, since this package declares no binary or multipart request body')] unencodable

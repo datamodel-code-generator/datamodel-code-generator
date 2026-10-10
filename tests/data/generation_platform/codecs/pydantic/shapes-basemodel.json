@@ -53,7 +53,7 @@
     {"name": "values-server-response-integer-key", "use": "/paths/~1values/post response_body 200", "op": "encode", "value": {"call": "Values", "args": {"any": {"k": {"py": "dict", "items": [[1, 2]]}}}}},
     {"name": "values-client-from-wire-nested", "use": "/paths/~1values/post request_body", "surface": "client", "op": "from_wire", "value": {"nested": 3000}},
     {"name": "tree-client-decode-native", "use": "/paths/~1tree/put response_body 200", "surface": "client", "op": "decode", "value": {"value": 1, "index": {"k": {"value": 2, "contact": "bad@x"}}, "pair": [1, "bad@y"]}},
-    {"name": "tree-server-mutate-pair", "use": "/paths/~1tree/put response_body 200", "op": "mutate", "target": "tree-client-decode", "attr": "pair", "native": {"py": "tuple", "items": [1]}},
+    {"name": "tree-server-mutate-pair", "use": "/paths/~1tree/put response_body 200", "op": "mutate", "target": "tree-client-decode", "attr": "pair", "native": {"py": "tuple", "items": [1, "bad@y"]}},
     {"name": "tree-server-encode-mutated", "use": "/paths/~1tree/put response_body 200", "op": "encode", "value": {"result": "tree-client-decode", "attr": "value"}},
     {"name": "values-server-response-codes", "use": "/paths/~1values/post response_body 200", "op": "encode", "value": {"call": "Values", "args": {"codes": ["a"]}}},
     {"name": "values-client-encode-codes", "use": "/paths/~1values/post request_body", "surface": "client", "op": "encode", "value": {"call": "Values", "args": {"codes": ["a"]}}},

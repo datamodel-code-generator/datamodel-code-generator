@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: Link errors, version: "1.0"}
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      responses:
+        "201":
+          description: Created.
+          links:
+            known: {$ref: "#/components/links/Known"}
+            missing: {$ref: "#/components/links/Absent"}
+            nonlink: {$ref: "#"}
+            unnamed: {description: Names no operation.}
+            both: {operationRef: "#/paths/~1pets/post", operationId: createPet}
+            numeric: {operationId: 0}
+            undecodable: {$ref: "link-errors-latin1.yaml#/components/links/Pets"}
+      callbacks:
+        created:
+          "{$request.body#/url}":
+            post:
+              responses:
+                "204":
+                  description: Received.
+                  links:
+                    unobserved: {$ref: "link-errors-library.yaml#/components/links/Pets"}
+components:
+  links:
+    Known: {operationId: createPet}

@@ -1,0 +1,32 @@
+openapi: 3.2.0
+info: {title: Server errors, version: "1.0"}
+paths:
+  /accounts/{id}:
+    post:
+      operationId: updateAccount
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
+        - {name: limit, in: query, schema: {type: integer, maximum: 10}}
+        - {name: X-Token, in: header, schema: {type: string, minLength: 8}}
+        - {name: session, in: cookie, style: cookie, schema: {type: string, minLength: 8}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Login"}
+      responses:
+        "204": {description: Done.}
+  /codes:
+    get:
+      operationId: listCodes
+      parameters:
+        - {name: codes, in: query, explode: false, schema: {type: array, items: {type: string, minLength: 8}}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Login:
+      type: object
+      required: [secret]
+      properties:
+        secret: {type: string, minLength: 8}

@@ -1,37 +1,41 @@
-"""Multipart bodies: form-data field and file parts sent with the boundary of their call, and received parts.
+"""Multipart bodies: form-data field and file parts that HTTPX2 encodes as `files=`.
 
-A field part carries a value, a file part any binary body of the client's mode. A call encodes the fields and the
-heads of the file parts once, and each send begins each file part's own attempt around them, so a multipart body can
-be sent again when all of its file parts can. A body whose schema has file parts is checked against the plans of its
-members: each part's name, kind, and repeats, and the presence of every required member.
+A field part carries a value, a file part a binary body that is read synchronously: bytes, a synchronous file
+object, a path, or an iterable of bytes. HTTPX2 encodes a multipart body and reads its files synchronously, so an async
+file or async iterable is refused before anything is sent, rather than buffered, in either mode. A body whose parts
+are all bytes is encoded once; one with streamed file parts is encoded at each attempt under the boundary its media
+type names, each file part read from the position it had when the call began, so it can be sent again when all of its
+file parts can.
 """
 
 from __future__ import annotations
 
-import os
-import re
 from collections.abc import Mapping
-from functools import partial
+from dataclasses import dataclass
+from io import UnsupportedOperation
+from os import SEEK_END, SEEK_SET, urandom
 from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, TypeVar, cast
 
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
-from ..model_codecs.media import issue, json_value, media_kind, normalize_media_type, plain, typed
 from ..model_codecs.media import json_bytes as _json_bytes
+from ..model_codecs.media import media_kind
 from ..model_codecs.parameters import ParameterPlan, part_pairs
-from ..model_codecs.unset import Unset
-from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
-from .errors import DecodeError, add_secondary
-from .media import charset, encode_text, most_specific, normalized, with_charset
-from .responses import HeadersView
+from ..model_codecs.unset import UNSET
+from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
+from .body_sources import BinaryBodies, BodyBindings, BoundBody
+from .errors import DecodeError
+from .logical import in_thread
+from .media import encode_text, most_specific, normalized, with_charset
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Iterator
+    from collections.abc import AsyncIterator, Iterable, Iterator
     from typing import Any, Protocol
 
-    from ..model_codecs.media import JSONValue, LexicalKind
-    from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
+    from ..model_codecs.media import JSONValue
+    from .bodies import BinaryContent, BinarySource
+    from .content import AsyncContent, BodyEntry, SyncContent
 
     class PartCodec(Protocol):
         """The codec of a sent member's values, as the generated operation registry binds it."""
@@ -47,52 +51,22 @@ if TYPE_CHECKING:
 
 
 PartT = TypeVar("PartT")
-T = TypeVar("T")
-InputT = TypeVar("InputT")
 PartT_co = TypeVar("PartT_co", covariant=True)
-T_co = TypeVar("T_co", covariant=True)
 PartKind: TypeAlias = Literal["string", "integer", "number", "boolean", "json"]
 ContentT_co = TypeVar("ContentT_co", bound="SyncBinaryBody | AsyncBinaryBody", covariant=True)
+Entry: TypeAlias = tuple[str, str | None, object, str | None, tuple[tuple[str, str], ...]]
 
-if TYPE_CHECKING:
-
-    class ValueCodec(Protocol[T_co]):
-        """The codec of a received member's values."""
-
-        def decode(self, content: bytes) -> T_co:
-            """Return the value of received JSON bytes."""
-            ...
-
-        def convert(self, value: object) -> T_co:
-            """Return the value of a parsed text value."""
-            ...
-
-        @property
-        def errors(self) -> tuple[type[Exception], ...]:
-            """Return the failures of the codec's backend."""
-            ...
-
-        def malformed(self, error: Exception) -> bool:
-            """Return whether a failure of the codec's backend is received bytes that are not JSON."""
-            ...
-
-
-_MULTIPART: Final = "A multipart body must be of the client's mode"
-_TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-zA-Z-]+")
-_BREAK: Final = re.compile(r"[\r\n\x00]")
-_PART_HEADERS: Final = frozenset({"content-type", "content-disposition"})
-_PARAMETERS: Final = r';\s*([^\s;=]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^\s;]*))'
-_PART: Final = "A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode"
-_UNDECLARED: Final = "A form-data part is not declared"
-_EXCLUDED: Final = "A form-data member that its direction excludes takes no part"
-_KIND: Final = "A form-data file member takes FileParts, and any other member FieldParts"
-_REPEATED: Final = "A form-data body repeats a single-valued member"
-_MISSING: Final = "A form-data body lacks a required member"
+_MULTIPART: Final = "A multipart body must be a MultipartBody or an AsyncMultipartBody"
+_PART: Final = "A multipart part must be a FieldPart or a FilePart named by a string"
+_SYNC: Final = (
+    "A multipart file part must be read synchronously: bytes, a binary file object, a path, or an iterable of bytes"
+)
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
+_DISPOSITION: Final = "A part's Content-Disposition comes from its name and filename, so its headers may not name it"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
-_SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
-_ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
+_OCTETS: Final = "application/octet-stream"
+_FORM_DATA: Final = "multipart/form-data"
 
 
 class FieldPart(Generic[PartT_co]):
@@ -106,13 +80,13 @@ class FieldPart(Generic[PartT_co]):
     def __init__(
         self,
         name: str,
-        value: PartT_co | Unset,
+        value: PartT_co | UNSET,
         content_type: str | None = None,
         headers: tuple[tuple[str, str], ...] = (),
     ) -> None:
         """Keep the part's name, value, media type, and extra headers in their order."""
         self._name = name
-        self._value = value
+        self._value: PartT_co | UNSET = value
         self._content_type = content_type
         self._headers = headers
 
@@ -122,7 +96,7 @@ class FieldPart(Generic[PartT_co]):
         return self._name
 
     @property
-    def value(self) -> PartT_co | Unset:
+    def value(self) -> PartT_co | UNSET:
         """Return the part's value, or UNSET for a part left out."""
         return self._value
 
@@ -214,40 +188,27 @@ class AsyncMultipartBody(Generic[PartT]):
 
 
 if TYPE_CHECKING:
-    BodyInput: TypeAlias = bytes | FileBody | StreamBody | BodyFactory | MultipartBody[PartT]
-    AsyncBodyInput: TypeAlias = bytes | AsyncFileBody | AsyncStreamBody | AsyncBodyFactory | AsyncMultipartBody[PartT]
+    BodyInput: TypeAlias = SyncBinaryBody | MultipartBody[PartT]
+    AsyncBodyInput: TypeAlias = AsyncBinaryBody | AsyncMultipartBody[PartT]
 else:
-    BodyInput = TypeAliasType(
-        "BodyInput", "bytes | FileBody | StreamBody | BodyFactory | MultipartBody[PartT]", type_params=(PartT,)
-    )
+    BodyInput = TypeAliasType("BodyInput", "SyncBinaryBody | MultipartBody[PartT]", type_params=(PartT,))
     AsyncBodyInput = TypeAliasType(
         "AsyncBodyInput",
-        "bytes | AsyncFileBody | AsyncStreamBody | AsyncBodyFactory | AsyncMultipartBody[PartT]",
+        "AsyncBinaryBody | AsyncMultipartBody[PartT]",
         type_params=(PartT,),
     )
 
 
 class PartPlan:
-    """How one form-data member is sent or read: its kind, repeats, files, requiredness, codec, and media types.
+    """How one form-data member is sent or read: its kind, repeats, codec, media types, and style.
 
     A received part is read in its lexical kind, or as JSON. A sent value is encoded by the codec, when the member
-    has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts. The media
-    types of the member's encoding bound the media type a part names, and the first concrete one is its default. A
-    member whose encoding gives a query style writes a part for each name and value that style gives its value. A
-    member the direction excludes, read-only in a request, takes no part.
+    has one, and each item of a repeated member becomes its own part. The media types of the member's encoding bound
+    the media type a part names, and the first concrete one is its default. A member whose encoding gives a query
+    style writes a part for each name and value that style gives its value.
     """
 
-    __slots__ = (
-        "codec",
-        "content_types",
-        "excluded",
-        "file",
-        "kind",
-        "name",
-        "repeated",
-        "required",
-        "style",
-    )
+    __slots__ = ("codec", "content_types", "kind", "name", "repeated", "style")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -255,20 +216,14 @@ class PartPlan:
         kind: PartKind = "string",
         *,
         repeated: bool = False,
-        file: bool = False,
-        required: bool = False,
-        excluded: bool = False,
         codec: PartCodec | None = None,
         content_types: tuple[str, ...] = (),
         style: ParameterPlan | None = None,
     ) -> None:
-        """Keep the member's name, kind, repeats, files, requiredness, exclusion, codec, media, and style."""
+        """Keep the member's name, kind, repeats, codec, media, and style."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
-        self.file = file
-        self.required = required
-        self.excluded = excluded
         self.codec = codec
         self.content_types = content_types
         self.style = style
@@ -288,83 +243,21 @@ class PartPlan:
 _ANY: Final = PartPlan("")
 
 
-class _Names:
-    """The member plans of a body with file parts, and the names its parts have used so far.
+@dataclass(frozen=True, slots=True)
+class FormParts:
+    """The parts of a form-data body with streamed file parts, as `files=` takes them, each file input as given.
 
-    Once a member's style writes part names of its own, each part name is owned by the member that wrote it.
+    The call binds each file input and opens it for each attempt, which HTTPX2 encodes under the boundary the media
+    type names.
     """
 
-    __slots__ = ("additional", "declared", "owners", "seen")
-
-    def __init__(self, plans: tuple[PartPlan, ...], additional: PartPlan | None) -> None:
-        self.declared = {plan.name: plan for plan in plans}
-        self.additional = additional
-        self.seen: set[str] = set()
-        self.owners: dict[str, str] | None = {} if any(plan.style is not None for plan in plans) else None
-
-    def plan(self, name: object, *, file: bool, omitted: bool = False) -> PartPlan:
-        """Return the plan of a part, refusing an undeclared name, the other kind of part, or a repeat.
-
-        A member its direction excludes takes only an omitted part.
-        """
-        if not isinstance(name, str) or (plan := self.declared.get(name, self.additional)) is None:
-            raise _malformed(name, ValueError(_UNDECLARED))
-        if plan.excluded and not omitted:
-            raise _malformed(name, ValueError(_EXCLUDED))
-        if plan.file is not file:
-            raise _malformed(name, ValueError(_KIND))
-        if name in self.seen and not (file and plan.repeated):
-            raise _malformed(name, ValueError(_REPEATED))
-        self.seen.add(name)
-        return plan
-
-    def claim(self, member: str, written: Iterable[str]) -> None:
-        """Refuse part names another member's parts have written."""
-        if self.owners is not None and any(self.owners.setdefault(name, member) != member for name in written):
-            raise _malformed(member, ValueError(_CLAIMED))
-
-    def check(self) -> None:
-        """Refuse a body that lacks a part of a required member."""
-        for plan in self.declared.values():
-            if plan.required and plan.name not in self.seen:
-                raise _malformed(plan.name, ValueError(_MISSING))
+    entries: tuple[Entry, ...]
+    media_type: str
 
 
-def _malformed(name: object, cause: BaseException, *, whole: bool = False) -> DecodeError:
-    location = ("body",) if whole else ("body", name if isinstance(name, str) else "?")
+def _malformed(name: object, cause: BaseException) -> DecodeError:
+    location = ("body",) if name is None else ("body", name if isinstance(name, str) else "?")
     return DecodeError(reason="unencodable", direction="request", location=location, cause=cause)
-
-
-def multipart_head(
-    boundary: str, name: str, filename: str | None, content_type: str | None, headers: tuple[tuple[str, str], ...]
-) -> bytes:
-    """Return the delimiter and headers that open one form-data part, as HTML forms quote its name and filename.
-
-    Content-Type and Content-Disposition come from the part itself, so its own headers may not repeat them.
-    """
-    lines = [f"--{boundary}", f"Content-Disposition: {_disposition(name, filename)}"]
-    if content_type is not None:
-        try:
-            normalize_media_type(content_type)
-        except ValueError:
-            msg = "A part media type must be a media type"
-            raise ParameterEncodingError(msg) from None
-        lines.append(f"Content-Type: {content_type}")
-    for key, value in headers:
-        if not _TOKEN.fullmatch(key) or key.lower() in _PART_HEADERS or _BREAK.search(value):
-            msg = "A part header must be a token other than Content-Type and Content-Disposition, on one line"
-            raise ParameterEncodingError(msg)
-        lines.append(f"{key}: {value}")
-    return ("\r\n".join(lines) + "\r\n\r\n").encode()
-
-
-def _disposition(name: str, filename: str | None) -> str:
-    disposition = f'form-data; name="{_quoted(name)}"'
-    return disposition if filename is None else f'{disposition}; filename="{_quoted(filename)}"'
-
-
-def _quoted(text: str) -> str:
-    return text.replace('"', "%22").replace("\r", "%0D").replace("\n", "%0A")
 
 
 def multipart_member(value: JSONValue, media_type: str | None = None) -> tuple[bytes, str | None]:
@@ -392,235 +285,158 @@ def multipart_member(value: JSONValue, media_type: str | None = None) -> tuple[b
             return encode_text(_json_bytes(value).decode(), media_type), media_type
 
 
+def _entry(
+    name: str,
+    content: object,
+    media_type: str | None,
+    headers: tuple[tuple[str, str], ...] = (),
+    filename: str | None = None,
+) -> Entry:
+    return name, filename, content, media_type, headers
+
+
+def _part_headers(media_type: str | None, headers: tuple[tuple[str, str], ...]) -> dict[str, str]:
+    """Return a part's headers as HTTPX2 writes them: its media type first, then each name once, repeats comma-joined.
+
+    A Content-Type header the part names replaces its media type.
+    """
+    written: dict[str, str] = {} if media_type is None else {"Content-Type": media_type}
+    names: dict[str, str] = {}
+    for key, value in headers:
+        if (name := names.get(folded := key.lower())) is not None:
+            written[name] = f"{written[name]}, {value}"
+            continue
+        if folded == "content-type":
+            written.pop("Content-Type", None)
+        names[folded] = key
+        written[key] = value
+    return written
+
+
+def native_files(entries: Iterable[Entry], contents: Iterable[object] | None = None) -> Any:
+    """Return the parts as HTTPX2's `files=` takes them, with the given contents in place of the parts' own."""
+    if contents is None:
+        contents = (content for _, _, content, _, _ in entries)
+    return [
+        (name, (filename, content, media_type, _part_headers(media_type, headers)))
+        for (name, filename, _, media_type, headers), content in zip(entries, contents, strict=True)
+    ]
+
+
+def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | FormParts, str | None]:
+    """Return a body's bytes, or else its streamed parts, and its media type with a new boundary.
+
+    The media type is the one the call sends, multipart/form-data without one, its other parameters kept. A body
+    without parts has no media type, as HTTPX2 sends none. A part header naming Content-Disposition is refused, as
+    HTTPX2 writes it itself, and HTTPX2 checks every part's name and headers before any file input is opened.
+    """
+    import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
+
+    if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
+        raise _malformed(None, ValueError(_DISPOSITION))
+    try:
+        if not entries:
+            return b"", None
+        sent = f"{media_type or _FORM_DATA}; boundary={urandom(16).hex()}"
+        if all(type(content) is bytes for _, _, content, _, _ in entries):
+            return httpx2.Request("POST", "/", headers={"Content-Type": sent}, files=native_files(entries)).read(), sent
+        httpx2.Request("POST", "/", files=native_files(entries, (b"" for _ in entries)))
+    except (TypeError, ValueError) as error:
+        raise _malformed(None, error) from None
+    return FormParts(tuple(entries), sent), sent
+
+
 def encode_multipart(
     value: JSONValue,
-    boundary: str,
     content_types: Mapping[str, str] | None = None,
     styled: Mapping[str, ParameterPlan] | None = None,
-) -> bytes:
-    """Serialize an object as ordered form-data parts, repeating a part for each array member; an empty one writes none.
+    sent: str | None = None,
+) -> tuple[bytes | FormParts, str | None]:
+    """Encode an object as ordered form-data parts, repeating a part for each array member; an empty one writes none.
 
-    A member with an encoding's media type is written in it. A member in `styled` writes a part for each name and
-    value its query style gives, without percent-encoding, and no two members may then write parts of the same name.
+    The body is sent in the media type `sent` names. A member with an encoding's media type is written in it. A member
+    in `styled` writes a part for each name and value its query style gives, without percent-encoding, and no two
+    members may then write parts of the same name.
     """
     if not isinstance(value, Mapping):
         msg = "A multipart form value must be an object"
         raise ParameterEncodingError(msg)
-    parts: list[bytes] = []
+    entries: list[Entry] = []
     owners: dict[str, str] = {}
     for name, item in value.items():
         if styled and (style := styled.get(name)) is not None:
             pairs = part_pairs(style, item)
             if any(owners.setdefault(key, name) != name for key, _ in pairs):
                 raise ParameterEncodingError(_CLAIMED)
-            parts.extend(
-                piece
-                for key, text in pairs
-                for piece in (multipart_head(boundary, key, None, None, ()), text.encode(), b"\r\n")
-            )
+            entries.extend(_entry(key, text.encode(), None) for key, text in pairs)
             continue
         if styled and owners.setdefault(name, name) != name:
             raise ParameterEncodingError(_CLAIMED)
         declared = None if content_types is None else content_types.get(name)
         for member in item if isinstance(item, list) else (item,):
             content, media_type = multipart_member(member, declared)
-            parts.extend((multipart_head(boundary, name, None, media_type, ()), content, b"\r\n"))
-    parts.append(f"--{boundary}--\r\n".encode())
-    return b"".join(parts)
-
-
-def new_boundary() -> str:
-    """Return a new random boundary, one for each call."""
-    return f"dcg{os.urandom(16).hex()}"
+            entries.append(_entry(name, content, media_type))
+    return _encoded(entries, sent)
 
 
 def _refused(part: object) -> NoReturn:
-    raise _malformed(getattr(part, "name", None), TypeError(_PART))
-
-
-def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names | None = None) -> bytes | None:
-    """Return a field part's bytes with their heads and tails, one part for each item of a repeated member.
-
-    UNSET leaves an optional member out and is refused for a required one. A styled member writes a part for each
-    name and value its style gives, without percent-encoding.
-    """
-    if isinstance(value := part.value, Unset):
-        if plan.required:
-            raise _malformed(part.name, ValueError(_MISSING))
-        return None
-    try:
-        wire = cast("JSONValue", value if (codec := plan.codec) is None else codec.dump(value))
-        if plan.style is not None and names is not None:
-            return _styled(part, boundary, part_pairs(plan.style, wire), names)
-        if names is not None and names.owners is not None:
-            names.claim(part.name, (part.name,))
-        if not plan.repeated or not isinstance(wire, list):
-            return _member(part, boundary, wire, plan)
-        return b"".join([_member(part, boundary, item, plan) for item in wire])
-    except _errors(plan) as error:
-        raise _malformed(part.name, error) from None
+    raise _malformed(getattr(part, "name", "?"), TypeError(_PART))
 
 
 def _errors(plan: PartPlan) -> tuple[type[Exception], ...]:
     return (CodecError, TypeError, AttributeError, *(() if plan.codec is None else plan.codec.errors))
 
 
-def _styled(part: FieldPart[object], boundary: str, pairs: tuple[tuple[str, str], ...], names: _Names) -> bytes:
-    """Return the parts a styled member writes, each name claimed for it.
+def _field(part: FieldPart[object], plan: PartPlan) -> list[Entry]:
+    """Return a field part's entries, one for each item of a repeated member and none for UNSET.
 
-    Each value is text in the charset of the media type its part names, UTF-8 without one.
+    A styled member writes a part for each name and value its style gives, without percent-encoding, in the charset of
+    the media type its part names, UTF-8 without one.
     """
-    names.claim(part.name, [key for key, _ in pairs])
-    media_type = part.content_type
-    return b"".join([
-        multipart_head(boundary, key, None, media_type, part.headers)
-        + (text.encode() if media_type is None else encode_text(text, media_type))
-        + b"\r\n"
-        for key, text in pairs
-    ])
+    if (value := part.value) is UNSET:
+        return []
+    try:
+        wire = cast("JSONValue", value if (codec := plan.codec) is None else codec.dump(value))
+        if plan.style is not None:
+            media_type = part.content_type
+            return [
+                _entry(
+                    key,
+                    text.encode() if media_type is None else encode_text(text, media_type),
+                    media_type,
+                    part.headers,
+                )
+                for key, text in part_pairs(plan.style, wire)
+            ]
+        items = wire if plan.repeated and isinstance(wire, list) else (wire,)
+        return [_member(part, item, plan) for item in items]
+    except _errors(plan) as error:
+        raise _malformed(part.name, error) from None
 
 
-def _member(part: FieldPart[object], boundary: str, item: JSONValue, plan: PartPlan) -> bytes:
+def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
     if plan.content_types:
-        media_type = plan.media(part.content_type)
-        content, shaped = multipart_member(item, media_type)
+        content, media_type = multipart_member(item, plan.media(part.content_type))
     else:
-        media_type = part.content_type
         content, shaped = multipart_member(item)
-    return multipart_head(boundary, part.name, None, media_type or shaped, part.headers) + content + b"\r\n"
+        media_type = part.content_type or shaped
+    return _entry(part.name, content, media_type, part.headers)
 
 
-def _file_head(part: FilePart[SyncBinaryBody | AsyncBinaryBody], boundary: str, plan: PartPlan) -> bytes:
+def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> Entry:
+    if not is_binary_input(part.content):
+        raise _malformed(part.name, TypeError(_SYNC))
     try:
         media_type = plan.media(part.content_type) if plan.content_types else part.content_type
         if media_type is None and plan.content_types:
             raise ParameterEncodingError(_MEDIA)
-        return multipart_head(
-            boundary, part.name, part.filename, media_type or "application/octet-stream", part.headers
-        )
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
+    return _entry(part.name, part.content, media_type or _OCTETS, part.headers, part.filename)
 
 
-class MultipartAttempt:
-    """One attempt of a multipart body: the encoded heads and fields, and each file part's own attempt."""
-
-    __slots__ = ("_length", "_pieces")
-
-    def __init__(self, pieces: list[bytes | BodyAttempt]) -> None:
-        self._pieces = pieces
-        lengths = [len(piece) if isinstance(piece, bytes) else piece.content_length for piece in pieces]
-        self._length = None if None in lengths else sum(length for length in lengths if length is not None)
-
-    @property
-    def content_length(self) -> int | None:
-        """Return the body's length when every file part knows its own."""
-        return self._length
-
-    @property
-    def content_type(self) -> None:
-        """Name no media type; the request's Content-Type carries the boundary."""
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        """Yield the parts in order, each file part as its attempt reads it."""
-        for piece in self._pieces:
-            if isinstance(piece, bytes):
-                yield piece
-            else:
-                yield from piece.iter_bytes()
-
-    def digest_pieces(self) -> Iterator[bytes | BodyAttempt]:
-        """Visit the frozen wire framing and opened parts without consuming their iterators."""
-        return iter(self._pieces)
-
-    def close(self) -> None:
-        """Close every file part's attempt, preserving native interruption before ordinary failures."""
-        pieces, self._pieces = self._pieces, []
-        close_attempts(pieces)
-
-
-class AsyncMultipartAttempt:
-    """One async attempt of a multipart body: the encoded heads and fields, and each file part's own attempt."""
-
-    __slots__ = ("_length", "_pieces")
-
-    def __init__(self, pieces: list[bytes | AsyncBodyAttempt]) -> None:
-        self._pieces = pieces
-        lengths = [len(piece) if isinstance(piece, bytes) else piece.content_length for piece in pieces]
-        self._length = None if None in lengths else sum(length for length in lengths if length is not None)
-
-    @property
-    def content_length(self) -> int | None:
-        """Return the body's length when every file part knows its own."""
-        return self._length
-
-    @property
-    def content_type(self) -> None:
-        """Name no media type; the request's Content-Type carries the boundary."""
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        """Yield the parts in order, each file part as its attempt reads it."""
-        for piece in self._pieces:
-            if isinstance(piece, bytes):
-                yield piece
-            else:
-                async for chunk in piece.aiter_bytes():
-                    yield chunk
-
-    def digest_pieces(self) -> Iterator[bytes | AsyncBodyAttempt]:
-        """Visit this attempt's retained framing and parts before asynchronous upload."""
-        return iter(self._pieces)
-
-    async def aclose(self) -> None:
-        """Close every file part's attempt, preserving native interruption before ordinary failures."""
-        pieces, self._pieces = self._pieces, []
-        await close_async_attempts(pieces)
-
-
-def close_attempts(pieces: list[bytes | BodyAttempt]) -> None:
-    """Close every opened attempt before selecting its group's cleanup failure."""
-    _closed_all([piece.close for piece in pieces if not isinstance(piece, bytes)])
-
-
-async def close_async_attempts(pieces: list[bytes | AsyncBodyAttempt]) -> None:
-    """Close every opened attempt, retaining the first failure and every later one."""
-    raise_cleanup([
-        failure
-        for piece in pieces
-        if not isinstance(piece, bytes) and (failure := await quiet_aclose(piece.aclose)) is not None
-    ])
-
-
-def quiet_close(close: Callable[[], object]) -> BaseException | None:
-    try:
-        close()
-    except BaseException as error:  # noqa: BLE001
-        return error
-    return None
-
-
-async def quiet_aclose(close: Callable[[], Awaitable[None]]) -> BaseException | None:
-    try:
-        await close()
-    except BaseException as error:  # noqa: BLE001
-        return error
-    return None
-
-
-def raise_cleanup(failures: list[BaseException]) -> None:
-    if failures:
-        first = next((failure for failure in failures if not isinstance(failure, Exception)), failures[0])
-        for failure in failures:
-            add_secondary(first, failure)
-        raise first
-
-
-def _closed_all(closes: list[Callable[[], object]]) -> None:
-    raise_cleanup([failure for close in closes if (failure := quiet_close(close)) is not None])
-
-
-def _is_field(value: object) -> TypeIs[FieldPart[object]]:
-    return isinstance(value, FieldPart)
+def _named(part: object) -> bool:
+    return isinstance(getattr(part, "name", None), str) and isinstance(part, FieldPart | FilePart)
 
 
 def is_file_part(value: object) -> TypeIs[FilePart[SyncBinaryBody | AsyncBinaryBody]]:
@@ -632,373 +448,186 @@ def is_multipart(value: object) -> TypeIs[MultipartBody[object] | AsyncMultipart
     return isinstance(value, (MultipartBody, AsyncMultipartBody))
 
 
-def _is_sync(value: object) -> TypeIs[MultipartBody[object]]:
-    return isinstance(value, MultipartBody)
+def encode_parts(
+    body: object,
+    plans: tuple[PartPlan, ...] | None = None,
+    additional: PartPlan | None = None,
+    sent: str | None = None,
+) -> tuple[bytes | FormParts, str | None]:
+    """Encode the parts a call gives in their order, each by the plan of its member when the schema has them.
 
-
-def _is_async(value: object) -> TypeIs[AsyncMultipartBody[object]]:
-    return isinstance(value, AsyncMultipartBody)
-
-
-def _layout(
-    parts: tuple[object, ...], boundary: str, names: _Names | None
-) -> list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]]:
-    """Return a body's pieces in order: the encoded fields and heads between the file parts, whose inputs are sent.
-
-    With member plans, each part must be declared for its kind, and every required member must have a part.
+    A file part without a media type is sent as application/octet-stream, and the body in the media type `sent` names.
     """
-    pieces: list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]] = []
-    encoded: list[bytes] = []
-    for part in parts:
-        if _is_field(part):
-            plan = _ANY if names is None else names.plan(part.name, file=False, omitted=isinstance(part.value, Unset))
-            if (field := _field(part, boundary, plan, names)) is not None:
-                encoded.append(field)
-        elif is_file_part(part):
-            file = _ANY if names is None else names.plan(part.name, file=True)
-            if names is not None and names.owners is not None:
-                names.claim(part.name, (part.name,))
-            encoded.append(_file_head(part, boundary, file))
-            pieces.extend((b"".join(encoded), part))
-            encoded = [b"\r\n"]
-        else:
+    if not is_multipart(body):
+        raise _malformed(None, TypeError(_MULTIPART))
+    declared = {} if plans is None else {plan.name: plan for plan in plans}
+    entries: list[Entry] = []
+    for part in body.parts:
+        if not _named(part):
             _refused(part)
-    if names is not None:
-        names.check()
-    encoded.append(f"--{boundary}--\r\n".encode())
-    pieces.append(b"".join(encoded))
-    return pieces
-
-
-def _inputs(
-    pieces: list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]], inputs: tuple[type[InputT], ...]
-) -> Iterator[bytes | InputT]:
-    """Yield a body's encoded pieces and each file part's binary input, refusing an input of the other mode."""
-    for piece in pieces:
-        if isinstance(piece, bytes):
-            yield piece
-        elif isinstance(content := piece.content, inputs):
-            yield content
+        plan = declared.get(part.name, additional) or _ANY
+        if isinstance(part, FieldPart):
+            entries.extend(_field(part, plan))
         else:
-            _refused(piece)
+            entries.append(_file(part, plan))
+    return _encoded(entries, sent)
 
 
-class MultipartSource:
-    """A multipart body with the boundary of its call, which builds the attempt of each send in the client's mode.
+class PartFile:
+    """A file part's opened input as HTTPX2 reads a file: from the position the call captured, measured when it can be.
 
-    It encodes the fields and the heads of the file parts once, checked by the member plans of a schema with file
-    parts; a body without a schema has none.
+    HTTPX2 rewinds a file part before reading it; an input of unknown length, an iterable or a stream, cannot seek.
     """
 
-    __slots__ = ("_pieces", "body", "boundary")
+    __slots__ = ("_chunks", "_content")
+
+    def __init__(self, content: BinaryContent) -> None:
+        self._content = content
+        self._chunks: Iterator[bytes] | None = None
+
+    def read(self, _size: int = -1) -> bytes:
+        """Return the input's next chunk that has bytes, or no bytes at its end, where HTTPX2 stops reading."""
+        if self._chunks is None:
+            self._chunks = self._content.iter_bytes()
+        return next((chunk for chunk in self._chunks if chunk), b"")
+
+    def seek(self, _offset: int, whence: int = SEEK_SET) -> int:
+        """Rewind to the captured position, or return the measured length from the end, as HTTPX2 measures a file."""
+        if (length := self._content.content_length) is None:
+            raise UnsupportedOperation
+        self._chunks = None
+        return length if whence == SEEK_END else 0
+
+    def tell(self) -> int:
+        """Return the captured position, which is the start of the part."""
+        return self.seek(0)
+
+
+class MultipartAttempt:
+    """One attempt of a body with streamed file parts, encoded by HTTPX2 under the boundary its media type names."""
+
+    __slots__ = ("_stream", "_threaded", "content_length", "content_type")
 
     def __init__(
-        self,
-        body: object,
-        boundary: str,
-        plans: tuple[PartPlan, ...] | None = None,
-        additional: PartPlan | None = None,
+        self, entries: tuple[Entry, ...], contents: list[object], content_type: str, *, threaded: bool = False
     ) -> None:
-        """Encode the body's fields and file heads for every attempt, refusing a body that is no multipart body."""
-        if not is_multipart(body):
-            raise _malformed(None, TypeError(_MULTIPART), whole=True)
-        self.body = body
-        self.boundary = boundary
-        self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional))
+        """Encode the parts with the attempt's contents, under the boundary of the body's media type.
 
-    def inputs(self) -> Iterator[SyncBinaryBody]:
-        """Yield the once-encoded layout and synchronous file inputs for call-level binding."""
-        if not _is_sync(self.body):
-            raise _malformed(None, TypeError(_MULTIPART), whole=True)
-        return _inputs(self._pieces, _SYNC)
+        A threaded attempt, one with a file the call opened from a path, is read in a thread in async mode.
+        """
+        import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
 
-    def ainputs(self) -> Iterator[AsyncBinaryBody]:
-        """Yield the once-encoded layout and asynchronous file inputs for call-level binding."""
-        if not _is_async(self.body):
-            raise _malformed(None, TypeError(_MULTIPART), whole=True)
-        return _inputs(self._pieces, _ASYNC)
+        self._threaded = threaded
+        native = httpx2.Request(
+            "POST",
+            "/",
+            headers={"Content-Type": content_type},
+            files=native_files(entries, contents),
+        )
+        self._stream = native.stream
+        self.content_type: str | None = content_type
+        length = native.headers.get("Content-Length")
+        self.content_length = None if length is None else int(length)
+
+    def iter_bytes(self) -> Iterator[bytes]:
+        """Yield the encoded parts, each file part as HTTPX2 reads it."""
+        return iter(cast("Iterable[bytes]", self._stream))
+
+    def aiter_bytes(self) -> AsyncIterator[bytes]:
+        """Yield the encoded parts in async mode, one chunk at a time in a thread when the call opened a file."""
+        if self._threaded:
+            return _in_thread(self.iter_bytes())
+        return aiter(cast("AsyncIterator[bytes]", self._stream))
 
 
-class DecodedPart(Generic[T_co]):
-    """One part of a multipart response: its name, value, filename, media type, and headers in their order.
+async def _in_thread(chunks: Iterator[bytes]) -> AsyncIterator[bytes]:
+    while (chunk := await in_thread(next_chunk, chunks)) is not None:
+        yield chunk
 
-    Its representation names only the part and its media type, never its value, filename, or header values.
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MultipartForm:
+    """How a form-data body is written: the parts a call gives, checked by its members' plans, or an object's members.
+
+    An object's members are written in the media types of their encodings, and a member in `encoded` writes a part for
+    each name and value its query style gives.
     """
 
-    __slots__ = ("_content_type", "_filename", "_headers", "_name", "_value")
+    parts: tuple[PartPlan, ...] | None = None
+    additional: PartPlan | None = None
+    members: bool = False
+    content_types: tuple[tuple[str, str], ...] = ()
+    encoded: tuple[ParameterPlan, ...] = ()
 
-    def __init__(
-        self, name: str | None, value: T_co, filename: str | None, content_type: str | None, headers: HeadersView
-    ) -> None:
-        """Keep the part as it arrived, with its value decoded."""
-        self._name = name
-        self._value = value
-        self._filename = filename
-        self._content_type = content_type
-        self._headers = headers
-
-    @property
-    def name(self) -> str | None:
-        """Return the part's form-data name, or None when its Content-Disposition names none."""
-        return self._name
-
-    @property
-    def value(self) -> T_co:
-        """Return the part's value."""
-        return self._value
-
-    @property
-    def filename(self) -> str | None:
-        """Return the filename the part names, which is never used as a path."""
-        return self._filename
-
-    @property
-    def content_type(self) -> str | None:
-        """Return the part's media type, or None when it names none."""
-        return self._content_type
-
-    @property
-    def headers(self) -> HeadersView:
-        """Return the part's headers in their order, duplicates included."""
-        return self._headers
-
-    def __eq__(self, other: object) -> bool:
-        """Compare the parts field by field."""
-        return _is_part(other) and self._fields() == other._fields()
-
-    def __hash__(self) -> int:
-        """Hash the part's fields."""
-        return hash(self._fields())
-
-    def __repr__(self) -> str:
-        """Name the part and its media type only."""
-        return f"DecodedPart(name={self._name!r}, content_type={self._content_type!r})"
-
-    def _fields(self) -> tuple[str | None, T_co, str | None, str | None, HeadersView]:
-        return self._name, self._value, self._filename, self._content_type, self._headers
+    def encode(self, value: object, sent: str) -> tuple[bytes | FormParts, str | None]:
+        """Return the body and its media type, which keeps the sent type's parameters beside its boundary."""
+        if not self.members:
+            return encode_parts(value, self.parts, self.additional, sent)
+        return encode_multipart(
+            cast("JSONValue", value),
+            dict(self.content_types) if self.content_types else None,
+            {plan.name: plan for plan in self.encoded} if self.encoded else None,
+            sent,
+        )
 
 
-class MultipartData(Generic[T_co]):
-    """The parts of a multipart response in their order; its representation counts them and shows nothing else."""
+class BoundParts(BoundBody):
+    """The parts of a form-data body with streamed file parts, each attempt encoded under the boundary it names."""
 
     __slots__ = ("_parts",)
 
-    def __init__(self, parts: tuple[DecodedPart[T_co], ...]) -> None:
-        """Keep the parts in their order."""
+    def __init__(self, pieces: list[bytes | BinarySource], bindings: BodyBindings, parts: FormParts) -> None:
+        super().__init__(pieces, bindings)
         self._parts = parts
 
-    @property
-    def parts(self) -> tuple[DecodedPart[T_co], ...]:
-        """Return the parts in their order."""
-        return self._parts
-
-    def __eq__(self, other: object) -> bool:
-        """Compare the parts in their order."""
-        return _is_data(other) and self._parts == other._parts
-
-    def __hash__(self) -> int:
-        """Hash the parts in their order."""
-        return hash(self._parts)
-
-    def __repr__(self) -> str:
-        """Count the parts."""
-        return f"MultipartData(<{len(self._parts)} parts>)"
-
-
-def _is_part(value: object) -> TypeIs[DecodedPart[object]]:
-    return isinstance(value, DecodedPart)
-
-
-def _is_data(value: object) -> TypeIs[MultipartData[object]]:
-    return isinstance(value, MultipartData)
-
-
-def _parameter(value: str, name: str) -> str | None:
-    """Return a parameter of a header value: a token, or a quoted string with its escapes removed."""
-    for found in re.finditer(_PARAMETERS, value):
-        if found[1].lower() == name:
-            return found[3] if found[2] is None else re.sub(r"\\(.)", r"\1", found[2])
-    return None
-
-
-def _headers(head: bytes) -> HeadersView:
-    """Return a part's headers, read as UTF-8, or as Latin-1 when they are not UTF-8."""
-    try:
-        text = head.decode()
-    except UnicodeDecodeError:
-        text = head.decode("latin-1")
-    items: list[tuple[str, str]] = []
-    for line in text.split("\r\n"):
-        key, colon, value = line.partition(":")
-        if not colon or not _TOKEN.fullmatch(key):
-            msg = "A part header must be a token, a colon, and a value"
-            raise ValueError(msg)
-        items.append((key, value.strip()))
-    return HeadersView(items)
-
-
-def parse_multipart(body: bytes, content_type: str | None) -> tuple[DecodedPart[bytes], ...]:
-    """Split a multipart body into its parts by the boundary its Content-Type names; raise ValueError if broken.
-
-    Delimiters start their own lines and may carry transport padding; the preamble and epilogue are skipped.
-    """
-    if content_type is None or not (boundary := _parameter(content_type, "boundary")):
-        msg = "A multipart response must name its boundary"
-        raise ValueError(msg)
-    delimiter = b"\r\n--" + boundary.encode()
-    if body.startswith(delimiter[2:]):
-        position = len(delimiter) - 2
-    elif (found := body.find(delimiter)) >= 0:
-        position = found + len(delimiter)
-    else:
-        msg = "A multipart body must hold its boundary"
-        raise ValueError(msg)
-    parts: list[DecodedPart[bytes]] = []
-    while not body.startswith(b"--", position):
-        line = body.find(b"\r\n", position)
-        if line < 0 or body[position:line].strip(b" \t") or (end := body.find(delimiter, line + 2)) < 0:
-            msg = "A multipart part must start on its own line and end at the next boundary"
-            raise ValueError(msg)
-        split = body.find(b"\r\n\r\n", line, end + 2)
-        head, content = (body[line + 2 : end], b"") if split < 0 else (body[line + 2 : split], body[split + 4 : end])
-        headers = _headers(head) if head else HeadersView()
-        disposition = headers.get("content-disposition") or ""
-        parts.append(
-            DecodedPart(
-                _parameter(disposition, "name"),
-                content,
-                _parameter(disposition, "filename"),
-                headers.get("content-type"),
-                headers,
-            )
+    def attempt(self) -> SyncContent:
+        """Encode the parts for one synchronous attempt, each file part opened from its captured position."""
+        parts = self._parts
+        return MultipartAttempt(
+            parts.entries,
+            [piece if isinstance(piece, bytes) else PartFile(piece.open()) for piece in self._pieces],
+            parts.media_type,
         )
-        position = end + len(delimiter)
-    return tuple(parts)
+
+    async def aattempt(self) -> AsyncContent:
+        """Encode the parts for one asynchronous attempt, read in a thread when the call opened a path."""
+        parts = self._parts
+        return MultipartAttempt(
+            parts.entries,
+            [piece if isinstance(piece, bytes) else PartFile(await piece.aopen()) for piece in self._pieces],
+            parts.media_type,
+            threaded=any(not isinstance(piece, bytes) and piece.owned for piece in self._pieces),
+        )
 
 
-def _json_part(part: DecodedPart[bytes]) -> bool:
-    media = (part.content_type or "").partition(";")[0].strip().lower()
-    return media == "application/json" or media.endswith("+json")
+class MultipartBodies(BinaryBodies):
+    """Bind the binary and the multipart bodies of a package, and encode a raw call's multipart body."""
+
+    __slots__ = ()
+
+    @staticmethod
+    def inputs(body: object) -> Iterable[object]:
+        """Return a body's native input, or the file inputs of a multipart body's parts."""
+        if is_multipart(body):
+            return [part.content for part in body.parts if is_file_part(part)]
+        return (body,)
+
+    @staticmethod
+    def bind(content: object, entry: BodyEntry | None, *, asynchronous: bool) -> BoundBody:
+        """Bind a native input, or each file input of a multipart body's parts, without buffering native streams."""
+        if not isinstance(content, FormParts):
+            return BinaryBodies.bind(content, entry, asynchronous=asynchronous)
+        bindings = BodyBindings() if entry is None else cast("BodyBindings", entry)
+        pieces: list[bytes | BinarySource] = [
+            piece if type(piece) is bytes else bindings.bind(piece, asynchronous=asynchronous)
+            for _, _, piece, _, _ in content.entries
+        ]
+        return BoundParts(pieces, bindings, content)
+
+    @staticmethod
+    def raw(body: object) -> tuple[object, str | None]:
+        """Return a raw call's body as it is sent: a multipart body's parts encoded, any other body as it is given."""
+        return encode_parts(body) if is_multipart(body) else (body, None)
 
 
-def _part_value(part: DecodedPart[bytes], kind: PartKind) -> JSONValue:
-    if kind == "json" or _json_part(part):
-        return json_value(part.value)
-    return plain(typed(part.value.decode(charset(part.content_type or "")), kind))
-
-
-def decode_parts(
-    parts: tuple[DecodedPart[bytes], ...], plans: tuple[PartPlan, ...], additional: PartPlan | None
-) -> dict[str, JSONValue]:
-    """Read form-data parts into an object by their members' plans, collecting repeated members into arrays."""
-    declared = {plan.name: plan for plan in plans}
-    result: dict[str, JSONValue] = {}
-    for part in parts:
-        if part.name is None or (plan := declared.get(part.name, additional)) is None:
-            raise issue(code="multipart.undeclared", message="A form-data part is not declared")
-        value = plain(_part_value(part, plan.kind))
-        if part.name not in result:
-            result[part.name] = [value] if plan.repeated else value
-        elif plan.repeated:
-            cast("list[JSONValue]", result[part.name]).append(value)
-        else:
-            raise issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
-    return result
-
-
-class PartSyntaxError(Exception):
-    """A received part that is not text of its member's kind, or not JSON."""
-
-    def __init__(self, cause: BaseException) -> None:
-        """Keep the failure of reading the part."""
-        super().__init__()
-        self.cause = cause
-
-
-class PartValueError(Exception):
-    """A received part whose value its member's codec refuses."""
-
-    def __init__(self, cause: BaseException) -> None:
-        """Keep the codec's failure."""
-        super().__init__()
-        self.cause = cause
-
-
-class PartDecoder(Generic[T_co]):
-    """How the parts of one member of a form-data response with file parts are read, and whether they repeat.
-
-    A file part keeps its bytes; any other part is read in its member's kind, or as JSON, then decoded by its codec.
-    """
-
-    __slots__ = ("_read", "excluded", "name", "repeated", "required")
-
-    def __init__(
-        self,
-        name: str,
-        read: Callable[[DecodedPart[bytes]], T_co],
-        *,
-        repeated: bool = False,
-        required: bool = False,
-        excluded: bool = False,
-    ) -> None:
-        """Keep the member's name, how a part becomes its value, and whether it repeats or is required.
-
-        A member the direction excludes, write-only in a response, has no part to read.
-        """
-        self.name = name
-        self._read = read
-        self.repeated = repeated
-        self.required = required
-        self.excluded = excluded
-
-    def read(self, part: DecodedPart[bytes]) -> T_co:
-        """Return the value of one part, raising PartSyntaxError when it is not text of its kind."""
-        return self._read(part)
-
-
-def _content(part: DecodedPart[bytes]) -> bytes:
-    return part.value
-
-
-def file_part(
-    name: str, *, repeated: bool = False, required: bool = False, excluded: bool = False
-) -> PartDecoder[bytes]:
-    """Return how a file member's parts are read, as their bytes; an untyped extra part is read the same way."""
-    return PartDecoder(name, _content, repeated=repeated, required=required, excluded=excluded)
-
-
-def _part_text(part: DecodedPart[bytes], kind: LexicalKind) -> object:
-    try:
-        return plain(typed(part.value.decode(charset(part.content_type or "")), kind))
-    except (CodecError, ValueError) as error:
-        raise PartSyntaxError(error) from None
-
-
-def _decoded(codec: ValueCodec[T], kind: PartKind, part: DecodedPart[bytes]) -> T:
-    try:
-        if kind == "json" or _json_part(part):
-            return codec.decode(part.value)
-        return codec.convert(plain(_part_text(part, kind)))
-    except codec.errors as error:
-        if codec.malformed(error):
-            raise PartSyntaxError(error) from None
-        raise PartValueError(error) from None
-
-
-def value_part(  # noqa: PLR0913
-    name: str,
-    kind: PartKind,
-    codec: ValueCodec[T],
-    *,
-    repeated: bool = False,
-    required: bool = False,
-    excluded: bool = False,
-) -> PartDecoder[T]:
-    """Return how a member's parts are read: as JSON, or in its kind, then decoded by its codec."""
-    return PartDecoder(
-        name,
-        partial(_decoded, codec, kind),
-        repeated=repeated,
-        required=required,
-        excluded=excluded,
-    )
+MULTIPART_BODIES: Final = MultipartBodies()

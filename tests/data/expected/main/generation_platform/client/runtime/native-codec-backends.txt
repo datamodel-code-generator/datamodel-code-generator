@@ -7,16 +7,7 @@
   async native encode = Pet(id=2, name='dog', tag='a')
   native request GET /pets b''
   native request POST /pets b'{"name":"dog","tag":"a"}'
-# pets pydantic_v2.dataclass
-  sync native decode = [Pet(id=1, name='dog', tag='a')]
-  sync native encode = Pet(id=2, name='dog', tag='a')
-  native request GET /pets b''
-  native request POST /pets b'{"name":"dog","tag":"a"}'
-  async native decode = [Pet(id=1, name='dog', tag='a')]
-  async native encode = Pet(id=2, name='dog', tag='a')
-  native request GET /pets b''
-  native request POST /pets b'{"name":"dog","tag":"a"}'
-# pets dataclasses.dataclass
+# pets pydantic_v2.dataclass, dataclasses.dataclass, msgspec.Struct
   sync native decode = [Pet(id=1, name='dog', tag='a')]
   sync native encode = Pet(id=2, name='dog', tag='a')
   native request GET /pets b''
@@ -32,14 +23,5 @@
   native request POST /pets b'{"name":"dog","tag":"a"}'
   async native decode = [{'id': 1, 'name': 'dog', 'tag': 'a'}]
   async native encode = {'id': 2, 'name': 'dog', 'tag': 'a'}
-  native request GET /pets b''
-  native request POST /pets b'{"name":"dog","tag":"a"}'
-# pets msgspec.Struct
-  sync native decode = [Pet(id=1, name='dog', tag='a')]
-  sync native encode = Pet(id=2, name='dog', tag='a')
-  native request GET /pets b''
-  native request POST /pets b'{"name":"dog","tag":"a"}'
-  async native decode = [Pet(id=1, name='dog', tag='a')]
-  async native encode = Pet(id=2, name='dog', tag='a')
   native request GET /pets b''
   native request POST /pets b'{"name":"dog","tag":"a"}'

@@ -1,4 +1,0 @@
-# publication-check
-generate
-  OSError: Input/output error
-tree

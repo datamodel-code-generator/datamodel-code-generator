@@ -7,40 +7,21 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias
 
-from models import FieldUsersGetResponse200XNextHeader as _dcg_type_1
-from models import UserPage as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
-ListUsersResponse: TypeAlias = _dcg_type_0
+ListUsersResponse: TypeAlias = models.UserPage
 
 
-_LIST_USERS_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders(
+_LIST_USERS_HEADERS: Final[ResponseHeaders[models.FieldUsersGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listUsers',
     frozenset({'200', '500'}),
-    (
-        (
-            'X-Next',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Next',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_4,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_4, missing=optional_header)),)),),
 )
 
 
@@ -48,9 +29,9 @@ def decode_list_users_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_1 | Unset:
+) -> models.FieldUsersGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_users from a response's metadata."""
     return _LIST_USERS_HEADERS.decode(info, name)
 
 
-SearchUsersResponse: TypeAlias = _dcg_type_0
+SearchUsersResponse: TypeAlias = models.UserPage

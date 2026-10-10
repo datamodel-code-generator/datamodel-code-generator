@@ -1,0 +1,4 @@
+# pets pydantic_v2.BaseModel
+  response 7 copied
+  runtime copied True
+  server failures []

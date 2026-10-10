@@ -1,106 +1,85 @@
 # input-cycle-reference
-render
-  target=fastapi schema_version=1
-  write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/untagged.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['write']
+check
+  MISSING: models.py (file does not exist but should be generated)
+  MISSING: server/__init__.py (should be generated)
+  MISSING: server/_generated/__init__.py (should be generated)
+  MISSING: server/_generated/contract.py (should be generated)
+  MISSING: server/_generated/openapi.py (should be generated)
+  MISSING: server/application.py (should be generated)
+  MISSING: server/routers/__init__.py (should be generated)
+  MISSING: server/routers/untagged.py (should be generated)
+  MISSING: server/services.py (should be generated)
+  MISSING: server/README.md (file does not exist but should be generated)
+  MISSING: server/py.typed (file does not exist but should be generated)
+  5 runtime modules ['MISSING']
 tree
 generate
-  returned None
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  5 runtime modules ['present']
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
-render
-  target=fastapi schema_version=1
-  write model models.py
-  unchanged target server/__init__.py (target)
-  unchanged target server/application.py (target)
-  unchanged target server/routers/__init__.py (target)
-  unchanged target server/routers/untagged.py (target)
-  unchanged target server/_generated/__init__.py (target)
-  unchanged target server/_generated/contract.py (target)
-  unchanged target server/errors.py (target)
-  unchanged target server/services.py (target)
-  write target server/README.md (target)
-  unchanged target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['unchanged']
+  5 runtime modules ['present']
+check
+  --- models.py
+  --- server/README.md
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  5 runtime modules ['present']
 generate
-  returned None
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  5 runtime modules ['present']
 tree
   models.py
-  server/.dcg-target-manifest.json
   server/README.md
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.py
   server/application.py
-  server/errors.py
   server/py.typed
   server/routers/__init__.py
   server/routers/untagged.py
   server/services.py
-  11 runtime modules ['present']
+  5 runtime modules ['present']

@@ -5,15 +5,14 @@
 
 from __future__ import annotations
 
-import uuid
 from abc import abstractmethod
 from typing import Protocol
+from uuid import UUID
 
 import pets_dataclass_models
-import pydantic
 from fastapi.responses import Response
+from pydantic import AwareDatetime
 
-from ._runtime.model_codecs.unset import Unset
 from ._runtime.server.responses import HTTPResult
 
 
@@ -25,46 +24,53 @@ class PetsService(Protocol):
         self,
         *,
         limit: int,
-        tags: list[str] | Unset,
-        kind: pets_dataclass_models.FieldPetsGetQueryKindParameter | Unset,
-        x_request_id: uuid.UUID | Unset,
-        since: pydantic.AwareDatetime | Unset,
-        session: str | Unset,
-    ) -> (
-        pets_dataclass_models.FieldPetsGetResponse
-        | HTTPResult[pets_dataclass_models.FieldPetsGetResponse | pets_dataclass_models.Error]
-        | Response
-    ): ...
+        tags: list[str] | None,
+        kind: pets_dataclass_models.FieldPetsGetQueryKindParameter | None,
+        X_Request_Id: UUID | None,
+        since: AwareDatetime | None,
+        session: str | None,
+    ) -> pets_dataclass_models.FieldPetsGetResponse | HTTPResult[pets_dataclass_models.FieldPetsGetResponse | pets_dataclass_models.Error] | Response:
+        """
+        Handle GET /pets.
+        """
 
     @abstractmethod
     def create_pet(
         self,
         *,
         body: pets_dataclass_models.NewPet,
-    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet] | Response: ...
+    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet] | Response:
+        """
+        Handle POST /pets.
+        """
 
     @abstractmethod
     def list_my_pets(
         self,
-    ) -> (
-        pets_dataclass_models.FieldPetsMineGetResponse
-        | HTTPResult[pets_dataclass_models.FieldPetsMineGetResponse]
-        | Response
-    ): ...
+    ) -> pets_dataclass_models.FieldPetsMineGetResponse | HTTPResult[pets_dataclass_models.FieldPetsMineGetResponse] | Response:
+        """
+        Handle GET /pets/mine.
+        """
 
     @abstractmethod
     def get_pet(
         self,
         *,
-        pet_id: int,
-    ) -> (
-        pets_dataclass_models.Pet
-        | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error]
-        | Response
-    ): ...
+        petId: int,
+    ) -> pets_dataclass_models.Pet | HTTPResult[pets_dataclass_models.Pet | pets_dataclass_models.Error] | Response:
+        """
+        Handle GET /pets/{petId}.
+        """
 
     @abstractmethod
-    def delete_pet(self, *, pet_id: int) -> None | HTTPResult[None] | Response: ...
+    def delete_pet(
+        self,
+        *,
+        petId: int,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle DELETE /pets/{petId}.
+        """
 
 
 class StoreService(Protocol):
@@ -73,8 +79,7 @@ class StoreService(Protocol):
     @abstractmethod
     def get_inventory(
         self,
-    ) -> (
-        pets_dataclass_models.FieldStoreInventoryGetResponse
-        | HTTPResult[pets_dataclass_models.FieldStoreInventoryGetResponse]
-        | Response
-    ): ...
+    ) -> pets_dataclass_models.FieldStoreInventoryGetResponse | HTTPResult[pets_dataclass_models.FieldStoreInventoryGetResponse] | Response:
+        """
+        Handle GET /store/inventory.
+        """

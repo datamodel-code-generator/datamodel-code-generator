@@ -11,4 +11,3 @@ class Model(BaseModel):
     name: constr(pattern=r'^\p{L}+$') | None = None
     code: constr(pattern=r'^[a-z]+$') | None = None
     site: AnyUrl | None = None
-    blob: bytes | None = None

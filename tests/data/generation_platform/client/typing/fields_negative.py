@@ -26,10 +26,10 @@ def refuse(
     pets.create_pet(name="Mimi", kind=kind, media_type="application/x-www-form-urlencoded")  # error
     pets.create_pet(name=5, kind=kind, media_type="application/json")  # error
     pets.create_pet(name="Mimi", pet_tag=None, media_type="application/x-www-form-urlencoded")  # error
-    pets.update_pet(pet_id=pet, media_type="application/json")  # error
-    pets.update_pet(pet_id=pet, name=None)  # error
-    pets.log_visit(pet_id=visit, note="n", media_type="text/plain")  # error
-    pets.set_owner(pet_id=owner_id, email="e")  # error
+    pets.update_pet(petId=pet, media_type="application/json")  # error
+    pets.update_pet(petId=pet, name=None)  # error
+    pets.log_visit(petId=visit, note="n", media_type="text/plain")  # error
+    pets.set_owner(petId=owner_id, email="e")  # error
     pets.create_owner()  # error
 
 

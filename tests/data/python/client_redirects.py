@@ -1,11 +1,12 @@
-"""Report redirect methods, destination restrictions, and replay through generated public clients."""
+"""Report native redirects of generated public clients: statuses, methods, bodies, limits, retries, and HEAD."""
 
 from __future__ import annotations
 
 import asyncio
 import importlib
+import io
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import httpx2
 
@@ -18,17 +19,29 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-class _Events:
-    def __init__(self) -> None:
-        self.values: list[tuple[object, ...]] = []
+class _Hops:
+    """Record each request HTTPX2 sends, followed redirects included, and each response, through its event hooks."""
 
-    def on_event(self, event: object) -> None:
-        self.values.append(
-            tuple(
-                getattr(event, name)
-                for name in ("name", "attempt_index", "status", "origin", "attempt_count", "outcome")
-            )
-        )
+    def __init__(self) -> None:
+        self.values: list[object] = []
+
+    def request(self, request: httpx2.Request) -> None:
+        self.values.append((request.method, str(request.url)))
+
+    def response(self, response: httpx2.Response) -> None:
+        self.values.append(response.status_code)
+
+    async def arequest(self, request: httpx2.Request) -> None:
+        self.request(request)
+
+    async def aresponse(self, response: httpx2.Response) -> None:
+        self.response(response)
+
+    def hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.request], "response": [self.response]}
+
+    def async_hooks(self) -> dict[str, list[Callable[..., object]]]:
+        return {"request": [self.arequest], "response": [self.aresponse]}
 
 
 async def _chunks() -> AsyncIterator[bytes]:
@@ -44,7 +57,6 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
         info = getattr(error, "info", None)
         return (
             type(error).__name__,
-            getattr(error, "delivery_state", None),
             getattr(error, "reason", None),
             getattr(info, "status_code", None),
             getattr(error, "attempt_count", None),
@@ -59,142 +71,84 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
 
 
 def _statuses(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Follow each redirect status as HTTPX2 does, across origins too, and stop at its limit."""
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    events = _Events()
+    hops = _Hops()
     with (
-        exchange.client() as native,
+        exchange.client(max_redirects=2, event_hooks=hops.hooks()) as native,
         package.Client(
             http_client=native,
-            options=options.ClientOptions(
-                retry=options.RetryOptions(initial_delay=0),
-                redirects=options.RedirectOptions(enabled=True),
-                hooks=(events,),
-            ),
+            retry=options.RetryOptions(initial_delay=0),
+            follow_redirects=True,
         ) as api,
     ):
-        for label, status, fields, configured in (
-            ("disabled", 301, (("Location", "/done"),), options.RedirectOptions(enabled=False)),
-            ("301 GET", 301, (("Location", "/done"),), options.RedirectOptions()),
-            ("302 GET", 302, (("Location", "/done"),), options.RedirectOptions()),
-            ("303 GET", 303, (("Location", "/done"),), options.RedirectOptions()),
-            ("307 GET", 307, (("Location", "/done"),), options.RedirectOptions()),
-            ("308 GET", 308, (("Location", "/done"),), options.RedirectOptions()),
-            (
-                "explicit default port",
-                302,
-                (("Location", "https://API.EXAMPLE.COM:443/done"),),
-                options.RedirectOptions(),
-            ),
-            (
-                "custom port",
-                302,
-                (("Location", "https://other.example.com:9443/done"),),
-                options.RedirectOptions(allowed_origins=("https://other.example.com:9443",)),
-            ),
-            (
-                "IDNA origin",
-                302,
-                (("Location", "https://xn--tst-qla.example.com/done"),),
-                options.RedirectOptions(allowed_origins=("https://täst.example.com", "https://[::1]:443")),
-            ),
-            ("unsupported305", 305, (("Location", "/done"),), options.RedirectOptions()),
-            ("missing Location", 302, (), options.RedirectOptions()),
-            ("multiple Location", 302, (("Location", "/one"), ("Location", "/two")), options.RedirectOptions()),
-            ("relative encoded", 302, (("Location", "next%2Fpart?q=a%2Fb#omitted"),), options.RedirectOptions()),
-            ("fragment loop", 302, (("Location", "/safe#fragment"),), options.RedirectOptions()),
-            ("zero limit", 302, (("Location", "/done"),), options.RedirectOptions(max_redirects=0)),
-            ("unlisted origin", 302, (("Location", "https://other.example.com/done"),), options.RedirectOptions()),
-            (
-                "listed origin",
-                302,
-                (("Location", "https://other.example.com/done"),),
-                options.RedirectOptions(allowed_origins=("https://other.example.com",)),
-            ),
-            (
-                "userinfo rejected",
-                302,
-                (("Location", "https://user@api.example.com/done"),),
-                options.RedirectOptions(),
-            ),
-            ("scheme rejected", 302, (("Location", "ftp://api.example.com/done"),), options.RedirectOptions()),
-            ("zero port rejected", 302, (("Location", "https://api.example.com:0/done"),), options.RedirectOptions()),
-            (
-                "overflow port rejected",
-                302,
-                (("Location", "https://api.example.com:65536/done"),),
-                options.RedirectOptions(),
-            ),
-            (
-                "downgrade rejected",
-                302,
-                (("Location", "http://other.example.com/done"),),
-                options.RedirectOptions(allowed_origins=("http://other.example.com",)),
-            ),
+        for label, status, fields, follow in (
+            ("not followed by the call", 301, (("Location", "/done"),), False),
+            ("301 GET", 301, (("Location", "/done"),), True),
+            ("302 GET", 302, (("Location", "/done"),), True),
+            ("303 GET", 303, (("Location", "/done"),), True),
+            ("307 GET", 307, (("Location", "/done"),), True),
+            ("308 GET", 308, (("Location", "/done"),), True),
+            ("another origin", 302, (("Location", "https://other.example.com:9443/done"),), True),
+            ("unsupported 305", 305, (("Location", "/done"),), True),
+            ("missing Location", 302, (), True),
+            ("relative encoded", 302, (("Location", "next%2Fpart?q=a%2Fb#omitted"),), True),
+            ("invalid port", 302, (("Location", "https://api.example.com:port/done"),), True),
         ):
             exchange.responders.clear()
-            events.values.clear()
+            hops.values.clear()
             exchange.respond(_response(status, fields), _response(200))
-            request = options.RequestOptions(redirects=configured)
+            request = options.RequestOptions(follow_redirects=follow)
             record(
                 lines,
                 label,
                 lambda request=request: outcome(lambda: api.retry.with_response.get_safe(options=request)),
             )
-            lines.append(f"    unused={len(exchange.responders)} events={events.values!r}")
+            lines.append(f"    unused={len(exchange.responders)} hops={hops.values!r}")
+        view = api.with_options(follow_redirects=False)
+        for label, request in (
+            ("not followed by the view", None),
+            ("followed by the call over the view", options.RequestOptions(follow_redirects=True)),
+        ):
+            exchange.responders.clear()
+            hops.values.clear()
+            exchange.respond(_response(301, (("Location", "/done"),)), _response(200))
+            record(
+                lines,
+                label,
+                lambda request=request: outcome(lambda: view.retry.with_response.get_safe(options=request)),
+            )
+            lines.append(f"    unused={len(exchange.responders)} hops={hops.values!r}")
         exchange.responders.clear()
-        exchange.respond(_response(302, (("Location", "/next"),)), _response(302, (("Location", "/last"),)))
-        request = options.RequestOptions(redirects=options.RedirectOptions(max_redirects=1))
-        record(
-            lines,
-            "cumulative limit",
-            lambda request=request: outcome(lambda: api.retry.with_response.get_safe(options=request)),
-        )
+        exchange.respond(*(_response(302, (("Location", f"/hop{index}"),)) for index in range(3)), _response(200))
+        record(lines, "past the native limit", lambda: outcome(api.retry.with_response.get_safe))
+        lines.append(f"    unused={len(exchange.responders)}")
 
 
 def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Change POST to GET for 301, 302, and 303, and send the body again for 307 and 308 as HTTPX2 does."""
     exchange = Exchange(lines)
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     with (
         exchange.client() as native,
         package.Client(
             http_client=native,
-            options=options.ClientOptions(
-                retry=options.RetryOptions(initial_delay=0), redirects=options.RedirectOptions(enabled=True)
-            ),
+            retry=options.RetryOptions(initial_delay=0),
+            follow_redirects=True,
         ) as api,
     ):
         for label, method, status, request in (
-            ("301 POST forbidden", "post_idempotent", 301, options.RequestOptions()),
-            ("302 POST forbidden", "post_idempotent", 302, options.RequestOptions()),
-            ("303 POST opt-in required", "post_unsafe", 303, options.RequestOptions()),
+            ("301 POST becomes GET", "post_idempotent", 301, options.RequestOptions()),
+            ("302 POST becomes GET", "post_idempotent", 302, options.RequestOptions()),
+            ("303 POST becomes GET", "post_unsafe", 303, options.RequestOptions()),
+            ("307 POST sends its bytes again", "post_unsafe", 307, options.RequestOptions()),
+            ("308 POST sends its bytes again", "post_idempotent", 308, options.RequestOptions()),
             (
-                "303 POST allowed",
-                "post_unsafe",
-                303,
-                options.RequestOptions(redirects=options.RedirectOptions(allow_303_to_get=True)),
-            ),
-            (
-                "303 never forbidden",
-                "post_never",
-                303,
-                options.RequestOptions(redirects=options.RedirectOptions(allow_303_to_get=True)),
-            ),
-            ("307 unsafe forbidden", "post_unsafe", 307, options.RequestOptions()),
-            ("307 declared idempotent", "post_idempotent", 307, options.RequestOptions()),
-            ("308 declared idempotent", "post_idempotent", 308, options.RequestOptions()),
-            (
-                "308 caller key",
+                "308 caller key sent again",
                 "post_keyed",
                 308,
-                options.RequestOptions(idempotency_key=options.IdempotencyKey("same-key")),
-            ),
-            (
-                "308 key suppressed",
-                "post_keyed",
-                308,
-                options.RequestOptions(idempotency_key=None),
+                options.RequestOptions(idempotency_key="same-key"),
             ),
         ):
             exchange.responders.clear()
@@ -214,117 +168,111 @@ def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None
             "HEAD303 becomes GET",
             lambda: outcome(lambda: api.request_raw("HEAD", "https://api.example.com/start")),
         )
-        for status in (301, 303, 307):
+        for status in (303, 307):
             exchange.responders.clear()
             exchange.respond(_response(status, (("Location", "/done"),)), _response(200))
-            body = bodies.StreamBody(iter((b"one", b"two")))
-            request = options.RequestOptions(
-                redirects=options.RedirectOptions(allow_303_to_get=True),
-                headers=(("Content-Encoding", "identity"), ("Content-Language", "en")),
-            )
+            body = iter((b"one", b"two"))
             record(
                 lines,
                 f"{status} one-shot body",
-                lambda body=body, request=request: outcome(
-                    lambda: api.retry.with_response.post_idempotent(body=body, options=request)
-                ),
+                lambda body=body: outcome(lambda: api.retry.with_response.post_idempotent(body=body)),
             )
             lines.append(f"    unused={len(exchange.responders)}")
-        exchange.responders.clear()
-        exchange.respond(
-            _response(303, (("Location", "/middle"),)),
-            _response(302, (("Location", "/done"),)),
-            _response(200),
-        )
-        body = bodies.StreamBody(iter((b"one", b"two")))
-        request = options.RequestOptions(redirects=options.RedirectOptions(allow_303_to_get=True))
-        record(
-            lines,
-            "one-shot POST303 GET302 chain",
-            lambda: outcome(lambda: api.retry.with_response.post_unsafe(body=body, options=request)),
-        )
-        lines.append(f"    unused={len(exchange.responders)}")
-
-
-def _canonical_loops(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    exchange = Exchange(lines)
-    outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(
-                base_url="https://API.EXAMPLE.COM:443", redirects=options.RedirectOptions(enabled=True)
-            ),
-        ) as api,
-    ):
-        exchange.respond(_response(302, (("Location", "https://api.example.com/safe"),)))
-        record(lines, "canonical typed loop seed", lambda: outcome(api.retry.with_response.get_safe))
-        exchange.respond(_response(302, (("Location", "https://api.example.com/safe"),)))
-        record(
-            lines,
-            "canonical raw lowercase method loop seed",
-            lambda: outcome(lambda: api.request_raw("get", "https://API.EXAMPLE.COM:443/safe")),
-        )
-        lines.append(f"    unused={len(exchange.responders)}")
 
 
 def _restored(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    exchange = Exchange(lines)
-    outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-        ) as api,
-    ):
-        for label, limit in (("303 retry restores original POST", 5), ("redirect limit survives retry", 1)):
-            exchange.responders.clear()
-            exchange.respond(
-                _response(303, (("Location", "/done"),)),
-                _response(503),
-                _response(303, (("Location", "/done"),)),
-                _response(200),
-            )
-            request = options.RequestOptions(
-                redirects=options.RedirectOptions(enabled=True, allow_303_to_get=True, max_redirects=limit),
-                headers=(("Content-Encoding", "identity"), ("Content-Language", "en")),
-            )
-            record(
-                lines,
-                label,
-                lambda request=request: outcome(
-                    lambda: api.retry.with_response.post_idempotent(body=b"original", options=request)
-                ),
-            )
-            lines.append(f"    unused={len(exchange.responders)}")
-        exchange.responders.clear()
-        exchange.respond(_response(303, (("Location", "/done"),)), failing(httpx2.ConnectError), _response(200))
-        request = options.RequestOptions(redirects=options.RedirectOptions(enabled=True, allow_303_to_get=True))
-        record(
-            lines,
-            "unsent 303 hop never resends an unsafe POST",
-            lambda: outcome(lambda: api.retry.with_response.post_unsafe(body=b"original", options=request)),
-        )
-        lines.append(f"    unused={len(exchange.responders)}")
-
-
-def _origins(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Retry from the original request after a redirect, and never resend a call whose redirect was answered."""
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     with (
         exchange.client() as native,
         package.Client(
             http_client=native,
-            options=options.ClientOptions(
-                headers=(
-                    ("Authorization", "original-secret"),
-                    ("Proxy-Authorization", "proxy-secret"),
-                    ("Cookie", "private=1"),
-                ),
-                retry=options.RetryOptions(initial_delay=0),
-                redirects=options.RedirectOptions(enabled=True, allowed_origins=("https://other.example.com",)),
-            ),
+            retry=options.RetryOptions(initial_delay=0),
+            follow_redirects=True,
+        ) as api,
+    ):
+        exchange.respond(
+            _response(303, (("Location", "/done"),)),
+            _response(503),
+            _response(303, (("Location", "/done"),)),
+            _response(200),
+        )
+        record(
+            lines,
+            "303 retry restores original POST",
+            lambda: outcome(lambda: api.retry.with_response.post_idempotent(body=b"original")),
+        )
+        lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
+        for label, method in (("unsafe POST", "post_unsafe"), ("idempotent POST", "post_idempotent")):
+            exchange.respond(_response(303, (("Location", "/done"),)), failing(httpx2.ConnectError), _response(200))
+            record(
+                lines,
+                f"refused redirect after an answered {label}",
+                lambda method=method: outcome(lambda: getattr(api.retry.with_response, method)(body=b"original")),
+            )
+            lines.append(f"    unused={len(exchange.responders)}")
+            exchange.responders.clear()
+
+
+def _refused_hook(request: httpx2.Request) -> None:
+    del request
+    msg = "refused by the hook"
+    raise httpx2.ConnectError(msg)
+
+
+def _failed_hook(response: httpx2.Response) -> None:
+    msg = "failed in the response hook"
+    raise (
+        httpx2.ConnectError(msg, request=response.request) if response.status_code == 201 else httpx2.ConnectError(msg)
+    )
+
+
+class _AsyncFailedHook:
+    async def __call__(self, response: httpx2.Response) -> None:
+        _failed_hook(response)
+
+
+def _hooked(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Classify a failure an injected client's own hook raises: before anything was sent, or after an answer."""
+    exchange = Exchange(lines)
+    outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
+    with (
+        exchange.client(event_hooks={"request": [_refused_hook]}) as native,
+        package.Client(http_client=native, max_retries=0) as api,
+    ):
+        record(lines, "native request hook failure", lambda: outcome(api.retry.with_response.get_safe))
+    with (
+        exchange.client(event_hooks={"response": [_failed_hook]}) as native,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
+    ):
+        for label, status in (("without a request", 200), ("of the answered request", 201)):
+            exchange.respond(_response(status), _response(status))
+            record(
+                lines,
+                f"native response hook failure {label}",
+                lambda: outcome(lambda: api.retry.with_response.post_unsafe(body=b"once")),
+            )
+            lines.append(f"    unused={len(exchange.responders)}")
+            exchange.responders.clear()
+
+
+def _origins(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Drop Authorization and the Cookie header across origins, as HTTPX2 does, while other headers go on."""
+    exchange = Exchange(lines)
+    outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
+    with (
+        exchange.client(follow_redirects=True) as native,
+        package.Client(
+            http_client=native,
+            default_headers={
+                "Authorization": "original-secret",
+                "Proxy-Authorization": "proxy-secret",
+                "Cookie": "private=1",
+                "X-Client": "kept",
+            },
+            retry=options.RetryOptions(initial_delay=0),
         ) as api,
     ):
         exchange.respond(
@@ -333,16 +281,10 @@ def _origins(package: ModuleType, options: ModuleType, lines: list[str]) -> None
             _response(200),
         )
         record(lines, "origin chain returns to initial", lambda: outcome(api.retry.with_response.get_safe))
-        exchange.respond(
-            _response(302, (("Location", "/next"),)),
-            _response(503),
-            _response(302, (("Location", "/next"),)),
-            _response(200),
-        )
-        record(lines, "retry resets URL and loop set", lambda: outcome(api.retry.with_response.get_safe))
 
 
-def _downgrade(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+def _downgrade(package: ModuleType, lines: list[str]) -> None:
+    """Follow a redirect from TLS to plain HTTP as HTTPX2 does, unless the call keeps redirects."""
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     secure, plain = NativeFixture(), NativeFixture()
     plain.tls = False
@@ -350,23 +292,11 @@ def _downgrade(package: ModuleType, options: ModuleType, lines: list[str]) -> No
     secure.status = 302
     secure.location = f"{destination}/done".encode()
     try:
-        with httpx2.Client(verify=secure.verify, trust_env=False) as native:
-            for label, allowed, downgrade in (
-                ("downgrade flag still requires allowed origin", (), True),
-                ("allowed HTTP still requires downgrade flag", (destination,), False),
-                ("allowed HTTP and downgrade", (destination,), True),
-            ):
+        with httpx2.Client(verify=secure.verify, trust_env=False, follow_redirects=True) as native:
+            for label, follow in (("downgrade followed", True), ("downgrade kept by the call", False)):
                 secure.requests.clear()
                 plain.requests.clear()
-                with package.Client(
-                    http_client=native,
-                    options=options.ClientOptions(
-                        base_url=secure.url,
-                        redirects=options.RedirectOptions(
-                            enabled=True, allowed_origins=allowed, allow_https_downgrade=downgrade
-                        ),
-                    ),
-                ) as api:
+                with package.Client(http_client=native, base_url=secure.url, follow_redirects=follow) as api:
                     record(lines, label, lambda api=api: outcome(api.retry.with_response.get_safe))
                 lines.append(f"    secure={secure.requests!r} plain={plain.requests!r}")
     finally:
@@ -376,187 +306,145 @@ def _downgrade(package: ModuleType, options: ModuleType, lines: list[str]) -> No
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native, options=options.ClientOptions(redirects=options.RedirectOptions(enabled=True))
-        ) as api,
+        package.AsyncClient(http_client=native, follow_redirects=True) as api,
     ):
         exchange.respond(_response(307, (("Location", "/done"),)), _response(200))
         response = await arecord(lines, "async307", api.retry.with_response.get_safe)
-        if response is None:
-            message = "The async redirect did not return a response"
-            raise RuntimeError(message)
         info = getattr(response, "info", None)
-        counts = tuple(
-            getattr(info, name, None) for name in ("attempt_count", "request_id")
-        )
-        lines.append(f"    counts={counts!r}")
+        lines.append(f"    counts={tuple(getattr(info, name, None) for name in ('attempt_count', 'request_id'))!r}")
         exchange.respond(
             _response(303, (("Location", "/middle"),)),
             _response(302, (("Location", "/done"),)),
             _response(200),
         )
-        body = bodies.AsyncStreamBody(_chunks())
-        request = options.RequestOptions(redirects=options.RedirectOptions(allow_303_to_get=True))
+        body = _chunks()
         response = await arecord(
-            lines,
-            "async one-shot POST303 GET302 chain",
-            lambda: api.retry.with_response.post_unsafe(body=body, options=request),
+            lines, "async one-shot POST303 GET302 chain", lambda: api.retry.with_response.post_unsafe(body=body)
         )
         info = getattr(response, "info", None)
-        counts = tuple(
-            getattr(info, name, None) for name in ("attempt_count", "request_id")
-        )
+        counts = tuple(getattr(info, name, None) for name in ("attempt_count", "request_id"))
         lines.append(f"    counts={counts!r} unused={len(exchange.responders)}")
+        exchange.responders.clear()
+        exchange.respond(_response(307, (("Location", "/done"),)), _response(200))
+        body = _chunks()
+        await arecord(lines, "async one-shot POST307", lambda: api.retry.with_response.post_unsafe(body=body))
+        lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
+        exchange.respond(_response(307, (("Location", "/done"),)), _response(200))
+        file = io.BytesIO(b"seekable body")
+        await arecord(lines, "async seekable POST307", lambda: api.retry.with_response.post_unsafe(body=file))
+        lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
+    async with (
+        exchange.async_client(event_hooks={"response": [_AsyncFailedHook()]}) as native,
+        package.AsyncClient(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
+    ):
+        for label, status in (("without a request", 200), ("of the answered request", 201)):
+            exchange.respond(_response(status), _response(status))
+            try:
+                await api.retry.with_response.post_unsafe(body=b"once")
+            except Exception as error:  # noqa: BLE001
+                lines.append(f"  async native response hook failure {label} ! {type(error).__name__}")
+            lines.append(f"    unused={len(exchange.responders)}")
+            exchange.responders.clear()
 
 
 def redirects(package: ModuleType, lines: list[str]) -> None:
-    """Exercise redirect policy with fresh requests and wire-visible origin/method/body changes."""
+    """Exercise native redirects through generated clients with wire-visible origin, method, and body changes."""
     options = importlib.import_module(f"{package.__name__}.options")
     _statuses(package, options, lines)
     _methods(package, options, lines)
-    _canonical_loops(package, options, lines)
     _restored(package, options, lines)
+    _hooked(package, options, lines)
     _origins(package, options, lines)
-    _downgrade(package, options, lines)
+    _downgrade(package, lines)
     run(lambda: _async(package, options, lines))
 
 
-class _HeadEvents:
-    def __init__(self) -> None:
-        self.ends: list[tuple[object, ...]] = []
+def _head_calls(api: Any, pet: object, *, asynchronous: bool) -> dict[str, Callable[[], object]]:
+    """Return the typed, response, raw, streaming, and raw-request HEAD calls of a client."""
+    pets = api.pets
+    if asynchronous:
 
-    def on_event(self, event: object) -> None:
-        if getattr(event, "name", None) in {"call_end", "stream_end"}:
-            self.ends.append(
-                tuple(
-                    getattr(event, name)
-                    for name in (
-                        "name",
-                        "status",
-                        "outcome",
-                        "attempt_count",
-                    )
-                )
-            )
+        async def buffered() -> bytes:
+            return (await pets.with_raw_response.head_pet(petId=pet)).body_bytes
 
-
-async def _async_head_redirects(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    pet = argument(package, "headPet", "path", "petId", 3)
-    exchange, events = Exchange(lines), _HeadEvents()
-    async with (
-        exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(redirects=options.RedirectOptions(enabled=True), hooks=(events,)),
-        ) as api,
-    ):
-
-        async def buffered(request: object) -> bytes:
-            response = await api.pets.with_raw_response.head_pet(pet_id=pet, options=request)
-            return response.body_bytes
-
-        async def streaming(request: object) -> bytes:
-            async with api.pets.with_streaming_response.head_pet(pet_id=pet, options=request) as response:
+        async def streaming() -> bytes:
+            async with pets.with_streaming_response.head_pet(petId=pet) as response:
                 return await response.read()
 
-        async def escape(request: object) -> bytes:
-            response = await api.request_raw(
-                "HEAD", "https://api.example.com/v1/pets/3", body=b"head request", options=request
-            )
+        async def escape() -> bytes:
+            response = await api.request_raw("HEAD", "https://api.example.com/v1/pets/3")
             return response.body_bytes
 
-        for allowed in (False, True):
-            request = options.RequestOptions(
-                redirects=options.RedirectOptions(allow_303_to_get=allowed),
-                headers=(("Content-Encoding", "identity"), ("Content-Language", "en")),
-            )
-            calls = {
-                "typed": lambda request=request: api.pets.head_pet(pet_id=pet, options=request),
-                "response": lambda request=request: api.pets.with_response.head_pet(pet_id=pet, options=request),
-                "raw": lambda request=request: buffered(request),
-                "stream": lambda request=request: streaming(request),
-                "escape": lambda request=request: escape(request),
-            }
-            for mode, payload, hops in (
-                ("typed", b"redirected representation", 1),
-                ("response", b"redirected representation", 1),
-                ("raw", b"redirected representation", 1),
-                ("stream", b"redirected representation", 1),
-                ("typed", b"", 1),
-                ("response", b"", 1),
-                ("escape", b"redirected representation", 1),
-                ("raw", b"redirected representation", 2),
-            ):
-                exchange.respond(raw_response(303, Location="/redirected"))
-                if hops == 2:
-                    exchange.respond(raw_response(302, Location="/done"))
-                exchange.respond(raw_response(200, payload, "text/plain", ETag='"redirected"'))
-                await arecord(
-                    lines,
-                    f"async HEAD303 {mode} allow={allowed} body={bool(payload)} hops={hops}",
-                    calls[mode],
-                )
-                lines.append(f"    ends={events.ends!r} unused={len(exchange.responders)}")
-                events.ends.clear()
+        return {
+            "typed": lambda: pets.head_pet(petId=pet),
+            "response": lambda: pets.with_response.head_pet(petId=pet),
+            "raw": buffered,
+            "stream": streaming,
+            "escape": escape,
+        }
+
+    def streamed() -> bytes:
+        with pets.with_streaming_response.head_pet(petId=pet) as response:
+            return response.read()
+
+    return {
+        "typed": lambda: pets.head_pet(petId=pet),
+        "response": lambda: pets.with_response.head_pet(petId=pet),
+        "raw": lambda: pets.with_raw_response.head_pet(petId=pet).body_bytes,
+        "stream": streamed,
+        "escape": lambda: api.request_raw("HEAD", "https://api.example.com/v1/pets/3").body_bytes,
+    }
+
+
+_HEAD_MODES = (
+    ("typed", b"redirected representation", 1),
+    ("response", b"redirected representation", 1),
+    ("raw", b"redirected representation", 1),
+    ("stream", b"redirected representation", 1),
+    ("typed", b"", 1),
+    ("escape", b"redirected representation", 1),
+    ("raw", b"redirected representation", 2),
+)
+
+
+def _head_responses(exchange: Exchange, payload: bytes, hops: int) -> None:
+    exchange.respond(raw_response(303, Location="/redirected"))
+    if hops == 2:
+        exchange.respond(raw_response(302, Location="/done"))
+    exchange.respond(raw_response(200, payload, "text/plain", ETag='"redirected"'))
+
+
+async def _async_head_redirects(package: ModuleType, lines: list[str]) -> None:
+    pet = argument(package, "headPet", "path", "petId", 3)
+    exchange, hops = Exchange(lines), _Hops()
+    async with (
+        exchange.async_client(event_hooks=hops.async_hooks()) as native,
+        package.AsyncClient(http_client=native, follow_redirects=True) as api,
+    ):
+        calls = _head_calls(api, pet, asynchronous=True)
+        for mode, payload, count in _HEAD_MODES:
+            _head_responses(exchange, payload, count)
+            await arecord(lines, f"async HEAD303 {mode} body={bool(payload)} hops={count}", calls[mode])
+            lines.append(f"    hops={hops.values!r} unused={len(exchange.responders)}")
+            hops.values.clear()
 
 
 def head_redirects(package: ModuleType, lines: list[str]) -> None:
-    """Keep HEAD's typed bodyless declaration after the prescribed 303 conversion to GET."""
-    options = importlib.import_module(f"{package.__name__}.options")
+    """Keep HEAD's typed bodyless declaration after HTTPX2 changes a 303 to GET."""
     pet = argument(package, "headPet", "path", "petId", 3)
-    exchange, events = Exchange(lines), _HeadEvents()
+    exchange, hops = Exchange(lines), _Hops()
     with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(redirects=options.RedirectOptions(enabled=True), hooks=(events,)),
-        ) as api,
+        exchange.client(event_hooks=hops.hooks()) as native,
+        package.Client(http_client=native, follow_redirects=True) as api,
     ):
-
-        def streaming(request: object) -> bytes:
-            with api.pets.with_streaming_response.head_pet(pet_id=pet, options=request) as response:
-                return response.read()
-
-        for allowed in (False, True):
-            request = options.RequestOptions(
-                redirects=options.RedirectOptions(allow_303_to_get=allowed),
-                headers=(("Content-Encoding", "identity"), ("Content-Language", "en")),
-            )
-            calls = {
-                "typed": lambda request=request: api.pets.head_pet(pet_id=pet, options=request),
-                "response": lambda request=request: api.pets.with_response.head_pet(pet_id=pet, options=request),
-                "raw": lambda request=request: (
-                    api.pets.with_raw_response.head_pet(pet_id=pet, options=request).body_bytes
-                ),
-                "stream": lambda request=request: streaming(request),
-                "escape": lambda request=request: (
-                    api.request_raw(
-                        "HEAD", "https://api.example.com/v1/pets/3", body=b"head request", options=request
-                    ).body_bytes
-                ),
-            }
-            for mode, payload, hops in (
-                ("typed", b"redirected representation", 1),
-                ("response", b"redirected representation", 1),
-                ("raw", b"redirected representation", 1),
-                ("stream", b"redirected representation", 1),
-                ("typed", b"", 1),
-                ("response", b"", 1),
-                ("escape", b"redirected representation", 1),
-                ("raw", b"redirected representation", 2),
-            ):
-                exchange.respond(raw_response(303, Location="/redirected"))
-                if hops == 2:
-                    exchange.respond(raw_response(302, Location="/done"))
-                exchange.respond(raw_response(200, payload, "text/plain", ETag='"redirected"'))
-                record(
-                    lines,
-                    f"HEAD303 {mode} allow={allowed} body={bool(payload)} hops={hops}",
-                    calls[mode],
-                )
-                lines.append(f"    ends={events.ends!r} unused={len(exchange.responders)}")
-                events.ends.clear()
-    run(lambda: _async_head_redirects(package, options, lines))
+        calls = _head_calls(api, pet, asynchronous=False)
+        for mode, payload, count in _HEAD_MODES:
+            _head_responses(exchange, payload, count)
+            record(lines, f"HEAD303 {mode} body={bool(payload)} hops={count}", calls[mode])
+            lines.append(f"    hops={hops.values!r} unused={len(exchange.responders)}")
+            hops.values.clear()
+    run(lambda: _async_head_redirects(package, lines))

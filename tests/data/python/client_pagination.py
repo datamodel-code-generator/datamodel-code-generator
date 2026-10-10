@@ -140,23 +140,22 @@ class Harness:
         """Return a starting cursor of the users listing."""
         return self.argument("listUsers", "query", "cursor", wire)
 
-    def client_options(self, **settings: Any) -> Any:
-        """Return client options that retry at once, with any other settings."""
-        options = self.options
-        return options.ClientOptions(retry=options.RetryOptions(initial_delay=0, jitter="none"), **settings)
+    def client_options(self, **settings: Any) -> dict[str, Any]:
+        """Return client keywords that retry at once, with any other settings."""
+        return {"retry": self.options.RetryOptions(initial_delay=0, jitter="none"), **settings}
 
 
 def pagination(package: ModuleType, lines: list[str]) -> None:
     """Traverse, end, limit, and continue cursor pages through the synchronous and asyncio clients."""
     harness = Harness(package)
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+    with exchange.client() as native, package.Client(http_client=native, **harness.client_options()) as api:
         _traversals(harness, api, exchange, lines)
         _modes(harness, api, exchange, lines)
         _pages(harness, api, exchange, lines)
         _ends(harness, api, exchange, lines)
         _data(harness, api, exchange, lines)
-        _sizes(harness, api, exchange, lines)
+        _sizes(api, exchange, lines)
         _cycles(api, exchange, lines)
         _limits(harness, api, exchange, lines)
         _targets(harness, api, exchange, lines)
@@ -235,7 +234,7 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
         ("page response", {"items": (), "data": None, "response": None}),
         ("page continuation", {"items": (), "data": None, "response": first.response, "continuation": "a"}),
     ):
-        record(lines, label, lambda arguments=arguments: harness.protocols.Page(**arguments))
+        record(lines, label, lambda arguments=arguments: summary(harness.protocols.Page(**arguments)))
     record(lines, "page frozen", lambda: setattr(first, "data", None))
     record(lines, "page equality", lambda: (first == first, first == second, hash(first) == hash(first)))
 
@@ -273,16 +272,16 @@ def _data(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
         (
             "duplicate cursor header",
             api.protocols.users.by_header,
-            lambda _: httpx2.Response(
-                200, headers=[("X-Next", "a"), ("x-next", "b")], json={"data": [{"id": "1"}]}
-            ),
+            lambda _: httpx2.Response(200, headers=[("X-Next", "a"), ("x-next", "b")], json={"data": [{"id": "1"}]}),
         ),
         ("invalid page", loose, raw_response(200, b"{", "application/json")),
         ("page its model refuses", loose, json_response(200, {"data": [{"name": "x"}]})),
     ):
         exchange.respond(responder)
         drained(lines, label, helper.iterate())
-    exchange.respond(json_response(200, {"data": [{"id": "1"}], "next": 7}), json_response(200, {"data": [], "next": None}))
+    exchange.respond(
+        json_response(200, {"data": [{"id": "1"}], "next": 7}), json_response(200, {"data": [], "next": None})
+    )
     drained(lines, "integer cursor", loose.iterate())
     exchange.respond(
         json_response(200, {"result": {"items": [{"id": "1"}], "next": "n1"}}),
@@ -291,24 +290,9 @@ def _data(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     drained(lines, "nested items", nested.iterate())
 
 
-def _sizes(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Refuse cursors and pages over their limits, and a page over a smaller response limit as any call does."""
-    options, protocols = harness.options, harness.protocols
+def _sizes(api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Refuse a page whose content coding is broken as any call does."""
     helper = api.protocols.users.all
-    for label, settings, responder in (
-        ("cursor over its limit", {"pagination_options": protocols.PaginationOptions(max_cursor_bytes=4)}, users("1", cursor="abcde")),
-        ("multibyte cursor", {"pagination_options": protocols.PaginationOptions(max_cursor_bytes=4)}, users("1", cursor="ééé")),
-        ("page over its limit", {"pagination_options": protocols.PaginationOptions(max_page_bytes=10)}, users("1")),
-        ("response limit smaller", {"options": options.RequestOptions(max_response_bytes=10)}, users("1")),
-        (
-            "response limit removed",
-            {"options": options.RequestOptions(max_response_bytes=None), "pagination_options": protocols.PaginationOptions(max_page_bytes=10)},
-            users("1"),
-        ),
-        ("equal limits", {"options": options.RequestOptions(max_response_bytes=10), "pagination_options": protocols.PaginationOptions(max_page_bytes=10)}, users("1")),
-    ):
-        exchange.respond(responder)
-        drained(lines, label, helper.iterate(**settings))
     exchange.respond(
         raw_response(200, b"\x1f\x8b-broken", "application/json", **{"content-encoding": "gzip"}),
     )
@@ -356,9 +340,13 @@ def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     exchange.respond(users("1", cursor="a"))
     first = fetched(lines, "page for limits", helper.page)
     for label, settings in (("page limit", {"max_pages": 1}), ("item limit", {"max_items": 1})):
-        record(lines, f"next page past its {label}", lambda settings=settings: helper.next_page(
-            first, pagination_options=protocols.PaginationOptions(**settings)
-        ))
+        record(
+            lines,
+            f"next page past its {label}",
+            lambda settings=settings: helper.next_page(
+                first, pagination_options=protocols.PaginationOptions(**settings)
+            ),
+        )
 
 
 def _targets(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -394,7 +382,7 @@ async def _async_pagination(harness: Harness, lines: list[str]) -> None:
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as native,
-        package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+        package.AsyncClient(http_client=native, **harness.client_options()) as api,
     ):
         helper = api.protocols.users.all
         pager = helper.iterate()
@@ -431,12 +419,6 @@ async def _async_pagination(harness: Harness, lines: list[str]) -> None:
             lines,
             "async zero items page",
             lambda: helper.page(pagination_options=protocols.PaginationOptions(max_items=0)),
-        )
-        exchange.respond(users("1"))
-        await adrained(
-            lines,
-            "async response limit smaller",
-            helper.iterate(options=harness.options.RequestOptions(max_response_bytes=10)),
         )
         closed = helper.iterate()
         await closed.aclose()

@@ -1,37 +1,37 @@
 # input-cycles
-render
-  cyclic YAML input rejected
+check
+  Error: Invalid file format for openapi at input-cycle-dict.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
 tree
 generate
-  cyclic YAML input rejected
+  Error: Invalid file format for openapi at input-cycle-dict.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
 tree
-render
-  cyclic YAML input rejected
-tree
-generate
-  cyclic YAML input rejected
-tree
-render
-  cyclic YAML input rejected
+check
+  Error: Invalid file format for openapi at input-cycle-dict.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
 tree
 generate
-  cyclic YAML input rejected
+  Error: Invalid file format for openapi at input-cycle-dict.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
 tree
-render
-  cyclic YAML input rejected
-tree
-generate
-  cyclic YAML input rejected
-tree
-render
-  cyclic YAML input rejected
+check
+  Error: Invalid file format for openapi at input-cycle-list.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
 tree
 generate
-  cyclic YAML input rejected
+  Error: Invalid file format for openapi at input-cycle-list.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
 tree
-render
-  cyclic YAML input rejected
+check
+  Error: Invalid file format for openapi at input-cycle-list.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
 tree
 generate
-  cyclic YAML input rejected
+  Error: Invalid file format for openapi at input-cycle-list.yaml: InvalidYamlError: recursion limit exceeded at line 12 column 10
+tree
+check
+  Error: Invalid file format for openapi at input-cycle-mutual.yaml: InvalidYamlError: recursion limit exceeded at line 13 column 11
+tree
+generate
+  Error: Invalid file format for openapi at input-cycle-mutual.yaml: InvalidYamlError: recursion limit exceeded at line 13 column 11
+tree
+check
+  Error: Invalid file format for openapi at input-cycle-mutual.yaml: InvalidYamlError: recursion limit exceeded at line 13 column 11
+tree
+generate
+  Error: Invalid file format for openapi at input-cycle-mutual.yaml: InvalidYamlError: recursion limit exceeded at line 13 column 11
 tree

@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.options import SessionOptions
-from pets.protocols import AsyncLroHandle, CancelReceipt, LroHandle, ResumeState
+from pets.model_codecs import JSONValue
+from pets.options import RequestOptions
+from pets.protocols import AsyncLroHandle, CancelReceipt, LroHandle
 from pets.types.jobs import GetJobResponse, GetReportResponse
 from pets_models import JobRequest
 
 
-async def wrong_handles(client: Client, async_client: AsyncClient, job: JobRequest, state: ResumeState) -> None:
+async def wrong_handles(client: Client, async_client: AsyncClient, job: JobRequest, state: JSONValue) -> None:
     """Reject each misuse of a helper or its handle."""
     run = async_client.protocols.jobs.run
     unawaited: AsyncLroHandle[GetReportResponse, GetJobResponse] = run.start(body=job)  # error
     client.protocols.jobs.run.start()  # error
-    client.protocols.jobs.run.start(body=job, poll_options=SessionOptions())  # error
+    client.protocols.jobs.run.start(body=job, poll_options=RequestOptions())  # error
     await client.protocols.jobs.run.start(body=job)  # error
     results: LroHandle[None, GetJobResponse] = client.protocols.jobs.run.start(body=job)  # error
     polls: LroHandle[object, object] = client.protocols.jobs.run.start(body=job)  # error

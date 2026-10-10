@@ -53,7 +53,7 @@ def _parameters(harness: Harness, api: Any, exchange: Exchange, lines: list[str]
     drained(lines, "header cursor", helpers.by_header.iterate())
     start = harness.argument("listUsers", "header", "X-Cursor", "start")
     exchange.respond(users("1", cursor="a"), users("2"))
-    drained(lines, "header cursor over the caller's", helpers.by_header.iterate(x_cursor=start))
+    drained(lines, "header cursor over the caller's", helpers.by_header.iterate(X_Cursor=start))
 
 
 def _overrides(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -61,25 +61,25 @@ def _overrides(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
     options = harness.options.RequestOptions
     helpers = api.protocols.users
     for label, helper, settings in (
-        ("header patch of the cursor", helpers.by_header, options(headers=(("x-cursor", "mine"),))),
-        ("query patch of a binding", helpers.bound, options(query=(("limit", "9"),))),
-        ("query patch of the cursor", helpers.bound, options(query=(("cursor", "mine"),))),
+        ("header patch of the cursor", helpers.by_header, options(extra_headers={"x-cursor": "mine"})),
+        ("query patch of a binding", helpers.bound, options(extra_query={"limit": "9"})),
+        ("query patch of the cursor", helpers.bound, options(extra_query={"cursor": "mine"})),
     ):
         record(lines, f"{label} pager", lambda helper=helper, settings=settings: helper.iterate(options=settings))
         record(lines, f"{label} page", lambda helper=helper, settings=settings: helper.page(options=settings))
     exchange.respond(users("1", cursor="a"))
-    extra = options(query=(("extra", "1"),))
+    extra = options(extra_query={"extra": "1"})
     first = fetched(lines, "page with another query", lambda: helpers.by_header.page(options=extra))
     record(
         lines,
         "next page with a header patch of the cursor",
-        lambda: helpers.by_header.next_page(first, options=options(headers=(("X-Cursor", "mine"),))),
+        lambda: helpers.by_header.next_page(first, options=options(extra_headers={"X-Cursor": "mine"})),
     )
     exchange.respond(users("2"))
     fetched(
         lines,
         "next page with another header",
-        lambda: helpers.by_header.next_page(first, options=options(headers=(("X-Other", "kept"),))),
+        lambda: helpers.by_header.next_page(first, options=options(extra_headers={"X-Other": "kept"})),
     )
 
 
@@ -154,7 +154,7 @@ async def _async_targets(harness: Harness, lines: list[str]) -> None:
             lines, "async body page", lambda: helper.page(body=_search_body(harness, {"query": "a"}))
         )
         await afetched(lines, "async body next page", lambda: helper.next_page(first))
-        patched = harness.options.RequestOptions(headers=(("X-Cursor", "mine"),))
+        patched = harness.options.RequestOptions(extra_headers={"X-Cursor": "mine"})
         record(
             lines,
             "async header patch of the cursor",

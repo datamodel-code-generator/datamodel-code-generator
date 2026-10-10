@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.loose import ListLooseResponse
 
@@ -41,11 +41,13 @@ class LooseResource:
     def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListLooseResponse:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (cursor,),
@@ -64,11 +66,13 @@ class LooseWithResponse:
     def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListLooseResponse]:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return self._core.execute(
             _operations.OPERATION_2,
             (cursor,),
@@ -87,11 +91,13 @@ class LooseWithRawResponse:
     def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_2,
             (cursor,),
@@ -110,11 +116,13 @@ class LooseWithStreamingResponse:
     def list_loose(
         self,
         *,
-        cursor: int | Unset = UNSET,
+        cursor: int | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /loose."""
+        """
+        Call GET /loose.
+        """
         return self._core.stream(
             _operations.OPERATION_2,
             (cursor,),

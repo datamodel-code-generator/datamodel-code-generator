@@ -1,9 +1,10 @@
-"""Replay public body inputs through generated clients while retaining their call-owned resources."""
+"""Send native binary inputs through real retry and multipart exchanges."""
 
 from __future__ import annotations
 
 import importlib
 import io
+import json
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -16,9 +17,11 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
     from types import ModuleType
 
+_DATA = Path(__file__).parents[1] / "generation_platform/client/native-bodies.json"
+
 
 class _File(io.BytesIO):
-    """A real in-memory binary file that counts its owned close and bounded reads."""
+    """Observe conventional binary reads and caller-owned lifetime."""
 
     def __init__(self, content: bytes, *, seekable: bool = True) -> None:
         super().__init__(content)
@@ -26,12 +29,22 @@ class _File(io.BytesIO):
         self.reads: list[int | None] = []
         self.can_seek = seekable
 
-    def seekable(self) -> bool:
-        return self.can_seek
+    def seek(self, offset: int, whence: int = 0, /) -> int:
+        if not self.can_seek:
+            raise io.UnsupportedOperation("not seekable")
+        return super().seek(offset, whence)
 
     def read(self, size: int | None = -1, /) -> bytes:
         self.reads.append(size)
         return super().read(size)
+
+    def write(self, content: bytes, /, *, at_end: bool = False) -> int:
+        position = self.tell()
+        if at_end:
+            super().seek(0, io.SEEK_END)
+        written = super().write(content)
+        super().seek(position)
+        return written
 
     def close(self) -> None:
         self.closes += 1
@@ -39,15 +52,16 @@ class _File(io.BytesIO):
 
 
 class _Chunks:
-    """An owned or borrowed iterable recording its consumption and final cleanup."""
+    """Observe when a caller-owned iterable is consumed."""
 
-    def __init__(self) -> None:
+    def __init__(self, payload: bytes = b"one-shot") -> None:
+        self.payload = payload
         self.begins = 0
         self.closes = 0
 
     def __iter__(self) -> Iterator[bytes]:
         self.begins += 1
-        yield b"one-shot"
+        yield self.payload
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         for item in self:
@@ -55,100 +69,6 @@ class _Chunks:
 
     def close(self) -> None:
         self.closes += 1
-
-    async def aclose(self) -> None:
-        self.close()
-
-
-class _Attempt:
-    """A slotted factory result whose identity must not require hashing or weak references."""
-
-    __slots__ = ("closes", "failure", "length", "payload")
-
-    def __init__(
-        self, payload: bytes = b"factory", *, length: int | None = None, failure: BaseException | None = None
-    ) -> None:
-        self.payload = payload
-        self.length = length
-        self.failure = failure
-        self.closes = 0
-
-    @property
-    def content_length(self) -> int | None:
-        return self.length
-
-    @property
-    def content_type(self) -> None:
-        return None
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        yield self.payload
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        yield self.payload
-
-    def close(self) -> None:
-        self.closes += 1
-        if self.failure is not None:
-            raise self.failure
-
-    async def aclose(self) -> None:
-        self.close()
-
-
-class _Factory:
-    """Return supplied attempt identities or fresh results and record the immutable callback context."""
-
-    def __init__(self, attempts: tuple[_Attempt, ...] = ()) -> None:
-        self.supplied = iter(attempts)
-        self.attempts: list[_Attempt] = []
-        self.contexts: list[tuple[int, int, bool]] = []
-        self.ids: list[str] = []
-
-    def __call__(self, context: Any) -> _Attempt:
-        self.contexts.append((context.attempt_index, context.hop_index, context.remaining_timeout is not None))
-        self.ids.append(context.call_id)
-        attempt = next(self.supplied, None)
-        if attempt is None:
-            attempt = _Attempt(length=7)
-        self.attempts.append(attempt)
-        return attempt
-
-    async def async_call(self, context: Any) -> _Attempt:
-        return self(context)
-
-
-class _Move:
-    """Move a borrowed file after call entry, proving that each send uses its retained entry offset."""
-
-    def __init__(self, file: _File) -> None:
-        self.file = file
-
-    def on_event(self, event: Any) -> None:
-        if event.name == "call_start":
-            self.file.seek(0)
-
-
-class _ChangePath:
-    """Change the path after the completed upload is closed and before its next stat check."""
-
-    def __init__(self, path: Path) -> None:
-        self.path = path
-
-    def on_event(self, event: Any) -> None:
-        if event.name == "retry_scheduled":
-            self.path.write_bytes(b"changed length")
-
-
-class _AsyncChangePath:
-    """Change the path at the same released-attempt boundary through the async hook contract."""
-
-    def __init__(self, path: Path) -> None:
-        self.path = path
-
-    async def on_event(self, event: Any) -> None:
-        if event.name == "retry_scheduled":
-            self.path.write_bytes(b"changed length")
 
 
 class _Replies:
@@ -187,343 +107,144 @@ class _Replies:
 
 
 def body_replay(package: ModuleType, lines: list[str]) -> None:
-    """Retain bytes, file offsets, and owned sources through retries and redirect hops."""
-    bodies, options = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "options"))
+    """Replay bytes, seekable files and paths without factories or ownership adapters."""
+    options = importlib.import_module(f"{package.__name__}.options")
+    data = json.loads(_DATA.read_text())
     exchange = Exchange([])
     replies = _Replies(exchange)
-    config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0),
-        redirects=options.RedirectOptions(enabled=True, allow_303_to_get=True),
-    )
+    config = {"retry": options.RetryOptions(initial_delay=0), "follow_redirects": True}
     with (
         exchange.client() as native,
-        package.Client(http_client=native, options=config) as api,
+        package.Client(http_client=native, **config) as api,
         tempfile.TemporaryDirectory() as directory,
     ):
-        replies.reset(503, 200)
-        record(lines, "bytes retained", lambda: api.retry.post_idempotent(body=b"retained"))
+        replies.reset(*data["retry"])
+        record(lines, "bytes retained", lambda: api.retry.post_idempotent(body=data["payload"].encode()))
         replies.report(lines)
-        file = _File(b"prefix-payload")
-        file.seek(7)
-        body = bodies.FileBody(file)
-        replies.reset(307, 503, 200)
-        record(
-            lines,
-            "borrowed entry offset",
-            lambda body=body, file=file: api.retry.post_idempotent(
-                body=body, options=options.RequestOptions(hooks=(_Move(file),))
-            ),
-        )
+        file = _File(data["file"].encode())
+        file.seek(data["offset"])
+        replies.reset(*data["hops"])
+        with (
+            exchange.client(event_hooks={"request": [lambda _: file.seek(0)]}) as moving,
+            package.Client(http_client=moving, **config) as moved,
+        ):
+            record(lines, "borrowed entry offset", lambda: moved.retry.post_idempotent(body=file))
         replies.report(lines)
-        lines.append(f"    file closed={file.closed} offset={file.tell()} reads={file.reads}")
-        file.seek(3)
+        lines.append(f"    caller file open={not file.closed} offset={file.tell()} reads={file.reads}")
+        file.seek(data["next_offset"])
         replies.reset(200)
-        record(lines, "borrowed next call offset", lambda body=body: api.retry.post_idempotent(body=body))
+        record(lines, "next call offset", lambda: api.retry.post_idempotent(body=file))
         replies.report(lines)
         file.close()
-        owned = _File(b"owned")
-        body = bodies.FileBody(owned, ownership="owned")
-        replies.reset(503, 308, 200)
-        record(lines, "owned file final close", lambda body=body: api.retry.post_idempotent(body=body))
+        grown = _File(data["payload"].encode())
+        replies.reset(*data["retry"], change=lambda: grown.write(b"-grown", at_end=True))
+        record(lines, "file grown between attempts", lambda: api.retry.post_idempotent(body=grown))
         replies.report(lines)
-        record(lines, "owned reuse refused", lambda body=body: api.retry.post_idempotent(body=body))
-        lines.append(f"    owned closed={owned.closed} closes={owned.closes}")
-        for ownership in ("borrowed", "owned"):
-            file = _File(b"unseekable", seekable=False)
-            body = bodies.FileBody(file, ownership=ownership)
-            replies.reset(503, 200)
-            record(lines, f"{ownership} unseekable not retried", lambda body=body: api.retry.post_idempotent(body=body))
-            replies.report(lines)
-            record(lines, f"{ownership} unseekable reuse", lambda body=body: api.retry.post_idempotent(body=body))
-            lines.append(f"    file closes={file.closes} reads={file.reads}")
-            if not file.closed:
-                file.close()
+        lines.append(f"    grown file size={len(grown.getvalue())} reads={grown.reads}")
+        grown.close()
+        gone = _File(data["payload"].encode())
+        replies.reset(*data["retry"], change=gone.close)
+        record(lines, "file closed between attempts", lambda: api.retry.post_idempotent(body=gone))
+        replies.report(lines)
         path = Path(directory) / "body.bin"
-        path.write_bytes(b"path body")
-        replies.reset(307, 503, 200)
-        record(lines, "path reopened", lambda: api.retry.post_idempotent(body=bodies.FileBody.from_path(path)))
+        path.write_bytes(data["payload"].encode())
+        replies.reset(*data["hops"])
+        record(lines, "native path replay", lambda: api.retry.post_idempotent(body=path))
         replies.report(lines)
-        body = bodies.FileBody.from_path(path)
-        replies.reset(503, 200)
+        path.unlink()
+        for label, body in (
+            ("nonseekable file", _File(data["payload"].encode(), seekable=False)),
+            ("native iterator", iter((data["payload"].encode(),))),
+        ):
+            replies.reset(*data["retry"])
+            record(lines, label, lambda body=body: api.retry.post_idempotent(body=body))
+            replies.report(lines)
+        replies.reset(303, 200)
         record(
-            lines,
-            "path changed between attempts",
-            lambda body=body: api.retry.post_idempotent(
-                body=body, options=options.RequestOptions(hooks=(_ChangePath(path),))
-            ),
+            lines, "303 drops consumed body", lambda: api.retry.post_idempotent(body=iter((data["payload"].encode(),)))
         )
         replies.report(lines)
-        _streams(api, bodies, replies, lines)
-        _factories(api, bodies, replies, lines)
-    run(lambda: _async_body_replay(package, bodies, options, lines))
+    run(lambda: _async_replay(package, options, data, lines))
 
 
-def _streams(api: Any, bodies: ModuleType, replies: _Replies, lines: list[str]) -> None:
-    for ownership in ("borrowed", "owned"):
-        chunks = _Chunks()
-        body = bodies.StreamBody(chunks, ownership=ownership)
-        replies.reset(503, 200)
-        record(lines, f"{ownership} stream not retried", lambda body=body: api.retry.post_idempotent(body=body))
-        replies.report(lines)
-        record(lines, f"{ownership} stream reuse", lambda body=body: api.retry.post_idempotent(body=body))
-        lines.append(f"    stream begins={chunks.begins} closes={chunks.closes}")
-    chunks = _Chunks()
-    replies.reset(303, 200)
-    record(
-        lines,
-        "303 drops consumed body",
-        lambda: api.retry.post_idempotent(body=bodies.StreamBody(chunks, ownership="owned")),
-    )
-    replies.report(lines)
-    lines.append(f"    stream begins={chunks.begins} closes={chunks.closes}")
-
-
-def _factories(api: Any, bodies: ModuleType, replies: _Replies, lines: list[str]) -> None:
-    factory = _Factory()
-    replies.reset(307, 503, 200)
-    record(lines, "factory per candidate hop", lambda: api.retry.post_idempotent(body=bodies.BodyFactory(factory)))
-    replies.report(lines)
-    lines.append(
-        f"    contexts={factory.contexts} one_call={len(set(factory.ids)) == 1}"
-        f" closes={[item.closes for item in factory.attempts]}"
-    )
-    a, b = _Attempt(), _Attempt()
-    factory = _Factory((a, b, a, a))
-    body = bodies.BodyFactory(factory)
-    replies.reset(503, 503, 200)
-    record(lines, "factory A B A refused", lambda body=body: api.retry.post_idempotent(body=body))
-    replies.report(lines)
-    record(lines, "factory immediate next call refused", lambda body=body: api.retry.post_idempotent(body=body))
-    lines.append(f"    contexts={factory.contexts} closes={(a.closes, b.closes)}")
-    a, b = _Attempt(length=7), _Attempt(b"changed", length=8)
-    factory = _Factory((a, b))
-    replies.reset(503, 200)
-    record(
-        lines, "factory observed length changed", lambda: api.retry.post_idempotent(body=bodies.BodyFactory(factory))
-    )
-    replies.report(lines)
-    lines.append(f"    closes={(a.closes, b.closes)}")
-    factory = _Factory()
-    replies.reset(303, 503, 200)
-    record(
-        lines,
-        "bodyless redirect retry restores source",
-        lambda: api.retry.post_idempotent(body=bodies.BodyFactory(factory)),
-    )
-    replies.report(lines)
-    lines.append(f"    contexts={factory.contexts} closes={[item.closes for item in factory.attempts]}")
-
-
-async def _async_body_replay(package: ModuleType, bodies: ModuleType, options: ModuleType, lines: list[str]) -> None:
+async def _async_replay(package: ModuleType, options: ModuleType, data: dict[str, Any], lines: list[str]) -> None:
     exchange = Exchange([])
     replies = _Replies(exchange)
-    config = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0),
-        redirects=options.RedirectOptions(enabled=True, allow_303_to_get=True),
-    )
+    config = {"retry": options.RetryOptions(initial_delay=0), "follow_redirects": True}
     with tempfile.TemporaryDirectory() as directory:
-        async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
-            replies.reset(503, 200)
-            await arecord(lines, "async bytes retained", lambda: api.retry.post_idempotent(body=b"retained"))
-            replies.report(lines)
-            for ownership in ("borrowed", "owned"):
-                file = _File(b"prefix-payload")
-                file.seek(7)
-                body = bodies.AsyncFileBody(file, ownership=ownership)
-                replies.reset(307, 503, 200)
-                await arecord(
-                    lines,
-                    f"async {ownership} entry offset",
-                    lambda body=body, file=file: api.retry.post_idempotent(
-                        body=body, options=options.RequestOptions(hooks=(_Move(file),))
-                    ),
-                )
-                replies.report(lines)
-                lines.append(f"    file closed={file.closed} closes={file.closes} reads={file.reads}")
-                if ownership == "owned":
-                    await arecord(
-                        lines, "async owned reuse refused", lambda body=body: api.retry.post_idempotent(body=body)
-                    )
-                    lines.append(f"    owned closes={file.closes}")
-                await body.aclose()
-                if not file.closed:
-                    file.close()
-            file = _File(b"unseekable", seekable=False)
-            body = bodies.AsyncFileBody(file, ownership="owned")
-            replies.reset(503, 200)
-            await arecord(lines, "async unseekable not retried", lambda body=body: api.retry.post_idempotent(body=body))
-            replies.report(lines)
-            lines.append(f"    file closes={file.closes} reads={file.reads}")
-            await body.aclose()
+        async with exchange.async_client() as native, package.AsyncClient(http_client=native, **config) as api:
+            file = _File(data["file"].encode())
+            file.seek(data["offset"])
             path = Path(directory) / "async.bin"
-            path.write_bytes(b"path body")
-            body = bodies.AsyncFileBody.from_path(path)
-            replies.reset(503, 308, 200)
-            await arecord(lines, "async path reopened", lambda body=body: api.retry.post_idempotent(body=body))
-            replies.report(lines)
-            replies.reset(503, 200)
-            await arecord(
-                lines,
-                "async path changed",
-                lambda body=body: api.retry.post_idempotent(
-                    body=body, options=options.RequestOptions(hooks=(_AsyncChangePath(path),))
-                ),
-            )
-            replies.report(lines)
-            await body.aclose()
-            for ownership in ("borrowed", "owned"):
-                chunks = _Chunks()
-                body = bodies.AsyncStreamBody(chunks, ownership=ownership)
-                replies.reset(503, 200)
-                await arecord(
-                    lines,
-                    f"async {ownership} stream not retried",
-                    lambda body=body: api.retry.post_idempotent(body=body),
-                )
+            path.write_bytes(data["payload"].encode())
+            for label, body in (
+                ("async bytes", data["payload"].encode()),
+                ("async file", file),
+                ("async path", path),
+                ("async native iterator", iter((data["payload"].encode(),))),
+                ("async native async iterator", _Chunks(data["payload"].encode())),
+            ):
+                replies.reset(*data["retry"])
+                await arecord(lines, label, lambda body=body: api.retry.post_idempotent(body=body))
                 replies.report(lines)
-                await arecord(
-                    lines, f"async {ownership} stream reuse", lambda body=body: api.retry.post_idempotent(body=body)
-                )
-                lines.append(f"    stream begins={chunks.begins} closes={chunks.closes}")
-            await _async_factories(api, bodies, replies, lines)
-
-
-async def _async_factories(api: Any, bodies: ModuleType, replies: _Replies, lines: list[str]) -> None:
-    factory = _Factory()
-    replies.reset(307, 503, 200)
-    await arecord(
-        lines,
-        "async factory per candidate hop",
-        lambda: api.retry.post_idempotent(body=bodies.AsyncBodyFactory(factory.async_call)),
-    )
-    replies.report(lines)
-    lines.append(
-        f"    contexts={factory.contexts} one_call={len(set(factory.ids)) == 1}"
-        f" closes={[item.closes for item in factory.attempts]}"
-    )
-    a, b = _Attempt(), _Attempt()
-    factory = _Factory((a, b, a, a))
-    body = bodies.AsyncBodyFactory(factory.async_call)
-    replies.reset(503, 503, 200)
-    await arecord(lines, "async factory A B A refused", lambda body=body: api.retry.post_idempotent(body=body))
-    replies.report(lines)
-    await arecord(
-        lines, "async factory immediate next call refused", lambda body=body: api.retry.post_idempotent(body=body)
-    )
-    lines.append(f"    contexts={factory.contexts} closes={(a.closes, b.closes)}")
-    a, b = _Attempt(length=7), _Attempt(b"changed", length=8)
-    factory = _Factory((a, b))
-    replies.reset(503, 200)
-    await arecord(
-        lines,
-        "async factory observed length changed",
-        lambda: api.retry.post_idempotent(body=bodies.AsyncBodyFactory(factory.async_call)),
-    )
-    replies.report(lines)
-    lines.append(f"    closes={(a.closes, b.closes)}")
+            lines.append(f"    async caller file open={not file.closed} offset={file.tell()} reads={file.reads}")
+            file.close()
+            path.unlink()
 
 
 def multipart_replay(package: ModuleType, lines: list[str]) -> None:
-    """Keep one boundary and encoded layout, and share attempt identities between multipart factories."""
+    """Use the same caller file twice and rewind each part at actual consumption."""
     bodies, options = (importlib.import_module(f"{package.__name__}.{name}") for name in ("bodies", "options"))
+    data = json.loads(_DATA.read_text())
     exchange = Exchange([])
-    replies = _Replies(exchange)
-    config = options.ClientOptions(redirects=options.RedirectOptions(enabled=True))
-    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
-        file = _File(b"prefix-file")
-        file.seek(7)
-        factory = _Factory()
-        body = bodies.MultipartBody((
-            bodies.FieldPart("title", "frozen"),
-            bodies.FilePart("file", bodies.FileBody(file, ownership="owned")),
-            bodies.FilePart("factory", bodies.BodyFactory(factory)),
-            bodies.FilePart("bytes", b"bytes"),
-        ))
-        replies.reset(307, 308, 200)
+    config = {"retry": options.RetryOptions(initial_delay=0)}
+    file = _File(data["file"].encode())
+    file.seek(data["offset"])
+    parts = (bodies.FilePart("first", file), bodies.FilePart("second", file))
+
+    def received(request: httpx2.Request) -> httpx2.Response:
+        lines.append(f"    multipart payload count={request.content.count(data['file'][data['offset'] :].encode())}")
+        return httpx2.Response(200, headers={"content-type": "text/plain"}, stream=httpx2.ByteStream(b"ok"))
+
+    with exchange.client() as native, package.Client(http_client=native, **config) as api:
+        exchange.respond(received, received)
         record(
             lines,
-            "multipart reopens",
-            lambda: api.request_raw("PUT", "https://forms.example.com/parts", body=body).body_bytes,
+            "shared file parts",
+            lambda: api.request_raw("POST", data["url"], body=bodies.MultipartBody(parts)).read(),
         )
-        lines.append(
-            f"    requests={len(replies.requests)} stable_body={len({item[3] for item in replies.requests}) == 1}"
-            f" stable_type={len({item[2] for item in replies.requests}) == 1}"
-            f" closes={file.closes} factories={factory.contexts}"
-        )
-        chunks = _Chunks()
-        body = bodies.MultipartBody((
-            bodies.FieldPart("title", "one shot"),
-            bodies.FilePart("stream", bodies.StreamBody(chunks, ownership="owned")),
-        ))
-        replies.reset(307, 200)
+        file.seek(data["offset"])
         record(
             lines,
-            "multipart one shot blocks redirect",
-            lambda: api.request_raw("PUT", "https://forms.example.com/parts", body=body).body_bytes,
+            "caller file in another call",
+            lambda: api.request_raw("POST", data["url"], body=bodies.MultipartBody(parts)).read(),
         )
-        lines.append(
-            f"    requests={len(replies.requests)} pending={len(exchange.responders)}"
-            f" begins={chunks.begins} closes={chunks.closes}"
-        )
-        attempt = _Attempt()
-        first, second = _Factory((attempt,)), _Factory((attempt,))
-        body = bodies.MultipartBody((
-            bodies.FilePart("first", bodies.BodyFactory(first)),
-            bodies.FilePart("second", bodies.BodyFactory(second)),
-        ))
-        replies.reset(200)
-        record(lines, "multipart shared raw attempt refused", lambda: api.forms.submit_parts(body=body))
-        lines.append(
-            f"    requests={len(replies.requests)} closes={attempt.closes} contexts={(first.contexts, second.contexts)}"
-        )
-    run(lambda: _async_multipart_replay(package, bodies, config, lines))
+        lines.append(f"    multipart caller file open={not file.closed}")
+    file.close()
+    run(lambda: _async_multipart(package, bodies, config, data, lines))
 
 
-async def _async_multipart_replay(package: ModuleType, bodies: ModuleType, config: object, lines: list[str]) -> None:
+async def _async_multipart(
+    package: ModuleType, bodies: ModuleType, config: dict[str, Any], data: dict[str, Any], lines: list[str]
+) -> None:
     exchange = Exchange([])
-    replies = _Replies(exchange)
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
-        file = _File(b"prefix-file")
-        file.seek(7)
-        source = bodies.AsyncFileBody(file, ownership="owned")
-        factory = _Factory()
-        body = bodies.AsyncMultipartBody((
-            bodies.FieldPart("title", "frozen"),
-            bodies.FilePart("file", source),
-            bodies.FilePart("factory", bodies.AsyncBodyFactory(factory.async_call)),
-            bodies.FilePart("bytes", b"bytes"),
-        ))
-        replies.reset(307, 308, 200)
-        await arecord(lines, "async multipart reopens", lambda: _async_raw_body(api, body))
-        lines.append(
-            f"    requests={len(replies.requests)} stable_body={len({item[3] for item in replies.requests}) == 1}"
-            f" stable_type={len({item[2] for item in replies.requests}) == 1}"
-            f" closes={file.closes} factories={factory.contexts}"
-        )
-        await source.aclose()
-        chunks = _Chunks()
-        body = bodies.AsyncMultipartBody((
-            bodies.FieldPart("title", "one shot"),
-            bodies.FilePart("stream", bodies.AsyncStreamBody(chunks, ownership="owned")),
-        ))
-        replies.reset(307, 200)
-        await arecord(lines, "async multipart one shot blocks redirect", lambda: _async_raw_body(api, body))
-        lines.append(
-            f"    requests={len(replies.requests)} pending={len(exchange.responders)}"
-            f" begins={chunks.begins} closes={chunks.closes}"
-        )
-        attempt = _Attempt()
-        first, second = _Factory((attempt,)), _Factory((attempt,))
-        body = bodies.AsyncMultipartBody((
-            bodies.FilePart("first", bodies.AsyncBodyFactory(first.async_call)),
-            bodies.FilePart("second", bodies.AsyncBodyFactory(second.async_call)),
-        ))
-        replies.reset(200)
-        await arecord(lines, "async multipart shared raw attempt refused", lambda: api.forms.submit_parts(body=body))
-        lines.append(
-            f"    requests={len(replies.requests)} closes={attempt.closes} contexts={(first.contexts, second.contexts)}"
-        )
+    file = _File(data["file"].encode())
+    file.seek(data["offset"])
 
+    def received(request: httpx2.Request) -> httpx2.Response:
+        lines.append(
+            f"    async multipart payload count={request.content.count(data['file'][data['offset'] :].encode())}"
+        )
+        return httpx2.Response(200, headers={"content-type": "text/plain"}, stream=httpx2.ByteStream(b"ok"))
 
-async def _async_raw_body(api: Any, body: object) -> bytes:
-    return (await api.request_raw("PUT", "https://forms.example.com/parts", body=body)).body_bytes
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, **config) as api:
+        exchange.respond(received)
+        body = bodies.AsyncMultipartBody((bodies.FilePart("first", file), bodies.FilePart("second", file)))
+
+        async def call() -> object:
+            response = await api.request_raw("POST", data["url"], body=body)
+            return await response.read()
+
+        await arecord(lines, "async shared file parts", call)
+        lines.append(f"    async multipart caller file open={not file.closed}")
+    file.close()

@@ -1,34 +1,3 @@
 # protocols-stream-errors
 render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CONFIG_VALUE config protocols['media.name'].media: protocols['media.name'].media must be a media type
-  E_CONFIG_VALUE config protocols['media.type'].media: protocols['media.type'].media must be a media type
-  E_CONFIG_CONFLICT config protocols['unknown.raw'].unknown: protocols['unknown.raw'].unknown can be 'raw' only with a discriminator
-  E_CONFIG_VALUE config protocols['unknown.choice'].unknown: protocols['unknown.choice'].unknown must be 'error' or 'raw'
-  E_CONFIG_CONFLICT config protocols['errors.undiscriminated'].error_events: protocols['errors.undiscriminated'].error_events need a discriminator
-  E_CONFIG_CONFLICT config protocols['errors.shared'].error_events['created']: protocols['errors.shared'].error_events['created'] is also an event of protocols['errors.shared'].event_schema.mapping
-  E_CONFIG_VALUE config protocols['errors.type'].error_events: protocols['errors.type'].error_events must be a mapping
-  E_CONFIG_VALUE config protocols['errors.key'].error_events: protocols['errors.key'].error_events has the key '', which is not a nonempty UTF-8 string
-  E_CONFIG_VALUE config protocols['mapping.empty'].event_schema.mapping: protocols['mapping.empty'].event_schema.mapping must be a nonempty mapping
-  E_CONFIG_VALUE config protocols['discriminator.pointer'].event_schema.discriminator.pointer: protocols['discriminator.pointer'].event_schema.discriminator needs 'pointer'
-  E_CONFIG_VALUE config protocols['discriminator.form'].event_schema.discriminator.pointer: protocols['discriminator.form'].event_schema.discriminator.pointer must be an RFC 6901 pointer
-  E_CONFIG_UNKNOWN config protocols['discriminator.extra'].event_schema.discriminator.pointer: protocols['discriminator.extra'].event_schema.discriminator has no key 'pointer'
-  E_CONFIG_VALUE config protocols['discriminator.ndjson'].event_schema.discriminator.from: protocols['discriminator.ndjson'].event_schema.discriminator.from must be 'body'
-  E_CONFIG_VALUE config protocols['schema.type'].event_schema: protocols['schema.type'].event_schema must be a schema reference
-  E_CONFIG_VALUE config protocols['completion.sentinel'].completion.value: protocols['completion.sentinel'].completion.value must be a nonempty UTF-8 string
-  E_CONFIG_VALUE config protocols['completion.ndjson'].completion.kind: protocols['completion.ndjson'].completion.kind must be 'eof' or 'sentinel'
-  E_CONFIG_VALUE config protocols['completion.line'].completion.value: protocols['completion.line'].completion.value must not contain a line feed
-  E_CONFIG_UNKNOWN config protocols['final.sse'].final_line: protocols['final.sse'] has no key 'final_line'
-  E_CONFIG_VALUE config protocols['final.missing'].final_line: protocols['final.missing'] needs 'final_line'
-  E_CONFIG_VALUE config protocols['final.choice'].final_line: protocols['final.choice'].final_line must be 'require_newline' or 'allow_eof'
-  E_CONFIG_VALUE config protocols['resume.type'].resume: protocols['resume.type'].resume must be a mapping
-  E_CONFIG_CONFLICT config protocols['resume.disabled'].resume.cursor: protocols['resume.disabled'].resume.cursor applies only when resume is enabled
-  E_CONFIG_VALUE config protocols['resume.enabled'].resume.enabled: protocols['resume.enabled'].resume.enabled must be a boolean
-  E_CONFIG_UNKNOWN config protocols['resume.event'].resume.missing: protocols['resume.event'].resume has no key 'missing'
-  E_CONFIG_VALUE config protocols['resume.cursor'].resume.missing: protocols['resume.cursor'].resume needs 'missing'
-  E_CONFIG_VALUE config protocols['resume.cursor'].resume.null: protocols['resume.cursor'].resume needs 'null'
-  E_CONFIG_VALUE config protocols['resume.ndjson'].resume.cursor: protocols['resume.ndjson'].resume.cursor must be a selector
-  E_CONFIG_VALUE config protocols['resume.delivery'].resume.delivery: protocols['resume.delivery'].resume.delivery must be 'at_least_once'
-  E_CONFIG_VALUE config protocols['resume.reasons'].resume.reconnect_on[1]: protocols['resume.reasons'].resume.reconnect_on[1] repeats a reconnect reason
-  E_CONFIG_VALUE config protocols['resume.empty'].resume.reconnect_on: protocols['resume.empty'].resume.reconnect_on must be a nonempty list
-  E_CONFIG_VALUE config protocols['resume.expiries'].resume.expires_at.occurrence: protocols['resume.expiries'].resume.expires_at.occurrence can be 'all' only in a binding value
+  Error: --client-protocols['media.name'].media must be a media type; --client-protocols['media.type'].media must be a media type; --client-protocols['unknown.raw'].unknown can be 'raw' only with a discriminator; --client-protocols['unknown.choice'].unknown must be 'error' or 'raw'; --client-protocols['errors.undiscriminated'].error_events need a discriminator; --client-protocols['errors.shared'].error_events['created'] is also an event of protocols['errors.shared'].event_schema.mapping; --client-protocols['errors.type'].error_events must be a mapping; --client-protocols['errors.key'].error_events has the key '', which is not a nonempty UTF-8 string; --client-protocols['mapping.empty'].event_schema.mapping must be a nonempty mapping; --client-protocols['discriminator.pointer'].event_schema.discriminator needs 'pointer'; --client-protocols['discriminator.form'].event_schema.discriminator.pointer must be an RFC 6901 pointer; --client-protocols['discriminator.extra'].event_schema.discriminator has no key 'pointer'; --client-protocols['discriminator.ndjson'].event_schema.discriminator.from must be 'body'; --client-protocols['schema.type'].event_schema must be a schema reference; --client-protocols['completion.sentinel'].completion.value must be a nonempty UTF-8 string; --client-protocols['completion.ndjson'].completion.kind must be 'eof' or 'sentinel'; --client-protocols['completion.line'].completion.value must not contain a line feed; --client-protocols['final.sse'] has no key 'final_line'; --client-protocols['final.missing'] needs 'final_line'; --client-protocols['final.choice'].final_line must be 'require_newline' or 'allow_eof'; --client-protocols['resume.type'].resume must be a mapping; --client-protocols['resume.disabled'].resume.cursor applies only when resume is enabled; --client-protocols['resume.enabled'].resume.enabled must be a boolean; --client-protocols['resume.event'].resume has no key 'missing'; --client-protocols['resume.cursor'].resume needs 'missing'; --client-protocols['resume.cursor'].resume needs 'null'; --client-protocols['resume.ndjson'].resume.cursor must be a selector; --client-protocols['resume.delivery'].resume.delivery must be 'at_least_once'; --client-protocols['resume.reasons'].resume.reconnect_on[1] repeats a reconnect reason; --client-protocols['resume.empty'].resume.reconnect_on must be a nonempty list; --client-protocols['resume.expiries'].resume.expires_at.occurrence can be 'all' only in a binding value

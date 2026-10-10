@@ -114,7 +114,14 @@ def _validate_http_key_value_options(
 
 @lru_cache(maxsize=1)
 def _get_config_class() -> type[Config]:
-    from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator  # noqa: PLC0415
+    from pydantic import (  # noqa: PLC0415
+        ConfigDict,
+        Field,
+        PrivateAttr,
+        ValidationInfo,
+        field_validator,
+        model_validator,
+    )
     from typing_extensions import Self  # noqa: PLC0415
 
     from datamodel_code_generator.base_config import BaseGenerateConfig  # noqa: PLC0415
@@ -128,6 +135,8 @@ def _get_config_class() -> type[Config]:
             protected_namespaces=(),
             defer_build=True,
         )
+
+        _json_sources: dict[str, Any] = PrivateAttr(default_factory=dict)
 
         def get(self, item: str) -> Any:  # pragma: no cover
             """Get attribute value by name."""
@@ -160,6 +169,9 @@ def _get_config_class() -> type[Config]:
             "server_operation_names",
             "server_router_names",
             "server_parameter_names",
+            "client_resource_names",
+            "client_operations",
+            "client_protocols",
             mode="before",
         )
         @classmethod
@@ -198,6 +210,7 @@ def _get_config_class() -> type[Config]:
             "custom_file_header_path",
             "http_local_ref_path",
             "server_output",
+            "client_output",
             mode="before",
         )
         @classmethod
@@ -442,20 +455,6 @@ def _get_config_class() -> type[Config]:
         watch_delay: float = 0.5
         list_deprecations: Optional[str] = None  # noqa: UP045
         list_experimental: Optional[str] = None  # noqa: UP045
-        generate_server: Optional[Literal["fastapi"]] = None  # noqa: UP045
-        server_output: Optional[Path] = None  # noqa: UP045
-        server_package: Optional[str] = None  # noqa: UP045
-        server_model_package: Optional[str] = None  # noqa: UP045
-        server_layout: Optional[Literal["routers", "single"]] = None  # noqa: UP045
-        server_handler_mode: Optional[Literal["sync", "async"]] = None  # noqa: UP045
-        server_handler_modes: Optional[Mapping[str, Literal["sync", "async"]]] = None  # noqa: UP045
-        server_include_request: Optional[bool] = None  # noqa: UP045
-        server_body_mode: Optional[Literal["typed", "request"]] = None  # noqa: UP045
-        server_body_modes: Optional[Mapping[str, Literal["typed", "request"]]] = None  # noqa: UP045
-        server_primary_responses: Optional[Mapping[str, Any]] = None  # noqa: UP045
-        server_operation_names: Optional[Mapping[str, str]] = None  # noqa: UP045
-        server_router_names: Optional[Mapping[str, str]] = None  # noqa: UP045
-        server_parameter_names: Optional[Mapping[str, Mapping[str, str]]] = None  # noqa: UP045
 
         def merge_args(self, args: Namespace) -> None:
             """Merge command-line arguments into config."""
@@ -477,6 +476,10 @@ def _get_config_class() -> type[Config]:
                 self.locked = False
             elif "locked" in set_args:
                 self.update_lock = False
+            if "generate_server" in set_args:
+                self.generate_client = None
+            elif "generate_client" in set_args:
+                self.generate_server = None
             for field_name in set_args:
                 setattr(self, field_name, getattr(parsed_args, field_name))
 

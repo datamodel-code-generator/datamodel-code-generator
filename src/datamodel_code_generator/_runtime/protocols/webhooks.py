@@ -4,15 +4,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
-from typing import Generic, Protocol
+from typing import Final, Generic, Protocol
 
 from typing_extensions import TypeVar
 
-from ..model_codecs.unset import UNSET, Unset
-from .options import WEBHOOK_LIMITS, check_limits
+from ..client.timing import check_limits
+from ..model_codecs.unset import UNSET
 
 K = TypeVar("K")
 T_co = TypeVar("T_co", covariant=True)
+
+_LIMITS: Final = (
+    ("max_body_bytes", False, False, False),
+    ("max_header_bytes", False, False, False),
+    ("max_keys", False, False, False),
+    ("max_signatures", False, False, False),
+    ("past_tolerance", True, False, True),
+    ("future_tolerance", True, False, True),
+)
 
 
 def _key_tuple(value: object) -> None:
@@ -55,16 +64,16 @@ class VerifiedWebhook(Generic[T_co]):
 class WebhookOptions:
     """Standalone verification limits; every UNSET field takes its webhook default."""
 
-    max_body_bytes: int | Unset = UNSET
-    max_header_bytes: int | Unset = UNSET
-    max_keys: int | Unset = UNSET
-    max_signatures: int | Unset = UNSET
-    past_tolerance: float | Unset = UNSET
-    future_tolerance: float | Unset = UNSET
+    max_body_bytes: int | UNSET = UNSET
+    max_header_bytes: int | UNSET = UNSET
+    max_keys: int | UNSET = UNSET
+    max_signatures: int | UNSET = UNSET
+    past_tolerance: float | UNSET = UNSET
+    future_tolerance: float | UNSET = UNSET
 
     def __post_init__(self) -> None:
         """Reject invalid counts and durations without accepting bool or disabled limits."""
-        check_limits(self, WEBHOOK_LIMITS)
+        check_limits(self, _LIMITS)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

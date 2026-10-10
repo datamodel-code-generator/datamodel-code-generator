@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from models import Pet as _dcg_type_0
+import models
 
-CreatePetResponse: TypeAlias = _dcg_type_0
+CreatePetResponse: TypeAlias = models.Pet
 
 
 UpdatePetResponse: TypeAlias = None

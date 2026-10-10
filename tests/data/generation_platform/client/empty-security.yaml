@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: Empty security
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /status:
+    get:
+      operationId: getStatus
+      security: []
+      responses:
+        '204':
+          description: Up.

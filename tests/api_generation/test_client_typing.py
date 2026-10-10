@@ -131,10 +131,28 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links", "streams-mixed"]
+    "case",
+    [
+        "pagination-targets",
+        "pagination-querystring",
+        "pagination-counts",
+        "pagination-links",
+        "streams-mixed",
+        "type-spellings-cycle",
+        "type-spellings-exact",
+        "type-spellings-legacy",
+        "naming",
+        "naming-snake",
+        "type-checking-imports-on",
+    ],
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
-    """Check packages whose helpers write each kind of request target, bindings, positions, and followed URLs."""
+    """Check helper target, naming, and type-checking import packages.
+
+    The helper target packages write each kind of request target, bindings, positions, and followed URLs.
+    The naming packages check methods and arguments named by the model's naming rules, with their suffixes.
+    The type-checking import package imports the names its annotations alone use only for type checkers.
+    """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(
@@ -293,6 +311,16 @@ def test_client_typing_compression(tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "compression", ("compression",)),
         EXPECTED / "pydantic_v2-BaseModel-compression.txt",
+    )
+
+
+def test_client_typing_auth(tmp_path: Path) -> None:
+    """Check constructor credentials of each scheme kind, OAuth providers, and native Auth settings."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "auth", ("auth",)),
+        EXPECTED / "pydantic_v2-BaseModel-auth.txt",
     )
 
 

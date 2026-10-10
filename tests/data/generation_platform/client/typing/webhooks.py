@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from pets.errors import ConfigurationError
-from pets.options import UNSET, Unset
+from pets.options import UNSET
 from pets.protocols import (
     KeySet,
     OperationRef,
@@ -55,13 +55,13 @@ def contracts(now: datetime, limits: ResolvedWebhookOptions) -> None:
     assert_type(event.data, str)
     accepts_event(event)
     options = WebhookOptions(max_keys=2, past_tolerance=0, future_tolerance=UNSET)
-    assert_type(options.max_keys, int | Unset)
-    assert_type(options.past_tolerance, float | Unset)
+    assert_type(options.max_keys, int | UNSET)
+    assert_type(options.past_tolerance, float | UNSET)
     assert_type(limits.past_tolerance, float)
     operation = OperationRef(pointer="/webhooks/event/post")
     assert_type(operation.document, str | None)
-    failure = ConfigurationError(field_path=("keys",), reason="invalid_value", operation=operation)
-    assert_type(failure.operation, OperationRef | None)
+    failure = ConfigurationError(field_path=("keys",), reason="invalid_value", helper_id="event")
+    assert_type(failure.helper_id, str | None)
 
 
 def accepts_event(event: VerifiedWebhook[object]) -> None:

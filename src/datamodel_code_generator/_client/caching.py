@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 _MIN_SUCCESS: Final = 200
@@ -57,9 +56,8 @@ class _Caches:
     """Check and plan every enabled cache helper of a client target."""
 
     def __init__(self, pages: _Pages) -> None:
-        """Keep response codec uses and the headers credentials travel in."""
+        """Keep the pagination checks' response codec uses."""
         self.pages = pages
-        self.credential_headers = self.pages.secret_headers
 
     def helper(self, helper: Helper, spec: OperationSpec) -> tuple[CacheSpec | None, list[Diagnostic]]:
         """Check one enabled helper against its operation, and plan it when every check passes."""
@@ -80,13 +78,6 @@ class _Caches:
         if not tree["authenticated"] and security is not None and security.alternatives and all(security.alternatives):
             message = f"The cache helper {name!r} is declared anonymous, but {label} requires credentials"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.authenticated", message, spec))
-        for index, header in enumerate(tree["vary_allowlist"]):
-            if header.lower() in self.credential_headers:
-                message = (
-                    f"The cache helper {name!r} allows a Vary on {header!r}, which credentials travel in; the auth "
-                    "adds it after the cache looks a request up"
-                )
-                problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.vary_allowlist[{index}]", message, spec))
         if response is None or problems:
             return None, problems
         return CacheSpec(helper=helper, operation=spec, response=response), problems
@@ -118,18 +109,17 @@ class _Caches:
         return found[0] if found else None
 
 
-def plan_caches(  # noqa: PLR0913, PLR0917
+def plan_caches(
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[CacheSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled cache helper, returning the planned ones and each checked helper's problems."""
     if protocols is None:
         return (), {}
-    caches = _Caches(_Pages(protocols, plan, facts, codecs, wire, request))
+    caches = _Caches(_Pages(protocols, plan, facts, codecs, request))
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[CacheSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

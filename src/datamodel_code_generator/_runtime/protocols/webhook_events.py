@@ -16,19 +16,12 @@ from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import (
     ConfigurationError,
-    ProtocolSizeError,
-    WebhookVerificationError,
     is_sequence,
 )
-from ..model_codecs.errors import (
-    CodecResourceLimitError,
-    ParameterEncodingError,
-    WireValidationError,
-)
-from ..model_codecs.unset import Unset
+from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError
 from .records import BodySelector
-from .values import Missing, resolve
+from .values import MISSING, resolve
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
@@ -67,11 +60,6 @@ _DEFAULTS: Final = ResolvedWebhookOptions(
     future_tolerance=30.0,
 )
 _OPTIONS: Final = tuple(item.name for item in fields(WebhookOptions))
-_DATA_ERRORS: Final = (
-    CodecResourceLimitError,
-    ParameterEncodingError,
-    WireValidationError,
-)
 
 
 class _Failed(Enum):
@@ -86,7 +74,7 @@ def _parsed(raw_body: bytes, helper_id: str) -> JSONValue:
     except (ValueError, UnicodeDecodeError, RecursionError):
         wire = _Failed.MALFORMED
     if isinstance(wire, _Failed):
-        raise ProtocolDataError(condition="malformed", helper_id=helper_id)
+        raise ProtocolDataError(reason="malformed", helper_id=helper_id)
     return wire
 
 
@@ -112,7 +100,7 @@ class EventDecoder(Generic[T_co]):
             event = _Failed.MALFORMED if codec.malformed(error) else _Failed.VALUE
         if isinstance(event, _Failed):
             condition: Literal["malformed", "value"] = "malformed" if event is _Failed.MALFORMED else "value"
-            raise ProtocolDataError(condition=condition, helper_id=helper_id)
+            raise ProtocolDataError(reason=condition, helper_id=helper_id)
         return event
 
 
@@ -136,16 +124,13 @@ class MappedEventDecoder(Generic[T_co]):
         if isinstance(name, str) and (decoder := self._events.get(name)) is not None:
             return decoder.decode(raw_body, helper_id)
         condition: Literal["missing", "null", "type", "value"] = "type"
-        match name:
-            case str():
-                condition = "value"
-            case Missing():
-                condition = "missing"
-            case None:
-                condition = "null"
-            case _:
-                pass
-        raise ProtocolDataError(condition=condition, location=self._location, helper_id=helper_id)
+        if isinstance(name, str):
+            condition = "value"
+        elif name is MISSING:
+            condition = "missing"
+        elif name is None:
+            condition = "null"
+        raise ProtocolDataError(reason=condition, location=self._location, helper_id=helper_id)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -177,7 +162,7 @@ def reject(
     helper_id: str,
 ) -> NoReturn:
     """Refuse a delivery for the condition."""
-    raise WebhookVerificationError(condition=condition, helper_id=helper_id)
+    raise ProtocolDataError(reason=condition, helper_id=helper_id)
 
 
 def _is_pairs(value: object) -> TypeIs[list[tuple[str, str]] | tuple[tuple[str, str], ...]]:
@@ -212,7 +197,7 @@ def _limits(options: object, helper_id: str) -> ResolvedWebhookOptions:
         return _DEFAULTS
     if not isinstance(options, WebhookOptions):
         raise configuration_error(("options",), "invalid_value", helper_id)
-    given = {name: value for name in _OPTIONS if not isinstance(value := getattr(options, name), Unset)}
+    given = {name: value for name in _OPTIONS if (value := getattr(options, name)) is not UNSET}
     return replace(_DEFAULTS, **given)
 
 
@@ -237,20 +222,19 @@ def local_arguments(  # ruff: ignore[too-many-arguments]
     return epoch_microseconds(now), limits
 
 
-def size(kind: Literal["body", "headers", "keys", "signatures"], limit: int, observed: int, helper_id: str) -> None:
+def size(limit: int, observed: int, helper_id: str) -> None:
     """Refuse an observed size or count over its limit."""
     if observed > limit:
-        unit: Literal["bytes", "items"] = "items" if kind in {"keys", "signatures"} else "bytes"
-        raise ProtocolSizeError(kind=kind, limit=limit, observed=observed, unit=unit, helper_id=helper_id)
+        raise ProtocolDataError(reason="too_large", helper_id=helper_id)
 
 
 def sizes(
     limits: ResolvedWebhookOptions, raw_body: bytes, headers: Sequence[tuple[str, str]], keys: int, helper_id: str
 ) -> None:
     """Refuse a body, headers, or key count over its limit, in that order."""
-    size("body", limits.max_body_bytes, len(raw_body), helper_id)
-    size("headers", limits.max_header_bytes, sum(len(name) + len(value) for name, value in headers), helper_id)
-    size("keys", limits.max_keys, keys, helper_id)
+    size(limits.max_body_bytes, len(raw_body), helper_id)
+    size(limits.max_header_bytes, sum(len(name) + len(value) for name, value in headers), helper_id)
+    size(limits.max_keys, keys, helper_id)
 
 
 def instant(microseconds: int) -> datetime | None:
@@ -286,5 +270,5 @@ def decode_unsigned(plan: EventPlan[T], raw_body: bytes, *, options: WebhookOpti
     helper_id = plan.helper_id
     if not _instance(raw_body, bytes):
         raise configuration_error(("raw_body",), "invalid_value", helper_id)
-    size("body", _limits(options, helper_id).max_body_bytes, len(raw_body), helper_id)
+    size(_limits(options, helper_id).max_body_bytes, len(raw_body), helper_id)
     return plan.event.decode(raw_body, helper_id)

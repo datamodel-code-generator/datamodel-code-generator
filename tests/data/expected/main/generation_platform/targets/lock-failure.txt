@@ -1,3 +1,4 @@
 # lock-failure
-render
-  OSError: No space left on device
+check
+  Error: No space left on device
+  DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

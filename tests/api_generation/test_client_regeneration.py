@@ -11,5 +11,5 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
 
 
 def test_client_regeneration(tmp_path: Path) -> None:
-    """Keep user modules, rewrite edited owned files, refuse an unmanaged file in the way, and follow the API."""
+    """Keep user modules, overwrite an edited and a foreign file, leave stale modules, and follow the API."""
     assert_output(client_regeneration_report(tmp_path), EXPECTED / "regeneration.txt")

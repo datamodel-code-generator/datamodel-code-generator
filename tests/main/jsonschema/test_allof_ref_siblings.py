@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 from jsonschema.validators import validator_for
+from packaging.version import Version
 from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import TypeAdapter, ValidationError
 from referencing import Registry, Resource
@@ -94,8 +95,9 @@ def test_allof_ref_siblings(
         generated_validator = validator_for(generated_schema)(generated_schema)
         if not schema_validators:
             expected = DATA_PATH / "payloads/allof_ref_sibling_outputs" / f"{case['name']}_without_validators.txt"
-            if case["name"] == "enum_null" and PYDANTIC_VERSION.split(".")[:2] == ["2", "0"]:
-                expected = expected.with_name("enum_null_pydantic20_without_validators.txt")
+            # Pydantic 2.1 through 2.13 validate a value matching no member of an enum with a None member as None.
+            if case["name"] == "enum_null" and not (Version("2.1") <= Version(PYDANTIC_VERSION) < Version("2.14")):
+                expected = expected.with_name("enum_null_rejected_without_validators.txt")
             actual = []
             for value, expected_value in zip(
                 [*case["valid"], *case["invalid"]],

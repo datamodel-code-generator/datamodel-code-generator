@@ -132,8 +132,8 @@ Generated model class and package behavior.
 - `--reuse-model`: Reuse models on the field when a module has the model with the same content
 - `--reuse-scope`: Scope for model reuse deduplication: module (per-file, default) or tree (cross-file with shared module). Only effective when --reuse-model is set. Choices: `module`, `tree`.
 - `--target-python-version`: target python version Choices: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`.
-- `--target-pydantic-version`: Oldest Pydantic version the generated code must support. Unset: the newest supported feature forms, with populate_by_name config like '2'. '2': Pydantic 2.0+ compatible (uses populate_by_name). '2.11': Pydantic 2.11+ (uses validate_by_name). '2.12': Pydantic 2.12+ (supports MISSING sentinel). Choices: `2`, `2.11`, `2.12`.
-- `--alias-generator`: Pydantic v2 BaseModel alias generator to use in ConfigDict. Matching generated aliases are omitted from individual Field() calls. Choices: `to_camel`, `to_pascal`, `to_snake`.
+- `--target-pydantic-version`: Oldest Pydantic version the generated code must support. Unset: the newest supported feature forms, with populate_by_name config like '2' and the experimental MISSING import like '2.12'. '2': Pydantic 2.0+ compatible (uses populate_by_name). '2.11': Pydantic 2.11+ (uses validate_by_name). '2.12': Pydantic 2.12+ (supports MISSING sentinel). '2.14': Pydantic 2.14+ (imports MISSING from pydantic). Choices: `2`, `2.11`, `2.12`, `2.14`.
+- `--alias-generator`: Pydantic v2 BaseModel alias generator to use in ConfigDict. Matching generated aliases are omitted from individual Field() calls, except with --target-pydantic-version 2, which writes every alias. Choices: `to_camel`, `to_pascal`, `to_snake`.
 - `--use-generic-base-class`: Generate a shared base class with model configuration (e.g., extra='forbid') instead of repeating the configuration in each model. Keeps code DRY.
 - `--parent-scoped-naming` (deprecated): Deprecated: --parent-scoped-naming is deprecated. Use --naming-strategy parent-prefixed instead.
 - `--naming-strategy`: Strategy for generating unique model names when duplicates occur. 'numbered' (default): Append numeric suffix (Address, Address1, Address2). Simple but names don't indicate context. 'parent-prefixed': Prefix with parent model name using underscore (Company_Address, Company_Employee_Address for nested). Names show hierarchy. 'full-path': Similar to parent-prefixed but joins with CamelCase (CompanyAddress, CompanyEmployeeAddress). More readable for deep nesting. 'primary-first': Keep clean names for primary definitions (in /definitions/ or /components/schemas/), only add suffix to inline/nested duplicates. Choices: `numbered`, `parent-prefixed`, `full-path`, `primary-first`.
@@ -150,7 +150,7 @@ Generated model class and package behavior.
 - `--strip-default-none`: Strip default None on fields
 - `--use-default`: Use default value even if a field is required
 - `--use-default-kwarg`: Use `default=` instead of a positional argument for Fields that have default values.
-- `--use-missing-sentinel`: Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+).
+- `--use-missing-sentinel`: Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), or pydantic.MISSING with --target-pydantic-version 2.14 or later.
 - `--union-mode`: Union mode for only pydantic v2 field Choices: `smart`, `left_to_right`.
 - `--use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).
 - `--no-use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).
@@ -256,7 +256,7 @@ General utility, HTTP, checking, and project integration options.
 
 ## Target Generation Options
 
-Server generation alongside the models (experimental).
+Server and client generation alongside the models (experimental).
 
 - `--generate-server`: Generate a FastAPI server package for the models; the --server-* options configure it (experimental). Choices: `fastapi`.
 - `--server-output`: Directory of the generated server package (experimental).
@@ -273,3 +273,14 @@ Server generation alongside the models (experimental).
 - `--server-operation-names`: Service method names per operation reference as inline JSON or a JSON file path (experimental).
 - `--server-router-names`: Router group names keyed by group key, such as tag:pets, as inline JSON or a JSON file path (experimental).
 - `--server-parameter-names`: Argument names per operation reference, each keyed by location and name such as query:limit, as inline JSON or a JSON file path (experimental).
+- `--generate-client`: Generate an HTTPX2 client package for the models; the --client-* options configure it (experimental). Choices: `httpx2`.
+- `--client-output`: Directory of the generated client package (experimental).
+- `--client-package`: Import path of the generated client package (experimental).
+- `--client-model-package`: Import path of the models that --output generates (experimental).
+- `--client-signature-style`: Declare operation arguments as keywords (default) or as one Unpack[TypedDict] (experimental). Choices: `explicit`, `unpack`.
+- `--client-body-arguments`: Take request bodies as one body argument (default) or also as field arguments (experimental). Choices: `body`, `both`.
+- `--client-resource-names`: Resource namespaces keyed by tag, such as {"pets": "store.pets"}, as inline JSON or a JSON file path (experimental).
+- `--client-operations`: Settings per operation reference, such as /paths/~1pets/get, as inline JSON or a JSON file path; their body_arguments overrides --client-body-arguments (experimental).
+- `--client-default-base-url`: Server URL of the operations that declare no servers (experimental).
+- `--client-server-base-url`: Base URL that relative server URLs of the document resolve against (experimental).
+- `--client-protocols`: Pagination, polling, stream, WebSocket, cache, upload, and webhook helpers by name, as inline JSON or a JSON file path (experimental).

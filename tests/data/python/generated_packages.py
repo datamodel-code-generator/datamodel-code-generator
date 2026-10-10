@@ -22,8 +22,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-def import_generated(package: str) -> ModuleType:
-    """Import a generated package whose private runtime resolves to this checkout's runtime sources."""
+def import_generated(package: str, *, copied: bool = False) -> ModuleType:
+    """Import a generated package with its copied runtime or this checkout's covered runtime sources."""
+    if copied:
+        return importlib.import_module(package)
     runtime = Path(_runtime.__file__).parent
     spec = importlib.util.spec_from_file_location(
         f"{package}._runtime", runtime / "__init__.py", submodule_search_locations=[str(runtime)]
