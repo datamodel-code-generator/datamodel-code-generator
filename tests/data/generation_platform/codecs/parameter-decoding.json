@@ -762,6 +762,27 @@
       "plan": {
         "location": "header",
         "name": "X-Rate",
+        "style": "simple"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            "5"
+          ],
+          [
+            "X-Rate",
+            {
+              "hex": "ff"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
         "style": "simple",
         "shape": "array"
       },
@@ -960,6 +981,72 @@
           [
             "Cookie",
             "color=%zz"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=50%off"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=\"a b\""
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=a%2Cb; color=c"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "kind": "integer"
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=12"
           ]
         ]
       }
@@ -1221,76 +1308,5 @@
         "query": "a+b%20c"
       }
     }
-  ],
-  "operation": {
-    "plans": [
-      {
-        "location": "path",
-        "name": "id",
-        "style": "simple",
-        "required": true,
-        "kind": "integer"
-      },
-      {
-        "location": "query",
-        "name": "q",
-        "style": "form",
-        "explode": true,
-        "required": true
-      },
-      {
-        "location": "query",
-        "name": "page",
-        "style": "form",
-        "explode": true,
-        "kind": "integer"
-      },
-      {
-        "location": "header",
-        "name": "X-Rate",
-        "style": "simple",
-        "kind": "integer"
-      },
-      {
-        "location": "cookie",
-        "name": "session",
-        "style": "form",
-        "explode": true
-      }
-    ],
-    "raw": [
-      {
-        "path": {
-          "id": "7"
-        },
-        "query": "q=a&page=2",
-        "headers": [
-          [
-            "X-Rate",
-            "5"
-          ],
-          [
-            "Cookie",
-            "session=abc"
-          ]
-        ]
-      },
-      {
-        "path": {
-          "id": "x"
-        },
-        "query": "page=1&page=2",
-        "headers": [
-          [
-            "X-Rate",
-            "5"
-          ],
-          [
-            "X-Rate",
-            "6"
-          ]
-        ]
-      }
-    ]
-  }
+  ]
 }

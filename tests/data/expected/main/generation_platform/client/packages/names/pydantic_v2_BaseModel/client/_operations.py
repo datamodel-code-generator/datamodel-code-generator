@@ -20,7 +20,7 @@ from .types.admin import CreateAdminUserResponse
 from .types.admin.users import ListAdminUsersResponse
 from .types.default import GetRootResponse
 from .types.store import GetFilesByFileNameByExtResponse
-from .types.u30e6_u30fc_u30b6_u30fc import HttpGetUsersResponse
+from .types.ユーザー import HttpGetUsersResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://names.example.com'),)
 
@@ -38,41 +38,7 @@ OPERATION_1: Final[OperationPlan[GetFilesByFileNameByExtResponse]] = OperationPl
     path='/files/{fileName}.{ext}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='fileName',
-                style='simple',
-                required=True,
-                reserved_names=('ext',),
-            ),
-            codec=model_bindings.codec_0,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='path',
-                name='ext',
-                style='simple',
-                required=True,
-                reserved_names=('fileName',),
-            ),
-            codec=model_bindings.codec_1,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(
-                location='query',
-                name='class',
-                style='form',
-                explode=True,
-            ),
-            codec=model_bindings.codec_2,
-        ),
-        ParameterSpec(
-            plan=ParameterPlan(location='header', name='2fa', style='simple'),
-            codec=model_bindings.codec_3,
-        ),
-    ),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='fileName', style='simple', required=True, reserved_names=('ext',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='path', name='ext', style='simple', required=True, reserved_names=('fileName',)), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='class', style='form', explode=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='header', name='2fa', style='simple'), codec=model_bindings.codec_3)),
 )
 
 OPERATION_2: Final[OperationPlan[HttpGetUsersResponse]] = OperationPlan(

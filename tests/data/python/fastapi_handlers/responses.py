@@ -18,8 +18,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
     class Untagged(server.services.UntaggedService):
         def get_greeting(self, *, mode: object) -> object:
-            absent = mode is None or type(mode).__name__ == "Unset"
-            calls.append(f"get_greeting(mode={'absent' if absent else repr(mode)})")
+            calls.append(f"get_greeting(mode={'absent' if mode is None else repr(mode)})")
             match mode:
                 case "result":
                     return server.HTTPResult(200, make("ok"))

@@ -12,8 +12,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Final
 
-from models import Customer as _dcg_type_1
-from models import Invoice as _dcg_type_0
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.protocols.signatures import HMAC_SHA256
@@ -26,23 +25,20 @@ from ..._runtime.protocols.webhook_events import EventDecoder, MappedEventDecode
 from ..._runtime.protocols.webhook_keys import HmacKey
 from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
-__all__ = ["verify", "verify_async"]
+__all__ = [
+    'verify',
+    'verify_async',
+]
 
 
-_PLAN: Final[WebhookPlan[_dcg_type_0 | _dcg_type_1, HmacKey]] = WebhookPlan(
+_PLAN: Final[WebhookPlan[models.Invoice | models.Customer, HmacKey]] = WebhookPlan(
     helper_id='mapped.event',
     kind='body_hmac',
     algorithm=HMAC_SHA256,
     header='x-signature',
     encoding='hex',
     prefix='',
-    event=MappedEventDecoder(
-        '/type',
-        {
-            'invoice.paid': EventDecoder(model_bindings.codec_0),
-            'customer.created': EventDecoder(model_bindings.codec_1),
-        },
-    ),
+    event=MappedEventDecoder('/type', {'invoice.paid': EventDecoder(model_bindings.codec_0), 'customer.created': EventDecoder(model_bindings.codec_1)}),
 )
 
 
@@ -53,13 +49,19 @@ def verify(
     *,
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
+) -> VerifiedWebhook[models.Invoice | models.Customer]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        headers,
+        keys,
+        now=now,
+        options=options,
+    )
 
 
 async def verify_async(
@@ -69,11 +71,10 @@ async def verify_async(
     *,
     now: datetime,
     options: WebhookOptions | None = None,
-) -> VerifiedWebhook[_dcg_type_0 | _dcg_type_1]:
+) -> VerifiedWebhook[models.Invoice | models.Customer]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,

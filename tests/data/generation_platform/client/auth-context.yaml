@@ -5,7 +5,7 @@ info:
 servers:
   - url: https://api.example.com
 security:
-  - auth: []
+  - apiToken: []
 paths:
   /inherited:
     post:
@@ -22,7 +22,7 @@ paths:
     post:
       operationId: explicit
       security:
-        - auth: []
+        - apiToken: []
       responses:
         '204':
           description: Accepted
@@ -63,7 +63,7 @@ paths:
     $ref: retry-security-context-external.yaml#/components/pathItems/query
 components:
   securitySchemes:
-    auth:
+    apiToken:
       type: apiKey
       in: query
       name: access_token
@@ -72,6 +72,6 @@ components:
       in: header
       name: X-Idempotency
     remoteHeader:
-      $ref: retry-security-context-external.yaml#/components/securitySchemes/auth
+      $ref: retry-security-context-external.yaml#/components/securitySchemes/apiToken
     remoteQuery:
       $ref: retry-security-context-external.yaml#/components/securitySchemes/actualHeader

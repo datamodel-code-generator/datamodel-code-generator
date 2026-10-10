@@ -1,13 +1,13 @@
 # input-cycle-reference
-render
-  cyclic YAML input rejected
+check
+  Error: Invalid file format for openapi at <root>/spec/input-cycle-reference-model.yaml: InvalidYamlError: recursion limit exceeded at line 6 column 10
 tree
 generate
-  cyclic YAML input rejected
+  Error: Invalid file format for openapi at <root>/spec/input-cycle-reference-model.yaml: InvalidYamlError: recursion limit exceeded at line 6 column 10
 tree
-render
-  cyclic YAML input rejected
+check
+  Error: Invalid file format for openapi at <root>/spec/input-cycle-reference-model.yaml: InvalidYamlError: recursion limit exceeded at line 6 column 10
 tree
 generate
-  cyclic YAML input rejected
+  Error: Invalid file format for openapi at <root>/spec/input-cycle-reference-model.yaml: InvalidYamlError: recursion limit exceeded at line 6 column 10
 tree

@@ -10,32 +10,54 @@ from uuid import UUID
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, arecord, failing, record, run
+from tests.data.python.client_runtime import Exchange, arecord, failing, injected, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
     from types import ModuleType
 
 
-class _Events:
+class _Statuses:
+    """Record the status of each response the injected HTTP client receives, through its own response hook."""
+
     def __init__(self) -> None:
-        self.values: list[tuple[object, ...]] = []
+        self.values: list[int] = []
 
-    def on_event(self, event: object) -> None:
-        self.values.append(
-            tuple(
-                getattr(event, name)
-                for name in ("name", "attempt_index", "status", "sent", "outcome", "retry_reason", "attempt_count")
-            )
-        )
+    def __call__(self, response: httpx2.Response) -> None:
+        self.values.append(response.status_code)
+
+    async def asynchronous(self, response: httpx2.Response) -> None:
+        self(response)
 
 
-class _Clock:
-    def __init__(self) -> None:
+_RECEIVED: Final = 1767225600.0
+_LATE_RECEIPTS: Final = (
+    ("RFC850 next century at the last second of 2099", 4102444799.0, "Friday, 01-Jan-00 00:00:00 GMT"),
+    ("RFC850 next century from 2060", 2840140800.0, "Monday, 05-Jan-05 00:00:00 GMT"),
+)
+
+
+class _Waits:
+    """A fake monotonic clock that each recorded retry wait advances, so no wait passes in real time.
+
+    As the injected HTTP client's response hook, it also lets `received` seconds pass when error headers arrive.
+    """
+
+    def __init__(self, *, received: float = 0.0) -> None:
         self.value = 100.0
+        self.received = received
+        self.delays: list[float] = []
 
-    def __call__(self) -> float:
+    def monotonic(self) -> float:
         return self.value
+
+    def sleep(self, duration: float) -> None:
+        self.delays.append(round(duration, 12))
+        self.value += duration
+
+    def response(self, response: httpx2.Response) -> None:
+        if response.status_code != 200:
+            self.value += self.received
 
 
 class _Draw:
@@ -48,24 +70,16 @@ class _Draw:
         return self.value
 
 
-class _TimingHook:
-    def __init__(self, clock: _Clock, *, headers_elapsed: float = 0.0, end_elapsed: float = 0.0) -> None:
-        self.clock = clock
-        self.headers_elapsed = headers_elapsed
-        self.end_elapsed = end_elapsed
-        self.delays: list[float | None] = []
+class _Elapsed(httpx2.ByteStream):
+    """A response body whose close lets time pass on a fake clock after the client chose its retry wait."""
 
-    def on_event(self, event: object) -> None:
-        name = getattr(event, "name", None)
-        if name == "response_headers" and getattr(event, "status", None) != 200:
-            self.clock.value += self.headers_elapsed
-        if name == "attempt_end":
-            self.clock.value += self.end_elapsed
-        if name == "retry_scheduled":
-            delay = getattr(event, "duration", None)
-            self.delays.append(round(delay, 12) if isinstance(delay, float) else None)
-            if isinstance(delay, float):
-                self.clock.value += delay
+    def __init__(self, waits: _Waits, seconds: float) -> None:
+        super().__init__(b"server payload")
+        self.waits = waits
+        self.seconds = seconds
+
+    def close(self) -> None:
+        self.waits.value += self.seconds
 
 
 def _response(status: int, headers: tuple[tuple[str, str], ...] = ()) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -80,6 +94,17 @@ def _response(status: int, headers: tuple[tuple[str, str], ...] = ()) -> Callabl
     return respond
 
 
+def _elapsed(
+    status: int, headers: tuple[tuple[str, str], ...], waits: _Waits, seconds: float
+) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return an in-process response whose close lets seconds pass on the fake clock."""
+    return injected(
+        lambda _: httpx2.Response(
+            status, headers=(("Content-Type", "text/plain"), *headers), stream=_Elapsed(waits, seconds)
+        )
+    )
+
+
 def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tuple[object, ...]:
     try:
         value = call()
@@ -87,7 +112,6 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
         info = getattr(error, "info", None)
         return (
             type(error).__name__,
-            getattr(error, "retry_stop_reason", None),
             getattr(error, "attempt_count", None),
             getattr(error, "body_bytes", None),
             getattr(error, "body", None),
@@ -105,30 +129,17 @@ def _outcome(call: Callable[[], object], *, error_type: type[Exception]) -> tupl
 def _gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
-    events = _Events()
+    received = _Statuses()
     with (
-        exchange.client() as native,
-        package.Client(
-            http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,)),
-        ) as api,
+        exchange.client(event_hooks={"response": [received]}) as native,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
         for label, method, statuses, request in (
             ("default succeeds", "get_safe", (503, 200), options.RequestOptions()),
             ("default exhausted", "get_safe", (503, 503, 503), options.RequestOptions()),
-            (
-                "excluded before disabled",
-                "get_safe",
-                (404,),
-                options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
-            ),
-            (
-                "never before disabled",
-                "get_never",
-                (503,),
-                options.RequestOptions(retry=options.RetryOptions(max_retries=0)),
-            ),
-            ("disabled", "get_safe", (503,), options.RequestOptions(retry=options.RetryOptions(max_retries=0))),
+            ("excluded before disabled", "get_safe", (404,), options.RequestOptions(max_retries=0)),
+            ("never before disabled", "get_never", (503,), options.RequestOptions(max_retries=0)),
+            ("disabled", "get_safe", (503,), options.RequestOptions(max_retries=0)),
             ("unsafe", "post_unsafe", (503,), options.RequestOptions()),
             ("declared idempotent", "post_idempotent", (503, 200), options.RequestOptions()),
             (
@@ -145,7 +156,7 @@ def _gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             ),
         ):
             exchange.responders.clear()
-            events.values.clear()
+            received.values.clear()
             exchange.respond(*(_response(status) for status in statuses))
             record(
                 lines,
@@ -154,7 +165,7 @@ def _gates(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                     lambda: getattr(api.retry.with_response, method)(options=request)
                 ),
             )
-            lines.append(f"    events={events.values!r} unused={len(exchange.responders)}")
+            lines.append(f"    statuses={received.values!r} unused={len(exchange.responders)}")
 
 
 def _hints(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -162,34 +173,36 @@ def _hints(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     with (
         exchange.client() as native,
-        package.Client(
-            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-        ) as api,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
-        for label, status, values, retry in (
-            ("true adds404", 404, ("TrUe",), options.RetryOptions()),
-            ("ASCII whitespace", 404, (" \ttrue \t",), options.RetryOptions()),
-            ("false wins", 503, ("true", "FALSE", "true"), options.RetryOptions()),
-            ("false before disabled", 503, ("false",), options.RetryOptions(max_retries=0)),
-            ("excluded before false", 404, ("false",), options.RetryOptions()),
-            ("invalid hint", 404, ("yes", "1"), options.RetryOptions()),
-            ("false then true", 503, ("false", "true"), options.RetryOptions()),
-            ("true ignores200", 200, ("true",), options.RetryOptions()),
-            ("true ignores302", 302, ("true",), options.RetryOptions()),
-            ("true ignores401", 401, ("true",), options.RetryOptions()),
-            ("true ignores403", 403, ("true",), options.RetryOptions()),
-            ("true ignores407", 407, ("true",), options.RetryOptions()),
-            ("hint explicitly disabled", 404, ("true",), options.RetryOptions(should_retry_header=None)),
+        for label, status, values, request in (
+            ("true adds404", 404, ("TrUe",), options.RequestOptions()),
+            ("ASCII whitespace", 404, (" \ttrue \t",), options.RequestOptions()),
+            ("false wins", 503, ("true", "FALSE", "true"), options.RequestOptions()),
+            ("false before disabled", 503, ("false",), options.RequestOptions(max_retries=0)),
+            ("excluded before false", 404, ("false",), options.RequestOptions()),
+            ("invalid hint", 404, ("yes", "1"), options.RequestOptions()),
+            ("false then true", 503, ("false", "true"), options.RequestOptions()),
+            ("true ignores200", 200, ("true",), options.RequestOptions()),
+            ("true ignores302", 302, ("true",), options.RequestOptions()),
+            ("true ignores401", 401, ("true",), options.RequestOptions()),
+            ("true ignores403", 403, ("true",), options.RequestOptions()),
+            ("true ignores407", 407, ("true",), options.RequestOptions()),
+            (
+                "hint explicitly disabled",
+                404,
+                ("true",),
+                options.RequestOptions(retry=options.RetryOptions(should_retry_header=None)),
+            ),
             (
                 "hint case-insensitive binding",
                 404,
                 ("true",),
-                options.RetryOptions(should_retry_header="x-retry-permitted"),
+                options.RequestOptions(retry=options.RetryOptions(should_retry_header="x-retry-permitted")),
             ),
         ):
             exchange.responders.clear()
             exchange.respond(_response(status, tuple(("X-Retry-Permitted", value) for value in values)), _response(200))
-            request = options.RequestOptions(retry=retry)
             record(
                 lines,
                 label,
@@ -211,11 +224,13 @@ def _hints(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
 def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
+    received = [_RECEIVED]
     with (
         exchange.client() as native,
         package.Client(
             http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retry_after=0.01)),
+            retry=options.RetryOptions(initial_delay=0, max_retry_after=0.01),
+            clock=options.Clock(time=lambda: received[0]),
         ) as api,
     ):
         for label, values in (
@@ -227,7 +242,11 @@ def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -
             ("obsolete asctime", ("Sun Nov  6 08:49:37 1994",)),
             ("obsolete RFC850", ("Sunday, 06-Nov-94 08:49:37 GMT",)),
             ("RFC850 future window", ("Sunday, 06-Nov-74 08:49:37 GMT",)),
+            ("RFC850 window boundary", ("Thursday, 01-Jan-76 00:00:00 GMT",)),
+            ("RFC850 past the window", ("Thursday, 01-Jan-76 00:00:01 GMT",)),
             ("unknown date timezone", ("Sun, 06 Nov 2094 08:49:37 BOGUS",)),
+            ("unknown local timezone", ("Sun, 06 Nov 2094 08:49:37 -0000",)),
+            ("offset timezone", ("Sun, 06 Nov 2094 08:49:37 +0900",)),
             ("date trailing junk", ("Sun, 06 Nov 2094 08:49:37 GMT ignored",)),
             ("date wrong case", ("sun, 06 Nov 2094 08:49:37 GMT",)),
             ("leap second", ("Sat, 31 Dec 2016 23:59:60 GMT",)),
@@ -245,6 +264,13 @@ def _server_delays(package: ModuleType, options: ModuleType, lines: list[str]) -
             exchange.respond(_response(503, tuple(("Retry-After", value) for value in values)), _response(200))
             record(lines, f"delay {label}", lambda: outcome(api.retry.with_response.get_safe))
             lines.append(f"    unused={len(exchange.responders)}")
+        for label, receipt, value in _LATE_RECEIPTS:
+            received[0] = receipt
+            exchange.responders.clear()
+            exchange.respond(_response(503, (("Retry-After", value),)), _response(200))
+            record(lines, f"delay {label}", lambda: outcome(api.retry.with_response.get_safe))
+            lines.append(f"    unused={len(exchange.responders)}")
+        received[0] = _RECEIVED
         for label, fields, retry in (
             (
                 "vendor maximum",
@@ -299,15 +325,13 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     with (
         exchange.client() as native,
-        package.Client(
-            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-        ) as api,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
         for label, method, key in (
-            ("caller key", "post_keyed", options.IdempotencyKey("stable-key")),
-            ("header-only declaration", "post_key_only", options.IdempotencyKey("header-only")),
+            ("caller key", "post_keyed", "stable-key"),
+            ("header-only declaration", "post_key_only", "header-only"),
             ("key suppressed", "post_keyed", None),
-            ("undeclared key", "post_unsafe", options.IdempotencyKey("no-target")),
+            ("undeclared key", "post_unsafe", "no-target"),
         ):
             exchange.responders.clear()
             exchange.respond(_response(503), _response(200))
@@ -320,7 +344,7 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 ),
             )
             lines.append(f"    unused={len(exchange.responders)}")
-        for label, key in (("safe method caller key", options.IdempotencyKey("safe-key")),):
+        for label, key in (("safe method caller key", "safe-key"),):
             exchange.responders.clear()
             exchange.respond(_response(503), _response(200))
             request = options.RequestOptions(idempotency_key=key)
@@ -336,10 +360,7 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             _response(503),
             lambda request: _response(200, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
         )
-        events = _Events()
-        raw = api.retry.with_raw_response.post_key_only(
-            body=b"automatic", options=options.RequestOptions(hooks=(events,))
-        )
+        raw = api.retry.with_raw_response.post_key_only(body=b"automatic")
         wire_key = raw.info.headers.get("X-Observed-Key")
         parsed = None if wire_key is None else UUID(wire_key)
         record(lines, "automatic declared key", lambda: outcome(raw.raise_for_status))
@@ -347,7 +368,6 @@ def _keys(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
             f"attempts={raw.info.attempt_count} "
-            f"retries={sum(event[0] == 'retry_scheduled' for event in events.values)} "
             f"unused={len(exchange.responders)}"
         )
 
@@ -362,38 +382,20 @@ _STARTED: Final = (
 )
 
 
-class _Attempt:
-    """A body attempt that sends a first chunk, then fails as its source breaks while the request is on the wire."""
-
-    content_length = None
-    content_type = "application/octet-stream"
-
-    def iter_bytes(self) -> Iterator[bytes]:
-        yield b"partial"
-        message = "body source failed mid-send"
-        raise OSError(message)
-
-    async def aiter_bytes(self) -> AsyncIterator[bytes]:
-        for chunk in self.iter_bytes():
-            yield chunk
-
-    def close(self) -> None:
-        pass
-
-    async def aclose(self) -> None:
-        pass
+def _broken() -> Iterator[bytes]:
+    """Send a first chunk, then fail as the source breaks while the request is on the wire."""
+    yield b"partial"
+    message = "body source failed mid-send"
+    raise OSError(message)
 
 
 def _delivered(result: object) -> tuple[object, ...]:
-    """Describe a delivery outcome: the error class and reason, delivery state, phase, stop reason, attempts, cause."""
+    """Describe a delivery outcome: the error class and reason, attempts, and cause."""
     if not isinstance(result, BaseException):
         return getattr(result, "data", None), getattr(getattr(result, "info", None), "attempt_count", None)
     return (
         type(result).__name__,
         getattr(result, "reason", None),
-        str(getattr(result, "delivery_state", None)),
-        getattr(result, "phase", None),
-        getattr(result, "retry_stop_reason", None),
         getattr(result, "attempt_count", None),
         type(getattr(result, "cause", None)).__name__,
     )
@@ -401,7 +403,7 @@ def _delivered(result: object) -> tuple[object, ...]:
 
 def _calls(api: Any, options: ModuleType) -> tuple[tuple[str, Callable[[], Any]], ...]:
     """Return the safe, keyed, unsafe, and never-retried operations a delivery failure is reported through."""
-    key = options.RequestOptions(idempotency_key=options.IdempotencyKey("delivery-key"))
+    key = options.RequestOptions(idempotency_key="delivery-key")
     return (
         ("get_safe", api.retry.with_response.get_safe),
         ("post_keyed", lambda: api.retry.with_response.post_keyed(body=b"payload", options=key)),
@@ -410,22 +412,21 @@ def _calls(api: Any, options: ModuleType) -> tuple[tuple[str, Callable[[], Any]]
     )
 
 
-def _delivery_cases(options: ModuleType) -> Iterator[tuple[str, type[httpx2.TransportError], object]]:
-    """Yield each native failure with the request options that leave one retry available."""
-    request = options.RequestOptions(retry=options.RetryOptions(max_retries=1))
+def _delivery_cases(options: ModuleType) -> Iterator[tuple[str, type[httpx2.TransportError], dict[str, object]]]:
+    """Yield each native failure with the view settings that leave one retry available."""
+    view: dict[str, object] = {"max_retries": 1}
     for error in (*_UNSENT, *_STARTED):
-        yield error.__name__, error, request
-    pool = options.RequestOptions(retry=options.RetryOptions(max_retries=1, retry_on_pool_timeout=True))
-    yield "PoolTimeout enabled", httpx2.PoolTimeout, pool
+        yield error.__name__, error, view
+    yield "PoolTimeout enabled", httpx2.PoolTimeout, {**view, "retry": options.RetryOptions(retry_on_pool_timeout=True)}
 
 
 def _delivery(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Classify native failures by class: only an unsent request may be resent, and only by an eligible operation."""
     exchange = Exchange([])
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
-        for label, error, request in _delivery_cases(options):
-            for name, call in _calls(api.with_options(request), options):
+    retry = options.RetryOptions(initial_delay=0)
+    with exchange.client() as native, package.Client(http_client=native, retry=retry) as api:
+        for label, error, view in _delivery_cases(options):
+            for name, call in _calls(api.with_options(**view), options):
                 exchange.respond(failing(error), _response(200))
                 lines.append(f"  native {label} {name} = {_delivered(_failed(call))} unused={len(exchange.responders)}")
                 exchange.responders.clear()
@@ -434,10 +435,10 @@ def _delivery(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
 
 async def _adelivery(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange([])
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
-        for label, error, request in _delivery_cases(options):
-            for name, call in _calls(api.with_options(request), options):
+    retry = options.RetryOptions(initial_delay=0)
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, retry=retry) as api:
+        for label, error, view in _delivery_cases(options):
+            for name, call in _calls(api.with_options(**view), options):
                 exchange.respond(failing(error), _response(200))
                 result = _delivered(await _afailed(call))
                 lines.append(f"  async native {label} {name} = {result} unused={len(exchange.responders)}")
@@ -454,34 +455,31 @@ def _dropped(request: httpx2.Request) -> httpx2.Response:
 
 def _started(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     """Fail real TLS exchanges after their send started and observe that the server receives each request once."""
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     exchange, opened = Exchange(lines), []
 
-    def factory(context: Any) -> _Attempt:
-        opened.append(context.attempt_index)
-        return _Attempt()
+    def factory() -> Iterator[bytes]:
+        opened.append("consumed")
+        yield from _broken()
 
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))
-    with exchange.client() as native, package.Client(http_client=native, options=config) as api:
+    config = {"max_retries": 1, "retry": options.RetryOptions(initial_delay=0)}
+    with exchange.client() as native, package.Client(http_client=native, **config) as api:
         for name, call in _calls(api, options)[:2]:
             exchange.respond(_dropped, _response(200))
             record(lines, f"server dropped {name}", lambda call=call: _delivered(_failed(call)))
             lines.append(f"    unused={len(exchange.responders)}")
             exchange.responders.clear()
         exchange.respond(_response(200))
-        key = options.RequestOptions(idempotency_key=options.IdempotencyKey("delivery-key"))
+        key = options.RequestOptions(idempotency_key="delivery-key")
         record(
             lines,
             "body fails mid-send",
-            lambda: _delivered(_failed(lambda: api.retry.post_keyed(body=bodies.BodyFactory(factory), options=key))),
+            lambda: _delivered(_failed(lambda: api.retry.post_keyed(body=factory(), options=key))),
         )
         lines.append(f"    opened={opened} unused={len(exchange.responders)}")
         exchange.responders.clear()
     exchange = Exchange(lines)
-    pool = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0, max_retries=1), timeout=options.TimeoutOptions(pool=0.05)
-    )
-    with exchange.client(connections=1) as native, package.Client(http_client=native, options=pool) as api:
+    pool = {**config, "timeout": httpx2.Timeout(5.0, pool=0.05)}
+    with exchange.client(connections=1) as native, package.Client(http_client=native, **pool) as api:
         exchange.respond(_response(200))
         with api.retry.with_streaming_response.get_safe() as held:
             for enabled in (False, True):
@@ -511,34 +509,36 @@ async def _afailed(call: Callable[[], Any]) -> object:
 
 
 async def _astarted(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     exchange, opened = Exchange(lines), []
 
-    async def factory(context: Any) -> _Attempt:  # noqa: RUF029
-        opened.append(context.attempt_index)
-        return _Attempt()
+    async def factory() -> AsyncIterator[bytes]:  # noqa: RUF029
+        opened.append("consumed")
+        for chunk in _broken():
+            yield chunk
 
-    config = options.ClientOptions(retry=options.RetryOptions(initial_delay=0, max_retries=1))
-    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as api:
+    config = {"max_retries": 1, "retry": options.RetryOptions(initial_delay=0)}
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, **config) as api:
         for name, call in _calls(api, options)[:2]:
             exchange.respond(_dropped, _response(200))
-            lines.append(f"  async server dropped {name} = {_delivered(await _afailed(call))}")
-            lines.append(f"    unused={len(exchange.responders)}")
+            lines.extend((
+                f"  async server dropped {name} = {_delivered(await _afailed(call))}",
+                f"    unused={len(exchange.responders)}",
+            ))
             exchange.responders.clear()
         exchange.respond(_response(200))
-        key = options.RequestOptions(idempotency_key=options.IdempotencyKey("delivery-key"))
-        body = bodies.AsyncBodyFactory(factory)
+        key = options.RequestOptions(idempotency_key="delivery-key")
+        body = factory()
         result = await _afailed(lambda: api.retry.post_keyed(body=body, options=key))
-        lines.append(f"  async body fails mid-send = {_delivered(result)}")
-        lines.append(f"    opened={opened} unused={len(exchange.responders)}")
+        lines.extend((
+            f"  async body fails mid-send = {_delivered(result)}",
+            f"    opened={opened} unused={len(exchange.responders)}",
+        ))
         exchange.responders.clear()
     exchange = Exchange(lines)
-    pool = options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0, max_retries=1), timeout=options.TimeoutOptions(pool=0.05)
-    )
+    pool = {**config, "timeout": httpx2.Timeout(5.0, pool=0.05)}
     async with (
         exchange.async_client(connections=1) as native,
-        package.AsyncClient(http_client=native, options=pool) as api,
+        package.AsyncClient(http_client=native, **pool) as api,
     ):
         exchange.respond(_response(200))
         async with api.retry.with_streaming_response.get_safe() as held:
@@ -550,14 +550,11 @@ async def _astarted(package: ModuleType, options: ModuleType, lines: list[str]) 
 
 
 def _bodies(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    bodies = importlib.import_module(f"{package.__name__}.bodies")
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     exchange = Exchange(lines)
     with (
         exchange.client() as native,
-        package.Client(
-            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
-        ) as api,
+        package.Client(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
         for label, method, maximum in (
             ("body before unsafe", "post_unsafe", 2),
@@ -565,8 +562,8 @@ def _bodies(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             ("disabled before body", "post_idempotent", 0),
         ):
             exchange.respond(_response(503))
-            body = bodies.StreamBody(iter((b"one", b"two")))
-            request = options.RequestOptions(retry=options.RetryOptions(max_retries=maximum))
+            body = iter((b"one", b"two"))
+            request = options.RequestOptions(max_retries=maximum)
             record(
                 lines,
                 label,
@@ -577,6 +574,7 @@ def _bodies(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
 
 
 def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Record each retry wait through the client's clock, which advances a fake monotonic clock by it."""
     outcome = partial(_outcome, error_type=importlib.import_module(f"{package.__name__}.errors").SDKError)
     exchange = Exchange(lines)
     with exchange.client() as native:
@@ -592,7 +590,7 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 0,
             ),
             ("full jitter", {"initial_delay": 2, "max_delay": 4}, (503, 503, 200), (), 0.5, None, (1.0, 2.0), 2),
-            ("full lower bound", {"initial_delay": 1}, (503, 200), (), 0.0, None, (0.0,), 1),
+            ("full lower bound", {"initial_delay": 1}, (503, 200), (), 0.0, None, (), 1),
             ("full upper edge", {"initial_delay": 1}, (503, 200), (), math.nextafter(1.0, 0.0), None, (1.0,), 1),
             (
                 "subnormal upper edge",
@@ -601,7 +599,7 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 (),
                 math.nextafter(1.0, 0.0),
                 None,
-                (0.0,),
+                (),
                 1,
             ),
             (
@@ -611,10 +609,19 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 (),
                 0.5,
                 None,
-                (0.0, 0.0),
+                (),
                 0,
             ),
-            ("server exact cap", {"initial_delay": 0}, (503, 200), (("Retry-After", "60"),), 0.5, None, (60.0,), 0),
+            (
+                "server exact cap",
+                {"initial_delay": 0},
+                (503, 200),
+                (("Retry-After", "60"),),
+                0.5,
+                None,
+                (60.0,),
+                0,
+            ),
             ("server over cap no RNG", {"initial_delay": 1}, (503,), (("Retry-After", "61"),), 0.5, None, (), 0),
             (
                 "server unlimited cap",
@@ -626,7 +633,16 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 (61.0,),
                 0,
             ),
-            ("server deadline equality no RNG", {"initial_delay": 1}, (503,), (("Retry-After", "1"),), 0.5, 1.0, (), 0),
+            (
+                "server deadline equality no RNG",
+                {"initial_delay": 1},
+                (503,),
+                (("Retry-After", "1"),),
+                0.5,
+                1.0,
+                (),
+                0,
+            ),
             ("backoff deadline equality", {"initial_delay": 1, "jitter": "none"}, (503,), (), 0.5, 1.0, (), 0),
             ("jitter deadline rejection", {"initial_delay": 2}, (503,), (), 0.75, 1.0, (), 1),
             ("success no RNG", {"initial_delay": 1}, (200,), (), 0.5, None, (), 0),
@@ -642,37 +658,37 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 0,
             ),
         ):
-            clock, draw = _Clock(), _Draw(draw_value)
-            hook = _TimingHook(clock)
+            waits, draw = _Waits(), _Draw(draw_value)
             exchange.responders.clear()
             exchange.respond(*(_response(status, fields) for status in statuses))
+            retry = dict(retry_fields)
+            maximum = retry.pop("max_retries", 2)
             with package.Client(
                 http_client=native,
-                options=options.ClientOptions(
-                    retry=options.RetryOptions(**retry_fields),
-                    total_timeout=total,
-                    hooks=(hook,),
-                    clock=options.Clock(monotonic=clock, random=draw),
-                ),
+                max_retries=maximum,
+                retry=options.RetryOptions(**retry),
+                total_timeout=total,
+                clock=options.Clock(monotonic=waits.monotonic, random=draw, sleep=waits.sleep),
             ) as api:
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
+            delays = tuple(waits.delays)
             lines.append(
-                f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected} "
+                f"    delays={delays!r} expected={expected!r} match={delays == expected} "
                 f"draws={draw.calls}/{draws} unused={len(exchange.responders)}"
             )
 
-        for label, fields, retry_fields, elapsed, end_elapsed, expected in (
+        for label, fields, retry, received, closed, expected in (
             (
-                "receipt target survives headers hook",
+                "receipt target survives response close",
                 (("Retry-After", "1"),),
                 {"initial_delay": 0.25, "jitter": "none"},
-                0.5,
                 0.0,
+                0.5,
                 (0.5,),
             ),
-            ("chosen target survives end hook", (), {"initial_delay": 0.5, "jitter": "none"}, 0.0, 0.25, (0.25,)),
+            ("chosen target survives response close", (), {"initial_delay": 0.5, "jitter": "none"}, 0.0, 0.25, (0.25,)),
             (
-                "original server cap survives hook",
+                "original server cap survives headers hook",
                 (("X-Retry-In-Ms", "64"),),
                 {"initial_delay": 0, "max_retry_after": 0.06},
                 1.0,
@@ -680,34 +696,34 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 (),
             ),
         ):
-            clock = _Clock()
-            hook = _TimingHook(clock, headers_elapsed=elapsed, end_elapsed=end_elapsed)
+            waits = _Waits(received=received)
             exchange.responders.clear()
-            exchange.respond(_response(503, fields), _response(200))
-            with package.Client(
-                http_client=native,
-                options=options.ClientOptions(
-                    retry=options.RetryOptions(**retry_fields), hooks=(hook,), clock=options.Clock(monotonic=clock)
-                ),
-            ) as api:
+            exchange.respond(_elapsed(503, fields, waits, closed), _response(200))
+            with (
+                exchange.client(event_hooks={"response": [waits.response]}) as hooked,
+                package.Client(
+                    http_client=hooked,
+                    retry=options.RetryOptions(**retry),
+                    clock=options.Clock(monotonic=waits.monotonic, sleep=waits.sleep),
+                ) as api,
+            ):
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
-            lines.append(
-                f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected}"
-            )
+            delays = tuple(waits.delays)
+            lines.append(f"    delays={delays!r} expected={expected!r} match={delays == expected}")
 
 
-def _frozen(options: ModuleType) -> object:
-    """Return options whose clock never moves, so each retry waits as long in real time as its policy chose."""
-    return options.ClientOptions(
-        retry=options.RetryOptions(initial_delay=0.05, jitter="none"),
-        total_timeout=5,
-        clock=options.Clock(monotonic=lambda: 1000.0),
-    )
+def _frozen(options: ModuleType) -> dict[str, object]:
+    """Return client settings whose clock never moves, so each retry waits as long in real time as its policy chose."""
+    return {
+        "retry": options.RetryOptions(initial_delay=0.05, jitter="none"),
+        "total_timeout": 5,
+        "clock": options.Clock(monotonic=lambda: 1000.0),
+    }
 
 
 def _frozen_retries(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    with exchange.client() as native, package.Client(http_client=native, options=_frozen(options)) as api:
+    with exchange.client() as native, package.Client(http_client=native, **_frozen(options)) as api:
         exchange.respond(_response(503), _response(503), _response(200))
         response = record(lines, "retries on a frozen clock", api.retry.with_response.get_safe)
         lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'attempt_count', None)}")
@@ -715,21 +731,17 @@ def _frozen_retries(package: ModuleType, options: ModuleType, lines: list[str]) 
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    events = _Events()
+    received = _Statuses()
     async with (
-        exchange.async_client() as native,
-        package.AsyncClient(
-            http_client=native,
-            options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0), hooks=(events,)),
-        ) as api,
+        exchange.async_client(event_hooks={"response": [received.asynchronous]}) as native,
+        package.AsyncClient(http_client=native, retry=options.RetryOptions(initial_delay=0)) as api,
     ):
         exchange.respond(_response(503), _response(200))
         response = await arecord(lines, "async retry", api.retry.with_response.get_safe)
         info = getattr(response, "info", None)
         counts = tuple(getattr(info, name, None) for name in ("attempt_count", "request_id"))
-        lines.append(f"    counts={counts!r} events={events.values!r}")
-        events.values.clear()
-        async with package.AsyncClient(http_client=native, options=_frozen(options)) as frozen:
+        lines.append(f"    counts={counts!r} statuses={received.values!r}")
+        async with package.AsyncClient(http_client=native, **_frozen(options)) as frozen:
             exchange.respond(_response(503), _response(503), _response(200))
             response = await arecord(lines, "async retries on a frozen clock", frozen.retry.with_response.get_safe)
             lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'attempt_count', None)}")
@@ -745,7 +757,6 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
             f"    uuid4={parsed is not None and parsed.version == 4} "
             f"canonical={parsed is not None and str(parsed) == wire_key} "
             f"attempts={raw.info.attempt_count} "
-            f"retries={sum(event[0] == 'retry_scheduled' for event in events.values)} "
             f"unused={len(exchange.responders)}"
         )
     await _adelivery(package, options, lines)

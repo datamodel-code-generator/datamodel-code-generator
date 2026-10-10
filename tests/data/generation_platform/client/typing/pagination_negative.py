@@ -2,30 +2,38 @@
 
 from __future__ import annotations
 
+from os import PathLike
+
 from pets import AsyncClient, Client
-from pets.options import SessionOptions
-from pets.protocols import Page, Pager, ResumeState
+from pets.options import RequestOptions
+from pets.protocols import Page, Pager
 from pets.types.users import ListUsersResponse
+from pets.model_codecs import JSONValue
 from pets_models import User
 
 
-async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[User, object], state: ResumeState) -> None:
+async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[User, object], state: JSONValue) -> None:
     """Reject each misuse of a helper, its pager, or its pages."""
     list(async_client.protocols.users.all.iterate())  # error
     await async_client.protocols.users.all.iterate()  # error
     items: Pager[object, ListUsersResponse] = client.protocols.users.all.iterate()  # error
     pages: Pager[User, object] = client.protocols.users.all.iterate()  # error
-    client.protocols.users.all.iterate(pagination_options=SessionOptions())  # error
+    client.protocols.users.all.iterate(pagination_options=RequestOptions())  # error
     client.protocols.users.all.page(response_media_type="application/json")  # error
     client.protocols.users.all.next_page(client.protocols.labels.all.page())  # error
     client.protocols.users.all.next_page(page)  # error
     page.items = ()  # error
     client.protocols.users.everyone = client.protocols.users.all  # error
     await async_client.protocols.users.all.resume(state)  # error
-    await async_client.protocols.users.all.iterate().checkpoint()  # error
+    exported: bytes = async_client.protocols.users.all.iterate().checkpoint()  # error
     client.protocols.users.all.resume(b"state")  # error
-    client.protocols.users.all.resume(state, cursor="a")  # error
-    client.protocols.users.all.resume(state, pagination_options=SessionOptions())  # error
+    client.protocols.users.all.resume(state, cursor=5)  # error
+    client.protocols.users.all.resume(state, pagination_options=RequestOptions())  # error
     resumed: Pager[object, ListUsersResponse] = client.protocols.users.all.resume(state)  # error
     client.protocols.users.all.resume(page)  # error
-    del items, pages, resumed
+    del items, pages, resumed, exported
+
+
+def wrong_raw_bodies(client: Client, path: PathLike[str]) -> None:
+    """Reject a raw body other than bytes in a package that declares no binary or multipart request body."""
+    client.request_raw("POST", "https://example.com/upload", body=path)  # error

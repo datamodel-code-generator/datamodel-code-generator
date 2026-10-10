@@ -5,4 +5,6 @@
 
 from .._runtime.protocols.webhook_keys import HmacKey
 
-__all__ = ["HmacKey"]
+__all__ = [
+    'HmacKey',
+]

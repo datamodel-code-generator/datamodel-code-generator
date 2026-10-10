@@ -15,7 +15,7 @@ from pets_models import FieldPetsGetHeaderXTraceParameter
 class ListArguments(TypedDict):
     """Keywords of list_pets that a caller declares for itself."""
 
-    x_trace: FieldPetsGetHeaderXTraceParameter
+    X_Trace: FieldPetsGetHeaderXTraceParameter
     options: NotRequired[RequestOptions | None]
 
 
@@ -34,7 +34,7 @@ class Lister(Protocol):
 class TracedLister(Protocol):
     """A callable that takes only the trace."""
 
-    def __call__(self, *, x_trace: FieldPetsGetHeaderXTraceParameter) -> ListPetsResponse: ...
+    def __call__(self, *, X_Trace: FieldPetsGetHeaderXTraceParameter) -> ListPetsResponse: ...
 
 
 def forward(client: Client, arguments: ColoredArguments) -> None:

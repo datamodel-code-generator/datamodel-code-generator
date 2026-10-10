@@ -1,0 +1,24 @@
+[tool.datamodel-codegen]
+input = "compression.yaml"
+input-file-type = "openapi"
+output = "models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "client"
+client-package = "client"
+client-model-package = "models"
+client-protocols = "protocols/compression.json"
+
+[tool.datamodel-codegen.client-operations]
+"/paths/~1items/post" = { runtime = { accepted_content_encodings = ["gzip"] } }
+"/paths/~1items/get" = { runtime = { accepted_content_encodings = ["gzip"] } }
+"/paths/~1blobs/put" = { runtime = { accepted_content_encodings = ["gzip"] } }
+"/paths/~1search/post" = { runtime = { accepted_content_encodings = ["gzip"] } }
+"/paths/~1feed/post" = { runtime = { accepted_content_encodings = ["gzip"] } }
+"/paths/~1jobs/post" = { runtime = { accepted_content_encodings = ["gzip"] } }
+"/paths/~1events/post" = { runtime = { accepted_content_encodings = ["gzip"] } }
+"/paths/~1checks~1status/post" = { runtime = { accepted_content_encodings = ["gzip"] } }

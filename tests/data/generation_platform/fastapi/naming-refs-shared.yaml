@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info: {title: Shared naming declarations, version: "1.0"}
+paths:
+  /shared:
+    get:
+      operationId: listItems
+      tags: [items]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "204": {description: Done.}
+components:
+  parameters:
+    Cursor: {name: cursor, in: query, schema: {type: string}}
+    Limit: {name: limit, in: query, schema: {type: integer}}

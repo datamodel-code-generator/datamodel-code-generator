@@ -1,762 +1,501 @@
-"""Send one OAuth request through a provider-owned transport and classify what the token endpoint answered.
+"""OAuth client credentials and refresh token providers: bearer tokens renewed inline under a lock.
 
-Errors built here keep no token value, client secret, response body, or OAuth error description.
+The call that needs a token requests it while holding the provider's lock, and calls arriving meanwhile wait for that
+token. Nothing runs in the background and nothing is persisted: a refresh token provider hands each refreshed token set
+to its `on_token_refreshed` callback.
 """
 
 from __future__ import annotations
 
 import base64
 import inspect
-import json
-import re
-import sys
-from contextlib import suppress
+import threading
+import weakref
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar, get_args
-from urllib.parse import quote_plus, urlencode, urlsplit
+from typing import TYPE_CHECKING, ClassVar, Final, Literal, cast
+from urllib.parse import quote_plus, urlencode
 
 import httpx2
 from typing_extensions import TypeIs
 
-from ..model_codecs.unset import Unset  # noqa: TC001
-from .auth import AccessToken, ApiKeyCredential, CredentialContext
-from .errors import (
-    OAUTH_ERROR_CODES,
-    AuthError,
-    ConfigurationError,
-    DeliveryState,
-    IOPhase,
-    OAuthErrorCode,
-    is_auth_classified,
-    is_phase_timeout,
-    is_transport,
-)
-from .native import async_response_bytes, native_async_client, native_client, native_error, response_bytes
-from .responses import HeadersView
-from .scopes import scope_tuple
-from .timing import absolute_deadline, finite_number, on_clock
+from .auth import OAUTH_ERROR_CODES, AuthError, OAuthErrorCode, SchemeAuth, TokenSource
+from .errors import ConfigurationError, SDKError
+from .security import SecurityScheme
+from .timing import SYSTEM_CLOCK, Clock, checked_instance
+from .urls import URLValidationError, canonical_origin
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
+    from collections.abc import AsyncGenerator, Callable, Generator, Sequence
+    from contextlib import AbstractAsyncContextManager
 
-    from .auth import AsyncCredentialProvider, CredentialProvider
-    from .options import ResolvedTransportOptions, TimeoutOptions, TransportOptions
-    from .timing import Clock, Deadline
+    from .auth import Secret
+    from .client import AsyncSend, Send
 
-ClientAuthMethod = Literal["none", "client_secret_basic", "client_secret_post"]
-Outcome = Literal["success", "rejected", "http_status", "malformed_response", "unsent", "lost"]
-SecretT = TypeVar("SecretT")
-T = TypeVar("T")
+__all__ = ("ClientCredentials", "RefreshToken", "TokenSet")
 
 _LOOPBACK: Final = frozenset({"localhost", "127.0.0.1", "::1"})
-_MAX_BODY: Final = 65536
-_UNSAFE: Final = re.compile(r"[\x00-\x20\x7f]")
-_VSCHAR: Final = re.compile(r"[\x20-\x7e]+")
-_ERROR_CODE: Final = re.compile(r"[\x20\x21\x23-\x5b\x5d-\x7e]+")
-_ERROR_TEXT: Final = re.compile(r"[\x20\x21\x23-\x5b\x5d-\x7e]*")
-_URI_TEXT: Final = re.compile(r"(?:[A-Za-z0-9\-._~!$&'()*+,;=:@/?#\[\]]|%[0-9A-Fa-f]{2})*")
-_AUTHORITY: Final = re.compile(r"(?:[^@]*@)?(?:\[[^\]]*\]|[^:@\[\]]*)(?::[0-9]*)?")
-_SCOPE_ATOM: Final = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
-_BAD_REQUEST: Final = 400
-_UNAUTHORIZED: Final = 401
+_BEARER: Final = SecurityScheme(name="oauth", kind="bearer", location="header", wire_name="Authorization")
 _SUCCESS: Final = range(200, 300)
-_PHASES: Final[tuple[str, ...]] = ("connect", "read", "write", "pool")
+
+
+def refresh_margin(ttl: float) -> float:
+    """Return how long before its expiry a token is renewed: a tenth of its lifetime, at most thirty seconds."""
+    return min(30.0, ttl * 0.1)
 
 
 @dataclass(frozen=True, slots=True)
-class Endpoint:
-    """A validated OAuth endpoint URL and the canonical origin a client secret acquisition for it names."""
+class TokenSet:
+    """An access token, its timezone-aware expiry, and the refresh token that renews it; its repr omits both tokens."""
 
-    url: str
-    origin: str
+    access_token: str = field(repr=False)
+    refresh_token: str | None = field(default=None, repr=False)
+    expires_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        """Refuse empty tokens and a naive expiry."""
+        _text(self.access_token, "access_token")
+        _text(self.refresh_token, "refresh_token", optional=True)
+        _aware(self.expires_at)
 
 
-def endpoint_url(value: object, name: str, *, allow_insecure_loopback: bool) -> Endpoint:
-    """Accept an absolute HTTPS URL, or plain HTTP only to an explicitly permitted loopback host.
+def _text(value: object, name: str, *, optional: bool = False) -> None:
+    """Refuse a value that is not a nonempty string, or None when it is optional."""
+    if not ((optional and value is None) or (isinstance(value, str) and value)):
+        raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
-    The URL is parsed as requests will parse it, so its origin, port included, is known before any exchange.
-    """
-    from .urls import URLValidationError, canonical_origin, origin_text  # noqa: PLC0415
 
+def _aware(value: object) -> None:
+    """Refuse an expiry that is not None or a timezone-aware datetime."""
+    if value is not None and (not isinstance(value, datetime) or value.utcoffset() is None):
+        raise ConfigurationError(field_path=("expires_at",), reason="invalid_value")
+
+
+def _settings(client_secret: object, http_client: object, clock: object) -> None:
+    """Refuse a client secret, token client, or clock of another type."""
+    if client_secret is not None and not (isinstance(client_secret, str) or callable(client_secret)):
+        raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
+    checked_instance(http_client, (httpx2.Client, httpx2.AsyncClient, type(None)), ("http_client",))
+    checked_instance(clock, (Clock, type(None)), ("clock",))
+
+
+def _scope_list(value: object) -> tuple[str, ...]:
+    """Return requested scopes in order, refusing a string or a scope that is not a nonempty string."""
+    if isinstance(value, str) or not isinstance(value, (tuple, list)):
+        raise ConfigurationError(field_path=("scopes",), reason="invalid_value")
+    items = tuple(cast("tuple[object, ...] | list[object]", value))
+    for scope in items:
+        _text(scope, "scopes")
+    return cast("tuple[str, ...]", items)
+
+
+@dataclass(frozen=True, slots=True)
+class _Held:
+    """The token served, and the monotonic times from which it is renewed and at which it expires."""
+
+    value: str
+    refresh_at: float | None
+    expires_at: float | None
+
+
+def _url(value: object) -> str:
+    """Accept an HTTPS token URL, or plain HTTP to a loopback host."""
     if not isinstance(value, str):
-        raise ConfigurationError(field_path=(name,), reason="invalid_type")
-    if "#" in value or _UNSAFE.search(value):
-        raise ConfigurationError(field_path=(name,), reason="invalid_url")
+        raise ConfigurationError(field_path=("token_url",), reason="missing_value" if value is None else "invalid_type")
     try:
-        urlsplit(value)
-        origin = canonical_origin(value)
+        scheme, host, _ = canonical_origin(value)
     except (URLValidationError, ValueError):
-        raise ConfigurationError(field_path=(name,), reason="invalid_url") from None
-    scheme, host, _ = origin
-    if scheme == "http" and not (allow_insecure_loopback and host in _LOOPBACK):
-        raise ConfigurationError(field_path=(name,), reason="insecure_url")
-    return Endpoint(value, origin_text(origin))
-
-
-def uri_reference(value: str) -> bool:
-    """Check RFC 3986 URI-reference syntax in time linear in the value's length."""
-    if not _URI_TEXT.fullmatch(value):
-        return False
-    try:
-        parts = urlsplit(value)
-    except ValueError:
-        return False
-    if not parts.scheme and ":" in parts.path.partition("/")[0]:
-        return False
-    return (
-        _AUTHORITY.fullmatch(parts.netloc) is not None
-        and "#" not in parts.fragment
-        and not any(bracket in f"{parts.path}{parts.query}{parts.fragment}" for bracket in "[]")
-    )
-
-
-def _is_method(value: str) -> TypeIs[ClientAuthMethod]:
-    return value in get_args(ClientAuthMethod)
-
-
-def _is_oauth_error(value: str) -> TypeIs[OAuthErrorCode]:
-    return value in OAUTH_ERROR_CODES
-
-
-@dataclass(frozen=True, slots=True)
-class ClientAuthentication(Generic[SecretT]):
-    """How a token request identifies its client: the fixed id, the method, and the secret's explicit provider."""
-
-    client_id: str
-    method: ClientAuthMethod
-    secret: SecretT | None
-
-
-def client_authentication(
-    client_id: object, method: object, secret: object, accepts: Callable[[object], TypeIs[SecretT]]
-) -> ClientAuthentication[SecretT]:
-    """Validate the client identity, and that a secret provider of the flow's mode exists when the method sends one."""
-    if not isinstance(client_id, str) or not _VSCHAR.fullmatch(client_id):
-        raise ConfigurationError(field_path=("client_id",), reason="invalid_value")
-    if not isinstance(method, str) or not _is_method(method):
-        raise ConfigurationError(field_path=("client_auth_method",), reason="invalid_value")
-    if method == "none":
-        if secret is not None:
-            raise ConfigurationError(field_path=("client_secret",), reason="forbidden_value")
-        return ClientAuthentication(client_id, method, None)
-    if secret is None:
-        raise ConfigurationError(field_path=("client_secret",), reason="missing_value")
-    if not accepts(secret):
-        raise ConfigurationError(field_path=("client_secret",), reason="invalid_mode")
-    return ClientAuthentication(client_id, method, secret)
-
-
-def http_client_options(transport: TransportOptions, http_client: object) -> ResolvedTransportOptions:
-    """Refuse unverified TLS, an unavailable HTTP/2, and transport settings beside an injected client."""
-    import importlib.util  # noqa: PLC0415
-    import ssl  # noqa: PLC0415
-
-    from .options import DEFAULT_TRANSPORT, resolve_transport_options  # noqa: PLC0415
-
-    resolved = resolve_transport_options(transport)
-    if not resolved.verify:
-        raise ConfigurationError(field_path=("options", "transport", "verify"), reason="insecure_transport")
-    if (context := resolved.ssl_context) is not None and (
-        context.verify_mode != ssl.CERT_REQUIRED or not context.check_hostname
-    ):
-        raise ConfigurationError(field_path=("options", "transport", "ssl_context"), reason="insecure_transport")
-    if resolved.http2 and importlib.util.find_spec("h2") is None:
-        raise ConfigurationError(field_path=("options", "transport", "http2"), reason="unavailable")
-    if http_client is not None and resolved != DEFAULT_TRANSPORT:
-        raise ConfigurationError(field_path=("options", "transport"), reason="injected_transport")
-    return resolved
-
-
-def _secret_context(origin: str, deadline: Deadline) -> CredentialContext:
-    """Describe a client secret acquisition for a token endpoint itself, never for a resource caller."""
-    return CredentialContext(
-        scheme="oauth_client_secret",
-        required_scopes=(),
-        audience=None,
-        origin=origin,
-        deadline=deadline,
-    )
-
-
-def _secret_value(value: object) -> str:
-    """Accept only visible ASCII API key material as a client secret, closing a coroutine a sync provider returned."""
-    if isinstance(value, ApiKeyCredential) and _VSCHAR.fullmatch(value.value):
-        return value.value
-    if inspect.iscoroutine(value):
-        value.close()
-    raise ConfigurationError(field_path=("client_secret",), reason="invalid_material")
-
-
-def _provider_failure(error: Exception) -> Exception:
-    """Keep classified auth failures of the secret provider and wrap any other exception it raised."""
-    if is_auth_classified(error):
-        return error
-    return AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error)
-
-
-def token_request(  # noqa: PLR0913
-    url: str,
-    client_id: str,
-    method: ClientAuthMethod,
-    fields: tuple[tuple[str, str], ...],
-    secret: str | None,
-    *,
-    timeout: httpx2.Timeout,
-) -> httpx2.Request:
-    """Encode the form once and authenticate the client as its method prescribes, form-encoding Basic values."""
-    from .bodies import EncodedAttempt  # noqa: PLC0415
-
-    form = list(fields)
-    headers = [
-        ("Accept", "application/json"),
-        ("Accept-Encoding", "identity"),
-        ("Content-Type", "application/x-www-form-urlencoded"),
-    ]
-    match method:
-        case "client_secret_basic":
-            assert secret is not None
-            pair = f"{quote_plus(client_id, safe='')}:{quote_plus(secret, safe='')}"
-            headers.append(("Authorization", f"Basic {base64.b64encode(pair.encode()).decode('ascii')}"))
-        case "client_secret_post":
-            assert secret is not None
-            form.extend((("client_id", client_id), ("client_secret", secret)))
-        case _:
-            form.append(("client_id", client_id))
-    body = EncodedAttempt(urlencode(form).encode("ascii"), "application/x-www-form-urlencoded")
-    return httpx2.Request("POST", url, headers=headers, content=body.content, extensions={"timeout": timeout.as_dict()})
-
-
-def _phase(value: float | Unset | None) -> float:
-    """Return a phase cap that OAuthProviderOptions already resolved to a positive number."""
-    assert isinstance(value, float)
+        raise ConfigurationError(field_path=("token_url",), reason="invalid_url") from None
+    if scheme != "https" and host not in _LOOPBACK:
+        raise ConfigurationError(field_path=("token_url",), reason="insecure_url")
     return value
 
 
-def receipt(clock: Clock) -> tuple[datetime, float]:
-    """Return the UTC wall-clock time and the monotonic time of a receipt on the clock."""
-    return datetime.fromtimestamp(clock.time(), timezone.utc), clock.monotonic()
+def _failed(error: Exception) -> Exception:
+    """Return the error of an application callable that failed: its own SDK error, or a provider failure."""
+    if isinstance(error, SDKError):
+        return error
+    return AuthError(reason="provider_failed", cause=error)
 
 
-@dataclass(frozen=True, slots=True)
-class Session:
-    """One exchange's provider-owned budget: its absolute deadline, each phase's configured cap, and its clock."""
-
-    deadline: Deadline
-    total: float
-    phases: tuple[float, float, float, float]
-    clock: Clock
-
-    @classmethod
-    def start(
-        cls, refresh_timeout: float, phase_timeout: TimeoutOptions, clock: Clock, limit: Deadline | None = None
-    ) -> Session:
-        """Start the budget now on the provider's clock, ending by an explicit limit moved onto that clock."""
-        phases = (
-            _phase(phase_timeout.connect),
-            _phase(phase_timeout.read),
-            _phase(phase_timeout.write),
-            _phase(phase_timeout.pool),
-        )
-        now = clock.monotonic()
-        if limit is not None and (limit := on_clock(limit, clock)).at < now + refresh_timeout:
-            return cls(limit, refresh_timeout, phases, clock)
-        return cls(absolute_deadline(now + refresh_timeout, clock=clock), refresh_timeout, phases, clock)
-
-    def timeout(self) -> tuple[httpx2.Timeout, tuple[bool, ...]]:
-        """Clamp phases to the remaining provider deadline before request construction."""
-        remaining = self.deadline.remaining()
-        connect, read, write, pool = (min(value, remaining) for value in self.phases)
-        return httpx2.Timeout(connect=connect, read=read, write=write, pool=pool), tuple(
-            remaining <= value for value in self.phases
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class Exchanged:
-    """What one token request established: the endpoint's answer, or how far the request provably got."""
-
-    outcome: Outcome
-    delivery: DeliveryState
-    status_code: int | None = None
-    fields: Mapping[str, object] | None = field(default=None, repr=False)
-    oauth_error: OAuthErrorCode | None = None
-    received: datetime | None = None
-    receipt: float | None = None
-    cause: BaseException | None = None
-    phase: Literal["connect", "read", "write", "pool", "unknown"] = "unknown"
-    timeout: float | None = None
-    timeout_kind: Literal["phase", "provider"] | None = None
-
-
-class _SessionExpiredError(Exception):
-    """The session ran out while the response body was still arriving."""
-
-
-def _unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    fields: dict[str, object] = {}
-    for name, value in pairs:
-        if name in fields:
-            msg = "The response repeats a member."
-            raise ValueError(msg)
-        fields[name] = value
-    return fields
-
-
-def _constant(value: str) -> object:
-    msg = f"The response contains the non-standard number {value}."
-    raise ValueError(msg)
-
-
-def _is_object(value: object) -> TypeIs[dict[str, object]]:
-    return isinstance(value, dict)
-
-
-def _json_value(body: bytes) -> object:
-    """Parse UTF-8 JSON, replacing a parser failure with one that says where the body broke but keeps none of it."""
+def _secret(value: Secret | None) -> str | None:
+    """Return the client secret for one token request, calling a callable secret."""
+    if not callable(value):
+        return value
     try:
-        return json.loads(body.decode("utf-8"), object_pairs_hook=_unique, parse_constant=_constant)
-    except UnicodeDecodeError as error:
-        failure = ValueError(f"The response is not UTF-8 at byte {error.start}.")
-    except json.JSONDecodeError as error:
-        failure = ValueError(f"The response is not JSON at character {error.pos}.")
-    except RecursionError:
-        failure = ValueError("The response nests too deeply.")
-    raise failure
+        secret = value()
+    except Exception as error:  # noqa: BLE001 - The application's callable failed; its cause is kept.
+        raise _failed(error) from None
+    return _string(secret)
 
 
-def _json_object(headers: HeadersView, body: bytes) -> Mapping[str, object]:
-    if any(value.strip().lower() not in {"", "identity"} for value in headers.get_all("content-encoding")):
-        msg = "The response carries a content coding the request did not accept."
-        raise ValueError(msg)
-    media, _, parameters = (headers.get("content-type") or "").partition(";")
-    charset = next(
-        (
-            value.strip().strip('"').lower()
-            for name, _, value in (item.partition("=") for item in parameters.split(";"))
-            if name.strip().lower() == "charset"
-        ),
-        "utf-8",
+def _string(value: object) -> str:
+    """Return a client secret a callable returned, refusing a value of another type."""
+    if not isinstance(value, str):
+        raise ConfigurationError(field_path=("client_secret",), reason="invalid_type")
+    return value
+
+
+def _expiry(fields: dict[str, object], received: float) -> float | None:
+    """Return the monotonic expiry of a token response's positive expires_in, or None without one."""
+    if "expires_in" not in fields:
+        return None
+    seconds = fields["expires_in"]
+    if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not 0 < seconds < float("inf"):
+        raise AuthError(reason="invalid_expiry")
+    return received + seconds
+
+
+def _is_oauth_error(value: object) -> TypeIs[OAuthErrorCode]:
+    return value in OAUTH_ERROR_CODES
+
+
+def _answer(response: httpx2.Response, *, refreshing: bool) -> dict[str, object]:
+    """Return the members of a successful token response, or raise the error of any other answer."""
+    try:
+        data: object = response.json()
+    except ValueError:
+        data = None
+    fields = cast("dict[str, object]", data) if isinstance(data, dict) else {}
+    status = response.status_code
+    token, kind = fields.get("access_token"), fields.get("token_type")
+    if status in _SUCCESS and isinstance(token, str) and token and isinstance(kind, str) and kind.lower() == "bearer":
+        return fields
+    code = fields.get("error")
+    reason: Literal["oauth_error", "reauthorization_required"] = (
+        "reauthorization_required" if refreshing and code == "invalid_grant" else "oauth_error"
     )
-    if media.strip().lower() != "application/json" or charset != "utf-8":
-        msg = "The response is not UTF-8 JSON."
-        raise ValueError(msg)
-    if not _is_object(parsed := _json_value(body)):
-        msg = "The response is not a JSON object."
-        raise ValueError(msg)
-    return parsed
-
-
-def _error_code(fields: Mapping[str, object]) -> str | None:
-    """Return the code of a well-formed RFC 6749 section 5.2 error object, known or not, or None for any defect."""
-    error = fields.get("error")
-    if (
-        not isinstance(error, str)
-        or not _ERROR_CODE.fullmatch(error)
-        or "access_token" in fields
-        or "refresh_token" in fields
-    ):
-        return None
-    description, uri = fields.get("error_description", ""), fields.get("error_uri", "")
-    if not isinstance(description, str) or not _ERROR_TEXT.fullmatch(description):
-        return None
-    if not isinstance(uri, str) or not uri_reference(uri):
-        return None
-    return error
-
-
-def _answered(status: int, headers: HeadersView, body: bytes | None, received: datetime, receipt: float) -> Exchanged:
-    """Classify a complete response by status, then by its body's conformance to the success or error format.
-
-    A well-formed error object is a rejection whatever its code; each grant decides which codes it accepts.
-    """
-    delivery = DeliveryState.RESPONSE_STARTED
-    if status not in _SUCCESS and status not in {_BAD_REQUEST, _UNAUTHORIZED}:
-        return Exchanged("http_status", delivery, status)
-    defect: Outcome = "http_status" if status == _UNAUTHORIZED else "malformed_response"
-    if body is None:
-        return Exchanged(defect, delivery, status, cause=ValueError("The response exceeds its size limit."))
-    try:
-        fields = _json_object(headers, body)
-    except ValueError as error:
-        return Exchanged(defect, delivery, status, cause=error)
-    if status in _SUCCESS:
-        return Exchanged("success", delivery, status, fields, received=received, receipt=receipt)
-    code = _error_code(fields)
-    if code is None or (status == _UNAUTHORIZED and code != "invalid_client"):
-        return Exchanged(defect, delivery, status)
-    known = code if _is_oauth_error(code) else None
-    return Exchanged("rejected", delivery, status, oauth_error=known)
-
-
-def _timed_out(error: BaseException) -> bool:
-    if is_phase_timeout(error):
-        return True
-    import httpx2  # noqa: PLC0415
-
-    return is_transport(error) and isinstance(error.cause, httpx2.TimeoutException)
-
-
-def _is_io_phase(value: str) -> TypeIs[IOPhase]:
-    return value in _PHASES
-
-
-def _failed(
-    error: BaseException,
-    delivery: DeliveryState,
-    session_caps: tuple[bool, ...],
-    session: Session,
-    status: int | None = None,
-) -> Exchanged:
-    """Classify a failure by its delivery and whether the session, or one phase's cap, ran out of time."""
-    phase: IOPhase = error.phase if is_transport(error) and _is_io_phase(error.phase) else "unknown"
-    outcome: Outcome = "unsent" if delivery is DeliveryState.NOT_SENT else "lost"
-    if not _timed_out(error) or (phase == "unknown" and session.deadline.remaining() > 0):
-        return Exchanged(outcome, delivery, status, cause=error, phase=phase)
-    index = None if phase == "unknown" else _PHASES.index(phase)
-    if index is None or session_caps[index]:
-        return Exchanged(
-            outcome, delivery, status, cause=error, phase=phase, timeout=session.total, timeout_kind="provider"
-        )
-    return Exchanged(
-        outcome, delivery, status, cause=error, phase=phase, timeout=session.phases[index], timeout_kind="phase"
+    raise AuthError(
+        reason=reason,
+        status_code=status,
+        oauth_error=code if _is_oauth_error(code) else None,
     )
 
 
-def expired(
-    session: Session, delivery: DeliveryState, status: int | None = None, cause: BaseException | None = None
-) -> Exchanged:
-    """Classify the session deadline expiring by how far the exchange provably got."""
-    outcome: Outcome = "unsent" if delivery is DeliveryState.NOT_SENT else "lost"
-    return Exchanged(outcome, delivery, status, cause=cause, timeout=session.total, timeout_kind="provider")
+class _Provider(TokenSource):
+    """What both grants share: the token endpoint, client authentication, the held token, and its locks."""
 
+    token_url: ClassVar[str | None] = None
+    _refreshing: ClassVar[bool] = False
 
-def _read(chunks: Iterator[bytes], deadline: Deadline) -> bytes | None:
-    """Read at most the body limit, checking the session deadline at every chunk and once the body ends."""
-    body = bytearray()
-    for chunk in chunks:
-        if not _taken(body, chunk, deadline):
-            return None
-    return _ended(body, deadline)
-
-
-async def _aread(chunks: AsyncIterator[bytes], deadline: Deadline) -> bytes | None:
-    """Read at most the body limit as the synchronous endpoint does, checking the session deadline the same way."""
-    body = bytearray()
-    async for chunk in chunks:
-        if not _taken(body, chunk, deadline):
-            return None
-    return _ended(body, deadline)
-
-
-def _taken(body: bytearray, chunk: bytes, deadline: Deadline) -> bool:
-    """Append a chunk received within the session, and return whether the body stays within its limit."""
-    if deadline.remaining() <= 0:
-        raise _SessionExpiredError
-    body.extend(chunk)
-    return len(body) <= _MAX_BODY
-
-
-def _ended(body: bytearray, deadline: Deadline) -> bytes:
-    """Return a body that ended within the session."""
-    if deadline.remaining() <= 0:
-        raise _SessionExpiredError
-    return bytes(body)
-
-
-class TokenEndpoint:
-    """A synchronous token endpoint reached through one borrowed or lazily created HTTPX2 client."""
-
-    __slots__ = ("_client", "_created", "_lock", "_transport", "authentication", "closed", "endpoint")
-
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
-        endpoint: Endpoint,
-        authentication: ClientAuthentication[CredentialProvider],
-        transport: TransportOptions,
-        http_client: object,
+        *,
+        client_id: str,
+        client_secret: Secret | None,
+        client_auth_method: str,
+        token_url: str | None,
+        http_client: httpx2.Client | httpx2.AsyncClient | None,
+        clock: Clock | None,
     ) -> None:
-        """Validate the transport settings and the client's mode without creating an HTTP client."""
-        import threading  # noqa: PLC0415
-
-        self.endpoint = endpoint
-        self.authentication = authentication
-        self._transport = http_client_options(transport, http_client)
-        if http_client is not None and not isinstance(http_client, httpx2.Client):
-            raise ConfigurationError(field_path=("http_client",), reason="invalid_mode")
-        self._client: httpx2.Client | None = http_client
-        self._created = False
-        self.closed = False
+        _text(client_id, "client_id")
+        if client_auth_method not in {"none", "client_secret_basic", "client_secret_post"}:
+            raise ConfigurationError(field_path=("client_auth_method",), reason="invalid_value")
+        if (client_auth_method == "none") != (client_secret is None):
+            reason = "forbidden_value" if client_secret is not None else "missing_value"
+            raise ConfigurationError(field_path=("client_secret",), reason=reason)
+        _settings(client_secret, http_client, clock)
+        self._url = _url(token_url if token_url is not None else type(self).token_url)
+        self._client_id = client_id
+        self._secret = client_secret
+        self._method = client_auth_method
+        self._http_client = http_client
+        self._clock = SYSTEM_CLOCK if clock is None else clock
+        self._held: _Held | None = None
+        self._callback: Callable[[TokenSet], object] | None = None
         self._lock = threading.Lock()
+        self._alocks: weakref.WeakKeyDictionary[object, AbstractAsyncContextManager[object]] = (
+            weakref.WeakKeyDictionary()
+        )
 
-    def _open(self) -> None:
-        if self.closed:
-            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
+    def _form(self) -> list[tuple[str, str]]:
+        raise NotImplementedError
 
-    def prepare(self) -> None:
-        """Create the SDK-owned client once, before any exchange consumes its credential, unless already closed."""
-        with self._lock:
-            self._open()
-            if self._client is None:
-                self._client = native_client(self._transport)
-                self._created = True
+    def _adopt(self, fields: dict[str, object], received: float) -> TokenSet:
+        raise NotImplementedError
 
-    def exchange(self, fields: tuple[tuple[str, str], ...], session: Session) -> Exchanged:
-        """Acquire the client secret, then send the form once, without redirects or retries, reading a bounded body.
+    def _notify(self, tokens: TokenSet) -> object:
+        """Hand a refreshed token set to the callback, wrapping what it raises as the provider's failure."""
+        if (callback := self._callback) is None:
+            return None
+        try:
+            return callback(tokens)
+        except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
+            raise _failed(error) from None
 
-        The form is never sent once the session ended or the provider closed, and a secret provider's failure
-        propagates.
+    def _request(self) -> httpx2.Request:
+        """Return the next token request, authenticating the client as its method prescribes."""
+        form = self._form()
+        headers = {"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"}
+        secret = _secret(self._secret)
+        match self._method:
+            case "client_secret_basic":
+                pair = f"{quote_plus(self._client_id)}:{quote_plus(secret or '')}"
+                headers["Authorization"] = f"Basic {base64.b64encode(pair.encode()).decode('ascii')}"
+            case "client_secret_post":
+                form.extend((("client_id", self._client_id), ("client_secret", secret or "")))
+            case _:
+                form.append(("client_id", self._client_id))
+        return httpx2.Request("POST", self._url, headers=headers, content=urlencode(form).encode("ascii"))
+
+    def _usable(self, stale: str | None) -> str | None:
+        """Return the held token a caller may use without a request: a replacement of `stale`, or one not yet due."""
+        if (held := self._held) is None:
+            return None
+        if stale is not None:
+            return held.value if held.value != stale else None
+        return held.value if held.refresh_at is None or self._clock.monotonic() < held.refresh_at else None
+
+    def _kept(self, stale: str | None) -> str | None:
+        """Return the unexpired token an unforced caller keeps using after a failed early renewal."""
+        held = self._held
+        if stale is not None or held is None or held.expires_at is None:
+            return None
+        return held.value if self._clock.monotonic() < held.expires_at else None
+
+    def _received(self, response: httpx2.Response) -> TokenSet:
+        """Make a token response's token current and return its token set."""
+        return self._adopt(_answer(response, refreshing=self._refreshing), self._clock.monotonic())
+
+    def _hold(self, tokens: TokenSet, received: float, expires_at: float | None, *, renewable: bool = True) -> None:
+        """Serve a token set's access token, renewing it early when a request can renew it."""
+        refresh_at = expires_at
+        if expires_at is not None and renewable:
+            refresh_at = expires_at - refresh_margin(expires_at - received)
+        self._held = _Held(tokens.access_token, refresh_at, expires_at)
+
+    def _missing(self) -> ConfigurationError:
+        reason = "missing_value" if self._http_client is None else "invalid_mode"
+        return ConfigurationError(field_path=("http_client",), reason=reason)
+
+    def token(self, send: Send | None, stale: str | None = None) -> str:
+        """Return a usable token, requesting one under the provider's lock when none is.
+
+        The token request goes through the provider's own HTTP client, or else through `send`.
         """
-        target = self.endpoint
-        authentication = self.authentication
-        secret = None
-        if (provider := authentication.secret) is not None:
+        client = self._http_client
+        if isinstance(client, httpx2.Client):
+            send = _token_send(client)
+        elif client is not None or send is None:
+            raise self._missing()
+        with self._lock:
+            if (usable := self._usable(stale)) is not None:
+                return usable
             try:
-                secret = _secret_value(provider.get(_secret_context(target.origin, session.deadline)))
-            except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
-                raise _provider_failure(error) from None
-        timeout, caps = session.timeout()
-        request = token_request(
-            target.url, authentication.client_id, authentication.method, fields, secret, timeout=timeout
-        )
-        with self._lock:
-            self._open()
-            if session.deadline.remaining() <= 0:
-                return expired(session, DeliveryState.NOT_SENT)
-            client = self._client
-        assert client is not None
-        try:
-            response = client.send(request, stream=True, auth=None, follow_redirects=False)
-        except Exception as error:  # noqa: BLE001 - Every native failure is classified by its exception type.
-            failure = native_error(error, send_started=True)
-            return _failed(failure, failure.delivery_state, caps, session)
-        status = response.status_code
-        try:
-            body = _read(response_bytes(response), session.deadline)
-            received, received_at = receipt(session.clock)
-        except _SessionExpiredError:
-            return expired(session, DeliveryState.RESPONSE_STARTED, status)
-        except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
-            failure = native_error(error, send_started=True, response_started=True)
-            return _failed(failure, DeliveryState.RESPONSE_STARTED, caps, session, status)
-        finally:
-            with suppress(Exception):
-                response.close()
-        return _answered(status, HeadersView(response.headers.multi_items()), body, received, received_at)
+                tokens = self._received(_sent(send, self._request()))
+            except Exception:
+                if (kept := self._kept(stale)) is None:
+                    raise
+                return kept
+            if inspect.iscoroutine(result := self._notify(tokens)):
+                result.close()
+                raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_mode")
+            return tokens.access_token
 
-    def close(self) -> None:
-        """Close the client the endpoint created, once; a borrowed one stays open, and none is created afterwards."""
-        with self._lock:
-            if self.closed:
-                return
-            self.closed = True
-            client = self._client if self._created else None
-        if client is not None:
-            client.close()
+    async def atoken(self, send: AsyncSend | None, stale: str | None = None) -> str:
+        """Return a usable token as `token` does, under an asyncio lock of the running event loop.
 
-
-@dataclass(slots=True)
-class Progress:
-    """How far an asyncio exchange got, so the session deadline cutting it short is classified by what was sent."""
-
-    sent: bool = False
-    answered: bool = False
-
-    @property
-    def delivery(self) -> DeliveryState:
-        """Return the delivery the exchange reached."""
-        if self.answered:
-            return DeliveryState.RESPONSE_STARTED
-        return DeliveryState.MAYBE_SENT if self.sent else DeliveryState.NOT_SENT
-
-
-async def within(operation: Coroutine[object, object, T], seconds: float) -> T:
-    """Await the operation for at most the seconds, raising TimeoutError then without swallowing a cancellation."""
-    import asyncio  # noqa: PLC0415
-
-    if sys.version_info >= (3, 11):
-        async with asyncio.timeout(seconds):
-            return await operation
-    else:  # pragma: <3.11 cover
-        try:
-            return await asyncio.wait_for(operation, seconds)
-        except asyncio.TimeoutError as error:
-            raise TimeoutError from error
-
-
-class AsyncTokenEndpoint:
-    """An asyncio token endpoint reached through one borrowed or lazily created HTTPX2 client, bound to one loop."""
-
-    __slots__ = ("_client", "_created", "_loop", "_transport", "authentication", "closed", "endpoint")
-
-    def __init__(
-        self,
-        endpoint: Endpoint,
-        authentication: ClientAuthentication[AsyncCredentialProvider],
-        transport: TransportOptions,
-        http_client: object,
-    ) -> None:
-        """Validate the transport settings and the client's mode without creating one, binding to a running loop."""
+        Each event loop has its own lock, so renewals on different loops, and synchronous ones, run independently.
+        """
         import asyncio  # noqa: PLC0415
 
-        self.endpoint = endpoint
-        self.authentication = authentication
-        self._transport = http_client_options(transport, http_client)
-        if http_client is not None and not isinstance(http_client, httpx2.AsyncClient):
-            raise ConfigurationError(field_path=("http_client",), reason="invalid_mode")
-        self._client: httpx2.AsyncClient | None = http_client
-        self._created = False
-        self.closed = False
-        self._loop: object = None
-        with suppress(RuntimeError):
-            self._loop = asyncio.get_running_loop()
-
-    def _open(self) -> None:
-        if self.closed:
-            raise AuthError(reason="provider_closed", delivery_state=DeliveryState.NOT_SENT)
-
-    def bind(self) -> None:
-        """Refuse a caller outside asyncio or on another event loop than the one the endpoint belongs to."""
-        import asyncio  # noqa: PLC0415
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError as error:
-            raise AuthError(reason="provider_failed", delivery_state=DeliveryState.NOT_SENT, cause=error) from None
-        if self._loop is None:
-            self._loop = loop
-        elif self._loop is not loop:
-            raise AuthError(
-                reason="provider_failed",
-                delivery_state=DeliveryState.NOT_SENT,
-                cause=RuntimeError("The provider belongs to another event loop"),
-            )
-
-    def prepare(self) -> None:
-        """Refuse other loops, then create the SDK-owned client once unless already closed."""
-        self.bind()
-        self._open()
-        if self._client is None:
-            self._client = native_async_client(self._transport)
-            self._created = True
-
-    async def exchange(self, fields: tuple[tuple[str, str], ...], session: Session) -> Exchanged:
-        """Acquire the client secret and send the form once, both within the session deadline."""
-        progress = Progress()
-        try:
-            return await within(self._exchange(fields, session, progress), session.deadline.remaining())
-        except TimeoutError as error:
-            return expired(session, progress.delivery, cause=error)
-
-    async def _exchange(self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress) -> Exchanged:
-        target = self.endpoint
-        authentication = self.authentication
-        secret = None
-        if (provider := authentication.secret) is not None:
+        client = self._http_client
+        if isinstance(client, httpx2.AsyncClient):
+            send = _atoken_send(client)
+        elif client is not None or send is None:
+            raise self._missing()
+        loop = asyncio.get_running_loop()
+        if (lock := self._alocks.get(loop)) is None:
+            lock = self._alocks.setdefault(loop, asyncio.Lock())
+        async with lock:
+            if (usable := self._usable(stale)) is not None:
+                return usable
             try:
-                secret = _secret_value(await provider.get(_secret_context(target.origin, session.deadline)))
-            except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
-                raise _provider_failure(error) from None
-        timeout, caps = session.timeout()
-        request = token_request(
-            target.url, authentication.client_id, authentication.method, fields, secret, timeout=timeout
-        )
-        self._open()
-        if session.deadline.remaining() <= 0:
-            return expired(session, DeliveryState.NOT_SENT)
-        client = self._client
-        assert client is not None
-        progress.sent = True
-        try:
-            response = await client.send(request, stream=True, auth=None, follow_redirects=False)
-        except Exception as error:  # noqa: BLE001 - Every native failure is classified by its exception type.
-            failure = native_error(error, send_started=True)
-            return _failed(failure, failure.delivery_state, caps, session)
-        progress.answered = True
-        status = response.status_code
-        try:
-            body = await _aread(async_response_bytes(response), session.deadline)
-            received, received_at = receipt(session.clock)
-        except _SessionExpiredError:
-            return expired(session, DeliveryState.RESPONSE_STARTED, status)
-        except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
-            failure = native_error(error, send_started=True, response_started=True)
-            return _failed(failure, DeliveryState.RESPONSE_STARTED, caps, session, status)
-        finally:
-            with suppress(Exception):
-                await response.aclose()
-        return _answered(status, HeadersView(response.headers.multi_items()), body, received, received_at)
+                tokens = self._received(await _asent(send, self._request()))
+            except Exception:
+                if (kept := self._kept(stale)) is None:
+                    raise
+                return kept
+            if inspect.isawaitable(result := self._notify(tokens)):
+                try:
+                    await result
+                except Exception as error:  # noqa: BLE001 - The application's callback failed; its cause is kept.
+                    raise _failed(error) from None
+            return tokens.access_token
 
-    async def aclose(self) -> None:
-        """Close the client the endpoint created, once; a borrowed one stays open, and none is created afterwards."""
-        if self.closed:
-            return
-        self.closed = True
-        if self._created and (client := self._client) is not None:
-            await client.aclose()
+    def _auth(self) -> SchemeAuth:
+        return SchemeAuth(((_BEARER, self),), origin=None, replayable=_byte_stream, challenge_less=False)
+
+    def sync_auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        """Place the token on a request of any HTTPX2 client, requesting tokens through the provider's own client."""
+        return self._auth().sync_auth_flow(request)
+
+    def async_auth_flow(self, request: httpx2.Request) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
+        """Place the token on a request of any asyncio HTTPX2 client, as the synchronous flow does."""
+        return self._auth().async_auth_flow(request)
 
 
-class InvalidTokenResponseError(ValueError):
-    """A successful token response whose members cannot form usable token material."""
+def _byte_stream(request: httpx2.Request) -> bool:
+    """Return whether HTTPX2 can send a request of any client again: one whose body is bytes."""
+    return isinstance(request.stream, httpx2.ByteStream)
 
 
-def _invalid(message: str) -> InvalidTokenResponseError:
-    return InvalidTokenResponseError(message)
+def _token_send(client: httpx2.Client) -> Send:
+    """Return a sender of token requests through a client, without its Auth and without following redirects."""
+
+    def send(request: httpx2.Request) -> httpx2.Response:
+        return client.send(request, auth=None, follow_redirects=False)
+
+    return send
 
 
-def response_scopes(value: object) -> tuple[str, ...]:
-    """Split a response scope on single spaces into canonical tokens, refusing null, empty, and spacing defects."""
-    if not isinstance(value, str) or not value:
-        msg = "The token response scope is not a nonempty string."
-        raise _invalid(msg)
-    atoms = value.split(" ")
-    if not all(_SCOPE_ATOM.fullmatch(atom) for atom in atoms):
-        msg = "The token response scope is not space-separated scope tokens."
-        raise _invalid(msg)
-    return scope_tuple(atoms)
+def _atoken_send(client: httpx2.AsyncClient) -> AsyncSend:
+    """Return an asyncio sender of token requests through a client, as the synchronous sender sends them."""
+
+    async def send(request: httpx2.Request) -> httpx2.Response:
+        return await client.send(request, auth=None, follow_redirects=False)
+
+    return send
 
 
-def _invalid_expiry() -> AuthError:
-    return AuthError(reason="invalid_expiry", delivery_state=DeliveryState.RESPONSE_STARTED)
-
-
-def _expiry(value: object, received: datetime) -> datetime:
-    """Map a present expires_in to an expiry at receipt; a nonpositive or invalid value is an invalid expiry."""
-    if (number := finite_number(value)) is None:
-        raise _invalid_expiry()
-    if number <= 0:
-        raise _invalid_expiry()
+def _sent(send: Send, request: httpx2.Request) -> httpx2.Response:
     try:
-        return received + timedelta(seconds=number)
-    except OverflowError:
-        raise _invalid_expiry() from None
+        return send(request)
+    except httpx2.HTTPError as error:
+        raise _transport(error) from None
 
 
-def token_material(
-    fields: Mapping[str, object], received: datetime, snapshot: tuple[str, ...] | None
-) -> tuple[AccessToken, str | None]:
-    """Build the access token and the refresh token from a 2xx response.
+async def _asent(send: AsyncSend, request: httpx2.Request) -> httpx2.Response:
+    try:
+        return await send(request)
+    except httpx2.HTTPError as error:
+        raise _transport(error) from None
 
-    An omitted scope member inherits the grant's snapshot; a present one, even null, must be valid on its own.
-    """
-    if "error" in fields:
-        msg = "The token response mixes success and error members."
-        raise ValueError(msg)
-    access = fields.get("access_token")
-    token_type = fields.get("token_type")
-    if not isinstance(access, str) or not access:
-        msg = "The token response has no access token."
-        raise _invalid(msg)
-    if not isinstance(token_type, str) or token_type.lower() != "bearer":
-        msg = "The token response does not declare the Bearer token type."
-        raise _invalid(msg)
-    expires_at = _expiry(fields["expires_in"], received) if "expires_in" in fields else None
-    scopes = response_scopes(fields["scope"]) if "scope" in fields else snapshot
-    refresh = fields.get("refresh_token")
-    if "refresh_token" in fields and (not isinstance(refresh, str) or not refresh):
-        msg = "The token response refresh token is not a nonempty string."
-        raise _invalid(msg)
-    return (
-        AccessToken(access, token_type="Bearer", expires_at=expires_at, scopes=scopes),  # noqa: S106
-        refresh if isinstance(refresh, str) else None,
+
+def _transport(error: httpx2.HTTPError) -> AuthError:
+    """Return the error of a token request that failed in transport, keeping the native failure as its cause."""
+    return AuthError(
+        reason="timeout" if isinstance(error, httpx2.TimeoutException) else "oauth_error",
+        cause=error,
     )
+
+
+class ClientCredentials(_Provider):
+    """The OAuth client credentials grant: a confidential client's own token, acquired when a call first needs it.
+
+    It is renewed once a tenth of its lifetime, at most thirty seconds, remains, and once when a resource rejects it.
+    Token requests send the scopes in order and the audience when one is given.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        client_id: str,
+        client_secret: Secret,
+        scopes: Sequence[str] = (),
+        audience: str | None = None,
+        token_url: str | None = None,
+        client_auth_method: Literal["client_secret_basic", "client_secret_post"] = "client_secret_basic",
+        http_client: httpx2.Client | httpx2.AsyncClient | None = None,
+        clock: Clock | None = None,
+    ) -> None:
+        """Validate the endpoint, the client authentication, the scopes, and the audience without I/O."""
+        requested = _scope_list(scopes)
+        _text(audience, "audience", optional=True)
+        super().__init__(
+            client_id=client_id,
+            client_secret=client_secret,
+            client_auth_method=client_auth_method,
+            token_url=token_url,
+            http_client=http_client,
+            clock=clock,
+        )
+        self._scopes = requested
+        self._audience = audience
+
+    def _form(self) -> list[tuple[str, str]]:
+        form = [("grant_type", "client_credentials")]
+        if self._scopes:
+            form.append(("scope", " ".join(self._scopes)))
+        if self._audience is not None:
+            form.append(("audience", self._audience))
+        return form
+
+    def _adopt(self, fields: dict[str, object], received: float) -> TokenSet:
+        expires_at = _expiry(fields, received)
+        tokens = TokenSet(str(fields["access_token"]))
+        self._hold(tokens, received, expires_at)
+        return tokens
+
+
+def _refresh_settings(token_set: object, callback: object) -> None:
+    """Refuse a token set of another type and a callback that cannot be called."""
+    checked_instance(token_set, (TokenSet,), ("token_set",))
+    if callback is not None and not callable(callback):
+        raise ConfigurationError(field_path=("on_token_refreshed",), reason="invalid_type")
+
+
+class RefreshToken(_Provider):
+    """The OAuth refresh token grant for one token set, which this provider alone refreshes.
+
+    The access token is renewed once a tenth of its lifetime, at most thirty seconds, remains, and once when a resource
+    rejects it. Each refreshed token set becomes current, then goes to `on_token_refreshed`, which may persist it.
+    """
+
+    _refreshing: ClassVar[bool] = True
+
+    def __init__(  # noqa: PLR0913
+        self,
+        token_set: TokenSet,
+        *,
+        client_id: str,
+        client_secret: Secret | None = None,
+        client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "none",
+        on_token_refreshed: Callable[[TokenSet], object] | None = None,
+        token_url: str | None = None,
+        http_client: httpx2.Client | httpx2.AsyncClient | None = None,
+        clock: Clock | None = None,
+    ) -> None:
+        """Validate the endpoint, the client authentication, the token set, and the callback without I/O."""
+        _refresh_settings(token_set, on_token_refreshed)
+        super().__init__(
+            client_id=client_id,
+            client_secret=client_secret,
+            client_auth_method=client_auth_method,
+            token_url=token_url,
+            http_client=http_client,
+            clock=clock,
+        )
+        self._tokens = token_set
+        self._callback = on_token_refreshed
+        now = self._clock.monotonic()
+        expires_at = (
+            None
+            if token_set.expires_at is None
+            else now + (token_set.expires_at - datetime.fromtimestamp(self._clock.time(), timezone.utc)).total_seconds()
+        )
+        self._hold(token_set, now, expires_at, renewable=token_set.refresh_token is not None)
+
+    def _form(self) -> list[tuple[str, str]]:
+        if (refresh_token := self._tokens.refresh_token) is None:
+            raise AuthError(reason="reauthorization_required")
+        return [("grant_type", "refresh_token"), ("refresh_token", refresh_token)]
+
+    def _adopt(self, fields: dict[str, object], received: float) -> TokenSet:
+        expires_at = _expiry(fields, received)
+        issued = fields.get("refresh_token")
+        try:
+            expiry = (
+                None
+                if expires_at is None
+                else datetime.fromtimestamp(self._clock.time(), timezone.utc) + timedelta(seconds=expires_at - received)
+            )
+        except OverflowError:
+            raise AuthError(reason="invalid_expiry") from None
+        tokens = self._tokens = TokenSet(
+            str(fields["access_token"]),
+            issued if isinstance(issued, str) and issued else self._tokens.refresh_token,
+            expiry,
+        )
+        self._hold(tokens, received, expires_at)
+        return tokens

@@ -5,23 +5,24 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 
-from models import ClientMessage as _dcg_type_0
-from models import ServerMessage as _dcg_type_1
+import models
 
-from .._runtime.client.client import AsyncClientCore
+from .._runtime.client.client import AsyncClientCore as AsyncClientCore_1
+from .._runtime.protocols.client import AsyncClientCore
 from .._runtime.protocols.websocket import AsyncWebSocketSession, aconnect_socket
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from . import WSOptions, _plans
 
 
 class AsyncProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: AsyncClientCore) -> None:
+    def __init__(self, core: AsyncClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = AsyncClientCore.from_client(core)
 
     @cached_property
     def rooms(self) -> AsyncRoomsProtocols:
@@ -85,23 +86,21 @@ class AsyncRoomsChatWebsocket:
         """Keep the client core the helper sends through."""
         self._core = core
 
-    async def connect(
+    def connect(
         self,
         *,
         room: str,
-        since: int | Unset = UNSET,
+        since: int | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> AsyncWebSocketSession[_dcg_type_0, _dcg_type_1]:
-        """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
-        return await aconnect_socket(
+    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[models.ClientMessage, models.ServerMessage]]:
+        """Open the WebSocket of GET /rooms/{room}/socket for an async with block once its handshake got a valid 101."""
+        return aconnect_socket(
             self._core,
             _plans.SOCKET_0,
             (room, since),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -112,21 +111,19 @@ class AsyncFeedTextWebsocket:
         """Keep the client core the helper sends through."""
         self._core = core
 
-    async def connect(
+    def connect(
         self,
         *,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> AsyncWebSocketSession[str, bytes]:
-        """Open the WebSocket of GET /feed/socket, returning once its handshake got a valid 101."""
-        return await aconnect_socket(
+    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[str, bytes]]:
+        """Open the WebSocket of GET /feed/socket for an async with block once its handshake got a valid 101."""
+        return aconnect_socket(
             self._core,
             _plans.SOCKET_1,
             (),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -137,20 +134,18 @@ class AsyncSecureChatWebsocket:
         """Keep the client core the helper sends through."""
         self._core = core
 
-    async def connect(
+    def connect(
         self,
         *,
-        x_trace: str | Unset = UNSET,
+        X_Trace: str | UNSET = UNSET,
         ws_options: WSOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> AsyncWebSocketSession[bytes, str]:
-        """Open the WebSocket of GET /secure/socket, returning once its handshake got a valid 101."""
-        return await aconnect_socket(
+    ) -> AbstractAsyncContextManager[AsyncWebSocketSession[bytes, str]]:
+        """Open the WebSocket of GET /secure/socket for an async with block once its handshake got a valid 101."""
+        return aconnect_socket(
             self._core,
             _plans.SOCKET_2,
-            (x_trace,),
+            (X_Trace,),
             ws_options=ws_options,
             options=options,
-            session_options=session_options,
         )

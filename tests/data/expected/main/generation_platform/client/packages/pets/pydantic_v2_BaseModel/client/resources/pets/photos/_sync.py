@@ -12,7 +12,7 @@ from typing import Literal
 from .... import _operations
 from ...._runtime.client.client import ClientCore
 from ....bodies import SyncBinaryBody
-from ....options import UNSET, RequestOptions, Unset
+from ....options import UNSET, RequestOptions
 from ....responses import RawResponse, Response
 from ....types.pets.photos import UploadResponse
 
@@ -42,16 +42,18 @@ class PetsPhotosResource:
     def upload(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> UploadResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -69,16 +71,18 @@ class PetsPhotosWithResponse:
     def upload(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UploadResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -96,16 +100,18 @@ class PetsPhotosWithRawResponse:
     def upload(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,
@@ -123,16 +129,18 @@ class PetsPhotosWithStreamingResponse:
     def upload(
         self,
         *,
-        pet_id: int,
-        body: SyncBinaryBody | Unset = UNSET,
+        petId: int,
+        body: SyncBinaryBody | UNSET = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call PUT /pets/{petId}/photo."""
+        """
+        Call PUT /pets/{petId}/photo.
+        """
         return self._core.stream(
             _operations.OPERATION_5,
-            (pet_id,),
+            (petId,),
             body=body,
             media_type=media_type,
             options=options,

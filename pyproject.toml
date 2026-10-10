@@ -137,7 +137,7 @@ black22 = [ "black==22.1" ]
 black24 = [ "black==24.1" ]
 blacklatest = [ "black" ]
 client = [
-  "httpx2[http2]>=2.13,<3",
+  "httpx2[http2,ws]>=2.13,<3",
   "websockets>=17.1; python_version>='3.11'",
 ]
 coverage = [
@@ -301,6 +301,7 @@ ini_options.filterwarnings = [
   "ignore:^.*unclosed file.*",
   "ignore:^Black/isort will become optional.*:FutureWarning",
   "ignore:^Support for (Black|isort|DCG runtime Pydantic).*will end in a future release.*:FutureWarning",
+  "ignore:^Running datamodel-code-generator on Python 3.10 is deprecated.*:FutureWarning",
 ]
 ini_options.verbosity_assertions = 2
 ini_options.assert_helper_direct_assert_exempt_files = [
@@ -352,6 +353,7 @@ run.omit = [
   "*/datamodel_code_generator/_openapi_type_binding.py",
   "*/datamodel_code_generator/model/binding*.py",
   "*/datamodel_code_generator/parser/openapi_contract*.py",
+  "tests/api_generation/test_client_install.py",
   "tests/api_generation/test_client_typing.py",
   "tests/api_generation/test_fastapi_install.py",
   "tests/api_generation/test_fastapi_typing.py",

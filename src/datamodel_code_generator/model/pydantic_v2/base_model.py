@@ -72,16 +72,20 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_MISSING,
     IMPORT_MODEL_VALIDATOR,
     IMPORT_MULTIPLE_OF,
+    IMPORT_PYDANTIC_MISSING,
     IMPORT_STRING_CONSTRAINTS,
     IMPORT_TYPE_ADAPTER,
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
+    PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
+    PYDANTIC_V2_MISSING_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
     model_target_supports,
+    target_supports,
 )
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
@@ -798,7 +802,7 @@ class DataModelField(_PydanticBaseDataModelField):
         if (union_mode := data.pop("union_mode", None)) and self.data_type.is_union and "discriminator" not in data:
             data["union_mode"] = union_mode.value
 
-        self._update_alias_for_alias_generator(data)
+        pinned_alias = self._update_alias_for_alias_generator(data)
         has_alias = "alias" in data
         alias = data.get("alias")
 
@@ -837,6 +841,9 @@ class DataModelField(_PydanticBaseDataModelField):
             if serialization_alias != self.name or self._alias_generator_renames(serialization_alias):
                 data["serialization_alias"] = serialization_alias
 
+        if pinned_alias is not None and "alias" not in data:
+            data["alias"] = pinned_alias
+
         # **extra is not supported in pydantic 2.0
         extra_field_keys = tuple(
             k
@@ -854,20 +861,33 @@ class DataModelField(_PydanticBaseDataModelField):
             for key in extra_field_keys:
                 data.pop(key)
 
-    def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> None:
+    def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> str | None:
+        """Keep only an alias the parent's generator does not reproduce and return the generated alias to pin.
+
+        A target predating the 2.8 generator algorithms pins that alias on the fields of a BaseModel, the only model
+        that renders or inherits the generator: never a RootModel, enum, union or type alias.
+        """
         if self.name is None or self.is_pydantic_extra_field:
-            return
+            return None
         if (generator_name := self._alias_generator_name_from_parent()) is None:
-            return
+            return None
+        pinned_alias: str | None = None
+        if (
+            not model_target_supports(parent := self.parent, PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM)
+            and isinstance(parent, BaseModel)
+            and not parent.IS_ROOT_MODEL
+        ):
+            pinned_alias = _generate_alias(generator_name, self.name)
         alias = data.get("alias")
         if alias is None and self._automatic_alias_disabled_for_alias_generator():
-            return
+            return pinned_alias
         if (wire_name := alias if alias is not None else self.original_name) is None:
-            return
-        if _generate_alias(generator_name, self.name) == wire_name:
+            return pinned_alias
+        if (_generate_alias(generator_name, self.name) if pinned_alias is None else pinned_alias) == wire_name:
             data.pop("alias", None)
-            return
+            return pinned_alias
         data["alias"] = wire_name
+        return pinned_alias
 
     def _alias_generator_name_from_parent(self) -> str | None:
         if self.parent is None:
@@ -888,6 +908,13 @@ class DataModelField(_PydanticBaseDataModelField):
             return False
         return bool(self.parent.extra_template_data.get(_NO_ALIAS_INTERNAL_KEY))
 
+    def _missing_sentinel_import(self) -> Import:
+        """Import MISSING from pydantic for an explicit 2.14+ target; an unset target keeps the experimental path."""
+        target = None if self.parent is None else self.parent.extra_template_data.get("target_pydantic_version")
+        if target is not None and target_supports(target, PYDANTIC_V2_MISSING_MINIMUM):
+            return IMPORT_PYDANTIC_MISSING
+        return IMPORT_MISSING
+
     def _has_discriminator_in_data_type(self) -> bool:
         """Check if any nested DataType has a discriminator."""
         if not self.data_type.discriminator and not self.data_type.data_types and self.data_type.dict_key is None:
@@ -900,7 +927,7 @@ class DataModelField(_PydanticBaseDataModelField):
         base_imports = super().imports
         extra_imports: list[Import] = []
         if self.use_missing_sentinel_default:
-            extra_imports.append(IMPORT_MISSING)
+            extra_imports.append(self._missing_sentinel_import())
             if not self._use_union_operator and IMPORT_UNION not in base_imports:
                 extra_imports.append(IMPORT_UNION)
         if self.is_class_var:
@@ -919,7 +946,7 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
-_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
+_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr", "bytes", "StrictBytes"})
 _UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
 _REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
 _REGEX_TOKEN: re.Pattern[str] = re.compile(

@@ -14,30 +14,14 @@ from .._runtime.model_codecs.stdlib import Choice, Field, Model, StdlibCodec
 MODELS: Final[dict[type, Model]] = {
     models.Card: Model((Field('kind', 'kind'), Field('last4', 'last4'))),
     models.Transfer: Model((Field('kind', 'kind'), Field('iban', 'iban'))),
-    models.Order: Model(
-        (
-            Field('id', 'id'),
-            Field('status', 'status', models.Status),
-            Field('note', 'note', omit_none=True),
-            Field('channel', 'channel', models.Channel, omit_none=True),
-            Field(
-                'payment',
-                'payment',
-                Choice((), 'kind', (('card', models.Card), ('transfer', models.Transfer))),
-                omit_none=True,
-            ),
-        ),
-    ),
+    models.Order: Model((Field('id', 'id'), Field('status', 'status', models.Status), Field('note', 'note', omit_none=True), Field('channel', 'channel', models.Channel, omit_none=True), Field('payment', 'payment', Choice((), 'kind', (('card', models.Card), ('transfer', models.Transfer))), omit_none=True))),
     models.Problem: Model((Field('code', 'code'),)),
 }
 
 codec_0: Final[StdlibCodec[models.FieldOrdersOrderIdGetPathOrderIdParameter]] = StdlibCodec(None, MODELS)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request path orderId)."""
 
-codec_1: Final[StdlibCodec[models.FieldOrdersOrderIdGetQueryViewParameter]] = StdlibCodec(
-    models.FieldOrdersOrderIdGetQueryViewParameter,
-    MODELS,
-)
+codec_1: Final[StdlibCodec[models.FieldOrdersOrderIdGetQueryViewParameter]] = StdlibCodec(models.FieldOrdersOrderIdGetQueryViewParameter, MODELS)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request query view)."""
 
 codec_2: Final[StdlibCodec[models.Order]] = StdlibCodec(models.Order, MODELS)

@@ -39,7 +39,6 @@
     "signature_style": "unpack"
   },
   "invalid-values": {
-    "schema_version": 2,
     "transport": "httpx",
     "resource_names": [
       {
@@ -75,6 +74,11 @@
             "in_": "query",
             "name": "limit",
             "python_name": "b"
+          },
+          {
+            "in_": [],
+            "name": "limit",
+            "python_name": "c"
           }
         ],
         "request_media_type": "json",
@@ -107,7 +111,9 @@
     "resource_names": "pets",
     "operations": "all",
     "default_base_url": "https://[invalid",
-    "server_base_url": 5
+    "server_base_url": 5,
+    "signature_style": [],
+    "body_arguments": {}
   },
   "invalid-parameter-names": {
     "operations": [
@@ -116,18 +122,6 @@
         "parameter_names": "limit"
       }
     ]
-  },
-  "toml-values": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntransport = \"httpx2\"\ndefault_base_url = \"https://api.example.com\"\nserver_base_url = \"https://api.example.com/base/\"\nsignature_style = \"unpack\"\n\n[[resource_names]]\ntag = \"pets\"\nnamespace = \"animals\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nresource = \"animals\"\nname = \"list_pets\"\nrequest_media_type = \"application/json\"\nresponse_media_type = \"application/json\"\ndescription = \"List them.\"\nparameter_names = [{ in = \"query\", name = \"limit\", python_name = \"page_size\" }]\nruntime = { request_id_header = \"X-Request-Id\", success_statuses = [302] }\n\n[[operations]]\nref = { pointer = \"/paths/~1pets/post\" }\n"
-  },
-  "toml-invalid-location": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nparameter_names = [{ in = \"body\", name = \"limit\", python_name = \"limit\" }]\n"
-  },
-  "toml-invalid-statuses": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nruntime = { success_statuses = [\"302\"] }\n"
-  },
-  "toml-unknown-keys": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[resource_names]]\ntag = \"pets\"\nnamespace = \"pets\"\nextra = 1\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nruntime = { security = [] }\n"
   },
   "body-fields": {
     "body_arguments": "both",
@@ -155,6 +149,10 @@
         "ref": "/paths/~1pets/get",
         "body_arguments": "fields",
         "body_field_names": "tag"
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "body_arguments": []
       }
     ]
   },
@@ -193,12 +191,6 @@
         ]
       }
     ]
-  },
-  "toml-body-fields": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nbody_arguments = \"both\"\n\n[[operations]]\nref = \"/paths/~1pets~1{petId}/put\"\nbody_arguments = \"body\"\n\n[[operations]]\nref = \"/paths/~1pets/post\"\nbody_field_names = [{ media_type = \"application/json\", name = \"tag\", python_name = \"pet_tag\" }]\n"
-  },
-  "toml-body-field-names-unknown": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nbody_arguments = \"both\"\n\n[[operations]]\nref = \"/paths/~1pets/post\"\nbody_field_names = [{ media_type = \"application/json\", name = \"tag\", python = \"pet_tag\" }]\n"
   },
   "retry-values": {
     "operations": [
@@ -303,27 +295,6 @@
       }
     ]
   },
-  "toml-retry-values": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nretry_safety = \"idempotent\"\nretry_after_ms_header = \"X-Retry-In-Ms\"\nshould_retry_header = \"X-Retry-Permitted\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\n"
-  },
-  "toml-retry-safety": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nretry_safety = \"safe\"\n"
-  },
-  "toml-retry-type": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nretry_safety = false\n"
-  },
-  "toml-retry-unknown": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nunknown_runtime_setting = true\n"
-  },
-  "toml-retry-idempotency-unknown": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nextra = 1\n"
-  },
-  "toml-retry-idempotency-type": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nidempotency = \"key\"\n"
-  },
-  "toml-retry-header-missing": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\n"
-  },
   "auth-values": {
     "operations": [
       {
@@ -372,18 +343,6 @@
       }
     ]
   },
-  "toml-auth-values": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nauth_challenge_less_401 = true\n"
-  },
-  "toml-auth-type": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nauth_challenge_less_401 = 1\n"
-  },
-  "toml-auth-location": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\nauth_challenge_less_401 = true\n"
-  },
-  "toml-auth-unknown": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nsecurity = []\n"
-  },
   "protocols-path": {
     "protocols": "protocols/disabled.json"
   },
@@ -406,13 +365,6 @@
     "protocols": {
       "python": "shape"
     }
-  },
-  "toml-protocols": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"client-protocols.json\"\n",
-    "toml_path": "config/client.toml"
-  },
-  "toml-protocols-type": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = 5\n"
   },
   "compression-values": {
     "operations": [
@@ -468,32 +420,5 @@
         }
       }
     ]
-  },
-  "toml-compression-values": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\naccepted_content_encodings = [\"gzip\"]\n"
-  },
-  "toml-compression-type": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\naccepted_content_encodings = \"gzip\"\n"
-  },
-  "toml-retry-removed-retention": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nretention_seconds = 86400\n"
-  },
-  "toml-retry-removed-scope": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nscope = \"orders-v1\"\n"
-  },
-  "toml-retry-removed-replay": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = true\n"
-  },
-  "toml-syntax": {
-    "toml": "schema_version = \n"
-  },
-  "toml-version": {
-    "toml": "schema_version = 2\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n"
-  },
-  "toml-unknown-setting": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntargets = []\n"
-  },
-  "toml-operation-document": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[operations]]\nref = { pointer = \"/paths/~1pets/get\", document = \"https://example.com/api.yaml\" }\nname = \"list_all\"\n"
   }
 }

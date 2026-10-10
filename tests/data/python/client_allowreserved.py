@@ -9,9 +9,19 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from tests.data.python.client_generation import SOURCE, Modules, generate_client, render_client
-from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, argument, raw_response, record, run
+from tests.data.python.client_runtime import (
+    _CALL_ID,
+    Exchange,
+    agreeing_backends,
+    arecord,
+    argument,
+    import_generated_client,
+    raw_response,
+    record,
+    run,
+)
 from tests.data.python.fixture_server import stop_servers
-from tests.data.python.generated_packages import forget_generated, import_generated
+from tests.data.python.generated_packages import forget_generated
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -28,7 +38,7 @@ def reserved_version_report(case: str, version: str, backends: Sequence[str], ro
     source.write_text(document, encoding="utf-8")
     _, modules = render_client(source, root / "render", backends[0], {}, {})
     plans = {("client", "_operations.py"): modules["client", "_operations.py"]}
-    reports: list[str] = []
+    reports: dict[str, str] = {}
     for backend in backends:
         package = f"{case.replace('-', '_')}_shorthand_{backend.replace('.', '_').lower()}"
         destination = root / backend.replace(".", "_")
@@ -37,13 +47,13 @@ def reserved_version_report(case: str, version: str, backends: Sequence[str], ro
         sys.path.insert(0, str(destination))
         lines = [f"# {case} {backend}"]
         try:
-            reserved_paths(import_generated(package), lines)
+            reserved_paths(import_generated_client(package), lines)
         finally:
             stop_servers()
             sys.path.remove(str(destination))
             forget_generated(package)
-        reports.append(_CALL_ID.sub("<call>", "\n".join(lines)) + "\n")
-    return plans, "".join(reports)
+        reports[backend] = _CALL_ID.sub("<call>", "\n".join(lines)) + "\n"
+    return plans, agreeing_backends(reports)
 
 
 def _arguments(package: ModuleType, vector: dict[str, Any]) -> dict[str, object]:

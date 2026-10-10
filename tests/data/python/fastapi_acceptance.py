@@ -7,15 +7,9 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
-from datamodel_code_generator.fastapi import (
-    FastAPIConfig,
-    GeneratedProject,
-    generate_fastapi,
-    render_fastapi,
-)
+from datamodel_code_generator import DataModelType, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
 from tests.data.python.fastapi_generation import SOURCE
 
@@ -26,7 +20,7 @@ _SCOPE = Path(__file__).with_name("fastapi_scope.py")
 
 
 def fastapi_scope_report(root: Path) -> str:
-    """Run the entry points with unsupported settings in a fresh interpreter, reporting runs, imports, and files."""
+    """Run server generation with unsupported settings in a fresh interpreter, reporting runs, imports, and files."""
     result = subprocess.run(
         [sys.executable, str(_SCOPE), str(root)], capture_output=True, text=True, check=True, cwd=root
     )
@@ -36,12 +30,7 @@ def fastapi_scope_report(root: Path) -> str:
 
 
 def _files(root: Path) -> dict[str, bytes]:
-    """Return every generated file but the target manifest, whose identity across checkouts is not compared."""
-    return {
-        path.relative_to(root).as_posix(): path.read_bytes()
-        for path in sorted(root.rglob("*"))
-        if path.is_file() and path.name != ".dcg-target-manifest.json"
-    }
+    return {path.relative_to(root).as_posix(): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
 
 
 def _compare(label: str, first: Path, second: Path) -> str:
@@ -50,29 +39,24 @@ def _compare(label: str, first: Path, second: Path) -> str:
     return f"{label}: {len(after)} files, {differences or 'identical'}"
 
 
-def _settings(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, GenerateConfig, FastAPIConfig]:
+def _generate(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch, *, output: bool = True) -> Any:
+    """Generate the checkout's server from cwd into the checkout, or return its files without an output."""
     monkeypatch.chdir(cwd)
     base = Path() if cwd == checkout else checkout
-    model = GenerateConfig(
-        output=base / "models.py",
+    return generate(
+        base / "api.yaml",
+        output=base / "models.py" if output else None,
         input_file_type="openapi",
         target_python_version="3.11",
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType.PydanticV2BaseModel,
         formatters=[Formatter.BUILTIN],
         disable_timestamp=True,
+        generate_server="fastapi",
+        server_output=base / "server",
+        server_package="server",
+        server_model_package="models",
     )
-    return base / "api.yaml", model, FastAPIConfig(output=base / "server", package="server", model_package="models")
-
-
-def _generate(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    source, model, config = _settings(checkout, cwd, monkeypatch)
-    return generate_fastapi(source, model_config=model, config=config)
-
-
-def _render(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> GeneratedProject:
-    source, model, config = _settings(checkout, cwd, monkeypatch)
-    return render_fastapi(source, model_config=model, config=config)
 
 
 def fastapi_checkout_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
@@ -91,6 +75,12 @@ def fastapi_checkout_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     report = _generate(root / "absolute", root / "absolute", monkeypatch)
     lines.append(f"the same checkout from inside it returns {report}")
     shutil.copytree(root / "first", root / "moved")
-    project = _render(root / "moved", root / "moved", monkeypatch)
-    lines.append(f"a moved checkout renders {sorted({artifact.action for artifact in project.artifacts})}")
+    files = _generate(root / "moved", root / "moved", monkeypatch, output=False)
+    moved = root / "moved"
+    changed = sorted(
+        "/".join(parts)
+        for parts, text in files.items()
+        if not (location := moved.joinpath(*parts)).is_file() or location.read_text(encoding="utf-8") != text
+    )
+    lines.append(f"a moved checkout returns {len(files)} files, {changed or 'all as written'}")
     return "\n".join(lines) + "\n"

@@ -40,16 +40,18 @@ class StoreResource:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> GetFilesByFileNameByExtResponse:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         ).data
 
@@ -64,16 +66,18 @@ class StoreWithResponse:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> Response[GetFilesByFileNameByExtResponse]:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.execute(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         )
 
@@ -88,16 +92,18 @@ class StoreWithRawResponse:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         )
 
@@ -112,15 +118,17 @@ class StoreWithStreamingResponse:
     def get_files_by_file_name_by_ext(
         self,
         *,
-        file_name: str,
+        fileName: str,
         ext: str,
         class_: str = 'full',
         two_factor: str | None = 'off',
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /files/{fileName}.{ext}."""
+        """
+        Call GET /files/{fileName}.{ext}.
+        """
         return self._core.stream(
             _operations.OPERATION_1,
-            (file_name, ext, class_, two_factor),
+            (fileName, ext, class_, two_factor),
             options=options,
         )

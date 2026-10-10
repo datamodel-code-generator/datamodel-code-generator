@@ -7,10 +7,11 @@ from __future__ import annotations
 
 from functools import cached_property
 
-from .._runtime.client.client import ClientCore
-from .._runtime.protocols.resume import ResumeState
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.model_codecs.media import JSONValue
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.uploads import UploadHandle, resume_upload, start_upload
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from ..types.files import CompleteFileResponse
 from . import UploadOptions, UploadSource, _plans
 
@@ -18,9 +19,9 @@ from . import UploadOptions, UploadSource, _plans
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def files(self) -> FilesProtocols:
@@ -62,31 +63,28 @@ class FilesUploadResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_0,
             source,
-            (tus_resumable, x_name),
+            (Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
@@ -96,7 +94,6 @@ class FilesUploadResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -111,31 +108,28 @@ class FilesFinishResumableUpload:
         self,
         source: UploadSource,
         *,
-        tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[CompleteFileResponse]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_1,
             source,
-            (tus_resumable, x_name),
+            (Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[CompleteFileResponse]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
@@ -145,7 +139,6 @@ class FilesFinishResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -160,32 +153,29 @@ class FilesPutResumableUpload:
         self,
         source: UploadSource,
         *,
-        upload_length: int,
-        tus_resumable: str,
-        x_name: str | Unset = UNSET,
+        Upload_Length: int,
+        Tus_Resumable: str,
+        X_Name: str | UNSET = UNSET,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_2,
             source,
-            (upload_length, tus_resumable, x_name),
+            (Upload_Length, Tus_Resumable, X_Name),
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )
 
     def resume(
         self,
         source: UploadSource,
-        state: ResumeState,
+        state: JSONValue,
         *,
         upload_options: UploadOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
         """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
@@ -195,5 +185,4 @@ class FilesPutResumableUpload:
             state,
             upload_options=upload_options,
             options=options,
-            session_options=session_options,
         )

@@ -2,8 +2,8 @@
 
 A helper's `start` creates the operation in one child call and returns a handle. The handle polls only when `status` or
 `wait` asks, first waiting out the interval and any server delay the helper declares, and fetches a result at most once.
-Its `checkpoint` saves the values its next poll writes, which the helper's `resume` polls again in a session of its own
-without creating the operation again.
+Its `checkpoint` returns the values its next poll writes as plain JSON, which the helper's `resume` polls again in a
+session of its own without creating the operation again.
 """
 
 from __future__ import annotations
@@ -17,23 +17,12 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final, ove
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import ConfigurationError, DecodeError
+from ..client.errors import ConfigurationError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SYSTEM_CLOCK, SessionOptions
-from ..model_codecs.errors import CodecError
-from ..model_codecs.media import json_value
+from ..client.timing import SYSTEM_CLOCK
 from ..model_codecs.unset import UNSET
-from .errors import (
-    OperationCancelledError,
-    OperationFailedError,
-    PollingStateError,
-    PollWaitLimitError,
-    ProtocolDataError,
-    ProtocolStateError,
-    ResumeStateError,
-    SessionLimitError,
-)
+from .errors import ProtocolDataError, SessionLimitError
 from .options import PollOptions, layered
 from .records import (
     BodySelector,
@@ -41,29 +30,21 @@ from .records import (
     PollSnapshot,
     StatusSelector,
     canonical_json,
+    plain_copy,
 )
-from .resume import (
-    MalformedStateError,
-    ResumeState,
-    require_state,
-    saved_expiry,
-    state_array,
-    state_expiry,
-    state_fields,
-)
-from .values import MISSING, Missing, RepeatedValueError, resolve, selected, server_expiry
+from .resume import MalformedStateError, require_state, saved_expiry, state_array, state_expiry
+from .values import MISSING, RepeatedValueError, resolve, selected, server_expiry
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from datetime import datetime
     from types import TracebackType
 
-    from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
-    from ..client.timing import Clock, Deadline
+    from ..client.timing import Clock
     from ..model_codecs.media import JSONValue
-    from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
+    from .client import AsyncClientCore, ClientCore
     from .pagination import PageBinding
     from .records import ProtocolProgress, Selector
     from .references import OperationRef
@@ -98,7 +79,6 @@ class _Phase(Enum):
 
 
 _STATE: Final = frozenset({"phase", "bound", "seed", "cancel", "expires_at"})
-_UNREAD: Final = "unread"
 _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
@@ -145,7 +125,7 @@ class PollingPlan(Generic[T, P, C]):
     success reads its result from the final poll with `inline`, fetches it with `fetch` writing `fetch_bindings`, or
     has none. After each response, `interval` seconds pass before the next poll, or the longer delay the
     `retry_after_header` gives. `cancel` is the declared remote cancellation, and `expires_at` reads the server's
-    expiry of the operation from an accepted create response. `children` are the operations a resumed handle may send.
+    expiry of the operation from an accepted create response.
     """
 
     helper_id: str
@@ -157,7 +137,6 @@ class PollingPlan(Generic[T, P, C]):
     state: Selector
     pending: tuple[JSONValue, ...]
     succeeded: tuple[JSONValue, ...]
-    fingerprint: str
     bindings: tuple[PageBinding, ...] = ()
     failed: tuple[JSONValue, ...] = ()
     cancelled: tuple[JSONValue, ...] = ()
@@ -179,7 +158,6 @@ class PollingPlan(Generic[T, P, C]):
     fetched: Targeted[T] | None = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    children: tuple[OperationPlan[Any], ...] = field(init=False)
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
@@ -211,7 +189,6 @@ class PollingPlan(Generic[T, P, C]):
         object.__setattr__(self, "fetched", fetched)
         object.__setattr__(self, "headers", polled.headers.union(*(item.headers for item in others)))
         object.__setattr__(self, "queries", polled.queries.union(*(item.queries for item in others)))
-        object.__setattr__(self, "children", (polled.call, *(item.call for item in others)))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -222,7 +199,6 @@ class _Limits:
     max_polls: int | None = 1000
     max_wait: float | None = 60.0
     total_timeout: float | None = 600.0
-    deadline: Deadline | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
@@ -231,9 +207,7 @@ _DEFAULTS: Final = _Limits(interval=1.0)
 
 
 def _invalid(plan: PollingPlan[T, P, C], path: tuple[str, ...]) -> ConfigurationError:
-    return ConfigurationError(
-        field_path=path, reason="invalid_value", helper_id=plan.helper_id, operation=plan.operation
-    )
+    return ConfigurationError(field_path=path, reason="invalid_value", helper_id=plan.helper_id)
 
 
 def _limits(
@@ -241,54 +215,46 @@ def _limits(
     plan: PollingPlan[T, P, C],
     poll_options: object,
     options: object,
-    session_options: object,
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
     The interval defaults to the helper's; one longer than the allowed wait, or not shorter than the session, could
-    never be waited out, so it is refused before anything is sent. Effective options fixing an idempotency key are
-    refused, since the create call and each poll need keys of their own, and so are header or query patches of a
-    parameter the helper writes.
+    never be waited out, so it is refused before anything is sent. A fixed idempotency key, the call's own or a header
+    of its name the call, the client, or a view sends, is refused, since the create call and each poll need keys of
+    their own, and so are the call's extra headers or query names of a parameter the helper writes.
     """
     for name, value, kind in (
         ("poll_options", poll_options, PollOptions),
         ("options", options, RequestOptions),
-        ("session_options", session_options, SessionOptions),
     ):
         if value is not None and not isinstance(value, kind):
             raise _invalid(plan, (name,))
     request = options if isinstance(options, RequestOptions) else None
-    if core.fixes_key(request):
-        raise _invalid(plan, ("options", "idempotency_key"))
+    if (fixed := core.fixed_key(request, (plan.create, plan.poll, plan.fetch))) is not None:
+        raise _invalid(plan, fixed)
     if request is not None:
-        for name, _ in request.headers:
+        for name in request.extra_headers or ():
             if name.lower() in plan.headers:
-                raise _invalid(plan, ("options", "headers", name))
-        for name, _ in request.query:
+                raise _invalid(plan, ("options", "extra_headers", name))
+        for name in request.extra_query or ():
             if name in plan.queries:
-                raise _invalid(plan, ("options", "query", name))
-    defaults = core.protocol_defaults(plan.helper_id)
-    kinds = (poll_options, UNSET if defaults is None else defaults.options)
-    sessions = (session_options, UNSET if defaults is None else defaults.session)
+                raise _invalid(plan, ("options", "extra_query", name))
+    kinds = (poll_options, core.helper_defaults(plan.helper_id))
     limits = _Limits(
         interval=layered(kinds, "interval", plan.interval),
         max_polls=layered(kinds, "max_polls", _DEFAULTS.max_polls),
         max_wait=layered(kinds, "max_wait", _DEFAULTS.max_wait),
-        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
+        total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
     )
-    interval, deadline = limits.interval, limits.deadline
-    session = (limits.total_timeout, None if deadline is None else deadline.remaining())
-    if ((allowed := limits.max_wait) is not None and interval > allowed) or any(
-        bound is not None and interval >= bound for bound in session
-    ):
+    interval, total = limits.interval, limits.total_timeout
+    if ((allowed := limits.max_wait) is not None and interval > allowed) or (total is not None and interval >= total):
         raise _invalid(plan, ("poll_options", "interval"))
     return limits
 
 
-def _absence(value: JSONValue | Missing) -> Literal["missing", "null"]:
+def _absence(value: JSONValue | MISSING) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
@@ -320,7 +286,7 @@ class _Step(Generic[T, P]):
     not_before: float
     snapshot: PollSnapshot[P] | None = None
     bound: tuple[JSONValue, ...] = ()
-    result: T | Missing = MISSING
+    result: T | MISSING = MISSING
     seed: tuple[JSONValue, ...] | None = None
     cancel: tuple[JSONValue, ...] = ()
     expires_at: datetime | None = None
@@ -332,7 +298,7 @@ class _Operation(Generic[T, P]):
     Only a settled child call changes the phase, so a failure that settles none, such as a transport error, a
     deadline, a cancellation, or a limit, leaves the handle as it was, and a later step polls again unless a session
     limit it hit stays spent. The handle keeps what its last pending poll and remote cancel write, which its checkpoint
-    saves.
+    returns.
 
     `_lock` is held by the one step that polls or fetches, across its waits and sends; `_guard` only while what a
     step settles is written or read together, so a checkpoint or a remote cancel never waits for a step.
@@ -377,7 +343,7 @@ class _Operation(Generic[T, P]):
         self._bound: tuple[JSONValue, ...] = ()
         self._seed: tuple[JSONValue, ...] = ()
         self._cancel: tuple[JSONValue, ...] = ()
-        self._result: T | Missing = MISSING
+        self._result: T | MISSING = MISSING
         self._expires_at: datetime | None = None
         self._not_before = 0.0
         self._polls = 0
@@ -394,60 +360,37 @@ class _Operation(Generic[T, P]):
             "polls": self._polls,
         })
 
-    def checkpoint(self) -> ResumeState:
-        """Return a checkpoint the helper's `resume` continues from, sending nothing.
+    def checkpoint(self) -> JSONValue:
+        """Return the server values the helper's `resume` continues from, as plain JSON, sending nothing.
 
-        A pending handle saves what the next poll and a remote cancel write and the values the create response gave
-        the result fetch; a success whose result fetch is due saves what the fetch writes. Both save the server's
-        expiry, under the helper's identity, but neither polls, results, the session, nor the call's options. A closed
-        handle is checkpointed as it stood, and a handle another thread or task is polling as its last settled step
-        left it. A settled operation has nothing left to continue and refuses with ProtocolStateError.
+        A pending handle returns what the next poll and a remote cancel write and the values the create response gave
+        the result fetch; a success whose result fetch is due returns what the fetch writes. Both keep the server's
+        expiry, but neither polls, results, the session, nor the call's options. A closed handle is checkpointed as it
+        stood, and a handle another thread or task is polling as its last settled step left it. A settled operation
+        has nothing left to continue and refuses with ConfigurationError.
         """
-        if (saved := self._saved()) is None:
-            action = "checkpoint"
-            raise self._state_error(action, self._phase.value)
-        return saved
-
-    def _saved(self) -> ResumeState | None:
-        """Return a checkpoint of the handle as it stands, or None once the operation settled with its outcome."""
         with self._guard:
             if (pending := self._phase is _Phase.PENDING) or (
-                self._phase is _Phase.SUCCEEDED and isinstance(self._result, Missing)
+                self._phase is _Phase.SUCCEEDED and self._result is MISSING
             ):
-                state: JSONValue = {
+                return plain_copy({
                     "phase": "pending" if pending else "fetch",
-                    "bound": list(self._bound),
-                    "seed": list(self._seed) if pending else [],
-                    "cancel": list(self._cancel) if pending else [],
+                    "bound": self._bound,
+                    "seed": self._seed if pending else (),
+                    "cancel": self._cancel if pending else (),
                     "expires_at": saved_expiry(self._expires_at),
-                }
-                return ResumeState(helper=self._plan.fingerprint, state=state)
-        return None
+                })
+        action = "checkpoint"
+        raise self._state_error(action, self._phase.value)
 
-    def _state_error(self, action: str, state: str) -> ProtocolStateError:
-        plan = self._plan
-        return ProtocolStateError(
-            state=state,
-            action=action,
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self._session.session_id,
-        )
+    def _state_error(self, action: str, state: str) -> ConfigurationError:
+        return ConfigurationError(field_path=(action, state), reason="invalid_state", helper_id=self._plan.helper_id)
 
-    def _limit(self, limit: int, kind: Literal["polls"], *, created: bool = True) -> SessionLimitError:
-        """Return the error of a session limit reached while the operation is unsettled.
-
-        It keeps a checkpoint of the handle once the operation was created.
-        """
+    def _limit(self, limit: int, kind: Literal["polls"]) -> SessionLimitError:
+        """Return the error of a session limit reached while the operation is unsettled; `checkpoint` continues it."""
         plan = self._plan
         return SessionLimitError(
-            kind=kind,
-            limit=limit,
-            progress=self.progress,
-            resume_state=self._saved() if created else None,
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            parent_session_id=self._session.session_id,
+            reason=kind, limit=limit, progress=self.progress, helper_id=plan.helper_id, operation=plan.operation
         )
 
     def _enter(self, action: str) -> None:
@@ -485,7 +428,7 @@ class _Operation(Generic[T, P]):
         """Return the context to wait in before the next poll or result fetch, or None when it may be sent now.
 
         The poll limit, for a poll, and the session's send slots are checked first. A wait longer than the allowed
-        wait, or not shorter than what remains of the deadline, raises PollWaitLimitError instead of sending early.
+        wait, or not shorter than what remains of the deadline, raises SessionLimitError instead of sending early.
         """
         if call is self._plan.polled.call and (limit := self._limits.max_polls) is not None and self._polls >= limit:
             raise self._limit(limit, "polls")
@@ -499,32 +442,31 @@ class _Operation(Generic[T, P]):
             raise self._waited(required, remaining, "deadline")
         return waiter
 
-    def _waited(self, required: float, limit: float, kind: Literal["wait", "deadline"]) -> PollWaitLimitError:
+    def _waited(self, required: float, limit: float, kind: Literal["wait", "deadline"]) -> SessionLimitError:
         plan = self._plan
-        return PollWaitLimitError(
-            kind=kind,
-            required_wait=required,
+        return SessionLimitError(
+            reason=kind,
             limit=limit,
-            resume_state=self._saved(),
+            progress=self.progress,
+            required_wait=required,
             helper_id=plan.helper_id,
             operation=plan.poll_operation,
-            parent_session_id=self._session.session_id,
         )
 
     def _error(
         self,
         info: ResponseInfo | None,
-        condition: _DataCondition,
+        condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"],
         location: Selector,
         operation: OperationRef | None,
     ) -> ProtocolDataError:
         return ProtocolDataError(
-            condition=condition, location=location, helper_id=self._plan.helper_id, operation=operation, info=info
+            reason=condition, location=location, helper_id=self._plan.helper_id, operation=operation, info=info
         )
 
     def _selected(
         self, read: Selector, wire: JSONValue, info: ResponseInfo, operation: OperationRef | None
-    ) -> JSONValue | Missing:
+    ) -> JSONValue | MISSING:
         """Return what a selector reads from a response, or MISSING, refusing a header selected once it repeats."""
         try:
             return selected(read, wire, info)
@@ -645,7 +587,7 @@ class _Operation(Generic[T, P]):
     def _polled(
         self, data: P, wire: JSONValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> _Step[T, P]:
-        """Settle one poll by its state; an unknown state raises PollingStateError and success is never inferred.
+        """Settle one poll by its state; an unknown state raises ProtocolDataError and success is never inferred.
 
         A pending poll reads the values of the next poll's and a remote cancel's bindings, and a success its result or
         what its result fetch writes.
@@ -655,8 +597,8 @@ class _Operation(Generic[T, P]):
         if (value := self._selected(read, wire, info, operation)) is MISSING:
             raise self._error(info, "missing", read, operation)
         if (phase := plan.phases.get(canonical_json(value))) is None:
-            raise PollingStateError(
-                condition="value" if _kind(value) in plan.kinds else "type",
+            raise ProtocolDataError(
+                reason="value" if _kind(value) in plan.kinds else "type",
                 location=read,
                 helper_id=plan.helper_id,
                 operation=operation,
@@ -670,12 +612,12 @@ class _Operation(Generic[T, P]):
             cancels = self._values(cancel.targeted, cancel.bindings, wire, info, operation, self._cancel)
             return _Step(phase, self._after(info), snapshot, polled, cancel=cancels)
         bound: tuple[JSONValue, ...] = ()
-        result: T | Missing = MISSING
+        result: T | MISSING = MISSING
         if phase is _Phase.SUCCEEDED:
             bound, result = self._succeeded(data, wire, info)
         return _Step(phase, self._limits.clock.monotonic(), snapshot, bound, result)
 
-    def _succeeded(self, data: P, wire: JSONValue, info: ResponseInfo) -> tuple[tuple[JSONValue, ...], T | Missing]:
+    def _succeeded(self, data: P, wire: JSONValue, info: ResponseInfo) -> tuple[tuple[JSONValue, ...], T | MISSING]:
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
         plan = self._plan
         operation = plan.poll_operation
@@ -725,20 +667,19 @@ class _Operation(Generic[T, P]):
             raise self._state_error(action, _Phase.SUCCEEDED.value)
         return snapshot
 
-    def _outcome(self) -> T | Missing:
+    def _outcome(self) -> T | MISSING:
         """Return the settled operation's result, MISSING while its fetch is due; a failure or cancellation raises.
 
-        The terminal snapshot stays on the error, which every later `wait` raises again without sending.
+        The terminal poll's data and response stay on the error, which every later `wait` raises again without sending.
         """
         if (phase := self._phase) in {_Phase.FAILED, _Phase.CANCELLED}:
             plan, snapshot = self._plan, self._snapshot
             assert snapshot is not None
-            kind = OperationFailedError if phase is _Phase.FAILED else OperationCancelledError
-            raise kind(
-                snapshot=snapshot,
+            raise ProtocolDataError(
+                reason="operation_failed" if phase is _Phase.FAILED else "operation_cancelled",
+                data=snapshot.data,
                 helper_id=plan.helper_id,
                 operation=plan.poll_operation,
-                parent_session_id=self._session.session_id,
                 info=snapshot.response,
             )
         return self._result
@@ -751,44 +692,6 @@ class _Operation(Generic[T, P]):
     def _poll_request(self) -> tuple[tuple[object, ...], object, None]:
         return (*self._plan.polled.request(self._bound), None)
 
-    def _checked(
-        self, call: OperationPlan[Any], request: Callable[[], tuple[tuple[object, ...], object, None]]
-    ) -> None:
-        """Prepare a request the restored handle sends next as its call would, refusing saved values it cannot send."""
-        try:
-            self._client.checked_page(call, request, None, self._limits.options)
-        except (DecodeError, ProtocolDataError, CodecError):
-            raise MalformedStateError from None
-
-    def _seeded(self) -> None:
-        """Refuse a saved value a result fetch's `initial` binding writes to a parameter that cannot send it.
-
-        Each is encoded as the fetch encodes its parameter, before the final poll gives the fetch's other values; a
-        value written into the fetch's querystring or body is checked when the fetch request is built. Saved values
-        that alone make a path segment a dot segment are refused as a server's; a segment that also takes a value the
-        final poll gives is checked when the fetch is built.
-        """
-        plan = self._plan
-        if (fetched := plan.fetched) is None:
-            return
-        bindings = plan.fetch_bindings
-        given = {
-            cast("int", position): value
-            for binding, (position, pointer), value in zip(bindings, fetched.writes, self._seed, strict=True)
-            if binding.source == "initial" and pointer is None
-        }
-        try:
-            self._client.checked_arguments(fetched.call, given, self._limits.options)
-        except DecodeError:
-            raise MalformedStateError from None
-        self._dots(
-            fetched,
-            tuple(
-                value if binding.source == "initial" else binding.literal if binding.selector is None else _UNREAD
-                for binding, value in zip(bindings, self._seed, strict=True)
-            ),
-        )
-
     def _dots(self, targeted: Targeted[Any], written: tuple[JSONValue, ...]) -> None:
         """Refuse saved values making a path segment a dot segment once encoded, as if a server had just given them."""
         from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
@@ -797,10 +700,9 @@ class _Operation(Generic[T, P]):
             raise self._error(None, "value", read, self._plan.operation)
 
     def _restore(self, state: JSONValue) -> None:
-        """Restore a handle from a checkpoint's decoded state, refusing what does not fit the helper.
+        """Restore a handle from a checkpoint, refusing what does not fit the helper and saved dot segments.
 
-        A pending handle prepares its poll, the result fetch's saved values, and a remote cancel, and one whose result
-        fetch is due prepares the fetch, without sending.
+        Saved values are encoded as the server's are when the next poll, fetch, or remote cancel is built.
         """
         plan = self._plan
         require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
@@ -814,7 +716,6 @@ class _Operation(Generic[T, P]):
             assert fetched is not None
             self._phase, self._bound = _Phase.SUCCEEDED, _literals(plan.fetch_bindings, bound)
             self._dots(fetched, self._bound)
-            self._checked(fetched.call, self._fetch_request)
             return
         cancels = () if plan.cancel is None else plan.cancel.bindings
         require_state(
@@ -829,11 +730,8 @@ class _Operation(Generic[T, P]):
             for binding, value in zip(plan.fetch_bindings, seed, strict=True)
         )
         self._dots(plan.polled, self._bound)
-        self._checked(plan.polled.call, self._poll_request)
-        self._seeded()
         if (remote := plan.cancel) is not None:
             self._dots(remote.targeted, self._cancel)
-            self._checked(remote.targeted.call, _sent(remote.targeted, self._cancel))
 
 
 def _receipt(
@@ -852,7 +750,7 @@ class LroHandle(_Operation[T, P]):
     """A long-running operation a helper created: `status` polls it once, and `wait` polls until it settles.
 
     `close` only stops local polling; the remote operation goes on. Polling from two threads at once raises
-    ProtocolStateError, while `checkpoint` and a remote cancel run alongside a poll. A helper that declares a remote
+    ConfigurationError, while `checkpoint` and a remote cancel run alongside a poll. A helper that declares a remote
     cancellation returns a subclass of its own with `cancel_remote`.
     """
 
@@ -869,7 +767,6 @@ class LroHandle(_Operation[T, P]):
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
         step = core.execute_page(
-            plan,
             plan.create,
             lambda: (arguments, body, None),
             self._created,
@@ -877,7 +774,6 @@ class LroHandle(_Operation[T, P]):
             media_type=media_type,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
         self._settle(step)
 
@@ -893,7 +789,6 @@ class LroHandle(_Operation[T, P]):
         admitted = session.sends
         try:
             step = core.execute_page(
-                plan,
                 plan.polled.call,
                 self._poll_request,
                 self._polled,
@@ -901,7 +796,6 @@ class LroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -918,7 +812,6 @@ class LroHandle(_Operation[T, P]):
         self._pause(fetched.call)
         try:
             result = self._core.execute_page(
-                plan,
                 fetched.call,
                 self._fetch_request,
                 _kept,
@@ -926,7 +819,6 @@ class LroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=self._session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -940,7 +832,6 @@ class LroHandle(_Operation[T, P]):
         """
         request = self._cancelling(cancel)
         return self._core.execute_page(
-            self._plan,
             cancel.targeted.call,
             request,
             _receipt,
@@ -948,7 +839,6 @@ class LroHandle(_Operation[T, P]):
             media_type=None,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
 
     def status(self) -> PollSnapshot[P]:
@@ -966,20 +856,20 @@ class LroHandle(_Operation[T, P]):
     def wait(self) -> T:
         """Poll until the operation settles and return its result, fetching it at most once.
 
-        A failed or cancelled operation raises OperationFailedError or OperationCancelledError with its last poll.
+        A failed or cancelled operation raises ProtocolDataError with its last poll's data and response.
         """
         self._enter("wait")
         try:
             while self._phase is _Phase.PENDING:
                 self._poll()
-            if not isinstance(result := self._outcome(), Missing):
+            if (result := self._outcome()) is not MISSING:
                 return result
             return self._fetch()
         finally:
             self._lock.release()
 
     def close(self) -> None:
-        """Stop polling locally; later steps raise ProtocolStateError, and closing again does nothing."""
+        """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("close")
 
     def __enter__(self) -> Self:
@@ -997,7 +887,7 @@ class AsyncLroHandle(_Operation[T, P]):
     """A long-running operation an asyncio helper created: `status` polls it once, and `wait` until it settles.
 
     `aclose` only stops local polling; the remote operation goes on. Polling from two tasks at once raises
-    ProtocolStateError, while `checkpoint` and a remote cancel run alongside a poll. A helper that declares a remote
+    ConfigurationError, while `checkpoint` and a remote cancel run alongside a poll. A helper that declares a remote
     cancellation returns a subclass of its own with `cancel_remote`.
     """
 
@@ -1014,7 +904,6 @@ class AsyncLroHandle(_Operation[T, P]):
         """Send the create request as the session's first child call and settle what it gives."""
         core, plan = self._core, self._plan
         step = await core.execute_page(
-            plan,
             plan.create,
             lambda: (arguments, body, None),
             self._created,
@@ -1022,7 +911,6 @@ class AsyncLroHandle(_Operation[T, P]):
             media_type=media_type,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
         self._settle(step)
 
@@ -1038,7 +926,6 @@ class AsyncLroHandle(_Operation[T, P]):
         admitted = session.sends
         try:
             step = await core.execute_page(
-                plan,
                 plan.polled.call,
                 self._poll_request,
                 self._polled,
@@ -1046,7 +933,6 @@ class AsyncLroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -1063,7 +949,6 @@ class AsyncLroHandle(_Operation[T, P]):
         await self._pause(fetched.call)
         try:
             result = await self._core.execute_page(
-                plan,
                 fetched.call,
                 self._fetch_request,
                 _kept,
@@ -1071,7 +956,6 @@ class AsyncLroHandle(_Operation[T, P]):
                 media_type=None,
                 options=self._limits.options,
                 session=self._session,
-                max_page_bytes=None,
             )
         except Exception as error:
             self._failed(error)
@@ -1085,7 +969,6 @@ class AsyncLroHandle(_Operation[T, P]):
         """
         request = self._cancelling(cancel)
         return await self._core.execute_page(
-            self._plan,
             cancel.targeted.call,
             request,
             _receipt,
@@ -1093,7 +976,6 @@ class AsyncLroHandle(_Operation[T, P]):
             media_type=None,
             options=self._limits.options,
             session=self._session,
-            max_page_bytes=None,
         )
 
     async def status(self) -> PollSnapshot[P]:
@@ -1111,20 +993,20 @@ class AsyncLroHandle(_Operation[T, P]):
     async def wait(self) -> T:
         """Poll until the operation settles and return its result, fetching it at most once.
 
-        A failed or cancelled operation raises OperationFailedError or OperationCancelledError with its last poll.
+        A failed or cancelled operation raises ProtocolDataError with its last poll's data and response.
         """
         self._enter("wait")
         try:
             while self._phase is _Phase.PENDING:
                 await self._poll()
-            if not isinstance(result := self._outcome(), Missing):
+            if (result := self._outcome()) is not MISSING:
                 return result
             return await self._fetch()
         finally:
             self._lock.release()
 
     async def aclose(self) -> None:
-        """Stop polling locally; later steps raise ProtocolStateError, and closing again does nothing."""
+        """Stop polling locally; later steps raise ConfigurationError, and closing again does nothing."""
         self._close("aclose")
 
     async def __aenter__(self) -> Self:
@@ -1143,15 +1025,8 @@ def _session(limits: _Limits) -> OperationSession:
 
     return OperationSession(
         total_timeout=limits.total_timeout,
-        deadline=limits.deadline,
         clock=limits.clock,
     )
-
-
-def _resume_error(
-    plan: PollingPlan[T, P, C], condition: Literal["fingerprint", "expired", "malformed"]
-) -> ResumeStateError:
-    return ResumeStateError(condition=condition, helper_id=plan.helper_id, operation=plan.operation)
 
 
 def _restored(
@@ -1162,20 +1037,16 @@ def _restored(
 ) -> OperationT:
     """Return the handle a checkpoint continues in a session of its own, without sending.
 
-    The checkpoint must be this helper's, fit it, and be unexpired by the client's wall clock.
+    A checkpoint that is not JSON or does not fit the helper raises ConfigurationError, with the reason expired once
+    past the server's expiry by the client's wall clock.
     """
-    if not isinstance(state, ResumeState):
-        raise _invalid(plan, ("state",))
-    helper, state_json = state_fields(state)
-    if helper != plan.fingerprint:
-        raise _resume_error(plan, "fingerprint")
     handle = make(_session(limits))
     try:
-        handle._restore(json_value(state_json))  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    except MalformedStateError:
-        raise _resume_error(plan, "malformed") from None
+        handle._restore(plain_copy(state))  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    except (MalformedStateError, TypeError, ValueError):
+        raise _invalid(plan, ("state",)) from None
     if (expires_at := handle._expires_at) is not None and expires_at.timestamp() <= limits.clock.time():  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        raise _resume_error(plan, "expired")
+        raise ConfigurationError(field_path=("state",), reason="expired", helper_id=plan.helper_id)
     return handle
 
 
@@ -1189,7 +1060,6 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> LroHandle[T, P]:
     """Create a helper's operation and return a handle of the base class."""
 
@@ -1205,7 +1075,6 @@ def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> H:
     """Create a helper's operation and return a handle of the helper's own class."""
 
@@ -1220,13 +1089,12 @@ def start_operation(  # noqa: PLR0913
     media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> LroHandle[Any, Any]:
     """Create a helper's operation in a session of its own and return the handle that polls it.
 
     A helper that declares a remote cancellation passes its own handle class.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     created = handle(core, plan, limits, _session(limits))
     created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
@@ -1242,7 +1110,6 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AsyncLroHandle[T, P]:
     """Create a helper's operation with asyncio and return a handle of the base class."""
 
@@ -1258,7 +1125,6 @@ async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     media_type: str | None = ...,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AH:
     """Create a helper's operation with asyncio and return a handle of the helper's own class."""
 
@@ -1273,13 +1139,12 @@ async def astart_operation(  # noqa: PLR0913
     media_type: str | None = None,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncLroHandle[Any, Any]:
     """Create a helper's operation with asyncio in a session of its own and return the handle that polls it.
 
     A helper that declares a remote cancellation passes its own handle class.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     created = handle(core, plan, limits, _session(limits))
     await created._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return created
@@ -1293,7 +1158,6 @@ def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> LroHandle[T, P]:
     """Return a handle of the base class continuing a helper's checkpoint."""
 
@@ -1307,7 +1171,6 @@ def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     handle: type[H],
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> H:
     """Return a handle of the helper's own class continuing a helper's checkpoint."""
 
@@ -1320,13 +1183,12 @@ def resume_operation(  # noqa: PLR0913
     handle: type[LroHandle[Any, Any]] = LroHandle,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> LroHandle[Any, Any]:
     """Return a handle continuing a helper's checkpoint in a session of its own, checking the checkpoint now.
 
     It sends nothing, and never creates the operation again; `status` or `wait` sends its first poll.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     return _restored(plan, state, limits, lambda session: handle(core, plan, limits, session))
 
 
@@ -1338,7 +1200,6 @@ def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     *,
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AsyncLroHandle[T, P]:
     """Return an asyncio handle of the base class continuing a helper's checkpoint."""
 
@@ -1352,7 +1213,6 @@ def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     handle: type[AH],
     poll_options: object = ...,
     options: object = ...,
-    session_options: object = ...,
 ) -> AH:
     """Return an asyncio handle of the helper's own class continuing a helper's checkpoint."""
 
@@ -1365,12 +1225,11 @@ def aresume_operation(  # noqa: PLR0913
     handle: type[AsyncLroHandle[Any, Any]] = AsyncLroHandle,
     poll_options: object = None,
     options: object = None,
-    session_options: object = None,
 ) -> AsyncLroHandle[Any, Any]:
     """Return an asyncio handle continuing a helper's checkpoint in a session of its own, checking it now.
 
     It is not awaited and sends nothing, and never creates the operation again; `status` or `wait` sends its first
     poll.
     """
-    limits = _limits(core, plan, poll_options, options, session_options)
+    limits = _limits(core, plan, poll_options, options)
     return _restored(plan, state, limits, lambda session: handle(core, plan, limits, session))

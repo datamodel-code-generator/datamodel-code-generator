@@ -5,13 +5,9 @@ render pydantic_v2.BaseModel
   write client/_client.py
   write client/_async_client.py
   write client/options.py
-  write client/hooks.py
   write client/errors.py
   write client/responses.py
-  write client/auth.py
-  write client/bodies.py
   write client/model_codecs.py
-  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/default/__init__.py
   write client/resources/default/_sync.py
@@ -25,5 +21,4 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
-  write client/.dcg-target-manifest.json
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']

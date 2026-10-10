@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final
 
-from models import User as _dcg_type_0
+import models
 
 from .. import _operations
 from .._runtime.protocols.pagination import (
@@ -30,202 +30,201 @@ from ..types.secure import ListSecureUsersResponse
 from ..types.users import ListUsersResponse
 
 
-def _items_0(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
+def _items_0(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
     """Return the items of one page of users.follow."""
     return data.data
 
 
-PLAN_0: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+def _items_1(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.nullable."""
+    return data.data
+
+
+def _items_2(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.loose."""
+    return data.data
+
+
+def _items_3(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.headed."""
+    return data.data
+
+
+def _items_4(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.linked."""
+    return data.data
+
+
+def _items_5(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.snapshot."""
+    return data.data
+
+
+def _items_6(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.related."""
+    return data.data
+
+
+def _items_7(
+    data: SearchResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of searches.repeated."""
+    return data.data
+
+
+def _items_8(
+    data: SearchResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of searches.fetched."""
+    return data.data
+
+
+def _items_9(
+    data: ListSecureUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of secure.users."""
+    return data.data
+
+
+def _items_10(
+    data: ListKeyedUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of keyed.users."""
+    return data.data
+
+
+PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.follow',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
     continuation=NextUrlPlan(read=BodySelector(pointer='/next'), end_missing=True),
-    fingerprint='82a191dd42a720027c619da1e5fcb3b2bf19f84ebf2701d4d1b98b0de99b373b',
+    fingerprint='207fb6936c244ab15e4994860f5069612bbbf587db1393c7be02dcdf29e5b02b',
 )
 
 
-def _items_1(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of users.nullable."""
-    return data.data
-
-
-PLAN_1: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.nullable',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
-    continuation=NextUrlPlan(
-        read=BodySelector(pointer='/maybe_next'),
-        end_null=True,
-        end_values=('',),
-    ),
-    fingerprint='f828f5daa0ce0951db633cb1a43efbfba7dfbe9a091b0fb24c3fbf0fa3fdae7c',
+    continuation=NextUrlPlan(read=BodySelector(pointer='/maybe_next'), end_null=True, end_values=('',)),
+    fingerprint='f98a55b470f3297dd859973c93b0ef37a5c2a2a1483a82e201271cc13262c782',
 )
 
 
-def _items_2(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of users.loose."""
-    return data.data
-
-
-PLAN_2: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_2: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.loose',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
     items=_items_2,
     items_selector=BodySelector(pointer='/data'),
-    continuation=NextUrlPlan(
-        read=BodySelector(pointer='/loose_next'),
-        end_missing=True,
-    ),
-    fingerprint='efe27843d966e44c1fcb4443d79e948ce2d7ead7c0f3ac544fb398dd865e60c3',
+    continuation=NextUrlPlan(read=BodySelector(pointer='/loose_next'), end_missing=True),
+    fingerprint='37b3513ed21c686913c4fc154c4eee9abbc9d2bb02682d057eda72c3fba5074c',
 )
 
 
-def _items_3(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of users.headed."""
-    return data.data
-
-
-PLAN_3: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_3: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.headed',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
     continuation=NextUrlPlan(read=HeaderSelector(name='X-Next'), end_missing=True),
-    fingerprint='fa449cfccd0f384c938a166accf651857c41bc993524a4072f07a28551c9bbf1',
+    fingerprint='a4ad889b4c020ca28abdc1d3d2ddd758ff8a2eed92e4d930cd2cf11ed1292f07',
 )
 
 
-def _items_4(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of users.linked."""
-    return data.data
-
-
-PLAN_4: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_4: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.linked',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
     items=_items_4,
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='link'),
-    fingerprint='d390fc319566f0af5bc7e184d79534efbd193a5c939d0679453b63d0d877571a',
+    fingerprint='9bd3c77001d863d5155b43909648318e159c533435a80834f46f398e72984afd',
 )
 
 
-def _items_5(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of users.snapshot."""
-    return data.data
-
-
-PLAN_5: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_5: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.snapshot',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
     items=_items_5,
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='Link'),
-    fingerprint='ad5a79470f0f54c88a7c767618aaae065cb87903b667832424249a1d672cff76',
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='header', name='X-Trace'),
-            source='initial',
-            selector=HeaderSelector(name='X-Snapshot'),
-        ),
-    ),
+    fingerprint='fcaf455582ce93514dc045ae559a743e69dcbfbf7b6ef617acae3ed58f391182',
+    bindings=(PageBinding(target=ParameterTarget(location='header', name='X-Trace'), source='initial', selector=HeaderSelector(name='X-Snapshot')),),
 )
 
 
-def _items_6(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of users.related."""
-    return data.data
-
-
-PLAN_6: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_6: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     helper_id='users.related',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
     items=_items_6,
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='Link', rel='https://example.com/rel/More'),
-    fingerprint='ed0f97007c7fb7a17303a2f2221faf60b3a45173418426442bd5cf8648866951',
+    fingerprint='ffcd74507e4eec09a83ab3647a350771cbf5a500f4f832d09606a532afae52a7',
 )
 
 
-def _items_7(data: SearchResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of searches.repeated."""
-    return data.data
-
-
-PLAN_7: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
+PLAN_7: Final[PaginationPlan[models.User, SearchResponse]] = PaginationPlan(
     helper_id='searches.repeated',
     operation=OperationRef(pointer='/paths/~1searches/post'),
     call=_operations.OPERATION_1,
     items=_items_7,
     items_selector=BodySelector(pointer='/data'),
-    continuation=NextUrlPlan(
-        read=BodySelector(pointer='/next'),
-        end_missing=True,
-        repeat_request_body=True,
-    ),
-    fingerprint='f32519eef09548d49b8808603d211a9c4acc345501f8877e1be21b99b9657ea5',
-    bindings=(
-        PageBinding(
-            target=BodyTarget(pointer='/token'),
-            source='previous',
-            selector=BodySelector(pointer='/token'),
-        ),
-    ),
+    continuation=NextUrlPlan(read=BodySelector(pointer='/next'), end_missing=True, repeat_request_body=True),
+    fingerprint='a85dc03cb40a16a79b7ab42bfef89d19961d51430f3b18be9224850ff40b3563',
+    bindings=(PageBinding(target=BodyTarget(pointer='/token'), source='previous', selector=BodySelector(pointer='/token')),),
 )
 
 
-def _items_8(data: SearchResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of searches.fetched."""
-    return data.data
-
-
-PLAN_8: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
+PLAN_8: Final[PaginationPlan[models.User, SearchResponse]] = PaginationPlan(
     helper_id='searches.fetched',
     operation=OperationRef(pointer='/paths/~1searches/post'),
     call=_operations.OPERATION_1,
     items=_items_8,
     items_selector=BodySelector(pointer='/data'),
     continuation=NextUrlPlan(read=BodySelector(pointer='/next'), end_missing=True),
-    fingerprint='0ed579111175c3a25c62f2ef7807a563f8a6a22dd008e1bf945c703558ce1d90',
+    fingerprint='a9fafcc6ec73a956d299dcd36c3cb0066fcf71828304da63643a3f7f2a1502df',
 )
 
 
-def _items_9(data: ListSecureUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of secure.users."""
-    return data.data
-
-
-PLAN_9: Final[PaginationPlan[_dcg_type_0, ListSecureUsersResponse]] = PaginationPlan(
+PLAN_9: Final[PaginationPlan[models.User, ListSecureUsersResponse]] = PaginationPlan(
     helper_id='secure.users',
     operation=OperationRef(pointer='/paths/~1secure~1users/get'),
     call=_operations.OPERATION_2,
     items=_items_9,
     items_selector=BodySelector(pointer='/data'),
     continuation=LinkPlan(header='Link'),
-    fingerprint='c8f6c9066bb7cfd3233af4382c27c8ac76d0a44481dc018a46c3e1461f0ffa84',
+    fingerprint='cd76f8b24ff228df0fc7adbb61505aaf220bcb156966ff95d123a6225d4da132',
 )
 
 
-def _items_10(data: ListKeyedUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of keyed.users."""
-    return data.data
-
-
-PLAN_10: Final[PaginationPlan[_dcg_type_0, ListKeyedUsersResponse]] = PaginationPlan(
+PLAN_10: Final[PaginationPlan[models.User, ListKeyedUsersResponse]] = PaginationPlan(
     helper_id='keyed.users',
     operation=OperationRef(pointer='/paths/~1keyed~1users/get'),
     call=_operations.OPERATION_3,
     items=_items_10,
     items_selector=BodySelector(pointer='/data'),
     continuation=NextUrlPlan(read=BodySelector(pointer='/next'), end_missing=True),
-    fingerprint='890cd7466356829f21583126daade660cce656004637c4f0a4171b5868d1f51d',
+    fingerprint='41008faa8b57255d9b54f0f0d7578a80e8317f2ba44751bf906f24d89d63b41e',
 )

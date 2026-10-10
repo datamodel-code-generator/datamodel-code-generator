@@ -11,7 +11,7 @@ from typing import Literal
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import UNSET, RequestOptions, Unset
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.nested import ListNestedResponse
 
@@ -41,11 +41,13 @@ class NestedResource:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> ListNestedResponse:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (cursor,),
@@ -64,11 +66,13 @@ class NestedWithResponse:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ListNestedResponse]:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.execute(
             _operations.OPERATION_3,
             (cursor,),
@@ -87,11 +91,13 @@ class NestedWithRawResponse:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.execute_raw(
             _operations.OPERATION_3,
             (cursor,),
@@ -110,11 +116,13 @@ class NestedWithStreamingResponse:
     def list_nested(
         self,
         *,
-        cursor: str | Unset = UNSET,
+        cursor: str | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Call GET /nested."""
+        """
+        Call GET /nested.
+        """
         return self._core.stream(
             _operations.OPERATION_3,
             (cursor,),

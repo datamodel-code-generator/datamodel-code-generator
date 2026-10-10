@@ -1,73 +1,25 @@
 # inputs
-render
-  target=fastapi schema_version=1
-  write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/items.py (target)
-  write target server/routers/users.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['write']
-{
-  "files": {
-    "README.md": "sha256:0dd6eecb8c31c94fa699177b4061fbdf0c226b7b211faeab8c1c9eb8cb036962",
-    "__init__.py": "sha256:1fbc3d1b9cc0ae11744d7eb817a60529075d1c39fa32b887ecbce8dc359e3513",
-    "_generated/__init__.py": "sha256:10e6a917c6aad1f0b20bd3bc37eb2a23c25709af9263dee4cb4848b6b6f1d218",
-    "_generated/contract.py": "sha256:19fc85d9e38d10d80b3dd4aefb4b5cb300d379af32487dc6fd55cef136ff3db0",
-    "application.py": "sha256:6cce1a77a380cc0e9ebcd0bbfa0dde1a3a1aac9bf0b26cd175fb9794e637bf62",
-    "errors.py": "sha256:efdfe792fa77df3c491f826a91e89194b10a156edfb0d5fe67a8fa02e9cd3e52",
-    "py.typed": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "routers/__init__.py": "sha256:e8d9d8df87cbfbf0a9add51823d601424c3087a4061a7b0572f6ac1a5ec8c4f0",
-    "routers/items.py": "sha256:bbb6106d94348cea33a0c8df1dc786cb875773ded1ec333ac7022c875a839ee7",
-    "routers/users.py": "sha256:82587ca12975117e78478568f802ed4d0cbd7894d6818fb454133116b1090fef",
-    "services.py": "sha256:e21b295b33f9a9ec3557c31ed341809fcc645187fa50a42328aa476b12f688b3"
-  },
-  "format": 1,
-  "generator": {
-    "name": "datamodel-code-generator",
-    "version": "<masked>"
-  },
-  "model": {
-    "output": "../models.py",
-    "sha256": "<sha256>"
-  },
-  "target": {
-    "kind": "fastapi",
-    "package": "example.server"
-  }
-}
-render
-  target=fastapi schema_version=1
-  write model models.py
-  write target server/__init__.py (target)
-  write target server/application.py (target)
-  write target server/routers/__init__.py (target)
-  write target server/routers/items.py (target)
-  write target server/routers/users.py (target)
-  write target server/_generated/__init__.py (target)
-  write target server/_generated/contract.py (target)
-  write target server/errors.py (target)
-  write target server/services.py (target)
-  write target server/README.md (target)
-  write target server/py.typed (target)
-  write target_manifest server/.dcg-target-manifest.json (target)
-  11 runtime modules ['write']
-render
-  Error: The --server-operation-names entry '/paths/~1items/get' selects no root path operation
-  E_OPERATION_REF error config operation_names: The operation_names entry '/paths/~1items/get' selects no root path operation
-render
-  Error: input: Target generation reads one root document, not a list
-  E_INPUT_ROOT error input input: Target generation reads one root document, not a list
-render
+check
+  MISSING: models.py (file does not exist but should be generated)
+  MISSING: server/__init__.py (should be generated)
+  MISSING: server/_generated/__init__.py (should be generated)
+  MISSING: server/_generated/contract.py (should be generated)
+  MISSING: server/_generated/openapi.py (should be generated)
+  MISSING: server/application.py (should be generated)
+  MISSING: server/routers/__init__.py (should be generated)
+  MISSING: server/routers/items.py (should be generated)
+  MISSING: server/routers/users.py (should be generated)
+  MISSING: server/services.py (should be generated)
+  MISSING: server/README.md (file does not exist but should be generated)
+  MISSING: server/py.typed (file does not exist but should be generated)
+  5 runtime modules ['MISSING']
+  The input file type was determined to be: openapi
+  This can be specified explicitly with the `--input-file-type` option.
+check
+  The input file type was determined to be: openapi
+  This can be specified explicitly with the `--input-file-type` option.
+  Error: The --server-operation-names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
+check
   Error: input: Target generation reads one root document, not a directory
-  E_INPUT_ROOT error input input: Target generation reads one root document, not a directory
-render
+check
   Error: --input-file-type: Target generation reads an OpenAPI document
-  E_INPUT_ROOT error input model_config.input_file_type: Target generation reads an OpenAPI document

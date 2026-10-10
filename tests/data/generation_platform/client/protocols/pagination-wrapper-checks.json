@@ -1,0 +1,15 @@
+{
+  "has_more.wrapped_model": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {
+      "kind": "page",
+      "write": {"in": "query", "name": "page"},
+      "first": 1,
+      "step": {"literal": 1},
+      "has_more": {"from": "body", "pointer": "/base_cursor"}
+    }
+  }
+}

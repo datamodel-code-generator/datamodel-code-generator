@@ -8,23 +8,21 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import Created as _dcg_type_1
-from models import Deleted as _dcg_type_2
-from models import FeedQuery as _dcg_type_3
-from models import Message as _dcg_type_0
+import models
 
-from .._runtime.client.client import ClientCore
+from .._runtime.client.client import ClientCore as ClientCore_1
+from .._runtime.protocols.client import ClientCore
 from .._runtime.protocols.streams import EventStream, UnknownEvent, open_events
-from ..options import UNSET, RequestOptions, SessionOptions, Unset
+from ..options import UNSET, RequestOptions
 from . import StreamOptions, _plans
 
 
 class ProtocolHelpers:
     """The protocol helpers of this API."""
 
-    def __init__(self, core: ClientCore) -> None:
+    def __init__(self, core: ClientCore_1) -> None:
         """Keep the client core its helpers send through."""
-        self._core = core
+        self._core = ClientCore.from_client(core)
 
     @cached_property
     def events(self) -> EventsProtocols:
@@ -83,20 +81,18 @@ class EventsMessagesSse:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
-        last_event_id: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
+        Last_Event_ID: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+    ) -> EventStream[models.Message]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
             self._core,
             _plans.STREAM_0,
-            (topic, last_event_id),
+            (topic, Last_Event_ID),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -110,20 +106,18 @@ class EventsTypedSse:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
-        last_event_id: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
+        Last_Event_ID: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_1 | _dcg_type_2 | UnknownEvent]:
+    ) -> EventStream[models.Created | models.Deleted | UnknownEvent]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
             self._core,
             _plans.STREAM_1,
-            (topic, last_event_id),
+            (topic, Last_Event_ID),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -137,20 +131,18 @@ class EventsTaggedSse:
     def open(
         self,
         *,
-        topic: str | Unset = UNSET,
-        last_event_id: str | Unset = UNSET,
+        topic: str | UNSET = UNSET,
+        Last_Event_ID: str | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_1 | _dcg_type_2]:
+    ) -> EventStream[models.Created | models.Deleted]:
         """Open the event stream of GET /events, returning once its response is a declared success."""
         return open_events(
             self._core,
             _plans.STREAM_2,
-            (topic, last_event_id),
+            (topic, Last_Event_ID),
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )
 
 
@@ -164,12 +156,11 @@ class FeedAllSse:
     def open(
         self,
         *,
-        body: _dcg_type_3,
+        body: models.FeedQuery,
         media_type: Literal['application/json'] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
-        session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_0]:
+    ) -> EventStream[models.Message]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return open_events(
             self._core,
@@ -179,5 +170,4 @@ class FeedAllSse:
             media_type=media_type,
             stream_options=stream_options,
             options=options,
-            session_options=session_options,
         )

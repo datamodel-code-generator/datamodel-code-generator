@@ -62,8 +62,6 @@ def test_generation_observation(backend: DataModelType, tmp_path: Path) -> None:
                 "datamodel_code_generator._openapi_generation",
                 "datamodel_code_generator._target_binding",
                 "datamodel_code_generator._target_contract",
-                "datamodel_code_generator.fastapi",
-                "datamodel_code_generator.client",
             ))
         ),
     }

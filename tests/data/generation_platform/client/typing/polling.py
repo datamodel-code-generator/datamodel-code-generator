@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.options import RequestOptions, SessionOptions
+from pets.options import RequestOptions
 from pets.protocols import (
     AsyncLroHandle,
     CancelReceipt,
@@ -11,8 +11,8 @@ from pets.protocols import (
     PollOptions,
     PollSnapshot,
     ProtocolProgress,
-    ResumeState,
 )
+from pets.model_codecs import JSONValue
 from pets.responses import ResponseInfo
 from pets.types.exports import CancelExportsResponse
 from pets.types.jobs import CancelJobResponse, GetJobResponse, GetReportResponse
@@ -26,9 +26,8 @@ def operations(client: Client, job: JobRequest) -> None:
     helper = client.protocols.jobs.run
     handle = helper.start(
         body=job,
-        poll_options=PollOptions(max_polls=3, interval=0.5),
+        poll_options=PollOptions(max_polls=3, interval=0.5, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(handle, LroHandle[GetReportResponse, GetJobResponse])
     snapshot = handle.status()
@@ -61,17 +60,16 @@ async def async_operations(client: AsyncClient, job: JobRequest) -> None:
     await handle.aclose()
 
 
-def checkpoints(client: Client, job: JobRequest, state: ResumeState) -> None:
+def checkpoints(client: Client, job: JobRequest, state: JSONValue) -> None:
     """Checkpoint handles, resume them with their helper's handle type, and cancel declared operations remotely."""
     helper = client.protocols.jobs.run
     saved = helper.start(body=job).checkpoint()
-    assert_type(saved, ResumeState)
+    assert_type(saved, JSONValue)
     assert_type(helper.resume(saved), LroHandle[GetReportResponse, GetJobResponse])
     resumed = helper.resume(
         state,
-        poll_options=PollOptions(max_polls=2),
+        poll_options=PollOptions(max_polls=2, total_timeout=30),
         options=RequestOptions(),
-        session_options=SessionOptions(total_timeout=30),
     )
     assert_type(resumed.wait(), GetReportResponse)
     tracked = client.protocols.jobs.tracked.start(body=job)
@@ -87,11 +85,11 @@ def checkpoints(client: Client, job: JobRequest, state: ResumeState) -> None:
     del base, wider
 
 
-async def async_checkpoints(client: AsyncClient, job: JobRequest, state: ResumeState) -> None:
+async def async_checkpoints(client: AsyncClient, job: JobRequest, state: JSONValue) -> None:
     """Resume asyncio handles without awaiting, and await their remote cancellation."""
     resumed = client.protocols.jobs.run.resume(state)
     assert_type(resumed, AsyncLroHandle[GetReportResponse, GetJobResponse])
-    assert_type(resumed.checkpoint(), ResumeState)
+    assert_type(resumed.checkpoint(), JSONValue)
     tracked = await client.protocols.jobs.tracked.start(body=job)
     assert_type(await tracked.cancel_remote(), CancelReceipt[CancelJobResponse])
     base: AsyncLroHandle[Report, GetJobResponse] = client.protocols.jobs.tracked.resume(state)

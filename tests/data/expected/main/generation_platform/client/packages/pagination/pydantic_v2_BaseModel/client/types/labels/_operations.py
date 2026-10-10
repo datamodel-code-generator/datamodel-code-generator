@@ -7,42 +7,21 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias
 
-from models import FieldLabelSetsGetResponse200XNextHeader as _dcg_type_3
-from models import FieldLabelsGetResponse as _dcg_type_0
-from models import FieldLabelsGetResponse200XNextHeader as _dcg_type_1
-from models import LabelList as _dcg_type_2
+import models
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...options import Unset
+from ...options import UNSET
 from ...responses import ResponseInfo
 
-ListLabelsResponse: TypeAlias = _dcg_type_0
+ListLabelsResponse: TypeAlias = models.FieldLabelsGetResponse
 
 
-_LIST_LABELS_HEADERS: Final[ResponseHeaders[_dcg_type_1, Unset]] = ResponseHeaders(
+_LIST_LABELS_HEADERS: Final[ResponseHeaders[models.FieldLabelsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabels',
     frozenset({'200'}),
-    (
-        (
-            'X-Next',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Next',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_15,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_15, missing=optional_header)),)),),
 )
 
 
@@ -50,36 +29,18 @@ def decode_list_labels_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_1 | Unset:
+) -> models.FieldLabelsGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_labels from a response's metadata."""
     return _LIST_LABELS_HEADERS.decode(info, name)
 
 
-ListLabelSetsResponse: TypeAlias = _dcg_type_2
+ListLabelSetsResponse: TypeAlias = models.LabelList
 
 
-_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[_dcg_type_3, Unset]] = ResponseHeaders(
+_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[models.FieldLabelSetsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabelSets',
     frozenset({'200'}),
-    (
-        (
-            'X-Next',
-            (
-                (
-                    '200',
-                    HeaderBranch(
-                        plan=ParameterPlan(
-                            location='header',
-                            name='X-Next',
-                            style='simple',
-                        ),
-                        codec=model_bindings.codec_18,
-                        missing=optional_header,
-                    ),
-                ),
-            ),
-        ),
-    ),
+    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_18, missing=optional_header)),)),),
 )
 
 
@@ -87,6 +48,6 @@ def decode_list_label_sets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> _dcg_type_3 | Unset:
+) -> models.FieldLabelSetsGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_label_sets from a response's metadata."""
     return _LIST_LABEL_SETS_HEADERS.decode(info, name)

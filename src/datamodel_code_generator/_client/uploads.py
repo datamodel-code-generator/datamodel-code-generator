@@ -16,6 +16,7 @@ from datamodel_code_generator._client.pagination import (
     _overlaps,
     _page_use,
     _Pages,
+    _parameter_key,
     _problem,
     _target_key,
     credential_place,
@@ -30,7 +31,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ParameterSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 __all__ = ("UploadSpec", "plan_uploads")
@@ -74,7 +74,7 @@ class _Checks(_Polls):
 def _parameter(spec: OperationSpec, target: Mapping[str, Any]) -> ParameterSpec:
     """Return the parameter of an operation that a parameter target names."""
     key = _target_key(target)
-    return next(item for item in spec.parameters if _target_key({"in": item.location, "name": item.wire_name}) == key)
+    return next(item for item in spec.parameters if _parameter_key(item.location, item.wire_name) == key)
 
 
 class _Uploads:
@@ -233,7 +233,7 @@ class _Uploads:
             unwritten = (
                 location not in locations
                 if location == "querystring"
-                else _target_key({"in": location, "name": parameter.wire_name}) not in written
+                else _parameter_key(location, parameter.wire_name) not in written
             )
             if parameter.required and unwritten:
                 message = (
@@ -329,11 +329,11 @@ class _Uploads:
             return None
         reference = completion["result_schema"]
         pages = self.pages
-        if (expected := pages.item_schema(reference)) is None:
+        if (expected := pages.item_type(reference, use.id.direction)) == "missing":
             message = f"The result schema {reference.pointer!r} of {name!r} does not exist in its document"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.result_schema", message, spec))
             return None
-        if use.schema is None or pages.wire.schema(pages.nonnull(use.schema))[0] != expected:
+        if not pages.same(use.type, expected):
             message = (
                 f"The result schema {reference.pointer!r} of {name!r} is not the schema of the {_label(spec)} response"
             )
@@ -345,19 +345,18 @@ class _Uploads:
         return spec, use, schema
 
 
-def plan_uploads(  # noqa: PLR0913, PLR0917
+def plan_uploads(
     protocols: Protocols | None,
     plan: ClientPlan,
     facts: ModelFacts,
     codecs: Container[TypeUseId],
-    wire: WirePlan,
     request: TargetRequest,
 ) -> tuple[tuple[UploadSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled upload helper, returning them and each checked helper's problems."""
     if protocols is None:
         return (), {}
     operations = {spec.contract.id: spec for spec in plan.operations}
-    uploads = _Uploads(_Checks(_Pages(protocols, plan, facts, codecs, wire, request), operations, protocols))
+    uploads = _Uploads(_Checks(_Pages(protocols, plan, facts, codecs, request), operations, protocols))
     specs: list[UploadSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:

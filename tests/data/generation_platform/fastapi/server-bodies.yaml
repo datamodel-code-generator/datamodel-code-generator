@@ -132,6 +132,15 @@ paths:
             schema: {$ref: "#/components/schemas/Check"}
       responses:
         "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        content:
+          application/json:
+            schema: {anyOf: [{$ref: "#/components/schemas/Item"}, {type: "null"}]}
+      responses:
+        "204": {description: Done.}
   /raw:
     post:
       operationId: postRaw

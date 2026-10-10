@@ -23,24 +23,20 @@ if TYPE_CHECKING:
     from pathlib import Path
     from types import ModuleType
 
+_CODINGS: Final = {"Accept-Encoding": "gzip, deflate"}
 _CALL_ID: Final = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 _ERROR_FIELDS: Final = (
     "operation_id",
     "field_path",
-    "condition",
     "location",
-    "delivery_state",
-    "phase",
     "status_code",
     "body",
     "body_bytes",
     "truncated",
     "media_type",
-    "kind",
-    "unit",
     "limit",
     "observed",
-    "coding",
+    "sequence",
     "cause",
 )
 
@@ -81,16 +77,19 @@ class Exchange:
         self.responders.extend(responders)
 
     def client(self, connections: int = 10, kind: type[httpx2.Client] = httpx2.Client, **options: Any) -> httpx2.Client:
-        """Return an HTTPX2 client of a kind that sends through this exchange's server over at most `connections`."""
+        """Return an HTTPX2 client of a kind that sends through this exchange's server over at most `connections`.
+
+        It asks for the codings every environment decodes, so reports never depend on the optional decoders installed.
+        """
         self.transports += 1
-        return kind(transport=LocalTransport(self, connections), **options)
+        return kind(transport=LocalTransport(self, connections), **{"headers": _CODINGS, **options})
 
     def async_client(
         self, connections: int = 10, kind: type[httpx2.AsyncClient] = httpx2.AsyncClient, **options: Any
     ) -> httpx2.AsyncClient:
         """Return an asyncio HTTPX2 client of a kind that sends through this exchange's server over `connections`."""
         self.transports += 1
-        return kind(transport=AsyncLocalTransport(self, connections), **options)
+        return kind(transport=AsyncLocalTransport(self, connections), **{"headers": _CODINGS, **options})
 
     def port(self) -> int:
         """Return the port of the server, starting it first."""
@@ -160,7 +159,8 @@ def form_part(
 ) -> object:
     """Return the native value a form-data member's wire value builds: a declared member's, or another part's."""
     media = _operation(package, operation_id).body.select(operation_id, media_type)
-    return next((plan for plan in media.parts if plan.name == name), media.additional_part).codec.convert(wire)
+    form = media.form
+    return next((plan for plan in form.parts if plan.name == name), form.additional).codec.convert(wire)
 
 
 def describe(value: object) -> str:
@@ -172,8 +172,9 @@ def describe(value: object) -> str:
                 for name in _ERROR_FIELDS
                 if getattr(value, name, None) not in (None, ())
             )
-            code = f" {value.reason_code}" if hasattr(value, "reason_code") else ""
-            return f"{type(value).__name__}: {value} [{details}]{code}"
+            code = f" {value.reason}" if getattr(value, "reason", None) is not None else ""
+            notes = "".join(f" note={note!r}" for note in getattr(value, "__notes__", ()))
+            return f"{type(value).__name__}: {value} [{details}]{code}{notes}"
         case _ if hasattr(value, "info") and hasattr(value, "data"):
             info = value.info
             headers = list(info.headers)
@@ -196,20 +197,20 @@ def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
 
 
 def outcome(call: Callable[[], object]) -> str:
-    """Report the class of a call's failure with the classes of its secondary errors, or its result."""
+    """Report the class of a call's failure with the notes naming its secondary errors, or its result."""
     try:
         result = call()
     except Exception as error:  # noqa: BLE001
-        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
+        return f"{type(error).__name__} notes {getattr(error, '__notes__', [])}"
     return f"returned {result!r}"
 
 
 async def aoutcome(call: Callable[[], Any]) -> str:
-    """Report the class of an async call's failure with the classes of its secondary errors, or its result."""
+    """Report the class of an async call's failure with the notes naming its secondary errors, or its result."""
     try:
         result = await call()
     except Exception as error:  # noqa: BLE001
-        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
+        return f"{type(error).__name__} notes {getattr(error, '__notes__', [])}"
     return f"returned {result!r}"
 
 
@@ -307,6 +308,33 @@ def abroken(request: httpx2.Request) -> httpx2.Response:
     return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_AsyncBrokenStream())
 
 
+def import_generated_client(package: str) -> ModuleType:
+    """Import a client's copied runtime when requested, otherwise use the covered source runtime."""
+    return import_generated(package, copied=os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1")
+
+
+def client_copied_runtime_report(root: Path) -> str:
+    """Call a generated client and locate every runtime module that call actually imported."""
+    def scenario(package: ModuleType, lines: list[str]) -> None:
+        exchange = Exchange([])
+        exchange.respond(json_response(200, {"id": 7, "name": "copied"}))
+        with exchange.client(trust_env=False) as native, package.Client(http_client=native) as api:
+            pet = api.pets.get_pet(petId=7)
+            lines.append(f"  response {pet.id} {pet.name}")
+            server = exchange.server
+        runtime = [
+            module
+            for name, module in sys.modules.items()
+            if name.startswith(f"{package.__name__}._runtime") and getattr(module, "__file__", None)
+        ]
+        from pathlib import Path
+
+        lines.append(f"  runtime copied {bool(runtime) and all(Path(module.__file__).is_relative_to(root) for module in runtime)}")
+        lines.append(f"  server failures {server.failures if server else []}")
+
+    return generated("pets", "pydantic_v2.BaseModel", root, scenario)
+
+
 def generated(case_name: str, backend: str, root: Path, scenario: Callable[[ModuleType, list[str]], None]) -> str:
     """Generate one fixture's package for a backend, run a scenario against it, and return the cleaned report."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
@@ -314,15 +342,23 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     root.mkdir(parents=True, exist_ok=True)
     _generate(case, backend, root, package)
     sys.path.insert(0, str(root))
-    lines = [f"# {case_name} {backend}"]
+    lines = [f"# {case.get('expected', case_name)} {backend}"]
     try:
-        copied = os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1"
-        scenario(importlib.import_module(package) if copied else import_generated(package), lines)
+        scenario(import_generated_client(package), lines)
     finally:
         stop_servers()
         sys.path.remove(str(root))
         forget_generated(package)
     return _CALL_ID.sub("<call>", "\n".join(lines)) + "\n"
+
+
+def agreeing_backends(reports: dict[str, str]) -> str:
+    """Join backend reports, printing one section under a header naming every backend whose report agrees."""
+    sections: dict[tuple[str, str], list[str]] = {}
+    for backend, report in reports.items():
+        header, _, body = report.partition("\n")
+        sections.setdefault((header.removesuffix(f" {backend}"), body), []).append(backend)
+    return "".join(f"{title} {', '.join(backends)}\n{body}" for (title, body), backends in sections.items())
 
 
 def run(coroutine: Callable[[], Any]) -> None:

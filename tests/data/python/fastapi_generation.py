@@ -1,62 +1,25 @@
-"""Render FastAPI server targets from OpenAPI fixtures and report their files, diagnostics, and failures."""
+"""Generate FastAPI server targets from OpenAPI fixtures through generate() and report their files and failures."""
 
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import warnings
-from dataclasses import fields
-from pathlib import Path, PurePosixPath
-from typing import Any, TypeAlias, get_type_hints
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig, _runtime
+from datamodel_code_generator import DataModelType, Error, _runtime, generate
 from datamodel_code_generator.enums import OpenAPIScope
-from datamodel_code_generator.fastapi import (
-    APIGenerationError,
-    Diagnostic,
-    FastAPIConfig,
-    GeneratedProject,
-    GenerationInput,
-    OperationRef,
-    ResponseChoice,
-    generate_fastapi,
-    render_fastapi,
-)
 from datamodel_code_generator.format import Formatter
+
+if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
-MANIFEST = ".dcg-target-manifest.json"
 RUNTIME = Path(_runtime.__file__).parent
 BUILTIN_TEMPLATES = RUNTIME.parent / "_fastapi" / "templates"
-_DIGEST = re.compile(r'"[0-9a-f]{64}"')
-_SIZE = re.compile(r'"size":\d+')
 Modules: TypeAlias = dict[tuple[str, ...], str]
-
-
-def _selector(value: object) -> object:
-    return OperationRef(**value) if isinstance(value, dict) else value
-
-
-def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
-    """Build a FastAPI configuration from JSON fixture values."""
-    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", **values}
-    converted: dict[str, Any] = {}
-    for key, value in values.items():
-        match key:
-            case "output":
-                converted[key] = root / value
-            case "primary_responses" if isinstance(value, list):
-                converted[key] = {
-                    _selector(selector): ResponseChoice(**choice) if isinstance(choice, dict) else choice
-                    for selector, choice in value
-                }
-            case "handler_modes" | "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
-                converted[key] = {_selector(selector): item for selector, item in value}
-            case _:
-                converted[key] = value
-    return FastAPIConfig(**converted)
 
 
 def _copied(name: str, root: Path) -> Path:
@@ -70,28 +33,33 @@ def _copied(name: str, root: Path) -> Path:
     return target
 
 
-def _setting(value: object, root: Path) -> str:
-    match value:
-        case tuple():
-            items = [_setting(item, root) for item in value]
-            return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
-        case Path():
-            return repr(PurePosixPath(value.relative_to(root if value.is_relative_to(root) else SOURCE).as_posix()))
-        case _:
-            return repr(value)
+def server_options(case: dict[str, Any], package: str = PACKAGE, models: str = "models") -> dict[str, Any]:
+    """Return the generate() options that select the FastAPI server of a case, with its own server settings."""
+    return {
+        "generate_server": "fastapi",
+        "server_package": package,
+        "server_model_package": models,
+        **case.get("config", {}),
+    }
 
 
-def _diagnostic(item: Diagnostic) -> str:
-    fields = (item.stage, item.option_path, item.source_pointer, item.artifact_path)
-    location = " ".join(str(field) for field in fields if field is not None)
-    return f"  {item.code} {location}: {item.message}"
+def in_directory(root: Path) -> AbstractContextManager[object]:
+    """Run from root, importing `contextlib.chdir` only then, since it needs Python 3.11."""
+    from contextlib import chdir
+
+    return chdir(root)
 
 
 def _render(
-    case: dict[str, Any], backend: str, root: Path, modules: Modules, *, builtin_sources: bool = False
+    case: dict[str, Any],
+    backend: str,
+    root: Path,
+    modules: Modules,
+    documents: Modules,
+    *,
+    builtin_sources: bool = False,
 ) -> list[str]:
     model = {
-        "output": root / "models.py",
         "input_file_type": "openapi",
         "target_python_version": "3.11",
         "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
@@ -110,49 +78,46 @@ def _render(
     for name in case.get("files", ()):
         shutil.copy2(SOURCE / name, root / name)
     try:
-        project = render_fastapi(
-            source, model_config=GenerateConfig(**model), config=fastapi_config(case.get("config", {}), root)
-        )
-    except APIGenerationError as error:
-        return [f"  Error: {error}", *(_diagnostic(item) for item in error.diagnostics)]
+        with in_directory(root):
+            files = generate(source, **model, **server_options(case))
     except Error as error:
         return [f"  Error: {error}"]
-    encoding = case.get("model", {}).get("encoding", "utf-8")
     lines: list[str] = []
-    files: list[str] = []
-    for artifact in project.artifacts:
-        path, content = artifact.path.relative_to(root), artifact.content or b""
-        line = f"  {artifact.action} {path.as_posix()}"
-        match path.suffix, path.parts:
+    for parts, text in files.items():
+        line = f"  {'/'.join(parts)}"
+        match Path(*parts).suffix, parts:
             case _, parts if "_runtime" in parts:
-                source = RUNTIME.joinpath(*parts[parts.index("_runtime") + 1 :]).read_bytes()
-                copied = content.replace(b"\r\n", b"\n").endswith(source.replace(b"\r\n", b"\n"))
-                line += f" ({'copied' if copied else 'changed'} runtime)"
+                source = RUNTIME.joinpath(*parts[parts.index("_runtime") + 1 :]).read_text(encoding="utf-8")
+                line += f" ({'copied' if text.endswith(source) else 'changed'} runtime)"
                 if backend in case.get("runtime", ()):
-                    modules[parts] = content.decode(encoding)
+                    modules[parts] = text
             case ".py", parts:
                 if parts[0] != PACKAGE or backend in case.get(
                     "package_snapshots", case.get("backends", ["pydantic_v2.BaseModel"])
                 ):
-                    modules[parts] = content.decode(encoding)
-            case _ if path.name != MANIFEST:
-                files.append(f"  file {path.as_posix()}")
-                shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', content.decode()))
-                files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
+                    modules[parts] = text
+            case ".md", parts if backend in case.get("readme", ()):
+                documents[parts] = text
+            case _:
+                pass
         lines.append(line)
-    return [*lines, *files]
+    return lines
 
 
-def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False) -> tuple[str, dict[str, Modules]]:
-    """Render one fixture for each of its backends, returning a report and every backend's Python modules.
+def fastapi_render(
+    case_name: str, root: Path, *, builtin_sources: bool = False
+) -> tuple[str, dict[str, Modules], Modules]:
+    """Render one fixture for each of its backends, returning a report, every backend's Python modules, and READMEs.
 
-    The report is headed by the case's `expected` name, or its own. With builtin_sources, a custom template directory
+    The report lists every file a render returns. The READMEs, under their backend's directory, are those of the
+    backends the case's `readme` names. The report is headed by the case's `expected` name, or its own. With builtin_sources, a custom template directory
     holds a copy of the builtin server templates, so that every role renders from its Jinja source instead of its
     compiled renderer.
     """
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case.get('expected', case_name)}"]
     rendered: dict[str, Modules] = {}
+    documented: Modules = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
         with warnings.catch_warnings(record=True) as recorded:
@@ -163,50 +128,35 @@ def fastapi_render(case_name: str, root: Path, *, builtin_sources: bool = False)
                     backend,
                     root / (name := backend.replace(".", "_")),
                     modules := {},
+                    documents := {},
                     builtin_sources=builtin_sources,
                 )
             )
         lines.extend(f"  {item.category.__name__}: {item.message}" for item in recorded)
         if modules:
             rendered[name] = modules
-    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
-
-
-def fastapi_config_report(case_name: str, root: Path) -> str:
-    """Construct one FastAPI configuration and report every setting or the ordered diagnostics."""
-    case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
-    try:
-        config = fastapi_config(case, root)
-    except APIGenerationError as error:
-        return "\n".join((f"Error: {error}", *(_diagnostic(item).lstrip() for item in error.diagnostics))) + "\n"
-    return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
+        documented.update(((name, *parts), text) for parts, text in documents.items())
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered, documented
 
 
 def fastapi_api_report(root: Path) -> str:
-    """Resolve the entry points' annotations, render, generate twice, then generate over edited owned files.
-
-    The last step regenerates two packages in one process under the default warning action.
-    """
-    hints = {"input_": GenerationInput, "model_config": GenerateConfig, "config": FastAPIConfig}
-    lines = [
-        f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
-        for function, result in ((generate_fastapi, type(None)), (render_fastapi, GeneratedProject))
-    ]
+    """Generate a server through generate(): without an output, then twice into it, then over an edited file."""
     source = shutil.copy2(SOURCE / "pets.yaml", root / "api.yaml")
-    model = GenerateConfig(
-        output=root / "models.py",
-        input_file_type="openapi",
-        target_python_version="3.11",
-        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=DataModelType.PydanticV2BaseModel,
-        disable_timestamp=True,
-        formatters=[Formatter.BUILTIN],
-    )
-    config, other = fastapi_config({}, root), fastapi_config({"output": f"other/{PACKAGE}"}, root)
-    project = render_fastapi(source, model_config=model, config=config)
-    lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
+    options: dict[str, Any] = {
+        "input_file_type": "openapi",
+        "target_python_version": "3.11",
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType.PydanticV2BaseModel,
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+        "server_output": root / PACKAGE,
+        **server_options({}),
+    }
+    with in_directory(root):
+        returned = generate(source, **options)
+    lines = [f"returned without an output {sorted('/'.join(parts) for parts in returned)}"]
     for _ in range(2):
-        result = generate_fastapi(source, model_config=model, config=config)
+        result = generate(source, output=root / "models.py", **options)
         files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
         lines.append(f"generate returned {result}; files {files}")
     readme = root / PACKAGE / "README.md"
@@ -214,27 +164,8 @@ def fastapi_api_report(root: Path) -> str:
     readme.write_text("# edited\n", encoding="utf-8")
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
-        result = generate_fastapi(source, model_config=model, config=config)
-    lines.append(f"generate returned {result}; readme restored {readme.read_bytes() == original}")
-    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
-    for action in ("ignore", "error"):
-        readme.write_text("# edited\n", encoding="utf-8")
-        with warnings.catch_warnings(record=True) as recorded:
-            warnings.simplefilter(action, UserWarning)
-            try:
-                generate_fastapi(source, model_config=model, config=config)
-            except UserWarning as error:
-                lines.append(f"filter {action}: {type(error).__name__}: {error}")
-            else:
-                lines.append(f"filter {action}: {len(recorded)} warnings")
-        lines.append(f"filter {action}: readme restored {readme.read_bytes() == original}")
-    packages = [(model, config), (model.model_copy(update={"output": root / "other" / "models.py"}), other)]
-    generate_fastapi(source, model_config=packages[1][0], config=other)
-    for _, package in packages:
-        (package.output / "README.md").write_text("# edited\n", encoding="utf-8")
-    with warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter("default", UserWarning)
-        for package_model, package in packages:
-            generate_fastapi(source, model_config=package_model, config=package)
-    lines.extend(f"filter default: {item.category.__name__}: {item.message}" for item in recorded)
+        result = generate(source, output=root / "models.py", **options)
+    lines.append(
+        f"generate returned {result}; readme restored {readme.read_bytes() == original}; warnings {len(recorded)}"
+    )
     return "\n".join(lines).replace(root.as_posix(), "<root>") + "\n"
