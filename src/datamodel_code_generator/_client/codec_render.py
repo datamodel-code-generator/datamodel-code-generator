@@ -5,18 +5,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
+from datamodel_code_generator._client._compiled_templates import model_bindings as model_bindings_template
 from datamodel_code_generator._client.codec_plan import Choice, Class, Fixed, Items, Values
-from datamodel_code_generator._python_layout import Group, layout
+from datamodel_code_generator._client.facade import statement
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
+from datamodel_code_generator._target_render import call, display
 
 if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecKind, Shape
-    from datamodel_code_generator._python_layout import Doc
     from datamodel_code_generator._target_contract import TypeUseId
     from datamodel_code_generator._target_module import TypeNames
+    from datamodel_code_generator._target_templates import Role
 
-_WIDTH: Final = 120
 _CODECS: Final[dict[CodecKind, str]] = {
     "pydantic": "PydanticCodec",
     "pydantic_dataclass": "PydanticDataclassCodec",
@@ -52,6 +53,24 @@ class RenderedBindings:
     uses: tuple[UseAccessors, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class ModelEntry:
+    """The stdlib field map of one model: the model's type and its `Model` record."""
+
+    type: str
+    value: str
+
+
+@dataclass(frozen=True, slots=True)
+class Codec:
+    """The codec of one planned use: its name, its type, its constructor, and the docstring naming the use."""
+
+    name: str
+    annotation: str
+    value: str
+    description: str
+
+
 def _description(use: TypeUseId) -> str:
     owner = use.owner.use_site.pointer if isinstance(use.owner, OperationId) else use.owner.pointer
     selectors = "".join(f" {part}" for part in (use.location, use.name, use.status, use.media) if part)
@@ -64,100 +83,76 @@ class _Renderer:
         self.module = TargetModule(types, (*_NAMES, *(f"codec_{index}" for index in range(len(plan.uses)))), level=1)
         self.stdlib: set[str] = set()
 
-    def call(self, name: str, *values: Doc, **keywords: Doc) -> Group:
+    def call(self, name: str, *values: str, **keywords: str) -> str:
         self.stdlib.add(name)
-        return Group(
-            f"{name}(", (*(("", item) for item in values), *((f"{key}=", item) for key, item in keywords.items())), ")"
-        )
+        return call(name, (*values, *(f"{key}={item}" for key, item in keywords.items())))
 
-    def shape(self, shape: Shape) -> Doc:
+    def shape(self, shape: Shape) -> str:
         if isinstance(shape, Class):
             return self.module.hint(shape.type, static=False)
         if isinstance(shape, Items):
             return self.call("Items", self.shape(shape.item), *((repr(shape.kind),) if shape.kind != "list" else ()))
         if isinstance(shape, Fixed):
-            return self.call("Fixed", Group("(", tuple(("", self.shape(item)) for item in shape.items), ")", ","))
+            return self.call("Fixed", display(self.shape(item) for item in shape.items))
         if isinstance(shape, Values):
             return self.call("Values", self.shape(shape.value))
         if isinstance(shape, Choice):
-            kinds = Group(
-                "(",
-                tuple(("", Group("(", (("", repr(kind)), ("", self.shape(item))), ")")) for kind, item in shape.kinds),
-                ")",
-                ",",
-            )
-            tags = Group(
-                "(",
-                tuple(
-                    ("", Group("(", (("", repr(tag)), ("", self.module.symbol(symbol))), ")"))
-                    for tag, symbol in shape.tags
-                ),
-                ")",
-                ",",
-            )
+            kinds = display(f"({kind!r}, {self.shape(item)})" for kind, item in shape.kinds)
+            tags = display(f"({tag!r}, {self.module.symbol(symbol)})" for tag, symbol in shape.tags)
             return self.call("Choice", kinds, *((repr(shape.tag), tags) if shape.tag is not None else ()))
         return "None"
 
-    def render(self) -> RenderedBindings:
-        sections = []
+    def render(self, role: Role) -> RenderedBindings:
         codecs = sorted({_CODECS[use.kind] for use in self.plan.uses if use.kind != "stdlib"})
-        stdlib = any(use.kind == "stdlib" for use in self.plan.uses)
-        if stdlib:
+        models: list[ModelEntry] = []
+        annotation = ""
+        if any(use.kind == "stdlib" for use in self.plan.uses):
             self.stdlib.add("StdlibCodec")
             self.stdlib.add("Model")
-            entries = []
             for model in self.plan.models:
                 name = self.module.symbol(model.symbol)
-                fields = Group(
-                    "(",
-                    tuple(
-                        (
-                            "",
-                            self.call(
-                                "Field",
-                                repr(field.wire),
-                                repr(field.name),
-                                *((self.shape(field.shape),) if field.shape is not None else ()),
-                                **({"omit_none": "True"} if field.omit_none else {}),
-                            ),
-                        )
-                        for field in model.fields
-                    ),
-                    ")",
-                    ",",
+                fields = display(
+                    self.call(
+                        "Field",
+                        repr(field.wire),
+                        repr(field.name),
+                        *((self.shape(field.shape),) if field.shape is not None else ()),
+                        **({"omit_none": "True"} if field.omit_none else {}),
+                    )
+                    for field in model.fields
                 )
-                entries.append((f"{name}: ", self.call("Model", fields, *(("True",) if model.keyed else ()))))
-            prefix = f"MODELS: {self.module.name('typing', 'Final')}[dict[type, Model]] = "
-            sections.append(prefix + layout(Group("{", tuple(entries), "}"), 0, len(prefix), _WIDTH))
+                models.append(ModelEntry(name, self.call("Model", fields, *(("True",) if model.keyed else ()))))
+            annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]"
         accessors = []
+        entries = []
         for index, use in enumerate(self.plan.uses):
             codec = _CODECS[use.kind]
             static = self.module.hint(use.type)
-            arguments: tuple[tuple[str, Doc], ...] = (
-                (("", self.shape(use.shape)), ("", "MODELS"))
+            arguments = (
+                (self.shape(use.shape), "MODELS")
                 if use.kind == "stdlib"
-                else (("", self.module.hint(use.type, static=False)),)
+                else (self.module.hint(use.type, static=False),)
             )
-            call = Group(f"{codec}(", arguments, ")")
-            prefix = f"codec_{index}: {self.module.name('typing', 'Final')}[{codec}[{static}]] = "
-            sections.append(prefix + layout(call, 0, len(prefix), _WIDTH) + f'\n"""{_description(use.use)}"""')
+            final = self.module.name("typing", "Final")
+            entries.append(
+                Codec(f"codec_{index}", f"{final}[{codec}[{static}]]", call(codec, arguments), _description(use.use))
+            )
             accessors.append(UseAccessors(use.use, f"codec_{index}"))
-        imports = []
-        for module, names in (("native", codecs), ("stdlib", sorted(self.stdlib))):
-            if names:
-                imports.append(f"from .._runtime.model_codecs.{module} import {', '.join(names)}")
-        header = [
-            '"""Native model codecs of this generated package; regenerate them instead of editing."""',
-            "",
-            "from __future__ import annotations",
-            "",
-            self.module.imports(),
-            "",
-            *imports,
+        imports = [
+            statement(f".._runtime.model_codecs.{module}", names)
+            for module, names in (("native", codecs), ("stdlib", sorted(self.stdlib)))
+            if names
         ]
-        return RenderedBindings("\n".join(header) + "\n\n\n" + "\n\n".join(sections) + "\n", tuple(accessors))
+        source = role("model_bindings.jinja2", model_bindings_template.render)(
+            imports=self.module.imports(),
+            codec_imports=imports,
+            models_annotation=annotation,
+            models=models,
+            codecs=entries,
+        )
+        return RenderedBindings(source, tuple(accessors))
 
 
-def render_model_bindings(plan: ClientCodecs, types: TypeNames) -> RenderedBindings:
-    """Render one native codec per selected use and the stdlib models its conversions reach."""
-    return _Renderer(plan, types).render()
+def render_model_bindings(plan: ClientCodecs, types: TypeNames, role: Role) -> RenderedBindings:
+    """Render one native codec per selected use and the stdlib models its conversions reach, through the role."""
+    return _Renderer(plan, types).render(role)

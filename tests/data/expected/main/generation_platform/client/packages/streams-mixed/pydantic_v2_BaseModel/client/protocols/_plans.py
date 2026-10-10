@@ -19,7 +19,9 @@ from .._runtime.protocols.streams import EventPlan
 from ..types.notes import ListNotesResponse
 
 
-def _items_0(data: ListNotesResponse) -> Sequence[models.Note] | None:
+def _items_0(
+    data: ListNotesResponse,
+) -> Sequence[models.Note] | None:
     """Return the items of one page of notes.all."""
     return data.data
 
@@ -30,12 +32,7 @@ PLAN_0: Final[PaginationPlan[models.Note, ListNotesResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next_cursor'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_null=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_null=True, empty_string_ends=True),
     fingerprint='1735e7dd8ce25219d536f4ec4926b642d13cbf19eb2b62b05b5af4d08a2327f8',
 )
 

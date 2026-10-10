@@ -28,8 +28,82 @@ from ..types.statuses import ListStatusesResponse
 from ..types.users import ListUsersResponse, SearchUsersResponse
 
 
-def _items_0(data: ListUsersResponse) -> Sequence[models.User] | None:
+def _items_0(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
     """Return the items of one page of users.all."""
+    return data['data']
+
+
+def _items_1(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.by_header."""
+    return data['data']
+
+
+def _items_2(
+    data: SearchUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.search."""
+    return data['data']
+
+
+def _items_3(
+    data: ListLooseResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of loose.all."""
+    return data.get('data')
+
+
+def _items_4(
+    data: ListLooseResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of loose.tokens."""
+    return data.get('data')
+
+
+def _items_5(
+    data: ListNestedResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of nested.all."""
+    if (value_0 := data.get('result')) is None:
+        return None
+    return value_0.get('items')
+
+
+def _items_6(
+    data: ListLabelsResponse,
+) -> Sequence[models.Label] | None:
+    """Return the items of one page of labels.all."""
+    return data
+
+
+def _items_7(
+    data: ListLabelSetsResponse,
+) -> Sequence[models.Label] | None:
+    """Return the items of one page of labels.sets."""
+    return data
+
+
+def _items_8(
+    data: ListArchiveResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of archive.all."""
+    return data['data']
+
+
+def _items_9(
+    data: ListStatusesResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of statuses.all."""
+    return data['data']
+
+
+def _items_10(
+    data: ListSecureUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of secure.users."""
     return data['data']
 
 
@@ -39,19 +113,9 @@ PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next_cursor'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_missing=True,
-        end_null=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True),
     fingerprint='8d857b9018e63736ee2aace94bcded78bd536adf930e34b126bd95c646a9615e',
 )
-
-
-def _items_1(data: ListUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.by_header."""
-    return data['data']
 
 
 PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
@@ -60,20 +124,9 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=HeaderSelector(name='x-next'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_missing=True,
-        end_values=('done',),
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=HeaderSelector(name='x-next'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_values=('done',), empty_string_ends=True),
     fingerprint='afe3ebea71e9fa2cf3786359a88b01de0d8f8944c0c10581e9ccd70e7265de34',
 )
-
-
-def _items_2(data: SearchUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.search."""
-    return data['data']
 
 
 PLAN_2: Final[PaginationPlan[models.User, SearchUsersResponse]] = PaginationPlan(
@@ -82,20 +135,9 @@ PLAN_2: Final[PaginationPlan[models.User, SearchUsersResponse]] = PaginationPlan
     call=_operations.OPERATION_1,
     items=_items_2,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next_cursor'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_missing=True,
-        end_null=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
     fingerprint='fe9b859af6a669c66eebc8c5040627fbbcf109ce7e35f847ca87a6e32961f493',
 )
-
-
-def _items_3(data: ListLooseResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of loose.all."""
-    return data.get('data')
 
 
 PLAN_3: Final[PaginationPlan[models.User, ListLooseResponse]] = PaginationPlan(
@@ -104,18 +146,9 @@ PLAN_3: Final[PaginationPlan[models.User, ListLooseResponse]] = PaginationPlan(
     call=_operations.OPERATION_2,
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_null=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='query', name='cursor'), end_null=True),
     fingerprint='9bc1e1d431e2759d5d1c11759462fbbeb13a151b4238887a8d764ed98caace19',
 )
-
-
-def _items_4(data: ListLooseResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of loose.tokens."""
-    return data.get('data')
 
 
 PLAN_4: Final[PaginationPlan[models.User, ListLooseResponse]] = PaginationPlan(
@@ -124,21 +157,9 @@ PLAN_4: Final[PaginationPlan[models.User, ListLooseResponse]] = PaginationPlan(
     call=_operations.OPERATION_2,
     items=_items_4,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/token'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/token'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, empty_string_ends=True),
     fingerprint='8cf42fb0fdfbbb78bac52aed3cb2b3a7ab6c128982e50ba9c0c52f7626a5553d',
 )
-
-
-def _items_5(data: ListNestedResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of nested.all."""
-    if (value_0 := data.get('result')) is None:
-        return None
-    return value_0.get('items')
 
 
 PLAN_5: Final[PaginationPlan[models.User, ListNestedResponse]] = PaginationPlan(
@@ -147,19 +168,9 @@ PLAN_5: Final[PaginationPlan[models.User, ListNestedResponse]] = PaginationPlan(
     call=_operations.OPERATION_3,
     items=_items_5,
     items_selector=BodySelector(pointer='/result/items'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/result/next'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/result/next'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, empty_string_ends=True),
     fingerprint='5a2ee2332ef18f4d61c46fe48e51cc6c04891a3029bab2595577c3e23bd629d7',
 )
-
-
-def _items_6(data: ListLabelsResponse) -> Sequence[models.Label] | None:
-    """Return the items of one page of labels.all."""
-    return data
 
 
 PLAN_6: Final[PaginationPlan[models.Label, ListLabelsResponse]] = PaginationPlan(
@@ -168,19 +179,9 @@ PLAN_6: Final[PaginationPlan[models.Label, ListLabelsResponse]] = PaginationPlan
     call=_operations.OPERATION_4,
     items=_items_6,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(
-        read=HeaderSelector(name='X-Next'),
-        write=ParameterTarget(location='query', name='after'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=HeaderSelector(name='X-Next'), write=ParameterTarget(location='query', name='after'), end_missing=True, empty_string_ends=True),
     fingerprint='beb6712324ce921e1529a88581afaceeefdd07930ad261200fc8c7b2da6f3400',
 )
-
-
-def _items_7(data: ListLabelSetsResponse) -> Sequence[models.Label] | None:
-    """Return the items of one page of labels.sets."""
-    return data
 
 
 PLAN_7: Final[PaginationPlan[models.Label, ListLabelSetsResponse]] = PaginationPlan(
@@ -189,19 +190,9 @@ PLAN_7: Final[PaginationPlan[models.Label, ListLabelSetsResponse]] = PaginationP
     call=_operations.OPERATION_5,
     items=_items_7,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(
-        read=HeaderSelector(name='X-Next'),
-        write=ParameterTarget(location='query', name='after'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=HeaderSelector(name='X-Next'), write=ParameterTarget(location='query', name='after'), end_missing=True, empty_string_ends=True),
     fingerprint='81775f33dd31fbc1458031f53d8bdb849615bccaf39d1c3033e6b7d2431028fb',
 )
-
-
-def _items_8(data: ListArchiveResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of archive.all."""
-    return data['data']
 
 
 PLAN_8: Final[PaginationPlan[models.User, ListArchiveResponse]] = PaginationPlan(
@@ -210,20 +201,9 @@ PLAN_8: Final[PaginationPlan[models.User, ListArchiveResponse]] = PaginationPlan
     call=_operations.OPERATION_6,
     items=_items_8,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next_cursor'),
-        write=ParameterTarget(location='path', name='cursor'),
-        end_missing=True,
-        end_null=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='path', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
     fingerprint='08757f453b11cc65ca0a95fbd12e60f18016dfa8d80845cedfa8951dbdf52964',
 )
-
-
-def _items_9(data: ListStatusesResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of statuses.all."""
-    return data['data']
 
 
 PLAN_9: Final[PaginationPlan[models.User, ListStatusesResponse]] = PaginationPlan(
@@ -232,19 +212,9 @@ PLAN_9: Final[PaginationPlan[models.User, ListStatusesResponse]] = PaginationPla
     call=_operations.OPERATION_7,
     items=_items_9,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=StatusSelector(),
-        write=ParameterTarget(location='query', name='code'),
-        end_values=(200,),
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=StatusSelector(), write=ParameterTarget(location='query', name='code'), end_values=(200,), empty_string_ends=True),
     fingerprint='1a10dc83fd0fc33232a4e4ff717aaf459fa77dcda6bd1b08f4f6721d361226b6',
 )
-
-
-def _items_10(data: ListSecureUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of secure.users."""
-    return data['data']
 
 
 PLAN_10: Final[PaginationPlan[models.User, ListSecureUsersResponse]] = PaginationPlan(
@@ -253,12 +223,6 @@ PLAN_10: Final[PaginationPlan[models.User, ListSecureUsersResponse]] = Paginatio
     call=_operations.OPERATION_8,
     items=_items_10,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next_cursor'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_missing=True,
-        end_null=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
     fingerprint='4ce92f21977dbb9b55ca16404f934de694c73584d32ed54ebb03d33323b7855e',
 )

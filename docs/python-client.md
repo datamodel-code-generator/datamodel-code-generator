@@ -3041,11 +3041,13 @@ The client templates come from [`--custom-template-dir`](cli-reference/template-
 as model templates do: the files of its `client` directory replace the builtin roles of the same name:
 `facade.jinja2` (the package initializers and the public modules `options`, `errors`, `responses`, `auth`, `bodies`,
 `model_codecs`, and `protocols`, and the webhook packages' initializers and `webhooks/keys.py`), `client.jinja2` (`_client.py` and `_async_client.py`), `resource.jinja2` (each
-resource's `_sync.py` and `_async.py`), `types.jinja2` (each resource's `types/<resource>/_operations.py`, and the
-helper and webhook modules), `arguments.jinja2` (`_generated/client_arguments.py`), `operations.jinja2`
-(`_operations.py`), `security.jinja2` (`_generated/security.py`), `readme.jinja2`, and `runtime.jinja2` (the runtime
-reference). A role the directory does not hold, or a custom template directory without a `client` directory, keeps
-its builtin template. The builtin templates are in the `_client/templates` directory of the installed package; copy
+resource's `_sync.py` and `_async.py`), `types.jinja2` (each resource's `types/<resource>/_operations.py`),
+`arguments.jinja2` (`_generated/client_arguments.py`), `operations.jinja2` (`_operations.py`), `security.jinja2`
+(`_generated/security.py`), `model_bindings.jinja2` (`_generated/model_bindings.py`), `helper_plans.jinja2`
+(`protocols/_plans.py`), `helpers.jinja2` (`protocols/_helpers.py` and `protocols/_async_helpers.py`),
+`webhook.jinja2` (each webhook helper's module), `readme.jinja2`, and `runtime.jinja2` (the runtime reference). A
+role the directory does not hold, or a custom template directory without a `client` directory, keeps its builtin
+template. The builtin templates are in the `_client/templates` directory of the installed package; copy
 one to start from it. Each role receives the values its builtin template uses and, as custom model templates do, the
 `#all#` entry of [`--extra-template-data`](cli-reference/template-customization.md#extra-template-data); the role's
 own values take precedence over the extra data.
@@ -3062,12 +3064,16 @@ which the builtin template does not use, is the module's dotted path in the pack
 | `arguments.jinja2` | `docstring`, `imports`, `records`, `keywords` |
 | `client.jinja2` | `asynchronous`, `docstring`, `imports`, `type_checking`, `lazy_imports`, `defaults`, `name`, `class_docstring`, `core`, `view_keywords`, `client_keywords`, `credentials`, `create`, `scheme_credentials`, `unset`, `request_options`, `cached_property`, `raw`, `binary`, `manager`, `self_type`, `traceback`, `add_secondary`, `resources`, `protocols`, `protocols_module`, `helper_settings` |
 | `facade.jinja2` | `module`, `docstring`, `future`, `imports`, `checking`, `classes`, `exports`, `lazy`, `loader`, `listing` |
+| `helper_plans.jinja2` | `docstring`, `imports`, `accessors`, `plans` |
+| `helpers.jinja2` | `asynchronous`, `docstring`, `imports`, `core`, `cached_property`, `namespaces`, `helpers` |
+| `model_bindings.jinja2` | `imports`, `codec_imports`, `models_annotation`, `models`, `codecs` |
 | `operations.jinja2` | `docstring`, `imports`, `servers`, `operations` |
 | `readme.jinja2` | `package`, `public_modules`, `reference`, `signature_style`, `body_arguments`, `backend`, `model_package`, `operations`, `contracts`, `helpers`, `stream_label`, `resumes`, `sockets`, `kinds`, `compression`, `dependencies`, `security`, `capabilities`, `runtime` |
 | `resource.jinja2` | `docstring`, `imports`, `core`, `cached_property`, `overload_decorator`, `views` |
 | `runtime.jinja2` | `package`, `oauth`, `schemes`, `security`, `raw_bytes`, `multipart_requests`, `credentials`, `example`, `flows`, `pagination`, `polling`, `cache`, `uploads`, `streams`, `sockets`, `compression` |
 | `security.jinja2` | `docstring`, `imports`, `schemes`, `root_annotation`, `root`, `operations` |
-| `types.jinja2` | `docstring`, `imports`, `type_alias`, `overload_decorator`, `aliases`, `sections` |
+| `types.jinja2` | `docstring`, `imports`, `type_alias`, `overload_decorator`, `aliases` |
+| `webhook.jinja2` | `kind`, `name`, `algorithm`, `timestamp`, `imports`, `exports`, `typevar`, `plan`, `functions` |
 
 `resource.jinja2` receives one view for each class of a resource module, with its cached `attributes` and its
 `methods`. A method has its `name`, `view` (`plain`, `metadata`, `raw`, or `streaming`), whether it is a
@@ -3075,8 +3081,20 @@ which the builtin template does not use, is the module's dotted path in the pack
 `annotation`, `default`) or the TypedDict it `unpacked`, and its `returns`, the keywords record it `check`s an
 unpacked call with, and its `call` of the client core: the `operation`, the `parameters` tuple, and the keyword
 `arguments`. The plan constants of `operations.jinja2`, `security.jinja2`, and `arguments.jinja2` have a `name`, an
-`annotation`, a `constructor`, and `arguments`, each with a `keyword`, empty for a positional one, and a `value`.
-`types.jinja2` receives the finished definitions of the helper and webhook modules as `sections`. A builtin template
+`annotation`, a `constructor`, and `arguments`, each with a `keyword`, empty for a positional one, and a `value`; so
+do the `plans` of `helper_plans.jinja2` and the `plan` of `webhook.jinja2`. `helper_plans.jinja2` also receives the
+typed `accessors` the plans read items and results with: each has a `name`, the `data` type it reads, the type it
+`returns`, its `docstring`, the `checks` that end its read early (the `value` local, the `read` it keeps, whether it
+ends at `none`, and the `unset` type it ends at, when there is one), and its `result`. `helpers.jinja2` receives the
+helper `namespaces`, each with its `name`, `docstring`, the `core` it takes, the core it `wrap`s that in at the root,
+and its `children`, and the `helpers`, each with its `name`, `docstring`, `methods`, and the `handle` class a polling
+helper with remote cancellation returns. A helper method, like a function of `webhook.jinja2`, has its `name`, whether
+it is a `coroutine`, its `positional` parameters and the `keywords` after `*`, what it `returns`, its `docstring`
+(empty for a webhook function, whose builtin template writes its own), and the runtime `function` it returns the call
+of with its `arguments`. `webhook.jinja2` receives the signature `kind`
+(`none`, `adapter`, or `builtin`), the helper's `name` and its signature's `algorithm`, and whether deliveries carry a
+`timestamp`; `model_bindings.jinja2` receives the stdlib field maps as `models`, each with its `type` and `value`, and
+the `codecs`, each with its `name`, `annotation`, `value`, and `description`. A builtin template
 writes each parameter, argument, export, and plan keyword on its own line, and leaves the type annotations and plan
 values on one line for the formatter.
 
@@ -3625,10 +3643,17 @@ def verify(
 ) -> VerifiedWebhook[models.Message]:
     """Verify a delivery and decode its event.
 
-    Deliveries outside the timestamp window are rejected. Verification retains no
-    delivery state; deduplicate in your application using delivery_id when present.
+    Deliveries outside the timestamp window are rejected.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        headers,
+        keys,
+        now=now,
+        options=options,
+    )
 ```
 
 <!-- fmt: on -->

@@ -3,8 +3,8 @@
 
 """Verify the deliveries of one webhook helper with the caller's verifier, then decode their events.
 
-The helper is adapted.plain, whose deliveries are verified by the Verifier the caller
-passes, which must authenticate the whole raw body and every fact it returns.
+The helper is adapted.plain, whose deliveries are verified by the Verifier the caller passes,
+which must authenticate the whole raw body and every fact it returns.
 """
 
 from __future__ import annotations
@@ -25,7 +25,10 @@ from ..._runtime.protocols.webhooks import (
     WebhookOptions,
 )
 
-__all__ = ["verify", "verify_async"]
+__all__ = [
+    'verify',
+    'verify_async',
+]
 
 
 K = TypeVar("K")
@@ -50,12 +53,11 @@ def verify(
 ) -> VerifiedWebhook[models.Message]:
     """Verify a delivery with verifier and decode its event.
 
-    The verifier is called once, synchronously in both functions, and must authenticate
-    the whole raw body and every fact it returns; a result that is not a
-    VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises ConfigurationError before decoding.
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    The verifier is called once, synchronously in both functions,
+    and must authenticate the whole raw body and every fact it returns;
+    a result that is not a VerifiedSignature, lacks a fact this helper requires, returns one it does not declare,
+    or has a naive timestamp raises ConfigurationError before decoding.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return verify_adapted(
         _PLAN,
@@ -79,12 +81,11 @@ async def verify_async(
 ) -> VerifiedWebhook[models.Message]:
     """Verify a delivery with verifier and decode its event.
 
-    The verifier is called once, synchronously in both functions, and must authenticate
-    the whole raw body and every fact it returns; a result that is not a
-    VerifiedSignature, lacks a fact this helper requires, returns one it does not
-    declare, or has a naive timestamp raises ConfigurationError before decoding.
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    The verifier is called once, synchronously in both functions,
+    and must authenticate the whole raw body and every fact it returns;
+    a result that is not a VerifiedSignature, lacks a fact this helper requires, returns one it does not declare,
+    or has a naive timestamp raises ConfigurationError before decoding.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_adapted(
         _PLAN,

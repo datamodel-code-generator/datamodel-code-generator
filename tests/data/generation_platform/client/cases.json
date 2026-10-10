@@ -5134,6 +5134,72 @@
       }
     }
   },
+  "templates-helpers": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.json",
+      "templates/custom/client/helper_plans.jinja2",
+      "templates/custom/client/helpers.jinja2",
+      "templates/custom/client/model_bindings.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it."
+        }
+      }
+    }
+  },
+  "templates-webhooks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhooks.json",
+      "templates/custom/client/webhook.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/webhooks.json"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom"
+    }
+  },
   "templates-missing": {
     "input": "pets.yaml",
     "modules": [

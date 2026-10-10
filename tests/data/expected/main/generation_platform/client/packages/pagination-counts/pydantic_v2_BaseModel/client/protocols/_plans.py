@@ -25,8 +25,66 @@ from ..types.searches import SearchResponse
 from ..types.users import ListUsersResponse
 
 
-def _items_0(data: ListUsersResponse) -> Sequence[models.User] | None:
+def _items_0(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
     """Return the items of one page of users.offsets."""
+    return data.data
+
+
+def _items_1(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.items."""
+    return data.data
+
+
+def _items_2(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.loose."""
+    return data.data
+
+
+def _items_3(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.pages."""
+    return data.data
+
+
+def _items_4(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.counted."""
+    return data.data
+
+
+def _items_5(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.by_header."""
+    return data.data
+
+
+def _items_6(
+    data: SearchResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of searches.all."""
+    return data.data
+
+
+def _items_7(
+    data: FindResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of finds.all."""
+    return data.data
+
+
+def _items_8(
+    data: ListUsersResponse,
+) -> Sequence[models.User] | None:
+    """Return the items of one page of users.positions."""
     return data.data
 
 
@@ -36,23 +94,10 @@ PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='offset',
-        write=ParameterTarget(location='query', name='offset'),
-        first=0,
-        step=2,
-        has_more=BodySelector(pointer='/has_more'),
-    ),
+    continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=2, has_more=BodySelector(pointer='/has_more')),
     fingerprint='f0004336a003a2ec1a1954001fc89c99307fd01060b05b38d3db8f66d94fcc80',
-    bindings=(
-        PageBinding(target=ParameterTarget(location='query', name='limit'), literal=2),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='query', name='limit'), literal=2),),
 )
-
-
-def _items_1(data: ListUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.items."""
-    return data.data
 
 
 PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
@@ -61,20 +106,9 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='offset',
-        write=ParameterTarget(location='query', name='offset'),
-        first=0,
-        step=None,
-        total=BodySelector(pointer='/total'),
-    ),
+    continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=None, total=BodySelector(pointer='/total')),
     fingerprint='056431aa7e995baad5010c277a4336c7a9db5df7015e741debae55f6d3752509',
 )
-
-
-def _items_2(data: ListUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.loose."""
-    return data.data
 
 
 PLAN_2: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
@@ -83,20 +117,9 @@ PLAN_2: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_2,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='offset',
-        write=ParameterTarget(location='query', name='offset'),
-        first=10,
-        step=None,
-        has_more=BodySelector(pointer='/more'),
-    ),
+    continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=10, step=None, has_more=BodySelector(pointer='/more')),
     fingerprint='618eaf0d0cdd0137f5e4729a2d8a1df3d1b5d2ed14cedba9b89fcfe43ab6c234',
 )
-
-
-def _items_3(data: ListUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.pages."""
-    return data.data
 
 
 PLAN_3: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
@@ -105,20 +128,9 @@ PLAN_3: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='page',
-        write=ParameterTarget(location='query', name='page'),
-        first=1,
-        step=1,
-        total=HeaderSelector(name='x-total-count'),
-    ),
+    continuation=CountPlan(kind='page', write=ParameterTarget(location='query', name='page'), first=1, step=1, total=HeaderSelector(name='x-total-count')),
     fingerprint='13b47d7fd4c8778e9e635557c1e02495c8c4e15cf06b7cd0f9594fc32daa775a',
 )
-
-
-def _items_4(data: ListUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.counted."""
-    return data.data
 
 
 PLAN_4: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
@@ -127,20 +139,9 @@ PLAN_4: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_4,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='page',
-        write=ParameterTarget(location='query', name='page'),
-        first=1,
-        step=2,
-        total=BodySelector(pointer='/count'),
-    ),
+    continuation=CountPlan(kind='page', write=ParameterTarget(location='query', name='page'), first=1, step=2, total=BodySelector(pointer='/count')),
     fingerprint='4bc7e859709c11998f4757b1ebf45ddd6c8c8db01f4ea8219649dd78c140c654',
 )
-
-
-def _items_5(data: ListUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.by_header."""
-    return data.data
 
 
 PLAN_5: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
@@ -149,20 +150,9 @@ PLAN_5: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_5,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='page',
-        write=ParameterTarget(location='header', name='X-Page'),
-        first=0,
-        step=1,
-        has_more=HeaderSelector(name='X-Has-More'),
-    ),
+    continuation=CountPlan(kind='page', write=ParameterTarget(location='header', name='X-Page'), first=0, step=1, has_more=HeaderSelector(name='X-Has-More')),
     fingerprint='97f6000f6939129be6f2cff8f6d59e33018b99fd1ca04699d1347f4fb547bccd',
 )
-
-
-def _items_6(data: SearchResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of searches.all."""
-    return data.data
 
 
 PLAN_6: Final[PaginationPlan[models.User, SearchResponse]] = PaginationPlan(
@@ -171,20 +161,9 @@ PLAN_6: Final[PaginationPlan[models.User, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_2,
     items=_items_6,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='offset',
-        write=BodyTarget(pointer='/window/start'),
-        first=0,
-        step=10,
-        total=BodySelector(pointer='/total'),
-    ),
+    continuation=CountPlan(kind='offset', write=BodyTarget(pointer='/window/start'), first=0, step=10, total=BodySelector(pointer='/total')),
     fingerprint='8bb0a276dc5b30ce960896be6e1569c02901040cbc53dd93744f560197267b8e',
 )
-
-
-def _items_7(data: FindResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of finds.all."""
-    return data.data
 
 
 PLAN_7: Final[PaginationPlan[models.User, FindResponse]] = PaginationPlan(
@@ -193,20 +172,9 @@ PLAN_7: Final[PaginationPlan[models.User, FindResponse]] = PaginationPlan(
     call=_operations.OPERATION_3,
     items=_items_7,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='offset',
-        write=QuerystringTarget(name='criteria', pointer='/start'),
-        first=0,
-        step=5,
-        has_more=BodySelector(pointer='/has_more'),
-    ),
+    continuation=CountPlan(kind='offset', write=QuerystringTarget(name='criteria', pointer='/start'), first=0, step=5, has_more=BodySelector(pointer='/has_more')),
     fingerprint='bdcecf9126772404d0820e82e2b2c6576ccecb9927b6afc791f2636dfe74d365',
 )
-
-
-def _items_8(data: ListUsersResponse) -> Sequence[models.User] | None:
-    """Return the items of one page of users.positions."""
-    return data.data
 
 
 PLAN_8: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
@@ -215,12 +183,6 @@ PLAN_8: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_8,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='offset',
-        write=ParameterTarget(location='query', name='position'),
-        first=0,
-        step=1,
-        has_more=BodySelector(pointer='/has_more'),
-    ),
+    continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='position'), first=0, step=1, has_more=BodySelector(pointer='/has_more')),
     fingerprint='7705295a6a60f5885e8ac85ce688bf80b9016999b2f51d36d9af28cc4e5f5de7',
 )

@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._python_layout import Doc, Group
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
@@ -61,9 +59,15 @@ class Plan:
     arguments: tuple[Keyword, ...]
 
 
-def items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:
-    """Return group items without prefixes."""
-    return tuple(("", value) for value in values)
+def display(values: Iterable[str]) -> str:
+    """Return the tuple display of expressions, with the comma a lone item needs."""
+    items = tuple(values)
+    return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
+
+
+def call(head: str, arguments: Iterable[str]) -> str:
+    """Return a call of `head` with its arguments, each already spelled with its keyword when it has one."""
+    return f"{head}({', '.join(arguments)})"
 
 
 def runtime_sources(modules: Iterable[str]) -> Iterator[tuple[PurePosixPath, str]]:
@@ -83,21 +87,19 @@ def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
     return f"{local('_runtime.model_codecs.media', 'FieldPlan')}({field.name!r}, {field.kind!r}{repeated})"
 
 
-def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> Group:
+def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> str:
     """Return the plan constructor of one parameter or header, naming it through `local`."""
-    entries: list[tuple[str, Doc]] = [("location=", repr(plan.location)), ("name=", repr(plan.name))]
+    entries = [f"location={plan.location!r}", f"name={plan.name!r}"]
     entries.extend(
-        (f"{name}=", repr(value))
-        for name, default in _PLAN_DEFAULTS.items()
-        if (value := getattr(plan, name)) != default
+        f"{name}={value!r}" for name, default in _PLAN_DEFAULTS.items() if (value := getattr(plan, name)) != default
     )
     if plan.fields:
-        entries.append(("fields=", Group("(", items(field_plan(local, item) for item in plan.fields), ")", ",")))
+        entries.append(f"fields={display(field_plan(local, item) for item in plan.fields)}")
     if plan.additional is not None:
-        entries.append(("additional=", field_plan(local, plan.additional)))
+        entries.append(f"additional={field_plan(local, plan.additional)}")
     if plan.reserved_names:
-        entries.append(("reserved_names=", repr(plan.reserved_names)))
-    return Group(f"{local('_runtime.model_codecs.parameters', type(plan).__name__)}(", tuple(entries), ")")
+        entries.append(f"reserved_names={plan.reserved_names!r}")
+    return call(local("_runtime.model_codecs.parameters", type(plan).__name__), entries)
 
 
 def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:

@@ -135,6 +135,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "compression",
         "docstrings",
         "templates",
+        "templates-helpers",
+        "templates-webhooks",
         "templates-invalid",
         "templates-not-found",
         "api-scope-required",

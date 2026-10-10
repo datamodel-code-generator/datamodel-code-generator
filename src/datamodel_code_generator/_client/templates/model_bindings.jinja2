@@ -1,0 +1,24 @@
+"""Native model codecs of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+{%- if imports %}
+
+{{ imports }}
+{% for statement in codec_imports %}
+{{ statement }}
+{%- endfor %}
+{% endif %}
+{%- if models %}
+
+
+MODELS: {{ models_annotation }} = {
+{%- for model in models %}
+    {{ model.type }}: {{ model.value }},
+{%- endfor %}
+}
+{%- endif %}
+{%- for codec in codecs %}
+
+{{ codec.name }}: {{ codec.annotation }} = {{ codec.value }}
+"""{{ codec.description }}"""
+{%- endfor %}

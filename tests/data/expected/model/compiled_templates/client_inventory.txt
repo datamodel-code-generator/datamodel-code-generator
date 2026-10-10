@@ -1,13 +1,17 @@
-template count: 9
+template count: 13
 arguments.jinja2
 client.jinja2
 facade.jinja2
+helper_plans.jinja2
+helpers.jinja2
+model_bindings.jinja2
 operations.jinja2
 readme.jinja2
 resource.jinja2
 runtime.jinja2
 security.jinja2
 types.jinja2
+webhook.jinja2
 
 nodes: And, Call, Compare, Const, Filter, For, Getattr, If, Macro, Name, Not, Operand, Output, Template, TemplateData
 filters: repr
@@ -16,7 +20,7 @@ globals:
 loop_attributes: last
 assignments:
 for_targets: Name
-macros: accessor(headers, name, returns, stub); defaults=0; caller=False; kwargs=False; varargs=False, call(method); defaults=0; caller=False; kwargs=False; varargs=False, constant(plan); defaults=0; caller=False; kwargs=False; varargs=False, signature(method, variant, stub); defaults=0; caller=False; kwargs=False; varargs=False
+macros: accessor(headers, name, returns, stub); defaults=0; caller=False; kwargs=False; varargs=False, call(function); defaults=0; caller=False; kwargs=False; varargs=False, call(method); defaults=0; caller=False; kwargs=False; varargs=False, constant(plan); defaults=0; caller=False; kwargs=False; varargs=False, signature(function); defaults=0; caller=False; kwargs=False; varargs=False, signature(method); defaults=0; caller=False; kwargs=False; varargs=False, signature(method, variant, stub); defaults=0; caller=False; kwargs=False; varargs=False
 includes:
 imports_and_inheritance:
 undefined_usage:

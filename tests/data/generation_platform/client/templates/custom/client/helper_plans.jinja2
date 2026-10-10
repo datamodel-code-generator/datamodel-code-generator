@@ -1,0 +1,44 @@
+{%- macro constant(plan) -%}
+{{ plan.name }}: {{ plan.annotation }} = {{ plan.constructor }}(
+{%- for argument in plan.arguments %}
+    {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+)
+{%- endmacro -%}
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+{%- for accessor in accessors %}
+
+
+def {{ accessor.name }}(
+    data: {{ accessor.data }},
+) -> {{ accessor.returns }}:
+    """{{ accessor.docstring }}"""
+{%- for check in accessor.checks %}
+{%- if check.unset and check.none %}
+    if ({{ check.value }} := {{ check.read }}) is None or isinstance({{ check.value }}, {{ check.unset }}):
+{%- elif check.unset %}
+    if isinstance({{ check.value }} := {{ check.read }}, {{ check.unset }}):
+{%- else %}
+    if ({{ check.value }} := {{ check.read }}) is None:
+{%- endif %}
+        return None
+{%- endfor %}
+    return {{ accessor.result }}
+{%- endfor %}
+{%- for plan in plans %}
+
+
+{{ constant(plan) }}
+{%- endfor %}
+
+
+
+PLANS = (
+{%- for plan in plans %}
+    {{ plan.name }},
+{%- endfor %}
+)

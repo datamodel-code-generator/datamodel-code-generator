@@ -26,7 +26,6 @@ from datamodel_code_generator._fastapi.plan import (
     json_value,
 )
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
-from datamodel_code_generator._python_layout import flat
 from datamodel_code_generator._runtime.model_codecs.media import charset, media_kind
 from datamodel_code_generator._target_contract import (
     BuiltinType,
@@ -1112,7 +1111,7 @@ def _parameter_arguments(module: Module, adapters: list[Argument]) -> str:
         parameter = argument.parameter
         assert parameter is not None
         assert parameter.plan is not None
-        entries = [f"name={argument.name!r}", f"plan={flat(parameter_plan(module.local, parameter.plan))}"]
+        entries = [f"name={argument.name!r}", f"plan={parameter_plan(module.local, parameter.plan)}"]
         if parameter.type is not None:
             entries.append(f"adapter={_adapter(module, parameter.type)}")
         if (value := _default_value(module, parameter.default)) is not None:
