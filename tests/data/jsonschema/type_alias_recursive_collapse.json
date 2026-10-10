@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Document",
+  "type": "object",
+  "properties": {
+    "ring": {"$ref": "#/$defs/Ring"},
+    "pairs": {"$ref": "#/$defs/Pairs"}
+  },
+  "$defs": {
+    "Graph": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "array", "items": {"$ref": "#/$defs/Graph"}},
+        {"$ref": "#/$defs/Ring"},
+        {"type": "array", "items": {"$ref": "#/$defs/Ring"}}
+      ]
+    },
+    "Ring": {"type": "array", "items": {"$ref": "#/$defs/Graph"}},
+    "Scalar": {"anyOf": [{"$ref": "#/$defs/Leaf"}, {"type": "integer"}]},
+    "Pairs": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "object", "additionalProperties": {"$ref": "#/$defs/Pairs"}},
+        {"$ref": "#/$defs/Scalar"},
+        {"type": "null"},
+        {"type": ["array", "null"], "items": {"$ref": "#/$defs/Pairs"}}
+      ]
+    },
+    "Leaf": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}
+  }
+}

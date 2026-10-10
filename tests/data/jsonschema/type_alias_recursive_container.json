@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Document",
+  "type": "object",
+  "properties": {
+    "value": {"$ref": "#/$defs/JsonValue"},
+    "branch": {"$ref": "#/$defs/Branch"},
+    "nested": {"$ref": "#/$defs/Nested"},
+    "quoted": {"$ref": "#/$defs/Quoted"},
+    "forest": {"$ref": "#/$defs/Forest"},
+    "grove": {"$ref": "#/$defs/Grove"},
+    "node": {"$ref": "#/$defs/Node"},
+    "expr": {"$ref": "#/$defs/Expr"},
+    "matrix": {"$ref": "#/$defs/Matrix"},
+    "pair": {"$ref": "#/$defs/Pair"},
+    "chain": {"$ref": "#/$defs/Chain"}
+  },
+  "$defs": {
+    "JsonValue": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "number"},
+        {"type": "boolean"},
+        {"type": "null"},
+        {"type": "array", "items": {"$ref": "#/$defs/JsonValue"}},
+        {"type": "object", "additionalProperties": {"$ref": "#/$defs/JsonValue"}}
+      ]
+    },
+    "Branch": {
+      "anyOf": [
+        {"$ref": "#/$defs/Leaf"},
+        {"type": "array", "items": {"$ref": "#/$defs/Branch"}}
+      ]
+    },
+    "Leaf": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}},
+      "required": ["name"]
+    },
+    "Nested": {
+      "description": "Nested integer lists",
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "array", "items": {"$ref": "#/$defs/Nested"}}
+      ]
+    },
+    "Forest": {
+      "description": "Trees or a leaf name",
+      "anyOf": [
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/$defs/Tree"}}
+      ]
+    },
+    "Tree": {
+      "description": "Branches of a forest",
+      "type": "array",
+      "items": {"$ref": "#/$defs/Forest"}
+    },
+    "Grove": {
+      "anyOf": [
+        {"type": "integer"},
+        {"$ref": "#/$defs/Hub"},
+        {"$ref": "#/$defs/Left"}
+      ]
+    },
+    "Hub": {
+      "anyOf": [
+        {"type": "array", "items": {"$ref": "#/$defs/Left"}},
+        {"type": "array", "items": {"$ref": "#/$defs/Right"}}
+      ]
+    },
+    "Left": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Right"}
+    },
+    "Right": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Hub"}
+    },
+    "Node": {
+      "anyOf": [
+        {"type": "integer"},
+        {"$ref": "#/$defs/NodeList"}
+      ]
+    },
+    "NodeList": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Node"}
+    },
+    "Quoted": {
+      "anyOf": [
+        {"type": "string"},
+        {
+          "type": "array",
+          "items": {"anyOf": [{"enum": ["it's", "\\d"]}, {"$ref": "#/$defs/Quoted"}]}
+        }
+      ]
+    },
+    "Expr": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "array", "items": {"$ref": "#/$defs/Term"}}
+      ]
+    },
+    "Term": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/$defs/Factor"}},
+        {"type": "array", "items": {"$ref": "#/$defs/Expr"}}
+      ]
+    },
+    "Factor": {
+      "anyOf": [
+        {"type": "boolean"},
+        {"type": "array", "items": {"$ref": "#/$defs/Term"}},
+        {"$ref": "#/$defs/Chain"}
+      ]
+    },
+    "Matrix": {
+      "anyOf": [
+        {"type": "number"},
+        {"type": ["array", "null"], "items": {"$ref": "#/$defs/Matrix"}},
+        {
+          "type": "object",
+          "additionalProperties": {"type": "array", "items": {"$ref": "#/$defs/Matrix"}}
+        }
+      ]
+    },
+    "Pair": {
+      "anyOf": [
+        {"type": "string"},
+        {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"$ref": "#/$defs/Pair"}],
+          "minItems": 2,
+          "maxItems": 2,
+          "items": false
+        }
+      ]
+    },
+    "Chain": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/$defs/Link"}}
+      ]
+    },
+    "Link": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "array", "items": {"anyOf": [{"$ref": "#/$defs/Chain"}, {"$ref": "#/$defs/Knot"}]}}
+      ]
+    },
+    "Knot": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Chain"}
+    }
+  }
+}

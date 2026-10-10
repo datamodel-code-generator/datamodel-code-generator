@@ -3078,6 +3078,42 @@ def test_main_openapi_all_of_required(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "expected_file"),
+    [
+        pytest.param(DataModelType.PydanticV2BaseModel.value, "allof_scalar_roots/pydantic_v2.py", id="pydantic-v2"),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass.value,
+            "allof_scalar_roots/pydantic_v2_dataclass.py",
+            id="pydantic-v2-dataclass",
+        ),
+        pytest.param(DataModelType.DataclassesDataclass.value, "allof_scalar_roots/dataclass.py", id="dataclass"),
+        pytest.param(DataModelType.TypingTypedDict.value, "allof_scalar_roots/typed_dict.py", id="typed-dict"),
+        pytest.param(DataModelType.MsgspecStruct.value, "allof_scalar_roots/msgspec.py", id="msgspec"),
+    ],
+)
+def test_main_openapi_allof_scalar_roots(output_file: Path, output_model_type: str, expected_file: str) -> None:
+    """Generate the scalar root a schema, parameter or header allOf describes instead of an empty class."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_scalar_roots.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.benchmark
 def test_main_openapi_nullable(output_file: Path) -> None:
     """Test OpenAPI generation with nullable types."""
@@ -3142,6 +3178,94 @@ def test_main_openapi_nullable_strict_nullable(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="nullable_strict_nullable.py",
         extra_args=["--strict-nullable"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        pytest.param(
+            "nullable_map_value_types/pydantic_v2.py",
+            ["--output-model-type", DataModelType.PydanticV2BaseModel.value],
+            id="pydantic-v2",
+        ),
+        pytest.param(
+            "nullable_map_value_types/pydantic_v2_dataclass.py",
+            ["--output-model-type", DataModelType.PydanticV2Dataclass.value],
+            id="pydantic-v2-dataclass",
+        ),
+        pytest.param(
+            "nullable_map_value_types/dataclass.py",
+            ["--output-model-type", DataModelType.DataclassesDataclass.value],
+            id="dataclass",
+        ),
+        pytest.param(
+            "nullable_map_value_types/typed_dict.py",
+            ["--output-model-type", DataModelType.TypingTypedDict.value],
+            id="typed-dict",
+        ),
+        pytest.param(
+            "nullable_map_value_types/msgspec.py",
+            ["--output-model-type", DataModelType.MsgspecStruct.value],
+            id="msgspec",
+        ),
+        pytest.param(
+            "nullable_map_value_types/no_use_standard_collections.py",
+            ["--output-model-type", DataModelType.PydanticV2BaseModel.value, "--no-use-standard-collections"],
+            id="no-use-standard-collections",
+        ),
+        pytest.param(
+            "nullable_map_value_types/use_generic_container_types.py",
+            ["--output-model-type", DataModelType.PydanticV2BaseModel.value, "--use-generic-container-types"],
+            id="use-generic-container-types",
+        ),
+        pytest.param(
+            "nullable_map_value_types/strict_nullable.py",
+            ["--output-model-type", DataModelType.PydanticV2BaseModel.value, "--strict-nullable"],
+            id="strict-nullable",
+        ),
+    ],
+)
+def test_main_openapi_nullable_map_value_types(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Keep the additionalProperties value type of maps declared with an object and null type array."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_map_value_types.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            *extra_args,
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_nullable_map_value_types_parameters_scope(output_file: Path) -> None:
+    """Load the components a nullable map parameter references when only paths and parameters are in scope."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_map_value_types.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="nullable_map_value_types/parameters_scope.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--openapi-scopes",
+            "paths",
+            "parameters",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
     )
 
 

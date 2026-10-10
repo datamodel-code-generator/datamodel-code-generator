@@ -129,6 +129,14 @@ ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
 )
 EXCLUDED_CASES: dict[str, str] = {
+    "jsonschema/number_constraints_on_mapped_formats.json": (
+        "the boolean numeric format needs --type-mappings; "
+        "test_main_number_constraints_on_mapped_formats checks the mapped number bound"
+    ),
+    "jsonschema/number_constraints_on_numeric_string_formats.json": (
+        "hypothesis-jsonschema generates arbitrary strings for the decimal, integer and unixtime formats; "
+        "test_main_number_constraints_on_numeric_string_formats checks their generated number bounds"
+    ),
     **dict.fromkeys(
         (
             "jsonschema/allof_outer_constraints/duration_length.json",
@@ -221,6 +229,12 @@ EXCLUDED_CASES: dict[str, str] = {
     ),
     "openapi/allof.yaml::components.schemas.AllOfNested3": (
         "hypothesis-jsonschema cannot satisfy the nested allOf component constraints"
+    ),
+    "openapi/allof_scalar_roots.yaml::components.schemas.Anything": (
+        "an allOf of untyped constraint members stays an empty model until flat untyped constraints are fixed"
+    ),
+    "openapi/allof_scalar_roots.yaml::components.schemas.TwoPatterns": (
+        "an allOf with more than one pattern member stays an empty model until pattern intersection is fixed"
     ),
     "openapi/allof_with_required_inherited_complex_allof.yaml::components.schemas.ProjectedItem": (
         "hypothesis-jsonschema generates this nested allOf schema inconsistently"

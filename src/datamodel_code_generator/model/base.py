@@ -1877,6 +1877,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
     IS_ALIAS: ClassVar[bool] = False
     IS_ROOT_MODEL: ClassVar[bool] = False
+    DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(
@@ -2456,6 +2457,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         )
         self.__dict__[self._IMPORTS_CACHE_KEY] = imports
         return imports
+
+    def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:  # noqa: ARG002, PLR6301
+        """Render fields by assignment when ``Field()`` inside ``Annotated`` is unsafe for a forward reference.
+
+        ``positions`` maps the path of each model in the module to its order and ``index`` is this model's order.
+        The neutral model policy intentionally changes nothing. Output backends whose target mishandles such a
+        field can override this hook and return whether a field changed.
+        """
+        return False
 
     def clear_imports_cache(self) -> None:
         """Clear cached imports after import-affecting model, field, or data type mutations."""
