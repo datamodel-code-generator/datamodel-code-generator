@@ -1588,15 +1588,15 @@ def _write_results_to_output(  # noqa: PLR0913
         else:
             parts = [effective_header]
             if body:
-                parts.append("\n\n")
-                parts.append(body.rstrip())
+                parts.extend(("\n\n", body.rstrip()))
             parts.append("\n")
             content = "".join(parts)
 
         try:
             encoded_bytes = content.encode(config.encoding)
         except (UnicodeEncodeError, LookupError) as e:
-            raise Error(f"Unable to encode output using encoding {config.encoding!r}: {e}") from e
+            msg = f"Unable to encode output using encoding {config.encoding!r}: {e}"
+            raise Error(msg) from e
 
         prepared_modules.append((path, encoded_bytes))
 
