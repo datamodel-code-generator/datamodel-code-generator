@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnMappedFormats",
+  "type": "object",
+  "properties": {
+    "boolean_numeric_minimum": {
+      "type": "boolean",
+      "format": "numeric",
+      "minimum": 5
+    }
+  }
+}

@@ -502,6 +502,7 @@ _NUMBER_CONSTRAINT_TYPES = frozenset({
     Types.time,
     Types.decimal,
 })
+_NUMBER_STRING_FORMAT_TYPES = _NUMBER_CONSTRAINT_TYPES - {Types.time}
 
 # Keep this in sync with _traverse_schema_objects(). Only schemas that did not
 # explicitly receive one of these fields can skip the child traversal below.
@@ -1898,13 +1899,38 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return False
         return any(field in obj.model_fields_set for field in constraint_fields)
 
-    def _get_constraint_values(self, obj: JsonSchemaObject) -> dict[str, Any]:  # noqa: PLR6301
-        """Return JSON Schema constraint values without serializing nested schemas."""
-        return {
+    def _accepts_number_constraints(self, obj: JsonSchemaObject) -> bool:
+        """Return whether a declared type of the schema holds numbers, as number, integer or a numeric string format."""
+        if (types := obj.type) is None or types in ("number", "integer"):  # noqa: PLR6201
+            return True
+        format_ = obj.format or "default"
+        return any(
+            type_ in {"number", "integer"}
+            or (
+                (
+                    (type_, format_) in self.type_mappings
+                    or (type_ == "string" and format_ in self._data_formats["string"])
+                )
+                and self._get_type_with_mappings(type_, format_) in _NUMBER_STRING_FORMAT_TYPES
+            )
+            for type_ in ((types,) if isinstance(types, str) else types)
+        )
+
+    def _get_constraint_values(self, obj: JsonSchemaObject) -> dict[str, Any]:
+        """Return JSON Schema constraint values, without number keywords for schemas whose types hold no number."""
+        values = {
             constraint: value
             for constraint in obj.__constraint_field_order__
             if (value := getattr(obj, constraint)) is not None
         }
+        if (
+            values
+            and not values.keys().isdisjoint(_NUMBER_CONSTRAINT_KEYS)
+            and not self._accepts_number_constraints(obj)
+        ):
+            for key in _NUMBER_CONSTRAINT_KEYS:
+                values.pop(key, None)
+        return values
 
     def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
         """Check if an array field represents a fixed-length tuple."""

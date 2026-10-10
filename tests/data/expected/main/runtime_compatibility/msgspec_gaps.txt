@@ -84,16 +84,6 @@
     "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
     "error": "TypeError"
   },
-  "jsonschema/numeric_allof_types/null_template.json": {
-    "acceptance": "msgspec conversion rejects constraint metadata on generated null-only aliases",
-    "rejection": "msgspec conversion rejects constraint metadata on generated null-only aliases",
-    "error": "TypeError"
-  },
-  "jsonschema/root_alias_constraints/null_numeric.json": {
-    "acceptance": "msgspec conversion rejects constraint metadata on generated null-only aliases",
-    "rejection": "msgspec conversion rejects constraint metadata on generated null-only aliases",
-    "error": "TypeError"
-  },
   "jsonschema/root_alias_constraints/null_pattern.json": {
     "acceptance": "msgspec conversion rejects constraint metadata on generated null-only aliases",
     "rejection": "msgspec conversion rejects constraint metadata on generated null-only aliases",

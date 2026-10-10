@@ -4697,6 +4697,73 @@ def test_main_string_time_number_constraints(output_file: Path, expected_file: s
         assert_func=assert_file_content,
         expected_file=f"string_time_number_constraints/{expected_file}",
         extra_args=extra_args,
+        force_exec_validation=True,
+    )
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_number_constraints_on_non_numbers(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test number keywords constrain only fields whose schema types hold numbers."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_non_numbers.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"number_constraints_on_non_numbers/{expected_file}",
+        extra_args=extra_args,
+        force_exec_validation=True,
+    )
+
+
+def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
+    """Test number keywords still constrain a non-string type and format that --type-mappings maps to a number."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_mapped_formats.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="number_constraints_on_mapped_formats.py",
+        extra_args=[
+            "--field-constraints",
+            "--type-mappings",
+            "boolean+numeric=integer",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("field_constraints.py", ["--field-constraints"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_number_constraints_on_numeric_string_formats(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test number keywords still constrain string formats that map to numeric types."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_numeric_string_formats.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"number_constraints_on_numeric_string_formats/{expected_file}",
+        extra_args=extra_args,
     )
 
 
@@ -25426,7 +25493,7 @@ def test_optional_disjoint_allof_types(output_file: Path, entrypoint: str, *, sc
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_numeric_null_custom_template(output_file: Path, entrypoint: str) -> None:
-    """Preserve valid custom rendering, including raw constraints and existing imports."""
+    """Render a custom template without number keywords on a null root, keeping its existing imports."""
     source = JSON_SCHEMA_DATA_PATH / "numeric_allof_types/null_template.json"
     expected = EXPECTED_JSON_SCHEMA_PATH / "numeric_allof_types"
     template_dir = DATA_PATH / "templates_numeric_null"

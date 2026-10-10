@@ -8,4 +8,4 @@ from pydantic import Field, RootModel
 
 class Root(RootModel[None]):
 
-    root: None = Field(..., json_schema_extra={"minimum": 2})
+    root: None
