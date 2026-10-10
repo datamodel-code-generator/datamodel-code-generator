@@ -28,6 +28,9 @@ PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start 
     "case",
     [
         "pets",
+        "pets-type-checking",
+        "pets-type-checking-default",
+        "pets-type-checking-off",
         "unbound",
         "parameters",
         "strict",

@@ -346,6 +346,361 @@
         }
       }
     ],
+    "helper_plans.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "docstring": "The plans of this package's pagination helpers 日本 {braces}.",
+          "imports": "from typing import Final\nfrom msgspec import UnsetType",
+          "accessors": [
+            {
+              "name": "_items_0",
+              "data": "ListPetsResponse",
+              "returns": "Sequence[models.Pet] | None",
+              "docstring": "Return the items of one page of pets.日本.",
+              "checks": [
+                {
+                  "value": "value_0",
+                  "read": "data['page']",
+                  "none": true,
+                  "unset": ""
+                },
+                {
+                  "value": "value_1",
+                  "read": "value_0.items",
+                  "none": true,
+                  "unset": "UnsetType"
+                },
+                {
+                  "value": "value_2",
+                  "read": "value_1.get('next')",
+                  "none": false,
+                  "unset": "UnsetType"
+                }
+              ],
+              "result": "value_2.data"
+            },
+            {
+              "name": "_result_1",
+              "data": "GetJobResponse",
+              "returns": "models.Report | None",
+              "docstring": "Return the result of jobs.run in its final poll.",
+              "checks": [],
+              "result": "data.result"
+            }
+          ],
+          "plans": [
+            {
+              "name": "PLAN_0",
+              "annotation": "Final[PaginationPlan[models.Pet, ListPetsResponse]]",
+              "constructor": "PaginationPlan",
+              "arguments": [
+                {
+                  "keyword": "helper_id",
+                  "value": "'pets.日本'"
+                },
+                {
+                  "keyword": "items",
+                  "value": "_items_0"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "docstring": "The plans of this package's stream helpers.",
+          "imports": "from typing import Final",
+          "accessors": [],
+          "plans": []
+        }
+      }
+    ],
+    "helpers.jinja2": [
+      {
+        "name": "sync",
+        "context": {
+          "asynchronous": false,
+          "docstring": "The synchronous protocol helpers of this package, by their dotted names.",
+          "imports": "from functools import cached_property",
+          "core": "ClientCore",
+          "cached_property": "cached_property",
+          "namespaces": [
+            {
+              "name": "ProtocolHelpers",
+              "docstring": "The protocol helpers of this API.",
+              "core": "ClientCore_1",
+              "wrap": "ClientCore",
+              "children": [
+                {
+                  "attribute": "pets",
+                  "class_name": "PetsProtocols",
+                  "docstring": "The pets protocol helpers."
+                }
+              ]
+            },
+            {
+              "name": "PetsProtocols",
+              "docstring": "The pets protocol helpers 日本 {braces}.",
+              "core": "ClientCore",
+              "wrap": "",
+              "children": [
+                {
+                  "attribute": "all",
+                  "class_name": "PetsAllPagination",
+                  "docstring": "The pets.all pagination helper."
+                },
+                {
+                  "attribute": "run",
+                  "class_name": "JobsRunPolling",
+                  "docstring": "The jobs.run polling helper."
+                }
+              ]
+            }
+          ],
+          "helpers": [
+            {
+              "name": "PetsAllPagination",
+              "docstring": "The pets.all pagination helper of GET /pets.",
+              "methods": [
+                {
+                  "name": "next_page",
+                  "positional": [
+                    {
+                      "name": "page",
+                      "annotation": "Page[models.Pet, ListPetsResponse]",
+                      "default": ""
+                    }
+                  ],
+                  "keywords": [
+                    {
+                      "name": "pagination_options",
+                      "annotation": "PaginationOptions | None",
+                      "default": "None"
+                    },
+                    {
+                      "name": "options",
+                      "annotation": "RequestOptions | None",
+                      "default": "None"
+                    }
+                  ],
+                  "returns": "Page[models.Pet, ListPetsResponse] | None",
+                  "docstring": "Fetch the page after a page of this helper 日本 {braces}.",
+                  "function": "following_page",
+                  "arguments": [
+                    {
+                      "keyword": "",
+                      "value": "self._core"
+                    },
+                    {
+                      "keyword": "",
+                      "value": "_plans.PLAN_0"
+                    },
+                    {
+                      "keyword": "",
+                      "value": "(cursor,)"
+                    },
+                    {
+                      "keyword": "options",
+                      "value": "options"
+                    }
+                  ],
+                  "coroutine": false
+                },
+                {
+                  "name": "page",
+                  "positional": [],
+                  "keywords": [
+                    {
+                      "name": "cursor",
+                      "annotation": "str",
+                      "default": ""
+                    },
+                    {
+                      "name": "pagination_options",
+                      "annotation": "PaginationOptions | None",
+                      "default": "None"
+                    },
+                    {
+                      "name": "options",
+                      "annotation": "RequestOptions | None",
+                      "default": "None"
+                    }
+                  ],
+                  "returns": "Page[models.Pet, ListPetsResponse]",
+                  "docstring": "Fetch the first page of GET /pets.",
+                  "function": "first_page",
+                  "arguments": [
+                    {
+                      "keyword": "",
+                      "value": "self._core"
+                    },
+                    {
+                      "keyword": "",
+                      "value": "_plans.PLAN_0"
+                    },
+                    {
+                      "keyword": "",
+                      "value": "(cursor,)"
+                    },
+                    {
+                      "keyword": "options",
+                      "value": "options"
+                    }
+                  ],
+                  "coroutine": false
+                }
+              ],
+              "handle": null
+            },
+            {
+              "name": "JobsRunPolling",
+              "docstring": "The jobs.run polling helper of POST /jobs.",
+              "methods": [],
+              "handle": {
+                "name": "JobsRunHandle",
+                "base": "LroHandle[models.Report, GetJobResponse]",
+                "docstring": "A handle of the jobs.run polling helper, which also cancels the operation with DELETE /jobs/{jobId}.",
+                "receipt": "CancelReceipt[CancelJobResponse]",
+                "plan": "_plans.CANCEL_1"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "async",
+        "context": {
+          "asynchronous": true,
+          "docstring": "The asyncio protocol helpers of this package, by their dotted names.",
+          "imports": "from functools import cached_property",
+          "core": "AsyncClientCore",
+          "cached_property": "cached_property",
+          "namespaces": [],
+          "helpers": [
+            {
+              "name": "AsyncJobsRunPolling",
+              "docstring": "The jobs.run polling helper of POST /jobs.",
+              "methods": [
+                {
+                  "name": "start",
+                  "positional": [],
+                  "keywords": [
+                    {
+                      "name": "pagination_options",
+                      "annotation": "PaginationOptions | None",
+                      "default": "None"
+                    },
+                    {
+                      "name": "options",
+                      "annotation": "RequestOptions | None",
+                      "default": "None"
+                    }
+                  ],
+                  "returns": "AsyncJobsRunHandle",
+                  "docstring": "Create the operation of POST /jobs and return the handle that polls it.",
+                  "function": "astart_operation",
+                  "arguments": [
+                    {
+                      "keyword": "",
+                      "value": "self._core"
+                    },
+                    {
+                      "keyword": "",
+                      "value": "_plans.PLAN_0"
+                    },
+                    {
+                      "keyword": "",
+                      "value": "(cursor,)"
+                    },
+                    {
+                      "keyword": "options",
+                      "value": "options"
+                    }
+                  ],
+                  "coroutine": true
+                }
+              ],
+              "handle": {
+                "name": "AsyncJobsRunHandle",
+                "base": "AsyncLroHandle[models.Report, GetJobResponse]",
+                "docstring": "A handle of the jobs.run polling helper, which also cancels the operation with DELETE /jobs/{jobId}.",
+                "receipt": "CancelReceipt[CancelJobResponse]",
+                "plan": "_plans.CANCEL_1"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "model_bindings.jinja2": [
+      {
+        "name": "stdlib",
+        "context": {
+          "imports": "from typing import Final\n\nimport models",
+          "codec_imports": [
+            "from .._runtime.model_codecs.native import PydanticCodec",
+            "from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec"
+          ],
+          "models_annotation": "Final[dict[type, Model]]",
+          "models": [
+            {
+              "type": "models.Pet",
+              "value": "Model((Field('name', 'name'),), True)"
+            },
+            {
+              "type": "models.日本",
+              "value": "Model((Field('{braces}', 'braces'),))"
+            }
+          ],
+          "codecs": [
+            {
+              "name": "codec_0",
+              "annotation": "Final[StdlibCodec[models.Pet]]",
+              "value": "StdlibCodec(models.Pet, MODELS)",
+              "description": "Codec of /paths/~1pets/get response_body (response 200 application/json)."
+            },
+            {
+              "name": "codec_1",
+              "annotation": "Final[PydanticCodec[models.Error]]",
+              "value": "PydanticCodec(models.Error)",
+              "description": "Codec of \\\"日本\\\" {braces}."
+            }
+          ]
+        }
+      },
+      {
+        "name": "native",
+        "context": {
+          "imports": "from typing import Final\n\nimport models",
+          "codec_imports": [
+            "from .._runtime.model_codecs.native import PydanticCodec"
+          ],
+          "models_annotation": "",
+          "models": [],
+          "codecs": [
+            {
+              "name": "codec_0",
+              "annotation": "Final[PydanticCodec[models.Pet]]",
+              "value": "PydanticCodec(models.Pet)",
+              "description": "Codec of /paths/~1pets/get response_body (response 200 application/json)."
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "imports": "",
+          "codec_imports": [],
+          "models_annotation": "",
+          "models": [],
+          "codecs": []
+        }
+      }
+    ],
     "operations.jinja2": [
       {
         "name": "populated",
@@ -1459,21 +1814,6 @@
                 "docstring": "Decode one declared response header of list_pets from a response's metadata."
               }
             }
-          ],
-          "sections": []
-        }
-      },
-      {
-        "name": "sections",
-        "context": {
-          "docstring": "Types 日本 {braces}",
-          "imports": "from typing import TypedDict",
-          "type_alias": "",
-          "overload_decorator": "",
-          "aliases": [],
-          "sections": [
-            "class First(TypedDict):\n    value: str",
-            "class Second(TypedDict):\n    value: int"
           ]
         }
       },
@@ -1484,8 +1824,310 @@
           "imports": "from typing import TypedDict",
           "type_alias": "",
           "overload_decorator": "",
-          "aliases": [],
-          "sections": []
+          "aliases": []
+        }
+      }
+    ],
+    "webhook.jinja2": [
+      {
+        "name": "builtin",
+        "context": {
+          "kind": "builtin",
+          "name": "github.日本",
+          "algorithm": "HMAC-SHA256 {braces}",
+          "timestamp": false,
+          "imports": "from typing import Final",
+          "exports": [
+            "verify",
+            "verify_async"
+          ],
+          "typevar": "",
+          "plan": {
+            "name": "_PLAN",
+            "annotation": "Final[WebhookPlan[models.Event, HmacKey]]",
+            "constructor": "WebhookPlan",
+            "arguments": [
+              {
+                "keyword": "helper_id",
+                "value": "'github.日本'"
+              },
+              {
+                "keyword": "event",
+                "value": "EventDecoder(model_bindings.codec_0)"
+              }
+            ]
+          },
+          "functions": [
+            {
+              "name": "verify",
+              "positional": [
+                {
+                  "name": "raw_body",
+                  "annotation": "bytes",
+                  "default": ""
+                },
+                {
+                  "name": "headers",
+                  "annotation": "Sequence[tuple[str, str]]",
+                  "default": ""
+                },
+                {
+                  "name": "keys",
+                  "annotation": "KeySet[HmacKey]",
+                  "default": ""
+                }
+              ],
+              "keywords": [
+                {
+                  "name": "now",
+                  "annotation": "datetime",
+                  "default": ""
+                },
+                {
+                  "name": "options",
+                  "annotation": "WebhookOptions | None",
+                  "default": "None"
+                }
+              ],
+              "returns": "VerifiedWebhook[models.Event]",
+              "docstring": "",
+              "function": "verify_webhook",
+              "arguments": [
+                {
+                  "keyword": "",
+                  "value": "_PLAN"
+                },
+                {
+                  "keyword": "",
+                  "value": "raw_body"
+                },
+                {
+                  "keyword": "now",
+                  "value": "now"
+                },
+                {
+                  "keyword": "options",
+                  "value": "options"
+                }
+              ],
+              "coroutine": false
+            },
+            {
+              "name": "verify_async",
+              "positional": [
+                {
+                  "name": "raw_body",
+                  "annotation": "bytes",
+                  "default": ""
+                },
+                {
+                  "name": "headers",
+                  "annotation": "Sequence[tuple[str, str]]",
+                  "default": ""
+                },
+                {
+                  "name": "keys",
+                  "annotation": "KeySet[HmacKey]",
+                  "default": ""
+                }
+              ],
+              "keywords": [
+                {
+                  "name": "now",
+                  "annotation": "datetime",
+                  "default": ""
+                },
+                {
+                  "name": "options",
+                  "annotation": "WebhookOptions | None",
+                  "default": "None"
+                }
+              ],
+              "returns": "VerifiedWebhook[models.Event]",
+              "docstring": "",
+              "function": "averify_webhook",
+              "arguments": [
+                {
+                  "keyword": "",
+                  "value": "_PLAN"
+                },
+                {
+                  "keyword": "",
+                  "value": "raw_body"
+                },
+                {
+                  "keyword": "now",
+                  "value": "now"
+                },
+                {
+                  "keyword": "options",
+                  "value": "options"
+                }
+              ],
+              "coroutine": true
+            }
+          ]
+        }
+      },
+      {
+        "name": "adapter",
+        "context": {
+          "kind": "adapter",
+          "name": "adapted.plain",
+          "algorithm": "",
+          "timestamp": true,
+          "imports": "from typing import Final, TypeVar",
+          "exports": [
+            "verify",
+            "verify_async"
+          ],
+          "typevar": "TypeVar",
+          "plan": {
+            "name": "_PLAN",
+            "annotation": "Final[AdapterPlan[models.Event]]",
+            "constructor": "AdapterPlan",
+            "arguments": [
+              {
+                "keyword": "helper_id",
+                "value": "'github.日本'"
+              },
+              {
+                "keyword": "event",
+                "value": "EventDecoder(model_bindings.codec_0)"
+              }
+            ]
+          },
+          "functions": [
+            {
+              "name": "verify",
+              "positional": [
+                {
+                  "name": "raw_body",
+                  "annotation": "bytes",
+                  "default": ""
+                },
+                {
+                  "name": "headers",
+                  "annotation": "Sequence[tuple[str, str]]",
+                  "default": ""
+                },
+                {
+                  "name": "keys",
+                  "annotation": "KeySet[K]",
+                  "default": ""
+                }
+              ],
+              "keywords": [
+                {
+                  "name": "verifier",
+                  "annotation": "Verifier[K]",
+                  "default": ""
+                },
+                {
+                  "name": "now",
+                  "annotation": "datetime",
+                  "default": ""
+                },
+                {
+                  "name": "options",
+                  "annotation": "WebhookOptions | None",
+                  "default": "None"
+                }
+              ],
+              "returns": "VerifiedWebhook[models.Event]",
+              "docstring": "",
+              "function": "verify_adapted",
+              "arguments": [
+                {
+                  "keyword": "",
+                  "value": "_PLAN"
+                },
+                {
+                  "keyword": "",
+                  "value": "raw_body"
+                },
+                {
+                  "keyword": "verifier",
+                  "value": "verifier"
+                },
+                {
+                  "keyword": "now",
+                  "value": "now"
+                },
+                {
+                  "keyword": "options",
+                  "value": "options"
+                }
+              ],
+              "coroutine": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "unsigned",
+        "context": {
+          "kind": "none",
+          "name": "unsigned.日本",
+          "algorithm": "",
+          "timestamp": false,
+          "imports": "from typing import Final",
+          "exports": [
+            "decode_unverified"
+          ],
+          "typevar": "",
+          "plan": {
+            "name": "_PLAN",
+            "annotation": "Final[EventPlan[models.Event]]",
+            "constructor": "EventPlan",
+            "arguments": [
+              {
+                "keyword": "helper_id",
+                "value": "'github.日本'"
+              },
+              {
+                "keyword": "event",
+                "value": "EventDecoder(model_bindings.codec_0)"
+              }
+            ]
+          },
+          "functions": [
+            {
+              "name": "decode_unverified",
+              "positional": [
+                {
+                  "name": "raw_body",
+                  "annotation": "bytes",
+                  "default": ""
+                }
+              ],
+              "keywords": [
+                {
+                  "name": "options",
+                  "annotation": "WebhookOptions | None",
+                  "default": "None"
+                }
+              ],
+              "returns": "models.Event",
+              "docstring": "",
+              "function": "decode_unsigned",
+              "arguments": [
+                {
+                  "keyword": "",
+                  "value": "_PLAN"
+                },
+                {
+                  "keyword": "",
+                  "value": "raw_body"
+                },
+                {
+                  "keyword": "options",
+                  "value": "options"
+                }
+              ],
+              "coroutine": false
+            }
+          ]
         }
       }
     ]

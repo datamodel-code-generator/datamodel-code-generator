@@ -140,9 +140,12 @@ operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`
   `--formatters` (including its default and warning), `--custom-formatters` and `--custom-formatters-kwargs`,
   `--custom-file-header`, `--custom-file-header-path` and `--custom-file-header-mode`, `--disable-timestamp`,
   `--enable-version-header`, `--enable-command-header`, `--use-double-quotes`, `--builtin-format-line-length`,
-  `--encoding` (for the Python files; the other files are UTF-8), and the formatter settings found from `--output`.
-  The target settings have no output options of their own. `--use-type-checking-imports` does not apply to the
-  server files, because FastAPI reads their annotations at run time.
+  `--encoding` (for the Python files; the other files are UTF-8), `--use-type-checking-imports`, and the formatter
+  settings found from `--output`. The target settings have no output options of their own. As for the models, Ruff
+  moves imports only an annotation uses into `TYPE_CHECKING` blocks when `ruff-check` runs with its TC rules
+  selected and `--use-type-checking-imports` is given, since the server's Pydantic backends keep them by default. The
+  router and application modules keep their imports: they have no postponed annotations, because FastAPI reads them
+  at run time.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `--server-model-package` is its import path. The models can

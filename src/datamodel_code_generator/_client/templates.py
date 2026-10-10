@@ -15,12 +15,16 @@ class ClientTemplates(TemplateOverlay):
         "arguments.jinja2",
         "client.jinja2",
         "facade.jinja2",
+        "helper_plans.jinja2",
+        "helpers.jinja2",
+        "model_bindings.jinja2",
         "operations.jinja2",
         "readme.jinja2",
         "resource.jinja2",
         "runtime.jinja2",
         "security.jinja2",
         "types.jinja2",
+        "webhook.jinja2",
     })
     SUBDIR = "client"
     INVALID = "E_TEMPLATE_INVALID"

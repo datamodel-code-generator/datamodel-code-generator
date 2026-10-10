@@ -14,32 +14,22 @@ from .._runtime.model_codecs.native import PydanticCodec
 codec_0: Final[PydanticCodec[models.Limit]] = PydanticCodec(models.Limit)
 """Codec of /paths/~1pets/get parameter (request query limit)."""
 
-codec_1: Final[PydanticCodec[models.FieldPetsGetQueryOffsetParameter]] = PydanticCodec(
-    models.FieldPetsGetQueryOffsetParameter,
-)
+codec_1: Final[PydanticCodec[models.FieldPetsGetQueryOffsetParameter]] = PydanticCodec(models.FieldPetsGetQueryOffsetParameter)
 """Codec of /paths/~1pets/get parameter (request query offset)."""
 
-codec_2: Final[PydanticCodec[models.FieldPetsGetQueryHandleParameter]] = PydanticCodec(
-    models.FieldPetsGetQueryHandleParameter,
-)
+codec_2: Final[PydanticCodec[models.FieldPetsGetQueryHandleParameter]] = PydanticCodec(models.FieldPetsGetQueryHandleParameter)
 """Codec of /paths/~1pets/get parameter (request query handle)."""
 
 codec_3: Final[PydanticCodec[models.Kind]] = PydanticCodec(models.Kind)
 """Codec of /paths/~1pets/get parameter (request query kind)."""
 
-codec_4: Final[PydanticCodec[models.FieldPetsGetQueryModeParameter]] = PydanticCodec(
-    models.FieldPetsGetQueryModeParameter,
-)
+codec_4: Final[PydanticCodec[models.FieldPetsGetQueryModeParameter]] = PydanticCodec(models.FieldPetsGetQueryModeParameter)
 """Codec of /paths/~1pets/get parameter (request query mode)."""
 
-codec_5: Final[PydanticCodec[models.FieldPetsGetQueryTagsParameter]] = PydanticCodec(
-    models.FieldPetsGetQueryTagsParameter,
-)
+codec_5: Final[PydanticCodec[models.FieldPetsGetQueryTagsParameter]] = PydanticCodec(models.FieldPetsGetQueryTagsParameter)
 """Codec of /paths/~1pets/get parameter (request query tags)."""
 
-codec_6: Final[PydanticCodec[models.FieldPetsGetQuerySinceParameter]] = PydanticCodec(
-    models.FieldPetsGetQuerySinceParameter,
-)
+codec_6: Final[PydanticCodec[models.FieldPetsGetQuerySinceParameter]] = PydanticCodec(models.FieldPetsGetQuerySinceParameter)
 """Codec of /paths/~1pets/get parameter (request query since)."""
 
 codec_7: Final[PydanticCodec[models.FieldPetsGetResponse]] = PydanticCodec(models.FieldPetsGetResponse)
@@ -60,9 +50,7 @@ codec_11: Final[PydanticCodec[models.Job]] = PydanticCodec(models.Job)
 codec_12: Final[PydanticCodec[models.Job]] = PydanticCodec(models.Job)
 """Codec of /paths/~1jobs/post response_body (response 202 application/json)."""
 
-codec_13: Final[PydanticCodec[models.FieldJobsJobIdGetPathJobIdParameter]] = PydanticCodec(
-    models.FieldJobsJobIdGetPathJobIdParameter,
-)
+codec_13: Final[PydanticCodec[models.FieldJobsJobIdGetPathJobIdParameter]] = PydanticCodec(models.FieldJobsJobIdGetPathJobIdParameter)
 """Codec of /paths/~1jobs~1{jobId}/get parameter (request path jobId)."""
 
 codec_14: Final[PydanticCodec[models.Job]] = PydanticCodec(models.Job)

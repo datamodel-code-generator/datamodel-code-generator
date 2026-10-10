@@ -3,8 +3,7 @@
 
 """Verify the signed deliveries of one webhook helper, then decode their events.
 
-The helper is wycheproof.rsa, whose deliveries are signed with RSA-PSS with SHA-256,
-MGF1 with SHA-256, and a 32-byte salt.
+The helper is wycheproof.rsa, whose deliveries are signed with RSA-PSS with SHA-256, MGF1 with SHA-256, and a 32-byte salt.
 """
 
 from __future__ import annotations
@@ -25,7 +24,10 @@ from ..._runtime.protocols.verification import (
 from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
-__all__ = ["verify", "verify_async"]
+__all__ = [
+    'verify',
+    'verify_async',
+]
 
 
 _PLAN: Final[WebhookPlan[models.Count, RSAPSSKey]] = WebhookPlan(
@@ -49,10 +51,16 @@ def verify(
 ) -> VerifiedWebhook[models.Count]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        headers,
+        keys,
+        now=now,
+        options=options,
+    )
 
 
 async def verify_async(
@@ -65,8 +73,7 @@ async def verify_async(
 ) -> VerifiedWebhook[models.Count]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,

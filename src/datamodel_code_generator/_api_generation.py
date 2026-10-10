@@ -674,15 +674,26 @@ class _Finisher:
         self.root = planner.root
 
     def finish(self, rendered: TargetRender) -> tuple[PlannedFile, ...]:
-        """Format, head, and encode every file like a model file, from the model output settings."""
+        """Format, head, and encode every file like a model file, from the model output settings.
+
+        Imports used only for type checking move into `TYPE_CHECKING` blocks as they do in the models' modules: a target
+        package is a multi-module output of the model backend, so the backend decides the default.
+        """
         from datamodel_code_generator import (  # noqa: PLC0415
             _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
             _build_module_content,  # pyright: ignore[reportPrivateUsage]
             _format_file_header,  # pyright: ignore[reportPrivateUsage]
         )
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
+        from datamodel_code_generator.format import resolve_use_type_checking_imports  # noqa: PLC0415
+        from datamodel_code_generator.model import get_data_model_types  # noqa: PLC0415
 
         effective, models = self.effective, self.models
+        backend = get_data_model_types(
+            effective.output_model_type,
+            effective.target_python_version,
+            target_pydantic_version=effective.target_pydantic_version,
+        ).data_model
         files = (*rendered.files, RenderedFile(path=PurePosixPath("py.typed"), kind="typing", text=""))
         formatter = TargetCodeFormatter(
             effective.target_python_version,
@@ -695,7 +706,12 @@ class _Finisher:
             encoding=effective.encoding,
             formatters=effective.formatters,
             builtin_format_line_length=effective.builtin_format_line_length,
-            use_type_checking_imports=False,
+            use_type_checking_imports=resolve_use_type_checking_imports(
+                effective.use_type_checking_imports,
+                is_multi_module_output=True,
+                formatters=effective.formatters,
+                requires_runtime_imports_with_ruff_check=backend.REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK,
+            ),
             defer_formatting=True,
             formatter_cwd=models.formatter_cwd,
         )

@@ -11,14 +11,10 @@ import models
 
 from .._runtime.model_codecs.native import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldEventsGetQueryTopicParameter]] = PydanticCodec(
-    models.FieldEventsGetQueryTopicParameter,
-)
+codec_0: Final[PydanticCodec[models.FieldEventsGetQueryTopicParameter]] = PydanticCodec(models.FieldEventsGetQueryTopicParameter)
 """Codec of /paths/~1events/get parameter (request query topic)."""
 
-codec_1: Final[PydanticCodec[models.FieldEventsGetHeaderLastEventIDParameter]] = PydanticCodec(
-    models.FieldEventsGetHeaderLastEventIDParameter,
-)
+codec_1: Final[PydanticCodec[models.FieldEventsGetHeaderLastEventIDParameter]] = PydanticCodec(models.FieldEventsGetHeaderLastEventIDParameter)
 """Codec of /paths/~1events/get parameter (request header Last-Event-ID)."""
 
 codec_2: Final[PydanticCodec[models.FieldEventsGetResponse]] = PydanticCodec(models.FieldEventsGetResponse)

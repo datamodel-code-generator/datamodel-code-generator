@@ -41,8 +41,7 @@ def client_typing_report(
             target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=backend,
-            formatters=[Formatter.BUILTIN],
-            **model,
+            **{"formatters": [Formatter.BUILTIN], **model},
             **client_options(case.get("config", {}), root, "pets"),
         ),
     )

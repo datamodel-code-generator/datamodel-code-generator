@@ -18,6 +18,7 @@ from fastapi.testclient import TestClient
 from datamodel_code_generator import DataModelType, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
+from tests.data.python.client_generation import formatter_refusal
 from tests.data.python.fastapi_generation import SOURCE, server_options
 from tests.data.python.generated_packages import forget_generated, import_generated
 
@@ -200,7 +201,11 @@ def fastapi_server_report(
         lines.append(f"serve {backend}")
         if (previous := case.get("previous")) is not None:
             _generate({**case, "input": previous}, backend, root, package)
-        _generate(case, backend, root, package)
+        try:
+            _generate(case, backend, root, package)
+        except RuntimeError as error:
+            lines.append(f"  {formatter_refusal(error)}")
+            continue
         packages[backend.replace(".", "_")] = _generated(root, package, package_snapshots)
         try:
             server, models = _import(package, _models(case, package))

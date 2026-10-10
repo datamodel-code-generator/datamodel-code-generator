@@ -35,6 +35,34 @@ from ..types.jobs import (
 )
 from ..types.reports import FindReportResponse, LatestReportResponse
 
+
+def _result_1(
+    data: GetJobResponse,
+) -> models.Report | None:
+    """Return the result of jobs.inline in its final poll."""
+    if isinstance(value_0 := data.result, UnsetType):
+        return None
+    return value_0
+
+
+def _immediate_1(
+    data: CreateJobResponse,
+) -> models.Report | None:
+    """Return the result of jobs.inline in an immediate create response."""
+    if isinstance(value_0 := data.result, UnsetType):
+        return None
+    return value_0
+
+
+def _result_5(
+    data: GetJobResponse,
+) -> models.Report | None:
+    """Return the result of jobs.tracked in its final poll."""
+    if isinstance(value_0 := data.result, UnsetType):
+        return None
+    return value_0
+
+
 PLAN_0: Final[PollingPlan[GetReportResponse, GetJobResponse, CreateJobResponse]] = PollingPlan(
     helper_id='jobs.run',
     operation=OperationRef(pointer='/paths/~1jobs/post'),
@@ -47,44 +75,13 @@ PLAN_0: Final[PollingPlan[GetReportResponse, GetJobResponse, CreateJobResponse]]
     succeeded=('done',),
     failed=('failed',),
     cancelled=('cancelled',),
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='header', name='X-Trace'),
-            source='previous',
-            selector=BodySelector(pointer='/status'),
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='X-Trace'), source='previous', selector=BodySelector(pointer='/status'))),
     fetch_operation=OperationRef(pointer='/paths/~1jobs~1{jobId}~1report/get'),
     fetch=_operations.OPERATION_3,
-    fetch_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
+    fetch_bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')),),
     interval=2.0,
     retry_after_header='Retry-After',
 )
-
-
-def _result_1(data: GetJobResponse) -> models.Report | None:
-    """Return the result of jobs.inline in its final poll."""
-    if isinstance(value_0 := data.result, UnsetType):
-        return None
-    return value_0
-
-
-def _immediate_1(data: CreateJobResponse) -> models.Report | None:
-    """Return the result of jobs.inline in an immediate create response."""
-    if isinstance(value_0 := data.result, UnsetType):
-        return None
-    return value_0
 
 
 PLAN_1: Final[PollingPlan[models.Report, GetJobResponse, CreateJobResponse]] = PollingPlan(
@@ -97,17 +94,7 @@ PLAN_1: Final[PollingPlan[models.Report, GetJobResponse, CreateJobResponse]] = P
     state=HeaderSelector(name='X-State'),
     pending=('pending',),
     succeeded=('done',),
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='previous',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='query', name='verbose'),
-            literal=True,
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='previous', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='query', name='verbose'), literal=True)),
     inline=_result_1,
     inline_selector=BodySelector(pointer='/result'),
     immediate=_immediate_1,
@@ -127,27 +114,10 @@ PLAN_2: Final[PollingPlan[FindReportResponse, GetJobResponse, CreateJobResponse]
     state=BodySelector(pointer='/status'),
     pending=('queued',),
     succeeded=('done',),
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='query', name='since'),
-            source='previous',
-            selector=StatusSelector(),
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='query', name='since'), source='previous', selector=StatusSelector())),
     fetch_operation=OperationRef(pointer='/paths/~1reports/post'),
     fetch=_operations.OPERATION_4,
-    fetch_bindings=(
-        PageBinding(
-            target=BodyTarget(pointer='/job'),
-            source='previous',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
+    fetch_bindings=(PageBinding(target=BodyTarget(pointer='/job'), source='previous', selector=BodySelector(pointer='/id')),),
     interval=1.0,
 )
 
@@ -169,13 +139,7 @@ PLAN_3: Final[PollingPlan[None, ExportStatusResponse, StartExportResponse]] = Po
     pending=(0,),
     succeeded=(1,),
     failed=(2,),
-    bindings=(
-        PageBinding(
-            target=QuerystringTarget(name='criteria', pointer='/id'),
-            source='initial',
-            selector=HeaderSelector(name='Operation-Id'),
-        ),
-    ),
+    bindings=(PageBinding(target=QuerystringTarget(name='criteria', pointer='/id'), source='initial', selector=HeaderSelector(name='Operation-Id')),),
     interval=1.0,
     cancel=CANCEL_3,
 )
@@ -197,27 +161,10 @@ PLAN_4: Final[PollingPlan[LatestReportResponse, ExportStatusResponse, StartExpor
 )
 
 
-def _result_5(data: GetJobResponse) -> models.Report | None:
-    """Return the result of jobs.tracked in its final poll."""
-    if isinstance(value_0 := data.result, UnsetType):
-        return None
-    return value_0
-
-
 CANCEL_5: Final[CancelPlan[CancelJobResponse]] = CancelPlan(
     operation=OperationRef(pointer='/paths/~1jobs~1{jobId}/delete'),
     call=_operations.OPERATION_2,
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='previous',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='header', name='X-Reason'),
-            literal='requested',
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='previous', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='X-Reason'), literal='requested')),
 )
 
 
@@ -233,13 +180,7 @@ PLAN_5: Final[PollingPlan[models.Report, GetJobResponse, CreateJobResponse]] = P
     succeeded=('done',),
     failed=('failed',),
     cancelled=('cancelled',),
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')),),
     inline=_result_5,
     inline_selector=BodySelector(pointer='/result'),
     interval=1.0,

@@ -6,11 +6,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client._compiled_templates import facade as facade_template
+from datamodel_code_generator._target_templates import templated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from datamodel_code_generator._target_templates import Role
+    from datamodel_code_generator._target_templates import Templated
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,8 +56,7 @@ def name_set(values: Iterable[str]) -> str:
     return f"{{{', '.join(map(repr, values))}}}"
 
 
-def render_facade(  # noqa: PLR0913
-    role: Role,
+def facade_module(  # noqa: PLR0913
     module: str,
     docstring: str,
     *,
@@ -68,14 +68,16 @@ def render_facade(  # noqa: PLR0913
     lazy: tuple[Lazy, ...] = (),
     loader: str = "",
     listing: str = "",
-) -> str:
-    """Render one facade module through the `facade.jinja2` role.
+) -> Templated:
+    """Return one facade module of the `facade.jinja2` role.
 
     `module` is its dotted path in the package, empty for the package itself; `imports` are its import statements and
     `checking` those it makes only for type checking. `loader` documents the `__getattr__` that loads the lazy names,
     and `listing` the `__dir__` that lists them.
     """
-    return role("facade.jinja2", facade_template.render)(
+    return templated(
+        "facade.jinja2",
+        facade_template.render,
         module=module,
         docstring=docstring,
         future=future,

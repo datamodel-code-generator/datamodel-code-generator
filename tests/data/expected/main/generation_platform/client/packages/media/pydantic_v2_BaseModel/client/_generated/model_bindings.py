@@ -56,9 +56,7 @@ codec_13: Final[PydanticCodec[models.Draft]] = PydanticCodec(models.Draft)
 codec_14: Final[PydanticCodec[models.Draft]] = PydanticCodec(models.Draft)
 """Codec of /paths/~1documents/post response_body (response 3XX application/json)."""
 
-codec_15: Final[PydanticCodec[models.FieldDocumentsIdGetPathIdParameter]] = PydanticCodec(
-    models.FieldDocumentsIdGetPathIdParameter,
-)
+codec_15: Final[PydanticCodec[models.FieldDocumentsIdGetPathIdParameter]] = PydanticCodec(models.FieldDocumentsIdGetPathIdParameter)
 """Codec of /paths/~1documents~1{id}/get parameter (request path id application/json)."""
 
 codec_16: Final[PydanticCodec[models.Draft]] = PydanticCodec(models.Draft)

@@ -20,8 +20,31 @@ from .._runtime.protocols.references import OperationRef
 from ..types.default import LookupResponse, SearchResponse
 
 
-def _items_0(data: SearchResponse) -> Sequence[str] | None:
+def _items_0(
+    data: SearchResponse,
+) -> Sequence[str] | None:
     """Return the items of one page of search.all."""
+    return data.root
+
+
+def _items_1(
+    data: SearchResponse,
+) -> Sequence[str] | None:
+    """Return the items of one page of search.fixed."""
+    return data.root
+
+
+def _items_2(
+    data: SearchResponse,
+) -> Sequence[str] | None:
+    """Return the items of one page of search.next."""
+    return data.root
+
+
+def _items_3(
+    data: LookupResponse,
+) -> Sequence[str] | None:
+    """Return the items of one page of lookup.all."""
     return data.root
 
 
@@ -31,19 +54,9 @@ PLAN_0: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(
-        read=StatusSelector(),
-        write=QuerystringTarget(name='criteria', pointer='/page'),
-        end_values=(204,),
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=StatusSelector(), write=QuerystringTarget(name='criteria', pointer='/page'), end_values=(204,), empty_string_ends=True),
     fingerprint='189a349436d57c01f7130aa522420ad4ac272ac0bb4cc9a670fcd029b7274462',
 )
-
-
-def _items_1(data: SearchResponse) -> Sequence[str] | None:
-    """Return the items of one page of search.fixed."""
-    return data.root
 
 
 PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
@@ -52,25 +65,10 @@ PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(
-        read=StatusSelector(),
-        write=QuerystringTarget(name='criteria', pointer='/page'),
-        end_values=(204,),
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=StatusSelector(), write=QuerystringTarget(name='criteria', pointer='/page'), end_values=(204,), empty_string_ends=True),
     fingerprint='91ff0dad3b068510419154ecd45e1e0af7d79c56403a5b844bc42bec745238ab',
-    bindings=(
-        PageBinding(
-            target=QuerystringTarget(name='criteria', pointer='/term'),
-            literal='all',
-        ),
-    ),
+    bindings=(PageBinding(target=QuerystringTarget(name='criteria', pointer='/term'), literal='all'),),
 )
-
-
-def _items_2(data: SearchResponse) -> Sequence[str] | None:
-    """Return the items of one page of search.next."""
-    return data.root
 
 
 PLAN_2: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
@@ -79,19 +77,9 @@ PLAN_2: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_2,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(
-        read=HeaderSelector(name='X-Next'),
-        write=QuerystringTarget(name='criteria', pointer='/term'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=HeaderSelector(name='X-Next'), write=QuerystringTarget(name='criteria', pointer='/term'), end_missing=True, empty_string_ends=True),
     fingerprint='cc362700cb051c0d9f1cc8b5248ca9f2979c25385eabe08ff36b8faea5a88fda',
 )
-
-
-def _items_3(data: LookupResponse) -> Sequence[str] | None:
-    """Return the items of one page of lookup.all."""
-    return data.root
 
 
 PLAN_3: Final[PaginationPlan[str, LookupResponse]] = PaginationPlan(
@@ -100,17 +88,7 @@ PLAN_3: Final[PaginationPlan[str, LookupResponse]] = PaginationPlan(
     call=_operations.OPERATION_1,
     items=_items_3,
     items_selector=BodySelector(pointer=''),
-    continuation=CursorPlan(
-        read=StatusSelector(),
-        write=QuerystringTarget(name='filter', pointer='/page'),
-        end_values=(204,),
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=StatusSelector(), write=QuerystringTarget(name='filter', pointer='/page'), end_values=(204,), empty_string_ends=True),
     fingerprint='4333bb03fdfb6310f2296cad37a3b39f59eefac15607f5a2b508a4efeb37025c',
-    bindings=(
-        PageBinding(
-            target=QuerystringTarget(name='filter', pointer='/term'),
-            literal=None,
-        ),
-    ),
+    bindings=(PageBinding(target=QuerystringTarget(name='filter', pointer='/term'), literal=None),),
 )

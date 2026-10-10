@@ -163,6 +163,211 @@
       "pydantic_v2.dataclass"
     ]
   },
+  "pets-type-checking": {
+    "input": "pets.yaml",
+    "files": [
+      "type-checking/pyproject.toml"
+    ],
+    "services": "pets",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": true
+    },
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z",
+        "headers": {
+          "X-Request-Id": "00000000-0000-0000-0000-000000000001",
+          "Cookie": "session=a%20b"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?kind=bird"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=99"
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Tom",
+          "tag": null
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": ""
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets/mine"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/7"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "DELETE",
+        "url": "/pets/2"
+      },
+      {
+        "method": "DELETE",
+        "url": "/pets/7"
+      },
+      {
+        "method": "GET",
+        "url": "/store/inventory"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z",
+        "headers": {
+          "X-Request-Id": "00000000-0000-0000-0000-000000000001"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=101"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=two"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=1&limit=2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?since=2024-01-01T00:00:00"
+      },
+      {
+        "method": "GET",
+        "url": "/pets",
+        "headers": {
+          "X-Request-Id": "not-a-uuid"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets?tags=a+b&tags=c%20d"
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Tom",
+          "extra": 1
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "tag": "dog"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": 7
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "content": "{",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "content": "{\"name\": \"Tom\"}",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/one"
+      }
+    ]
+  },
+  "pets-type-checking-default": {
+    "input": "pets.yaml",
+    "files": [
+      "type-checking/pyproject.toml"
+    ],
+    "services": "pets",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking"
+    }
+  },
+  "pets-type-checking-off": {
+    "input": "pets.yaml",
+    "files": [
+      "type-checking/pyproject.toml"
+    ],
+    "services": "pets",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": false
+    }
+  },
   "parameters": {
     "input": "server-parameters.yaml",
     "services": "parameters",

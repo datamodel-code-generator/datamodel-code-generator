@@ -5134,6 +5134,262 @@
       }
     }
   },
+  "templates-helpers": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.json",
+      "templates/custom/client/helper_plans.jinja2",
+      "templates/custom/client/helpers.jinja2",
+      "templates/custom/client/model_bindings.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.json"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom",
+      "extra_template_data": {
+        "#all#": {
+          "support": "Ask the platform team before changing the API document; regenerate the package instead of editing it."
+        }
+      }
+    }
+  },
+  "templates-webhooks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhooks.json",
+      "templates/custom/client/webhook.jinja2"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/webhooks.json"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom"
+    }
+  },
+  "type-checking-imports": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking"
+    }
+  },
+  "type-checking-imports-on": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": true
+    }
+  },
+  "type-checking-imports-off": {
+    "input": "pets.yaml",
+    "references": [
+      "type-checking/pyproject.toml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "pets",
+        "_sync.py"
+      ]
+    ],
+    "model": {
+      "formatters": [
+        "ruff-check",
+        "ruff-format"
+      ],
+      "settings_path": "type-checking",
+      "use_type_checking_imports": false
+    }
+  },
   "templates-missing": {
     "input": "pets.yaml",
     "modules": [

@@ -83,6 +83,20 @@ def _operation(value: object) -> object:
     return ClientOperationConfig(**converted)
 
 
+FORMATTER_FAILURE = "Ruff command failed"
+
+
+def formatter_refusal(error: RuntimeError) -> str:
+    """Report a formatter that refused the generated files by its failure and the rule codes it left unfixed.
+
+    Any other `RuntimeError` is a renderer bug, so it propagates instead of being recorded as a refusal.
+    """
+    if not str(error).startswith(FORMATTER_FAILURE):
+        raise error
+    codes = sorted(set(re.findall(r"\b[A-Z]+[0-9]{3}\b", str(error).partition("\n")[2])))
+    return f"{type(error).__name__}: {str(error).partition(':')[0]} ({', '.join(codes)})"
+
+
 def _working_directory(case: dict[str, Any], root: Path) -> AbstractContextManager[object]:
     """Run a case from its root when it asks, importing `contextlib.chdir` only then, since it needs Python 3.11."""
     if not case.get("cwd"):
@@ -269,6 +283,8 @@ def _render(
             files = sorted(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
             lines.append(f"  files {[path for path in files if path not in kept]}")
         return lines
+    except RuntimeError as error:
+        return [f"  {formatter_refusal(error)}"]
     lines: list[str] = []
     for artifact in project.artifacts:
         path = (root / artifact.path).relative_to(root)

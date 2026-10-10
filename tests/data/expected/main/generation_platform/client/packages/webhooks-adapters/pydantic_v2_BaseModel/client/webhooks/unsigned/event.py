@@ -3,9 +3,9 @@
 
 """Decode the unsigned deliveries of one webhook helper.
 
-The helper is unsigned.event, whose deliveries carry no signature: nothing authenticates
-who sent one, that its body is unchanged, or that it is not a replay, so treat every
-event as untrusted input.
+The helper is unsigned.event, whose deliveries carry no signature:
+nothing authenticates who sent one, that its body is unchanged, or that it is not a replay,
+so treat every event as untrusted input.
 """
 
 from __future__ import annotations
@@ -23,18 +23,14 @@ from ..._runtime.protocols.webhook_events import (
 )
 from ..._runtime.protocols.webhooks import WebhookOptions
 
-__all__ = ["decode_unverified"]
+__all__ = [
+    'decode_unverified',
+]
 
 
 _PLAN: Final[EventPlan[models.Invoice | models.Customer]] = EventPlan(
     helper_id='unsigned.event',
-    event=MappedEventDecoder(
-        '/meta/type',
-        {
-            'invoice.paid': EventDecoder(model_bindings.codec_0),
-            'customer.created': EventDecoder(model_bindings.codec_1),
-        },
-    ),
+    event=MappedEventDecoder('/meta/type', {'invoice.paid': EventDecoder(model_bindings.codec_0), 'customer.created': EventDecoder(model_bindings.codec_1)}),
 )
 
 
@@ -45,8 +41,12 @@ def decode_unverified(
 ) -> models.Invoice | models.Customer:
     """Decode a delivery's event without authenticating it.
 
-    Nothing verifies who sent the delivery, that its body is unchanged, or that it is
-    not a replay, and no duplicate information is returned: treat the event as untrusted
-    input. Of options, only max_body_bytes applies.
+    Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,
+    and no duplicate information is returned: treat the event as untrusted input.
+    Of options, only max_body_bytes applies.
     """
-    return decode_unsigned(_PLAN, raw_body, options=options)
+    return decode_unsigned(
+        _PLAN,
+        raw_body,
+        options=options,
+    )

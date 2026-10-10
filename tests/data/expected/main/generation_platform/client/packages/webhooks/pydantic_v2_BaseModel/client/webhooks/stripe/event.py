@@ -25,7 +25,10 @@ from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhook_keys import HmacKey
 from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
-__all__ = ["verify", "verify_async"]
+__all__ = [
+    'verify',
+    'verify_async',
+]
 
 
 _PLAN: Final[WebhookPlan[models.Message, HmacKey]] = WebhookPlan(
@@ -49,10 +52,17 @@ def verify(
 ) -> VerifiedWebhook[models.Message]:
     """Verify a delivery and decode its event.
 
-    Deliveries outside the timestamp window are rejected. Verification retains no
-    delivery state; deduplicate in your application using delivery_id when present.
+    Deliveries outside the timestamp window are rejected.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        headers,
+        keys,
+        now=now,
+        options=options,
+    )
 
 
 async def verify_async(
@@ -65,8 +75,8 @@ async def verify_async(
 ) -> VerifiedWebhook[models.Message]:
     """Verify a delivery and decode its event.
 
-    Deliveries outside the timestamp window are rejected. Verification retains no
-    delivery state; deduplicate in your application using delivery_id when present.
+    Deliveries outside the timestamp window are rejected.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,

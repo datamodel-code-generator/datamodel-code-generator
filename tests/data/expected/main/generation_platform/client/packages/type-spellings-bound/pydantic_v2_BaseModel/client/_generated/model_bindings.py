@@ -19,7 +19,5 @@ codec_0: Final[PydanticCodec[models.Listed]] = PydanticCodec(models.Listed)
 codec_1: Final[PydanticCodec[models.Named]] = PydanticCodec(models.Named)
 """Codec of /paths/~1named/post request_body (request application/json)."""
 
-codec_2: Final[PydanticCodec[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]]] = PydanticCodec(
-    tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0],
-)
+codec_2: Final[PydanticCodec[tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0]]] = PydanticCodec(tests_data_python_fastapi_handlers_spelling_types.Holder.model_fields['items'].annotation.__args__[0])
 """Codec of /paths/~1named/post response_body (response 200 application/json)."""

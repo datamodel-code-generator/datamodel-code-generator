@@ -17,7 +17,9 @@ from .._runtime.protocols.references import OperationRef
 from ..types.default import ListThingsResponse
 
 
-def _items_0(data: ListThingsResponse) -> Sequence[models.Thing] | None:
+def _items_0(
+    data: ListThingsResponse,
+) -> Sequence[models.Thing] | None:
     """Return the items of one page of things.pages."""
     return data.data
 
@@ -28,12 +30,6 @@ PLAN_0: Final[PaginationPlan[models.Thing, ListThingsResponse]] = PaginationPlan
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(
-        kind='offset',
-        write=ParameterTarget(location='query', name='offset'),
-        first=0,
-        step=None,
-        has_more=BodySelector(pointer='/has_more'),
-    ),
+    continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=None, has_more=BodySelector(pointer='/has_more')),
     fingerprint='95869c2f8227981ccd2be41553f828014c413258f1a2b6ec2be8a81ab0593fa9',
 )

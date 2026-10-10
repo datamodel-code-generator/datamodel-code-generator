@@ -17,7 +17,9 @@ from .._runtime.protocols.references import OperationRef
 from ..types.default import ListPetsResponse
 
 
-def _items_0(data: ListPetsResponse) -> Sequence[Sequence_1] | None:
+def _items_0(
+    data: ListPetsResponse,
+) -> Sequence[Sequence_1] | None:
     """Return the items of one page of pets.all."""
     return data.items
 
@@ -28,11 +30,6 @@ PLAN_0: Final[PaginationPlan[Sequence_1, ListPetsResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/items'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next'),
-        write=ParameterTarget(location='query', name='cursor'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, empty_string_ends=True),
     fingerprint='5830b2f8357333df95961bf7db3e400ba0387e9622942d8e0240ef5d38bc086c',
 )

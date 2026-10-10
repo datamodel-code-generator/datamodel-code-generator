@@ -24,7 +24,10 @@ from ..._runtime.protocols.verification import (
 from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhooks import KeySet, VerifiedWebhook, WebhookOptions
 
-__all__ = ["verify", "verify_async"]
+__all__ = [
+    'verify',
+    'verify_async',
+]
 
 
 _PLAN: Final[WebhookPlan[models.Push, Ed25519Key]] = WebhookPlan(
@@ -48,10 +51,16 @@ def verify(
 ) -> VerifiedWebhook[models.Push]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        headers,
+        keys,
+        now=now,
+        options=options,
+    )
 
 
 async def verify_async(
@@ -64,8 +73,7 @@ async def verify_async(
 ) -> VerifiedWebhook[models.Push]:
     """Verify a delivery and decode its event.
 
-    Verification retains no delivery state; deduplicate in your application using
-    delivery_id when present.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
     """
     return await averify_webhook(
         _PLAN,

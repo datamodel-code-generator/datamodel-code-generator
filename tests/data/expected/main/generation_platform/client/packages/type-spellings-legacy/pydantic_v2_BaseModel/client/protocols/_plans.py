@@ -17,7 +17,9 @@ from .._runtime.protocols.references import OperationRef
 from ..types.default import CreateJobResponse, GetJobResponse
 
 
-def _result_0(data: GetJobResponse) -> Optional[Union[models.Pet, models.Problem]]:
+def _result_0(
+    data: GetJobResponse,
+) -> Optional[Union[models.Pet, models.Problem]]:
     """Return the result of jobs.run in its final poll."""
     return data.result
 
@@ -39,13 +41,7 @@ PLAN_0: Final[PollingPlan[Union[models.Pet, models.Problem], GetJobResponse, Cre
     state=BodySelector(pointer='/status'),
     pending=('running',),
     succeeded=('done',),
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')),),
     inline=_result_0,
     inline_selector=BodySelector(pointer='/result'),
     immediate=_immediate_0,

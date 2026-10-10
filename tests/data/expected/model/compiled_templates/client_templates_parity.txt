@@ -356,6 +356,225 @@ __all__ = [
 === facade.jinja2 / docstring
 """The resources 日本 of the clients."""
 
+=== helper_plans.jinja2 / populated
+"""The plans of this package's pagination helpers 日本 {braces}."""
+
+from __future__ import annotations
+
+from typing import Final
+from msgspec import UnsetType
+
+
+def _items_0(
+    data: ListPetsResponse,
+) -> Sequence[models.Pet] | None:
+    """Return the items of one page of pets.日本."""
+    if (value_0 := data['page']) is None:
+        return None
+    if (value_1 := value_0.items) is None or isinstance(value_1, UnsetType):
+        return None
+    if isinstance(value_2 := value_1.get('next'), UnsetType):
+        return None
+    return value_2.data
+
+
+def _result_1(
+    data: GetJobResponse,
+) -> models.Report | None:
+    """Return the result of jobs.run in its final poll."""
+    return data.result
+
+
+PLAN_0: Final[PaginationPlan[models.Pet, ListPetsResponse]] = PaginationPlan(
+    helper_id='pets.日本',
+    items=_items_0,
+)
+
+=== helper_plans.jinja2 / empty
+"""The plans of this package's stream helpers."""
+
+from __future__ import annotations
+
+from typing import Final
+
+=== helpers.jinja2 / sync
+"""The synchronous protocol helpers of this package, by their dotted names."""
+
+from __future__ import annotations
+
+from functools import cached_property
+
+
+class ProtocolHelpers:
+    """The protocol helpers of this API."""
+
+    def __init__(self, core: ClientCore_1) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = ClientCore.from_client(core)
+
+    @cached_property
+    def pets(self) -> PetsProtocols:
+        """The pets protocol helpers."""
+        return PetsProtocols(self._core)
+
+
+class PetsProtocols:
+    """The pets protocol helpers 日本 {braces}."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = core
+
+    @cached_property
+    def all(self) -> PetsAllPagination:
+        """The pets.all pagination helper."""
+        return PetsAllPagination(self._core)
+
+    @cached_property
+    def run(self) -> JobsRunPolling:
+        """The jobs.run polling helper."""
+        return JobsRunPolling(self._core)
+
+
+class PetsAllPagination:
+    """The pets.all pagination helper of GET /pets."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def next_page(
+        self,
+        page: Page[models.Pet, ListPetsResponse],
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> Page[models.Pet, ListPetsResponse] | None:
+        """Fetch the page after a page of this helper 日本 {braces}."""
+        return following_page(
+            self._core,
+            _plans.PLAN_0,
+            (cursor,),
+            options=options,
+        )
+
+    def page(
+        self,
+        *,
+        cursor: str,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> Page[models.Pet, ListPetsResponse]:
+        """Fetch the first page of GET /pets."""
+        return first_page(
+            self._core,
+            _plans.PLAN_0,
+            (cursor,),
+            options=options,
+        )
+
+
+class JobsRunPolling:
+    """The jobs.run polling helper of POST /jobs."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+
+class JobsRunHandle(LroHandle[models.Report, GetJobResponse]):
+    """A handle of the jobs.run polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
+
+    __slots__ = ()
+
+    def cancel_remote(self) -> CancelReceipt[CancelJobResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return self._cancel_remote(_plans.CANCEL_1)
+
+=== helpers.jinja2 / async
+"""The asyncio protocol helpers of this package, by their dotted names."""
+
+from __future__ import annotations
+
+from functools import cached_property
+
+
+class AsyncJobsRunPolling:
+    """The jobs.run polling helper of POST /jobs."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def start(
+        self,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncJobsRunHandle:
+        """Create the operation of POST /jobs and return the handle that polls it."""
+        return await astart_operation(
+            self._core,
+            _plans.PLAN_0,
+            (cursor,),
+            options=options,
+        )
+
+
+class AsyncJobsRunHandle(AsyncLroHandle[models.Report, GetJobResponse]):
+    """A handle of the jobs.run polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
+
+    __slots__ = ()
+
+    async def cancel_remote(self) -> CancelReceipt[CancelJobResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return await self._cancel_remote(_plans.CANCEL_1)
+
+=== model_bindings.jinja2 / stdlib
+"""Native model codecs of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+from typing import Final
+
+import models
+
+from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+
+
+
+MODELS: Final[dict[type, Model]] = {
+    models.Pet: Model((Field('name', 'name'),), True),
+    models.日本: Model((Field('{braces}', 'braces'),)),
+}
+
+codec_0: Final[StdlibCodec[models.Pet]] = StdlibCodec(models.Pet, MODELS)
+"""Codec of /paths/~1pets/get response_body (response 200 application/json)."""
+
+codec_1: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
+"""Codec of \"日本\" {braces}."""
+
+=== model_bindings.jinja2 / native
+"""Native model codecs of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+from typing import Final
+
+import models
+
+from .._runtime.model_codecs.native import PydanticCodec
+
+
+codec_0: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
+"""Codec of /paths/~1pets/get response_body (response 200 application/json)."""
+
+=== model_bindings.jinja2 / empty
+"""Native model codecs of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
 === operations.jinja2 / populated
 """The operation registry 日本 of this package."""
 
@@ -1791,24 +2010,165 @@ def decode_count_pets_header(
     """Decode one declared response header of list_pets from a response's metadata."""
     return _COUNT_PETS_HEADERS.decode(info, name)
 
-=== types.jinja2 / sections
-"""Types 日本 {braces}"""
-
-from __future__ import annotations
-
-from typing import TypedDict
-
-
-class First(TypedDict):
-    value: str
-
-
-class Second(TypedDict):
-    value: int
-
 === types.jinja2 / empty
 """Types 日本 {braces}"""
 
 from __future__ import annotations
 
 from typing import TypedDict
+
+=== webhook.jinja2 / builtin
+"""Verify the signed deliveries of one webhook helper, then decode their events.
+
+The helper is github.日本, whose deliveries are signed with HMAC-SHA256 {braces}.
+"""
+
+from __future__ import annotations
+
+from typing import Final
+
+
+__all__ = [
+    'verify',
+    'verify_async',
+]
+
+
+_PLAN: Final[WebhookPlan[models.Event, HmacKey]] = WebhookPlan(
+    helper_id='github.日本',
+    event=EventDecoder(model_bindings.codec_0),
+)
+
+
+def verify(
+    raw_body: bytes,
+    headers: Sequence[tuple[str, str]],
+    keys: KeySet[HmacKey],
+    *,
+    now: datetime,
+    options: WebhookOptions | None = None,
+) -> VerifiedWebhook[models.Event]:
+    """Verify a delivery and decode its event.
+
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
+    """
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        now=now,
+        options=options,
+    )
+
+
+async def verify_async(
+    raw_body: bytes,
+    headers: Sequence[tuple[str, str]],
+    keys: KeySet[HmacKey],
+    *,
+    now: datetime,
+    options: WebhookOptions | None = None,
+) -> VerifiedWebhook[models.Event]:
+    """Verify a delivery and decode its event.
+
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
+    """
+    return await averify_webhook(
+        _PLAN,
+        raw_body,
+        now=now,
+        options=options,
+    )
+
+=== webhook.jinja2 / adapter
+"""Verify the deliveries of one webhook helper with the caller's verifier, then decode their events.
+
+The helper is adapted.plain, whose deliveries are verified by the Verifier the caller passes,
+which must authenticate the whole raw body and every fact it returns.
+"""
+
+from __future__ import annotations
+
+from typing import Final, TypeVar
+
+
+__all__ = [
+    'verify',
+    'verify_async',
+]
+
+
+K = TypeVar("K")
+
+
+_PLAN: Final[AdapterPlan[models.Event]] = AdapterPlan(
+    helper_id='github.日本',
+    event=EventDecoder(model_bindings.codec_0),
+)
+
+
+def verify(
+    raw_body: bytes,
+    headers: Sequence[tuple[str, str]],
+    keys: KeySet[K],
+    *,
+    verifier: Verifier[K],
+    now: datetime,
+    options: WebhookOptions | None = None,
+) -> VerifiedWebhook[models.Event]:
+    """Verify a delivery with verifier and decode its event.
+
+    The verifier is called once, synchronously in both functions,
+    and must authenticate the whole raw body and every fact it returns;
+    a result that is not a VerifiedSignature, lacks a fact this helper requires, returns one it does not declare,
+    or has a naive timestamp raises ConfigurationError before decoding.
+    Deliveries outside the timestamp window are rejected.
+    Verification retains no delivery state; deduplicate in your application using delivery_id when present.
+    """
+    return verify_adapted(
+        _PLAN,
+        raw_body,
+        verifier=verifier,
+        now=now,
+        options=options,
+    )
+
+=== webhook.jinja2 / unsigned
+"""Decode the unsigned deliveries of one webhook helper.
+
+The helper is unsigned.日本, whose deliveries carry no signature:
+nothing authenticates who sent one, that its body is unchanged, or that it is not a replay,
+so treat every event as untrusted input.
+"""
+
+from __future__ import annotations
+
+from typing import Final
+
+
+__all__ = [
+    'decode_unverified',
+]
+
+
+_PLAN: Final[EventPlan[models.Event]] = EventPlan(
+    helper_id='github.日本',
+    event=EventDecoder(model_bindings.codec_0),
+)
+
+
+def decode_unverified(
+    raw_body: bytes,
+    *,
+    options: WebhookOptions | None = None,
+) -> models.Event:
+    """Decode a delivery's event without authenticating it.
+
+    Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,
+    and no duplicate information is returned: treat the event as untrusted input.
+    Of options, only max_body_bytes applies.
+    """
+    return decode_unsigned(
+        _PLAN,
+        raw_body,
+        options=options,
+    )

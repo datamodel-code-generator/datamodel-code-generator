@@ -31,8 +31,17 @@ from ..types.default import (
 )
 
 
-def _items_0(data: SearchResponse) -> Sequence[str] | None:
+def _items_0(
+    data: SearchResponse,
+) -> Sequence[str] | None:
     """Return the items of one page of search.all."""
+    return data.data
+
+
+def _items_1(
+    data: SearchResponse,
+) -> Sequence[str] | None:
+    """Return the items of one page of search.everything."""
     return data.data
 
 
@@ -42,19 +51,9 @@ PLAN_0: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next'),
-        write=ParameterTarget(location='header', name='X-Cursor'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='header', name='X-Cursor'), end_missing=True, empty_string_ends=True),
     fingerprint='64c7fb5f76009475b309c908f6bfcecbc509102e9b5b4a82c21d53d32c457fb1',
 )
-
-
-def _items_1(data: SearchResponse) -> Sequence[str] | None:
-    """Return the items of one page of search.everything."""
-    return data.data
 
 
 PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
@@ -63,23 +62,9 @@ PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next'),
-        write=ParameterTarget(location='header', name='x-cursor'),
-        end_missing=True,
-        empty_string_ends=True,
-    ),
+    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='header', name='x-cursor'), end_missing=True, empty_string_ends=True),
     fingerprint='dc1c53dfcdba5448472573739bd416de836e4f2acd8e9043051ecafd4d42c817',
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='scope'),
-            literal='everything',
-        ),
-        PageBinding(
-            target=QuerystringTarget(name='criteria', pointer='/limit'),
-            literal=50,
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='scope'), literal='everything'), PageBinding(target=QuerystringTarget(name='criteria', pointer='/limit'), literal=50)),
 )
 
 
@@ -93,21 +78,7 @@ PLAN_2: Final[PollingPlan[None, GetJobResponse, CreateJobResponse]] = PollingPla
     state=BodySelector(pointer='/status'),
     pending=('queued', 'running'),
     succeeded=('done',),
-    bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='jobId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=ParameterTarget(location='header', name='X-Trace'),
-            literal='poll',
-        ),
-        PageBinding(
-            target=QuerystringTarget(name='view', pointer='/fields'),
-            literal='status',
-        ),
-    ),
+    bindings=(PageBinding(target=ParameterTarget(location='path', name='jobId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=ParameterTarget(location='header', name='X-Trace'), literal='poll'), PageBinding(target=QuerystringTarget(name='view', pointer='/fields'), literal='status')),
     interval=1.0,
 )
 
@@ -125,24 +96,8 @@ PLAN_3: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     max_chunk_bytes=4,
     partial_commit=True,
     size=ParameterTarget(location='header', name='Upload-Length'),
-    probe_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-        PageBinding(
-            target=QuerystringTarget(name='detail', pointer='/kind'),
-            literal='offset',
-        ),
-    ),
-    append_bindings=(
-        PageBinding(
-            target=ParameterTarget(location='path', name='fileId'),
-            source='initial',
-            selector=BodySelector(pointer='/id'),
-        ),
-    ),
+    probe_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=QuerystringTarget(name='detail', pointer='/kind'), literal='offset')),
+    append_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')),),
 )
 
 
@@ -152,11 +107,5 @@ STREAM_0: Final[EventPlan[models.Message]] = EventPlan(
     call=_operations.OPERATION_1,
     media='text/event-stream',
     event=model_bindings.codec_23,
-    resume=StreamResumePlan(
-        operation=OperationRef(pointer='/paths/~1events/get'),
-        call=_operations.OPERATION_1,
-        media='text/event-stream',
-        write=ParameterTarget(location='header', name='Last-Event-ID'),
-        own=True,
-    ),
+    resume=StreamResumePlan(operation=OperationRef(pointer='/paths/~1events/get'), call=_operations.OPERATION_1, media='text/event-stream', write=ParameterTarget(location='header', name='Last-Event-ID'), own=True),
 )
