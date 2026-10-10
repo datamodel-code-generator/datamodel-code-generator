@@ -119,15 +119,24 @@ class _Fields:
                 )
         for name in explicit.values():
             scope.take(name)
-        derived: dict[str, str] = {}
+        pending: dict[str, str] = {}
+        for media_type, fields in declared:
+            for item in fields:
+                if (media_type, item.wire_name) not in explicit:
+                    pending.setdefault(item.wire_name, self.base(item))
+        derived = dict(
+            zip(
+                pending,
+                self.names.claim(scope, [(base, base == wire, spec.scopes) for wire, base in pending.items()]),
+                strict=True,
+            )
+        )
         branches = tuple(
             FieldBranch(
                 media_type=media_type,
                 fields=tuple(
                     FieldArgument(
-                        python_name=explicit.get((media_type, item.wire_name))
-                        or derived.get(item.wire_name)
-                        or derived.setdefault(item.wire_name, scope.claim(self.base(item))),
+                        python_name=explicit.get((media_type, item.wire_name)) or derived[item.wire_name],
                         wire_name=item.wire_name,
                         required=item.required,
                         type=item.type,

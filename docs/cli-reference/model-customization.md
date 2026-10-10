@@ -3819,6 +3819,15 @@ The `--naming-strategy parent-prefixed` flag prefixes model names with their
 parent model name when duplicates occur. For example, if both `Order` and
 `Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
 
+Generated clients and servers (experimental) tell their derived names apart the same way, in the scope each name
+lives in: a resource's methods, a method's arguments, the server's handlers, router modules, and classes. Under
+`numbered` a duplicate takes `name_1` in declaration order; under `parent-prefixed` it first takes the name of its
+enclosing scope, the resource for a client method, the router group for a handler, and the method or handler for an
+argument (`get_item_itemId`); under `full-path` the names of every enclosing scope (`item_store_get_item_itemId`);
+and under `primary-first` the names the document spells as written, an operationId, tag, or wire name that needs no
+change, take their names before derived ones. A name with no enclosing scope, such as a resource, router module, or
+credential, is numbered, and a duplicate class takes `--duplicate-name-suffix` as model classes do.
+
 **Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming)
 
 !!! tip "Usage"

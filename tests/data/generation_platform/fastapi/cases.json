@@ -253,7 +253,8 @@
     "input": "argument-errors.yaml",
     "model": {
       "aliases": {
-        "sort": "sort by"
+        "sort": "sort by",
+        "me": "self"
       }
     },
     "config": {

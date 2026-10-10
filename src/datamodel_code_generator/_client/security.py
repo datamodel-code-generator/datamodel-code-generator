@@ -101,6 +101,11 @@ def _url(flow: object, *names: str) -> str | None:
     )
 
 
+def _provided(flows: tuple[tuple[Flow, str | None], ...]) -> bool:
+    """Return whether a scheme's flows declare a token URL, which gives it OAuth provider classes."""
+    return any(url is not None for _, url in flows)
+
+
 def _flows(declaration: WireDeclaration) -> tuple[tuple[Flow, str | None], ...]:
     """Return the OAuth providers an OAuth 2 or OpenID Connect declaration names, with their declared token URLs.
 
@@ -179,15 +184,25 @@ class SecurityPlanner:
             for alternative in binding.alternatives
             for item in alternative
         }
-        specs: list[CredentialSpec] = []
-        arguments = NameScope(_ARGUMENTS)
-        providers = NameScope()
-        for name, scheme in used.items():
-            argument = self.names.function(name, arguments)
-            flows = _flows(self.declarations[name])
-            prefix = self.names.pascal(argument, providers) if any(url is not None for _, url in flows) else ""
-            specs.append(CredentialSpec(name=argument, scheme=scheme, flows=flows, prefix=prefix))
-        return tuple(specs)
+        bases = {name: self.names.function(name) for name in used}
+        arguments = self.names.claim(NameScope(_ARGUMENTS), [(base, base == name, ()) for name, base in bases.items()])
+        flows = {name: _flows(self.declarations[name]) for name in used}
+        provided = [(name, argument) for name, argument in zip(used, arguments, strict=True) if _provided(flows[name])]
+        prefixes = dict(
+            zip(
+                (name for name, _ in provided),
+                self.names.claim(
+                    NameScope(),
+                    [(self.names.pascal(argument), bases[name] == name, ()) for name, argument in provided],
+                    camel=True,
+                ),
+                strict=True,
+            )
+        )
+        return tuple(
+            CredentialSpec(name=argument, scheme=scheme, flows=flows[name], prefix=prefixes.get(name, ""))
+            for (name, scheme), argument in zip(used.items(), arguments, strict=True)
+        )
 
     def problem(self, operation: OperationContract, message: str, *, conflict: bool = False) -> None:
         """Keep a deterministic diagnostic on the operation that requires invalid security."""

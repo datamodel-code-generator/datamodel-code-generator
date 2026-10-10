@@ -15,7 +15,13 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 
 from datamodel_code_generator import Error
-from tests.api_generation.scenarios.client_naming import naming, naming_snake
+from tests.api_generation.scenarios.client_naming import (
+    naming,
+    naming_full_path,
+    naming_parent_prefixed,
+    naming_primary_first,
+    naming_snake,
+)
 from tests.data.python.client_allowreserved import reserved_paths
 from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
@@ -862,6 +868,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
     "naming": ("naming", ("pydantic_v2.BaseModel",), naming),
     "naming-snake": ("naming-snake", ("pydantic_v2.BaseModel",), naming_snake),
+    "naming-parent-prefixed": ("naming-parent-prefixed", ("pydantic_v2.BaseModel",), naming_parent_prefixed),
+    "naming-full-path": ("naming-full-path", ("pydantic_v2.BaseModel",), naming_full_path),
+    "naming-primary-first": ("naming-primary-first", ("pydantic_v2.BaseModel",), naming_primary_first),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
     "webhook-contracts": ("pets-protocols", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), webhook_errors),

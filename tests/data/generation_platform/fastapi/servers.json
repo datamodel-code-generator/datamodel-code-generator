@@ -2975,10 +2975,6 @@
       },
       {
         "method": "GET",
-        "url": "/pets?%EF%AC%81le=a&file=b"
-      },
-      {
-        "method": "GET",
         "url": "/health"
       }
     ],
@@ -3022,7 +3018,132 @@
       },
       {
         "method": "GET",
-        "url": "/pets?%EF%AC%81le=a&file=b"
+        "url": "/health"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "naming-parent-prefixed": {
+    "input": "naming.yaml",
+    "services": "naming",
+    "model": {
+      "naming_strategy": "parent-prefixed"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "headers": {
+          "itemId": "3",
+          "X-Request-Id": "rid",
+          "Cookie": "sessionId=sid"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items?name=q",
+        "json": {
+          "name": "n",
+          "itemCount": 2
+        }
+      },
+      {
+        "method": "DELETE",
+        "url": "/items/4/tags"
+      },
+      {
+        "method": "GET",
+        "url": "/x1"
+      },
+      {
+        "method": "GET",
+        "url": "/x_1"
+      },
+      {
+        "method": "GET",
+        "url": "/health"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "naming-full-path": {
+    "input": "naming.yaml",
+    "services": "naming",
+    "model": {
+      "naming_strategy": "full-path"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "headers": {
+          "itemId": "3",
+          "X-Request-Id": "rid",
+          "Cookie": "sessionId=sid"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items?name=q",
+        "json": {
+          "name": "n",
+          "itemCount": 2
+        }
+      },
+      {
+        "method": "DELETE",
+        "url": "/items/4/tags"
+      },
+      {
+        "method": "GET",
+        "url": "/x1"
+      },
+      {
+        "method": "GET",
+        "url": "/x_1"
+      },
+      {
+        "method": "GET",
+        "url": "/health"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "naming-primary-first": {
+    "input": "naming.yaml",
+    "services": "naming",
+    "model": {
+      "naming_strategy": "primary-first"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s",
+        "headers": {
+          "itemId": "3",
+          "X-Request-Id": "rid",
+          "Cookie": "sessionId=sid"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items?name=q",
+        "json": {
+          "name": "n",
+          "itemCount": 2
+        }
+      },
+      {
+        "method": "DELETE",
+        "url": "/items/4/tags"
+      },
+      {
+        "method": "GET",
+        "url": "/x1"
+      },
+      {
+        "method": "GET",
+        "url": "/x_1"
       },
       {
         "method": "GET",

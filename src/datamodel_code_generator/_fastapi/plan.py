@@ -6,6 +6,7 @@ from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from enum import Enum
+from itertools import starmap
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
@@ -477,7 +478,6 @@ class Planner:  # noqa: PLR0904
         self.schemes: dict[str, SchemeSpec] = {}
         assert request.batch.names is not None
         self.target_names = request.batch.names
-        self.scheme_names = NameScope()
         self.backend = request.model_config.output_model_type.value
         self.problems: list[Diagnostic] = []
         self.names = self.selected("operation_names", config.operation_names)
@@ -515,15 +515,29 @@ class Planner:  # noqa: PLR0904
         operations = self.request.operations
         names = self.operation_names(operations)
         self.raise_problems()
-        classes = NameScope()
-        specs = tuple(
-            self.operation(operation, name, self.target_names.pascal(name, classes))
-            for operation, name in zip(operations, names, strict=True)
+        pascals = self.target_names.claim(
+            NameScope(),
+            [
+                (self.target_names.pascal(name), _primary(operation, name), (self.target_names.pascal(group),))
+                for operation, name, group in zip(operations, names, map(self.group_name, operations), strict=True)
+            ],
+            camel=True,
         )
+        specs = tuple(starmap(self.operation, zip(operations, names, pascals, strict=True)))
         self.check_routes(specs)
         groups = self.groups(specs)
         self.raise_problems()
-        return ServerPlan(operations=specs, groups=groups, schemes=tuple(self.schemes.values()), info=self.info())
+        schemes = tuple(self.schemes.values())
+        bases = [self.target_names.function(scheme.name) for scheme in schemes]
+        python_names = self.target_names.claim(
+            NameScope(), [(base, base == scheme.name, ()) for scheme, base in zip(schemes, bases, strict=True)]
+        )
+        schemes = tuple(replace(scheme, python_name=name) for scheme, name in zip(schemes, python_names, strict=True))
+        return ServerPlan(operations=specs, groups=groups, schemes=schemes, info=self.info())
+
+    def group_name(self, operation: OperationContract) -> str:
+        """Return the name an operation's group derives, the scope a duplicate name of the operation lives in."""
+        return self.target_names.function(group_basis(group_key(operation, single=self.config.layout == "single")))
 
     def operation_names(self, operations: tuple[OperationContract, ...]) -> list[str]:
         """Name each operation's handler: explicit names first, which must differ, then derived ones suffixed apart."""
@@ -533,12 +547,25 @@ class Planner:  # noqa: PLR0904
             for name, count in sorted(Counter(explicit).items())
             if count > 1
         )
-        scope = NameScope(explicit)
-        return [
-            self.names.get(operation.id.use_site.pointer)
-            or self.target_names.function(operation_basis(operation), scope)
-            for operation in operations
+        derived = [operation for operation in operations if operation.id.use_site.pointer not in self.names]
+        bases = [
+            self.target_names.function(operation_basis(operation.method, operation.path, operation.operation_id))
+            for operation in derived
         ]
+        claimed = dict(
+            zip(
+                (operation.id for operation in derived),
+                self.target_names.claim(
+                    NameScope(explicit),
+                    [
+                        (base, _primary(operation, base), (self.group_name(operation),))
+                        for operation, base in zip(derived, bases, strict=True)
+                    ],
+                ),
+                strict=True,
+            )
+        )
+        return [self.names.get(operation.id.use_site.pointer) or claimed[operation.id] for operation in operations]
 
     def groups(self, specs: tuple[OperationSpec, ...]) -> tuple[GroupSpec, ...]:
         """Group operations by first tag in first-occurrence order, naming router files and services apart.
@@ -557,23 +584,36 @@ class Planner:  # noqa: PLR0904
             if (name := self.config.router_names.get(key)) is not None
             and (file_stem_conflict(name) or not scope.take(name))
         }
+        derived = [key for key in members if key not in self.config.router_names]
+        bases = [self.target_names.function(group_basis(key)) for key in derived]
+        claimed = self.target_names.claim(
+            scope, [(base, base == group_basis(key), ()) for key, base in zip(derived, bases, strict=True)]
+        )
         stems = {
-            key: self.config.router_names.get(key) or self.target_names.function(group_basis(key), scope)
-            for key in members
+            key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
         }
         conflicts.update(stem for stem in stems.values() if file_stem_conflict(stem))
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(conflicts)
         )
-        services = NameScope()
+        named = [key for key in members if stems[key] != "service"]
+        services = dict(
+            zip(
+                named,
+                self.target_names.claim(
+                    NameScope(),
+                    [(self.target_names.pascal(stems[key]), stems[key] == group_basis(key), ()) for key in named],
+                    camel=True,
+                ),
+                strict=True,
+            )
+        )
         return tuple(
             GroupSpec(
                 key=key,
                 stem=stems[key],
-                service="Service"
-                if stems[key] == "service"
-                else f"{self.target_names.pascal(stems[key], services)}Service",
+                service=f"{services[key]}Service" if key in services else "Service",
                 operations=tuple(values),
             )
             for key, values in members.items()
@@ -610,7 +650,9 @@ class Planner:  # noqa: PLR0904
         responses = tuple(self.response(operation, response) for response in operation.responses)
         primary = self.primary(operation, responses)
         security = self.security(operation)
-        arguments = self.arguments(operation, parameters, body, names, secured=security is not None)
+        arguments = self.arguments(
+            operation, parameters, body, names, secured=security is not None, scopes=(self.group_name(operation), name)
+        )
         route = self.route(operation, arguments, wire_names)
         slots = {slot.wire_name: slot.slot for slot in route.slots}
         return OperationSpec(
@@ -660,7 +702,7 @@ class Planner:  # noqa: PLR0904
             )
             self.problems.append(_problem("F_SECURITY_INVALID", message, declaration.use_site))
         else:
-            self.schemes[name] = replace(scheme, python_name=self.target_names.function(name, self.scheme_names))
+            self.schemes[name] = scheme
 
     def info(self) -> tuple[tuple[str, JSONValue], ...]:
         """Return the FastAPI settings the root document's info, tags, and servers supply, in constructor order."""
@@ -1101,7 +1143,7 @@ class Planner:  # noqa: PLR0904
         decision = _primary_decision(operation, choice.status_code, media)
         return PrimarySpec(status=choice.status_code, response=response, media=media, decision=decision)
 
-    def arguments(
+    def arguments(  # noqa: PLR0913
         self,
         operation: OperationContract,
         parameters: tuple[ParameterSpec, ...],
@@ -1109,11 +1151,13 @@ class Planner:  # noqa: PLR0904
         wire_names: tuple[str, ...],
         *,
         secured: bool,
+        scopes: tuple[str, ...] = (),
     ) -> tuple[Argument, ...]:
         """Name the handler's keywords in the fixed order.
 
         Explicit names, configured or `--aliases` entries, must differ from each other and from the handler's own
-        arguments; the others are named as model fields after their wire names, suffixed apart in argument order.
+        arguments; the others are named as model fields after their wire names, told apart in argument order by the
+        naming strategy, whose enclosing `scopes` are the operation's group and handler.
         """
         names = self.parameter_names.get(operation.id.use_site.pointer, {})
         order = {name: index for index, name in enumerate(dict.fromkeys(wire_names))}
@@ -1153,13 +1197,27 @@ class Planner:  # noqa: PLR0904
             _problem(
                 "F_NAME_CONFLICT", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
             )
-            for name, count in sorted(Counter([*filter(None, given), *(item.name for item in support)]).items())
+            for name, count in sorted(Counter([*filter(None, given), "self", *(item.name for item in support)]).items())
             if count > 1
         )
-        scope = NameScope((*RESERVED, *filter(None, given)))
+        bases = {
+            index: self.target_names.argument(parameter.wire_name)
+            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
+            if name is None
+        }
+        claimed = dict(
+            zip(
+                bases,
+                self.target_names.claim(
+                    NameScope((*RESERVED, *filter(None, given))),
+                    [(base, base == ordered[index].wire_name, scopes) for index, base in bases.items()],
+                ),
+                strict=True,
+            )
+        )
         arguments = [
             Argument(
-                name=name or self.target_names.argument(parameter.wire_name, scope),
+                name=name or claimed[index],
                 kind="native" if parameter.native is not None else "adapter",
                 location=parameter.location,
                 wire_name=parameter.wire_name,
@@ -1167,7 +1225,7 @@ class Planner:  # noqa: PLR0904
                 native=parameter.native,
                 parameter=parameter,
             )
-            for parameter, name in zip(ordered, given, strict=True)
+            for index, (parameter, name) in enumerate(zip(ordered, given, strict=True))
         ]
         bodies = [item for item in support if item.kind in {"body", "media_type"}]
         return (*(item for item in support if item.kind in {"request", "principal"}), *arguments, *bodies)
@@ -1181,6 +1239,13 @@ class Planner:  # noqa: PLR0904
             )
             self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site))
         return alias
+
+
+def _primary(operation: OperationContract, name: str) -> bool:
+    """Return whether a handler takes its operation's operationId as written."""
+    return operation.explicit_operation_id and name == operation_basis(
+        operation.method, operation.path, operation.operation_id
+    )
 
 
 def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:

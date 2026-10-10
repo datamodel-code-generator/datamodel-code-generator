@@ -559,6 +559,16 @@ class OperationContract:
     callbacks: tuple[WireDeclaration, ...]
     ignored: tuple[IgnoredDeclaration, ...]
 
+    @property
+    def operation_id(self) -> str | None:
+        """Return the operationId the operation declares as a nonempty string, or None."""
+        if not self.explicit_operation_id:
+            return None
+        value = next((item for key, item in self.facts if key == "operationId"), None)
+        return (
+            value.value if isinstance(value, LiteralScalar) and isinstance(value.value, str) and value.value else None
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class GeneratedTypeContractBatch:

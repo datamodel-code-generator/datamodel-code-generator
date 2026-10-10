@@ -15,9 +15,6 @@ render pydantic_v2.BaseModel
   write client/resources/item_store_1/__init__.py
   write client/resources/item_store_1/_sync.py
   write client/resources/item_store_1/_async.py
-  write client/resources/pets/__init__.py
-  write client/resources/pets/_sync.py
-  write client/resources/pets/_async.py
   write client/resources/close_1/__init__.py
   write client/resources/close_1/_sync.py
   write client/resources/close_1/_async.py
@@ -26,8 +23,6 @@ render pydantic_v2.BaseModel
   write client/types/item_store/_operations.py
   write client/types/item_store_1/__init__.py
   write client/types/item_store_1/_operations.py
-  write client/types/pets/__init__.py
-  write client/types/pets/_operations.py
   write client/types/close_1/__init__.py
   write client/types/close_1/_operations.py
   write client/_generated/__init__.py

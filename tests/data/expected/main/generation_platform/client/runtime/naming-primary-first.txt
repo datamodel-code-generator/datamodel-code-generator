@@ -1,4 +1,4 @@
-# naming pydantic_v2.BaseModel
+# naming-primary-first pydantic_v2.BaseModel
   > GET https://api.example.com/items/1?itemId=2&page%5Bsize%5D=10&2fa=t&class=c&options=o&body=b&self=s
     [host: api.example.com, accept-encoding: gzip, deflate, itemid: 3, x-request-id: rid, cookie: sessionId=sid] b''
   get an item = None

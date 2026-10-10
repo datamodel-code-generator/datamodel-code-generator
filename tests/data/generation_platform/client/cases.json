@@ -831,6 +831,24 @@
     "config": {"body_arguments": "both"},
     "modules": [["client", "resources", "item_store", "_sync.py"]]
   },
+  "naming-parent-prefixed": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "parent-prefixed"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
+  "naming-full-path": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "full-path"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
+  "naming-primary-first": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "primary-first"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
   "method-collisions": {
     "input": "method-collisions.yaml",
     "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]

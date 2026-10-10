@@ -69,8 +69,9 @@ naming options say: a method after its operationId, or after its method and path
 preset, which turns on `--snake-case-field` for Pydantic models, names the `petId` path parameter `pet_id`; without the
 preset, pass `--snake-case-field` explicitly for snake_case arguments, or the argument keeps the wire name, `petId`.
 `--aliases` and the special-field prefix options apply to arguments too. A derived name that its namespace already
-holds takes the model's suffix, such as `id_1` for a query `id` beside a path `id`, `body_1` for a parameter named
-`body`, or `pets_1` for a second tag that also becomes `pets`; an explicit name of `--server-operation-names`,
+holds takes the model's suffix, or the prefix `--naming-strategy` gives it, such as `id_1` for a query `id` beside a
+path `id`, `body_1` for a parameter named `body`, or `pets_1` for a second tag that also becomes `pets`; an explicit
+name of `--server-operation-names`,
 `--server-router-names`, or `--server-parameter-names` must be new and is never renamed.
 For a document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
 implement it in a module of your own, outside the generated package:

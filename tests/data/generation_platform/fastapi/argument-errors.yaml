@@ -9,5 +9,6 @@ paths:
         - {name: page, in: query, schema: {type: integer}}
         - {name: size, in: header, schema: {type: integer}}
         - {name: sort, in: query, schema: {type: string}}
+        - {name: me, in: query, schema: {type: string}}
       responses:
         "204": {description: Done.}

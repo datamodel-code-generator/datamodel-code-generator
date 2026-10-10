@@ -7,8 +7,7 @@ as a model field named after that wire name is: `--snake-case-field`, `--aliases
 the field name delimiter apply to it.
 
 A derived name never fails: in a scope that already holds it, it takes the model's duplicate suffix. An explicit name
-(a configured name or an `--aliases` entry) is a user choice and is validated, never renamed. Names are compared in
-NFKC form, as Python compares identifiers, and derived names are written in it.
+(a configured name or an `--aliases` entry) is a user choice and is validated, never renamed.
 """
 
 from __future__ import annotations
@@ -17,20 +16,20 @@ import keyword
 import re
 import unicodedata
 from copy import copy
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, TypeAlias
 
-from datamodel_code_generator._target_contract import LiteralScalar
+from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
-    from datamodel_code_generator._target_contract import OperationContract
     from datamodel_code_generator.reference import FieldNameResolver, ModelResolver
 
-__all__ = ("WINDOWS_DEVICES", "NameScope", "TargetNames", "explicit_name", "operation_basis")
+__all__ = ("WINDOWS_DEVICES", "Candidate", "NameScope", "TargetNames", "explicit_name", "operation_basis")
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _WORDS: Final = re.compile(r"[^\W_]+")
+_PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath})
 WINDOWS_DEVICES: Final = frozenset({
     "aux",
     "con",
@@ -41,10 +40,6 @@ WINDOWS_DEVICES: Final = frozenset({
 })
 
 
-def _nfkc(text: str) -> str:
-    return unicodedata.normalize("NFKC", text)
-
-
 def explicit_name(value: object) -> bool:
     """Return whether an explicit name is a Python identifier: no keyword, no leading `__`, and in NFKC form."""
     return (
@@ -52,28 +47,22 @@ def explicit_name(value: object) -> bool:
         and value.isidentifier()
         and not keyword.iskeyword(value)
         and not value.startswith("__")
-        and _nfkc(value) == value
+        and unicodedata.normalize("NFKC", value) == value
     )
 
 
-def operation_basis(operation: OperationContract) -> str:
+def operation_basis(method: str, path: str, operation_id: str | None) -> str:
     """Return the text an operation's derived name comes from: its operationId, or its method and path.
 
     The path gives its literal words, and `by_` before the words of each placeholder; a path with neither is `root`.
     """
-    operation_id = next((value for key, value in operation.facts if key == "operationId"), None)
-    if (
-        operation.explicit_operation_id
-        and isinstance(operation_id, LiteralScalar)
-        and isinstance(text := operation_id.value, str)
-        and text
-    ):
-        return text
+    if operation_id:
+        return operation_id
     parts: list[str] = []
-    for index, piece in enumerate(_PLACEHOLDER.split(operation.path)):
+    for index, piece in enumerate(_PLACEHOLDER.split(path)):
         if words := _WORDS.findall(piece):
             parts.append(f"by_{'_'.join(words)}" if index % 2 else "_".join(words))
-    return "_".join((operation.method.lower(), *(parts or ["root"])))
+    return "_".join((method.lower(), *(parts or ["root"])))
 
 
 class NameScope:
@@ -90,7 +79,6 @@ class NameScope:
         self._taken = {self._key(name) for name in reserved}
 
     def _key(self, name: str) -> str:
-        name = _nfkc(name)
         return name.casefold() if self._folded else name
 
     def __contains__(self, name: object) -> bool:
@@ -110,7 +98,6 @@ class NameScope:
         A field takes `name_1`, `name_2`; a class `Name1`, `Name2`, or `NameSuffix`, `NameSuffix1` with a suffix.
         """
         delimiter = "" if camel else "_"
-        name = _nfkc(name)
         candidate, count = name, 0
         while candidate in self:
             count += 1
@@ -122,15 +109,25 @@ class NameScope:
         return candidate
 
 
+Candidate: TypeAlias = tuple[str, bool, tuple[str, ...]]
+"""A derived name to claim: the name, whether the document gives it as written, and its enclosing scopes' names."""
+
+
 class TargetNames:
     """The model generator's configured class-name resolver, applied to the names of generated API code.
 
-    `suffix` is the model's duplicate class name suffix, which `--duplicate-name-suffix` sets.
+    `suffix` is the model's duplicate class name suffix, which `--duplicate-name-suffix` sets, and `strategy` its
+    `--naming-strategy`, which decides how a derived name that its scope already holds is told apart.
     """
 
-    __slots__ = ("_function", "_resolver", "suffix")
+    __slots__ = ("_function", "_resolver", "strategy", "suffix")
 
-    def __init__(self, resolver: FieldNameResolver, suffix: str | None = None) -> None:
+    def __init__(
+        self,
+        resolver: FieldNameResolver,
+        suffix: str | None = None,
+        strategy: NamingStrategy = NamingStrategy.Numbered,
+    ) -> None:
         """Keep the resolver, and a copy of it that snake-cases every name as `--snake-case-field` would."""
         function = copy(resolver)
         function.snake_case_field = True
@@ -138,6 +135,7 @@ class TargetNames:
         self._resolver = resolver
         self._function = function
         self.suffix = suffix or None
+        self.strategy = strategy
 
     @classmethod
     def of(cls, model_resolver: ModelResolver) -> TargetNames:
@@ -146,17 +144,34 @@ class TargetNames:
 
         suffixes = model_resolver.duplicate_name_suffix_map
         suffix = suffixes.get("model", suffixes.get("default")) or model_resolver.duplicate_name_suffix
-        return cls(model_resolver.field_name_resolvers[ModelType.CLASS], suffix)
+        return cls(model_resolver.field_name_resolvers[ModelType.CLASS], suffix, model_resolver.naming_strategy)
 
-    def function(self, text: str, scope: NameScope | None = None) -> str:
-        """Return the snake_case name of a method, handler, resource, or module, unique in its scope."""
-        name = self._function.get_valid_name(_nfkc(text))
-        return name if scope is None else scope.claim(name)
+    def function(self, text: str) -> str:
+        """Return the snake_case name of a method, handler, resource, or module."""
+        return self._function.get_valid_name(text)
 
-    def pascal(self, text: str, scope: NameScope | None = None) -> str:
-        """Return the UpperCamel class name the models would give, unique in its scope by the model's class rule."""
-        name = self._resolver.get_valid_name(_nfkc(text), ignore_snake_case_field=True, upper_camel=True)
-        return name if scope is None else scope.claim(name, self.suffix, camel=True)
+    def pascal(self, text: str) -> str:
+        """Return the UpperCamel class name the models would give."""
+        return self._resolver.get_valid_name(text, ignore_snake_case_field=True, upper_camel=True)
+
+    def claim(self, scope: NameScope, candidates: Sequence[Candidate], *, camel: bool = False) -> list[str]:
+        """Claim derived names in their scope, in order, telling a name the scope already holds apart as models do.
+
+        `numbered` suffixes it; `parent-prefixed` first prefixes it with its innermost enclosing scope, `full-path`
+        with every enclosing scope; `primary-first` claims the names the document gives as written before the others.
+        A class takes the duplicate class suffix.
+        """
+        order: Iterable[int] = range(len(candidates))
+        if self.strategy is NamingStrategy.PrimaryFirst:
+            order = sorted(order, key=lambda index: not candidates[index][1])
+        names = [""] * len(candidates)
+        for index in order:
+            name, _, path = candidates[index]
+            if path and name in scope and self.strategy in _PREFIXED:
+                parts = path[-1:] if self.strategy is NamingStrategy.ParentPrefixed else path
+                name = ("" if camel else "_").join((*parts, name))
+            names[index] = scope.claim(name, self.suffix if camel else None, camel=camel)
+        return names
 
     def alias(self, wire_name: str) -> str | None:
         """Return the flat `--aliases` entry for a wire name, which names its argument as given."""
@@ -170,8 +185,6 @@ class TargetNames:
             if isinstance(value, str)
         )
 
-    def argument(self, wire_name: str, scope: NameScope | None = None) -> str:
-        """Return the name a model field named after a wire name takes, in NFKC form and unique in its scope."""
-        key = wire_name if wire_name in self._resolver.aliases else _nfkc(wire_name)
-        name = _nfkc(self._resolver.get_valid_field_name_and_alias(key)[0])
-        return name if scope is None else scope.claim(name)
+    def argument(self, wire_name: str) -> str:
+        """Return the name a model field named after a wire name takes."""
+        return self._resolver.get_valid_field_name_and_alias(wire_name)[0]

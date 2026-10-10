@@ -210,7 +210,8 @@ class FieldBranch:
 class OperationSpec:
     """Everything the renderer needs for one selected operation.
 
-    `body_only` pairs each body media type of a 'both' operation that has no field arguments with the reason.
+    `body_only` pairs each body media type of a 'both' operation that has no field arguments with the reason, and
+    `scopes` names the scopes its arguments live in for the naming strategy: its resource and its derived method name.
     """
 
     contract: OperationContract
@@ -238,6 +239,7 @@ class OperationSpec:
     security: SecurityBinding | None = None
     auth_challenge_less_401: bool = False
     accepted_content_encodings: tuple[str, ...] = ()
+    scopes: tuple[str, ...] = ()
 
     @property
     def head(self) -> bool:
@@ -374,12 +376,11 @@ class Planner:
         self.styles = {use: {plan.name: plan for plan in plans} for use, plans in wire.styles}
         self.documents = {document.id: document.uri for document in request.batch.documents}
         self.resource_names = {item.tag: item.namespace for item in config.resource_names}
-        self.namespaces: dict[str, str] = {}
-        self.roots = NameScope(RESERVED_MEMBERS, folded=True)
         self.problems: list[Diagnostic] = []
         self.security = SecurityPlanner(request.batch, self.problems)
         self.settings = self.resolved()
         self.raise_problems()
+        self.namespaces = self.tag_namespaces()
 
     @cached_property
     def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
@@ -424,7 +425,9 @@ class Planner:
         """Plan one operation's names, arguments, media, responses, and servers."""
         setting = self.settings.get(operation.id.use_site.pointer)
         name = self.method(operation, setting)
-        parameters = self.parameters(operation, setting)
+        resource = self.resource(operation, setting)
+        scopes = (*resource.split("."), name)
+        parameters = self.parameters(operation, setting, scopes)
         body = None if operation.request_body is None else self.body(operation, operation.request_body, setting)
         runtime = None if setting is None else setting.runtime
         security = self.security.binding(operation)
@@ -446,7 +449,7 @@ class Planner:
         return OperationSpec(
             contract=operation,
             index=index,
-            resource=self.resource(operation, setting),
+            resource=resource,
             name=name,
             pascal="",
             operation_id=operation_id if isinstance(operation_id, str) and operation_id else None,
@@ -467,6 +470,7 @@ class Planner:
             security=security,
             auth_challenge_less_401=False if runtime is None else runtime.auth_challenge_less_401,
             accepted_content_encodings=() if runtime is None else runtime.accepted_content_encodings,
+            scopes=scopes,
         )
 
     def _idempotency_header(
@@ -512,12 +516,32 @@ class Planner:
             return "default"
         if (mapped := self.resource_names.get(tags[0])) is not None:
             return mapped
-        if (namespace := self.namespaces.get(tags[0])) is None:
-            namespace = self.namespaces[tags[0]] = self.names.function(tags[0], self.roots)
+        return self.namespaces[tags[0]]
+
+    def tag_namespaces(self) -> dict[str, str]:
+        """Name the resource of each first tag that no setting names, apart from the clients' members and each other.
+
+        A Windows device name needs an explicit one.
+        """
+        first: dict[str, OperationContract] = {}
+        for operation in self.request.operations:
+            setting = self.settings.get(operation.id.use_site.pointer)
+            if (
+                (setting is None or setting.resource is None)
+                and (tags := _tags(operation))
+                and tags[0] not in self.resource_names
+            ):
+                first.setdefault(tags[0], operation)
+        bases = [self.names.function(tag) for tag in first]
+        names = self.names.claim(
+            NameScope(RESERVED_MEMBERS, folded=True),
+            [(base, base == tag, ()) for tag, base in zip(first, bases, strict=True)],
+        )
+        for (tag, operation), namespace in zip(first.items(), names, strict=True):
             if namespace.casefold() in WINDOWS_DEVICES:
-                message = f"The tag {tags[0]!r} of {_label(operation)} needs an explicit resource name"
+                message = f"The tag {tag!r} of {_label(operation)} needs an explicit resource name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
-        return namespace
+        return dict(zip(first, names, strict=True))
 
     def method(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
         """Return the operation's method name: explicit, or derived from its operationId or its method and path.
@@ -525,7 +549,7 @@ class Planner:
         The resource names derived names apart; an explicit name must not be a member the resource defines.
         """
         if setting is None or (name := setting.name) is None:
-            return self.names.function(operation_basis(operation))
+            return self.names.function(operation_basis(operation.method, operation.path, operation.operation_id))
         if name in RESERVED_MEMBERS:
             message = f"The method name {name!r} of {_label(operation)} is reserved"
             self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
@@ -555,14 +579,33 @@ class Planner:
                     self.problems.append(_problem("E_NAME_COLLISION", message))
             for name in RESERVED_MEMBERS:
                 scope.take(name)
-            types = NameScope()
-            for spec in operations:
-                name = spec.name if spec.index in explicit else scope.claim(spec.name)
-                named[spec.index] = replace(spec, name=name, pascal=self.names.pascal(name, types))
+            parts = tuple(namespace.split("."))
+            derived = [spec for spec in operations if spec.index not in explicit]
+            claimed = dict(
+                zip(
+                    (spec.index for spec in derived),
+                    self.names.claim(
+                        scope, [(spec.name, _primary(spec.contract, spec.name), parts) for spec in derived]
+                    ),
+                    strict=True,
+                )
+            )
+            methods = [claimed.get(spec.index, spec.name) for spec in operations]
+            prefix = ("".join(map(self.names.pascal, parts)),)
+            pascals = self.names.claim(
+                NameScope(),
+                [
+                    (self.names.pascal(name), _primary(spec.contract, spec.name), prefix)
+                    for spec, name in zip(operations, methods, strict=True)
+                ],
+                camel=True,
+            )
+            for spec, name, pascal in zip(operations, methods, pascals, strict=True):
+                named[spec.index] = replace(spec, name=name, pascal=pascal)
         return tuple(named)
 
     def parameters(
-        self, operation: OperationContract, setting: ClientOperationConfig | None
+        self, operation: OperationContract, setting: ClientOperationConfig | None, path: tuple[str, ...]
     ) -> tuple[ParameterSpec, ...]:
         """Plan the effective parameters in order and name their arguments.
 
@@ -596,9 +639,12 @@ class Planner:
                 self.problems.append(_problem("E_NAME_COLLISION", message, operation.id.use_site))
         for name in (*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())):
             scope.take(name)
+        bases = {index: self.names.argument(item[2]) for index, item in enumerate(declared) if item[4] is None}
+        derived = self.names.claim(scope, [(base, base == declared[index][2], path) for index, base in bases.items()])
+        claimed = dict(zip(bases, derived, strict=True))
         specs: list[ParameterSpec] = []
-        for declaration, location, wire_name, plan, given in declared:
-            python_name = given or self.names.argument(wire_name, scope)
+        for index, (declaration, location, wire_name, plan, given) in enumerate(declared):
+            python_name = given or claimed[index]
             required = fact(declaration, "required") is True
             use = self.use(_uses(declaration))
             argument = None if use is None or use.type is None else self.facts.argument(use.type)
@@ -1065,6 +1111,13 @@ class Planner:
             )
             for namespace, operations in members.items()
         )
+
+
+def _primary(operation: OperationContract, name: str) -> bool:
+    """Return whether a method takes its operation's operationId as written."""
+    return operation.explicit_operation_id and name == operation_basis(
+        operation.method, operation.path, operation.operation_id
+    )
 
 
 def _parts_of(namespace: str) -> list[str]:
