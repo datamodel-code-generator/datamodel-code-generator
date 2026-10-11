@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: Nullable parameters, version: "1.0"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /items:
+    get:
+      operationId: getItems
+      parameters:
+        - {name: cap, in: query, schema: {type: [integer, "null"]}}
+        - {name: tags, in: query, schema: {type: [array, "null"], items: {type: integer}}}
+        - name: filter
+          in: query
+          style: deepObject
+          explode: true
+          schema: {type: [object, "null"], properties: {name: {type: string}}}
+        - {name: X-Trace, in: header, schema: {type: [string, "null"]}}
+        - {name: session, in: cookie, schema: {type: [string, "null"]}}
+        - {name: blob, in: query, content: {application/json: {schema: {type: [integer, "null"]}}}}
+        - {name: levels, in: query, schema: {type: array, items: {type: [integer, "null"]}}}
+      responses:
+        "204": {description: Done.}
+  /needed/{key}:
+    get:
+      operationId: getNeeded
+      parameters:
+        - {name: key, in: path, required: true, schema: {type: [string, "null"]}}
+        - {name: need, in: query, required: true, schema: {type: [integer, "null"]}}
+      responses:
+        "204": {description: Done.}

@@ -1,0 +1,20 @@
+# nullable-parameters pydantic_v2.BaseModel
+  > GET https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  omit null optional parameters = None
+  > GET https://api.example.com/items?cap=0&tags=1&tags=2
+    [host: api.example.com, accept-encoding: gzip, deflate, x-trace: t, cookie: session=s] b''
+  send optional values = None
+  > GET https://api.example.com/items?blob=null
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  send null content = None
+  > GET https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  omit an empty array = None
+  refuse a null array item ! DecodeError: DecodeError(operation_id='getItems', reason='unencodable', location='query.levels') [operation_id='getItems', location=('query', 'levels'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('The NoneType value does not have the integer lexical kind')] unencodable
+  refuse a null required query ! DecodeError: DecodeError(operation_id='getNeeded', reason='unencodable', location='query.need') [operation_id='getNeeded', location=('query', 'need'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('JSON null cannot be written by a style-based parameter')] unencodable
+  refuse a null path ! DecodeError: DecodeError(operation_id='getNeeded', reason='unencodable', location='path.key') [operation_id='getNeeded', location=('path', 'key'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('JSON null cannot be written by a style-based parameter')] unencodable
+  > GET https://api.example.com/items
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async omit null optional parameters = None
+  async refuse a null required query ! DecodeError: DecodeError(operation_id='getNeeded', reason='unencodable', location='query.need') [operation_id='getNeeded', location=('query', 'need'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('JSON null cannot be written by a style-based parameter')] unencodable

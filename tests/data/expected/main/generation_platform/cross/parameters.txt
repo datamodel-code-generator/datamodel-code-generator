@@ -34,8 +34,11 @@ get_sizes values
   get_sizes(size=3, words=['x', 'y z'], one='x', least=8, cap=4)
   < 204 -
   = None
-get_sizes null [bug: the client signature takes None for the nullable cap, then refuses to send it]
-  ! DecodeError: DecodeError(operation_id='getSizes', reason='unencodable', location='query.cap') [operation_id='getSizes', location=('query', 'cap'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('JSON null cannot be written by a style-based parameter')] unencodable
+get_sizes null
+  > GET /sizes?size=10&least=7
+  get_sizes(size=10, words=['a', 'b'], one='x', least=7, cap=None)
+  < 204 -
+  = None
 get_codes
   > GET /codes
   get_codes(X_Codes=[1, 2])

@@ -4,7 +4,7 @@ dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.13.5
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
-  client/client.py: 1801
+  client/client.py: 1806
   client/content.py: 102
   client/errors.py: 306
   client/logical.py: 230
@@ -25,7 +25,7 @@ copied runtime
   model_codecs/native.py: 172
   model_codecs/parameters.py: 312
   model_codecs/unset.py: 11
-total 23 modules, 6097 lines
+total 23 modules, 6102 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py

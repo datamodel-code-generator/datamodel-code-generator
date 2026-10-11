@@ -242,6 +242,11 @@ test for it with `is UNSET`. A type checker must support PEP 661 sentinels to ac
 later (mypy 2.3 reports `valid-type`), or Pyright and ty, which the generated packages are checked with in strict
 mode.
 
+A parameter style has no spelling of null, so `None` for an optional nullable query, header, or cookie parameter is
+sent as `UNSET` is: the parameter is left out, which a server reads as absent. A parameter declared with `content`
+sends JSON `null`. A required parameter, including a path parameter, and an array item refuse `None` with a
+`DecodeError` whose reason is `unencodable`.
+
 ## Webhook contracts
 
 Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is

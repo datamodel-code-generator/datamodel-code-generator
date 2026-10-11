@@ -51,10 +51,7 @@ def calls(kit: Kit) -> Calls:
         ("get_ratios limits", lambda: api.default.get_ratios(ratios=[2.0], limits=[3])),
         ("get_sizes defaults", api.default.get_sizes),
         ("get_sizes values", lambda: api.default.get_sizes(size=3, words=["x", "y z"], one="x", least=8, cap=4)),
-        (
-            "get_sizes null [bug: the client signature takes None for the nullable cap, then refuses to send it]",
-            lambda: api.default.get_sizes(cap=None),
-        ),
+        ("get_sizes null", lambda: api.default.get_sizes(cap=None)),
         ("get_codes", lambda: api.default.get_codes(X_Codes=[1, 2])),
         ("repeat", lambda: api.default.repeat(id=5)),
         ("get_note", lambda: api.default.get_note(note_id=3)),

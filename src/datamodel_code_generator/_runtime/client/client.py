@@ -337,7 +337,10 @@ def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
 
 
 def _parameters(operation: OperationPlan[object], arguments: tuple[object, ...]) -> _Request:
-    """Return a call's request with its parameters encoded."""
+    """Return a call's request with its parameters encoded.
+
+    A style has no spelling of null, so an optional style parameter whose value dumps to null is left out, as UNSET is.
+    """
     request = _Request()
     for spec, value in zip(operation.parameters, arguments, strict=True):
         plan = spec.plan
@@ -346,7 +349,9 @@ def _parameters(operation: OperationPlan[object], arguments: tuple[object, ...])
                 raise request_decode_error(operation, (plan.location, plan.name))
             continue
         try:
-            request.add(plan, spec.dump(value))
+            if (wire := spec.dump(value)) is None and not plan.required and plan.content_media_type is None:
+                continue
+            request.add(plan, wire)
         except request_errors(spec.codec) as error:
             raise request_decode_error(operation, (plan.location, plan.name), error) from None
     return request

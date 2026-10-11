@@ -5062,6 +5062,9 @@
       "body_arguments": "both"
     }
   },
+  "nullable-parameters": {
+    "input": "nullable-parameters.yaml"
+  },
   "parameter-kinds": {
     "input": "parameter-kinds.yaml"
   },
