@@ -104,11 +104,8 @@ class ClientTarget:
     unsupported_backend: str = "E_CONFIG_VALUE"
     selector: str = "--generate-client"
 
-    def __init__(self, protocol_base: Path | None = None) -> None:
-        """Resolve the documents that helper records or a helper JSON object name against protocol_base.
-
-        Without it, they resolve against the working directory.
-        """
+    def __init__(self, protocol_base: Path) -> None:
+        """Resolve the documents that the helper JSON object names against protocol_base."""
         self.protocol_base = protocol_base
 
     def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[too-many-locals]
@@ -116,7 +113,7 @@ class ClientTarget:
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         backend = _BACKENDS[request.model_config.output_model_type]
-        protocols = plan_protocols(request, config.protocols, self.protocol_base or request.cwd)
+        protocols = plan_protocols(request, config.protocols, self.protocol_base)
         wire = _wire(request, request.batch)
         facts = ModelFacts(request.batch)
         helping = helper_operations(protocols)
