@@ -45,9 +45,9 @@ def capability_arguments(profile: str, root: Path) -> list[str]:
 
 
 def client_capability_report(profile: str, root: Path, stderr: str) -> str:
-    """List the dependencies a profile's run asks to add, its public files and its copied-runtime module lines.
+    """List the dependencies a profile's run asks to add, its public files and its copied-runtime modules.
 
-    The run writes the only Python files under the root.
+    Line counts are listed only for `minimal`. The run writes the only Python files under the root.
     """
     backend = PROFILES[profile].get("backend", "pydantic_v2.BaseModel")
     added = next(line for line in stderr.splitlines() if line.lstrip().startswith("uv add "))
@@ -58,13 +58,14 @@ def client_capability_report(profile: str, root: Path, stderr: str) -> str:
             runtime[relative.relative_to(f"{PACKAGE}/_runtime").as_posix()] = len(path.read_bytes().splitlines())
         elif all(not part.startswith("_") or part == "__init__.py" for part in relative.parts):
             public.append(relative.as_posix())
+    counted = profile == "minimal"
     return "\n".join([
         f"# {profile}",
         f"backend {backend}",
         f"dependencies {' '.join(shlex.split(added)[2:])}",
         "copied runtime",
-        *(f"  {path}: {lines}" for path, lines in sorted(runtime.items())),
-        f"total {len(runtime)} modules, {sum(runtime.values())} lines",
+        *(f"  {path}: {lines}" if counted else f"  {path}" for path, lines in sorted(runtime.items())),
+        f"total {len(runtime)} modules, {sum(runtime.values())} lines" if counted else f"total {len(runtime)} modules",
         "public files",
         *(f"  {path}" for path in sorted(public)),
         "",
