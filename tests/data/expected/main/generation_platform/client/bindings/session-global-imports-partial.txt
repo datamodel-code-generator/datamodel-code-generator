@@ -2,46 +2,38 @@
 render pydantic_v2.BaseModel plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py pydantic_v2_BaseModel/plain
 render pydantic_v2.BaseModel remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py pydantic_v2_BaseModel/remapped
 render pydantic_v2.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py pydantic_v2_dataclass/plain
 render pydantic_v2.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py pydantic_v2_dataclass/remapped
 render dataclasses.dataclass plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py dataclasses_dataclass/plain
 render dataclasses.dataclass remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic Error: /paths/~1native/post/requestBody/content/application~1json/schema: The dataclasses.dataclass converter has no conversion for the custom_uuid.UUID type
 render typing.TypedDict plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py dataclasses_dataclass/plain
 render typing.TypedDict remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic Error: /paths/~1native/post/requestBody/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type
 render msgspec.Struct plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py msgspec_Struct/plain
 render msgspec.Struct remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py
-  codec_0 UUID
+  model_bindings.py msgspec_Struct/remapped

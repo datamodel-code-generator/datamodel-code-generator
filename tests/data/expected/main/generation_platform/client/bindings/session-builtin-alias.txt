@@ -1,28 +1,16 @@
 # session-builtin-alias
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.BuiltinTypeFieldNames
-  codec_1 models.BuiltinTypeFieldNames
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.BuiltinTypeFieldNames
-  codec_1 models.BuiltinTypeFieldNames
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.BuiltinTypeFieldNames
-  codec_1 models.BuiltinTypeFieldNames
-  map models:BuiltinTypeFieldNames bool=bool, bytearray=bytearray, bytes=bytes, classmethod=classmethod, complex=complex, dict=dict, enumerate=enumerate, filter=filter, float=float, frozenset=frozenset, int=int, list=list, map=map, memoryview=memoryview, object=object, property=property, range=range, reversed=reversed, set=set, slice=slice, staticmethod=staticmethod, str=str, super=super, tuple=tuple, type=type, zip=zip, normal_field=normal_field
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.BuiltinTypeFieldNames
-  codec_1 models.BuiltinTypeFieldNames
-  map models:BuiltinTypeFieldNames bool=bool, bytearray=bytearray, bytes=bytes, classmethod=classmethod, complex=complex, dict=dict, enumerate=enumerate, filter=filter, float=float, frozenset=frozenset, int=int, list=list, map=map, memoryview=memoryview, object=object, property=property, range=range, reversed=reversed, set=set, slice=slice, staticmethod=staticmethod, str=str, super=super, tuple=tuple, type=type, zip=zip, normal_field=normal_field
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.BuiltinTypeFieldNames
-  codec_1 models.BuiltinTypeFieldNames
+  model_bindings.py msgspec_Struct/default

@@ -1,41 +1,31 @@
 # session-integer-status
 render pydantic_v2.BaseModel paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py pydantic_v2_BaseModel/paths
 render pydantic_v2.BaseModel api
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py pydantic_v2_BaseModel/paths
 render pydantic_v2.dataclass paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py pydantic_v2_dataclass/paths
 render pydantic_v2.dataclass api
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py pydantic_v2_dataclass/paths
 render dataclasses.dataclass paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py dataclasses_dataclass/paths
 render dataclasses.dataclass api
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py dataclasses_dataclass/paths
 render typing.TypedDict paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py dataclasses_dataclass/paths
 render typing.TypedDict api
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py dataclasses_dataclass/paths
 render msgspec.Struct paths
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py msgspec_Struct/paths
 render msgspec.Struct api
   models.py
-  model_bindings.py
-  codec_0 models.FieldItemsPostResponseItem
+  model_bindings.py msgspec_Struct/paths

@@ -3,21 +3,7 @@ render pydantic_v2.BaseModel default
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   models.py
-  model_bindings.py
-  codec_0 models.FieldRecordsIdPostHeaderTraceParameter
-  codec_1 models.FieldRecordsIdPostQueryFilterParameter
-  codec_2 models.FieldRecordsIdPostPathIdParameter
-  codec_3 models.PageParameter
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.FieldRecordsIdPostResponse201LocationHeader
-  codec_9 models.FieldRecordsIdPostResponse201XLimitHeader
-  codec_10 models.Problem
-  codec_11 models.FieldRecordsIdPostPathIdParameter
-  codec_12 models.PageParameter
-  codec_13 models.Record
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default line-offsets
   @@ -12,0 +13,2 @@
   +
@@ -46,81 +32,19 @@ render pydantic_v2.dataclass default
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   models.py
-  model_bindings.py
-  codec_0 models.FieldRecordsIdPostHeaderTraceParameter
-  codec_1 models.FieldRecordsIdPostQueryFilterParameter
-  codec_2 models.FieldRecordsIdPostPathIdParameter
-  codec_3 models.PageParameter
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.FieldRecordsIdPostResponse201LocationHeader
-  codec_9 models.FieldRecordsIdPostResponse201XLimitHeader
-  codec_10 models.Problem
-  codec_11 models.FieldRecordsIdPostPathIdParameter
-  codec_12 models.PageParameter
-  codec_13 models.Record
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   models.py
-  model_bindings.py
-  codec_0 models.FieldRecordsIdPostHeaderTraceParameter
-  codec_1 models.FieldRecordsIdPostQueryFilterParameter
-  codec_2 models.FieldRecordsIdPostPathIdParameter
-  codec_3 models.PageParameter
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.FieldRecordsIdPostResponse201LocationHeader
-  codec_9 models.FieldRecordsIdPostResponse201XLimitHeader
-  codec_10 models.Problem
-  codec_11 models.FieldRecordsIdPostPathIdParameter
-  codec_12 models.PageParameter
-  codec_13 models.Record
-  map models:FieldRecordsIdPostQueryFilterParameter active=active
-  map models:Problem message=message
-  map models:Record id=id, wire-name=wire_name, nullable=nullable, items=items
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   models.py
-  model_bindings.py
-  codec_0 models.FieldRecordsIdPostHeaderTraceParameter
-  codec_1 models.FieldRecordsIdPostQueryFilterParameter
-  codec_2 models.FieldRecordsIdPostPathIdParameter
-  codec_3 models.PageParameter
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.FieldRecordsIdPostResponse201LocationHeader
-  codec_9 models.FieldRecordsIdPostResponse201XLimitHeader
-  codec_10 models.Problem
-  codec_11 models.FieldRecordsIdPostPathIdParameter
-  codec_12 models.PageParameter
-  codec_13 models.Record
-  map models:FieldRecordsIdPostQueryFilterParameter active=active
-  map models:Problem message=message
-  map models:Record id=id, wire-name=wire-name, nullable=nullable, items=items
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   models.py
-  model_bindings.py
-  codec_0 models.FieldRecordsIdPostHeaderTraceParameter
-  codec_1 models.FieldRecordsIdPostQueryFilterParameter
-  codec_2 models.FieldRecordsIdPostPathIdParameter
-  codec_3 models.PageParameter
-  codec_4 models.Record
-  codec_5 models.Record
-  codec_6 models.Record
-  codec_7 models.Record
-  codec_8 models.FieldRecordsIdPostResponse201LocationHeader
-  codec_9 models.FieldRecordsIdPostResponse201XLimitHeader
-  codec_10 models.Problem
-  codec_11 models.FieldRecordsIdPostPathIdParameter
-  codec_12 models.PageParameter
-  codec_13 models.Record
+  model_bindings.py msgspec_Struct/default

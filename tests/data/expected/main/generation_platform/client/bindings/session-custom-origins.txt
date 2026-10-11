@@ -1,16 +1,10 @@
 # session-custom-origins
 render pydantic_v2.BaseModel custom-base
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
+  model_bindings.py pydantic_v2_BaseModel/custom-base
 render pydantic_v2.BaseModel mapped-base
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
+  model_bindings.py pydantic_v2_BaseModel/custom-base
 render pydantic_v2.BaseModel decorated
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
+  model_bindings.py pydantic_v2_BaseModel/custom-base

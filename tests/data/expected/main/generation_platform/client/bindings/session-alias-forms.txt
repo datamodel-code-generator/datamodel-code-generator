@@ -1,8 +1,7 @@
 # session-alias-forms
 render pydantic_v2.BaseModel py311
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/py311
 change pydantic_v2.BaseModel py311 value-0
   @@ -18 +18 @@
   -Nullable = TypeAliasType("Nullable", str | None)
@@ -25,85 +24,58 @@ change pydantic_v2.BaseModel py311 value-4
   +Nullable = TypeAliasType("Nullable", str | None, str)
 render pydantic_v2.BaseModel py311-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/py311
 render pydantic_v2.BaseModel py312
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/py311
 render pydantic_v2.BaseModel py312-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_BaseModel/py311
 render pydantic_v2.dataclass py311
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_dataclass/py311
 render pydantic_v2.dataclass py311-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_dataclass/py311
 render pydantic_v2.dataclass py312
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_dataclass/py311
 render pydantic_v2.dataclass py312-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py pydantic_v2_dataclass/py311
 render dataclasses.dataclass py311
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model required_any=required_any, required_nullable=required_nullable, any_value=any_value, any_chain=any_chain, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items
+  model_bindings.py dataclasses_dataclass/py311
 render dataclasses.dataclass py311-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model required_any=required_any, required_nullable=required_nullable, any_value=any_value, any_chain=any_chain, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items
+  model_bindings.py dataclasses_dataclass/py311
 render dataclasses.dataclass py312
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model required_any=required_any, required_nullable=required_nullable, any_value=any_value, any_chain=any_chain, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items
+  model_bindings.py dataclasses_dataclass/py311
 render dataclasses.dataclass py312-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model required_any=required_any, required_nullable=required_nullable, any_value=any_value, any_chain=any_chain, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items
+  model_bindings.py dataclasses_dataclass/py311
 render typing.TypedDict py311
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model any_value=any_value, any_chain=any_chain, required_any=required_any, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items, required_nullable=required_nullable
+  model_bindings.py typing_TypedDict/py311
 render typing.TypedDict py311-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model any_value=any_value, any_chain=any_chain, required_any=required_any, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items, required_nullable=required_nullable
+  model_bindings.py typing_TypedDict/py311
 render typing.TypedDict py312
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model any_value=any_value, any_chain=any_chain, required_any=required_any, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items, required_nullable=required_nullable
+  model_bindings.py typing_TypedDict/py311
 render typing.TypedDict py312-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  map models:Model any_value=any_value, any_chain=any_chain, required_any=required_any, imported_none=imported_none, plain=plain, nullable=nullable, union=union, chain=chain, items=items, required_nullable=required_nullable
+  model_bindings.py typing_TypedDict/py311
 render msgspec.Struct py311
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py msgspec_Struct/py311
 render msgspec.Struct py311-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py msgspec_Struct/py311
 render msgspec.Struct py312
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py msgspec_Struct/py311
 render msgspec.Struct py312-annotated
   models.py
-  model_bindings.py
-  codec_0 models.Model
+  model_bindings.py msgspec_Struct/py311

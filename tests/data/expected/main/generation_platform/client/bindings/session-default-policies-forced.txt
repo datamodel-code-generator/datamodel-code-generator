@@ -1,28 +1,16 @@
 # session-default-policies-forced
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Defaults
-  codec_1 models.Defaults
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Defaults
-  codec_1 models.Defaults
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Defaults
-  codec_1 models.Defaults
-  map models:Defaults implicit=implicit, schema_null=schema_null, override_null=override_null, nullable=nullable, required_value=required_value, required_nullable=required_nullable
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Defaults
-  codec_1 models.Defaults
-  map models:Defaults implicit=implicit, schema_null=schema_null, override_null=override_null, nullable=nullable, required_value=required_value, required_nullable=required_nullable
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Defaults
-  codec_1 models.Defaults
+  model_bindings.py msgspec_Struct/default

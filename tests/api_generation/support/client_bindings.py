@@ -8,6 +8,8 @@ as another process writing to the staging directory would.
 A render the generator refuses reports the error instead of a package, and the generator's own warnings are reported
 before what the render ships. A case that pins a known bug names the internal exception it lets escape in "raises".
 Each render that ships a package also generates its models the ordinary way, for the models it captured to equal.
+The model bindings of a case are pinned once per distinct file, under the backend and variant of the first render
+that ships them; the report names that directory.
 """
 
 from __future__ import annotations
@@ -51,6 +53,7 @@ PACKAGE = "client"
 BINDINGS = (PACKAGE, "_generated", "model_bindings.py")
 STAGING = ".datamodel-codegen-"
 STDLIB = frozenset({"dataclasses.dataclass", "typing.TypedDict"})
+PINNED = tuple(f"session-{letter}" for letter in "abcdefgi")
 
 
 def _document(source: Path, root: Path, case: dict[str, Any]) -> Path:
@@ -118,12 +121,27 @@ def _models(modules: Modules) -> Modules:
     return {parts: text for parts, text in modules.items() if parts[0] != PACKAGE}
 
 
-def _shipped(diagnostics: list[str], modules: Modules, *, maps: bool, sources: bool) -> list[str]:
+def _listing(lines: list[str], modules: Modules, pin: str) -> list[str]:
+    """Return a render's warnings and diagnostics, its model modules, and the directory pinning its model bindings."""
+    bindings = [f"model_bindings.py {pin}"] if BINDINGS in modules else []
+    return [*lines, *("/".join(parts) for parts in _models(modules)), *bindings]
+
+
+def _sources(lines: list[str], modules: Modules) -> list[str]:
+    """Return a render's warnings and refusal or diagnostics, then each model module and its model bindings by line.
+
+    An edit of the models then shows what it changes in the models and in their bindings.
+    """
+    shipped = {**_models(modules), **({BINDINGS[-1:]: modules[BINDINGS]} if BINDINGS in modules else {})}
+    return [*lines, *(line for parts, text in shipped.items() for line in ("/".join(parts), *text.splitlines()))]
+
+
+def _shipped(lines: list[str], modules: Modules, *, maps: bool, sources: bool) -> list[str]:
     """Return the refusal or diagnostics, the model modules, and the codecs and field maps of a rendered package.
 
     With sources, each model module is followed by its lines, for an edit to show what it changes in the models.
     """
-    lines = [f"diagnostic {item}" for item in diagnostics]
+    lines = list(lines)
     for parts, text in _models(modules).items():
         lines.extend(["/".join(parts), *(text.splitlines() if sources else ())])
     if BINDINGS in modules:
@@ -168,10 +186,10 @@ def _difference(before: list[str], after: list[str]) -> list[str]:
 
 def _renders(
     case: dict[str, Any], root: Path
-) -> Iterator[tuple[str, Callable[..., tuple[list[str], list[str], Modules]], Callable[[str], Path]]]:
+) -> Iterator[tuple[str, Callable[..., tuple[list[str], Modules]], Callable[[str], Path]]]:
     """Yield the label of each backend and variant of a case, and functions that render it or its models in a directory.
 
-    A render returns its report lines without and with the model sources, and the Python modules of the package it
+    A render returns its warnings and refusal or diagnostics as report lines, and the Python modules of the package it
     ships, and the ordinary generation returns the directory that holds its models.
     """
     source = _document(DATA / case["source"], root, case)
@@ -197,7 +215,7 @@ def _renders(
             *,
             backend: str = backend,
             model: dict = model,
-        ) -> tuple[list[str], list[str], Modules]:
+        ) -> tuple[list[str], Modules]:
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
                 try:
@@ -213,12 +231,7 @@ def _renders(
                     if not isinstance(error, datamodel_code_generator.Error) and type(error).__name__ != raises:
                         raise
                     diagnostics, modules = [f"{type(error).__name__}: {error}"], {}
-            reported = _warnings(caught)
-            return (
-                [*reported, *_shipped(diagnostics, modules, maps=backend in STDLIB, sources=False)],
-                [*reported, *_shipped(diagnostics, modules, maps=backend in STDLIB, sources=True)],
-                modules,
-            )
+            return [*_warnings(caught), *(f"diagnostic {item}" for item in diagnostics)], modules
 
         def ordinary(name: str, *, backend: str = backend, model: dict = model) -> Path:
             with warnings.catch_warnings(record=True) as caught:
@@ -243,29 +256,49 @@ def _report(case_name: str, lines: list[str], unused: dict[str, list[dict[str, s
     return "\n".join([f"# {case_name}", *lines]).replace(root.resolve().as_posix(), "<root>") + "\n"
 
 
-def client_binding_report(case_name: str, root: Path) -> tuple[str, list[tuple[Modules, Path]]]:
+def _reported(
+    case_name: str, label: str, render: tuple[list[str], Modules], pins: dict[str, str]
+) -> tuple[list[str], list[str]]:
+    """Return the report lines of a render without and with its sources, pinning model bindings not pinned yet."""
+    lines, modules = render
+    if not case_name.startswith(PINNED):
+        maps = label.split(" ", maxsplit=1)[0] in STDLIB
+        return _shipped(lines, modules, maps=maps, sources=False), _shipped(lines, modules, maps=maps, sources=True)
+    pin = pins.setdefault(modules.get(BINDINGS, ""), label.replace(".", "_").replace(" ", "/"))
+    return _listing(lines, modules, pin), _sources(lines, modules)
+
+
+def client_binding_report(
+    case_name: str, root: Path
+) -> tuple[str, list[tuple[Modules, Path]], dict[tuple[str, ...], str]]:
     """Render one fixture for each backend and variant, then again with each formatter change of a render.
 
     Each render that ships a package is returned with its models, and the directory where ordinary generation
-    wrote the models of the same options.
+    wrote the models of the same options. Each distinct model bindings file is returned at the path that pins it.
     """
     case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
     if case_name == "session-cyclic-metadata":
-        return client_cyclic_metadata_report(_document(DATA / case["source"], root, case), root, MODEL), []
+        return client_cyclic_metadata_report(_document(DATA / case["source"], root, case), root, MODEL), [], {}
     changes = _edits(case, "changes")
     lines: list[str] = []
     packages: list[tuple[Modules, Path]] = []
+    pins: dict[str, str] = {}
     for key, render, ordinary in _renders(case, root):
         count, label = key.split(" ", 1)
-        listed, shipped, modules = render(count)
-        if modules:
+        listed, shipped = _reported(case_name, label, rendered := render(count), pins)
+        if modules := rendered[1]:
             packages.append((_models(modules), ordinary(f"ordinary-{count}")))
         lines.extend((f"render {label}", *(f"  {line}" for line in listed)))
         for change in changes.pop(label, ()):
             edit = {key: change[key] for key in ("old", "new", "append") if key in change}
-            _, edited, _ = render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
-            lines.extend((f"change {label} {change['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
-    return _report(case_name, lines, changes, root), packages
+            edited = render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
+            _, edited_sources = _reported(case_name, label, edited, {})
+            lines.extend((
+                f"change {label} {change['id']}",
+                *(f"  {line}" for line in _difference(shipped, edited_sources)),
+            ))
+    bindings = {(*pin.split("/"), *BINDINGS): text for text, pin in pins.items() if text}
+    return _report(case_name, lines, changes, root), packages, bindings
 
 
 @pytest.mark.abnormal_path("Another process rewriting the staged models cannot be timed from outside.")
@@ -293,9 +326,9 @@ def client_binding_rewrite_report(case_name: str, root: Path) -> str:
         count, label = key.split(" ", 1)
         if not (selected := rewrites.pop(label, ())):
             continue
-        _, shipped, _ = render(count)
+        _, shipped = _reported(case_name, label, render(count), {})
         for rewrite in selected:
             with _rewritten_stage(rewrite["old"], rewrite["new"]):
-                _, edited, _ = render(rewrite["id"])
+                _, edited = _reported(case_name, label, render(rewrite["id"]), {})
             lines.extend((f"rewrite {label} {rewrite['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
     return _report(case_name, lines, rewrites, root)

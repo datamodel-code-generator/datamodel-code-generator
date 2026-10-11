@@ -1,72 +1,16 @@
 # session-final-enum
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Request
-  codec_1 models.Request
-  codec_2 models.RequestVersionEnum
-  codec_3 models.RequestVersionEnum
-  codec_4 SerializeAsAny[models.RequestBase]
-  codec_5 SerializeAsAny[models.RequestBase]
-  codec_6 models.RequestV1
-  codec_7 models.RequestV1
-  codec_8 models.RequestV2
-  codec_9 models.RequestV2
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Request
-  codec_1 models.Request
-  codec_2 models.RequestVersionEnum
-  codec_3 models.RequestVersionEnum
-  codec_4 SerializeAsAny[models.RequestBase]
-  codec_5 SerializeAsAny[models.RequestBase]
-  codec_6 models.RequestV1
-  codec_7 models.RequestV1
-  codec_8 models.RequestV2
-  codec_9 models.RequestV2
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Request
-  codec_1 models.Request
-  codec_2 models.RequestVersionEnum
-  codec_3 models.RequestVersionEnum
-  codec_4 models.RequestBase
-  codec_5 models.RequestBase
-  codec_6 models.RequestV1
-  codec_7 models.RequestV1
-  codec_8 models.RequestV2
-  codec_9 models.RequestV2
-  map models:RequestBase version=version
-  map models:RequestV1 version=version, request_id=request_id
-  map models:RequestV2 version=version
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Request
-  codec_1 models.Request
-  codec_2 models.RequestVersionEnum
-  codec_3 models.RequestVersionEnum
-  codec_4 models.RequestBase
-  codec_5 models.RequestBase
-  codec_6 models.RequestV1
-  codec_7 models.RequestV1
-  codec_8 models.RequestV2
-  codec_9 models.RequestV2
-  map models:RequestBase version=version
-  map models:RequestV1 version=version, request_id=request_id
-  map models:RequestV2 version=version
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Request
-  codec_1 models.Request
-  codec_2 models.RequestVersionEnum
-  codec_3 models.RequestVersionEnum
-  codec_4 models.RequestBase
-  codec_5 models.RequestBase
-  codec_6 models.RequestV1
-  codec_7 models.RequestV1
-  codec_8 models.RequestV2
-  codec_9 models.RequestV2
+  model_bindings.py msgspec_Struct/default

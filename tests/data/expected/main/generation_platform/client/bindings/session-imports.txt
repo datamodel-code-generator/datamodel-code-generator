@@ -2,56 +2,20 @@
 render pydantic_v2.BaseModel default
   models/__init__.py
   models/sub.py
-  model_bindings.py
-  codec_0 models.RootModel
-  codec_1 models.RootModel
-  codec_2 sub.ChildModel
-  codec_3 sub.ChildModel
-  codec_4 sub.AnotherChild
-  codec_5 sub.AnotherChild
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models/__init__.py
   models/sub.py
-  model_bindings.py
-  codec_0 models.RootModel
-  codec_1 models.RootModel
-  codec_2 sub.ChildModel
-  codec_3 sub.ChildModel
-  codec_4 sub.AnotherChild
-  codec_5 sub.AnotherChild
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models/__init__.py
   models/sub.py
-  model_bindings.py
-  codec_0 models.RootModel
-  codec_1 models.RootModel
-  codec_2 sub.ChildModel
-  codec_3 sub.ChildModel
-  codec_4 sub.AnotherChild
-  codec_5 sub.AnotherChild
-  map models.sub:AnotherChild sibling=sibling
-  map models.sub:ChildModel id=id, parent=parent
-  map models:RootModel id=id
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models/__init__.py
   models/sub.py
-  model_bindings.py
-  codec_0 models.RootModel
-  codec_1 models.RootModel
-  codec_2 sub.ChildModel
-  codec_3 sub.ChildModel
-  codec_4 sub.AnotherChild
-  codec_5 sub.AnotherChild
-  map models.sub:AnotherChild sibling=sibling
-  map models.sub:ChildModel id=id, parent=parent
-  map models:RootModel id=id
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models/__init__.py
   models/sub.py
-  model_bindings.py
-  codec_0 models.RootModel
-  codec_1 models.RootModel
-  codec_2 sub.ChildModel
-  codec_3 sub.ChildModel
-  codec_4 sub.AnotherChild
-  codec_5 sub.AnotherChild
+  model_bindings.py msgspec_Struct/default

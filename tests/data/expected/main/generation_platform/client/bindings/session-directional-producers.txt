@@ -1,273 +1,61 @@
 # session-directional-producers
 render pydantic_v2.BaseModel request-response
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_BaseModel/request-response
 render pydantic_v2.BaseModel all
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_BaseModel/request-response
 render pydantic_v2.dataclass request-response
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_dataclass/request-response
 render pydantic_v2.dataclass all
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_dataclass/all
 render pydantic_v2.dataclass all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_dataclass/all
 render pydantic_v2.dataclass request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py pydantic_v2_dataclass/request-response
 render dataclasses.dataclass request-response
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/request-response
 render dataclasses.dataclass all
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:A id=id, name=name, secret=secret
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/all
 render dataclasses.dataclass all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:A id=id, name=name, secret=secret
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/all
 render dataclasses.dataclass request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py dataclasses_dataclass/request-response
 render typing.TypedDict request-response
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py typing_TypedDict/request-response
 render typing.TypedDict all
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:A id=id, name=name, secret=secret
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py typing_TypedDict/all
 render typing.TypedDict all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:A id=id, name=name, secret=secret
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py typing_TypedDict/all
 render typing.TypedDict request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
-  map models:ARequest name=name, secret=secret
-  map models:AResponse id=id, name=name
-  map models:BRequest name=name, secret=secret
-  map models:BResponse id=id, name=name
-  map models:ChildRequest secret=secret, name=name
-  map models:ChildResponse id=id, name=name
+  model_bindings.py typing_TypedDict/request-response
 render msgspec.Struct request-response
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py msgspec_Struct/request-response
 render msgspec.Struct all
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py msgspec_Struct/all
 render msgspec.Struct all-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.Array
-  codec_5 models.Array
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py msgspec_Struct/all
 render msgspec.Struct request-response-reuse-collapse
   models.py
-  model_bindings.py
-  codec_0 models.ARequest
-  codec_1 models.AResponse
-  codec_2 models.BRequest
-  codec_3 models.BResponse
-  codec_4 models.ArrayRequest
-  codec_5 models.ArrayResponse
-  codec_6 models.ChildRequest
-  codec_7 models.ChildResponse
+  model_bindings.py msgspec_Struct/request-response
