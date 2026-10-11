@@ -2539,7 +2539,8 @@ def test_enable_version_header(output_file: Path) -> None:
     option_description="""Include command-line options in file header for reproducibility.
 
 The `--enable-command-header` flag adds the full command-line used to generate
-the file to the header, making it easy to reproduce the generation.""",
+the file to the header, making it easy to reproduce the generation. `--http-headers` and `--http-query-parameters`
+values are shown as `<redacted>`, and `--url` like the `filename` line without its userinfo, query or fragment.""",
     input_schema="openapi/api.yaml",
     cli_args=["--enable-command-header"],
     golden_output="openapi/enable_command_header.py",

@@ -10,6 +10,7 @@ from datamodel_code_generator._client.config import OPTION_PREFIX
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._client.plan import fact
 from datamodel_code_generator._target_documents import document_identity, named_document, portable
+from datamodel_code_generator._url_redaction import redact_url
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -51,7 +52,12 @@ def _problem(
 
 
 def _undocumented(at: str, document: str | None) -> Diagnostic:
-    return _problem("E_CONFIG_VALUE", "config", f"{at}.document", f"{at}.document {document!r} is not a document name")
+    return _problem(
+        "E_CONFIG_VALUE",
+        "config",
+        f"{at}.document",
+        f"{at}.document {redact_url(str(document))!r} is not a document name",
+    )
 
 
 def plan_protocols(

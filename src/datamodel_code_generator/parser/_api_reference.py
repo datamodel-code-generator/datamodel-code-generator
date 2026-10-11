@@ -10,6 +10,7 @@ from urllib.parse import quote, unquote
 
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
+from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser.jsonschema import split_json_pointer
 from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
@@ -24,7 +25,7 @@ _BAD_ESCAPE = re.compile(r"~(?![01])")
 def pointer_tokens(ref: str) -> tuple[str, ...] | None:
     """Decode a URI fragment once, distinguishing named anchors from pointers."""
     fragment = ref.partition("#")[2]
-    msg = f"API_REF_NONCANONICAL_POINTER: {ref!r}"
+    msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(ref)!r}"
     if _BAD_PERCENT.search(fragment):
         raise SchemaParseError(msg, path=[ref])
     try:
@@ -48,7 +49,7 @@ def check_pointer_interpretation(raw: dict[str, YamlValue], original: str, resol
     if fragment[:3].lower() == "%2f":
         fragment = "/" + fragment[3:]
     if tuple(split_json_pointer(raw, fragment)) != tokens:
-        msg = f"API_REF_NONCANONICAL_POINTER: {original!r}"
+        msg = f"API_REF_NONCANONICAL_POINTER: {redact_reference(original)!r}"
         raise SchemaParseError(msg, path=[resolved])
 
 

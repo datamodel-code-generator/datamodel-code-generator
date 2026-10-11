@@ -71,6 +71,7 @@ from datamodel_code_generator._source import (
     _read_parser_source_data_from_path,
 )
 from datamodel_code_generator._template_data import copy_extra_template_data
+from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DefaultValueType, StrictTypes, _is_pydantic_version_at_least
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
@@ -1251,7 +1252,9 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
             # unresolved
             unresolved_classes = ", ".join(
-                f"[class: {item.path} references: {get_reference_classes(item)}]" for item in unresolved_references
+                f"[class: {redact_reference(item.path)} references: "
+                f"{frozenset(map(redact_reference, get_reference_classes(item)))}]"
+                for item in unresolved_references
             )
             msg = f"A Parser can not resolve classes: {unresolved_classes}."
             raise Exception(msg)  # noqa: TRY002
@@ -6746,7 +6749,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         def label(index: int) -> str:
             model = models[index]
-            return f"{model.class_name} ({model.path})"
+            return f"{model.class_name} ({redact_reference(model.path)})"
 
         postorder = list(range(len(models))) if ordered else []
         if not ordered:
@@ -7007,7 +7010,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module: ModulePath,
         source_reference_paths: Mapping[DataModel, str],
     ) -> GeneratedModelMetadata:
-        source_ref = source_reference_paths[model]
+        source_ref = redact_reference(source_reference_paths[model])
         title = model.extra_template_data.get("title")
         return {
             "class_name": model.class_name,

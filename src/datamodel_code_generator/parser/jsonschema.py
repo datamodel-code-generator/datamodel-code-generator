@@ -57,6 +57,7 @@ from datamodel_code_generator._source import (
     load_data,
     load_data_from_path,
 )
+from datamodel_code_generator._url_redaction import redact_path, redact_reference, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANY, Import
@@ -839,7 +840,7 @@ def _validate_external_ref(ref: str) -> None:
     """Reject references with more than one fragment delimiter."""
     if ref.count("#") <= 1:
         return
-    msg = f"Invalid external $ref: {ref}"
+    msg = f"Invalid external $ref: {redact_url(ref)}"
     raise Error(msg)
 
 
@@ -9250,8 +9251,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     ref = self.model_resolver.add_ref(all_of_item.ref)
                     if self._dynamic_target_bindings(ref.path):
                         warn(
-                            f"allOf base class {all_of_item.ref!r} cannot follow the $dynamicAnchor bindings of its "
-                            "dynamic scope; its $dynamicRef resolve within its own schema resources.",
+                            f"allOf base class {redact_reference(all_of_item.ref)!r} cannot follow the $dynamicAnchor "
+                            "bindings of its dynamic scope; its $dynamicRef resolve within its own schema resources.",
                             stacklevel=2,
                         )
                     if ref.path not in {b.path for b in base_classes}:
@@ -11701,7 +11702,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if not uses_local_http_path:
                 if self.allow_remote_refs is False:
                     msg = (
-                        f"Fetching remote $ref is disabled: {resolved_ref}\n"
+                        f"Fetching remote $ref is disabled: {redact_reference(resolved_ref)}\n"
                         "Reason: --no-allow-remote-refs was set, so external $ref targets are not fetched.\n"
                         "If this schema and all of its remote references are trusted, pass --allow-remote-refs. "
                         "If a trusted remote reference points to an internal schema registry, also pass "
@@ -11712,9 +11713,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     warn_deprecated(
                         "behavior.remote-ref-default",
                         details=(
-                            f"Reference: {resolved_ref}. Pass --allow-remote-refs for trusted remote schemas, "
-                            "or --no-allow-remote-refs to block HTTP(S) $ref fetching. Internal network targets "
-                            "also require --allow-private-network."
+                            f"Reference: {redact_reference(resolved_ref)}. Pass --allow-remote-refs for trusted remote "
+                            "schemas, or --no-allow-remote-refs to block HTTP(S) $ref fetching. Internal network "
+                            "targets also require --allow-private-network."
                         ),
                         stacklevel=2,
                     )
@@ -11816,22 +11817,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         assert self.http_local_ref_path is not None
         parsed = urlparse(ref)
         if parsed.scheme not in {"http", "https"}:  # pragma: no cover
-            msg = f"Unsupported local HTTP $ref URL: {ref}"
+            msg = f"Unsupported local HTTP $ref URL: {redact_url(ref)}"
             raise Error(msg)
 
         parts = [unquote(part) for part in parsed.path.split("/") if part]
-        if not parsed.netloc or any(part in {".", ".."} or "/" in part or "\\" in part for part in parts):
-            msg = f"Unsupported local HTTP $ref URL path: {ref}"
+        host = parsed.netloc.rpartition("@")[2]
+        if not host or any(part in {".", ".."} or "/" in part or "\\" in part for part in parts):
+            msg = f"Unsupported local HTTP $ref URL path: {redact_url(ref)}"
             raise Error(msg)
 
         base_path = self.http_local_ref_path.resolve()
-        relative_path = Path(parsed.netloc, *parts)
+        relative_path = Path(host, *parts)
         file_paths = [(base_path / relative_path).resolve()]
         if not parts or not Path(parts[-1]).suffix:
             file_paths.append((base_path / relative_path.with_name(f"{relative_path.name}.json")).resolve())
 
         if any(not file_path.is_relative_to(base_path) for file_path in file_paths):
-            msg = f"Unsupported local HTTP $ref URL path: {ref}"
+            msg = f"Unsupported local HTTP $ref URL path: {redact_url(ref)}"
             raise Error(msg)
 
         for file_path in file_paths:
@@ -11847,7 +11849,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     ),
                 )
 
-        msg = f"$ref local file not found for {ref}: tried {', '.join(str(path) for path in file_paths)}"
+        msg = f"$ref local file not found for {redact_url(ref)}: tried {', '.join(str(path) for path in file_paths)}"
         raise Error(msg)
 
     def _get_ref_body_from_url(self, ref: str) -> dict[str, YamlValue]:
@@ -12245,7 +12247,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and (root := self._schema_resource_locations.get(resource)) is not None
             and root.split("#", 1)[1]
         ):
-            msg = f"Embedded schema resource has no anchor {fragment!r}: {reference!r}"
+            msg = f"Embedded schema resource has no anchor {fragment!r}: {redact_url(reference)!r}"
             raise Error(msg)
         if nested_scope and resource.startswith("file://") and not reference.startswith("file://"):
             absolute = _file_uri_path(resource).as_posix() + absolute[len(resource) :]
@@ -12274,20 +12276,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return reference
         if (target := _document_location(location, document)) == reference or not target.startswith("#"):
             return reference
-        source = "/".join(self._schema_resource_path_parts[document])
+        source = redact_url("/".join(self._schema_resource_path_parts[document]))
         if reference.startswith("#"):
             if not self._lenient_pointer_exists(document, reference):
                 return target if self._lenient_pointer_exists(document, target) else reference
             message = (
-                f"$ref {reference!r} in {source} is resolved against the document for compatibility, but JSON "
-                f"Schema resolves it against the enclosing $id, to {target!r}."
+                f"$ref {redact_url(reference)!r} in {source} is resolved against the document for compatibility, "
+                f"but JSON Schema resolves it against the enclosing $id, to {redact_url(target)!r}."
             )
         else:
             if not self._loads_document(urljoin(self._schema_resource_root_bases[document], reference)):
                 return target
             message = (
-                f"$ref {reference!r} in {source} loads the referenced document for compatibility, but JSON Schema "
-                f"resolves it to the schema with that $id at {target!r}."
+                f"$ref {redact_url(reference)!r} in {source} loads the referenced document for compatibility, "
+                f"but JSON Schema resolves it to the schema with that $id at {redact_url(target)!r}."
             )
         self._resource_ref_warnings.add(f"{message} Update the reference or the $id so that both name one schema.")
         return reference
@@ -12498,7 +12500,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if not self.schema_features.boolean_schemas:
                 version_name = "Draft 4" if self.schema_features.id_field == "id" else "this version"
                 warn(
-                    f"Boolean schemas are not supported in {version_name}. Schema path: {'/'.join(path)}",
+                    f"Boolean schemas are not supported in {version_name}. Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             return
@@ -12509,7 +12511,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if isinstance(type_value, list) and "null" in type_value and not self.schema_features.null_in_type_array:
             warn(
                 'null in type array (e.g., type: ["string", "null"]) is not supported '
-                f"in this schema version. Use nullable: true instead. Schema path: {'/'.join(path)}",
+                f"in this schema version. Use nullable: true instead. Schema path: {redact_path(path)}",
                 stacklevel=3,
             )
 
@@ -12521,13 +12523,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if isinstance(exclusive_min, bool):
                 warn(
                     f"exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             if isinstance(exclusive_max, bool):
                 warn(
                     f"exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
         else:
@@ -12535,25 +12537,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if exclusive_min is not None and not isinstance(exclusive_min, bool):
                 warn(
                     f"exclusiveMinimum as number is Draft 6+ style, but schema version is Draft 4. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             if exclusive_max is not None and not isinstance(exclusive_max, bool):
                 warn(
                     f"exclusiveMaximum as number is Draft 6+ style, but schema version is Draft 4. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
 
         if not self.schema_features.read_only_write_only:
             if raw.get("readOnly") is True:
                 warn(
-                    f"readOnly is not supported in this schema version (Draft 7+ only). Schema path: {'/'.join(path)}",
+                    "readOnly is not supported in this schema version (Draft 7+ only). "
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             if raw.get("writeOnly") is True:
                 warn(
-                    f"writeOnly is not supported in this schema version (Draft 7+ only). Schema path: {'/'.join(path)}",
+                    "writeOnly is not supported in this schema version (Draft 7+ only). "
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
 
@@ -12574,7 +12578,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if obj.prefixItems is not None and not self.schema_features.prefix_items:
             warn(
                 f"prefixItems is not supported in this schema version. "
-                f"Use items as array for tuple validation. Schema path: {'/'.join(path)}",
+                f"Use items as array for tuple validation. Schema path: {redact_path(path)}",
                 stacklevel=4,
             )
 
@@ -12582,7 +12586,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if isinstance(obj.items, list) and self.schema_features.prefix_items:
             warn_deprecated(
                 "schema.jsonschema-items-array",
-                details=f"Schema path: {'/'.join(path)}",
+                details=f"Schema path: {redact_path(path)}",
                 stacklevel=4,
             )
 
@@ -12904,13 +12908,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         dangling_refs = sorted(self._dangling_refs)
         if self.strict_refs:
-            details = "\n".join(f"- {source}: {ref}" for source, ref in dangling_refs)
+            details = "\n".join(f"- {redact_url(source)}: {ref}" for source, ref in dangling_refs)
             msg = f"Unresolved local $ref targets:\n{details}"
             raise Error(msg)
 
         for source, ref in dangling_refs:
             warn(
-                f"Unresolved local $ref {ref!r} in {source}: JSON pointer was not found. "
+                f"Unresolved local $ref {ref!r} in {redact_url(source)}: JSON pointer was not found. "
                 "Generated a fallback Any model; use --strict-refs to fail instead.",
                 DanglingRefWarning,
                 stacklevel=4,

@@ -12,6 +12,7 @@ from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
     AllExportsScope,
@@ -224,12 +225,16 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_url(cls, value: Any) -> ParseResult | None:
             """Validate and parse URL."""
-            if isinstance(value, str) and is_url(value):  # pragma: no cover
-                return urlparse(value)
             if value is None:  # pragma: no cover
                 return None
-            msg = f"Unsupported URL scheme. Supported: http, https, file. --input={value}"  # pragma: no cover
-            raise Error(msg)  # pragma: no cover
+            if not isinstance(value, str) or not is_url(value):
+                msg = f"Unsupported URL scheme. Supported: http, https, file. --input={redact_url(str(value))}"
+                raise Error(msg)
+            try:
+                return urlparse(value)
+            except ValueError as exc:
+                msg = f"Invalid URL: {redact_url(value)}: {exc}"
+                raise Error(msg) from exc
 
         # Pydantic 1.5.1 doesn't support each_item=True correctly
         @field_validator("http_headers", mode="before")

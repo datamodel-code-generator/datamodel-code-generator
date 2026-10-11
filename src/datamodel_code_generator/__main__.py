@@ -149,6 +149,7 @@ from datamodel_code_generator._project_config import (
     _resolve_profile_extends,
     _resolve_pyproject_relative_paths,
 )
+from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.arguments import arg_parser, namespace
 from datamodel_code_generator.deprecations import render_deprecations, warn_deprecated
 
@@ -238,8 +239,20 @@ def sig_int_handler(_: int, __: Any) -> None:  # pragma: no cover
 def _redact_command_args(args: Sequence[str]) -> list[str]:
     redacted: list[str] = []
     redact_values = False
+    url_value = False
     for arg in args:
+        if url_value:
+            redacted.append(redact_url(arg))
+            url_value = False
+            continue
         match arg:
+            case "--url":
+                redacted.append(arg)
+                redact_values = False
+                url_value = True
+            case url_option if url_option.startswith("--url="):
+                redacted.append(f"--url={redact_url(url_option.removeprefix('--url='))}")
+                redact_values = False
             case option if option in SENSITIVE_COMMAND_OPTIONS:
                 redacted.append(option)
                 redact_values = True

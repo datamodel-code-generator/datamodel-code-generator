@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias, cast
 from urllib.parse import unquote, urljoin, urlsplit
 
 from datamodel_code_generator._target_documents import escape_pointer_token, pointer_tokens
+from datamodel_code_generator._url_redaction import redact_reference
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -382,7 +383,8 @@ class SourceDocument:
         """
         if (resolved := self.resolve(document, base, ref)) is None:
             self.problems[
-                f"{_pointer(at)}: The served document keeps {ref}, which names nothing the generation loaded"
+                f"{_pointer(at)}: The served document keeps {redact_reference(ref)}, "
+                "which names nothing the generation loaded"
             ] = None
             return ref
         target, tokens, resource = resolved
