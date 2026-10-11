@@ -103,8 +103,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "abnormal-e2e": (
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._publication",
     ),
-    "disguised-asserts": (),
-    "platform-helpers": (),
     "embedded-sources": (
         "embedded-source:tests/data/expected/main/generation_platform/client/fields-shared-refs.txt",
         "embedded-source:tests/data/expected/main/generation_platform/client/input-cycle-reference.txt",
@@ -1190,11 +1188,6 @@ ALLOWLIST_GROUP_REASONS = {
     "abnormal-e2e": (
         "Reproduce these abnormal paths e2e, with read-only directories and a second process that holds or races "
         "the lock, and patch the rest by dotted name under @pytest.mark.abnormal_path."
-    ),
-    "disguised-asserts": "Move these report helper checks into report text compared with assert_output.",
-    "platform-helpers": (
-        "Move the generation platform's test logic beside its tests, to tests/api_generation/support and "
-        "tests/api_generation/scenarios, where it is linted, covered, and analysed like the tests."
     ),
     "embedded-sources": (
         "Pin the generated files these reports hold at their generated paths, and compare generations that must "

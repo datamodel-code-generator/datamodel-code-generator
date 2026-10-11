@@ -49713,6 +49713,43 @@ are intentionally outside the generated-output helper policy. Use
 reasonably be expressed with the shared helpers, such as external-request mock
 checks or intermediate-state checks.
 
+## 🎯 Client and server target tests
+
+Tests for the generated client and server (FastAPI) packages live in `tests/api_generation/`. The client runtime
+scenarios, one module per behavior such as `client_retry_calls.py`, live in `tests/api_generation/scenarios/`, and
+`test_client_runtime.py` drives them. The shared harness, fixture servers, and generation helpers live in
+`tests/api_generation/support/`. The other `test_*.py` modules (client generation, CLI, typing, and the FastAPI
+tests) keep their own cases and use `support/` for setup. Both directories are linted and covered like other tests,
+except for the modules still listed in `[tool.coverage] run.omit` in `pyproject.toml`; issue
+[#4572](https://github.com/koxudaxi/datamodel-code-generator/issues/4572) tracks removing those entries.
+
+Tests go through the public `generate()` function or the `datamodel-codegen` CLI only. Do not assert on
+internal objects, and use mocks only for abnormal paths (injected faults, marked with
+`@pytest.mark.abnormal_path`) and external services.
+
+Expected output lives under `tests/data/expected/main/generation_platform/`:
+
+- `client/packages/<case>/<backend>/` and `fastapi/packages/<case>/<backend>/` hold generated packages, including
+  server `README.md` files where the case selects one.
+- `client/bindings/<case>/<backend>/<variant>/client/_generated/model_bindings.py` pins the model bindings each
+  case generates.
+- `client/capabilities/*.txt` and the other `*.txt` reports list copied runtime modules by name. Line counts appear
+  only in `minimal`.
+- Reports hold listings, diagnostics, and outcomes. Generated source is pinned as files at its generated path, not
+  embedded in a report.
+
+Compare output with the helpers described under "E2E test assertions":
+`assert_output` for reports, `assert_generated_modules_output` for `generate(output=None)` modules,
+`assert_exact_directory_content` for trees written to disk, and `run_main_and_assert` for CLI runs. Regenerate
+expected files by running the module with `-n0` and `--inline-snapshot=fix`. Under `pytest-xdist`, inline-snapshot
+cannot create or fix files, but comparisons still run. `assert_exact_directory_content` has no snapshot indirection, so
+pin trees it compares through a snapshot-backed helper or update them from the generated output, then review
+`git diff`.
+
+`tests/test_assert_helper_usage.py` guards these directories against direct asserts, unit-style checks, and
+private imports. Its exceptions are listed in `tests/assert_helper_allowlists.py`. Those lists only shrink: remove
+an entry when you fix its violation, and do not add new ones.
+
 ## Documentation formatting
 
 Ruff formats Python code blocks in Markdown, including hand-written explanations.
