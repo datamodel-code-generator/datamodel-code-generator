@@ -53,7 +53,7 @@ PACKAGE = "client"
 BINDINGS = (PACKAGE, "_generated", "model_bindings.py")
 STAGING = ".datamodel-codegen-"
 STDLIB = frozenset({"dataclasses.dataclass", "typing.TypedDict"})
-PINNED = ("session-",)
+PINNED = ("session-", *"abcde")
 
 
 def _document(source: Path, root: Path, case: dict[str, Any]) -> Path:

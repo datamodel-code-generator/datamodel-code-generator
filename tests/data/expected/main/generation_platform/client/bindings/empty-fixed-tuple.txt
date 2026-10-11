@@ -1,94 +1,70 @@
 # empty-fixed-tuple
 render pydantic_v2.BaseModel typing
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py pydantic_v2_BaseModel/typing
 change pydantic_v2.BaseModel typing element-type
   @@ -11 +11 @@
   -    value: Tuple[()]
   +    value: Tuple[str]
 render pydantic_v2.BaseModel standard
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py pydantic_v2_BaseModel/typing
 change pydantic_v2.BaseModel standard element-type
   @@ -10 +10 @@
   -    value: tuple[()]
   +    value: tuple[str]
 render pydantic_v2.dataclass typing
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py pydantic_v2_dataclass/typing
 change pydantic_v2.dataclass typing element-type
   @@ -13 +13 @@
   -    value: Tuple[()]
   +    value: Tuple[str]
 render pydantic_v2.dataclass standard
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py pydantic_v2_dataclass/typing
 change pydantic_v2.dataclass standard element-type
   @@ -12 +12 @@
   -    value: tuple[()]
   +    value: tuple[str]
 render dataclasses.dataclass typing
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
-  map models:Record value=value
+  model_bindings.py dataclasses_dataclass/typing
 change dataclasses.dataclass typing element-type
   @@ -13 +13 @@
   -    value: Tuple[()]
   +    value: Tuple[str]
 render dataclasses.dataclass standard
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
-  map models:Record value=value
+  model_bindings.py dataclasses_dataclass/typing
 change dataclasses.dataclass standard element-type
   @@ -12 +12 @@
   -    value: tuple[()]
   +    value: tuple[str]
 render typing.TypedDict typing
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
-  map models:Record value=value
+  model_bindings.py typing_TypedDict/typing
 change typing.TypedDict typing element-type
   @@ -11 +11 @@
   -    value: Tuple[()]
   +    value: Tuple[str]
 render typing.TypedDict standard
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
-  map models:Record value=value
+  model_bindings.py typing_TypedDict/typing
 change typing.TypedDict standard element-type
   @@ -11 +11 @@
   -    value: tuple[()]
   +    value: tuple[str]
 render msgspec.Struct typing
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py msgspec_Struct/typing
 change msgspec.Struct typing element-type
   @@ -12 +12 @@
   -    value: Tuple[()]
   +    value: Tuple[str]
 render msgspec.Struct standard
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py msgspec_Struct/typing
 change msgspec.Struct standard element-type
   @@ -11 +11 @@
   -    value: tuple[()]

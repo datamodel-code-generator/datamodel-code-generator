@@ -1,4 +1,4 @@
 # edge-typeddict-field-ownership
 render typing.TypedDict default
   models.py
-  model_bindings.py
+  model_bindings.py typing_TypedDict/default

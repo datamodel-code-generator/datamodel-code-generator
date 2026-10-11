@@ -1,6 +1,4 @@
 # aliased-origins
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.First
-  codec_1 models.Second
+  model_bindings.py pydantic_v2_BaseModel/default

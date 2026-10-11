@@ -1,8 +1,4 @@
 # api-reference-declarations
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Uses
-  codec_1 models.Uses
-  codec_2 models.Foo
-  codec_3 models.Foo
+  model_bindings.py pydantic_v2_BaseModel/default

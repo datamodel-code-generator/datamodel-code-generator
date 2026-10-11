@@ -6,12 +6,4 @@ render pydantic_v2.BaseModel default
   models/item.py
   models/item_request.py
   models/item_response.py
-  model_bindings.py
-  codec_0 item_request.ItemRequest
-  codec_1 item_response.ItemResponse
-  codec_2 base_request.BaseRequest
-  codec_3 base.Base
-  codec_4 item_request.ItemRequest
-  codec_5 item_response.ItemResponse
-  codec_6 str
-  codec_7 str
+  model_bindings.py pydantic_v2_BaseModel/default

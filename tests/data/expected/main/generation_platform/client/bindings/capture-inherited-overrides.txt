@@ -1,44 +1,16 @@
 # capture-inherited-overrides
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.Base
-  codec_2 models.ChildRequest
-  codec_3 models.Child
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.Base
-  codec_2 models.ChildRequest
-  codec_3 models.Child
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.Base
-  codec_2 models.ChildRequest
-  codec_3 models.Child
-  map models:Base value=value, id=id, note=note
-  map models:BaseRequest value=value, note=note
-  map models:Child value=value, id=id, note=note
-  map models:ChildRequest value=value, note=note
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.Base
-  codec_2 models.ChildRequest
-  codec_3 models.Child
-  map models:Base value=value, id=id, note=note
-  map models:BaseRequest value=value, note=note
-  map models:Child value=value, id=id, note=note
-  map models:ChildRequest value=value, note=note
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.BaseRequest
-  codec_1 models.Base
-  codec_2 models.ChildRequest
-  codec_3 models.Child
+  model_bindings.py msgspec_Struct/default

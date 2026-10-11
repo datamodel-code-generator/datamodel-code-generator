@@ -1,4 +1,4 @@
 # api-media-32
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
+  model_bindings.py pydantic_v2_BaseModel/default

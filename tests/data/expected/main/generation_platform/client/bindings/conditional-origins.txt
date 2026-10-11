@@ -1,6 +1,4 @@
 # conditional-origins
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Choice
-  codec_1 models.Choice
+  model_bindings.py pydantic_v2_BaseModel/default
