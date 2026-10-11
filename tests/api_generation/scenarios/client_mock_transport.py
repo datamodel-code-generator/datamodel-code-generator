@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 _PET: Final = b'{"id":3,"name":"fox"}'
 _JSON: Final = {"content-type": "application/json"}
 _GZIP: Final = {**_JSON, "content-encoding": "gzip"}
+_IDENTITY: Final = {**_JSON, "content-encoding": " Identity ,IDENTITY "}
 
 
 class _Answers:
@@ -74,10 +75,11 @@ def _bodies(*, asynchronous: bool) -> tuple[tuple[str, Callable[[], Any]], ...]:
 
 
 def _raw_bodies() -> tuple[tuple[str, Callable[[], httpx2.Response]], ...]:
-    """Return read responses whose raw bytes are their content, or are gone with their content coding."""
+    """Return read responses whose raw bytes are their content, coded only as identity, or are gone with a coding."""
     return (
         ("raw content", lambda: httpx2.Response(200, headers=_JSON, content=_PET)),
         ("raw gzip content", lambda: httpx2.Response(200, headers=_GZIP, content=gzip.compress(_PET))),
+        ("raw identity content", lambda: httpx2.Response(200, headers=_IDENTITY, content=_PET)),
     )
 
 

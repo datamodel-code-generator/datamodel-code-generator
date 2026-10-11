@@ -120,10 +120,11 @@ async def async_decoded_bytes(
 def _read_content(response: httpx2.Response, *, decoded: bool) -> bytes:
     """Return the body HTTPX2 already read, as `Response(content=...)` and `Response(json=...)` are read on creation.
 
-    HTTPX2 keeps it decoded, so the raw bytes of a read body with a content coding are gone, as are those of a stream
-    consumed without being read.
+    HTTPX2 keeps it decoded, so the raw bytes of a read body with a coding other than identity are gone, as are those
+    of a stream consumed without being read. Codings are named as HTTPX2 reads them to choose its decoder.
     """
-    if decoded or "content-encoding" not in response.headers:
+    codings = response.headers.get_list("content-encoding", split_commas=True)
+    if decoded or all(coding.strip().lower() == "identity" for coding in codings):
         with suppress(httpx2.ResponseNotRead):
             return response.content
     raise httpx2.StreamConsumed

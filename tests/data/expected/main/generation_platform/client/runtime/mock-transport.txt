@@ -15,6 +15,8 @@
   raw content = [b'{"id":3,"name":"fox"}']
   > GET https://api.example.com/v1/pets/3
   raw gzip content ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  > GET https://api.example.com/v1/pets/3
+  raw identity content = [b'{"id":3,"name":"fox"}']
   > GET https://api.example.com/v1/pets
   async json = FieldPetsGetResponse(root=[Pet(id=1, name='dog', tag=None)])
   > GET https://api.example.com/v1/pets
@@ -31,3 +33,5 @@
   async raw content = [b'{"id":3,"name":"fox"}']
   > GET https://api.example.com/v1/pets/3
   async raw gzip content ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  > GET https://api.example.com/v1/pets/3
+  async raw identity content = [b'{"id":3,"name":"fox"}']
