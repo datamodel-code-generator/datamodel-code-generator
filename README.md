@@ -239,6 +239,184 @@ See [Performance Benchmarks](https://datamodel-code-generator.koxudaxi.dev/perfo
 
 ---
 
+## 🌐 Generate a FastAPI server or an HTTP client (experimental)
+
+> [!WARNING]
+> Server and client generation are experimental since 0.84.0: their options and generated packages may change.
+> See [Experimental Features](https://datamodel-code-generator.koxudaxi.dev/experimental/).
+
+From one OpenAPI document, `--generate-server fastapi` writes a FastAPI server package and `--generate-client httpx2`
+an HTTPX2 client package, in the same run as the models. The models stay the runtime contract: routes and client
+methods take and return the generated models, so the server and the client parse and produce the same classes you already
+use. Every generated file is regenerated on each run; keep your own code outside the generated packages.
+
+<details>
+<summary>Input (<code>openapi.yaml</code>)</summary>
+
+```yaml
+openapi: 3.1.0
+info:
+  title: Pets
+  version: "1.0"
+servers:
+  - url: http://localhost:8000
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/NewPet"}
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+components:
+  schemas:
+    NewPet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        tag: {type: string}
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        tag: {type: string}
+```
+
+</details>
+
+**Commands**
+
+```bash
+# FastAPI server package in server/
+datamodel-codegen \
+  --input openapi.yaml \
+  --input-file-type openapi \
+  --openapi-scopes schemas api \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20260909 \
+  --output models.py \
+  --generate-server fastapi \
+  --server-output server \
+  --server-package server \
+  --server-model-package models
+
+# HTTPX2 client package in client/
+datamodel-codegen \
+  --input openapi.yaml \
+  --input-file-type openapi \
+  --openapi-scopes schemas api \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20260909 \
+  --output models.py \
+  --generate-client httpx2 \
+  --client-output client \
+  --client-package client \
+  --client-model-package models
+```
+
+`--openapi-scopes` must include `api`, and both need Python 3.11 or later, to run and as the target version (the preset
+sets 3.12). Each run ends by printing the runtime dependencies of its package to stderr:
+
+```text
+Add the runtime dependencies of server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
+Add the runtime dependencies of client to your project:
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.13.5"
+```
+
+**Generated files (trimmed)**
+
+```text
+models.py              # NewPet, Pet
+server/
+├── __init__.py        # create_app, build_router
+├── application.py
+├── services.py        # PetsService Protocol
+├── routers/pets.py
+├── README.md
+└── _generated/, _runtime/
+client/
+├── __init__.py        # Client, AsyncClient
+├── resources/pets/
+├── types/pets/
+├── options.py, errors.py, responses.py
+└── _generated/, _runtime/
+```
+
+**Implement the server** by subclassing the generated service Protocol in a module of your own; type checkers report a
+missing method or a mismatched signature:
+
+```python
+# app.py
+from models import NewPet, Pet
+from server import create_app
+from server.services import PetsService
+
+
+class Pets(PetsService):
+    def __init__(self) -> None:
+        self.pets: dict[int, Pet] = {}
+
+    def create_pet(self, *, body: NewPet) -> Pet:
+        pet = Pet(id=len(self.pets) + 1, name=body.name, tag=body.tag)
+        self.pets[pet.id] = pet
+        return pet
+
+    def get_pet(self, *, pet_id: int) -> Pet:
+        return self.pets[pet_id]
+
+
+app = create_app(pets=Pets())
+```
+
+```bash
+uv add uvicorn
+uv run uvicorn app:app
+```
+
+**Call it with the client**, which sends to the document's server URL by default:
+
+```python
+from client import Client
+from models import NewPet
+
+with Client() as client:
+    pet = client.pets.create_pet(body=NewPet(name="Mimi", tag="cat"))
+    print(client.pets.get_pet(pet_id=pet.id))
+# id=1 name='Mimi' tag='cat'
+```
+
+`AsyncClient` offers the same methods as coroutines. See [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/) and [Python Client Generation](https://datamodel-code-generator.koxudaxi.dev/python-client/) for every option, the
+`pyproject.toml` settings, authentication, and the Python API.
+
+---
+
 ## 📖 Documentation
 
 **👉 [Read the full documentation →](https://datamodel-code-generator.koxudaxi.dev/)**
@@ -246,6 +424,8 @@ See [Performance Benchmarks](https://datamodel-code-generator.koxudaxi.dev/perfo
 - 🧰 [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/) - Recommended option bundles for modern output
 - 🚀 [Getting Started](https://datamodel-code-generator.koxudaxi.dev/getting-started/) - Installation and first model
 - 🖥️ [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/) - All command-line options
+- 🌐 [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/) - Experimental FastAPI server package from OpenAPI
+- 📡 [Python Client Generation](https://datamodel-code-generator.koxudaxi.dev/python-client/) - Experimental HTTPX2 client package from OpenAPI
 - 🧪 [Playground](https://datamodel-code-generator.koxudaxi.dev/playground/) - Try generation in your browser
 - ⚙️ [pyproject.toml](https://datamodel-code-generator.koxudaxi.dev/pyproject_toml/) - Configuration file
 - 🔄 [CI/CD Integration](https://datamodel-code-generator.koxudaxi.dev/ci-cd/) - GitHub Actions, pre-commit hooks
