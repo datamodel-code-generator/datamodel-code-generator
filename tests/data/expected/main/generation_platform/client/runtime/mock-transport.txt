@@ -1,0 +1,33 @@
+# pets pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/pets
+  json = FieldPetsGetResponse(root=[Pet(id=1, name='dog', tag=None)])
+  > GET https://api.example.com/v1/pets
+  json error ! NotFoundError: Error code: 404 - {"code":4,"message":"missing"} [operation_id='listPets', status_code=404, body=Error(code=4, message='missing'), body_bytes=b'{"code":4,"message":"missing"}', truncated=False]
+  > GET https://api.example.com/v1/pets/3
+  content = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+  gzip content = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+  streamed = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+  consumed stream ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  > GET https://api.example.com/v1/pets/3
+  raw content = [b'{"id":3,"name":"fox"}']
+  > GET https://api.example.com/v1/pets/3
+  raw gzip content ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  > GET https://api.example.com/v1/pets
+  async json = FieldPetsGetResponse(root=[Pet(id=1, name='dog', tag=None)])
+  > GET https://api.example.com/v1/pets
+  async json error ! NotFoundError: Error code: 404 - {"code":4,"message":"missing"} [operation_id='listPets', status_code=404, body=Error(code=4, message='missing'), body_bytes=b'{"code":4,"message":"missing"}', truncated=False]
+  > GET https://api.example.com/v1/pets/3
+  async content = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+  async gzip content = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+  async streamed = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+  async consumed stream ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]
+  > GET https://api.example.com/v1/pets/3
+  async raw content = [b'{"id":3,"name":"fox"}']
+  > GET https://api.example.com/v1/pets/3
+  async raw gzip content ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='StreamConsumed') [operation_id='getPet', cause=StreamConsumed('Attempted to read or stream some content, but the content has already been streamed. For requests, this could be due to passing a generator as request content, and then receiving a redirect response or a secondary request as part of an authentication flow.For responses, this could be due to attempting to stream the response content more than once.')]

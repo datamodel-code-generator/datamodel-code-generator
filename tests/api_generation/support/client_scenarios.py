@@ -32,6 +32,7 @@ from tests.api_generation.scenarios.client_deadline_streams import deadline_stre
 from tests.api_generation.scenarios.client_fields import fields, optional_models
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
 from tests.api_generation.scenarios.client_hooks import hooks
+from tests.api_generation.scenarios.client_mock_transport import mock_transport
 from tests.api_generation.scenarios.client_multipart import multipart, split_parts
 from tests.api_generation.scenarios.client_naming import (
     naming,
@@ -861,6 +862,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "native-codec-backends": ("pets", BACKENDS, native_codec_backends),
     "native-wire": ("retries", ("pydantic_v2.BaseModel",), native_wire),
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
+    "mock-transport": ("pets", ("pydantic_v2.BaseModel",), mock_transport),
     "oauth-client-credentials": ("auth", ("pydantic_v2.BaseModel",), oauth_client_credentials),
     "oauth-refresh": ("auth", ("pydantic_v2.BaseModel",), oauth_refresh),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),

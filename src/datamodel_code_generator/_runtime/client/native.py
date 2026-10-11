@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import TYPE_CHECKING, Literal, cast
 
 import httpx2
@@ -88,8 +89,8 @@ def decoded_bytes(response: httpx2.Response, info: ResponseInfo, operation_id: s
 
     The raw chunks pass through a response of their own, so decoding never closes the one the SDK releases.
     """
-    if "content-encoding" not in response.headers:
-        yield from response_bytes(response)
+    if response.is_stream_consumed or "content-encoding" not in response.headers:
+        yield from response_bytes(response, decoded=True)
         return
     decoding = httpx2.Response(response.status_code, headers=response.headers, stream=_Held(response_bytes(response)))
     try:
@@ -102,8 +103,8 @@ async def async_decoded_bytes(
     response: httpx2.Response, info: ResponseInfo, operation_id: str | None
 ) -> AsyncIterator[bytes]:
     """Read the asynchronous body once with HTTPX2 removing its content codings, as `decoded_bytes` does."""
-    if "content-encoding" not in response.headers:
-        async for chunk in async_response_bytes(response):
+    if response.is_stream_consumed or "content-encoding" not in response.headers:
+        async for chunk in async_response_bytes(response, decoded=True):
             yield chunk
         return
     decoding = httpx2.Response(
@@ -116,18 +117,35 @@ async def async_decoded_bytes(
         raise _malformed(error, info, operation_id) from None
 
 
-def response_bytes(response: httpx2.Response) -> Iterator[bytes]:
-    """Read the raw stream bytes, content codings included, once, leaving the native close to the SDK's finally."""
+def _read_content(response: httpx2.Response, *, decoded: bool) -> bytes:
+    """Return the body HTTPX2 already read, as `Response(content=...)` and `Response(json=...)` are read on creation.
+
+    HTTPX2 keeps it decoded, so the raw bytes of a read body with a content coding are gone, as are those of a stream
+    consumed without being read.
+    """
+    if decoded or "content-encoding" not in response.headers:
+        with suppress(httpx2.ResponseNotRead):
+            return response.content
+    raise httpx2.StreamConsumed
+
+
+def response_bytes(response: httpx2.Response, *, decoded: bool = False) -> Iterator[bytes]:
+    """Read the raw stream bytes, content codings included, once, leaving the native close to the SDK's finally.
+
+    A body HTTPX2 already read is its content; `decoded` accepts it without its content codings.
+    """
     if response.is_stream_consumed:
-        raise httpx2.StreamConsumed
+        yield _read_content(response, decoded=decoded)
+        return
     response.is_stream_consumed = True
     yield from cast("httpx2.SyncByteStream", response.stream)
 
 
-async def async_response_bytes(response: httpx2.Response) -> AsyncIterator[bytes]:
+async def async_response_bytes(response: httpx2.Response, *, decoded: bool = False) -> AsyncIterator[bytes]:
     """Read the raw asynchronous bytes, content codings included, once, without awaited EOF auto-close."""
     if response.is_stream_consumed:
-        raise httpx2.StreamConsumed
+        yield _read_content(response, decoded=decoded)
+        return
     response.is_stream_consumed = True
     async for chunk in cast("httpx2.AsyncByteStream", response.stream):
         yield chunk
