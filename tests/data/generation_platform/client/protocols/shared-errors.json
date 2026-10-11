@@ -117,6 +117,14 @@
     "continuation": {"kind": "link", "header": "Link"},
     "bindings": [{"target": {"in": "query", "name": "cursor"}, "value": {"literal": NaN}}]
   },
+  "binding.text": {
+    "kind": "pagination",
+    "operation": "/paths/~1users/get",
+    "items": {"from": "body", "pointer": "/data"},
+    "item_schema": {"pointer": "/components/schemas/User"},
+    "continuation": {"kind": "link", "header": "Link"},
+    "bindings": [{"target": {"in": "query", "name": "cursor"}, "value": {"literal": ["\ud800"]}}]
+  },
   "binding.value": {
     "kind": "pagination",
     "operation": "/paths/~1users/get",

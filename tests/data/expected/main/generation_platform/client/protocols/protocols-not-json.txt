@@ -1,3 +1,0 @@
-# protocols-not-json
-render pydantic_v2.BaseModel
-  Error: Invalid JSON for --client-protocols: Expecting ',' delimiter: line 1 column 17 (char 16)

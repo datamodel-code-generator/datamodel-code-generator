@@ -58,45 +58,6 @@
       },
       "default_base_url": "ftp://example.com",
       "server_base_url": "https://user@example.com:0/"
-    },
-    "records": {
-      "transport": "httpx",
-      "resource_names": [
-        {
-          "tag": 1,
-          "namespace": "pets"
-        },
-        {
-          "tag": "pets",
-          "namespace": "store"
-        },
-        {
-          "tag": "pets",
-          "namespace": "store"
-        }
-      ],
-      "operations": [
-        {
-          "ref": 5,
-          "parameter_names": [
-            {
-              "in_": "query",
-              "name": "limit",
-              "python_name": "a"
-            },
-            {
-              "in_": "query",
-              "name": "limit",
-              "python_name": "b"
-            }
-          ]
-        },
-        {
-          "ref": "/paths/~1pets/get",
-          "runtime": "fast"
-        }
-      ],
-      "signature_style": "Unpack"
     }
   },
   "invalid-urls": {
@@ -108,13 +69,6 @@
   "invalid-shapes": {
     "options": {
       "default_base_url": "https://[invalid"
-    },
-    "records": {
-      "resource_names": "pets",
-      "operations": "all",
-      "server_base_url": 5,
-      "signature_style": [],
-      "body_arguments": {}
     }
   },
   "invalid-parameter-names": {
@@ -124,14 +78,6 @@
           "parameter_names": "limit"
         }
       }
-    },
-    "records": {
-      "operations": [
-        {
-          "ref": "/paths/~1pets/get",
-          "parameter_names": "limit"
-        }
-      ]
     }
   },
   "body-fields": {
@@ -161,15 +107,6 @@
           "body_arguments": []
         }
       }
-    },
-    "records": {
-      "body_arguments": "all",
-      "operations": [
-        {
-          "ref": "/paths/~1pets/get",
-          "body_field_names": "tag"
-        }
-      ]
     }
   },
   "body-field-names-invalid": {
@@ -267,16 +204,6 @@
           }
         }
       }
-    },
-    "records": {
-      "operations": [
-        {
-          "ref": "/paths/~1pets/post",
-          "runtime": {
-            "idempotency": "header"
-          }
-        }
-      ]
     }
   },
   "retry-conflicting-controls": {
@@ -350,39 +277,6 @@
             "security": []
           }
         }
-      }
-    }
-  },
-  "protocols-path": {
-    "records": {
-      "protocols": "protocols/disabled.json"
-    }
-  },
-  "protocols-type": {
-    "records": {
-      "protocols": {
-        "raw": 5
-      }
-    }
-  },
-  "protocols-records": {
-    "records": {
-      "protocols": {
-        "python": "disabled"
-      }
-    }
-  },
-  "protocols-records-invalid": {
-    "records": {
-      "protocols": {
-        "python": "invalid"
-      }
-    }
-  },
-  "protocols-records-shape": {
-    "records": {
-      "protocols": {
-        "python": "shape"
       }
     }
   },

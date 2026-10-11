@@ -143,7 +143,6 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "type-checking-imports-off",
         "templates-not-found",
         "api-scope-required",
-        "output-required",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -193,17 +192,11 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     "case",
     [
         "protocols-disabled",
-        "protocols-python",
         "protocols-relative",
         "protocols-empty",
         "protocols-unsupported",
         "protocols-unsupported-kinds",
-        "protocols-file-missing",
-        "protocols-not-json",
-        "protocols-not-object",
-        "protocols-deep",
         "protocols-deep-limit",
-        "protocols-deep-huge",
         "protocols-names",
         "protocols-shared-errors",
         "protocols-pagination-errors",
@@ -237,7 +230,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
-    """Load helper settings from JSON, TOML, or Python records, validate and record them, and keep the package.
+    """Load helper settings from JSON or TOML, validate and record them, and keep the package.
 
     Cases that give the same settings another way report under the name of the case they equal.
     """
@@ -296,23 +289,15 @@ def test_client_template_fallback(case: str, *, builtin_sources: bool, tmp_path:
     ("first", "second"),
     [
         ("pagination-root", "pagination-documents"),
-        ("webhooks", "webhooks-python"),
-        ("webhooks-public-keys", "webhooks-public-keys-python"),
-        ("webhooks-adapters", "webhooks-adapters-python"),
-        ("caching", "caching-python"),
         ("references", "self-references"),
     ],
     ids=[
         "pagination-root-pagination-documents-helper-documents",
-        "webhooks-webhooks-python-webhook-records",
-        "webhooks-public-keys-webhooks-public-keys-python-webhook-public-key-records",
-        "webhooks-adapters-webhooks-adapters-python-webhook-adapter-records",
-        "caching-caching-python-cache-records",
         "references-self-references-reference-spellings",
     ],
 )
 def test_client_helper_spellings(first: str, second: str, tmp_path: Path) -> None:
-    """Generate equivalent helper settings, such as file references and Python records, into the same files.
+    """Generate equivalent helper settings, such as document references spelled two ways, into the same files.
 
     Each id names the equality it shows.
     """
@@ -375,15 +360,10 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
         "retry-unknown-field",
         "compression-values",
         "compression-invalid",
-        "protocols-path",
-        "protocols-type",
-        "protocols-records",
-        "protocols-records-invalid",
-        "protocols-records-shape",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:
-    """Generate a client with client option values, and build the settings only Python records hold."""
+    """Generate a client with client option values, or refuse them."""
     assert_output(client_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
 
 

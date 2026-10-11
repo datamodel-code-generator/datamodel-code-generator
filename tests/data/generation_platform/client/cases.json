@@ -2466,231 +2466,6 @@
       "protocols": "protocols/disabled.json"
     }
   },
-  "protocols-python": {
-    "input": "helpers.yaml",
-    "modules": [
-      [
-        "client",
-        "_async_client.py"
-      ],
-      [
-        "client",
-        "_client.py"
-      ],
-      [
-        "client",
-        "_generated",
-        "model_bindings.py"
-      ],
-      [
-        "client",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "resources",
-        "events",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "events",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "events",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "jobs",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "jobs",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "jobs",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "labels",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "labels",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "labels",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "records",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "records",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "records",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "tags",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "tags",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "tags",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "resources",
-        "users",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "resources",
-        "users",
-        "_async.py"
-      ],
-      [
-        "client",
-        "resources",
-        "users",
-        "_sync.py"
-      ],
-      [
-        "client",
-        "types",
-        "events",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "events",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "jobs",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "jobs",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "labels",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "labels",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "records",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "records",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "tags",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "tags",
-        "_operations.py"
-      ],
-      [
-        "client",
-        "types",
-        "users",
-        "__init__.py"
-      ],
-      [
-        "client",
-        "types",
-        "users",
-        "_operations.py"
-      ],
-      [
-        "models.py"
-      ]
-    ],
-    "references": [
-      "helpers-external.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": {
-        "python": "disabled"
-      }
-    },
-    "expected": "protocols-disabled",
-    "cwd": true
-  },
   "protocols-relative": {
     "input": "helpers.yaml",
     "modules": [
@@ -3160,52 +2935,6 @@
     },
     "modules": false
   },
-  "protocols-not-json": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/not-json.json"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": {
-        "file": "protocols/not-json.json"
-      }
-    },
-    "modules": false
-  },
-  "protocols-deep": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/deep.json"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": {
-        "file": "protocols/deep.json"
-      }
-    },
-    "modules": false
-  },
   "protocols-deep-limit": {
     "input": "helpers.yaml",
     "references": [
@@ -3227,53 +2956,6 @@
     },
     "modules": false,
     "expected": "protocols-empty"
-  },
-  "protocols-deep-huge": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/deep-huge.json"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": {
-        "file": "protocols/deep-huge.json"
-      }
-    },
-    "modules": false,
-    "expected": "protocols-deep"
-  },
-  "protocols-not-object": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/not-object.json"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": {
-        "file": "protocols/not-object.json"
-      }
-    },
-    "modules": false
   },
   "protocols-names": {
     "input": "helpers.yaml",
@@ -3398,28 +3080,6 @@
     },
     "config": {
       "protocols": "protocols/references.json"
-    },
-    "modules": false
-  },
-  "protocols-file-missing": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml"
-    ],
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/tags",
-        "/labels",
-        "/jobs*",
-        "/events",
-        "/records"
-      ]
-    },
-    "config": {
-      "protocols": {
-        "file": "protocols/missing.json"
-      }
     },
     "modules": false
   },
@@ -4005,14 +3665,6 @@
       ]
     ]
   },
-  "webhooks-python": {
-    "input": "webhooks.yaml",
-    "config": {
-      "protocols": {
-        "python": "webhooks"
-      }
-    }
-  },
   "protocols-webhook-errors": {
     "input": "webhooks.yaml",
     "references": [
@@ -4085,14 +3737,6 @@
         "push.py"
       ]
     ]
-  },
-  "webhooks-public-keys-python": {
-    "input": "webhooks.yaml",
-    "config": {
-      "protocols": {
-        "python": "public_keys"
-      }
-    }
   },
   "webhooks-adapters": {
     "input": "webhook-adapters.yaml",
@@ -4174,14 +3818,6 @@
         "__init__.py"
       ]
     ]
-  },
-  "webhooks-adapters-python": {
-    "input": "webhook-adapters.yaml",
-    "config": {
-      "protocols": {
-        "python": "adapters"
-      }
-    }
   },
   "webhooks-unsigned": {
     "input": "webhook-adapters.yaml",
@@ -4737,21 +4373,6 @@
       "protocols": "protocols/cache-errors.json"
     },
     "modules": false
-  },
-  "caching-python": {
-    "input": "caching.yaml",
-    "model": {
-      "openapi_include_paths": [
-        "/users*",
-        "/carts/current",
-        "/secure/users/*"
-      ]
-    },
-    "config": {
-      "protocols": {
-        "python": "caching"
-      }
-    }
   },
   "caching-typing": {
     "input": "caching.yaml",
@@ -5448,12 +5069,6 @@
     "cwd": true,
     "model": {
       "custom_template_dir": "templates/not-found"
-    }
-  },
-  "output-required": {
-    "input": "pets.yaml",
-    "model": {
-      "output": null
     }
   },
   "api-scope-required": {

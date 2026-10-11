@@ -1,96 +1,40 @@
-"""Helper configuration of a client target: its Python records, its JSON value, and the one validation of both.
+"""Helper configuration of a client target: its JSON value and the validation that normalizes it.
 
-The JSON value is an object mapping each helper's name to its definition. Python records are projected into the tree
-that value gives, so both inputs share every diagnostic and the same normalized metadata. Selectors and request
-targets are the runtime records generated helpers use.
+The JSON value is an object mapping each helper's name to its definition. Validation gives every diagnostic and the
+normalized metadata of each helper. Selectors and request targets are the runtime records generated helpers use.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass
 from enum import Enum
 from functools import partial
 from math import isfinite
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
-from datamodel_code_generator._json_limits import CLIENT_PROTOCOLS_MAX_DEPTH
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_documents import canonical_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
-    from pathlib import Path
-
-    from datamodel_code_generator._api_types import OperationSelector
-    from datamodel_code_generator._runtime.model_codecs.media import JSONValue
-    from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (
-    "AdapterSignature",
-    "Binding",
-    "BodyHmacSignature",
-    "CacheHelper",
-    "Continuation",
     "Converter",
-    "CountContinuation",
-    "CursorContinuation",
-    "EndCondition",
-    "EventDiscriminator",
-    "EventMapping",
     "Helper",
-    "HelperDefinition",
     "HelperKind",
-    "ImmediateResult",
-    "InlineResult",
-    "LengthCompletion",
     "Link",
-    "LinkContinuation",
-    "LiteralValue",
-    "NextUrlContinuation",
-    "NoResult",
-    "NoSignature",
-    "OperationCompletion",
-    "OperationResult",
-    "PaginationHelper",
-    "PollInterval",
-    "PollingHelper",
-    "ProtocolConfiguration",
-    "PublicKeySignature",
-    "RemoteCancel",
-    "ResumableUploadHelper",
-    "Source",
-    "SourceValue",
     "Spec",
-    "StandardWebhooksSignature",
-    "StreamCompletion",
-    "StreamHelper",
-    "StreamResume",
-    "StripeStyleSignature",
     "Tree",
-    "UploadAbort",
-    "UploadAppend",
-    "UploadChecksum",
-    "UploadCreate",
-    "UploadProbe",
-    "WebSocketHelper",
-    "WebSocketMessage",
-    "WebhookHelper",
-    "load_protocols",
-    "project",
-    "protocol_problems",
     "validate",
 )
 
 HelperKind: TypeAlias = Literal[
     "pagination", "polling", "sse", "ndjson", "websocket", "webhook", "cache", "resumable_upload"
 ]
-Source: TypeAlias = Literal["input", "initial", "previous", "state", "item"]
 Converter: TypeAlias = "Callable[[object, str], object]"
 Spec: TypeAlias = "Mapping[str, tuple[Converter, object]]"
 Tree: TypeAlias = "dict[str, Any]"
@@ -107,20 +51,16 @@ KINDS: Final = (
 )
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SOURCES: Final = ("input", "initial", "previous")
-_KEYS: Final = {"from_": "from"}
 _ROOT: Final = "protocols"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
-_MAX_DEPTH: Final = CLIENT_PROTOCOLS_MAX_DEPTH
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
 
 
 class _Mark(Enum):
     REQUIRED = "required"
     OMITTED = "omitted"
-    FOREIGN = "foreign"
-    DEEP = "deep"
 
 
 class _Invalid(Enum):
@@ -129,517 +69,7 @@ class _Invalid(Enum):
 
 REQUIRED: Final = _Mark.REQUIRED
 OMITTED: Final = _Mark.OMITTED
-FOREIGN: Final = _Mark.FOREIGN
-DEEP: Final = _Mark.DEEP
 INVALID: Final = _Invalid.INVALID
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SourceValue:
-    """Read a binding's value with a selector from the helper's input, a response, or its state."""
-
-    source: Source
-    selector: Selector
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class LiteralValue:
-    """Give a binding a fixed JSON value."""
-
-    literal: JSONValue
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Binding:
-    """Write one value into a request target of the operation a helper sends next."""
-
-    target: RequestTarget
-    value: SourceValue | LiteralValue
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class EndCondition:
-    """End a sequence when a selected value is missing, JSON null, or equals the given JSON value."""
-
-    kind: Literal["missing", "null", "value"]
-    value: JSONValue | UNSET = UNSET
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class CursorContinuation:
-    """Read a cursor from each page and write it into the next request until an end condition holds."""
-
-    kind: ClassVar[Literal["cursor"]] = "cursor"
-
-    read: Selector
-    write: RequestTarget
-    end: tuple[EndCondition, ...]
-    empty_string: Literal["value", "end"]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class CountContinuation:
-    """Write an offset or page number, advanced by a literal step or the page's item count."""
-
-    kind: Literal["offset", "page"]
-    write: RequestTarget
-    first: int
-    step: int | Literal["page_items_count"]
-    has_more: Selector | None = None
-    total: Selector | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class NextUrlContinuation:
-    """Follow the URL each page selects until an end condition holds."""
-
-    kind: ClassVar[Literal["next_url"]] = "next_url"
-
-    read: Selector
-    end: tuple[EndCondition, ...]
-    repeat_request_body: bool = False
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class LinkContinuation:
-    """Follow the link of one relation in a response header."""
-
-    kind: ClassVar[Literal["link"]] = "link"
-
-    header: str
-    rel: str = "next"
-
-
-Continuation: TypeAlias = CursorContinuation | CountContinuation | NextUrlContinuation | LinkContinuation
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PaginationHelper:
-    """Iterate the items of one operation's pages."""
-
-    kind: ClassVar[Literal["pagination"]] = "pagination"
-
-    operation: OperationSelector
-    items: Selector
-    item_schema: SchemaRef
-    continuation: Continuation
-    bindings: tuple[Binding, ...] = ()
-    enabled: bool = True
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class InlineResult:
-    """Read a long-running operation's result from its final poll response."""
-
-    kind: ClassVar[Literal["inline"]] = "inline"
-
-    selector: Selector
-    schema: SchemaRef
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class OperationResult:
-    """Fetch a long-running operation's result with another operation."""
-
-    kind: ClassVar[Literal["operation"]] = "operation"
-
-    operation: OperationSelector
-    bindings: tuple[Binding, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class NoResult:
-    """A long-running operation without a result."""
-
-    kind: ClassVar[Literal["none"]] = "none"
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PollInterval:
-    """The wait between polls, and the response header that may lengthen it."""
-
-    seconds: float = 1.0
-    retry_after_header: str | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class RemoteCancel:
-    """The operation that cancels a long-running operation remotely."""
-
-    operation: OperationSelector
-    bindings: tuple[Binding, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ImmediateResult:
-    """Statuses of the create response that already carry the result."""
-
-    statuses: tuple[int, ...]
-    selector: Selector
-    schema: SchemaRef
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PollingHelper:
-    """Create a long-running operation and poll it until its state is terminal."""
-
-    kind: ClassVar[Literal["polling"]] = "polling"
-
-    create: OperationSelector
-    poll: OperationSelector
-    accepted_statuses: tuple[int, ...]
-    bindings: tuple[Binding, ...]
-    state: Selector
-    pending: tuple[JSONValue, ...]
-    succeeded: tuple[JSONValue, ...]
-    result: InlineResult | OperationResult | NoResult
-    failed: tuple[JSONValue, ...] = ()
-    cancelled: tuple[JSONValue, ...] = ()
-    interval: PollInterval = field(default_factory=PollInterval)
-    remote_cancel: RemoteCancel | None = None
-    immediate_result: ImmediateResult | None = None
-    expires_at: Selector | None = None
-    enabled: bool = True
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class EventDiscriminator:
-    """Where an event's type is read: the SSE event field, or a body member."""
-
-    from_: Literal["event_type", "body"]
-    pointer: str | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class EventMapping:
-    """The schema of each event type."""
-
-    discriminator: EventDiscriminator
-    mapping: Mapping[str, SchemaRef]
-
-    def __post_init__(self) -> None:
-        """Keep a read-only copy of the mapping."""
-        object.__setattr__(self, "mapping", _frozen(self.mapping))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StreamCompletion:
-    """How a stream ends: at EOF, at a sentinel, or at an SSE event type."""
-
-    kind: Literal["eof", "sentinel", "event_type"]
-    value: str | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StreamResume:
-    """How an interrupted stream is reopened from the last delivered cursor."""
-
-    cursor: Selector | Literal["event_id"]
-    write: RequestTarget
-    reopen_operation: OperationSelector
-    delivery: Literal["at_least_once"]
-    bindings: tuple[Binding, ...] = ()
-    missing: Literal["inherit", "error"] | None = None
-    null: Literal["clear", "error"] | None = None
-    reconnect_on: tuple[Literal["transport_interruption", "incomplete_eof"], ...] = ("transport_interruption",)
-    expires_at: Selector | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StreamHelper:
-    """Open an SSE or NDJSON stream and decode its events."""
-
-    kind: Literal["sse", "ndjson"]
-    operation: OperationSelector
-    media: str
-    event_schema: SchemaRef | EventMapping
-    completion: StreamCompletion
-    final_line: Literal["require_newline", "allow_eof"] | None = None
-    unknown: Literal["error", "raw"] = "error"
-    error_events: Mapping[str, SchemaRef] = field(default_factory=lambda: MappingProxyType({}))
-    resume: StreamResume | None = None
-    enabled: bool = True
-
-    def __post_init__(self) -> None:
-        """Keep a read-only copy of the error events."""
-        object.__setattr__(self, "error_events", _frozen(self.error_events))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StandardWebhooksSignature:
-    """HMAC-SHA256 over the Standard Webhooks delivery id, timestamp, and body."""
-
-    kind: ClassVar[Literal["standard_webhooks"]] = "standard_webhooks"
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class StripeStyleSignature:
-    """HMAC-SHA256 over a Stripe-style timestamp and body."""
-
-    kind: ClassVar[Literal["stripe_style"]] = "stripe_style"
-    header: str = "Stripe-Signature"
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class BodyHmacSignature:
-    """A hex or base64 HMAC signature over the raw body."""
-
-    kind: ClassVar[Literal["body_hmac"]] = "body_hmac"
-    header: str
-    algorithm: Literal["hmac-sha256", "hmac-sha512"] = "hmac-sha256"
-    encoding: Literal["hex", "base64"] = "hex"
-    prefix: str = ""
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PublicKeySignature:
-    """An Ed25519 or RSA-PSS signature over the raw body."""
-
-    kind: Literal["ed25519", "rsa-pss-sha256"]
-    header: str
-    encoding: Literal["hex", "base64", "base64url"] = "hex"
-    prefix: str = ""
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class AdapterSignature:
-    """A signature the caller's verifier checks, and whether it must return each fact; `none` declares it absent."""
-
-    kind: ClassVar[Literal["adapter"]] = "adapter"
-
-    timestamp: Literal["required", "none"]
-    delivery_id: Literal["required", "none"]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class NoSignature:
-    """No signature: the helper only decodes an event, whose delivery nothing authenticates."""
-
-    kind: ClassVar[Literal["none"]] = "none"
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class WebhookHelper:
-    """Verify a signed webhook delivery and decode its event, or only decode an unsigned one."""
-
-    kind: ClassVar[Literal["webhook"]] = "webhook"
-
-    event_schema: SchemaRef | EventMapping
-    signature: (
-        StandardWebhooksSignature
-        | StripeStyleSignature
-        | BodyHmacSignature
-        | PublicKeySignature
-        | AdapterSignature
-        | NoSignature
-    )
-    enabled: bool = True
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class WebSocketMessage:
-    """How the messages of one direction are coded: JSON by a schema, UTF-8 text, or bytes, and in which frames.
-
-    The frame defaults to text for JSON and UTF-8 text, and to binary for bytes.
-    """
-
-    codec: Literal["json", "utf8", "bytes"]
-    schema: SchemaRef | None = None
-    frame: Literal["text", "binary"] | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class WebSocketHelper:
-    """Open a WebSocket through an operation's handshake, and send and receive typed messages on it.
-
-    The operation is a GET without a request body; the subprotocols are offered in order, one of which the server must
-    select when any is offered.
-    """
-
-    kind: ClassVar[Literal["websocket"]] = "websocket"
-
-    operation: OperationSelector
-    send: WebSocketMessage
-    receive: WebSocketMessage
-    subprotocols: tuple[str, ...] = ()
-    enabled: bool = True
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class CacheHelper:
-    """Fetch one operation's responses through a private cache that revalidates stale entries with their validator."""
-
-    kind: ClassVar[Literal["cache"]] = "cache"
-
-    operation: OperationSelector
-    validator: Literal["etag", "last_modified", "both"]
-    authenticated: bool
-    statuses: tuple[int, ...] = (200,)
-    vary_allowlist: tuple[str, ...] = ()
-    enabled: bool = True
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class UploadCreate:
-    """The operation that starts an upload, where it writes the content's size, and what its response gives."""
-
-    operation: OperationSelector
-    size: RequestTarget | None = None
-    session_url: Selector | None = None
-    expires_at: Selector | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class UploadProbe:
-    """The operation that reads the server's offset of an upload."""
-
-    operation: OperationSelector
-    remote_offset: Selector
-    bindings: tuple[Binding, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class UploadChecksum:
-    """Where an append writes the checksum of the bytes it sends, by which algorithm, and how it is spelled.
-
-    `algorithm_prefix` writes the algorithm's name and a space before the digest, as the tus checksum extension does.
-    """
-
-    target: RequestTarget
-    algorithm: Literal["md5", "sha1", "sha256", "sha512"]
-    encoding: Literal["base64", "hex"] = "base64"
-    algorithm_prefix: bool = False
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class UploadAppend:
-    """The operation that appends one chunk, and where it writes the chunk's offset, length, and checksum."""
-
-    operation: OperationSelector
-    offset: RequestTarget
-    length: RequestTarget | None = None
-    checksum: UploadChecksum | None = None
-    bindings: tuple[Binding, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class LengthCompletion:
-    """Complete an upload once the server holds every byte."""
-
-    kind: ClassVar[Literal["length"]] = "length"
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class OperationCompletion:
-    """Complete an upload with an operation, whose response is the upload's result."""
-
-    kind: ClassVar[Literal["operation"]] = "operation"
-
-    operation: OperationSelector
-    result_schema: SchemaRef
-    bindings: tuple[Binding, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class UploadAbort:
-    """The operation that aborts an upload remotely."""
-
-    operation: OperationSelector
-    bindings: tuple[Binding, ...] = ()
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ResumableUploadHelper:
-    """Upload content in chunks the server confirms, resuming from its confirmed offset."""
-
-    kind: ClassVar[Literal["resumable_upload"]] = "resumable_upload"
-
-    profile: Literal["offset", "parts"]
-    create: UploadCreate
-    probe: UploadProbe
-    append: UploadAppend
-    max_chunk_bytes: int
-    partial_commit: Literal["allowed", "forbidden"]
-    completion: LengthCompletion | OperationCompletion
-    abort: UploadAbort | None = None
-    enabled: bool = True
-
-
-HelperDefinition: TypeAlias = (
-    PaginationHelper
-    | PollingHelper
-    | StreamHelper
-    | WebhookHelper
-    | WebSocketHelper
-    | CacheHelper
-    | ResumableUploadHelper
-)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ProtocolConfiguration:
-    """The helpers of a client target by their names, in declaration order."""
-
-    helpers: Mapping[str, HelperDefinition]
-
-    def __post_init__(self) -> None:
-        """Keep a read-only copy of the helpers."""
-        object.__setattr__(self, "helpers", _frozen(self.helpers))
-
-
-_RECORDS: Final = frozenset({
-    SourceValue,
-    LiteralValue,
-    Binding,
-    EndCondition,
-    CursorContinuation,
-    NextUrlContinuation,
-    LinkContinuation,
-    PaginationHelper,
-    InlineResult,
-    OperationResult,
-    NoResult,
-    PollInterval,
-    RemoteCancel,
-    ImmediateResult,
-    PollingHelper,
-    EventDiscriminator,
-    EventMapping,
-    StreamCompletion,
-    StreamHelper,
-    StandardWebhooksSignature,
-    StripeStyleSignature,
-    BodyHmacSignature,
-    PublicKeySignature,
-    AdapterSignature,
-    NoSignature,
-    WebhookHelper,
-    WebSocketMessage,
-    WebSocketHelper,
-    CacheHelper,
-    UploadCreate,
-    UploadProbe,
-    UploadChecksum,
-    UploadAppend,
-    LengthCompletion,
-    OperationCompletion,
-    UploadAbort,
-    ResumableUploadHelper,
-})
-_ROLES: Final[Mapping[tuple[type, str], str]] = {
-    (LiteralValue, "literal"): "json",
-    (EndCondition, "value"): "json",
-    (PollingHelper, "pending"): "json",
-    (PollingHelper, "succeeded"): "json",
-    (PollingHelper, "failed"): "json",
-    (PollingHelper, "cancelled"): "json",
-    (EventMapping, "mapping"): "mapping",
-    (StreamHelper, "error_events"): "mapping",
-}
-
-
-def _frozen(value: object) -> object:
-    return MappingProxyType(dict(value)) if isinstance(value, Mapping) else value
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -664,22 +94,6 @@ class Helper:
     schemas: tuple[tuple[str, SchemaRef], ...]
 
 
-def _plain(value: object, depth: int = 1) -> object:
-    """Project a Python JSON value, cutting containers nested too deep for any valid literal."""
-    match value:
-        case None | str() | bool() | int() | float():
-            return value
-        case list() | tuple() | Mapping() if depth > _MAX_DEPTH:
-            return DEEP
-        case list() | tuple():
-            return [_plain(item, depth + 1) for item in value]
-        case Mapping():
-            return {key: _plain(item, depth + 1) for key, item in value.items()}
-        case _:
-            pass
-    return FOREIGN
-
-
 def _encodable(text: str) -> bool:
     try:
         text.encode("utf-8")
@@ -689,10 +103,7 @@ def _encodable(text: str) -> bool:
 
 
 def _literal_problem(value: object) -> str | None:
-    """Return why a value is no JSON literal: another type, a lone surrogate, or containers nested too deep.
-
-    Projection cuts Python containers nested too deep, and reading a file refuses deep nesting before this runs.
-    """
+    """Return why a value is no JSON literal: another type, or text with a lone surrogate."""
     pending = [value]
     while pending:
         match item := pending.pop():
@@ -712,124 +123,15 @@ def _literal_problem(value: object) -> str | None:
                 continue
             case _:
                 pass
-        return f"nests deeper than {_MAX_DEPTH} levels" if item is DEEP else "must be a JSON value"
+        return "must be a JSON value"
     return None
 
 
-def project(configuration: ProtocolConfiguration) -> object:
-    """Project Python records into the tree a JSON value gives; any other object becomes a value validation refuses."""
-    from datamodel_code_generator._runtime.protocols.records import (  # noqa: PLC0415
-        BodySelector,
-        BodyTarget,
-        HeaderSelector,
-        ParameterTarget,
-        QuerystringTarget,
-        StatusSelector,
-    )
-
-    def members(value: object) -> dict[object, object]:
-        kind = getattr(type(value), "kind", None)
-        tree: dict[object, object] = {"kind": kind} if isinstance(kind, str) else {}
-        for item in fields(value):  # ty: ignore[invalid-argument-type]
-            role = _ROLES.get((type(value), item.name), "record")
-            if (member := getattr(value, item.name)) is UNSET or (member is None and item.default is None):
-                continue
-            tree[_KEYS.get(item.name, item.name)] = _plain(member) if role == "json" else convert(member, role)
-        return tree
-
-    def reference(value: Any) -> object:
-        return {"pointer": value.pointer, **({} if value.document is None else {"document": value.document})}
-
-    def signature(value: PublicKeySignature) -> object:
-        """Project a signature record whose class allows its kind, and refuse any other as validation refuses."""
-        kinds = _PUBLIC_KEY_SIGNATURES
-        return members(value) if value.kind in kinds else FOREIGN
-
-    def step(value: object) -> object:
-        return {"page_items_count": True} if value == "page_items_count" else {"literal": convert(value)}
-
-    shapes: dict[type, Callable[[Any], object]] = {
-        **dict.fromkeys(_RECORDS, members),
-        PublicKeySignature: signature,
-        CountContinuation: lambda value: {**members(value), "step": step(value.step)},
-        StreamResume: lambda value: {"enabled": True, **members(value)},
-        BodySelector: lambda value: {"from": "body", "pointer": value.pointer},
-        HeaderSelector: lambda value: {"from": "header", "name": value.name, "occurrence": value.occurrence},
-        StatusSelector: lambda _: {"from": "status"},
-        ParameterTarget: lambda value: {"in": value.location, "name": value.name},
-        QuerystringTarget: lambda value: {"in": "querystring", "name": value.name, "pointer": value.pointer},
-        BodyTarget: lambda value: {"in": "body", "pointer": value.pointer},
-        OperationRef: reference,
-        SchemaRef: reference,
-    }
-
-    def convert(value: object, role: str = "record") -> object:
-        match value:
-            case str() | bool() | int() | float():
-                return value
-            case list() | tuple() if role != "item":
-                return [convert(item, "item") for item in value]
-            case Mapping() if role == "mapping":
-                return {key: convert(item) for key, item in value.items()}
-            case _ if (shape := shapes.get(type(value))) is not None:
-                return shape(value)
-            case _:
-                pass
-        return FOREIGN
-
-    return convert(configuration.helpers, "mapping")
-
-
-def protocol_problems(configuration: ProtocolConfiguration) -> list[Diagnostic]:
-    """Return every problem of a Python helper configuration that needs no accepted input."""
-    return validate(project(configuration))[1]
-
-
-def load_protocols(
-    source: Path | ProtocolConfiguration | Mapping[str, object], cwd: Path
-) -> tuple[tuple[Helper, ...], Path, list[Diagnostic]]:
-    """Read or project a helper configuration and validate it, with the directory its documents resolve against.
-
-    A file's relative documents resolve against its directory, and those of Python records or a JSON object against
-    the given working directory.
-    """
-    match source:
-        case ProtocolConfiguration():
-            tree, base, problems = project(source), cwd, []
-        case Mapping():
-            tree, base, problems = source, cwd, []
-        case _:
-            path = cwd / source.expanduser()
-            tree, problems = _read(path)
-            base = path.parent
-    if problems:
-        return (), base, problems
-    helpers, problems = validate(tree)
-    return helpers, base, problems
-
-
-def _read(path: Path) -> tuple[object, list[Diagnostic]]:
-    """Read a helper file as --client-protocols reads it, with that option's messages."""
-    from datamodel_code_generator.json_config import (  # noqa: PLC0415
-        JsonConfigError,
-        JsonConfigSpecs,
-        load_json_config_field,
-    )
-    from datamodel_code_generator.util import record_watch_dependency  # noqa: PLC0415
-
-    record_watch_dependency(path)
-    try:
-        return load_json_config_field("client_protocols", str(path)), []
-    except JsonConfigError as error:
-        option = JsonConfigSpecs.by_field_name["client_protocols"].option_name
-        return None, [_diagnostic("E_CONFIG_VALUE", _ROOT, str(error).replace(option, _ROOT))]
-
-
-def validate(tree: object) -> tuple[tuple[Helper, ...], list[Diagnostic]]:
-    """Validate a helper configuration tree, returning its valid helpers and every problem in declaration order."""
+def validate(tree: Mapping[str, object]) -> tuple[tuple[Helper, ...], list[Diagnostic]]:
+    """Validate a helper configuration object, returning its valid helpers and every problem in declaration order."""
     validator = _Validator()
     helpers = validator.helpers(tree, _ROOT)
-    return (() if helpers is INVALID else helpers), validator.problems
+    return helpers, validator.problems
 
 
 def _choices(values: tuple[str, ...]) -> str:
@@ -1076,17 +378,12 @@ class _Validator:  # noqa: PLR0904
 
         return convert
 
-    def helpers(self, value: object, at: str) -> tuple[Helper, ...] | _Invalid:
+    def helpers(self, value: Mapping[str, object], at: str) -> tuple[Helper, ...]:
         """Validate each helper in declaration order, refusing invalid and colliding names."""
-        if not isinstance(value, Mapping):
-            return self.value(at, f"{at} must be a mapping")
         names: list[tuple[str, str]] = []
         helpers: list[Helper] = []
         for name, body in value.items():
             here = f"{at}[{name!r}]"
-            if not isinstance(name, str):
-                self.value(here, f"{at} has the key {name!r}, which is not a string")
-                continue
             if (problem := helper_name_problem(name)) is not None:
                 self.value(here, problem)
             elif other := next((other for key, other in names if _collides(folded(name), key)), None):
