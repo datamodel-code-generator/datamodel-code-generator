@@ -149,6 +149,7 @@ fastapi = [
   "fastapi>=0.141.1,<0.142",
   "httpx2>=2,<3",
   "python-multipart>=0.0.32,<0.1",
+  "uvicorn>=0.54",
 ]
 fix = [ "prek>=0.2.22" ]
 isort6 = [ "isort>=6,<7" ]

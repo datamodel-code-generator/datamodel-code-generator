@@ -1,0 +1,52 @@
+models shared True
+# ndjson in-process sync, in-process async
+records.all
+  > GET /records?topic=records
+  stream_records(topic='records')
+  < 200 application/x-ndjson
+  = [Event(1, '', Record(text='a'), id=None), Event(2, '', Record(text='b'), id=None)]
+records.all unterminated
+  > GET /records?topic=unterminated
+  stream_records(topic='unterminated')
+  < 200 application/x-ndjson
+  ! StreamInterruptedError: StreamInterruptedError(operation_id='streamRecords', reason='eof', sequence=1) [operation_id='streamRecords', sequence=1] eof
+records.lenient unterminated
+  > GET /records?topic=unterminated
+  stream_records(topic='unterminated')
+  < 200 application/x-ndjson
+  = [Event(1, '', Record(text='a'), id=None), Event(2, '', Record(text='b'), id=None)]
+records.tagged
+  > GET /records?topic=tagged
+  stream_records(topic='tagged')
+  < 200 application/x-ndjson
+  = [Event(1, '', Created(type='created', id='1'), id=None), Event(2, '', UnknownEvent(discriminator='moved'), id=None)]
+records.tagged error record
+  > GET /records?topic=failed
+  stream_records(topic='failed')
+  < 200 application/x-ndjson
+  ! ProtocolDataError: ProtocolDataError(operation_id='streamRecords', reason='error_event') [operation_id='streamRecords'] error_event
+records.all missing topic
+  > GET /records?topic=missing
+  stream_records(topic='missing')
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - {"detail":"no topic"} [operation_id='streamRecords', status_code=404, body=Problem(detail='no topic'), body_bytes=b'{"detail":"no topic"}', truncated=False]
+search.all
+  > POST /search [application/json]
+  search(body=SearchQuery(text='hi'))
+  < 200 application/jsonl; charset=utf-8
+  = [Event(1, '', Record(text='hi'), id=None)]
+stream_records
+  > GET /records?topic=records
+  stream_records(topic='records')
+  < 200 application/x-ndjson
+  = b'{"text":"a"}\n{"text":"b"}\n'
+search
+  > POST /search [application/json]
+  search(body=SearchQuery(text='hi'))
+  < 200 application/jsonl; charset=utf-8
+  = b'{"text":"hi"}\n[DONE]\n'
+get_status
+  > GET /status
+  get_status()
+  < 200 application/json
+  = Record(text='up')

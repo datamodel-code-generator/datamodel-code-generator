@@ -1,0 +1,107 @@
+models shared True
+# bodies in-process sync, in-process async
+post_item
+  > POST /items [application/json]
+  post_item(body=Item(name='a'))
+  < 204 -
+  = None
+post_item without a body
+  > POST /items
+  post_item(body=None)
+  < 204 -
+  = None
+post_account
+  > POST /accounts [application/json]
+  post_account(body=Account(id=1, name='a'))
+  < 204 -
+  = None
+post_profile profile=a
+  > POST /profiles [application/json; profile=a]
+  post_profile(body=FieldProfilesPostRequest(a=1), media_type='application/json; profile=a')
+  < 204 -
+  = None
+post_profile profile=b
+  > POST /profiles [application/json; profile=b]
+  post_profile(body=FieldProfilesPostRequest1(b='x'), media_type='application/json; profile=b')
+  < 204 -
+  = None
+post_variant JSON
+  > POST /variants [application/json]
+  post_variant(body=FieldVariantsPostRequest1(c=True), media_type='application/json')
+  < 204 -
+  = None
+post_variant profile=v1
+  > POST /variants [application/json; profile=v1]
+  post_variant(body=FieldVariantsPostRequest(a=1), media_type='application/json; profile=v1')
+  < 204 -
+  = None
+post_variant form
+  > POST /variants [application/x-www-form-urlencoded]
+  post_variant(body=FieldVariantsPostRequest2(tags=['a', 'b']), media_type='application/x-www-form-urlencoded')
+  < 204 -
+  = None
+put_document JSON
+  > PUT /documents [application/json]
+  put_document(body=Item(name='j'), media_type='application/json')
+  < 204 -
+  = None
+put_document vendor JSON
+  > PUT /documents [application/vnd.item+json]
+  put_document(body=Item(name='v'), media_type='application/vnd.item+json')
+  < 204 -
+  = None
+put_document text
+  > PUT /documents [text/markdown]
+  put_document(body=FieldDocumentsPutRequest(root='hi'), media_type='text/markdown')
+  < 204 -
+  = None
+put_archive bytes
+  > PUT /archives [application/zip]
+  put_archive(body=b'PK\x03\x04', media_type='application/zip')
+  < 204 -
+  = None
+put_archive text
+  > PUT /archives [text/plain]
+  put_archive(body=FieldArchivesPutRequest(root='abc'), media_type='text/plain')
+  < 204 -
+  = None
+put_blob
+  > PUT /blobs [application/octet-stream]
+  put_blob(body=b'\x00\x01\x02')
+  < 204 -
+  = None
+post_form
+  > POST /forms [application/x-www-form-urlencoded]
+  post_form(body=FieldFormsPostRequest(name='n', tags=['a', 'b c'], count=2, extra=5))
+  < 204 -
+  = None
+post_native_form
+  > POST /native-forms [application/x-www-form-urlencoded]
+  post_native_form(body=FieldNativeFormsPostRequest(name='n', count=1))
+  < 204 -
+  = None
+upload
+  > POST /uploads [multipart/form-data; boundary=<boundary>]
+  upload(body=FieldUploadsPostRequest(file=b'\x00binary\xff', note='café'))
+  < 204 -
+  = None
+post_check
+  > POST /checks [application/json]
+  post_check(body=Check(code=7, scores=[1, 2]))
+  < 204 -
+  = None
+post_note null
+  > POST /notes [application/json]
+  post_note(body=None)
+  < 204 -
+  = None
+post_note item
+  > POST /notes [application/json]
+  post_note(body=FieldNotesPostRequest(root=Item(name='i')))
+  < 204 -
+  = None
+post_raw
+  > POST /raw [application/json]
+  post_raw(body=FieldRawPostRequest())
+  < 204 -
+  = None

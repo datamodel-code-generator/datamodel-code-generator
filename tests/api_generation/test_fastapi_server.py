@@ -1,4 +1,7 @@
-"""Serve generated FastAPI packages over HTTP: parameters, bodies, forms, results, responses, and handler checks."""
+"""Serve generated FastAPI packages over HTTP: parameters, bodies, forms, results, responses, and handler checks.
+
+The cross-target cases call each server through the client generated from the same document.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +12,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 
+from tests.api_generation.support.cross_targets import cross_report
 from tests.api_generation.support.fastapi_charsets import text_charsets
 from tests.api_generation.support.fastapi_openapi import SCENARIOS, fastapi_openapi_report
 from tests.api_generation.support.fastapi_server import fastapi_server_report
@@ -21,6 +25,7 @@ DATA = Path(__file__).parents[1] / "data"
 CODECS = DATA / "generation_platform/codecs/pydantic"
 CODEC_EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi/servers"
+CROSS = Path(__file__).parents[1] / "data/expected/main/generation_platform/cross"
 PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start preset emits type statements")
 
 
@@ -74,6 +79,14 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in packages.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
+
+
+@pytest.mark.parametrize(
+    "case", ["pets", "parameters", "styles", "security", "bodies", "results", "pagination", "streams", "ndjson"]
+)
+def test_generated_client(case: str, tmp_path: Path) -> None:
+    """Generate a server and a client from one document, then call every operation of the server through the client."""
+    assert_output(cross_report(case, tmp_path), CROSS / f"{case}.txt")
 
 
 @pytest.mark.parametrize("case", list(SCENARIOS))

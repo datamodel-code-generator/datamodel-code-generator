@@ -1,0 +1,70 @@
+models shared True
+# security in-process sync, in-process async
+list_pets with the header key
+  > GET /v2/pets
+  authorize(requirement_sets=((('api_key', ()),),), credentials={'api_key': 'key-1'})
+  list_pets(principal='principal of api_key')
+  < 200 application/json
+  = FieldPetsGetResponse(root=['Mimi'])
+list_pets with a rejected key
+  > GET /v2/pets
+  authorize(requirement_sets=((('api_key', ()),),), credentials={'api_key': 'revoked'})
+  < 403 application/json
+  ! PermissionDeniedError: Error code: 403 - {"detail":"revoked"} [operation_id='listPets', status_code=403, body=b'{"detail":"revoked"}', body_bytes=b'{"detail":"revoked"}', truncated=False]
+list_pets without credentials
+  ! ConfigurationError: ConfigurationError(operation_id='listPets', reason='missing_credentials', field_path='auth') [operation_id='listPets', field_path=('auth',)] missing_credentials
+get_public
+  > GET /v2/public
+  get_public()
+  < 204 -
+  = None
+get_maybe anonymous
+  > GET /v2/maybe?principal=query%20value
+  get_maybe(principal=None, principal_1='query value')
+  < 204 -
+  = None
+get_maybe with a bearer token
+  > GET /v2/maybe
+  authorize(requirement_sets=((('bearer', ()),),), credentials={'bearer': HTTPAuthorizationCredentials(scheme='Bearer', credentials='token-1')})
+  get_maybe(principal='principal of bearer', principal_1=None)
+  < 204 -
+  = None
+put_pet with OAuth client credentials
+  > POST /token [application/x-www-form-urlencoded]
+  token(form={'grant_type': 'client_credentials', 'scope': 'read:pets'}, authorization='Basic cGV0czpzM2NyZXQ=')
+  < 200 application/json
+  > PUT /v2/pets/1
+  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),),), credentials={'oauth': 'Bearer issued-token'})
+  put_pet(principal='principal of oauth', petId=1)
+  < 204 -
+  = None
+put_pet with the cached token
+  > PUT /v2/pets/2
+  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),),), credentials={'oauth': 'Bearer issued-token'})
+  put_pet(principal='principal of oauth', petId=2)
+  < 204 -
+  = None
+put_pet with the query key and Basic [bug: the server presents the Basic Authorization header as the oauth credential, so authorize gets the oauth requirement set first]
+  > PUT /v2/pets/3?key=key+2
+  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),), (('query_key', ()), ('basic', ()))), credentials={'oauth': 'Basic dXNlcjpwYXNzOndvcmQ=', 'query_key': 'key 2', 'basic': HTTPBasicCredentials(username='user', password='pass:word')})
+  put_pet(principal='principal of basic, oauth, query_key', petId=3)
+  < 204 -
+  = None
+get_session with the cookie key
+  > GET /v2/session
+  authorize(requirement_sets=((('cookie_key', ()),),), credentials={'cookie_key': 'cookie-1'})
+  get_session(principal='principal of cookie_key')
+  < 204 -
+  = None
+get_session with OpenID Connect
+  > GET /v2/session
+  authorize(requirement_sets=((('oidc', ('openid',)),),), credentials={'oidc': 'Bearer id-token'})
+  get_session(principal='principal of oidc')
+  < 204 -
+  = None
+get_session with the header key
+  > GET /v2/session
+  authorize(requirement_sets=((('api_key', ()),),), credentials={'api_key': 'key-1'})
+  get_session(principal='principal of api_key')
+  < 204 -
+  = None

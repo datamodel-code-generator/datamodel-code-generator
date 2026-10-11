@@ -1,0 +1,125 @@
+models shared True
+# pagination in-process sync, in-process async
+list_users
+  > GET /users?limit=2
+  list_users(cursor=None, limit=2, X_Snapshot=None)
+  < 200 application/json
+  = UserPage(data=[User(id='ann', name='Ann'), User(id='bob', name='Bob')], next_cursor='c2')
+users.all
+  > GET /users?limit=2
+  list_users(cursor=None, limit=2, X_Snapshot=None)
+  < 200 application/json
+  > GET /users?cursor=c2&limit=2
+  list_users(cursor='c2', limit=2, X_Snapshot=None)
+  < 200 application/json
+  > GET /users?cursor=c4&limit=2
+  list_users(cursor='c4', limit=2, X_Snapshot=None)
+  < 200 application/json
+  = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee'), User(id='eve', name='Eve')]
+users.all pages
+  > GET /users
+  list_users(cursor=None, limit=None, X_Snapshot=None)
+  < 200 application/json
+  > GET /users?cursor=c2
+  list_users(cursor='c2', limit=None, X_Snapshot=None)
+  < 200 application/json
+  = Page((User(id='cid', name='Cid'), User(id='dee', name='Dee')), next='c4')
+users.by_header
+  > GET /users
+  list_users(cursor=None, limit=None, X_Snapshot='s1')
+  < 200 application/json
+  > GET /users?cursor=c2
+  list_users(cursor='c2', limit=None, X_Snapshot='s1')
+  < 200 application/json
+  > GET /users?cursor=c4
+  list_users(cursor='c4', limit=None, X_Snapshot='s1')
+  < 200 application/json
+  = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee'), User(id='eve', name='Eve')]
+users.search
+  > POST /users/search [application/json]
+  search_users(cursor=None, body=UserQuery(name='e'))
+  < 200 application/json
+  > POST /users/search?cursor=c2 [application/json]
+  search_users(cursor='c2', body=UserQuery(name='e'))
+  < 200 application/json
+  > POST /users/search?cursor=c4 [application/json]
+  search_users(cursor='c4', body=UserQuery(name='e'))
+  < 200 application/json
+  = [User(id='dee', name='Dee'), User(id='eve', name='Eve')]
+loose.all
+  > GET /loose
+  list_loose(cursor=None)
+  < 200 application/json
+  > GET /loose?cursor=2
+  list_loose(cursor=2)
+  < 200 application/json
+  > GET /loose?cursor=4
+  list_loose(cursor=4)
+  < 200 application/json
+  = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee'), User(id='eve', name='Eve')]
+nested.all
+  > GET /nested
+  list_nested(cursor=None)
+  < 200 application/json
+  > GET /nested?cursor=c2
+  list_nested(cursor='c2')
+  < 200 application/json
+  > GET /nested?cursor=c4
+  list_nested(cursor='c4')
+  < 200 application/json
+  = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee'), User(id='eve', name='Eve')]
+labels.all
+  > GET /labels
+  list_labels(after=None)
+  < 200 application/json
+  > GET /labels?after=c2
+  list_labels(after='c2')
+  < 200 application/json
+  > GET /labels?after=c4
+  list_labels(after='c4')
+  < 200 application/json
+  = [Label(name='Ann'), Label(name='Bob'), Label(name='Cid'), Label(name='Dee'), Label(name='Eve')]
+labels.sets
+  > GET /label-sets
+  list_label_sets(after=None)
+  < 200 application/json
+  > GET /label-sets?after=c2
+  list_label_sets(after='c2')
+  < 200 application/json
+  > GET /label-sets?after=c4
+  list_label_sets(after='c4')
+  < 200 application/json
+  = [Label(name='Ann'), Label(name='Bob'), Label(name='Cid'), Label(name='Dee'), Label(name='Eve')]
+archive.all
+  > GET /archive/start
+  list_archive(cursor='start')
+  < 200 application/json
+  > GET /archive/c2
+  list_archive(cursor='c2')
+  < 200 application/json
+  > GET /archive/c4
+  list_archive(cursor='c4')
+  < 200 application/json
+  = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee'), User(id='eve', name='Eve')]
+statuses.all
+  > GET /statuses
+  list_statuses(code=None)
+  < 206 application/json
+  > GET /statuses?code=206
+  list_statuses(code=206)
+  < 200 application/json
+  = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee')]
+secure.users
+  > GET /secure/users
+  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'Bearer token-1'})
+  list_secure_users(principal='reader', cursor=None)
+  < 200 application/json
+  > GET /secure/users?cursor=c2
+  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'Bearer token-1'})
+  list_secure_users(principal='reader', cursor='c2')
+  < 200 application/json
+  > GET /secure/users?cursor=c4
+  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'Bearer token-1'})
+  list_secure_users(principal='reader', cursor='c4')
+  < 200 application/json
+  = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee'), User(id='eve', name='Eve')]

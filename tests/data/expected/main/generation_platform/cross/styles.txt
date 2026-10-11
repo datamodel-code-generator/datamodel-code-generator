@@ -1,0 +1,76 @@
+models shared True
+# styles in-process sync, in-process async
+get_labels
+  > GET /labels/.a%20b/.x.y/.x,1,y,-2
+  get_labels(name='a b', names=['x', 'y'], point=Point(x=1, y=-2))
+  < 204 -
+  = None
+get_matrix
+  > GET /matrix/;name=a%3Bb/;names=x;names=y/;x=1;y=-2
+  get_matrix(name='a;b', names=['x', 'y'], point=Point(x=1, y=-2))
+  < 204 -
+  = None
+get_simple
+  > GET /simple/a%2Cb/1,2,3/x=1,y=-2
+  get_simple(name='a,b', names=[1, 2, 3], point=Point(x=1, y=-2))
+  < 204 -
+  = None
+get_query every style
+  > GET /query?spaced=a%20b&piped=1%7C2&x=1&y=-2&corner=x,3,y,4&flags=true&flags=false&reserved=a/b?c
+  get_query(spaced=['a', 'b'], piped=[1, 2], point=Point(x=1, y=-2), corner=Point(x=3, y=4), flags=[True, False], reserved='a/b?c')
+  < 204 -
+  = None
+get_query delimiter in a value
+  ! DecodeError: DecodeError(operation_id='getQuery', reason='unencodable', location='query.spaced') [operation_id='getQuery', location=('query', 'spaced'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] unencodable
+get_query characters to escape
+  > GET /query?spaced=%C3%A4%26b%3Dc%20%23&reserved=%C3%A4%20%26%3D%23
+  get_query(spaced=['ä&b=c', '#'], piped=None, point=None, corner=None, flags=None, reserved='ä &=#')
+  < 204 -
+  = None
+get_labels escapes
+  > GET /labels/.a.b/.%25.%3F.%23/.x,1,y,-2
+  get_labels(name='a.b', names=['%', '?', '#'], point=Point(x=1, y=-2))
+  < 204 -
+  = None
+get_labels slash [bug: the client sends / in a path value as %2F, and the server routes on the decoded path and answers 404]
+  > GET /labels/.a%2Fb/.x/.x,1,y,-2
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - {"detail":"Not Found"} [operation_id='getLabels', status_code=404, body=b'{"detail":"Not Found"}', body_bytes=b'{"detail":"Not Found"}', truncated=False]
+get_matrix slash [bug: the client sends / in a path value as %2F, and the server routes on the decoded path and answers 404]
+  > GET /matrix/;name=a%2Fb/;names=x/;x=1;y=-2
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - {"detail":"Not Found"} [operation_id='getMatrix', status_code=404, body=b'{"detail":"Not Found"}', body_bytes=b'{"detail":"Not Found"}', truncated=False]
+get_simple slash [bug: the client sends / in a path value as %2F, and the server routes on the decoded path and answers 404]
+  > GET /simple/a%2Fb/1/x=1,y=-2
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - {"detail":"Not Found"} [operation_id='getSimple', status_code=404, body=b'{"detail":"Not Found"}', body_bytes=b'{"detail":"Not Found"}', truncated=False]
+get_headers non-ASCII
+  > GET /headers
+  get_headers(X_Point=None, X_Corner=None, X_Tags=['café'])
+  < 204 -
+  = None
+get_query nothing
+  > GET /query
+  get_query(spaced=None, piped=None, point=None, corner=None, flags=None, reserved=None)
+  < 204 -
+  = None
+get_query empty arrays
+  > GET /query
+  get_query(spaced=None, piped=None, point=None, corner=None, flags=None, reserved=None)
+  < 204 -
+  = None
+get_headers
+  > GET /headers
+  get_headers(X_Point=Point(x=1, y=-2), X_Corner=Point(x=3, y=4), X_Tags=['a', 'b c'])
+  < 204 -
+  = None
+get_cookies
+  > GET /cookies
+  get_cookies(ids=[1, 2], point=Point(x=1, y=-2), count=3)
+  < 204 -
+  = None
+get_names
+  > GET /names/1?id=2&class=c&from=f&self=s&options=o&request=r&page%5Bsize%5D=10
+  get_names(id=1, id_1=2, class_='c', from_='f', self_1='s', options='o', request_1='r', page_size_=10, user_id='u')
+  < 204 -
+  = None

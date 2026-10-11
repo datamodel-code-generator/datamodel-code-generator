@@ -1,0 +1,47 @@
+models shared True
+# streams in-process sync, in-process async
+events.messages
+  > GET /events?topic=messages
+  stream_events(topic='messages', Last_Event_ID='1')
+  < 200 text/event-stream; charset=utf-8
+  = [Event(1, 'message', Message(text='a'), id=None), Event(2, 'message', Message(text='b'), id='2')]
+events.typed
+  > GET /events?topic=typed
+  stream_events(topic='typed', Last_Event_ID=None)
+  < 200 text/event-stream; charset=utf-8
+  = [Event(1, 'created', Created(type='created', id='1'), id=None), Event(2, 'other', UnknownEvent(discriminator='other'), id=None)]
+events.tagged
+  > GET /events?topic=done
+  stream_events(topic='done', Last_Event_ID=None)
+  < 200 text/event-stream; charset=utf-8
+  = [Event(1, 'message', Created(type='created', id='1'), id=None)]
+events.tagged error event
+  > GET /events?topic=tagged
+  stream_events(topic='tagged', Last_Event_ID=None)
+  < 200 text/event-stream; charset=utf-8
+  ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', reason='error_event') [operation_id='streamEvents'] error_event
+events.messages missing topic
+  > GET /events?topic=missing
+  stream_events(topic='missing', Last_Event_ID=None)
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - {"detail":"no topic"} [operation_id='streamEvents', status_code=404, body=Problem(detail='no topic'), body_bytes=b'{"detail":"no topic"}', truncated=False]
+events.messages no events
+  > GET /events?topic=none
+  stream_events(topic='none', Last_Event_ID=None)
+  < 204 -
+  ! DecodeError: DecodeError(status_code=204, operation_id='streamEvents', reason='unexpected_media_type') [operation_id='streamEvents', body_bytes=b'', truncated=False] unexpected_media_type
+feed.all
+  > POST /feed [application/json]
+  stream_feed(body=FeedQuery(topic='news'))
+  < 200 text/event-stream; charset=utf-8
+  = [Event(1, 'message', Message(text='news'), id=None)]
+stream_events
+  > GET /events?topic=messages
+  stream_events(topic='messages', Last_Event_ID=None)
+  < 200 text/event-stream; charset=utf-8
+  = FieldEventsGetResponse(root='data: {"text":"a"}\n\nid: 2\ndata: {"text":\ndata: "b"}\n\n')
+get_status
+  > GET /status
+  get_status()
+  < 200 application/json
+  = Message(text='up')

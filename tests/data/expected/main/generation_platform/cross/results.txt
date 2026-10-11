@@ -1,0 +1,92 @@
+models shared True
+# results in-process sync, in-process async
+get_result thing
+  > GET /results?case=thing
+  get_result(case='thing')
+  < 200 application/json
+  = Response(Thing(id=1), 200, 'application/json')
+get_result headers
+  > GET /results?case=rate
+  get_result(case='rate')
+  < 200 application/json
+  = (Response(Thing(id=2), 200, 'application/json'), FieldResultsGetResponse200XRateHeader(root=5))
+get_result created
+  > GET /results?case=created
+  get_result(case='created')
+  < 201 application/json
+  = (Response(Thing(id=3), 201, 'application/json'), FieldResultsGetResponse201LocationHeader(root='/results/3'))
+get_result nothing
+  > GET /results?case=nothing
+  get_result(case='nothing')
+  < 204 -
+  = Response(None, 204, None)
+get_result accepted
+  > GET /results?case=accepted
+  get_result(case='accepted')
+  < 202 application/json
+  = Response({'queued': True}, 202, 'application/json')
+get_result csv
+  > GET /results?case=csv
+  get_result(case='csv')
+  < 200 text/csv; charset=utf-8
+  = Response(FieldResultsGetResponse(root='a,b\n1,2\n'), 200, 'text/csv; charset=utf-8')
+get_result octets
+  > GET /results?case=octets
+  get_result(case='octets')
+  < 200 application/octet-stream
+  = Response(b'\x00\x01', 200, 'application/octet-stream')
+get_result image
+  > GET /results?case=png
+  get_result(case='png')
+  < 200 image/png
+  = Response(b'\x89PNG', 200, 'image/png')
+get_result 4XX
+  > GET /results?case=teapot
+  get_result(case='teapot')
+  < 418 text/plain; charset=utf-8
+  ! APIStatusError: Error code: 418 - short and stout [operation_id='getResult', status_code=418, body='short and stout', body_bytes=b'short and stout', truncated=False]
+get_result default
+  > GET /results?case=problem
+  get_result(case='problem')
+  < 500 application/problem+json
+  ! InternalServerError: Error code: 500 - {"title":"broken"} [operation_id='getResult', status_code=500, body=Problem(title='broken'), body_bytes=b'{"title":"broken"}', truncated=False]
+head_result
+  > HEAD /results?case=thing
+  head_result(case='thing')
+  < 200 -
+  = Response(None, 200, None)
+get_plain
+  > GET /plain?case=short
+  get_plain(case='short')
+  < 200 text/plain; charset=utf-8
+  = FieldPlainGetResponse(root='abc')
+get_plain past its maxLength
+  > GET /plain?case=long
+  get_plain(case='long')
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='getPlain', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+get_latin
+  > GET /latin?case=latin
+  get_latin(case='latin')
+  < 200 text/plain; charset=iso-8859-1
+  = Response(FieldLatinGetResponse(root='café'), 200, 'text/plain; charset=iso-8859-1')
+get_nothing success
+  > GET /nothing?case=ok
+  get_nothing(case='ok')
+  < 200 application/json
+  = Response(FieldNothingGetResponse(), 200, 'application/json')
+get_nothing error
+  > GET /nothing?case=bad
+  get_nothing(case='bad')
+  < 400 application/json
+  ! BadRequestError: Error code: 400 - {} [operation_id='getNothing', status_code=400, body=FieldNothingGetResponse(), body_bytes=b'{}', truncated=False]
+get_blob
+  > GET /blob?case=ab
+  get_blob(case='ab')
+  < 200 application/octet-stream
+  = Response(b'abab', 200, 'application/octet-stream')
+post_empty
+  > POST /empty?case=x
+  post_empty(case='x')
+  < 204 -
+  = None

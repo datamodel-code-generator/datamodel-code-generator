@@ -1,0 +1,73 @@
+models shared True
+# parameters in-process sync, in-process async
+search every parameter
+  > GET /search?code=XYZ&filter%5Bid%5D=1&filter%5Bname%5D=a%20b&ids=1,2,3&blob=%7B%22a%22%3A1%7D&note=hello%2C%20world
+  search(session='ab', code='XYZ', filter=Filter(id=1, name='a b'), ids=[1, 2, 3], X_Ids=[4, 5], blob=Blob(a=1), note='hello, world')
+  < 204 -
+  = None
+search defaults
+  > GET /search?code=AB
+  search(session='ab', code='AB', filter=None, ids=None, X_Ids=[3], blob=None, note=None)
+  < 204 -
+  = None
+search refused cookie
+  > GET /search?code=AB
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"string_too_short","loc":["cookie","session"],"msg":"<msg>"}]} [operation_id='search', status_code=422, body=b'{"detail":[{"type":"string_too_short","loc":["cookie","session"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"string_too_short","loc":["cookie","session"],"msg":"<msg>"}]}', truncated=False]
+get_ratios
+  > GET /ratios?ratios=0.5&ratios=1.25
+  get_ratios(ratios=[0.5, 1.25], limits=[1, 2])
+  < 204 -
+  = None
+get_ratios limits
+  > GET /ratios?ratios=2.0&limits=3
+  get_ratios(ratios=[2.0], limits=[3])
+  < 204 -
+  = None
+get_sizes defaults
+  > GET /sizes?size=10&least=7
+  get_sizes(size=10, words=['a', 'b'], one='x', least=7, cap=None)
+  < 204 -
+  = None
+get_sizes values
+  > GET /sizes?size=3&words=x&words=y%20z&one=x&least=8&cap=4
+  get_sizes(size=3, words=['x', 'y z'], one='x', least=8, cap=4)
+  < 204 -
+  = None
+get_sizes null [bug: the client signature takes None for the nullable cap, then refuses to send it]
+  ! DecodeError: DecodeError(operation_id='getSizes', reason='unencodable', location='query.cap') [operation_id='getSizes', location=('query', 'cap'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('JSON null cannot be written by a style-based parameter')] unencodable
+get_codes
+  > GET /codes
+  get_codes(X_Codes=[1, 2])
+  < 204 -
+  = None
+repeat
+  > GET /repeat/5/again/5
+  repeat(id=5)
+  < 204 -
+  = None
+get_note
+  > GET /notes/3
+  get_note(note_id=3)
+  < 204 -
+  = None
+get_file
+  > GET /files/a.txt
+  get_file(file_name='a.txt')
+  < 204 -
+  = None
+get_menu
+  > GET /men%C3%BC/abc
+  get_menu(item='abc')
+  < 204 -
+  = None
+get_item every parameter
+  > GET /items/2?mode=1&ratio=1.5&kind=b&levels=2&levels=2
+  get_item(level=FieldItemsLevelGetPathLevelParameter.integer_2, mode=FieldItemsLevelGetQueryModeParameter.integer_1, ratio=FieldItemsLevelGetQueryRatioParameter.number_1_5, X_Flag=True, kind=FieldItemsLevelGetQueryKindParameter.b, tier=None, levels=[FieldItemsLevelGetQueryLevelsParameterEnum.integer_2, FieldItemsLevelGetQueryLevelsParameterEnum.integer_2])
+  < 204 -
+  = None
+get_item level
+  > GET /items/2
+  get_item(level=FieldItemsLevelGetPathLevelParameter.integer_2, mode=None, ratio=None, X_Flag=None, kind=None, tier=None, levels=None)
+  < 204 -
+  = None

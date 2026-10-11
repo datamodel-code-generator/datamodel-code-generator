@@ -1,0 +1,51 @@
+models shared True
+# pets in-process sync, in-process async, socket sync, socket async
+list_pets every parameter
+  > GET /pets?limit=5&tags=a%20b&tags=c%2Cd&kind=cat&since=2026-10-01T12%3A30%3A00Z
+  list_pets(limit=5, tags=['a b', 'c,d'], kind=FieldPetsGetQueryKindParameter.cat, X_Request_Id=UUID('12345678-1234-5678-1234-567812345678'), since=datetime(2026-10-01T12:30:00+00:00), session='s1')
+  < 200 application/json
+  = FieldPetsGetResponse(root=[Pet(id=1, name='Mimi', tag=None), Pet(id=2, name='Rex', tag='dog')])
+list_pets defaults
+  > GET /pets?limit=20
+  list_pets(limit=20, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
+  < 200 application/json
+  = FieldPetsGetResponse(root=[Pet(id=1, name='Mimi', tag=None), Pet(id=2, name='Rex', tag='dog')])
+list_pets default response
+  > GET /pets?limit=99
+  list_pets(limit=99, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
+  < 409 application/json
+  ! ConflictError: Error code: 409 - {"code":409,"message":"paused"} [operation_id='listPets', status_code=409, body=Error(code=409, message='paused'), body_bytes=b'{"code":409,"message":"paused"}', truncated=False]
+create_pet
+  > POST /pets [application/json]
+  create_pet(body=NewPet(name='Tama', tag=None))
+  < 201 application/json
+  = Pet(id=3, name='Tama', tag=None)
+create_pet refused body
+  > POST /pets [application/json]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"string_too_short","loc":["body","name"],"msg":"<msg>"}]} [operation_id='createPet', status_code=422, body=b'{"detail":[{"type":"string_too_short","loc":["body","name"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"string_too_short","loc":["body","name"],"msg":"<msg>"}]}', truncated=False]
+list_my_pets
+  > GET /pets/mine
+  list_my_pets()
+  < 200 application/json
+  = FieldPetsMineGetResponse(root=[])
+get_pet
+  > GET /pets/7
+  get_pet(petId=7)
+  < 200 application/json
+  = Pet(id=7, name='Mimi', tag=None)
+get_pet typed error
+  > GET /pets/404
+  get_pet(petId=404)
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - {"code":404,"message":"no such pet"} [operation_id='getPet', status_code=404, body=Error(code=404, message='no such pet'), body_bytes=b'{"code":404,"message":"no such pet"}', truncated=False]
+delete_pet
+  > DELETE /pets/7
+  delete_pet(petId=7)
+  < 204 -
+  = None
+get_inventory
+  > GET /store/inventory
+  get_inventory()
+  < 200 application/json
+  = FieldStoreInventoryGetResponse(root={'available': 2, 'sold': 0})
