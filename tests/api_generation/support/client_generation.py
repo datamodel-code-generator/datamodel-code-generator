@@ -7,13 +7,12 @@ import json
 import re
 import shutil
 import warnings
-from contextlib import AbstractContextManager, nullcontext
 from functools import partial
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, generate
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, chdir, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.client_protocol_records import (
@@ -44,15 +43,6 @@ def formatter_refusal(error: RuntimeError) -> str:
         raise error
     codes = sorted(set(re.findall(r"\b[A-Z]+[0-9]{3}\b", str(error).partition("\n")[2])))
     return f"{type(error).__name__}: {str(error).partition(':')[0]} ({', '.join(codes)})"
-
-
-def _directory(path: Path | None) -> AbstractContextManager[object]:
-    """Run from a directory when one is given, importing `contextlib.chdir` only then, since it needs Python 3.11."""
-    if path is None:
-        return nullcontext()
-    from contextlib import chdir
-
-    return chdir(path)
 
 
 def _helper_file(values: Mapping[str, Any], root: Path) -> Path | None:
@@ -192,9 +182,9 @@ def _files(root: Path) -> set[Path]:
     return {path.relative_to(root) for path in root.rglob("*") if path.is_file()}
 
 
-def _outputs(root: Path, before: set[Path], package: str = PACKAGE, models: str = "models") -> set[Path]:
+def _outputs(root: Path, before: set[Path]) -> set[Path]:
     """Return the files a run wrote at its outputs, the models and the package, without the caches of formatters."""
-    return {path for path in _files(root) - before if path.parts[0] in {package, models, f"{models}.py"}}
+    return {path for path in _files(root) - before if path.parts[0] in {PACKAGE, "models", "models.py"}}
 
 
 def _run(
@@ -202,9 +192,6 @@ def _run(
     backend: str,
     root: Path,
     model: Mapping[str, Any],
-    *,
-    package: str = PACKAGE,
-    models: str = "models",
 ) -> None:
     """Generate a case's models and package under its root, from the directory the case runs in.
 
@@ -221,14 +208,14 @@ def _run(
                 if isinstance(value := model.get(key), str)
             },
         }
-    with _directory(run):
+    with chdir(run):
         if coordinated(case):
-            coordinator_generate(source, model_config(root / f"{models}.py", backend, model), config, root)
+            coordinator_generate(source, model_config(root / "models.py", backend, model), config, root)
         else:
             generate(
                 source,
                 config=model_config(
-                    root / f"{models}.py", backend, {**model, **client_options(config, root, package, models)}
+                    root / "models.py", backend, {**model, **client_options(config, root, PACKAGE, "models")}
                 ),
             )
 
@@ -289,7 +276,7 @@ def render_client(
     root.mkdir(parents=True, exist_ok=True)
     helpers = _helper_file(config, root)
     try:
-        with _directory(root if helpers is None else helpers.parent):
+        with chdir(root if helpers is None else helpers.parent):
             generate(
                 source,
                 config=model_config(
@@ -312,15 +299,6 @@ def client_tree(case_name: str, root: Path) -> Path:
     _prepare_input(case, root)
     _run(case, "pydantic_v2.BaseModel", root, case.get("model", {}))
     return root
-
-
-def publication_client(case: Mapping[str, Any], root: Path, backend: str) -> set[Path]:
-    """Generate a publication profile under a root and return the files the run wrote, copied runtime included."""
-    (root / case["input"]).parent.mkdir(parents=True, exist_ok=True)
-    _prepare_input(case, root)
-    before = _files(root)
-    _run(case, backend, root, case.get("model", {}), package="publication_client", models="publication_client_models")
-    return _outputs(root, before, "publication_client", "publication_client_models")
 
 
 def client_render(case_name: str, root: Path, *, builtin_sources: bool = False) -> tuple[str, dict[str, Modules]]:
@@ -474,7 +452,7 @@ def client_api_report(root: Path) -> str:
         "client_model_package": "models",
         "client_protocols": helpers,
     }
-    with _directory(root):
+    with chdir(root):
         returned = generate(source, **options)
         lines = [
             f"returned without an output {sorted('/'.join(parts) for parts in returned if '_runtime' not in parts)}"
@@ -505,7 +483,7 @@ def client_ordinary_models(case_name: str, root: Path) -> dict[str, Path]:
         attempt = directories[backend.replace(".", "_")] = root / backend.replace(".", "_")
         attempt.mkdir(parents=True)
         source = _prepare_input(case, attempt)
-        with _directory(attempt if case.get("cwd") else None):
+        with chdir(attempt if case.get("cwd") else None):
             generate(source, config=model_config(attempt / "models.py", backend, case.get("model", {})))
     return directories
 
@@ -540,7 +518,7 @@ def client_cyclic_metadata_report(source: Path, root: Path, model: Mapping[str, 
     """Keep cyclic session metadata on the public target path without accepting the old capture crash."""
     lines = ["# session-cyclic-metadata", "render pydantic_v2.BaseModel default"]
     try:
-        with _directory(root):
+        with chdir(root):
             returned = generate(
                 source,
                 config=model_config(
@@ -615,7 +593,7 @@ def client_input_report(case_name: str, root: Path) -> str:
             options = {**case.get("model", {}), **client_options(case.get("config", {}), attempt, PACKAGE, "models")}
             lines.append(f"{name} {backend}")
             try:
-                with _directory(attempt):
+                with chdir(attempt):
                     generate(
                         source,
                         config=model_config(attempt / "models.py" if name == "generate" else None, backend, options),
@@ -685,7 +663,7 @@ def client_metadata_cycle_diagnostic_report(backend: str, root: Path, *, externa
             document = yaml.safe_load(source.read_text(encoding="utf-8"))
         lines.append(name)
         try:
-            with _directory(attempt):
+            with chdir(attempt):
                 generate(
                     document,
                     config=model_config(
