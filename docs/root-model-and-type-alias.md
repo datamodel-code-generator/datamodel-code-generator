@@ -21,6 +21,15 @@ in the alias type keep the alias form. This does not change `--use-type-alias`.
 An existing custom `pydantic_v2/RootModelTypeAlias.jinja2` remains selected;
 that template is responsible for preserving its root constraints.
 
+## API scope parameters
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, OpenAPI path, query, header, and cookie parameter schemas that would be root models
+    are always generated as type aliases, exactly as `--use-type-alias` emits them, whatever the output model type
+    and options; 0.83.0 generated root models for them. Object parameters stay models, and component schemas keep
+    their usual root models. See
+    [OpenAPI Options: Generate all API declarations](openapi-options.md#generate-all-api-declarations).
+
 ## 📊 Type Alias Behavior by Output Type and Python Version
 
 The type of type alias generated depends on the output model type and target Python version:

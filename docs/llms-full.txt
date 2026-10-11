@@ -3824,8 +3824,10 @@ readOnly/writeOnly resolution works with local and file reference types:
 
 ## Limitations
 
-OpenAPI input is used for model generation. It does not generate HTTP clients, server handlers, route definitions, or
-runtime request dispatch logic. Full OpenAPI document validation is outside the generation path unless you explicitly
+OpenAPI input is used for model generation. Without the experimental `--generate-server fastapi` or
+`--generate-client httpx2` options, it does not generate HTTP clients, server handlers, route definitions, or runtime
+request dispatch logic; with them, it also generates a [FastAPI server package](fastapi-server.md) or a
+[Python client package](python-client.md) on top of the models. Full OpenAPI document validation is outside the generation path unless you explicitly
 enable validation-related options.
 
 ---
@@ -3909,6 +3911,12 @@ that references a parameter schema, including another schema, references its ali
 alias has no default value, so the model no longer applies a parameter schema's scalar
 default. Component schemas, response headers, and the other scopes keep their usual
 models.
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, parameter schemas that 0.83.0 generated as root models, such as a Pydantic
+    `RootModel`, are now type aliases, as `--use-type-alias` emits them. Code that constructed one, such as
+    `LimitParameter(5)`, or read its `.root` uses the plain value instead. See
+    [Root Models and Type Aliases](root-model-and-type-alias.md#api-scope-parameters).
 
 Adding other scopes alongside `api` does not repeat schema generation. `--openapi-include-paths` filters root paths and their reachable
 callbacks; webhooks and standalone components retain their declarations.
@@ -6754,7 +6762,7 @@ This pattern is ideal when:
 - [CLI Reference: `--collapse-root-models`](cli-reference/model-customization.md#collapse-root-models)
 - [CLI Reference: `--use-type-alias`](cli-reference/typing-customization.md#use-type-alias)
 - [Root Models and Type Aliases](root-model-and-type-alias.md)
-- [FAQ: Performance](faq.md#-performance)
+- [FAQ: Performance](faq.md#performance)
 
 ---
 
@@ -7898,6 +7906,15 @@ to preserve validation. Unconstrained roots and constraints already represented
 in the alias type keep the alias form. This does not change `--use-type-alias`.
 An existing custom `pydantic_v2/RootModelTypeAlias.jinja2` remains selected;
 that template is responsible for preserving its root constraints.
+
+## API scope parameters
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, OpenAPI path, query, header, and cookie parameter schemas that would be root models
+    are always generated as type aliases, exactly as `--use-type-alias` emits them, whatever the output model type
+    and options; 0.83.0 generated root models for them. Object parameters stay models, and component schemas keep
+    their usual root models. See
+    [OpenAPI Options: Generate all API declarations](openapi-options.md#generate-all-api-declarations).
 
 ## 📊 Type Alias Behavior by Output Type and Python Version
 
@@ -10292,7 +10309,11 @@ datamodel-codegen --all-jobs
 
 Jobs always run sequentially in their TOML declaration order. Before generation,
 all selected jobs are validated: each must have an input and output, and output
-or model-metadata paths cannot overlap. `--job` and `--all-jobs` are mutually
+or model-metadata paths cannot overlap, with two exceptions: jobs that each select
+`generate-server` or `generate-client` may name the same models `output`, which the
+batch writes once and fails on if their generated model files differ, and a job may
+keep its models inside its own server or client output, or that output inside its
+models directory. `--job` and `--all-jobs` are mutually
 exclusive. Define job-specific input and output in TOML instead of combining
 job selection with `--input`, `--url`, `--input-model`, `--output`, `--profile`,
 `--diff-against`, or job-specific watch settings. Input comparison is a
@@ -10306,7 +10327,10 @@ rebuild individual jobs. A failed cycle keeps the last published outputs and
 continues watching both prior and newly discovered dependencies for recovery.
 
 A job whose settings select `generate-server` also generates the FastAPI server
-package, and such jobs can share one models `output`; see [Batch jobs](fastapi-server.md#batch-jobs).
+package, and a job whose settings select `generate-client` also generates the Python
+client package; such jobs can share one models `output`; see [Batch jobs](fastapi-server.md#batch-jobs).
+Server and client generation are experimental; see [FastAPI Server Generation](fastapi-server.md) and
+[Python Client Generation](python-client.md).
 
 ## 🎯 Configuration Priority
 
@@ -11369,13 +11393,15 @@ operations keyed by service method name, such as `{"get_pet": [Depends(audit)]}`
   moves imports only an annotation uses into `TYPE_CHECKING` blocks when `ruff-check` runs with its TC rules
   selected and `--use-type-checking-imports` is given, since the server's Pydantic backends keep them by default. The
   router and application modules keep their imports: they have no postponed annotations, because FastAPI reads them
-  at run time.
+  at run time. As for the models, `typing.get_type_hints` on a generated class or function whose annotations name a
+  moved import then raises `NameError`: pass `--no-use-type-checking-imports`, or do not select the TC rules, to
+  introspect the annotations at run time.
 - Custom templates and custom formatters must keep the class and field names of the models: the server binds each
   operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `--server-model-package` is its import path. The models can
   live inside the server package, and the server package inside a models directory; see
   [The generated package](#the-generated-package).
-- The generated package needs FastAPI 0.141 and the other requirements it lists.
+- The generated package needs `fastapi>=0.141.1` and the other requirements of the printed `uv add` command.
 
 ## Python API
 
@@ -11424,16 +11450,21 @@ work for them as well. See [Target Generation Options](cli-reference/target-gene
 | `--server-output` | required | Directory of the generated package |
 | `--server-package` | required | Import path of the generated package |
 | `--server-model-package` | required | Import path of the models `--output` generates |
-| `--server-layout` | `routers` | One router module per tag, or `single` for one `routes.py` |
+| `--server-layout` | `routers` | One router module per group, or `single` for one `routes.py` |
 | `--server-handler-mode` | `sync` | `async` makes service methods coroutine functions |
 | `--server-handler-modes` | none | The handler mode of single operations, over `--server-handler-mode` |
-| `--server-include-request` | off | Pass the Starlette `Request` to every service method |
-| `--server-body-mode` | `typed` | `request` passes the raw `Request` instead of a validated body |
+| `--server-include-request` | off | Pass the Starlette request to every service method as the keyword `request: Request` |
+| `--server-body-mode` | `typed` | `request` passes the raw request, as the keyword `request: Request`, instead of a validated body |
 | `--server-body-modes` | none | The body mode of single operations, over `--server-body-mode` |
 | `--server-primary-responses` | inferred | The response a bare return value takes: `status_code` and an optional `media_type` |
 | `--server-operation-names` | inferred | Service method names of single operations |
-| `--server-router-names` | inferred | Group keys, such as `tag:pets`, to group names: router modules, service arguments, and `<Name>Service` Protocols |
+| `--server-router-names` | inferred | Group keys, such as `tag:pets` or `untagged`, to group names: router modules, service arguments, and `<Name>Service` Protocols |
 | `--server-parameter-names` | inferred | Method argument names of single operations, keyed by location and name such as `query:limit` |
+
+Operations are grouped by their first tag, under the key `tag:<tag>`, and operations without a tag under the key
+`untagged`, which makes the `untagged` router module, the `UntaggedService` Protocol, and the `untagged=` argument of
+`create_app` and `build_router`. With `--server-layout single`, every operation is in the group `all`: one
+`routes.py`, one `Service` Protocol, and the argument `service=`.
 
 `--server-handler-modes`, `--server-body-modes`, `--server-primary-responses`, `--server-operation-names`,
 `--server-router-names`, and `--server-parameter-names` take a JSON object, inline or as the path of a JSON file, as
@@ -11533,7 +11564,7 @@ server run to the batch document, with file paths relative to that job's model o
 | `__init__.py`, `application.py` | `create_app`, `build_router`, and the public types |
 | `services.py` | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | Route registrations |
-| `security.py` | One FastAPI security dependency for each scheme |
+| `security.py` | One FastAPI security dependency for each scheme, only when a selected operation uses a security scheme |
 | `_generated/`, `_runtime/` | Plans and the runtime the package imports |
 | `README.md`, `py.typed` | Documentation and typing marker |
 
@@ -11656,6 +11687,10 @@ that repeats a member keeps the last value; and text that is not JSON, or JSON p
 integer of thousands of digits or deep nesting, answers `422` with `json_invalid`.
 A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query,
 header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
+A path, query, header, or cookie parameter whose schema mixes scalar kinds keeps every member when one of them is a
+string, such as `int | str` for `type: [integer, string]`. Without a string member, such as `type: [integer, boolean]`,
+and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops with
+`A parameter value needs one unambiguous scalar kind`.
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the
 route's `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`); an
@@ -11677,9 +11712,15 @@ key and for the `Authorization` header OAuth2 and OpenID Connect read, `HTTPBasi
 `create_app` and `build_router` of a package with secured operations take an
 `authorize(requirement_sets, credentials)` callback, which may be a coroutine function. Each secured operation calls
 it once with its security requirement sets whose every scheme presented a credential, in declaration order, and the
-credentials by scheme name; the handler receives the principal it returns, and it rejects a request by raising
-`HTTPException`. A request that presents no complete requirement set answers `401`, unless the operation also
-accepts no credentials, in which case the handler receives `None`. FastAPI's document lists each scheme of an
+credentials by scheme name; the handler receives the principal it returns as the keyword argument
+`principal: PrincipalT_contra`, and it rejects a request by raising `HTTPException`. A request that presents no
+complete requirement set answers `401`, unless the operation also accepts no credentials, in which case the handler
+receives `None`, typed `PrincipalT_contra | None`. A service Protocol with secured operations is generic,
+`PetsService(Protocol[PrincipalT_contra])`, so `create_app(pets=..., authorize=...)` ties the principal type of the
+services to the return type of `authorize`. The package exports the callback types `Authorize` and
+`AsyncAuthorize`, `Callable[[RequirementSets, Credentials], P]` and the same returning `Awaitable[P]`, with
+`RequirementSets`, a tuple of requirement sets, each a tuple of `(scheme name, scopes)` pairs, and `Credentials`,
+`Mapping[str, object]`. FastAPI's document lists each scheme of an
 operation as a separate alternative, since FastAPI cannot document a requirement that combines several schemes.
 
 ## Served OpenAPI document
@@ -48738,7 +48779,7 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 
 HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
 
---generate-client httpx2 generates the models at --output and a client package at --client-output; --client-package and --client-model-package name their import paths, and the other --client-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check, --diff-against, --watch, --output-format json, and the uv add notice on stderr work as with --generate-server. generate() takes them as generate_client and the client_* options. It needs Python 3.11 or later, both to run and as --target-python-version.
+`--generate-client httpx2` generates the models at `--output` and a client package at `--client-output`; `--client-package` and `--client-model-package` name their import paths, and the other `--client-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check`, `--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with `--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options. It needs Python 3.11 or later, both to run and as `--target-python-version`.
 
 ### `cli-option.generate-schema-validators`
 
@@ -48758,7 +48799,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
---generate-server fastapi generates the models at --output and a server package at --server-output; --server-package and --server-model-package name their import paths, and the other --server-* options configure the package. Like model options, they can be set in [tool.datamodel-codegen] of pyproject.toml, in its profiles, and in its jobs. --check compares without writing, --diff-against compares the files two inputs render, --watch regenerates after input changes, --output-format json uses the model generation, check, and input-diff payloads, and generation prints a uv add command to stderr. generate() takes them as generate_server and the server_* options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as --target-python-version.
+`--generate-server fastapi` generates the models at `--output` and a server package at `--server-output`; `--server-package` and `--server-model-package` name their import paths, and the other `--server-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check` compares without writing, `--diff-against` compares the files two inputs render, `--watch` regenerates after input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and generation prints a `uv add` command to stderr. `generate()` takes them as `generate_server` and the `server_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`.
 
 ### `cli-option.install-skill`
 
@@ -48818,7 +48859,7 @@ The option implies --use-type-alias and selects TypeAliasType for Python 3.10 an
 
 The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.
 
-datamodel-code-generator[http] remains the stable HTTPX backend and is not deprecated; datamodel-code-generator[httpx2] is experimental. The default HTTP backend policy is auto: stable httpx is selected when its client module is installed, including when both pairs are installed, and experimental httpx2 is selected only when that module is absent. Use --http-backend httpx2 or HTTPBackend.HTTPX2 to require the experimental pair. Explicit selections and paired dependency errors do not fall back.
+`datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; `datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable httpx is selected when its client module is installed, including when both pairs are installed, and experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or `HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency errors do not fall back.
 
 ### `formatter.builtin`
 
@@ -49222,8 +49263,8 @@ datamodel-codegen --url https://... --http-ignore-tls --output model.py
 
 ### 🌐 How can I request another HTTP library for generated API clients?
 
-The [Python API client generation plan](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4098)
-targets HTTPX2 for both synchronous and asynchronous requests. If you need `aiohttp` or another HTTP library,
+The experimental [Python client](python-client.md), generated with `--generate-client httpx2`, uses HTTPX2 for both
+synchronous and asynchronous requests. If you need `aiohttp` or another HTTP library,
 check [existing issues](https://github.com/datamodel-code-generator/datamodel-code-generator/issues), then
 [start a discussion](https://github.com/datamodel-code-generator/datamodel-code-generator/discussions)
 if your use case is not covered. Include the library you need, your use case, and whether you need synchronous

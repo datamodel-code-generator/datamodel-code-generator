@@ -66,6 +66,12 @@ alias has no default value, so the model no longer applies a parameter schema's 
 default. Component schemas, response headers, and the other scopes keep their usual
 models.
 
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, parameter schemas that 0.83.0 generated as root models, such as a Pydantic
+    `RootModel`, are now type aliases, as `--use-type-alias` emits them. Code that constructed one, such as
+    `LimitParameter(5)`, or read its `.root` uses the plain value instead. See
+    [Root Models and Type Aliases](root-model-and-type-alias.md#api-scope-parameters).
+
 Adding other scopes alongside `api` does not repeat schema generation. `--openapi-include-paths` filters root paths and their reachable
 callbacks; webhooks and standalone components retain their declarations.
 

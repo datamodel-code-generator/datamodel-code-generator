@@ -336,8 +336,8 @@ datamodel-codegen --url https://... --http-ignore-tls --output model.py
 
 ### 🌐 How can I request another HTTP library for generated API clients?
 
-The [Python API client generation plan](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4098)
-targets HTTPX2 for both synchronous and asynchronous requests. If you need `aiohttp` or another HTTP library,
+The experimental [Python client](python-client.md), generated with `--generate-client httpx2`, uses HTTPX2 for both
+synchronous and asynchronous requests. If you need `aiohttp` or another HTTP library,
 check [existing issues](https://github.com/datamodel-code-generator/datamodel-code-generator/issues), then
 [start a discussion](https://github.com/datamodel-code-generator/datamodel-code-generator/discussions)
 if your use case is not covered. Include the library you need, your use case, and whether you need synchronous
