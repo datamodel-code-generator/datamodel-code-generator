@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI, Request
+from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -47,8 +50,22 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     return {"default": {"untagged": Untagged()}}
 
 
+def _echo(request: Request) -> JSONResponse:
+    """Answer with the path and path parameters a route the user added receives."""
+    return JSONResponse({"path": request.url.path, "params": request.path_params})
+
+
 def applications(server: ModuleType, sets: dict[str, dict[str, object]]) -> dict[str, FastAPI]:
-    """Mount the application below /a/b of a user application."""
+    """Mount the application below /a/b, and add the user's own routes, router, and mount to the generated router."""
     mounted = FastAPI()
     mounted.mount("/a/b", server.create_app(**sets["default"]))
-    return {"mounted": mounted}
+    router = server.build_router(**sets["default"])
+    router.add_api_route("/user/{name}", _echo)
+    router.add_route("/echo/{rest:path}", _echo)
+    included = APIRouter()
+    included.add_api_route("/included/{rest:path}", _echo)
+    router.include_router(included)
+    router.mount("/mounted", Starlette(routes=[Route("/{rest:path}", _echo)]))
+    extended = FastAPI()
+    extended.include_router(router)
+    return {"mounted": mounted, "extended": extended}

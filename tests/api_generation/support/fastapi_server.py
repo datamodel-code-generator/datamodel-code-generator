@@ -99,7 +99,7 @@ def _exchange(client: TestClient, request: dict[str, Any], calls: list[str], lin
         lines.extend((f"> openapi {path} {method} {status}", f"< {json.dumps(content, sort_keys=True)}"))
         return
     method, url = request["method"], request["url"]
-    lines.append(f"> {method} {url}")
+    lines.append(f"> {method} {url}{_raw_path(request.get('headers', {}))}")
     options = {key: request[key] for key in ("headers", "json", "content", "data", "files") if key in request}
     match options.get("files"):
         case dict() as files:
@@ -133,6 +133,16 @@ def _exchange(client: TestClient, request: dict[str, Any], calls: list[str], lin
         )
     finally:
         calls.clear()
+
+
+def _raw_path(headers: dict[str, str] | list[list[str]]) -> str:
+    """Name the raw_path that _WithoutRawPath serves a request with, when its headers leave it out or rewrite it."""
+    named = {name.lower(): value for name, value in dict(headers).items()}
+    if "x-without-raw-path" in named:
+        return " (without raw_path)"
+    if (raw := named.get("x-raw-path")) is not None:
+        return f" (raw_path {raw})"
+    return ""
 
 
 def _errors(response: Any) -> str:

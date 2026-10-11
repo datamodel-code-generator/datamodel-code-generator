@@ -15,11 +15,11 @@ from fastapi.params import Depends
 from fastapi.routing import APIRoute
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import JSONResponse
+from starlette.routing import Match
 from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
     from starlette.requests import Request
-    from starlette.routing import Match
     from starlette.types import Receive, Scope, Send
 
 MethodT = TypeVar("MethodT")
@@ -33,25 +33,36 @@ class RawPathRouter(APIRouter):
     """An APIRouter that matches its routes with each slash the raw path encodes kept inside its segment.
 
     FastAPI matches and handles an included router through these methods, once per request; a path without an encoded
-    slash, or whose raw path does not spell it, goes through them unchanged.
+    slash, or whose raw path does not spell it, goes through them unchanged. So does a path that selects a route the
+    router's user added, such as a mount or a Starlette route, which receives the decoded path as FastAPI routes it.
     """
 
     def matches(self, scope: Scope) -> tuple[Match, Scope]:
         """Match the routes against the path with its encoded slashes marked."""
-        if (path := _segmented(scope)) is None:
+        if (marked := self._marked(scope)) is None:
             return super().matches(scope)
-        return super().matches({**scope, "path": path})
+        _, match, child_scope = marked
+        return match, child_scope
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Select the route by the path with its encoded slashes marked; the route puts the slashes back."""
-        if (path := _segmented(scope)) is None:
+        if (marked := self._marked(scope)) is None:
             await super().handle(scope, receive, send)
             return
-        decoded, scope["path"] = scope["path"], path
+        decoded, scope["path"] = scope["path"], marked[0]
         try:
             await super().handle(scope, receive, send)
         finally:
             scope["path"] = decoded
+
+    def _marked(self, scope: Scope) -> tuple[str, Match, Scope] | None:
+        """Return the marked path and its match, unless it selects a route other than a RawPathRoute."""
+        if (path := _segmented(scope)) is None:
+            return None
+        match, child_scope = super().matches({**scope, "path": path})
+        if match is not Match.NONE and not isinstance(child_scope.get("route"), RawPathRoute):
+            return None
+        return path, match, child_scope
 
 
 class RawPathRoute(APIRoute):
@@ -74,12 +85,18 @@ def _segmented(scope: Scope) -> str | None:
     if _PERCENT not in raw or (raw.find(b"%2F") < 0 and raw.find(b"%2f") < 0):
         return None
     path: str = scope["path"]
-    marked = "/".join(unquote_to_bytes(part).decode(errors="replace").replace("/", _SLASH) for part in raw.split(b"/"))
-    if not path.endswith(plain := marked.replace(_SLASH, "/")):
+    segments = (unquote_to_bytes(segment).decode(errors="replace") for segment in raw.split(b"/"))
+    marked = "/".join(segment.replace("/", _SLASH) for segment in segments)
+    plain = marked.replace(_SLASH, "/")
+    if not path.endswith(plain):
         return None
     offset = len(path) - len(plain)
-    start = max(offset, len(root) if path.startswith(root := scope.get("root_path", "")) else 0)
-    return path[:start] + tail if _SLASH in (tail := marked[start - offset :]) else None
+    root = scope.get("root_path", "")
+    start = max(offset, len(root) if path.startswith(root) else 0)
+    tail = marked[start - offset :]
+    if _SLASH not in tail:
+        return None
+    return path[:start] + tail
 
 
 def _coroutine_function(value: object) -> TypeGuard[Callable[..., Awaitable[object]]]:

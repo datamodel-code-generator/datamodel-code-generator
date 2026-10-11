@@ -422,7 +422,12 @@ the method as its model, with uploads read to `bytes`.
 
 The router splits a request path at the slashes the request sends, so a percent-encoded slash (`%2F`) stays inside
 its path parameter, whose value receives `/`, of whatever style; FastAPI alone routes by the decoded path, where
-`%2F` would end the segment. A path without an encoded slash is routed as FastAPI routes it.
+`%2F` would end the segment. A path without an encoded slash is routed as FastAPI routes it, and so is one that
+selects a route you add to the generated router yourself, such as a mount or a Starlette route.
+
+!!! warning
+    A path parameter value can therefore contain `/` and `..`: `..%2F..%2Fetc` arrives as `../../etc`. Validate such
+    a value, for instance with a `pattern` in the schema, before using it as a file system path or in another URL.
 
 A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
 as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the

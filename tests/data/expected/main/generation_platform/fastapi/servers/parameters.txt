@@ -80,10 +80,10 @@ app default
 < 422 application/json [{"type": "value_error", "loc": ["path", "id"]}]
 > GET /repeat/x/again/x
 < 422 application/json [{"type": "int_parsing", "loc": ["path", "id"]}]
-> GET /repeat/1/again/1
+> GET /repeat/1/again/1 (without raw_path)
   repeat(id=1)
 < 204 - b''
-> GET /repeat/1/again/1
+> GET /repeat/1/again/1 (raw_path /elsewhere)
 < 400 application/json {"detail":"Invalid request"}
 > GET /notes/7
   get_note(note_id=7)
@@ -98,10 +98,12 @@ app default
 > GET /files/a%2Fb.txt
 < 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "dcg_p0"]}]
 > GET /files/a%2fb.txt
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "dcg_p0"]}]
+> GET /files/a%2Fb.txt (without raw_path)
 < 404 application/json {"detail":"Not Found"}
 > GET /files/a%2Fb.txt/
 < 404 application/json {"detail":"Not Found"}
-> GET /files/a.txt
+> GET /files/a.txt (raw_path /files/a%2Fb.txt)
   get_file(file_name='a.txt')
 < 204 - b''
 > GET /notes/7%2F8
@@ -171,3 +173,16 @@ app mounted
 > GET /a/b/men%C3%BC/tea
   get_menu(item='tea')
 < 204 - b''
+app extended
+> GET /files/a%2Fb.txt
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "dcg_p0"], "input": "a/b.txt", "ctx": {"pattern": "^[a-z]+\\.txt$"}}]
+> GET /user/a%2Fb
+< 200 application/json {"path":"/user/a/b","params":{"name":"a/b"}}
+> GET /echo/a%2Fb
+< 200 application/json {"path":"/echo/a/b","params":{"rest":"a/b"}}
+> GET /included/a%2Fb
+< 200 application/json {"path":"/included/a/b","params":{"rest":"a/b"}}
+> GET /mounted/a%2Fb
+< 200 application/json {"path":"/mounted/a/b","params":{"rest":"a/b"}}
+> GET /nowhere/a%2Fb
+< 404 application/json {"detail":"Not Found"}

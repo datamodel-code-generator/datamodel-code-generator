@@ -577,7 +577,11 @@
           },
           {
             "method": "GET",
-            "url": "/files/a%2fb.txt",
+            "url": "/files/a%2fb.txt"
+          },
+          {
+            "method": "GET",
+            "url": "/files/a%2Fb.txt",
             "headers": {
               "X-Without-Raw-Path": "1"
             }
@@ -723,6 +727,35 @@
           {
             "method": "GET",
             "url": "/a/b/men%C3%BC/tea"
+          }
+        ]
+      },
+      {
+        "set": "extended",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/files/a%2Fb.txt"
+          },
+          {
+            "method": "GET",
+            "url": "/user/a%2Fb"
+          },
+          {
+            "method": "GET",
+            "url": "/echo/a%2Fb"
+          },
+          {
+            "method": "GET",
+            "url": "/included/a%2Fb"
+          },
+          {
+            "method": "GET",
+            "url": "/mounted/a%2Fb"
+          },
+          {
+            "method": "GET",
+            "url": "/nowhere/a%2Fb"
           }
         ]
       }
