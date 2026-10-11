@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage
     from datamodel_code_generator._client.plan import ClientPlan
-    from datamodel_code_generator._client.protocols import Helper, Link, ProtocolConfiguration
+    from datamodel_code_generator._client.protocols import Helper, Link
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import OperationContract, OperationId
 
@@ -60,25 +60,23 @@ def _undocumented(at: str, document: str | None) -> Diagnostic:
     )
 
 
-def plan_protocols(
-    request: TargetRequest, source: Path | ProtocolConfiguration | Mapping[str, object] | None, cwd: Path
-) -> Protocols | None:
-    """Load the target's helpers and resolve their references, raising every problem with the target's identity.
+def plan_protocols(request: TargetRequest, source: Mapping[str, object] | None, base: Path) -> Protocols | None:
+    """Resolve the references of the target's helpers against a base, raising every problem with the target's identity.
 
-    Every helper, enabled or not, needs each operation it names among the root path operations.
+    The client settings refused every helper problem when they were built, so validation only normalizes the helpers
+    here. Every helper, enabled or not, needs each operation it names among the root path operations.
     """
     if source is None:
         return None
-    from datamodel_code_generator._client.protocols import load_protocols  # noqa: PLC0415
+    from datamodel_code_generator._client.protocols import validate  # noqa: PLC0415
 
-    helpers, base, problems = load_protocols(source, cwd)
+    helpers, problems = validate(source)
     resolver = _Resolver(request, base)
-    if not problems:
-        for helper in helpers:
-            for link in helper.links:
-                problems.extend(resolver.link(link))
-            for at, schema in helper.schemas:
-                problems.extend(resolver.schema(at, schema))
+    for helper in helpers:
+        for link in helper.links:
+            problems.extend(resolver.link(link))
+        for at, schema in helper.schemas:
+            problems.extend(resolver.schema(at, schema))
     if problems:
         raise APIGenerationError(tuple(problems), option_prefix=OPTION_PREFIX)
     return Protocols(helpers=helpers, operations=resolver.operations, documents=resolver.documents)

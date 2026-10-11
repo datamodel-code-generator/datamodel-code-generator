@@ -11,7 +11,6 @@ from __future__ import annotations
 from pathlib import Path
 
 JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "client-coordinator": ("private-import:tests/api_generation/support/client_protocol_records.py",),
     "command-output": (
         "embedded-source:tests/data/expected/main/generation_platform/client/cli/check-edited.txt",
         "embedded-source:tests/data/expected/main/generation_platform/fastapi/cli/check-model-readme.txt",
@@ -1147,11 +1146,6 @@ ALLOWLISTS = {
     "LEGACY_VIOLATIONS": LEGACY_VIOLATIONS,
 }
 ALLOWLIST_GROUP_REASONS = {
-    "client-coordinator": (
-        "client_protocol_records builds the protocol and client configuration records that the coordinator consumes "
-        "and gives the coordinator the inputs generate() does not take: Python helper records, a helper file path, "
-        "and models without an output."
-    ),
     "command-output": (
         "Command-line output that prints generated files, as a user sees it, compared with what the command prints."
     ),

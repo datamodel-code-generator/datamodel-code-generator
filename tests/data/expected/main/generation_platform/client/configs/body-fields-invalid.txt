@@ -1,4 +1,2 @@
 generate()
   Error: --client-operations['/paths/~1pets/get'].body_arguments: body_arguments must be 'body', 'both', or None; --client-operations['/paths/~1pets/post'].body_arguments: body_arguments must be 'body', 'both', or None
-records
-  Error: --client-operations[0].body_field_names: body_field_names must be a tuple of BodyFieldName; --client-body-arguments must be 'body' or 'both'

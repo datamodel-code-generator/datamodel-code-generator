@@ -1,4 +1,2 @@
 generate()
   Error: --client-operations['/paths/~1pets/get'].parameter_names must be an object
-records
-  Error: --client-operations[0].parameter_names: parameter_names must be a tuple of ParameterName records
