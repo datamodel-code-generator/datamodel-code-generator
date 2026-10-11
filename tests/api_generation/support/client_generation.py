@@ -345,11 +345,17 @@ def _configured(options: Mapping[str, Any], root: Path) -> list[str]:
     ]
 
 
-def client_config_report(case_name: str, root: Path) -> str:
-    """Generate a client with one case's client option values, reporting the files written or the refusal."""
-    case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
-    lines = ["generate()", *_configured(case["options"], root / "generate")]
+def client_options_report(options: Mapping[str, Any], root: Path) -> str:
+    """Generate the pets client with client option values, reporting the files written or the refusal."""
+    lines = ["generate()", *_configured(options, root / "generate")]
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
+
+
+def client_config_report(case_name: str, root: Path) -> str:
+    """Generate the pets client with one case's client option values, reporting the files written or the refusal."""
+    return client_options_report(
+        json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]["options"], root
+    )
 
 
 def client_cli_arguments(pyproject: Path) -> list[str]:

@@ -1,0 +1,2 @@
+generate()
+  Error: --client-operations['/paths/~1pets/post'].body_field_names['application/json'][1]: A body field name needs a media type, a wire property, and an identifier; --client-operations['/paths/~1pets/post'].body_field_names['application/json'][None]: A body field name needs a media type, a wire property, and an identifier

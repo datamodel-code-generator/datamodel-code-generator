@@ -169,8 +169,14 @@ def _tuple_of(value: object, kind: type[RecordT]) -> TypeIs[tuple[RecordT, ...]]
     return _is_tuple(value) and all(isinstance(item, kind) for item in value)
 
 
-def _text(value: object) -> bool:
+def _text(value: object) -> TypeIs[str]:
+    """Return whether a value is text; a JSON object key is, but a Python mapping's key may be any object."""
     return isinstance(value, str)
+
+
+def _key_order(key: object) -> tuple[bool, str]:
+    """Order the keys of an object by their text, then any key that is no text by its repr."""
+    return (False, key) if _text(key) else (True, repr(key))
 
 
 def _one_of(value: object, choices: frozenset[str]) -> bool:
@@ -201,7 +207,7 @@ def _field_name_problems(item: ClientOperationConfig, default: object, at: str) 
         )
     seen: set[tuple[str, str]] = set()
     for index, name in enumerate(names):
-        if not (_media(name.media_type) and explicit_name(name.python_name)):
+        if not (_media(name.media_type) and _text(name.name) and explicit_name(name.python_name)):
             yield _diagnostic(
                 "E_CONFIG_VALUE",
                 f"{at}.body_field_names[{index}]",
@@ -303,7 +309,7 @@ def _object(value: object, at: str) -> Mapping[str, Any]:
 
 def _members(value: object, at: str, keys: frozenset[str]) -> Mapping[str, Any]:
     """Return a JSON object whose members are all known, or refuse it."""
-    if unknown := sorted(set(members := _object(value, at)) - keys):
+    if unknown := sorted(set(members := _object(value, at)) - keys, key=_key_order):
         option_path, message = f"{at}.{unknown[0]}", f"{at} has no key {unknown[0]!r}"
         raise _EntryError(option_path, message, code="E_CONFIG_UNKNOWN")
     return members
@@ -347,8 +353,8 @@ def _operation_config(ref: OperationSelector, value: object, at: str) -> ClientO
     return ClientOperationConfig(ref=ref, **values)
 
 
-def _parameter_name(key: str, python_name: object, at: str) -> ParameterName:
-    location, separator, name = key.partition(":")
+def _parameter_name(key: object, python_name: object, at: str) -> ParameterName:
+    location, separator, name = key.partition(":") if _text(key) else ("", "", "")
     if not separator or not _is_location(location):
         message = f"{at} key {key!r} must be a location (path, query, querystring, header, or cookie), ':', and a name"
         raise _EntryError(at, message)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -14,6 +15,7 @@ from tests.api_generation.support.client_generation import (
     client_config_report,
     client_documents,
     client_input_report,
+    client_options_report,
     client_ordinary_models,
     client_render,
     client_tree,
@@ -365,6 +367,30 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
 def test_client_config(case: str, tmp_path: Path) -> None:
     """Generate a client with client option values, or refuse them."""
     assert_output(client_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    ("case", "options"),
+    [
+        (
+            "body-field-keys",
+            {
+                "operations": {
+                    "/paths/~1pets/post": {
+                        "body_arguments": "both",
+                        "body_field_names": {"application/json": {1: "first", None: "second"}},
+                    }
+                }
+            },
+        ),
+        ("parameter-name-keys", {"operations": {"/paths/~1pets/get": {"parameter_names": {1: "first"}}}}),
+        ("parameter-name-none-key", {"operations": {"/paths/~1pets/get": {"parameter_names": {None: "first"}}}}),
+        ("runtime-keys", {"operations": {"/paths/~1pets/get": {"runtime": {1: "first", "unknown": "second"}}}}),
+    ],
+)
+def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path: Path) -> None:
+    """Refuse an operation setting key that only a Python mapping holds, as the malformed key of its JSON form."""
+    assert_output(client_options_report(options, tmp_path), EXPECTED / "configs" / f"{case}.txt")
 
 
 @pytest.mark.parametrize(
