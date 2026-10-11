@@ -1,1 +1,2 @@
-TypeError: RuntimeOperationMetadata.__init__() got an unexpected keyword argument 'security'
+generate()
+  Error: --client-operations['/paths/~1pets/get'].runtime has no key 'security'

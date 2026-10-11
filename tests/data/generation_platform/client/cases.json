@@ -3177,7 +3177,9 @@
       ]
     },
     "config": {
-      "protocols": "protocols/not-json.json"
+      "protocols": {
+        "file": "protocols/not-json.json"
+      }
     },
     "modules": false
   },
@@ -3198,7 +3200,9 @@
       ]
     },
     "config": {
-      "protocols": "protocols/deep.json"
+      "protocols": {
+        "file": "protocols/deep.json"
+      }
     },
     "modules": false
   },
@@ -3241,7 +3245,9 @@
       ]
     },
     "config": {
-      "protocols": "protocols/deep-huge.json"
+      "protocols": {
+        "file": "protocols/deep-huge.json"
+      }
     },
     "modules": false,
     "expected": "protocols-deep"
@@ -3263,7 +3269,9 @@
       ]
     },
     "config": {
-      "protocols": "protocols/not-object.json"
+      "protocols": {
+        "file": "protocols/not-object.json"
+      }
     },
     "modules": false
   },
@@ -3409,7 +3417,9 @@
       ]
     },
     "config": {
-      "protocols": "protocols/missing.json"
+      "protocols": {
+        "file": "protocols/missing.json"
+      }
     },
     "modules": false
   },

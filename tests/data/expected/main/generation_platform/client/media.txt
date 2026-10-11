@@ -1,69 +1,67 @@
 # media
 render pydantic_v2.BaseModel
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/bodies.py
-  write client/model_codecs.py
-  write client/resources/__init__.py
-  write client/resources/forms/__init__.py
-  write client/resources/forms/_sync.py
-  write client/resources/forms/_async.py
-  write client/resources/files/__init__.py
-  write client/resources/files/_sync.py
-  write client/resources/files/_async.py
-  write client/resources/documents/__init__.py
-  write client/resources/documents/_sync.py
-  write client/resources/documents/_async.py
-  write client/types/__init__.py
-  write client/types/forms/__init__.py
-  write client/types/forms/_operations.py
-  write client/types/files/__init__.py
-  write client/types/files/_operations.py
-  write client/types/documents/__init__.py
-  write client/types/documents/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_operations.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/bodies.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/documents/__init__.py
+  client/resources/documents/_async.py
+  client/resources/documents/_sync.py
+  client/resources/files/__init__.py
+  client/resources/files/_async.py
+  client/resources/files/_sync.py
+  client/resources/forms/__init__.py
+  client/resources/forms/_async.py
+  client/resources/forms/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/documents/__init__.py
+  client/types/documents/_operations.py
+  client/types/files/__init__.py
+  client/types/files/_operations.py
+  client/types/forms/__init__.py
+  client/types/forms/_operations.py
+  models.py
 render typing.TypedDict
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/bodies.py
-  write client/model_codecs.py
-  write client/resources/__init__.py
-  write client/resources/forms/__init__.py
-  write client/resources/forms/_sync.py
-  write client/resources/forms/_async.py
-  write client/resources/files/__init__.py
-  write client/resources/files/_sync.py
-  write client/resources/files/_async.py
-  write client/resources/documents/__init__.py
-  write client/resources/documents/_sync.py
-  write client/resources/documents/_async.py
-  write client/types/__init__.py
-  write client/types/forms/__init__.py
-  write client/types/forms/_operations.py
-  write client/types/files/__init__.py
-  write client/types/files/_operations.py
-  write client/types/documents/__init__.py
-  write client/types/documents/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_operations.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/bodies.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/documents/__init__.py
+  client/resources/documents/_async.py
+  client/resources/documents/_sync.py
+  client/resources/files/__init__.py
+  client/resources/files/_async.py
+  client/resources/files/_sync.py
+  client/resources/forms/__init__.py
+  client/resources/forms/_async.py
+  client/resources/forms/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/documents/__init__.py
+  client/types/documents/_operations.py
+  client/types/files/__init__.py
+  client/types/files/_operations.py
+  client/types/forms/__init__.py
+  client/types/forms/_operations.py
+  models.py

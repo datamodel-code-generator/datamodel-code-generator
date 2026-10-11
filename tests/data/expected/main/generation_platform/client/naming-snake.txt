@@ -1,35 +1,34 @@
 # naming-snake
 render pydantic_v2.BaseModel
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/model_codecs.py
-  write client/resources/__init__.py
-  write client/resources/item_store/__init__.py
-  write client/resources/item_store/_sync.py
-  write client/resources/item_store/_async.py
-  write client/resources/item_store_1/__init__.py
-  write client/resources/item_store_1/_sync.py
-  write client/resources/item_store_1/_async.py
-  write client/resources/close_1/__init__.py
-  write client/resources/close_1/_sync.py
-  write client/resources/close_1/_async.py
-  write client/types/__init__.py
-  write client/types/item_store/__init__.py
-  write client/types/item_store/_operations.py
-  write client/types/item_store_1/__init__.py
-  write client/types/item_store_1/_operations.py
-  write client/types/close_1/__init__.py
-  write client/types/close_1/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_generated/security.py
-  write client/_operations.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/close_1/__init__.py
+  client/resources/close_1/_async.py
+  client/resources/close_1/_sync.py
+  client/resources/item_store/__init__.py
+  client/resources/item_store/_async.py
+  client/resources/item_store/_sync.py
+  client/resources/item_store_1/__init__.py
+  client/resources/item_store_1/_async.py
+  client/resources/item_store_1/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/close_1/__init__.py
+  client/types/close_1/_operations.py
+  client/types/item_store/__init__.py
+  client/types/item_store/_operations.py
+  client/types/item_store_1/__init__.py
+  client/types/item_store_1/_operations.py
+  models.py

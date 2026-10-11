@@ -1,10 +1,6 @@
 # webhooks-public-keys
 backend pydantic_v2.BaseModel
-dependencies
-  httpx2>=2.13.0
-  typing-extensions>=4.16
-  pydantic>=2.13.5
-  cryptography>=50.0.0
+dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.13.5 cryptography>=50.0.0
 copied runtime
   __init__.py: 2
   client/__init__.py: 4

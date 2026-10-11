@@ -1,60 +1,59 @@
 # pagination
 render pydantic_v2.BaseModel
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/auth.py
-  write client/model_codecs.py
-  write client/protocols/__init__.py
-  write client/resources/__init__.py
-  write client/resources/users/__init__.py
-  write client/resources/users/_sync.py
-  write client/resources/users/_async.py
-  write client/resources/loose/__init__.py
-  write client/resources/loose/_sync.py
-  write client/resources/loose/_async.py
-  write client/resources/nested/__init__.py
-  write client/resources/nested/_sync.py
-  write client/resources/nested/_async.py
-  write client/resources/labels/__init__.py
-  write client/resources/labels/_sync.py
-  write client/resources/labels/_async.py
-  write client/resources/archive/__init__.py
-  write client/resources/archive/_sync.py
-  write client/resources/archive/_async.py
-  write client/resources/statuses/__init__.py
-  write client/resources/statuses/_sync.py
-  write client/resources/statuses/_async.py
-  write client/resources/secure/__init__.py
-  write client/resources/secure/_sync.py
-  write client/resources/secure/_async.py
-  write client/types/__init__.py
-  write client/types/users/__init__.py
-  write client/types/users/_operations.py
-  write client/types/loose/__init__.py
-  write client/types/loose/_operations.py
-  write client/types/nested/__init__.py
-  write client/types/nested/_operations.py
-  write client/types/labels/__init__.py
-  write client/types/labels/_operations.py
-  write client/types/archive/__init__.py
-  write client/types/archive/_operations.py
-  write client/types/statuses/__init__.py
-  write client/types/statuses/_operations.py
-  write client/types/secure/__init__.py
-  write client/types/secure/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_generated/security.py
-  write client/_operations.py
-  write client/protocols/_plans.py
-  write client/protocols/_helpers.py
-  write client/protocols/_async_helpers.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/auth.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/archive/__init__.py
+  client/resources/archive/_async.py
+  client/resources/archive/_sync.py
+  client/resources/labels/__init__.py
+  client/resources/labels/_async.py
+  client/resources/labels/_sync.py
+  client/resources/loose/__init__.py
+  client/resources/loose/_async.py
+  client/resources/loose/_sync.py
+  client/resources/nested/__init__.py
+  client/resources/nested/_async.py
+  client/resources/nested/_sync.py
+  client/resources/secure/__init__.py
+  client/resources/secure/_async.py
+  client/resources/secure/_sync.py
+  client/resources/statuses/__init__.py
+  client/resources/statuses/_async.py
+  client/resources/statuses/_sync.py
+  client/resources/users/__init__.py
+  client/resources/users/_async.py
+  client/resources/users/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/archive/__init__.py
+  client/types/archive/_operations.py
+  client/types/labels/__init__.py
+  client/types/labels/_operations.py
+  client/types/loose/__init__.py
+  client/types/loose/_operations.py
+  client/types/nested/__init__.py
+  client/types/nested/_operations.py
+  client/types/secure/__init__.py
+  client/types/secure/_operations.py
+  client/types/statuses/__init__.py
+  client/types/statuses/_operations.py
+  client/types/users/__init__.py
+  client/types/users/_operations.py
+  models.py

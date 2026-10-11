@@ -1,8 +1,6 @@
 # minimal-dataclass
 backend dataclasses.dataclass
-dependencies
-  httpx2>=2.13.0
-  typing-extensions>=4.16
+dependencies httpx2>=2.13.0 typing-extensions>=4.16
 copied runtime
   __init__.py: 2
   client/__init__.py: 4

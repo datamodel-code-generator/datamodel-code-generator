@@ -1,69 +1,68 @@
 # stream-resume
 render pydantic_v2.BaseModel
-  write models.py
-  write client/__init__.py
-  write client/_client.py
-  write client/_async_client.py
-  write client/options.py
-  write client/errors.py
-  write client/responses.py
-  write client/model_codecs.py
-  write client/protocols/__init__.py
-  write client/resources/__init__.py
-  write client/resources/searches/__init__.py
-  write client/resources/searches/_sync.py
-  write client/resources/searches/_async.py
-  write client/resources/events/__init__.py
-  write client/resources/events/_sync.py
-  write client/resources/events/_async.py
-  write client/resources/streams/__init__.py
-  write client/resources/streams/_sync.py
-  write client/resources/streams/_async.py
-  write client/resources/rooms/__init__.py
-  write client/resources/rooms/_sync.py
-  write client/resources/rooms/_async.py
-  write client/resources/replay/__init__.py
-  write client/resources/replay/_sync.py
-  write client/resources/replay/_async.py
-  write client/resources/records/__init__.py
-  write client/resources/records/_sync.py
-  write client/resources/records/_async.py
-  write client/resources/feed/__init__.py
-  write client/resources/feed/_sync.py
-  write client/resources/feed/_async.py
-  write client/resources/marks/__init__.py
-  write client/resources/marks/_sync.py
-  write client/resources/marks/_async.py
-  write client/resources/status/__init__.py
-  write client/resources/status/_sync.py
-  write client/resources/status/_async.py
-  write client/types/__init__.py
-  write client/types/searches/__init__.py
-  write client/types/searches/_operations.py
-  write client/types/events/__init__.py
-  write client/types/events/_operations.py
-  write client/types/streams/__init__.py
-  write client/types/streams/_operations.py
-  write client/types/rooms/__init__.py
-  write client/types/rooms/_operations.py
-  write client/types/replay/__init__.py
-  write client/types/replay/_operations.py
-  write client/types/records/__init__.py
-  write client/types/records/_operations.py
-  write client/types/feed/__init__.py
-  write client/types/feed/_operations.py
-  write client/types/marks/__init__.py
-  write client/types/marks/_operations.py
-  write client/types/status/__init__.py
-  write client/types/status/_operations.py
-  write client/_generated/__init__.py
-  write client/_generated/model_bindings.py
-  write client/_generated/security.py
-  write client/_operations.py
-  write client/protocols/_plans.py
-  write client/protocols/_helpers.py
-  write client/protocols/_async_helpers.py
-  write client/_generated_docs/README.md
-  write client/_generated_docs/runtime.md
-  write client/py.typed
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/README.md
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/model_codecs.py
+  client/options.py
+  client/protocols/__init__.py
+  client/protocols/_async_helpers.py
+  client/protocols/_helpers.py
+  client/protocols/_plans.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/events/__init__.py
+  client/resources/events/_async.py
+  client/resources/events/_sync.py
+  client/resources/feed/__init__.py
+  client/resources/feed/_async.py
+  client/resources/feed/_sync.py
+  client/resources/marks/__init__.py
+  client/resources/marks/_async.py
+  client/resources/marks/_sync.py
+  client/resources/records/__init__.py
+  client/resources/records/_async.py
+  client/resources/records/_sync.py
+  client/resources/replay/__init__.py
+  client/resources/replay/_async.py
+  client/resources/replay/_sync.py
+  client/resources/rooms/__init__.py
+  client/resources/rooms/_async.py
+  client/resources/rooms/_sync.py
+  client/resources/searches/__init__.py
+  client/resources/searches/_async.py
+  client/resources/searches/_sync.py
+  client/resources/status/__init__.py
+  client/resources/status/_async.py
+  client/resources/status/_sync.py
+  client/resources/streams/__init__.py
+  client/resources/streams/_async.py
+  client/resources/streams/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/events/__init__.py
+  client/types/events/_operations.py
+  client/types/feed/__init__.py
+  client/types/feed/_operations.py
+  client/types/marks/__init__.py
+  client/types/marks/_operations.py
+  client/types/records/__init__.py
+  client/types/records/_operations.py
+  client/types/replay/__init__.py
+  client/types/replay/_operations.py
+  client/types/rooms/__init__.py
+  client/types/rooms/_operations.py
+  client/types/searches/__init__.py
+  client/types/searches/_operations.py
+  client/types/status/__init__.py
+  client/types/status/_operations.py
+  client/types/streams/__init__.py
+  client/types/streams/_operations.py
+  models.py

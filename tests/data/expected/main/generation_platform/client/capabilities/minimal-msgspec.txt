@@ -1,9 +1,6 @@
 # minimal-msgspec
 backend msgspec.Struct
-dependencies
-  httpx2>=2.13.0
-  typing-extensions>=4.16
-  msgspec>=0.21.1
+dependencies httpx2>=2.13.0 typing-extensions>=4.16 msgspec>=0.21.1
 copied runtime
   __init__.py: 2
   client/__init__.py: 4
