@@ -1,11 +1,7 @@
 # field-origins
 render pydantic_v2.BaseModel api
   models.py
-  model_bindings.py
-  codec_0 models.Envelope
-  codec_1 models.Envelope
+  model_bindings.py pydantic_v2_BaseModel/api
 render pydantic_v2.BaseModel schemas
   models.py
-  model_bindings.py
-  codec_0 models.Envelope
-  codec_1 models.Envelope
+  model_bindings.py pydantic_v2_BaseModel/api

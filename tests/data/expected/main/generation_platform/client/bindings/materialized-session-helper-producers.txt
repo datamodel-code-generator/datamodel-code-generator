@@ -1,28 +1,16 @@
 # materialized-session-helper-producers
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Values
-  codec_1 models.Values
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Values
-  codec_1 models.Values
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Values
-  codec_1 models.Values
-  map models:Values any=any, list_any=list_any, choice=choice, dictionary=dictionary, pattern=pattern
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Values
-  codec_1 models.Values
-  map models:Values any=any, list_any=list_any, choice=choice, dictionary=dictionary, pattern=pattern
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Values
-  codec_1 models.Values
+  model_bindings.py msgspec_Struct/default

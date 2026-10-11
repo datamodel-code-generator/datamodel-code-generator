@@ -1,66 +1,16 @@
 # materialized-merged-origins
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.RefUse
-  codec_1 models.RefUse
-  codec_2 models.Combined
-  codec_3 models.Combined
-  codec_4 models.Base
-  codec_5 models.Base
-  codec_6 models.Other
-  codec_7 models.Other
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.RefUse
-  codec_1 models.RefUse
-  codec_2 models.Combined
-  codec_3 models.Combined
-  codec_4 models.Base
-  codec_5 models.Base
-  codec_6 models.Other
-  codec_7 models.Other
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.RefUse
-  codec_1 models.RefUse
-  codec_2 models.Combined
-  codec_3 models.Combined
-  codec_4 models.Base
-  codec_5 models.Base
-  codec_6 models.Other
-  codec_7 models.Other
-  map models:Base shared-key=shared_key
-  map models:Combined shared-key=shared_key
-  map models:Other shared-key=shared_key
-  map models:RefUse1 shared-key=shared_key, side-key=side_key
-  map models:SideKey nested-key=nested_key
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.RefUse
-  codec_1 models.RefUse
-  codec_2 models.Combined
-  codec_3 models.Combined
-  codec_4 models.Base
-  codec_5 models.Base
-  codec_6 models.Other
-  codec_7 models.Other
-  map models:Base shared-key=shared-key
-  map models:Combined shared-key=shared-key
-  map models:Other shared-key=shared-key
-  map models:RefUse1 shared-key=shared-key, side-key=side-key
-  map models:SideKey nested-key=nested-key
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.RefUse
-  codec_1 models.RefUse
-  codec_2 models.Combined
-  codec_3 models.Combined
-  codec_4 models.Base
-  codec_5 models.Base
-  codec_6 models.Other
-  codec_7 models.Other
+  model_bindings.py msgspec_Struct/default

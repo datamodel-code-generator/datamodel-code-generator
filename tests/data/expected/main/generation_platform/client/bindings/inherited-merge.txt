@@ -1,22 +1,10 @@
 # inherited-merge
 render pydantic_v2.BaseModel all
   models.py
-  model_bindings.py
-  codec_0 models.Thing
-  codec_1 models.Thing
-  codec_2 models.Person
-  codec_3 models.Person
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel constraints
   models.py
-  model_bindings.py
-  codec_0 models.Thing
-  codec_1 models.Thing
-  codec_2 models.Person
-  codec_3 models.Person
+  model_bindings.py pydantic_v2_BaseModel/all
 render pydantic_v2.BaseModel none
   models.py
-  model_bindings.py
-  codec_0 models.Thing
-  codec_1 models.Thing
-  codec_2 models.Person
-  codec_3 models.Person
+  model_bindings.py pydantic_v2_BaseModel/all

@@ -14,7 +14,6 @@ that ships them; the report names that directory.
 
 from __future__ import annotations
 
-import ast
 import difflib
 import json
 import shutil
@@ -52,8 +51,6 @@ GENERATOR = Path(datamodel_code_generator.__file__).parent
 PACKAGE = "client"
 BINDINGS = (PACKAGE, "_generated", "model_bindings.py")
 STAGING = ".datamodel-codegen-"
-STDLIB = frozenset({"dataclasses.dataclass", "typing.TypedDict"})
-PINNED = ("session-", *"abcde")
 
 
 def _document(source: Path, root: Path, case: dict[str, Any]) -> Path:
@@ -136,47 +133,6 @@ def _sources(lines: list[str], modules: Modules) -> list[str]:
     return [*lines, *(line for parts, text in shipped.items() for line in ("/".join(parts), *text.splitlines()))]
 
 
-def _shipped(lines: list[str], modules: Modules, *, maps: bool, sources: bool) -> list[str]:
-    """Return the refusal or diagnostics, the model modules, and the codecs and field maps of a rendered package.
-
-    With sources, each model module is followed by its lines, for an edit to show what it changes in the models.
-    """
-    lines = list(lines)
-    for parts, text in _models(modules).items():
-        lines.extend(["/".join(parts), *(text.splitlines() if sources else ())])
-    if BINDINGS in modules:
-        lines.append("model_bindings.py")
-        lines.extend(_codecs(modules[BINDINGS], maps=maps))
-    return lines
-
-
-def _codecs(text: str, *, maps: bool) -> Iterator[str]:
-    """Yield the type each codec reads and writes, then the field map of each dataclass or TypedDict model."""
-    models: list[str] = []
-    modules: dict[str, str] = {}
-    for node in ast.parse(text).body:
-        match node:
-            case ast.Import():
-                modules.update((alias.asname or alias.name, alias.name) for alias in node.names)
-            case ast.ImportFrom(level=0):
-                modules.update((alias.asname or alias.name, f"{node.module}.{alias.name}") for alias in node.names)
-            case ast.AnnAssign(
-                target=ast.Name(id=name), annotation=ast.Subscript(slice=ast.Subscript(slice=type_))
-            ) if name.startswith("codec_"):
-                yield f"{name} {ast.unparse(type_)}"
-            case ast.AnnAssign(target=ast.Name(id="MODELS"), value=ast.Dict(keys=keys, values=values)) if maps:
-                for key, value in zip(keys, values, strict=True):
-                    module, _, model = ast.unparse(key).rpartition(".")
-                    pairs = ", ".join(
-                        f"{ast.literal_eval(field.args[0])}={ast.literal_eval(field.args[1])}"
-                        for field in value.args[0].elts
-                    )
-                    models.append(f"map {modules.get(module, module)}:{model} {pairs}".rstrip())
-            case _:
-                pass
-    yield from sorted(models)
-
-
 def _difference(before: list[str], after: list[str]) -> list[str]:
     changed = [
         line for line in difflib.unified_diff(before, after, lineterm="", n=0) if not line.startswith(("---", "+++"))
@@ -256,18 +212,6 @@ def _report(case_name: str, lines: list[str], unused: dict[str, list[dict[str, s
     return "\n".join([f"# {case_name}", *lines]).replace(root.resolve().as_posix(), "<root>") + "\n"
 
 
-def _reported(
-    case_name: str, label: str, render: tuple[list[str], Modules], pins: dict[str, str]
-) -> tuple[list[str], list[str]]:
-    """Return the report lines of a render without and with its sources, pinning model bindings not pinned yet."""
-    lines, modules = render
-    if not case_name.startswith(PINNED):
-        maps = label.split(" ", maxsplit=1)[0] in STDLIB
-        return _shipped(lines, modules, maps=maps, sources=False), _shipped(lines, modules, maps=maps, sources=True)
-    pin = pins.setdefault(modules.get(BINDINGS, ""), label.replace(".", "_").replace(" ", "/"))
-    return _listing(lines, modules, pin), _sources(lines, modules)
-
-
 def client_binding_report(
     case_name: str, root: Path
 ) -> tuple[str, list[tuple[Modules, Path]], dict[tuple[str, ...], str]]:
@@ -285,17 +229,20 @@ def client_binding_report(
     pins: dict[str, str] = {}
     for key, render, ordinary in _renders(case, root):
         count, label = key.split(" ", 1)
-        listed, shipped = _reported(case_name, label, rendered := render(count), pins)
-        if modules := rendered[1]:
+        reported, modules = render(count)
+        pin = pins.setdefault(modules.get(BINDINGS, ""), label.replace(".", "_").replace(" ", "/"))
+        listed, shipped = _listing(reported, modules, pin), _sources(reported, modules)
+        if modules:
             packages.append((_models(modules), ordinary(f"ordinary-{count}")))
         lines.extend((f"render {label}", *(f"  {line}" for line in listed)))
         for change in changes.pop(label, ()):
             edit = {key: change[key] for key in ("old", "new", "append") if key in change}
-            edited = render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
-            _, edited_sources = _reported(case_name, label, edited, {})
+            edited = _sources(
+                *render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
+            )
             lines.extend((
                 f"change {label} {change['id']}",
-                *(f"  {line}" for line in _difference(shipped, edited_sources)),
+                *(f"  {line}" for line in _difference(shipped, edited)),
             ))
     bindings = {(*pin.split("/"), *BINDINGS): text for text, pin in pins.items() if text}
     return _report(case_name, lines, changes, root), packages, bindings
@@ -326,9 +273,9 @@ def client_binding_rewrite_report(case_name: str, root: Path) -> str:
         count, label = key.split(" ", 1)
         if not (selected := rewrites.pop(label, ())):
             continue
-        _, shipped = _reported(case_name, label, render(count), {})
+        shipped = _sources(*render(count))
         for rewrite in selected:
             with _rewritten_stage(rewrite["old"], rewrite["new"]):
-                _, edited = _reported(case_name, label, render(rewrite["id"]), {})
+                edited = _sources(*render(rewrite["id"]))
             lines.extend((f"rewrite {label} {rewrite['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
     return _report(case_name, lines, rewrites, root)

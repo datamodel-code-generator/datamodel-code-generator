@@ -1,8 +1,4 @@
 # trusted-template-cycle
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
+  model_bindings.py msgspec_Struct/default

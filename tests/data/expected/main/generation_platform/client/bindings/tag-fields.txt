@@ -1,13 +1,7 @@
 # tag-fields
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Event
-  codec_1 models.Event
-  codec_2 models.StartedEvent
-  codec_3 models.StartedEvent
-  codec_4 models.StoppedEvent
-  codec_5 models.StoppedEvent
+  model_bindings.py msgspec_Struct/default
 change msgspec.Struct default unexpected-emission
   @@ -12 +12 @@
   -    pass

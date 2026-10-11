@@ -1,13 +1,7 @@
 # metadata-types
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.A
-  codec_1 models.A
-  codec_2 models.B
-  codec_3 models.B
-  codec_4 models.Envelope
-  codec_5 models.Envelope
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default discriminator
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]

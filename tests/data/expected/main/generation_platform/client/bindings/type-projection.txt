@@ -1,11 +1,7 @@
 # type-projection
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Child
-  codec_1 models.Child
-  codec_2 UUID
-  codec_3 UUID
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default literal-order
   @@ -32 +32 @@
   -    literal: Optional[Literal[True, 1, 'one']] = None
@@ -40,11 +36,7 @@ change pydantic_v2.BaseModel default positional-field-default
   +    child: Optional[Child] = Field(None, 'extra')
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Child
-  codec_1 models.Child
-  codec_2 UUID
-  codec_3 UUID
+  model_bindings.py msgspec_Struct/default
 change msgspec.Struct default builtin
   @@ -20 +20 @@
   -    flag: Union[bool, UnsetType] = UNSET

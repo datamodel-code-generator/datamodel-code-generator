@@ -1,13 +1,9 @@
 # quoted-constraints
 render pydantic_v2.BaseModel builtin
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py pydantic_v2_BaseModel/builtin
 render pydantic_v2.BaseModel black
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   models.py
-  model_bindings.py
-  codec_0 models.Record
-  codec_1 models.Record
+  model_bindings.py pydantic_v2_BaseModel/black

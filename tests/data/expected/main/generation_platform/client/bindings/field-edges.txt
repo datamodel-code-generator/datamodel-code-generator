@@ -1,39 +1,13 @@
 # field-edges
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Base
-  codec_2 models.Edges
-  codec_3 models.Edges
-  codec_4 models.NullableName
-  codec_5 models.NullableName
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Base
-  codec_2 models.Edges
-  codec_3 models.Edges
-  codec_4 models.NullableName
-  codec_5 models.NullableName
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Base
-  codec_2 models.Edges
-  codec_3 models.Edges
-  codec_4 models.NullableName
-  codec_5 models.NullableName
-  map models:Base optional=optional
-  map models:Edges optional=optional, needed=needed, strict=strict, wire-name=wire_name, alias_ref=alias_ref
+  model_bindings.py dataclasses_dataclass/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Base
-  codec_2 models.Edges
-  codec_3 models.Edges
-  codec_4 models.NullableName
-  codec_5 models.NullableName
+  model_bindings.py msgspec_Struct/default
