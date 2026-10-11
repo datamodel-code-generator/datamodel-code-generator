@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 _URL = re.compile(
     r"(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*://)(?P<authority>[^/?#]*)(?P<path>[^?#]*)(?P<rest>.*)", re.DOTALL
@@ -28,3 +32,14 @@ def redact_url(text: str) -> str:
             return f"{url['scheme']}***"
         return f"{url['scheme']}***@{_DELIMITER.split(tail, maxsplit=1)[0]}"
     return f"{url['scheme']}{url['authority'].rpartition('@')[2]}{url['path']}"
+
+
+def redact_reference(text: str) -> str:
+    """Return a reference with its document URL redacted and its `#` fragment, such as a JSON pointer, kept."""
+    document, delimiter, fragment = text.partition("#")
+    return f"{redact_url(document)}{delimiter}{fragment}"
+
+
+def redact_path(parts: Iterable[str]) -> str:
+    """Join a schema path whose parts may start with a document URL, redacting each part."""
+    return "/".join(redact_reference(part) for part in parts)

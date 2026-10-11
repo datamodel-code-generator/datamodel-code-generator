@@ -41,6 +41,7 @@ from datamodel_code_generator._target_contract import (
     UnionType,
 )
 from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis
+from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
 
@@ -389,7 +390,7 @@ def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnosti
     reason = (
         "whose document could not be loaded" if item.state == "document_not_observed" else f"which reaches no {kind}"
     )
-    message = f"The {kind} {declaration.name!r} references {item.reference!r}, {reason}"
+    message = f"The {kind} {declaration.name!r} references {redact_reference(item.reference)!r}, {reason}"
     return _problem(code, message, declaration.use_site)
 
 

@@ -38,6 +38,7 @@ from typing_extensions import TypeIs
 
 from datamodel_code_generator import Error, NamingStrategy
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._url_redaction import redact_path, redact_reference
 from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.util import camel_to_snake
 
@@ -962,7 +963,7 @@ class ModelResolver:  # noqa: PLR0904
         reserved_name: str | None,
     ) -> None:
         if not self.validate_name(mapped_name):
-            msg = f"--model-name-map maps {path!r} to invalid class name {mapped_name!r}"
+            msg = f"--model-name-map maps {redact_reference(path)!r} to invalid class name {mapped_name!r}"
             raise Error(msg)
 
         reference_names = self._get_reference_names()
@@ -974,7 +975,10 @@ class ModelResolver:  # noqa: PLR0904
             else None
         )
         if conflict_reason:
-            msg = f"--model-name-map maps {path!r} to {mapped_name!r}, but that model name is {conflict_reason}"
+            msg = (
+                f"--model-name-map maps {redact_reference(path)!r} to {mapped_name!r}, "
+                f"but that model name is {conflict_reason}"
+            )
             raise Error(msg)
 
     def _apply_model_name_map(
@@ -1200,8 +1204,9 @@ class ModelResolver:  # noqa: PLR0904
             ref: str | None = scoped_ids.get(joined_path)
             if ref is None:
                 msg = (
-                    f"Unresolved $id reference '{joined_path}' in scope '{id_scope or '<root>'}'. "
-                    f"Known $id values: {', '.join(sorted(scoped_ids)) or '<none>'}"
+                    f"Unresolved $id reference '{joined_path}' in scope "
+                    f"'{redact_path(self.current_root) or '<root>'}'. "
+                    f"Known $id values: {', '.join(sorted(map(redact_reference, scoped_ids))) or '<none>'}"
                 )
                 raise Error(msg)
         else:

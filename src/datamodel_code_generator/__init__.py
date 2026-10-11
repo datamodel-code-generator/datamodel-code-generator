@@ -60,7 +60,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._source import (
     _read_parser_source_data_from_path as _read_parser_source_data_from_path,
 )
-from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator._url_redaction import redact_path, redact_url
 from datamodel_code_generator.enums import (
     DEFAULT_SHARED_MODULE_NAME,
     MAX_VERSION,
@@ -679,7 +679,7 @@ class SchemaParseError(Error):
     def _format_message(self, message: str) -> str:
         """Format message with schema path context."""
         if self.path:
-            path_str = "/".join(self.path)
+            path_str = redact_path(self.path)
             return f"Error at schema path '{path_str}': {message}"
         return message
 

@@ -57,7 +57,7 @@ from datamodel_code_generator._source import (
     load_data,
     load_data_from_path,
 )
-from datamodel_code_generator._url_redaction import redact_url
+from datamodel_code_generator._url_redaction import redact_path, redact_reference, redact_url
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANY, Import
@@ -9251,8 +9251,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     ref = self.model_resolver.add_ref(all_of_item.ref)
                     if self._dynamic_target_bindings(ref.path):
                         warn(
-                            f"allOf base class {all_of_item.ref!r} cannot follow the $dynamicAnchor bindings of its "
-                            "dynamic scope; its $dynamicRef resolve within its own schema resources.",
+                            f"allOf base class {redact_reference(all_of_item.ref)!r} cannot follow the $dynamicAnchor "
+                            "bindings of its dynamic scope; its $dynamicRef resolve within its own schema resources.",
                             stacklevel=2,
                         )
                     if ref.path not in {b.path for b in base_classes}:
@@ -11702,7 +11702,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if not uses_local_http_path:
                 if self.allow_remote_refs is False:
                     msg = (
-                        f"Fetching remote $ref is disabled: {resolved_ref}\n"
+                        f"Fetching remote $ref is disabled: {redact_reference(resolved_ref)}\n"
                         "Reason: --no-allow-remote-refs was set, so external $ref targets are not fetched.\n"
                         "If this schema and all of its remote references are trusted, pass --allow-remote-refs. "
                         "If a trusted remote reference points to an internal schema registry, also pass "
@@ -11713,9 +11713,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     warn_deprecated(
                         "behavior.remote-ref-default",
                         details=(
-                            f"Reference: {resolved_ref}. Pass --allow-remote-refs for trusted remote schemas, "
-                            "or --no-allow-remote-refs to block HTTP(S) $ref fetching. Internal network targets "
-                            "also require --allow-private-network."
+                            f"Reference: {redact_reference(resolved_ref)}. Pass --allow-remote-refs for trusted remote "
+                            "schemas, or --no-allow-remote-refs to block HTTP(S) $ref fetching. Internal network "
+                            "targets also require --allow-private-network."
                         ),
                         stacklevel=2,
                     )
@@ -12247,7 +12247,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and (root := self._schema_resource_locations.get(resource)) is not None
             and root.split("#", 1)[1]
         ):
-            msg = f"Embedded schema resource has no anchor {fragment!r}: {reference!r}"
+            msg = f"Embedded schema resource has no anchor {fragment!r}: {redact_url(reference)!r}"
             raise Error(msg)
         if nested_scope and resource.startswith("file://") and not reference.startswith("file://"):
             absolute = _file_uri_path(resource).as_posix() + absolute[len(resource) :]
@@ -12500,7 +12500,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if not self.schema_features.boolean_schemas:
                 version_name = "Draft 4" if self.schema_features.id_field == "id" else "this version"
                 warn(
-                    f"Boolean schemas are not supported in {version_name}. Schema path: {'/'.join(path)}",
+                    f"Boolean schemas are not supported in {version_name}. Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             return
@@ -12511,7 +12511,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if isinstance(type_value, list) and "null" in type_value and not self.schema_features.null_in_type_array:
             warn(
                 'null in type array (e.g., type: ["string", "null"]) is not supported '
-                f"in this schema version. Use nullable: true instead. Schema path: {'/'.join(path)}",
+                f"in this schema version. Use nullable: true instead. Schema path: {redact_path(path)}",
                 stacklevel=3,
             )
 
@@ -12523,13 +12523,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if isinstance(exclusive_min, bool):
                 warn(
                     f"exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             if isinstance(exclusive_max, bool):
                 warn(
                     f"exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
         else:
@@ -12537,25 +12537,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if exclusive_min is not None and not isinstance(exclusive_min, bool):
                 warn(
                     f"exclusiveMinimum as number is Draft 6+ style, but schema version is Draft 4. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             if exclusive_max is not None and not isinstance(exclusive_max, bool):
                 warn(
                     f"exclusiveMaximum as number is Draft 6+ style, but schema version is Draft 4. "
-                    f"Schema path: {'/'.join(path)}",
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
 
         if not self.schema_features.read_only_write_only:
             if raw.get("readOnly") is True:
                 warn(
-                    f"readOnly is not supported in this schema version (Draft 7+ only). Schema path: {'/'.join(path)}",
+                    "readOnly is not supported in this schema version (Draft 7+ only). "
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
             if raw.get("writeOnly") is True:
                 warn(
-                    f"writeOnly is not supported in this schema version (Draft 7+ only). Schema path: {'/'.join(path)}",
+                    "writeOnly is not supported in this schema version (Draft 7+ only). "
+                    f"Schema path: {redact_path(path)}",
                     stacklevel=3,
                 )
 
@@ -12576,7 +12578,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if obj.prefixItems is not None and not self.schema_features.prefix_items:
             warn(
                 f"prefixItems is not supported in this schema version. "
-                f"Use items as array for tuple validation. Schema path: {'/'.join(path)}",
+                f"Use items as array for tuple validation. Schema path: {redact_path(path)}",
                 stacklevel=4,
             )
 
@@ -12584,7 +12586,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if isinstance(obj.items, list) and self.schema_features.prefix_items:
             warn_deprecated(
                 "schema.jsonschema-items-array",
-                details=f"Schema path: {'/'.join(path)}",
+                details=f"Schema path: {redact_path(path)}",
                 stacklevel=4,
             )
 

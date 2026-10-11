@@ -1543,6 +1543,30 @@ def test_invalid_external_ref_omits_credentials_and_query(tmp_path: Path, capsys
     )
 
 
+def test_missing_embedded_anchor_omits_credentials_and_query(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Name a reference to a missing anchor of an embedded resource without its userinfo or query."""
+    resource = "https://user:secret@example.com/pet.json?token=SECRET"
+    root = tmp_path / "root.json"
+    root.write_text(
+        json.dumps({
+            "type": "object",
+            "properties": {"a": {"$ref": f"{resource}#missing"}},
+            "$defs": {"Pet": {"$id": resource, "type": "object"}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=root,
+        output_path=tmp_path / "model.py",
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Embedded schema resource has no anchor 'missing': 'https://example.com/pet.json'\n",
+    )
+
+
 @pytest.mark.parametrize(
     ("path", "expected"),
     [

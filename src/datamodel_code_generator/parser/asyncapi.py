@@ -16,6 +16,7 @@ from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, InputFileType, snooper_to_methods
+from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AsyncAPIVersion
 from datamodel_code_generator.parser.jsonschema import get_model_by_path, unescape_json_pointer_segment
@@ -137,7 +138,7 @@ def _iter_trait_items(traits: Any, path: list[str]) -> Iterator[tuple[dict[str, 
 
 
 def _path_to_string(path: list[str]) -> str:
-    return "/".join(path)
+    return redact_path(path)
 
 
 def _make_model_name(*parts: object) -> str:
