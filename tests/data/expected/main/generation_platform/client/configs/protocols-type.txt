@@ -1,2 +1,0 @@
-records
-  Error: --client-protocols must be a Path, a ProtocolConfiguration, a Mapping, or None

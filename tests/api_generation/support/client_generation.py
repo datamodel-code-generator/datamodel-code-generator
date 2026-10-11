@@ -15,11 +15,6 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, chdir, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
-from tests.api_generation.support.client_protocol_records import (
-    client_records_report,
-    coordinated,
-    coordinator_generate,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -196,7 +191,7 @@ def _run(
     """Generate a case's models and package under its root, from the directory the case runs in.
 
     A model path a case running at its root gives relative to it stays there when the case runs beside its helper
-    file. Inputs that generate() does not take go to the coordinator.
+    file.
     """
     source, config, run = root / case["input"], case.get("config", {}), _run_directory(case, root)
     if case.get("cwd") and run != root:
@@ -209,15 +204,12 @@ def _run(
             },
         }
     with chdir(run):
-        if coordinated(case):
-            coordinator_generate(source, model_config(root / "models.py", backend, model), config, root)
-        else:
-            generate(
-                source,
-                config=model_config(
-                    root / "models.py", backend, {**model, **client_options(config, root, PACKAGE, "models")}
-                ),
-            )
+        generate(
+            source,
+            config=model_config(
+                root / "models.py", backend, {**model, **client_options(config, root, PACKAGE, "models")}
+            ),
+        )
 
 
 def _render(
@@ -353,23 +345,17 @@ def _configured(options: Mapping[str, Any], root: Path) -> list[str]:
     ]
 
 
-def client_config_report(case_name: str, root: Path) -> str:
-    """Generate a client with one case's client option values, then build the settings only Python records hold.
-
-    The options run through generate() and report the files written or the refusal; the records report the settings
-    the coordinator builds from them or its diagnostics.
-    """
-    case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
-    lines: list[str] = []
-    if "options" in case:
-        lines.extend(("generate()", *_configured(case["options"], root / "generate")))
-    if "records" in case:
-        (records := root / "records").mkdir(parents=True)
-        lines.extend((
-            "records",
-            *(f"  {line}" for line in client_records_report(case["records"], records).splitlines()),
-        ))
+def client_options_report(options: Mapping[str, Any], root: Path) -> str:
+    """Generate the pets client with client option values, reporting the files written or the refusal."""
+    lines = ["generate()", *_configured(options, root / "generate")]
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
+
+
+def client_config_report(case_name: str, root: Path) -> str:
+    """Generate the pets client with one case's client option values, reporting the files written or the refusal."""
+    return client_options_report(
+        json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]["options"], root
+    )
 
 
 def client_cli_arguments(pyproject: Path) -> list[str]:

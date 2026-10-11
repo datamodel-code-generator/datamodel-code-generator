@@ -57,6 +57,7 @@
 ### Generation Targets
 
 - [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, generated package, template values, and served OpenAPI document may change. See Experimenta...
+- [Python Client Generation](https://datamodel-code-generator.koxudaxi.dev/python-client/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
 
 
 ## CLI Reference
@@ -86,6 +87,11 @@
 - [Version](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/version/)
 - [Debug](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/debug/)
 - [Profile](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/profile/)
+- [Job](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/job/)
+- [All Jobs](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/all-jobs/)
+- [Install Skill](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/install-skill/)
+- [Overwrite Skill](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/overwrite-skill/)
+- [Skill Scope](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/skill-scope/)
 - [No Color](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/no-color/)
 - [Generate Prompt](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/generate-prompt/)
 - [List Deprecations](https://datamodel-code-generator.koxudaxi.dev/cli-reference/manual/list-deprecations/)
