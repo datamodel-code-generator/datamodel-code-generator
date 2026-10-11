@@ -111,15 +111,15 @@ statuses.all
   = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee')]
 secure.users
   > GET /secure/users
-  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'Bearer token-1'})
+  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'token-1'})
   list_secure_users(principal='reader', cursor=None)
   < 200 application/json
   > GET /secure/users?cursor=c2
-  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'Bearer token-1'})
+  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'token-1'})
   list_secure_users(principal='reader', cursor='c2')
   < 200 application/json
   > GET /secure/users?cursor=c4
-  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'Bearer token-1'})
+  authorize(requirement_sets=((('oauth', ('users.read',)),),), credentials={'oauth': 'token-1'})
   list_secure_users(principal='reader', cursor='c4')
   < 200 application/json
   = [User(id='ann', name='Ann'), User(id='bob', name='Bob'), User(id='cid', name='Cid'), User(id='dee', name='Dee'), User(id='eve', name='Eve')]
