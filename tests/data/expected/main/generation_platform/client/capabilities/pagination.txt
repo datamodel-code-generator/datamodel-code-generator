@@ -1,5 +1,6 @@
 # pagination
 backend pydantic_v2.BaseModel
+dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.13.5
 copied runtime
   __init__.py
   client/__init__.py
