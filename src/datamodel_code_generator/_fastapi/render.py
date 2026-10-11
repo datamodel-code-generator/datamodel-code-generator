@@ -105,17 +105,16 @@ _CREDENTIALS: Final[dict[SchemeKind, str]] = {
     "basic": "HTTP Basic credentials, as `HTTPBasicCredentials`",
     "bearer": "a bearer token, as `HTTPAuthorizationCredentials`",
     "digest": "HTTP Digest credentials, as `HTTPAuthorizationCredentials`",
-    "oauth2": "the `Authorization` header, as FastAPI's `OAuth2` reads it",
-    "openid": "the `Authorization` header, as FastAPI's `OpenIdConnect` reads it",
+    "oauth2": "the bearer token of the `Authorization` header, as a string",
+    "openid": "the bearer token of the `Authorization` header, as a string",
     "custom": "no FastAPI class reads it: override its dependency to return the credential",
 }
 _SCHEME_CLASSES: Final[dict[SchemeKind, str]] = {
     "basic": "HTTPBasic",
     "bearer": "HTTPBearer",
     "digest": "HTTPDigest",
-    "oauth2": "OAuth2",
-    "openid": "OpenIdConnect",
 }
+_BEARER_CLASSES: Final[dict[SchemeKind, str]] = {"oauth2": "OAuth2Bearer", "openid": "OpenIdConnectBearer"}
 _API_KEY_CLASSES: Final = {"header": "APIKeyHeader", "query": "APIKeyQuery", "cookie": "APIKeyCookie"}
 _CHALLENGES: Final[dict[SchemeKind, str]] = {
     "api_key": "APIKey",
@@ -1279,16 +1278,18 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
     keywords: list[Keyword] = []
     if scheme.kind == "api_key":
         keywords.append(Keyword("name", repr(scheme.parameter)))
-        cls = _API_KEY_CLASSES[str(scheme.location)]
+        cls = module.name("fastapi.security", _API_KEY_CLASSES[str(scheme.location)])
+    elif (bearer := _BEARER_CLASSES.get(scheme.kind)) is not None:
+        cls = module.local("_runtime.server.security", bearer)
     else:
-        cls = _SCHEME_CLASSES[scheme.kind]
+        cls = module.name("fastapi.security", _SCHEME_CLASSES[scheme.kind])
     keywords.extend(
         Keyword(keyword, repr(value))
         for keyword in _SCHEME_FACTS.get(scheme.kind, ("description",))
         if (fact_value := facts.get(keyword)) is not None and (value := json_value(fact_value)) is not None
     )
     keywords.extend((Keyword("scheme_name", repr(scheme.name)), Keyword("auto_error", "False")))
-    return Scheme(name, scheme.name, module.name("fastapi.security", cls), tuple(keywords))
+    return Scheme(name, scheme.name, cls, tuple(keywords))
 
 
 def _requirement(requirement: Requirement) -> str:

@@ -69,10 +69,7 @@ def calls(kit: Kit) -> Calls:
         ("put_pet with OAuth client credentials", lambda: kit.connect(oauth=oauth).default.put_pet(petId=1)),
         ("put_pet with the cached token", lambda: kit.connect(oauth=oauth).default.put_pet(petId=2)),
         (
-            (
-                "put_pet with the query key and Basic [bug: the server presents the Basic Authorization header as the"
-                " oauth credential, so authorize gets the oauth requirement set first]"
-            ),
+            "put_pet with the query key and Basic",
             lambda: kit.connect(query_key="key 2", basic=("user", "pass:word")).default.put_pet(petId=3),
         ),
         ("get_session with the cookie key", kit.connect(cookie_key="cookie-1").default.get_session),

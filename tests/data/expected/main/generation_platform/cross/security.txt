@@ -34,20 +34,20 @@ put_pet with OAuth client credentials
   token(form={'grant_type': 'client_credentials', 'scope': 'read:pets'}, authorization='Basic cGV0czpzM2NyZXQ=')
   < 200 application/json
   > PUT /v2/pets/1
-  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),),), credentials={'oauth': 'Bearer issued-token'})
+  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),),), credentials={'oauth': 'issued-token'})
   put_pet(principal='principal of oauth', petId=1)
   < 204 -
   = None
 put_pet with the cached token
   > PUT /v2/pets/2
-  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),),), credentials={'oauth': 'Bearer issued-token'})
+  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),),), credentials={'oauth': 'issued-token'})
   put_pet(principal='principal of oauth', petId=2)
   < 204 -
   = None
-put_pet with the query key and Basic [bug: the server presents the Basic Authorization header as the oauth credential, so authorize gets the oauth requirement set first]
+put_pet with the query key and Basic
   > PUT /v2/pets/3?key=key+2
-  authorize(requirement_sets=((('oauth', ('write:pets', 'read:pets')),), (('query_key', ()), ('basic', ()))), credentials={'oauth': 'Basic dXNlcjpwYXNzOndvcmQ=', 'query_key': 'key 2', 'basic': HTTPBasicCredentials(username='user', password='pass:word')})
-  put_pet(principal='principal of basic, oauth, query_key', petId=3)
+  authorize(requirement_sets=((('query_key', ()), ('basic', ())),), credentials={'query_key': 'key 2', 'basic': HTTPBasicCredentials(username='user', password='pass:word')})
+  put_pet(principal='principal of basic, query_key', petId=3)
   < 204 -
   = None
 get_session with the cookie key
@@ -58,7 +58,7 @@ get_session with the cookie key
   = None
 get_session with OpenID Connect
   > GET /v2/session
-  authorize(requirement_sets=((('oidc', ('openid',)),),), credentials={'oidc': 'Bearer id-token'})
+  authorize(requirement_sets=((('oidc', ('openid',)),),), credentials={'oidc': 'id-token'})
   get_session(principal='principal of oidc')
   < 204 -
   = None

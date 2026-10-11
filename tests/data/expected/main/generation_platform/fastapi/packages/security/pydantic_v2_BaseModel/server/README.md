@@ -73,11 +73,11 @@ The secured operations use these security schemes:
 
 - `api_key`: an API key in the `X-API-Key` header
 - `bearer`: a bearer token, as `HTTPAuthorizationCredentials`
-- `oauth`: the `Authorization` header, as FastAPI's `OAuth2` reads it
+- `oauth`: the bearer token of the `Authorization` header, as a string
 - `query_key`: an API key in the `key` query parameter
 - `basic`: HTTP Basic credentials, as `HTTPBasicCredentials`
 - `cookie_key`: an API key in the `session` cookie
-- `oidc`: the `Authorization` header, as FastAPI's `OpenIdConnect` reads it
+- `oidc`: the bearer token of the `Authorization` header, as a string
 - `digest`: HTTP Digest credentials, as `HTTPAuthorizationCredentials`
 - `mtls`: no FastAPI class reads it: override its dependency to return the credential
 

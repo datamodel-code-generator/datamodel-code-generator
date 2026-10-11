@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable, Mapping
 from typing import TypeAlias
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
+from fastapi.security import OAuth2, OpenIdConnect
+from fastapi.security.utils import get_authorization_scheme_param
 from typing_extensions import TypeVar
 
 PrincipalT = TypeVar("PrincipalT")
@@ -14,6 +16,28 @@ RequirementSets: TypeAlias = tuple[Requirement, ...]
 Credentials: TypeAlias = Mapping[str, object]
 Authorize: TypeAlias = Callable[[RequirementSets, Credentials], PrincipalT]
 AsyncAuthorize: TypeAlias = Callable[[RequirementSets, Credentials], Awaitable[PrincipalT]]
+
+
+def bearer_token(authorization: str | None) -> str | None:
+    """Return the token of a `Bearer` `Authorization` header, matching the scheme case-insensitively, or None."""
+    scheme, token = get_authorization_scheme_param(authorization)
+    return token if scheme.lower() == "bearer" and token else None
+
+
+class OAuth2Bearer(OAuth2):
+    """FastAPI's `OAuth2` with the declared flows, reading only a bearer token as `OAuth2PasswordBearer` does."""
+
+    async def __call__(self, request: Request) -> str | None:
+        """Return the bearer token of the `Authorization` header, or None for another scheme or no header."""
+        return bearer_token(await super().__call__(request))
+
+
+class OpenIdConnectBearer(OpenIdConnect):
+    """FastAPI's `OpenIdConnect`, reading only a bearer token from the `Authorization` header."""
+
+    async def __call__(self, request: Request) -> str | None:
+        """Return the bearer token of the `Authorization` header, or None for another scheme or no header."""
+        return bearer_token(await super().__call__(request))
 
 
 async def authenticate(

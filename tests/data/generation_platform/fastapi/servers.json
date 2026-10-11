@@ -1483,6 +1483,33 @@
           },
           {
             "method": "PUT",
+            "url": "/pets/1",
+            "headers": {
+              "Authorization": "bearer tok"
+            }
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1",
+            "headers": {
+              "Authorization": "Bearer "
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1",
+            "headers": {
+              "Authorization": "Basic dXNlcjpwdw=="
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "PUT",
             "url": "/pets/1?key=k",
             "headers": {
               "Authorization": "Basic dXNlcjpwdw=="
@@ -1538,6 +1565,14 @@
             "url": "/session",
             "headers": {
               "Authorization": "Bearer idt",
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic dXNlcjpwdw==",
               "X-API-Key": "abc"
             }
           },

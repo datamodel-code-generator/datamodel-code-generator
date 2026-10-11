@@ -78,14 +78,28 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > PUT /pets/1
   global /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),)]
-    credentials ['oauth=Bearer tok']
+    credentials ['oauth=tok']
   put_pet(principal='user-oauth', petId=1)
 < 204 - b''
+> PUT /pets/1
+  global /pets/1
+  authorize [(('oauth', ('write:pets', 'read:pets')),)]
+    credentials ['oauth=tok']
+  put_pet(principal='user-oauth', petId=1)
+< 204 - b''
+> PUT /pets/1
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer, APIKey, Basic
+> PUT /pets/1
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer, APIKey, Basic
 > PUT /pets/1?key=k
   global /pets/1
-  authorize [(('oauth', ('write:pets', 'read:pets')),), (('query_key', ()), ('basic', ()))]
-    credentials ['basic=user', 'oauth=Basic dXNlcjpwdw==', 'query_key=k']
-  put_pet(principal='user-oauth', petId=1)
+  authorize [(('query_key', ()), ('basic', ()))]
+    credentials ['basic=user', 'query_key=k']
+  put_pet(principal='user-query_key+basic', petId=1)
 < 204 - b''
 > PUT /pets/1?key=k
   global /pets/1
@@ -98,7 +112,7 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > PUT /pets/1
   global /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),)]
-    credentials ['oauth=Bearer a']
+    credentials ['oauth=a']
   put_pet(principal='user-oauth', petId=1)
 < 204 - b''
 > GET /session
@@ -116,8 +130,14 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > GET /session
   global /session
   authorize [(('oidc', ('openid',)),), (('api_key', ()),)]
-    credentials ['api_key=abc', 'oidc=Bearer idt']
+    credentials ['api_key=abc', 'oidc=idt']
   get_session(principal='user-oidc')
+< 204 - b''
+> GET /session
+  global /session
+  authorize [(('api_key', ()),)]
+    credentials ['api_key=abc']
+  get_session(principal='user-api_key')
 < 204 - b''
 > GET /custom
   global /custom
@@ -154,7 +174,7 @@ app awaitables
 < raised TypeError: The method returned an awaitable for a response without a body; nothing awaited it
 > PUT /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),)]
-    credentials ['oauth=Bearer tok']
+    credentials ['oauth=tok']
 < raised TypeError: The method returned an awaitable for a response without a body; nothing awaited it
 app authorize-lambda
 > GET /pets
