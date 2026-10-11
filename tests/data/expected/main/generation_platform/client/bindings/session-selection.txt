@@ -1,9 +1,7 @@
 # session-selection
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default field
   @@ -14 +14 @@
   -    bad: str
@@ -33,9 +31,7 @@ change pydantic_v2.BaseModel default imported-base
   +
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
+  model_bindings.py pydantic_v2_dataclass/default
 change pydantic_v2.dataclass default field
   @@ -18 +18 @@
   -    bad: str
@@ -59,11 +55,7 @@ change pydantic_v2.dataclass default augmented
   +Bad |= int
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
-  map models:Bad bad=bad
-  map models:Good good=good
+  model_bindings.py dataclasses_dataclass/default
 change dataclasses.dataclass default field
   @@ -18 +18 @@
   -    bad: str
@@ -87,11 +79,7 @@ change dataclasses.dataclass default augmented
   +Bad |= int
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
-  map models:Bad bad=bad
-  map models:Good good=good
+  model_bindings.py typing_TypedDict/default
 change typing.TypedDict default field
   @@ -16 +16 @@
   -    bad: str
@@ -115,9 +103,7 @@ change typing.TypedDict default augmented
   +Bad |= int
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Good
-  codec_1 models.Bad
+  model_bindings.py msgspec_Struct/default
 change msgspec.Struct default field
   @@ -16 +16 @@
   -    bad: str

@@ -1,89 +1,31 @@
 # session-legacy-shared
 render pydantic_v2.BaseModel plain
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
+  model_bindings.py pydantic_v2_BaseModel/plain
 render pydantic_v2.BaseModel status-names
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
+  model_bindings.py pydantic_v2_BaseModel/plain
 render pydantic_v2.dataclass plain
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
+  model_bindings.py pydantic_v2_dataclass/plain
 render pydantic_v2.dataclass status-names
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
+  model_bindings.py pydantic_v2_dataclass/plain
 render dataclasses.dataclass plain
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
-  map models:SharedRequest value=value
-  map models:SharedResponse value=value
+  model_bindings.py dataclasses_dataclass/plain
 render dataclasses.dataclass status-names
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
-  map models:SharedRequest value=value
-  map models:SharedResponse value=value
+  model_bindings.py dataclasses_dataclass/plain
 render typing.TypedDict plain
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
-  map models:SharedRequest value=value
-  map models:SharedResponse value=value
+  model_bindings.py typing_TypedDict/plain
 render typing.TypedDict status-names
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
-  map models:SharedRequest value=value
-  map models:SharedResponse value=value
+  model_bindings.py typing_TypedDict/plain
 render msgspec.Struct plain
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
+  model_bindings.py msgspec_Struct/plain
 render msgspec.Struct status-names
   models.py
-  model_bindings.py
-  codec_0 models.SharedRequest
-  codec_1 models.SharedResponse
-  codec_2 models.SharedResponse
-  codec_3 models.SharedRequest
-  codec_4 models.SharedResponse
+  model_bindings.py msgspec_Struct/plain

@@ -1,88 +1,46 @@
 # session-serialize-imports-True
 render pydantic_v2.BaseModel schemas
   models.py
-  model_bindings.py
-  codec_0 SerializeAsAny[models.Base]
-  codec_1 models.Child
+  model_bindings.py pydantic_v2_BaseModel/schemas
 render pydantic_v2.BaseModel paths
   models.py
-  model_bindings.py
-  codec_0 SerializeAsAny[models.Base]
-  codec_1 models.Child
+  model_bindings.py pydantic_v2_BaseModel/schemas
 render pydantic_v2.BaseModel api
   models.py
-  model_bindings.py
-  codec_0 SerializeAsAny[models.Base]
-  codec_1 models.Child
+  model_bindings.py pydantic_v2_BaseModel/schemas
 render pydantic_v2.dataclass schemas
   models.py
-  model_bindings.py
-  codec_0 SerializeAsAny[models.Base]
-  codec_1 models.Child
+  model_bindings.py pydantic_v2_dataclass/schemas
 render pydantic_v2.dataclass paths
   models.py
-  model_bindings.py
-  codec_0 SerializeAsAny[models.Base]
-  codec_1 models.Child
+  model_bindings.py pydantic_v2_dataclass/schemas
 render pydantic_v2.dataclass api
   models.py
-  model_bindings.py
-  codec_0 SerializeAsAny[models.Base]
-  codec_1 models.Child
+  model_bindings.py pydantic_v2_dataclass/schemas
 render dataclasses.dataclass schemas
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
-  map models:Base name=name
-  map models:Child name=name, extra=extra
+  model_bindings.py dataclasses_dataclass/schemas
 render dataclasses.dataclass paths
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
-  map models:Base name=name
-  map models:Child name=name, extra=extra
+  model_bindings.py dataclasses_dataclass/schemas
 render dataclasses.dataclass api
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
-  map models:Base name=name
-  map models:Child name=name, extra=extra
+  model_bindings.py dataclasses_dataclass/schemas
 render typing.TypedDict schemas
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
-  map models:Base name=name
-  map models:Child name=name, extra=extra
+  model_bindings.py typing_TypedDict/schemas
 render typing.TypedDict paths
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
-  map models:Base name=name
-  map models:Child name=name, extra=extra
+  model_bindings.py typing_TypedDict/schemas
 render typing.TypedDict api
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
-  map models:Base name=name
-  map models:Child name=name, extra=extra
+  model_bindings.py typing_TypedDict/schemas
 render msgspec.Struct schemas
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
+  model_bindings.py msgspec_Struct/schemas
 render msgspec.Struct paths
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
+  model_bindings.py msgspec_Struct/schemas
 render msgspec.Struct api
   models.py
-  model_bindings.py
-  codec_0 models.Base
-  codec_1 models.Child
+  model_bindings.py msgspec_Struct/schemas

@@ -1,21 +1,16 @@
 # session-parameter-override
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.PageParameter
+  model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.PageParameter
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.PageParameter
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.PageParameter
+  model_bindings.py dataclasses_dataclass/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.PageParameter
+  model_bindings.py msgspec_Struct/default

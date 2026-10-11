@@ -1,11 +1,7 @@
 # session-module-writes
 render pydantic_v2.BaseModel default
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  codec_1 models.Model
-  codec_2 models.Other
-  codec_3 models.Other
+  model_bindings.py pydantic_v2_BaseModel/default
 change pydantic_v2.BaseModel default if-assignment
   @@ -14,0 +15,6 @@
   +
@@ -461,36 +457,16 @@ change pydantic_v2.BaseModel default conditional-assigned-call
   +    marker = alter()
 render pydantic_v2.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  codec_1 models.Model
-  codec_2 models.Other
-  codec_3 models.Other
+  model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  codec_1 models.Model
-  codec_2 models.Other
-  codec_3 models.Other
-  map models:Model value=value
-  map models:Other flag=flag
+  model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  codec_1 models.Model
-  codec_2 models.Other
-  codec_3 models.Other
-  map models:Model value=value
-  map models:Other flag=flag
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
-  model_bindings.py
-  codec_0 models.Model
-  codec_1 models.Model
-  codec_2 models.Other
-  codec_3 models.Other
+  model_bindings.py msgspec_Struct/default
 change msgspec.Struct default if-assignment
   @@ -16,0 +17,3 @@
   +
