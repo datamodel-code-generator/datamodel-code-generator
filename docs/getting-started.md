@@ -181,6 +181,16 @@ See [Performance Benchmarks](performance-benchmarks.md) for release benchmark da
 
 ---
 
+## Generate a server or a client
+
+From an OpenAPI document, the same run that generates the models can also generate a FastAPI server package
+(`--generate-server fastapi`) or an HTTPX2 client package (`--generate-client httpx2`) that use those models.
+Both are experimental since 0.84.0 (see [Experimental Features](experimental.md)). See the
+[overview example](index.md#generate-a-fastapi-server-or-an-http-client-experimental),
+[FastAPI Server Generation](fastapi-server.md), and [Python Client Generation](python-client.md).
+
+---
+
 ## Next Steps
 
 - [Choose an input format](index.md#choose-your-input)
