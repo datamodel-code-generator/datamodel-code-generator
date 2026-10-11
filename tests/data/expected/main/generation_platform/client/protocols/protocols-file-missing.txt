@@ -1,3 +1,0 @@
-# protocols-file-missing
-render pydantic_v2.BaseModel
-  Error: Invalid JSON for --client-protocols: Expecting value: line 1 column 1 (char 0)

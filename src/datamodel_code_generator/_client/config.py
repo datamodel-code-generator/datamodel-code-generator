@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.naming import namespace_problem, token
 from datamodel_code_generator._runtime.client.options import is_base_url
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
     from datamodel_code_generator._api_types import OperationSelector
-    from datamodel_code_generator._client.protocols import ProtocolConfiguration
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 Transport: TypeAlias = Literal["httpx2"]
@@ -33,7 +31,6 @@ RecordT = TypeVar("RecordT")
 
 OPTION_PREFIX: Final = "client"
 _LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
-_SIGNATURE_STYLES: Final = frozenset({"explicit", "unpack"})
 _BODY_ARGUMENTS: Final = frozenset({"body", "both"})
 _RETRY_SAFETIES: Final = frozenset({"method_default", "idempotent", "never"})
 _MIN_REDIRECT: Final = 300
@@ -122,18 +119,12 @@ class ClientGenerationConfig(TargetConfig):
     body_arguments: BodyArguments = "body"
     default_base_url: str | None = None
     server_base_url: str | None = None
-    protocols: Path | ProtocolConfiguration | Mapping[str, object] | None = None
+    protocols: Mapping[str, object] | None = None
 
     def _problems(self) -> Iterator[Diagnostic]:
         yield from TargetConfig._problems(self)  # noqa: SLF001
-        if self.transport != "httpx2":
-            yield _diagnostic("E_CONFIG_VALUE", "transport", "transport must be 'httpx2'")
         yield from _resource_name_problems(self.resource_names)
         yield from _operation_problems(self.operations, self.body_arguments)
-        if not _one_of(self.signature_style, _SIGNATURE_STYLES):
-            yield _diagnostic("E_CONFIG_VALUE", "signature_style", "signature_style must be 'explicit' or 'unpack'")
-        if not _one_of(self.body_arguments, _BODY_ARGUMENTS):
-            yield _diagnostic("E_CONFIG_VALUE", "body_arguments", "body_arguments must be 'body' or 'both'")
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
                 yield _diagnostic(
@@ -141,27 +132,15 @@ class ClientGenerationConfig(TargetConfig):
                     name,
                     f"{name} must be an absolute http or https URL without userinfo, query, or fragment",
                 )
-        if self.protocols is not None and not isinstance(self.protocols, Path):
+        if self.protocols is not None:
             yield from _protocol_problems(self.protocols)
 
 
-def _protocol_problems(value: object) -> Iterator[Diagnostic]:
-    """Validate Python helper records or a JSON object, loading their definitions only for a configuration with them."""
-    from datamodel_code_generator._client.protocols import (  # noqa: PLC0415
-        ProtocolConfiguration,
-        protocol_problems,
-        validate,
-    )
+def _protocol_problems(value: Mapping[str, object]) -> Iterator[Diagnostic]:
+    """Validate the helper JSON object, loading the helper definitions only for a configuration with helpers."""
+    from datamodel_code_generator._client.protocols import validate  # noqa: PLC0415
 
-    match value:
-        case ProtocolConfiguration():
-            yield from protocol_problems(value)
-        case Mapping():
-            yield from validate(value)[1]
-        case _:
-            yield _diagnostic(
-                "E_CONFIG_VALUE", "protocols", "protocols must be a Path, a ProtocolConfiguration, a Mapping, or None"
-            )
+    yield from validate(value)[1]
 
 
 def absolute(value: object) -> bool:
@@ -190,35 +169,28 @@ def _tuple_of(value: object, kind: type[RecordT]) -> TypeIs[tuple[RecordT, ...]]
     return _is_tuple(value) and all(isinstance(item, kind) for item in value)
 
 
-def _text(value: object) -> bool:
+def _text(value: object) -> TypeIs[str]:
+    """Return whether a value is text; a JSON object key is, but a Python mapping's key may be any object."""
     return isinstance(value, str)
+
+
+def _key_order(key: object) -> tuple[bool, str]:
+    """Order the keys of an object by their text, then any key that is no text by its repr."""
+    return (False, key) if _text(key) else (True, repr(key))
 
 
 def _one_of(value: object, choices: frozenset[str]) -> bool:
     return isinstance(value, str) and value in choices
 
 
-def _resource_name_problems(value: object) -> Iterator[Diagnostic]:
-    if not _tuple_of(value, ResourceName):
-        yield _diagnostic("E_CONFIG_VALUE", "resource_names", "resource_names must be a tuple of ResourceName records")
-        return
-    seen: set[str] = set()
+def _resource_name_problems(value: tuple[ResourceName, ...]) -> Iterator[Diagnostic]:
+    """Refuse a namespace that is no dotted resource path; the tags are the distinct keys of a JSON object."""
     for index, item in enumerate(value):
-        at = f"resource_names[{index}]"
-        if not _text(item.tag):
-            yield _diagnostic("E_CONFIG_VALUE", f"{at}.tag", "A resource name needs its source tag")
-        elif item.tag in seen:
-            yield _diagnostic("E_CONFIG_CONFLICT", f"{at}.tag", f"The tag {item.tag!r} is named twice")
-        else:
-            seen.add(item.tag)
         if (problem := namespace_problem(item.namespace)) is not None:
-            yield _diagnostic("E_CONFIG_VALUE", f"{at}.namespace", problem)
+            yield _diagnostic("E_CONFIG_VALUE", f"resource_names[{index}].namespace", problem)
 
 
-def _operation_problems(value: object, default: object) -> Iterator[Diagnostic]:
-    if not _tuple_of(value, ClientOperationConfig):
-        yield _diagnostic("E_CONFIG_VALUE", "operations", "operations must be a tuple of ClientOperationConfig records")
-        return
+def _operation_problems(value: tuple[ClientOperationConfig, ...], default: object) -> Iterator[Diagnostic]:
     for index, item in enumerate(value):
         yield from _operation_config_problems(item, f"operations[{index}]")
         yield from _field_name_problems(item, default, f"operations[{index}]")
@@ -229,11 +201,6 @@ def _field_name_problems(item: ClientOperationConfig, default: object, at: str) 
     if item.body_arguments is not None and not _one_of(item.body_arguments, _BODY_ARGUMENTS):
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.body_arguments", "body_arguments must be 'body', 'both', or None")
     names = item.body_field_names
-    if not _tuple_of(names, BodyFieldName):
-        yield _diagnostic(
-            "E_CONFIG_VALUE", f"{at}.body_field_names", "body_field_names must be a tuple of BodyFieldName"
-        )
-        return
     if names and (item.body_arguments or default) != "both":
         yield _diagnostic(
             "E_CONFIG_VALUE", f"{at}.body_field_names", "body_field_names need body_arguments 'both' for the operation"
@@ -257,8 +224,6 @@ def _field_name_problems(item: ClientOperationConfig, default: object, at: str) 
 
 
 def _operation_config_problems(item: ClientOperationConfig, at: str) -> Iterator[Diagnostic]:
-    if not _selector(item.ref):
-        yield _diagnostic("E_CONFIG_VALUE", f"{at}.ref", "ref must be an OperationRef or a pointer string")
     if item.resource is not None and (problem := namespace_problem(item.resource)) is not None:
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.resource", problem)
     if item.name is not None and not explicit_name(item.name):
@@ -272,14 +237,7 @@ def _operation_config_problems(item: ClientOperationConfig, at: str) -> Iterator
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.description", "description must be a string")
 
 
-def _selector(value: object) -> bool:
-    return isinstance(value, (str, OperationRef))
-
-
-def _runtime_problems(runtime: object, at: str) -> Iterator[Diagnostic]:
-    if not isinstance(runtime, RuntimeOperationMetadata):
-        yield _diagnostic("E_CONFIG_VALUE", at, "runtime must be a RuntimeOperationMetadata record")
-        return
+def _runtime_problems(runtime: RuntimeOperationMetadata, at: str) -> Iterator[Diagnostic]:
     for name in ("request_id_header", "retry_after_ms_header", "should_retry_header"):
         if (value := getattr(runtime, name)) is not None and not token(value):
             yield _diagnostic("E_CONFIG_VALUE", f"{at}.{name}", f"{name} must be a header name")
@@ -322,30 +280,18 @@ def _encoding_problems(value: object, at: str) -> Iterator[Diagnostic]:
         yield _diagnostic("E_CONFIG_VALUE", at, "accepted_content_encodings may name only gzip, the builtin encoder")
 
 
-def _idempotency_problems(value: object, at: str) -> Iterator[Diagnostic]:
-    if not isinstance(value, IdempotencyMetadata):
-        yield _diagnostic("E_CONFIG_VALUE", at, "idempotency must be an IdempotencyMetadata record")
-        return
+def _idempotency_problems(value: IdempotencyMetadata, at: str) -> Iterator[Diagnostic]:
     if not token(value.header_name):
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.header_name", "header_name must be a header name")
 
 
-def _parameter_name_problems(value: object, at: str) -> Iterator[Diagnostic]:
-    if not _tuple_of(value, ParameterName):
-        yield _diagnostic("E_CONFIG_VALUE", at, "parameter_names must be a tuple of ParameterName records")
-        return
-    seen: set[tuple[str, str]] = set()
+def _parameter_name_problems(value: tuple[ParameterName, ...], at: str) -> Iterator[Diagnostic]:
+    """Refuse an argument name that is no identifier; locations and names are the distinct keys of a JSON object."""
     for index, item in enumerate(value):
-        if not _one_of(item.in_, _LOCATIONS) or not _text(item.name) or not explicit_name(item.python_name):
+        if not explicit_name(item.python_name):
             yield _diagnostic(
                 "E_CONFIG_VALUE", f"{at}[{index}]", "A parameter name needs a location, a wire name, and an identifier"
             )
-        elif (key := (item.in_, item.name)) in seen:
-            yield _diagnostic(
-                "E_CONFIG_CONFLICT", f"{at}[{index}]", f"The {item.in_} parameter {item.name!r} is named twice"
-            )
-        else:
-            seen.add(key)
 
 
 class _EntryError(Exception):
@@ -363,7 +309,7 @@ def _object(value: object, at: str) -> Mapping[str, Any]:
 
 def _members(value: object, at: str, keys: frozenset[str]) -> Mapping[str, Any]:
     """Return a JSON object whose members are all known, or refuse it."""
-    if unknown := sorted(set(members := _object(value, at)) - keys):
+    if unknown := sorted(set(members := _object(value, at)) - keys, key=_key_order):
         option_path, message = f"{at}.{unknown[0]}", f"{at} has no key {unknown[0]!r}"
         raise _EntryError(option_path, message, code="E_CONFIG_UNKNOWN")
     return members
@@ -407,8 +353,8 @@ def _operation_config(ref: OperationSelector, value: object, at: str) -> ClientO
     return ClientOperationConfig(ref=ref, **values)
 
 
-def _parameter_name(key: str, python_name: object, at: str) -> ParameterName:
-    location, separator, name = key.partition(":")
+def _parameter_name(key: object, python_name: object, at: str) -> ParameterName:
+    location, separator, name = key.partition(":") if _text(key) else ("", "", "")
     if not separator or not _is_location(location):
         message = f"{at} key {key!r} must be a location (path, query, querystring, header, or cookie), ':', and a name"
         raise _EntryError(at, message)

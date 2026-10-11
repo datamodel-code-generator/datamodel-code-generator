@@ -1,3 +1,0 @@
-# protocols-not-object
-render pydantic_v2.BaseModel
-  Error: Invalid --client-protocols: Input should be a valid dictionary

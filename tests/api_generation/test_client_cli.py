@@ -743,6 +743,23 @@ def test_client_cli_api_scope_required(
     )
 
 
+def test_client_cli_model_output_required(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client without a model output, instead of writing the package alone."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Error: The client target needs --output\n",
+        file_should_not_exist=tmp_path / "client",
+    )
+
+
 @pytest.mark.parametrize(
     ("arguments", "stderr"),
     [
@@ -764,8 +781,25 @@ def test_client_cli_api_scope_required(
             ["--client-protocols", "[" * 65 + "]" * 65],
             "Invalid JSON for --client-protocols: nests collections deeper than 64 levels",
         ),
+        (
+            ["--client-protocols", str(SOURCE / "protocols" / "not-json.json")],
+            "Invalid JSON for --client-protocols: Expecting ',' delimiter: line 1 column 17 (char 16)",
+        ),
+        (
+            ["--client-protocols", str(SOURCE / "protocols" / "deep-huge.json")],
+            "Invalid JSON for --client-protocols: nests collections deeper than 64 levels",
+        ),
     ],
-    ids=["operations", "operation", "resource-names", "protocols-file", "protocols-object", "protocols-depth"],
+    ids=[
+        "operations",
+        "operation",
+        "resource-names",
+        "protocols-file",
+        "protocols-object",
+        "protocols-depth",
+        "protocols-not-json",
+        "protocols-depth-file",
+    ],
 )
 def test_client_cli_json_errors(
     arguments: list[str],
