@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from tests.api_generation.support.cross_targets import Calls, Kit, Recorder
 
 DOCUMENT = "cross/parameter-styles.yaml"
-SLASH = "[bug: the client sends / in a path value as %2F, and the server routes on the decoded path and answers 404]"
 
 
 def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[str, object]:
@@ -46,15 +45,15 @@ def calls(kit: Kit) -> Calls:
         ),
         ("get_labels escapes", lambda: api.default.get_labels(name="a.b", names=["%", "?", "#"], point=point)),
         (
-            f"get_labels slash {SLASH}",
+            "get_labels slash",
             lambda: api.default.get_labels(name="a/b", names=["x"], point=point),
         ),
         (
-            f"get_matrix slash {SLASH}",
+            "get_matrix slash",
             lambda: api.default.get_matrix(name="a/b", names=["x"], point=point),
         ),
         (
-            f"get_simple slash {SLASH}",
+            "get_simple slash",
             lambda: api.default.get_simple(name="a/b", names=[1], point=point),
         ),
         ("get_headers non-ASCII", lambda: api.default.get_headers(X_Tags=["caf\u00e9"])),

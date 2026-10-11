@@ -371,308 +371,360 @@
   "parameters": {
     "input": "server-parameters.yaml",
     "services": "parameters",
-    "requests": [
+    "apps": [
       {
-        "method": "GET",
-        "url": "/search"
+        "set": "default",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/search"
+          },
+          {
+            "method": "GET",
+            "url": "/search",
+            "headers": {
+              "Cookie": "session=x"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search",
+            "headers": {
+              "Cookie": "session=a%20b%2Bc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search",
+            "headers": {
+              "Cookie": "session=50%off"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search",
+            "headers": {
+              "Cookie": "session=\"a b\""
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search",
+            "headers": {
+              "Cookie": "session=one; session=two"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search",
+            "headers": {
+              "Cookie": "session=a;b"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi",
+            "headers": {
+              "Cookie": "session=abc",
+              "X-Ids": "3, 4"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?code=ab&ids=1,x&blob=%7B%22b%22%3A1%7D",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?blob=%7B",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?blob=%7B%22a%22%3A1%2C%22a%22%3A2%7D",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?ids=1,%zz",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?code=A&code=B",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?filter%5Bname%5D=n&filter%5Bid%5D=1",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/ratios?ratios=1&ratios=2.5"
+          },
+          {
+            "method": "GET",
+            "url": "/ratios?ratios=nan"
+          },
+          {
+            "method": "GET",
+            "url": "/ratios?ratios=inf"
+          },
+          {
+            "method": "GET",
+            "url": "/ratios?ratios=1&limits=3&limits=4"
+          },
+          {
+            "method": "GET",
+            "url": "/ratios?ratios=1&limits=0"
+          },
+          {
+            "method": "GET",
+            "url": "/sizes"
+          },
+          {
+            "method": "GET",
+            "url": "/sizes?size=3&words=x&words=y"
+          },
+          {
+            "method": "GET",
+            "url": "/sizes?cap=4"
+          },
+          {
+            "method": "GET",
+            "url": "/sizes?size=0"
+          },
+          {
+            "method": "GET",
+            "url": "/codes"
+          },
+          {
+            "method": "GET",
+            "url": "/codes",
+            "headers": {
+              "X-Codes": "1, 2"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/repeat/1/again/1"
+          },
+          {
+            "method": "GET",
+            "url": "/repeat/1/again/01"
+          },
+          {
+            "method": "GET",
+            "url": "/repeat/1/again/2"
+          },
+          {
+            "method": "GET",
+            "url": "/repeat/x/again/x"
+          },
+          {
+            "method": "GET",
+            "url": "/repeat/1/again/1",
+            "headers": {
+              "X-Without-Raw-Path": "1"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/repeat/1/again/1",
+            "headers": {
+              "X-Raw-Path": "/elsewhere"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/notes/7"
+          },
+          {
+            "method": "GET",
+            "url": "/notes/seven"
+          },
+          {
+            "method": "GET",
+            "url": "/files/a.txt"
+          },
+          {
+            "method": "GET",
+            "url": "/files/A.txt"
+          },
+          {
+            "method": "GET",
+            "url": "/files/a%2Fb.txt"
+          },
+          {
+            "method": "GET",
+            "url": "/files/a%2fb.txt",
+            "headers": {
+              "X-Without-Raw-Path": "1"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/files/a%2Fb.txt/"
+          },
+          {
+            "method": "GET",
+            "url": "/files/a.txt",
+            "headers": {
+              "X-Raw-Path": "/files/a%2Fb.txt"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/notes/7%2F8"
+          },
+          {
+            "method": "GET",
+            "url": "/repeat/1%2F2/again/1%2F2"
+          },
+          {
+            "method": "GET",
+            "url": "/men%C3%BC/tea"
+          },
+          {
+            "method": "GET",
+            "url": "/%6Den%c3%bc/tea"
+          },
+          {
+            "method": "GET",
+            "url": "/men%C3%BC/Tea"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?mode=1"
+          },
+          {
+            "method": "GET",
+            "url": "/items/2?mode=2&ratio=1.5&kind=b",
+            "headers": {
+              "X-Flag": "true"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/items/3"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?mode=3"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?ratio=2"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1",
+            "headers": {
+              "X-Flag": "false"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?kind=c"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?tier=2"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?levels=1&levels=2"
+          },
+          {
+            "method": "GET",
+            "url": "/search?filter[name]=n&filter[unknown]=extra",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?filter[name]=n&filter[id]=05",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?filter[name]=n&filter[id]=%2B1",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/search?filter[name]=n&filter[id]=1.0",
+            "headers": {
+              "Cookie": "session=abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?ratio=2.2"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?ratio=%EF%BC%92.%EF%BC%92"
+          },
+          {
+            "method": "GET",
+            "url": "/items/%D9%A1"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?levels=%EF%BC%91"
+          },
+          {
+            "method": "GET",
+            "url": "/notes/%D9%A7"
+          },
+          {
+            "method": "GET",
+            "url": "/items/1?ratio=1e999"
+          }
+        ]
       },
       {
-        "method": "GET",
-        "url": "/search",
-        "headers": {
-          "Cookie": "session=x"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search",
-        "headers": {
-          "Cookie": "session=a%20b%2Bc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search",
-        "headers": {
-          "Cookie": "session=50%off"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search",
-        "headers": {
-          "Cookie": "session=\"a b\""
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search",
-        "headers": {
-          "Cookie": "session=one; session=two"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search",
-        "headers": {
-          "Cookie": "session=a;b"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi",
-        "headers": {
-          "Cookie": "session=abc",
-          "X-Ids": "3, 4"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?code=ab&ids=1,x&blob=%7B%22b%22%3A1%7D",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?blob=%7B",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?blob=%7B%22a%22%3A1%2C%22a%22%3A2%7D",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?ids=1,%zz",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?code=A&code=B",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?filter%5Bname%5D=n&filter%5Bid%5D=1",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/ratios?ratios=1&ratios=2.5"
-      },
-      {
-        "method": "GET",
-        "url": "/ratios?ratios=nan"
-      },
-      {
-        "method": "GET",
-        "url": "/ratios?ratios=inf"
-      },
-      {
-        "method": "GET",
-        "url": "/ratios?ratios=1&limits=3&limits=4"
-      },
-      {
-        "method": "GET",
-        "url": "/ratios?ratios=1&limits=0"
-      },
-      {
-        "method": "GET",
-        "url": "/sizes"
-      },
-      {
-        "method": "GET",
-        "url": "/sizes?size=3&words=x&words=y"
-      },
-      {
-        "method": "GET",
-        "url": "/sizes?cap=4"
-      },
-      {
-        "method": "GET",
-        "url": "/sizes?size=0"
-      },
-      {
-        "method": "GET",
-        "url": "/codes"
-      },
-      {
-        "method": "GET",
-        "url": "/codes",
-        "headers": {
-          "X-Codes": "1, 2"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/repeat/1/again/1"
-      },
-      {
-        "method": "GET",
-        "url": "/repeat/1/again/01"
-      },
-      {
-        "method": "GET",
-        "url": "/repeat/1/again/2"
-      },
-      {
-        "method": "GET",
-        "url": "/repeat/x/again/x"
-      },
-      {
-        "method": "GET",
-        "url": "/repeat/1/again/1",
-        "headers": {
-          "X-Without-Raw-Path": "1"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/repeat/1/again/1",
-        "headers": {
-          "X-Raw-Path": "/elsewhere"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/notes/7"
-      },
-      {
-        "method": "GET",
-        "url": "/notes/seven"
-      },
-      {
-        "method": "GET",
-        "url": "/files/a.txt"
-      },
-      {
-        "method": "GET",
-        "url": "/files/A.txt"
-      },
-      {
-        "method": "GET",
-        "url": "/men%C3%BC/tea"
-      },
-      {
-        "method": "GET",
-        "url": "/%6Den%c3%bc/tea"
-      },
-      {
-        "method": "GET",
-        "url": "/men%C3%BC/Tea"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?mode=1"
-      },
-      {
-        "method": "GET",
-        "url": "/items/2?mode=2&ratio=1.5&kind=b",
-        "headers": {
-          "X-Flag": "true"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/items/3"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?mode=3"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?ratio=2"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1",
-        "headers": {
-          "X-Flag": "false"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?kind=c"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?tier=2"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?levels=1&levels=2"
-      },
-      {
-        "method": "GET",
-        "url": "/search?filter[name]=n&filter[unknown]=extra",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?filter[name]=n&filter[id]=05",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?filter[name]=n&filter[id]=%2B1",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/search?filter[name]=n&filter[id]=1.0",
-        "headers": {
-          "Cookie": "session=abc"
-        }
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?ratio=2.2"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?ratio=%EF%BC%92.%EF%BC%92"
-      },
-      {
-        "method": "GET",
-        "url": "/items/%D9%A1"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?levels=%EF%BC%91"
-      },
-      {
-        "method": "GET",
-        "url": "/notes/%D9%A7"
-      },
-      {
-        "method": "GET",
-        "url": "/items/1?ratio=1e999"
+        "set": "mounted",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/a%2Fb/files/a.txt"
+          },
+          {
+            "method": "GET",
+            "url": "/a/b/files/a%2Fb.txt"
+          },
+          {
+            "method": "GET",
+            "url": "/a/b/men%C3%BC/tea"
+          }
+        ]
       }
     ],
     "package_snapshots": []
@@ -1075,7 +1127,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "ÿ",
+        "content": "\u00ff",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }

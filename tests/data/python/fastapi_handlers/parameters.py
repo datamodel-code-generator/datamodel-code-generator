@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from fastapi import FastAPI
+
 if TYPE_CHECKING:
     from types import ModuleType
 
@@ -43,3 +45,10 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             record("get_item", arguments)
 
     return {"default": {"untagged": Untagged()}}
+
+
+def applications(server: ModuleType, sets: dict[str, dict[str, object]]) -> dict[str, FastAPI]:
+    """Mount the application below /a/b of a user application."""
+    mounted = FastAPI()
+    mounted.mount("/a/b", server.create_app(**sets["default"]))
+    return {"mounted": mounted}

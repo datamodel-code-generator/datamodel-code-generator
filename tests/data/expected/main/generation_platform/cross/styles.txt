@@ -32,18 +32,21 @@ get_labels escapes
   get_labels(name='a.b', names=['%', '?', '#'], point=Point(x=1, y=-2))
   < 204 -
   = None
-get_labels slash [bug: the client sends / in a path value as %2F, and the server routes on the decoded path and answers 404]
+get_labels slash
   > GET /labels/.a%2Fb/.x/.x,1,y,-2
-  < 404 application/json
-  ! NotFoundError: Error code: 404 - {"detail":"Not Found"} [operation_id='getLabels', status_code=404, body=b'{"detail":"Not Found"}', body_bytes=b'{"detail":"Not Found"}', truncated=False]
-get_matrix slash [bug: the client sends / in a path value as %2F, and the server routes on the decoded path and answers 404]
+  get_labels(name='a/b', names=['x'], point=Point(x=1, y=-2))
+  < 204 -
+  = None
+get_matrix slash
   > GET /matrix/;name=a%2Fb/;names=x/;x=1;y=-2
-  < 404 application/json
-  ! NotFoundError: Error code: 404 - {"detail":"Not Found"} [operation_id='getMatrix', status_code=404, body=b'{"detail":"Not Found"}', body_bytes=b'{"detail":"Not Found"}', truncated=False]
-get_simple slash [bug: the client sends / in a path value as %2F, and the server routes on the decoded path and answers 404]
+  get_matrix(name='a/b', names=['x'], point=Point(x=1, y=-2))
+  < 204 -
+  = None
+get_simple slash
   > GET /simple/a%2Fb/1/x=1,y=-2
-  < 404 application/json
-  ! NotFoundError: Error code: 404 - {"detail":"Not Found"} [operation_id='getSimple', status_code=404, body=b'{"detail":"Not Found"}', body_bytes=b'{"detail":"Not Found"}', truncated=False]
+  get_simple(name='a/b', names=[1], point=Point(x=1, y=-2))
+  < 204 -
+  = None
 get_headers non-ASCII
   > GET /headers
   get_headers(X_Point=None, X_Corner=None, X_Tags=['café'])

@@ -420,6 +420,10 @@ numbers, and booleans (`--strict-types`), repeated path placeholders, request bo
 and binary bodies, multipart forms, and forms of the `pydantic_v2.dataclass` backend. A multipart form body reaches
 the method as its model, with uploads read to `bytes`.
 
+The router splits a request path at the slashes the request sends, so a percent-encoded slash (`%2F`) stays inside
+its path parameter, whose value receives `/`, of whatever style; FastAPI alone routes by the decoded path, where
+`%2F` would end the segment. A path without an encoded slash is routed as FastAPI routes it.
+
 A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
 as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the
 quotes, a `;` ends the value, and the last of several cookies of one name is taken. The generated client sends such
