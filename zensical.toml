@@ -55,7 +55,8 @@ nav = [
       { "Coding Agent Skill" = "coding-agent-skill.md" }
     ]},
     { "Generation Targets" = [
-      { "FastAPI Server (Experimental)" = "fastapi-server.md" }
+      { "FastAPI Server (Experimental)" = "fastapi-server.md" },
+      { "Python Client (Experimental)" = "python-client.md" }
     ]}
   ]},
   { "CLI Reference" = [
@@ -82,6 +83,11 @@ nav = [
       { "Version" = "cli-reference/manual/version.md" },
       { "Debug" = "cli-reference/manual/debug.md" },
       { "Profile" = "cli-reference/manual/profile.md" },
+      { "Job" = "cli-reference/manual/job.md" },
+      { "All Jobs" = "cli-reference/manual/all-jobs.md" },
+      { "Install Skill" = "cli-reference/manual/install-skill.md" },
+      { "Overwrite Skill" = "cli-reference/manual/overwrite-skill.md" },
+      { "Skill Scope" = "cli-reference/manual/skill-scope.md" },
       { "No Color" = "cli-reference/manual/no-color.md" },
       { "Generate Prompt" = "cli-reference/manual/generate-prompt.md" },
       { "List Deprecations" = "cli-reference/manual/list-deprecations.md" },

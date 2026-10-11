@@ -1342,7 +1342,7 @@ def generate_index_page(
         OptionCategory.TEMPLATE: "Output formatting and custom rendering",
         OptionCategory.OPENAPI: "OpenAPI-specific features",
         OptionCategory.GENERAL: "Utilities and meta options",
-        OptionCategory.TARGET: "Server generation with the models (experimental)",
+        OptionCategory.TARGET: "Server and client generation with the models (experimental)",
     }
 
     for category in OptionCategory:
