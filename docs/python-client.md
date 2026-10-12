@@ -300,8 +300,6 @@ validate `WebhookOptions` before constructing this record and passing it to an a
 
 | Field | Type | Effective default | Valid values |
 |---|---|---|---|
-| `max_body_bytes` | `int \| UNSET` | `8388608` | Positive integer |
-| `max_header_bytes` | `int \| UNSET` | `16384` | Positive integer |
 | `max_keys` | `int \| UNSET` | `8` | Positive integer |
 | `max_signatures` | `int \| UNSET` | `8` | Positive integer |
 | `past_tolerance` | `float \| UNSET` | `300` seconds | Finite, nonnegative number |
@@ -325,7 +323,7 @@ All fields without a displayed default are required. They also accept the shared
 `helper_id: str | None = None`, `operation: OperationRef | None = None`, `info: ResponseInfo | None = None`, and
 `cause: BaseException | None = None`, together with inherited SDK error fields. A failed webhook verification raises
 `ProtocolDataError` with the verification failure as its `reason`: `malformed_signature`, `invalid_signature`,
-`missing_key`, or `timestamp_window`; a body, header, key, or signature count over its limit raises it with the reason
+`missing_key`, or `timestamp_window`; a key or signature count over its limit raises it with the reason
 `too_large`. Error strings and representations exclude delivery IDs, namespaces, operation references, entry IDs, and
 causes; callers may read those attributes explicitly.
 
@@ -414,11 +412,10 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
-| `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
-| `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
-| | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
+| `UploadOptions` | `chunk_bytes` | `8388608` | Positive integer |
+| `CacheOptions` | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
 | `WSOptions` | `open_timeout`, `idle_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
-| | `max_message_bytes` | `1048576` | Positive integer |
+| | `max_message_bytes` | HTTPX2's default (64 KiB in 2.13) | Positive integer |
 | Every type but `CacheOptions` | `total_timeout` | `600` seconds for polling, no limit otherwise | Nonnegative duration or `None`: the helper session's budget from its start |
 
 
@@ -662,7 +659,7 @@ without case, the operation's own querystring, or its request body. An operation
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `enabled` (`true`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | None |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`); see [cache helpers](#cache-helpers) |
-| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
+| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.fields -->
 Cache helper fields: `operation`, `validator`, `authenticated`, `statuses`, `vary_allowlist`, `enabled`. See [cache helpers](#cache-helpers).
@@ -1509,8 +1506,8 @@ sent from that buffer in 64 KiB slices, so an upload holds one chunk at a time b
 
 ### Chunks, offsets, and recovery
 
-A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. The offset
-profile sends one chunk at a time.
+A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default; set it in `helper_defaults` or per call for a server that
+takes another size. The offset profile sends one chunk at a time.
 
 `start` sends the create request once, resent only as shared retries allow, with the content's size in the declared
 `size` parameter, and reads every binding's `initial` value and the server's expiry from its response. The upload
@@ -1579,7 +1576,7 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 
 | Limit | Default | None |
 |---|---|---|
-| `UploadOptions.chunk_bytes` | 8 MiB, at most the helper's `max_chunk_bytes` | Not allowed |
+| `UploadOptions.chunk_bytes` | 8 MiB | Not allowed |
 | `UploadOptions.total_timeout` | No limit | Removes the limit |
 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
@@ -2183,12 +2180,12 @@ remaining duration as their timeout:
 |---|---|---|
 | `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, write, and pool timeouts and the deadline | No open limit |
 | `WSOptions.idle_timeout` | The native read timeout | No idle limit |
-| `WSOptions.max_message_bytes` | 1 MiB per message, HTTPX2's `max_message_size_bytes` | Not allowed |
+| `WSOptions.max_message_bytes` | HTTPX2's default (64 KiB in 2.13); a set value is passed as its `max_message_size_bytes` | Not allowed |
 | `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each, HTTPX2's keepalive settings; `pong_timeout` also bounds `ping()` | No keepalive pings |
 | `WSOptions.total_timeout` | None | No session budget |
 
-A message over `max_message_bytes` raises `ProtocolDataError` with the reason `too_large` after HTTPX2 closed the
-connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason
+A message over `max_message_bytes`, or over HTTPX2's default while that is unset, raises `ProtocolDataError` with the
+reason `too_large` after HTTPX2 closed the connection with 1009. A receive that waits longer than the idle timeout raises `APITimeoutError` with the reason
 `phase_timeout` and closes with 1001, as does a ping whose pong does not arrive within the pong timeout; another
 failure closes with 1011. A missed keepalive pong makes HTTPX2 close with 1011, and the next `receive` raises
 `APIConnectionError`. The session deadline bounds every wait and raises `APITimeoutError` with
@@ -2339,11 +2336,12 @@ condition, and a response that is not fresh is not stored for it.
 
 ### Storing and keys
 
-A response is stored only when its status is cacheable, its body is within `CacheOptions.max_entry_bytes`, it came
-without a redirect, it has no `Set-Cookie`, its `Cache-Control` has only RFC 9111 directives (`s-maxage` is ignored)
-and no `no-store`, its `Vary` names only allowlisted headers, and it is fresh or can be revalidated. A response that
-cannot be stored removes the entry it supersedes, and errors and decoding failures store nothing and keep the entry.
-Entries hold the body after content decoding and the headers without `Content-Encoding` or hop-by-hop fields.
+A response is stored only when its status is cacheable, it came without a redirect, it has no `Set-Cookie`, its
+`Cache-Control` has only RFC 9111 directives (`s-maxage` is ignored) and no `no-store`, its `Vary` names only
+allowlisted headers, and it is fresh or can be revalidated. The body's size is not limited: whatever HTTPX2 returned is
+stored. A response that cannot be stored removes the entry it supersedes, and errors and decoding failures store
+nothing and keep the entry. Entries hold the body after content decoding and the headers without `Content-Encoding` or
+hop-by-hop fields.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.keys -->
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
@@ -3163,7 +3161,8 @@ and its `children`, and the `helpers`, each with its `name`, `docstring`, `metho
 helper with remote cancellation returns. A helper method, like a function of `webhook.jinja2`, has its `name`, whether
 it is a `coroutine`, its `positional` parameters and the `keywords` after `*`, what it `returns`, its `docstring`
 (empty for a webhook function, whose builtin template writes its own), and the runtime `function` it returns the call
-of with its `arguments`. `webhook.jinja2` receives the signature `kind`
+of with its `arguments`. The `keywords` may be empty, as an unsigned webhook function's are, and a template writes
+`*` only when they are not. `webhook.jinja2` receives the signature `kind`
 (`none`, `adapter`, or `builtin`), the helper's `name` and its signature's `algorithm`, and whether deliveries carry a
 `timestamp`; `model_bindings.jinja2` receives the stdlib field maps as `models`, each with its `type` and `value`, and
 the `codecs`, each with its `name`, `annotation`, `value`, and `description`. A builtin template
@@ -3986,8 +3985,8 @@ def receive_stripe(raw_body: bytes, headers: list[tuple[str, str]], secret: byte
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter -->
 
 `verify_async` calls the same synchronous verifier, once. After the helper checks its arguments, including that
-`verifier` has a callable `verify` (or `ConfigurationError` with `field_path=("verifier",)`), and the body, header, and
-key-count limits, it passes the exact body, the headers as a tuple of pairs in received order, the key set, `now`, and
+`verifier` has a callable `verify` (or `ConfigurationError` with `field_path=("verifier",)`), and the key-count
+limit, it passes the exact body, the headers as a tuple of pairs in received order, the key set, `now`, and
 the resolved limits; it never reads the keys. The verifier must authenticate the whole body and every fact it returns,
 honor `max_signatures`, and raise `ProtocolDataError` with the reason `malformed_signature`, `invalid_signature`,
 `missing_key`, or `timestamp_window` when verification fails; every error it raises, including cancellation, propagates
@@ -4000,24 +3999,22 @@ window, as for builtin signatures.
 ### Unsigned webhooks
 
 A signature `{kind: none}` declares that the API does not sign its deliveries; a helper without `signature` is refused,
-so omitting it never means unsigned. The module has only `decode_unverified(raw_body, *, options=None) -> Event`, which
-refuses a body that is not `bytes` (`ConfigurationError`) or is over `max_body_bytes` (`ProtocolDataError` with the
-reason `too_large`), the only option it reads, and decodes the event. Nothing authenticates who sent the delivery or
+so omitting it never means unsigned. The module has only `decode_unverified(raw_body) -> Event`, which refuses a body
+that is not `bytes` (`ConfigurationError`) and decodes the event. Nothing authenticates who sent the delivery or
 whether it was changed or replayed, and the result is the event alone, with no facts: treat it as untrusted input.
 
 ### Verification order and limits
 
 A call checks `raw_body`, `headers`, `keys`, `now`, and `options`, then each builtin key's type and unique id. Invalid
-arguments raise `ConfigurationError` with their field path. Body, header, key, and signature counts are bounded by
-`ProtocolDataError` with the reason `too_large`. The helper checks signature syntax, timestamp tolerance when present,
-and cryptographic authenticity before decoding the model. Decoding errors raise `ProtocolDataError`. An adapter checks
-that `verifier.verify` is callable, then sizes, its returned facts, and the timestamp tolerance before decoding. Errors
-keep no key, signature, header value, or body.
+arguments raise `ConfigurationError` with their field path. Key and signature counts are bounded by
+`ProtocolDataError` with the reason `too_large`; the body and headers have no size limit here, so bound them in the web
+server that receives the delivery. The helper checks signature syntax, timestamp tolerance when present, and
+cryptographic authenticity before decoding the model. Decoding errors raise `ProtocolDataError`. An adapter checks that
+`verifier.verify` is callable, then the key count, its returned facts, and the timestamp tolerance before decoding.
+Errors keep no key, signature, header value, or body.
 
 | Limit (`WebhookOptions`) | Default |
 |---|---|
-| `max_body_bytes` | 8 MiB |
-| `max_header_bytes`, counting each name and value | 16 KiB |
 | `max_keys`, `max_signatures` | 8 |
 | `past_tolerance`, `future_tolerance` | 300 and 30 seconds; 0 is allowed |
 

@@ -115,9 +115,9 @@ class UploadPlan(Generic[T, C]):
     `initial` values of every binding and the server's expiry at `expires_at`. `probe` reads the server's offset at
     `remote_offset`; `append` sends one chunk as its binary body, writing its offset into `offset`, its length into
     `length`, and into `checksum` the `checksum_algorithm` digest of the bytes it sends, in `checksum_encoding` and
-    after the algorithm's name and a space with `checksum_prefix`. Chunks are at most `max_chunk_bytes`;
-    `partial_commit` allows a server to keep part of one. A helper without `completion` completes when the server holds
-    every byte; one with it sends that operation once.
+    after the algorithm's name and a space with `checksum_prefix`. `partial_commit` allows a server to keep part of a
+    chunk. A helper without `completion` completes when the server holds every byte; one with it sends that operation
+    once.
     """
 
     helper_id: str
@@ -129,7 +129,6 @@ class UploadPlan(Generic[T, C]):
     append_operation: OperationRef
     append: OperationPlan[object]
     offset: ParameterTarget
-    max_chunk_bytes: int
     partial_commit: bool
     size: ParameterTarget | None = None
     expires_at: Selector | None = None
@@ -1045,8 +1044,7 @@ def start_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload in a session of its own, and return the handle appending to it."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
-    handle = UploadHandle(core, plan, limits, _session(limits), content, chunk)
+    handle = UploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
     handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1065,8 +1063,7 @@ async def astart_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
-    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, chunk)
+    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
     await handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1109,7 +1106,7 @@ def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
     fields = cast("Mapping[str, JSONValue]", state)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
     phase = state_text(fields["phase"])
-    require_state(0 < chunk <= plan.max_chunk_bytes and confirmed <= size and phase in _PHASES)
+    require_state(chunk > 0 and confirmed <= size and phase in _PHASES)
     resolved = _PHASES[cast("str", phase)]
     require_state(
         resolved is not _Phase.COMPLETE

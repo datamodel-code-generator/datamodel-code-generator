@@ -1,4 +1,4 @@
-"""Decode webhook events and share argument, size, and timestamp checks.
+"""Decode webhook events and share argument, count, and timestamp checks.
 
 Builtin signatures and application verifiers authenticate a delivery in their own modules, so a package whose helpers
 use only one of them never loads the other's dependencies. Errors keep no key, signature, header, or body.
@@ -25,7 +25,7 @@ from .values import MISSING, resolve
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Mapping
 
     from ..client.operations import InboundModelCodec
     from ..model_codecs.media import JSONValue
@@ -43,7 +43,6 @@ __all__ = (
     "received",
     "reject",
     "size",
-    "sizes",
     "within",
 )
 
@@ -52,8 +51,6 @@ T_co = TypeVar("T_co", covariant=True)
 
 _EPOCH: Final = datetime(1970, 1, 1, tzinfo=timezone.utc)
 _DEFAULTS: Final = ResolvedWebhookOptions(
-    max_body_bytes=8388608,
-    max_header_bytes=16384,
     max_keys=8,
     max_signatures=8,
     past_tolerance=300.0,
@@ -223,18 +220,9 @@ def local_arguments(  # ruff: ignore[too-many-arguments]
 
 
 def size(limit: int, observed: int, helper_id: str) -> None:
-    """Refuse an observed size or count over its limit."""
+    """Refuse an observed count over its limit."""
     if observed > limit:
         raise ProtocolDataError(reason="too_large", helper_id=helper_id)
-
-
-def sizes(
-    limits: ResolvedWebhookOptions, raw_body: bytes, headers: Sequence[tuple[str, str]], keys: int, helper_id: str
-) -> None:
-    """Refuse a body, headers, or key count over its limit, in that order."""
-    size(limits.max_body_bytes, len(raw_body), helper_id)
-    size(limits.max_header_bytes, sum(len(name) + len(value) for name, value in headers), helper_id)
-    size(limits.max_keys, keys, helper_id)
 
 
 def instant(microseconds: int) -> datetime | None:
@@ -262,13 +250,12 @@ def received(plan: EventPlan[T], raw_body: bytes, facts: Facts) -> VerifiedWebho
     )
 
 
-def decode_unsigned(plan: EventPlan[T], raw_body: bytes, *, options: WebhookOptions | None = None) -> T:
-    """Decode a delivery's event without authenticating it, refusing only a body over max_body_bytes first.
+def decode_unsigned(plan: EventPlan[T], raw_body: bytes) -> T:
+    """Decode a delivery's event without authenticating it.
 
     Nothing about the delivery is verified, so the event is whatever its sender chose.
     """
     helper_id = plan.helper_id
     if not _instance(raw_body, bytes):
         raise configuration_error(("raw_body",), "invalid_value", helper_id)
-    size(_limits(options, helper_id).max_body_bytes, len(raw_body), helper_id)
     return plan.event.decode(raw_body, helper_id)

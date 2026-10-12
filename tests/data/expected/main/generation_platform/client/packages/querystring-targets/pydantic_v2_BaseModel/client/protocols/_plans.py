@@ -93,7 +93,6 @@ PLAN_3: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     append_operation=OperationRef(pointer='/paths/~1files~1{fileId}/patch'),
     append=_operations.OPERATION_6,
     offset=ParameterTarget(location='header', name='Upload-Offset'),
-    max_chunk_bytes=4,
     partial_commit=True,
     size=ParameterTarget(location='header', name='Upload-Length'),
     probe_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=QuerystringTarget(name='detail', pointer='/kind'), literal='offset')),

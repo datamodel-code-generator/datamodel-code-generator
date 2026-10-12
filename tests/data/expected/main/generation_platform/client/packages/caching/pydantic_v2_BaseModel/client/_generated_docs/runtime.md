@@ -100,7 +100,6 @@ stores.
 
 | Limit | Effective default |
 |---|---|
-| stored body per entry | 2 MiB |
 | freshness of any entry | 300 seconds |
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call

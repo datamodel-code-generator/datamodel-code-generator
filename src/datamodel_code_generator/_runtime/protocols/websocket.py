@@ -149,7 +149,7 @@ class _Limits:
 
     open_timeout: float | None
     idle_timeout: float | None
-    max_message_bytes: int
+    max_message_bytes: int | None
     ping_interval: float | None
     pong_timeout: float | None
     total_timeout: float | None = None
@@ -173,7 +173,8 @@ def _limits(
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
-    An idle timeout neither layer sets is the call's merged native read timeout.
+    An idle timeout neither layer sets is the call's merged native read timeout, and a message size neither sets is
+    left to HTTPX2.
     """
     for name, value, kind in (
         ("ws_options", ws_options, WSOptions),
@@ -186,13 +187,18 @@ def _limits(
     return _Limits(
         open_timeout=_first(kinds, "open_timeout", 5.0),
         idle_timeout=_first(kinds, "idle_timeout", core.call_settings(request, plan.call).timeout.read),
-        max_message_bytes=_first(kinds, "max_message_bytes", 1048576),
+        max_message_bytes=_first(kinds, "max_message_bytes", None),
         ping_interval=_first(kinds, "ping_interval", 20.0),
         pong_timeout=_first(kinds, "pong_timeout", 20.0),
         total_timeout=_first(kinds, "total_timeout", None),
         options=request,
         clock=core.clock,
     )
+
+
+def _message_size(limits: _Limits) -> dict[str, int]:
+    """Return the message size limit as HTTPX2's keyword, or nothing, so that HTTPX2's own default applies."""
+    return {} if (size := limits.max_message_bytes) is None else {"max_message_size_bytes": size}
 
 
 def _session(limits: _Limits) -> OperationSession:
@@ -302,7 +308,7 @@ class _Sockets(Generic[SendT, RecvT]):
         self._session = session
         self._info = info
         self._call = call
-        self._prefix = min(limits.max_message_bytes, MAX_RAW_PREFIX)
+        self._prefix = MAX_RAW_PREFIX if (size := limits.max_message_bytes) is None else min(size, MAX_RAW_PREFIX)
         self._lock = threading.Lock()
         self._receiving = threading.Lock()
         self._state = _State.OPEN
@@ -592,7 +598,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         self._held = held
         self._native = _Native(
             cast("NetworkStream", _Stream(upgraded.extensions["network_stream"])),
-            max_message_size_bytes=limits.max_message_bytes,
+            **_message_size(limits),
             queue_size=0,
             keepalive_ping_interval_seconds=limits.ping_interval,
             keepalive_ping_timeout_seconds=limits.pong_timeout,
@@ -740,7 +746,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         self._response = response
         self._native = _AsyncNative(
             upgraded.extensions["network_stream"],
-            max_message_size_bytes=limits.max_message_bytes,
+            **_message_size(limits),
             keepalive_ping_interval_seconds=limits.ping_interval,
             keepalive_ping_timeout_seconds=limits.pong_timeout,
             response=upgraded,

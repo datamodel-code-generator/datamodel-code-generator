@@ -4,7 +4,7 @@
   import <package>.webhooks loads []
   import <package>.webhooks.keys ! ModuleNotFoundError
   import <package>.webhooks.unsigned.message loads ['webhook_events']
-    decode_unverified hints=['options', 'raw_body', 'return']
+    decode_unverified hints=['raw_body', 'return']
   import <package>.webhooks.adapted.message loads ['webhook_events', 'adapters']
     verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return', 'verifier']
     verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return', 'verifier']

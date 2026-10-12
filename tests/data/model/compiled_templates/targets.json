@@ -2101,13 +2101,7 @@
                   "default": ""
                 }
               ],
-              "keywords": [
-                {
-                  "name": "options",
-                  "annotation": "WebhookOptions | None",
-                  "default": "None"
-                }
-              ],
+              "keywords": [],
               "returns": "models.Event",
               "docstring": "",
               "function": "decode_unsigned",
@@ -2119,10 +2113,6 @@
                 {
                   "keyword": "",
                   "value": "raw_body"
-                },
-                {
-                  "keyword": "options",
-                  "value": "options"
                 }
               ],
               "coroutine": false
