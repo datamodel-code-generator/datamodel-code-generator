@@ -576,7 +576,6 @@ class _Validator:  # noqa: PLR0904
                 "create": (self.upload_create, REQUIRED),
                 "probe": (self.upload_probe, REQUIRED),
                 "append": (self.upload_append, REQUIRED),
-                "max_chunk_bytes": (self.positive, REQUIRED),
                 "partial_commit": (self.choice("allowed", "forbidden"), REQUIRED),
                 "completion": (self.upload_completion, REQUIRED),
                 "abort": (self.remote_cancel, OMITTED),

@@ -104,7 +104,7 @@ raises the operation's `APIStatusError`. Each limit comes from the call's `ws_op
 |---|---|
 | open timeout | 5 seconds, also capped by the native connect, read, write, and pool timeouts and the deadline |
 | idle timeout | the native read timeout; None removes it |
-| message size | 1 MiB |
+| message size (`max_message_bytes`) | HTTPX2's default |
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | session total timeout (`total_timeout`) | None |
 

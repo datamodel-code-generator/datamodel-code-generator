@@ -15,8 +15,6 @@ K = TypeVar("K")
 T_co = TypeVar("T_co", covariant=True)
 
 _LIMITS: Final = (
-    ("max_body_bytes", False, False, False),
-    ("max_header_bytes", False, False, False),
     ("max_keys", False, False, False),
     ("max_signatures", False, False, False),
     ("past_tolerance", True, False, True),
@@ -64,8 +62,6 @@ class VerifiedWebhook(Generic[T_co]):
 class WebhookOptions:
     """Standalone verification limits; every UNSET field takes its webhook default."""
 
-    max_body_bytes: int | UNSET = UNSET
-    max_header_bytes: int | UNSET = UNSET
     max_keys: int | UNSET = UNSET
     max_signatures: int | UNSET = UNSET
     past_tolerance: float | UNSET = UNSET
@@ -80,8 +76,6 @@ class WebhookOptions:
 class ResolvedWebhookOptions:
     """The fully resolved verification limits passed to an application verifier."""
 
-    max_body_bytes: int
-    max_header_bytes: int
     max_keys: int
     max_signatures: int
     past_tolerance: float

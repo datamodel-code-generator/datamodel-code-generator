@@ -20,7 +20,6 @@ from ..._runtime.protocols.webhook_events import (
     EventPlan,
     decode_unsigned,
 )
-from ..._runtime.protocols.webhooks import WebhookOptions
 
 __all__ = [
     'decode_unverified',
@@ -35,17 +34,13 @@ _PLAN: Final[EventPlan[models.Message]] = EventPlan(
 
 def decode_unverified(
     raw_body: bytes,
-    *,
-    options: WebhookOptions | None = None,
 ) -> models.Message:
     """Decode a delivery's event without authenticating it.
 
     Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,
     and no duplicate information is returned: treat the event as untrusted input.
-    Of options, only max_body_bytes applies.
     """
     return decode_unsigned(
         _PLAN,
         raw_body,
-        options=options,
     )
