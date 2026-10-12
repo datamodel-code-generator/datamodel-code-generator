@@ -6,6 +6,7 @@ Python data models (Pydantic, dataclasses, TypedDict, msgspec) from various sche
 
 from __future__ import annotations
 
+import codecs
 import contextlib
 import gc
 import os
@@ -1543,6 +1544,47 @@ def _ensure_file_output_path(path: Path, error_message: str) -> None:
     raise Error(error_message)
 
 
+def _output_module_text(
+    body: str,
+    effective_header: str,
+    future_imports: str,
+    *,
+    has_custom_file_header: bool,
+) -> str:
+    """Return the text one generated module writes, including its trailing newline."""
+    if has_custom_file_header and body:
+        return (
+            _build_module_content(
+                body,
+                effective_header,
+                has_custom_file_header=True,
+                future_imports=future_imports,
+            )
+            + "\n"
+        )
+    if body:
+        return f"{effective_header}\n\n{body.rstrip()}\n"
+    return f"{effective_header}\n"
+
+
+def _ensure_output_text_encodable(text: str, encoding: str) -> None:
+    """Raise a clean error when output text cannot be encoded, before any destination is opened."""
+    try:
+        text.encode(encoding)
+    except (UnicodeEncodeError, LookupError) as exc:
+        msg = f"Error: Unable to encode output using encoding {encoding!r}: {exc}"
+        raise Error(msg) from exc
+
+
+def _reject_unknown_output_encoding(encoding: str) -> None:
+    """Raise a clean error for an unknown encoding name before input is read."""
+    try:
+        codecs.lookup(encoding)
+    except LookupError as exc:
+        msg = f"Error: Unable to encode output using encoding {encoding!r}: {exc}"
+        raise Error(msg) from exc
+
+
 def _write_results_to_output(  # noqa: PLR0913
     results: _ParserResults,
     output: Path,
@@ -1574,27 +1616,18 @@ def _write_results_to_output(  # noqa: PLR0913
         warn_shadowed_modules(modules)
 
     for path, (body, future_imports, filename) in modules.items():
+        effective_header = _format_file_header(header_prefix, header_suffix, filename)
+        module_text = _output_module_text(
+            body,
+            effective_header,
+            future_imports,
+            has_custom_file_header=has_custom_file_header,
+        )
+        _ensure_output_text_encodable(module_text, config.encoding)
         if not path.parent.exists():
             path.parent.mkdir(parents=True)
-
-        effective_header = _format_file_header(header_prefix, header_suffix, filename)
         with path.open("wt", encoding=config.encoding) as file:
-            if has_custom_file_header and body:
-                file.write(
-                    _build_module_content(
-                        body,
-                        effective_header,
-                        has_custom_file_header=True,
-                        future_imports=future_imports,
-                    )
-                    + "\n"
-                )
-            else:
-                file.write(effective_header)
-                if body:
-                    file.write("\n\n")
-                    file.write(body.rstrip())
-                file.write("\n")
+            file.write(module_text)
 
 
 def _format_deferred_output(
@@ -1779,6 +1812,7 @@ def generate(
 
         return generate_selected_target(input_, config)
     config = _prepare_generate_facade_config(config)
+    _reject_unknown_output_encoding(config.encoding)
 
     atomic_remote_update = (
         config.update_lock
