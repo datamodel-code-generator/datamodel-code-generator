@@ -3,7 +3,9 @@
 {%- for parameter in function.positional %}
     {{ parameter.name }}: {{ parameter.annotation }},
 {%- endfor %}
+{%- if function.keywords %}
     *,
+{%- endif %}
 {%- for parameter in function.keywords %}
 {%- if parameter.name == "now" %}
     now: {{ parameter.annotation }} | None = None,
@@ -78,7 +80,6 @@ K = {{ typevar }}("K")
 
     Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,
     and no duplicate information is returned: treat the event as untrusted input.
-    Of options, only max_body_bytes applies.
     """
 {%- else %}
     """Verify a delivery{% if kind == "adapter" %} with verifier{% endif %} and decode its event.

@@ -2719,7 +2719,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return "None" if spec.completion is None else _Helpers.response(module, spec.completion)
 
     def upload(self, module: TargetModule, index: int, spec: UploadSpec) -> Plan:
-        """Return an upload helper's plan: its operations, selectors, targets, bindings, chunk limit, and completion.
+        """Return an upload helper's plan: its operations, selectors, targets, bindings, and completion.
 
         Each optional entry appears only when the helper declares it.
         """
@@ -2736,7 +2736,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ("append_operation=", self.reference(module, spec.append)),
             ("append=", f"{operations}.OPERATION_{spec.append.index}"),
             ("offset=", self.target(module, append["offset"])),
-            ("max_chunk_bytes=", repr(tree["max_chunk_bytes"])),
             ("partial_commit=", repr(tree["partial_commit"] == "allowed")),
         ]
         if (size := create.get("size")) is not None:

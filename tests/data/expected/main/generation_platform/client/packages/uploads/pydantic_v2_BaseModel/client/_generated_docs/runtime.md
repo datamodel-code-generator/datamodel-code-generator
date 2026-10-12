@@ -81,7 +81,7 @@ client's `helper_defaults` for the helper, then the default below. The session t
 
 | Limit | Effective default |
 |---|---|
-| chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
+| chunk size (`chunk_bytes`) | 8 MiB |
 | session total timeout (`total_timeout`) | None (no limit) |
 
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`

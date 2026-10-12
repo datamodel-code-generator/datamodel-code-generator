@@ -1,6 +1,6 @@
 """Authenticate webhook deliveries with fixed signature presets before decoding their events.
 
-Local arguments, sizes, syntax, timestamp tolerance, and signatures are checked before any model decoding.
+Local arguments, counts, syntax, timestamp tolerance, and signatures are checked before any model decoding.
 Errors keep no key, signature, header, or body, and verification retains no delivery state.
 """
 
@@ -22,7 +22,6 @@ from .webhook_events import (
     received,
     reject,
     size,
-    sizes,
     within,
 )
 
@@ -144,7 +143,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     helper_id, algorithm = plan.helper_id, plan.algorithm
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
     candidates = _checked_keys(keys, algorithm, helper_id)
-    sizes(limits, raw_body, headers, len(candidates), helper_id)
+    size(limits.max_keys, len(candidates), helper_id)
     if not (values := [value for name, value in headers if _named(name, plan.header)]):
         reject("malformed_signature", helper_id)
     stamp, delivery, parts, elements = _signed(plan, raw_body, headers, values)
