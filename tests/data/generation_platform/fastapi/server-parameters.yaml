@@ -95,6 +95,14 @@ paths:
         - {name: levels, in: query, schema: {type: array, items: {type: integer, enum: [1, 2]}}}
       responses:
         "204": {description: Done.}
+  /foods/{food_id}/servings/{serving}:
+    get:
+      operationId: getServing
+      parameters:
+        - {name: food_id, in: path, schema: {type: string}}
+        - {name: serving, in: path, required: false, schema: {type: integer, minimum: 1, default: 1}}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Size: {type: integer, title: Size, minimum: 1, default: 10}

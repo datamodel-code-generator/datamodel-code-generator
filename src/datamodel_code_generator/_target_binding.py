@@ -3384,6 +3384,7 @@ class _Contracts(_SchemaUses):
         status: str | None = None,
         media: str | None = None,
     ) -> WireDeclaration:
+        """Bind one parameter or header; a path parameter is required whatever it declares, as OpenAPI requires."""
         wire_name = name if name is not None else str(value.get("name", ""))
         location = str(value["in"]) if "in" in value else None
         schemas: tuple[TypeUseId, ...] = ()
@@ -3425,7 +3426,7 @@ class _Contracts(_SchemaUses):
             wire_name,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
-            _facts(value, _PARAMETER_FACTS, declared),
+            _facts({**value, "required": True} if location == "path" else value, _PARAMETER_FACTS, declared),
             schemas,
             children,
         )

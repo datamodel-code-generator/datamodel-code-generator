@@ -63,6 +63,8 @@ operation's summary and description, formatted as model docstrings are, on one l
 parameter or request body that the request omits arrives as `None`, and a parameter with a default as its default.
 The routes declare such an input as FastAPI applications do, `T | None = None`, so FastAPI's own document shows
 its schema as `anyOf` of the type and `null`.
+A path parameter is required, as OpenAPI requires, even when the document leaves out `required` or declares it
+`false`; the served document keeps the declaration as written.
 Methods and router modules are named in snake case, and Protocols in PascalCase, whatever the model naming options say:
 a method after its operationId, or after its method and path without one, such as
 `get_pets_by_pet_id`. A method's arguments are named after their wire names as model fields are, so the quick start's

@@ -1,6 +1,6 @@
 # parameters
 serve pydantic_v2.BaseModel
-service DefaultService: get_codes, get_file, get_item, get_menu, get_note, get_pair, get_ratios, get_sizes, repeat, search
+service DefaultService: get_codes, get_file, get_item, get_menu, get_note, get_pair, get_ratios, get_serving, get_sizes, repeat, search
 service DefaultService without its methods: TypeError
 app default
 > GET /search
@@ -173,6 +173,13 @@ app default
 < 422 application/json [{"type": "int_parsing", "loc": ["path", "part"]}]
 > GET /pairs/ab/2/1/of/2
 < 422 application/json [{"type": "value_error", "loc": ["path", "part"]}]
+> GET /foods/apple/servings/2
+  get_serving(food_id='apple', serving=2)
+< 204 - b''
+> GET /foods/apple/servings/0
+< 422 application/json [{"type": "greater_than_equal", "loc": ["path", "serving"]}]
+> GET /foods/apple/servings/
+< 404 application/json {"detail":"Not Found"}
 app mounted
 > GET /a%2Fb/files/a.txt
   get_file(file_name='a.txt')
