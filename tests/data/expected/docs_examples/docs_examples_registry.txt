@@ -32,6 +32,7 @@ fastapi-server.howto.app: fastapi-server.md
 fastapi-server.howto.notice: fastapi-server.md
 fastapi-server.howto.models: fastapi-server.md
 fastapi-server.howto.tests: fastapi-server.md
+fastapi-code-generator-migration.command: fastapi-code-generator-migration.md
 fastapi-server.nested-models.command: fastapi-server.md
 openapi.quick-start.schema: openapi.md
 openapi.quick-start.output: openapi.md

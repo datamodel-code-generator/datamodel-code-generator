@@ -21,6 +21,8 @@ openapi.yaml ──► datamodel-codegen ──► models.py, server/    generat
                                        app.py, test_app.py    yours, never touched
 ```
 
+Coming from fastapi-code-generator? See [Migrating from fastapi-code-generator](fastapi-code-generator-migration.md).
+
 This page covers a tutorial, how-tos for implementing the services, and the reference of the generated package. For
 the client of the same document, see [Python Client Generation](python-client.md); for every option with examples,
 see [CLI Reference: Target Generation Options](cli-reference/target-generation-options.md).

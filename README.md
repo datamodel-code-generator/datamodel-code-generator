@@ -708,7 +708,7 @@ These public examples are grouped by how each project uses datamodel-code-genera
 
 ## 🔗 Related Projects
 
-- **[fastapi-code-generator](https://github.com/koxudaxi/fastapi-code-generator)** - Generate FastAPI app from OpenAPI
+- **[fastapi-code-generator](https://github.com/koxudaxi/fastapi-code-generator)** - Generate FastAPI app from OpenAPI. To generate a FastAPI server with this project, see `--generate-server fastapi` and the [migration guide](https://datamodel-code-generator.koxudaxi.dev/fastapi-code-generator-migration/)
 - **[pydantic-pycharm-plugin](https://github.com/koxudaxi/pydantic-pycharm-plugin)** - PyCharm plugin for Pydantic
 
 ---
