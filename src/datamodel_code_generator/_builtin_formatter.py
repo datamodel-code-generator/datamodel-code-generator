@@ -858,10 +858,10 @@ def _can_parenthesize_field_value(annotation: ast.AST, target: str) -> bool:
 def _should_format_union_annotation(
     annotation: ast.AST,
     value: ast.AST | None,
-    target_prefix: str,
     annotation_prefix: str,
     line_length: int,
 ) -> TypeGuard[ast.BinOp]:
+    """Return whether to split a union annotation, which black does when `<annotation> = (` cannot open a value."""
     return (
         isinstance(annotation, ast.BinOp)
         and isinstance(annotation.op, ast.BitOr)
@@ -874,12 +874,8 @@ def _should_format_union_annotation(
             )
             or _contains_list_of_annotated(annotation)
             or (
-                len(f"{annotation_prefix} = {ast.unparse(value)}") > line_length
-                and len(target_prefix) > LONG_TARGET_PREFIX_LENGTH
-                and (_contains_annotated(annotation) or _is_simple_union_annotation(annotation))
-            )
-            or (
-                len(f"{annotation_prefix} = (") > line_length
+                len(f"{annotation_prefix} = (") >= line_length
+                and len(f"{annotation_prefix} = {ast.unparse(value)}") > line_length
                 and (_contains_annotated(annotation) or _is_simple_union_annotation(annotation))
             )
         )
@@ -1184,7 +1180,6 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
     if _should_format_union_annotation(
         statement.annotation,
         statement.value,
-        target_prefix,
         annotation_prefix,
         line_length,
     ):

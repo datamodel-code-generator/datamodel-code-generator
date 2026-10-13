@@ -14,3 +14,6 @@ class ArrayConstraintsOnOtherTypes(BaseModel):
     number_min_items: float | None = None
     string_items: Annotated[str | None, Field(max_length=5, min_length=2)] = None
     untyped_items_schema: Annotated[list[int] | None, Field(min_length=1)] = None
+    array_min_length: Annotated[list[str] | None, Field(max_length=4, min_length=2)] = (
+        None
+    )

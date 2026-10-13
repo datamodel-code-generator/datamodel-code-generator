@@ -1297,6 +1297,7 @@ NUMBER_BOUND_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS - {"multipleOf"}
 LENGTH_KEYWORDS: frozenset[str] = frozenset({"minLength", "maxLength"})
 STRING_KEYWORDS: frozenset[str] = LENGTH_KEYWORDS | {"pattern"}
 ARRAY_KEYWORDS: frozenset[str] = frozenset({"minItems", "maxItems", "uniqueItems"})
+SEQUENCE_KEYWORDS: frozenset[str] = ARRAY_KEYWORDS | LENGTH_KEYWORDS
 TYPE_DEPENDENT_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
 _NO_KEYWORDS: frozenset[str] = frozenset()
 
@@ -1332,10 +1333,11 @@ class DataTypeManager(ABC):
         "datetime.time": NUMBER_BOUND_KEYWORDS,
         "str": STRING_KEYWORDS,
         "bytes": STRING_KEYWORDS,
-        "list": ARRAY_KEYWORDS,
-        "set": ARRAY_KEYWORDS,
-        "frozenset": ARRAY_KEYWORDS,
-        "tuple": ARRAY_KEYWORDS,
+        "list": SEQUENCE_KEYWORDS,
+        "set": SEQUENCE_KEYWORDS,
+        "frozenset": SEQUENCE_KEYWORDS,
+        "tuple": SEQUENCE_KEYWORDS,
+        "collections.deque": SEQUENCE_KEYWORDS,
     })
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
@@ -1436,7 +1438,7 @@ class DataTypeManager(ABC):
             data_type.is_sequence,
             data_type.is_tuple,
         )):
-            return ARRAY_KEYWORDS
+            return SEQUENCE_KEYWORDS
         return TYPE_DEPENDENT_KEYWORDS if data_type.reference else None
 
     def constraint_keywords(self, data_type: DataType) -> frozenset[str]:

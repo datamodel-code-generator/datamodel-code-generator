@@ -34,10 +34,10 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import (
-    ARRAY_KEYWORDS,
     LENGTH_KEYWORDS,
     NONE,
     NUMBER_KEYWORDS,
+    SEQUENCE_KEYWORDS,
     STRING_KEYWORDS,
     DataType,
     _create_context_data_type,
@@ -999,10 +999,11 @@ class DataTypeManager(_DataTypeManager):
         "str": STRING_KEYWORDS,
         "bytes": LENGTH_KEYWORDS,
         "bytearray": LENGTH_KEYWORDS,
-        "list": ARRAY_KEYWORDS,
-        "set": ARRAY_KEYWORDS,
-        "frozenset": ARRAY_KEYWORDS,
-        "tuple": ARRAY_KEYWORDS,
+        "list": SEQUENCE_KEYWORDS,
+        "set": SEQUENCE_KEYWORDS,
+        "frozenset": SEQUENCE_KEYWORDS,
+        "tuple": SEQUENCE_KEYWORDS,
+        "collections.deque": SEQUENCE_KEYWORDS,
     })
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = False
 

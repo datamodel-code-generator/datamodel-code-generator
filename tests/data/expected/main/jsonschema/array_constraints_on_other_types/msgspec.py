@@ -14,3 +14,6 @@ class ArrayConstraintsOnOtherTypes(Struct):
     number_min_items: float | UnsetType = UNSET
     string_items: Annotated[str, Meta(max_length=5, min_length=2)] | UnsetType = UNSET
     untyped_items_schema: Annotated[list[int], Meta(min_length=1)] | UnsetType = UNSET
+    array_min_length: (
+        Annotated[list[str], Meta(max_length=4, min_length=2)] | UnsetType
+    ) = UNSET

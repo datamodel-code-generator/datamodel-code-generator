@@ -38,7 +38,6 @@
       "items": {
         "type": "string"
       },
-      "minLength": 2,
       "pattern": "^a",
       "maxItems": 4
     },

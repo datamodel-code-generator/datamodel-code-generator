@@ -125,8 +125,8 @@ from datamodel_code_generator.reference import (
 )
 from datamodel_code_generator.types import (
     ANY,
-    ARRAY_KEYWORDS,
     NUMBER_KEYWORDS,
+    SEQUENCE_KEYWORDS,
     STRING_KEYWORDS,
     DataType,
     EmptyDataType,
@@ -1937,7 +1937,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _declared_constraint_keywords(self, obj: JsonSchemaObject) -> frozenset[str]:
         """Return the type-dependent keywords whose kind a declared type of the schema holds.
 
-        A declared string also holds minItems and maxItems, which are written as its length bounds.
+        A declared string also holds minItems and maxItems and a declared array also holds minLength and maxLength,
+        which are written as their length bounds.
         """
         if (types := obj.type) is None:
             return _NO_CONSTRAINT_KEYWORDS
@@ -1945,7 +1946,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return frozenset().union(
             NUMBER_KEYWORDS if self._accepts_number_constraints(obj, types) else _NO_CONSTRAINT_KEYWORDS,
             _DECLARED_STRING_CONSTRAINT_KEYWORDS if "string" in types else _NO_CONSTRAINT_KEYWORDS,
-            ARRAY_KEYWORDS if "array" in types else _NO_CONSTRAINT_KEYWORDS,
+            SEQUENCE_KEYWORDS if "array" in types else _NO_CONSTRAINT_KEYWORDS,
         )
 
     def _get_constraint_values(self, obj: JsonSchemaObject, data_type: DataType | None = None) -> dict[str, Any]:

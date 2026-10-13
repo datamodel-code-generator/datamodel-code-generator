@@ -166,14 +166,14 @@ They follow the same two cases as number keywords: a schema type `string` takes 
 `array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
 without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
 "pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
-`maxItems` as its length bounds.
+`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
 
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|
 | `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
 | `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
 | `conbytes`, `EmailStr`, `SecretStr` | `minLength`, `maxLength` | none |
-| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems` | `minItems`, `maxItems` |
+| `list`, `set`, `frozenset`, `tuple`, `deque` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength` |
 | a type the generator does not know or a model that the schema references | all of them | all of them |
 | any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts | none | none |
 
@@ -184,7 +184,7 @@ without `type` is written as `Any`, which takes none of them, so `{"minLength": 
     "code": {"type": "string", "minLength": 2},
     "any": {"minLength": 2},
     "count": {"type": "integer", "pattern": "^1"},
-    "tags": {"items": {"type": "string"}, "minItems": 1, "minLength": 3}
+    "tags": {"items": {"type": "string"}, "minItems": 1, "pattern": "^a"}
   }
 }
 ```

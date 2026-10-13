@@ -24,6 +24,14 @@
       },
       "minItems": 1,
       "minLength": 3
+    },
+    "array_min_length": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minLength": 2,
+      "maxLength": 4
     }
   }
 }
