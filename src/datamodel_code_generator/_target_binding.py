@@ -100,7 +100,7 @@ from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchema
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
-from datamodel_code_generator.types import DataType
+from datamodel_code_generator.types import DataType, Types
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 FieldKind: TypeAlias = Literal[
@@ -141,6 +141,7 @@ _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
+_TEXT_MEDIA: Final = frozenset({"json", "form"})
 _HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
     "response_header",
     "request_encoding_header",
@@ -366,7 +367,16 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._callback_origin: _Declaration | None = None
         self._walked_schemas: list[tuple[int, _Declaration, YamlValue] | None] = []
         super().__init__(source, config=config)
-        self._reader = _Reader(self._api_documents, self.schema_locations, versions=[])
+        self._reader = _Reader(self._api_documents, self.schema_locations, versions=[], binary=self._binary_formats())
+
+    def _binary_formats(self) -> frozenset[str]:
+        """Return the string formats the models type as raw bytes, as `--type-mappings` leaves or makes them."""
+        return frozenset(
+            found
+            for found in ("binary", *(format_ for type_, format_ in self.type_mappings if type_ == "string"))
+            if self._get_type_with_mappings("string", found) == Types.binary
+            and not self._is_base64_encoded_binary_mapping("string", found)
+        )
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
         """Record the declaration a reference object resolves to."""
@@ -654,6 +664,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.copies.clear()
         self.schema_records.clear()
         self.schema_locations.clear()
+        self._reader.binaries.clear()
         self.free_schemas.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
@@ -697,21 +708,29 @@ _Locate: TypeAlias = "Callable[[_Declaration], SourceLocation]"
 
 @dataclass(frozen=True, slots=True)
 class _PartsRecord:
-    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's."""
+    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's.
+
+    `binary` is where the first raw binary string sits inside a part that holds no files, which carries it as text.
+    """
 
     object: bool
     members: tuple[tuple[SourceLocation, PartSchema], ...]
     extra: PartSchema | Literal["closed"] | None
+    binary: SourceLocation | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class _SchemaRecord:
-    """What the walk recorded of an acquired schema that its model types do not say."""
+    """What the walk recorded of an acquired schema that its model types do not say.
+
+    `binary` is where the first raw binary string sits that the schema's values carry as text.
+    """
 
     default: LiteralScalar | None
     keywords: tuple[tuple[str, FrozenLiteral], ...]
     parts: _PartsRecord | None
     encoding: EncodingFacts | None
+    binary: SourceLocation | None = None
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -2237,10 +2256,13 @@ class _Reader(_SchemaLocations):
         nodes: dict[_Declaration, _SchemaNode],
         *,
         versions: list[str],
+        binary: frozenset[str],
     ) -> None:
         super().__init__(nodes, documents)
         self.loaded = documents
         self.versions = versions
+        self.formats = binary
+        self.binaries: dict[_Declaration, _Declaration | None] = {}
 
     @property
     def legacy(self) -> bool:
@@ -2288,15 +2310,23 @@ class _Reader(_SchemaLocations):
         parameter = role == "parameter"
         text = parameter or role in _HEADER_ROLES
         whole = self.whole(declaration)[1] if parameter else {}
+        parts = (
+            self.parts(declaration, locate)
+            if media is not None and media.strip().lower().startswith("multipart/")
+            else None
+        )
+        if text or kind in _TEXT_MEDIA or declaration.tokens[-1] == "itemSchema":
+            binary = None if (found := self.binary(declaration)) is None else locate(found)
+        else:
+            binary = None if parts is None else parts.binary
         return _SchemaRecord(
             _default(whole.get("default")),
             _keywords(whole) if parameter else (),
-            self.parts(declaration, locate)
-            if media is not None and media.strip().lower().startswith("multipart/")
-            else None,
+            parts,
             self.encoding(declaration, locate, members=kind in _FORMS)
             if text or media is None or kind in _FORMS
             else None,
+            binary,
         )
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
@@ -2326,16 +2356,75 @@ class _Reader(_SchemaLocations):
         """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
         location, raw = self.whole(schema)
         declared = raw.get("additionalProperties", True)
+        additional = _child(location, "additionalProperties")
         extra: PartSchema | Literal["closed"] | None = None
         if declared is False:
             extra = "closed"
         elif isinstance(declared, dict) and declared:
-            extra = self.part(_child(location, "additionalProperties"), locate)
+            extra = self.part(additional, locate)
+        members = tuple((found, self.part(found, locate)) for found in self.members(schema).values())
+        others = ((additional, extra),) if isinstance(extra, PartSchema) else ()
+        binary = next(
+            (hit for found, part in (*members, *others) if not part.file and (hit := self.binary(found)) is not None),
+            None,
+        )
         return _PartsRecord(
             _json_types(raw) - _NULL <= _OBJECT,
-            tuple((locate(found), self.part(found, locate)) for found in self.members(schema).values()),
+            tuple((locate(found), part) for found, part in members),
             extra,
+            None if binary is None else locate(binary),
         )
+
+    def binary(self, declaration: _Declaration) -> _Declaration | None:
+        """Return where the first string the models type as raw bytes sits in a schema's values, None without one.
+
+        The walk follows references, combined branches, properties, items and other properties.
+        """
+        return self._binary(declaration, {})[0]
+
+    def _binary(self, declaration: _Declaration, walked: dict[_Declaration, int]) -> tuple[_Declaration | None, int]:
+        """Return the first raw binary string a schema reaches, and the earliest walked schema it leads back to.
+
+        `walked` holds the schemas of the walk whose answer is pending, in their walk order. A schema that finds a
+        string, or leads back to none walked before it, settles itself and every pending schema walked after it,
+        since they all reach it; each schema is walked once.
+        """
+        if declaration in self.binaries:
+            return self.binaries[declaration], len(walked)
+        if (order := walked.get(declaration)) is not None:
+            return None, order
+        order = walked[declaration] = len(walked)
+        low = order
+        raw = _mapping(self.borrow(declaration))
+        format_ = raw.get("format")
+        found = (
+            declaration
+            if isinstance(format_, str) and format_ in self.formats and "string" in _json_types(raw)
+            else None
+        )
+        for child in self._subschemas(declaration, raw):
+            if found is not None:
+                break
+            found, reached = self._binary(child, walked)
+            low = min(low, reached)
+        while (found is not None or low == order) and len(walked) > order:
+            self.binaries[walked.popitem()[0]] = found
+        return found, low
+
+    def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
+        """Yield the schemas a schema's values are made of: its reference's, then its branches', members' and items'."""
+        if isinstance(ref := raw.get("$ref"), str) and (target := self.target(declaration, ref)) is not None:
+            yield target
+        if self.legacy and "$ref" in raw:
+            return
+        for keyword in ("allOf", "anyOf", "oneOf", "prefixItems", "items"):
+            if isinstance(branches := raw.get(keyword), list):
+                yield from (_child(declaration, keyword, str(index)) for index in range(len(branches)))
+        for keyword in ("properties", "patternProperties"):
+            yield from (_child(declaration, keyword, str(name)) for name in _mapping(raw.get(keyword)))
+        for keyword in ("items", "additionalProperties"):
+            if isinstance(raw.get(keyword), dict):
+                yield _child(declaration, keyword)
 
     def encoding(self, schema: _Declaration, locate: _Locate, *, members: bool) -> EncodingFacts:
         """Return how a schema's values are written as text: as one value, as form members, and member by member.
@@ -3278,6 +3367,7 @@ class _Contracts(_SchemaUses):
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
+                binary=record.binary,
             )
         return uses
 
@@ -3409,6 +3499,7 @@ class _Contracts(_SchemaUses):
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
+                binary=record.binary,
             )
             schemas = (use,)
         children = self.media(

@@ -10,7 +10,7 @@ from typing import Protocol
 
 import strict_basemodel_models
 from fastapi.responses import Response
-from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic import Base64Str, StrictBool, StrictFloat, StrictInt, StrictStr
 
 from ._runtime.server.responses import HTTPResult
 
@@ -36,7 +36,7 @@ class DefaultService(Protocol):
         maybe: StrictInt | None,
         X_Trace: StrictInt | None,
         X_Tag: StrictStr | None,
-        blob: bytes | None,
+        blob: Base64Str | None,
         visits: StrictInt | None,
     ) -> None | HTTPResult[None] | Response:
         """

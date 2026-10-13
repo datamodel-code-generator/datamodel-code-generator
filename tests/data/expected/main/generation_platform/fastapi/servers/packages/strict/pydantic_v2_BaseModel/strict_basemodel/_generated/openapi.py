@@ -147,7 +147,7 @@ _TEXT = (
     '      "in": "query",\n'
     '      "schema": {\n'
     '       "type": "string",\n'
-    '       "format": "binary"\n'
+    '       "format": "byte"\n'
     '      }\n'
     '     },\n'
     '     {\n'

@@ -1,0 +1,75 @@
+openapi: "3.0.0"
+info:
+  title: Test API
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    BuiltinTypeFieldNames:
+      type: object
+      properties:
+        bool:
+          type: boolean
+        bytearray:
+          type: string
+          format: byte
+        bytes:
+          type: string
+          format: byte
+        classmethod:
+          type: string
+        complex:
+          type: number
+        dict:
+          type: object
+        enumerate:
+          type: string
+        filter:
+          type: string
+        float:
+          type: number
+          format: float
+        frozenset:
+          type: array
+          items:
+            type: string
+        int:
+          type: integer
+        list:
+          type: array
+          items:
+            type: string
+        map:
+          type: string
+        memoryview:
+          type: string
+        object:
+          type: object
+        property:
+          type: string
+        range:
+          type: string
+        reversed:
+          type: string
+        set:
+          type: array
+          items:
+            type: string
+        slice:
+          type: string
+        staticmethod:
+          type: string
+        str:
+          type: string
+        super:
+          type: string
+        tuple:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+        zip:
+          type: string
+        normal_field:
+          type: string

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field, StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic import Base64Str, Field, StrictBool, StrictFloat, StrictInt, StrictStr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -64,7 +64,7 @@ FieldValuesIdGetHeaderXTraceParameter = TypeAliasType("FieldValuesIdGetHeaderXTr
 FieldValuesIdGetHeaderXTagParameter = TypeAliasType("FieldValuesIdGetHeaderXTagParameter", StrictStr)
 
 
-FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobParameter", bytes)
+FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobParameter", Base64Str)
 
 
 FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVisitsParameter", StrictInt)

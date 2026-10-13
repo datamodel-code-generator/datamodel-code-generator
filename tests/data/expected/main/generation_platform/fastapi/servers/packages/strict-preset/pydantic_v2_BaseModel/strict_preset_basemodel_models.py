@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from pydantic import (
+    Base64Str,
     BaseModel,
     ConfigDict,
     Field,
@@ -71,7 +72,7 @@ type FieldValuesIdGetHeaderXTraceParameter = StrictInt
 type FieldValuesIdGetHeaderXTagParameter = StrictStr
 
 
-type FieldValuesIdGetQueryBlobParameter = bytes
+type FieldValuesIdGetQueryBlobParameter = Base64Str
 
 
 type FieldValuesIdGetCookieVisitsParameter = StrictInt

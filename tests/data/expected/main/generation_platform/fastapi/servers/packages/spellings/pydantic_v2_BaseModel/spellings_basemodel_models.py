@@ -7,7 +7,7 @@ from datetime import date
 from re import compile
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import Base64Str, BaseModel, ConfigDict, Field, RootModel
 from pydantic.types import conint, constr
 from typing_extensions import TypeAliasType
 
@@ -108,7 +108,7 @@ FieldPetsPetIdGetQueryStepParameter = TypeAliasType(
 )
 
 
-FieldPetsPetIdGetQueryRawParameter = TypeAliasType("FieldPetsPetIdGetQueryRawParameter", bytes)
+FieldPetsPetIdGetQueryRawParameter = TypeAliasType("FieldPetsPetIdGetQueryRawParameter", Base64Str)
 
 
 FieldPetsPetIdGetQueryDayParameter = TypeAliasType("FieldPetsPetIdGetQueryDayParameter", date)

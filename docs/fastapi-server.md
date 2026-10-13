@@ -783,6 +783,17 @@ Add the runtime dependencies of server to your project:
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.howto.notice -->
 
+A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream` or `image/png`,
+or a file part of a multipart form can carry. Generation stops with an error that names the operation, the media or
+parameter, and where the schema declares the string, when a binary string, at any depth of its schema and through
+references and `allOf`, would be read or sent as text: inside a JSON or URL-encoded body or response, a multipart part
+that is not a file, an item of a streamed response, or a parameter or header. Pydantic writes `bytes` in JSON as raw
+UTF-8 text, which other clients, such as a generated one with dataclass, TypedDict or msgspec models, write as base64,
+and it cannot write bytes that are not UTF-8. Declare such a value `format: byte`, which every backend sends as the
+same base64 text and Pydantic models hold as a `Base64Str`, or add
+[`--type-mappings string+byte=binary`](cli-reference/typing-customization.md#type-mappings) to hold the decoded bytes
+as a `Base64Bytes`, which also accepts bytes that are not UTF-8.
+
 To stream a large upload or read the body yourself, generate the operation with
 [`--server-body-modes`](cli-reference/target-generation-options.md#server-body-modes) set to `request`, or
 [`--server-body-mode request`](cli-reference/target-generation-options.md#server-body-mode) for every operation: the
@@ -1261,11 +1272,12 @@ JSON past pydantic's limits such as an integer of thousands of digits or deep ne
 `json_invalid`. With pydantic older than 2.14, an enum that has a `null` member accepts any JSON value as that member
 when it is read from JSON, in bodies, JSON parts, and parameters with JSON `content` that adapters read.
 
-A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query, header, or cookie
-parameter, since a parameter carries text: generation stops with an error that names it. A path, query, header, or
-cookie parameter whose schema mixes scalar kinds keeps every member when one of them is a string, such as `int | str`
-for `type: [integer, string]`. Without a string member, such as `type: [integer, boolean]`, and for an enum whose
-values mix kinds, such as `enum: [1, a]`, generation stops with `A parameter value needs one unambiguous scalar kind`.
+A strict bytes type (`--strict-types bytes` with `format: byte` and `--type-mappings string+byte=binary`) cannot be a
+path, query, header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
+A path, query, header, or cookie parameter whose schema mixes scalar kinds keeps every member when one of them is a
+string, such as `int | str` for `type: [integer, string]`. Without a string member, such as `type: [integer, boolean]`,
+and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops with
+`A parameter value needs one unambiguous scalar kind`.
 
 ### Responses
 

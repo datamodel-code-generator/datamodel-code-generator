@@ -9,7 +9,7 @@ from typing import Annotated, Final
 import strict_basemodel_models
 from fastapi import APIRouter, Depends, Header, Query, params
 from fastapi.responses import Response
-from pydantic import StrictStr, StringConstraints
+from pydantic import Base64Str, StrictStr, StringConstraints
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -34,7 +34,7 @@ def _add_get_values(
         label: Annotated[Annotated[str, StringConstraints(min_length=2, strict=True)] | None, Query(alias='label')] = None,
         names: Annotated[list[StrictStr] | None, Query(alias='names')] = None,
         X_Tag: Annotated[StrictStr | None, Header(alias='X-Tag', convert_underscores=False)] = None,
-        blob: Annotated[bytes | None, Query(alias='blob')] = None,
+        blob: Annotated[Base64Str | None, Query(alias='blob')] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
         return dispatch(

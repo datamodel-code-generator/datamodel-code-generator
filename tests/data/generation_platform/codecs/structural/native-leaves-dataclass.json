@@ -7,7 +7,8 @@
     "api"
   ],
   "options": {
-    "use_standard_primitive_types": true
+    "use_standard_primitive_types": true,
+    "type_mappings": ["string+byte=binary"]
   },
   "cases": [
     {

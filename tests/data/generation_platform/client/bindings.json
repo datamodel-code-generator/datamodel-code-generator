@@ -2479,7 +2479,7 @@
     "models": "models"
   },
   "session-builtin-alias": {
-    "source": "openapi/builtin_type_field_names.yaml",
+    "source": "generation_platform/binding/builtin-type-field-names.yaml",
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass",
@@ -2490,6 +2490,9 @@
     "model": {
       "openapi_scopes": [
         "api"
+      ],
+      "type_mappings": [
+        "string+byte=binary"
       ]
     }
   },

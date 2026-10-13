@@ -32,8 +32,8 @@ service DefaultService without its methods: TypeError
 < 422 application/json [{"type": "int_type", "loc": ["query", "maybe"]}]
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["header", "X-Trace"]}]
-> GET /values/5?blob=abc&size=3
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, x_trace=None, x_tag=None, blob=b'abc', visits=None)
+> GET /values/5?blob=YWJj&size=3
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, x_trace=None, x_tag=None, blob='abc', visits=None)
 < 204 - b''
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, x_trace=None, x_tag=None, blob=None, visits=3)
