@@ -107,7 +107,7 @@ from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import chain_as_tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping
 
     from jinja2 import Template
     from typing_extensions import TypedDict, Unpack
@@ -265,6 +265,7 @@ _NO_ALIAS_INTERNAL_KEY = "_no_alias"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
 _COMPILED_PATTERN_KEY = "_compiled_python_pattern"
+_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY = "string_pattern_alias_reached"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
 _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY = "neutralize_root_model_extra_config"
 _MIN_QUOTED_STRING_LENGTH = 2
@@ -1167,25 +1168,10 @@ def assign_forward_reference_fields(model: DataModel, positions: Mapping[str, in
     return changed
 
 
-def _type_alias_fields(model: object) -> list[DataModelFieldBase] | None:
-    """Return the fields of a referenced type alias, which has no config to select a regex engine.
-
-    An alias that reuses another alias has no fields of its own and names that alias as its base.
-    """
-    from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
-
-    while isinstance(model, TypeAliasBase):
-        if model.fields or not model.base_classes or (reference := model.base_classes[0].reference) is None:
-            return model.fields
-        model = reference.source
-    return None
-
-
 def has_lookaround_pattern(
     fields: list[DataModelFieldBase],
     *,
     follow_references: bool = False,
-    aliases_only: bool = False,
     _visited: set[int] | None = None,
 ) -> bool:
     """Check if any field has a regex pattern that needs pydantic's ``python-re`` regex engine.
@@ -1196,7 +1182,6 @@ def has_lookaround_pattern(
     When ``follow_references`` is True, also inspect patterns reachable through referenced
     models (generated type aliases/root types) -- needed for Pydantic v2 dataclasses, where
     alias patterns are compiled with the consuming dataclass's config rather than their own.
-    ``aliases_only`` follows type aliases alone, because every other referenced model has its own config.
     """
     if _visited is None:
         _visited = set()
@@ -1213,14 +1198,56 @@ def has_lookaround_pattern(
             if not follow_references or data_type.reference is None:
                 continue
             source = data_type.reference.source
-            source_fields = _type_alias_fields(source) if aliases_only else getattr(source, "fields", None)
+            source_fields = getattr(source, "fields", None)
             if source_fields is not None and id(source) not in _visited:
                 _visited.add(id(source))
-                if has_lookaround_pattern(
-                    source_fields, follow_references=True, aliases_only=aliases_only, _visited=_visited
-                ):
+                if has_lookaround_pattern(source_fields, follow_references=True, _visited=_visited):
                     return True
     return False
+
+
+def _model_references(model: DataModel, base_classes: Iterable[BaseClassDataType]) -> Iterator[Reference]:
+    """Yield the references that the fields of ``model`` and the given base classes name."""
+    for field in model.fields:
+        for data_type in field.data_type.all_data_types:
+            if (reference := data_type.reference) is not None:
+                yield reference
+    for base_class in base_classes:
+        if (reference := base_class.reference) is not None:
+            yield reference
+
+
+def models_reaching_string_pattern_aliases(models: Iterable[DataModel]) -> set[int]:
+    """Return the ids of the models that reach a type alias keeping a string pattern for the ``python-re`` engine.
+
+    A target that predates compiled patterns keeps string patterns in type aliases, which have no config.
+    Pydantic builds an alias that is named more than once with the config of the outermost model, and a model
+    with the fields of its bases, so a model reaches an alias through any chain of fields and base classes.
+    The result is empty when the target compiles these patterns.
+    """
+    from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
+
+    models = list(models)
+    pending: list[DataModel] = [
+        model
+        for model in models
+        if isinstance(model, TypeAliasBase)
+        and not model_target_supports(model, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM)
+        and has_lookaround_pattern(model.fields)
+    ]
+    if not pending:
+        return set()
+    referrers: defaultdict[int, list[DataModel]] = defaultdict(list)
+    for model in models:
+        for reference in _model_references(model, model.base_classes):
+            referrers[id(reference.source)].append(model)
+    reached = {id(model) for model in pending}
+    while pending:
+        for referrer in referrers.get(id(pending.pop()), ()):
+            if id(referrer) not in reached:
+                reached.add(id(referrer))
+                pending.append(referrer)
+    return reached
 
 
 def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str) -> bool:
@@ -1672,21 +1699,36 @@ class BaseModel(BaseModelBase):
         """Select Python's regex engine for lookaround patterns that fields gained after ``__init__``.
 
         Collapsed root models inline their patterns; a config that already names an engine is kept.
-        A target that predates compiled patterns keeps string patterns in type aliases, which then
-        take the engine from each model that uses them.
         """
-        if not has_lookaround_pattern(
-            self.fields,
-            follow_references=not model_target_supports(self, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM),
-            aliases_only=True,
-        ):
+        if has_lookaround_pattern(self.fields):
+            self._select_python_regex_engine()
+
+    @classmethod
+    def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
+        """Select Python's regex engine in every model that reaches a string pattern type alias.
+
+        A model inherits the config of all its bases, so only the references of its own fields count.
+        """
+        if not (reached := models_reaching_string_pattern_aliases(models)):
             return
+        for model in models:
+            if isinstance(model, cls) and any(
+                id(reference.source) in reached for reference in _model_references(model, ())
+            ):
+                model._keep_string_pattern_aliases_out_of_bases()  # noqa: SLF001
+                model._select_python_regex_engine()  # noqa: SLF001
+
+    def _select_python_regex_engine(self) -> None:
+        """Set ``regex_engine`` unless the config already names an engine."""
         config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
         if "regex_engine" in config_parameters:
             return
         config_parameters["regex_engine"] = '"python-re"'
         self._set_config(config_parameters)
         self.invalidate_render_caches()
+
+    def _keep_string_pattern_aliases_out_of_bases(self) -> None:
+        """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
     def _set_config(self, config_parameters: dict[str, Any]) -> None:
         """Store the ConfigDict rendered as ``model_config``."""

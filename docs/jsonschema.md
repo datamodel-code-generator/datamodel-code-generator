@@ -228,7 +228,7 @@ the pattern. The decision depends only on the pattern text and `--target-python-
 the installed pydantic-core or on the Python running the generator, and it is the same for every
 `--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
 whatever the target. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
-with `--target-pydantic-version 2`, every model that uses the alias selects the engine (see
+with `--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 
 | Pattern syntax | Example | Generated model |

@@ -12,6 +12,7 @@ from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
     _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY,
+    _STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY,
     BaseModel,
     _config_dict_items,
     _safe_config_dict_items,
@@ -230,6 +231,12 @@ class RootModel(BaseModel):
         self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)
         self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
         self.clear_imports_cache()
+
+    def _keep_string_pattern_aliases_out_of_bases(self) -> None:
+        """Write ``Any`` in the generic: Pydantic builds it without this model's config, and aliases stay named."""
+        self._set_internal_template_data(key=_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY, value=True)
+        self._additional_imports.append(IMPORT_ANY)
+        self.invalidate_render_caches()
 
     def add_sequence_interface(self, item_type: str, slice_type: str) -> None:
         """Add sequence interface helpers that delegate to the wrapped root value."""
