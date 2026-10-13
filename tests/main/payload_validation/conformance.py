@@ -171,6 +171,10 @@ PYDANTIC_V2_DATACLASS_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/field_name_shadows_class_name.json": (
         "pydantic dataclass validation resolves a generated field/type name collision to the field value"
     ),
+    "jsonschema/type_alias_annotated/shadowed_imports.json": (
+        "pydantic Decimal multipleOf validation fails on schema-valid numbers whose quotient exceeds the default "
+        "28-digit Decimal precision, such as 2.5e+27 for multipleOf 0.25"
+    ),
     "openapi/enum_models.yaml::components.schemas.nestedNullableEnum": (
         "pydantic dataclass schema construction warns for defaults attached to nullable enum aliases"
     ),

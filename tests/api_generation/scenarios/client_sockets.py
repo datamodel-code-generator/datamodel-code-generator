@@ -735,6 +735,19 @@ def _trusted() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def _refusing_url() -> Iterator[str]:
+    """Yield a URL whose port no socket listens on, held by a connected socket so no other server takes it meanwhile.
+
+    A port held by a socket bound without listening is no refusal on macOS, which drops the SYN until the connect
+    times out; with no listening socket and no unconnected one bound to the port, every platform refuses at once.
+    """
+    with socket.create_server(("127.0.0.1", 0)) as listener, socket.socket() as holder:
+        holder.bind(("127.0.0.1", 0))
+        holder.connect(listener.getsockname())
+        yield f"https://127.0.0.1:{holder.getsockname()[1]}"
+
+
 def _client_close(harness: _Harness) -> None:
     """Close a client with sessions open: each session closes first, as its own close does, then the HTTP client."""
     lines, server = harness.lines, harness.server
@@ -825,9 +838,7 @@ def _handshakes(harness: _Harness) -> None:
         finally:
             peer.stop()
     _deadline_open(harness, once)
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        url = f"https://127.0.0.1:{probe.getsockname()[1]}"
+    with _refusing_url() as url:
         for retry in (1, 0):
             with harness.api(url) as api:
                 record(
@@ -914,9 +925,7 @@ async def _messages(session: Any) -> list[object]:
 async def _async_refused(harness: _Harness) -> None:
     """Retry an asyncio handshake refused before sending, within its session budget."""
     lines = harness.lines
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        url = f"https://127.0.0.1:{probe.getsockname()[1]}"
+    with _refusing_url() as url:
         async with harness.async_api(url) as api:
             await aconnected(lines, "async refused connection", api.protocols.feed.text.connect)
 
