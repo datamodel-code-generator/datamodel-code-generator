@@ -170,7 +170,7 @@ _DEFERRED_INHERITED_CLASS_KEY: Final = "_deferred_inherited_class"
 _DEFERRED_INHERITED_FIELD_KEY: Final = "_deferred_inherited_field"
 _DEFERRED_INHERITED_TYPE_KEY: Final = "_deferred_inherited_type"
 _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
-_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY: Final = "_type_dependent_number_constraints"
+_TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
 _SOURCE_REFERENCE_PATH_KEY: Final = "_source_reference_path"
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
@@ -417,7 +417,10 @@ def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bo
 
 
 def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
-    """Allocate aliases only where a property hides an emitted expression name."""
+    """Allocate aliases only where a property hides an emitted expression name.
+
+    Type aliases sit at module scope, so an import they name keeps its name beside the alias.
+    """
     field_names = {field.name for model in models for field in model.fields if field.name is not None}
     shadowable_imports = {
         effective_name: (from_, name)
@@ -436,6 +439,12 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
     if not collisions:
         return
     reserved_names.update(imports.get_effective_name(from_, name) for from_, names in imports.items() for name in names)
+    type_alias_imports = {
+        (import_.from_, import_.import_)
+        for model in models
+        if isinstance(model, TypeAliasBase)
+        for import_ in model.imports
+    }
     bindings: dict[str, str] = {}
     for name, (from_, imported_name) in shadowable_imports.items():
         if name not in collisions:
@@ -446,14 +455,16 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
             alias = f"{name}_aliased_{suffix}"
             suffix += 1
         reserved_names.add(alias)
-        aliased_import = Import(from_=from_, import_=imported_name, alias=alias)
+        keep_unaliased = (from_, imported_name) in type_alias_imports
+        aliased_import = Import(from_=from_, import_=imported_name, alias=alias, keep_unaliased=keep_unaliased)
         bindings[name] = alias
-        if from_ == "builtins":
+        if from_ == "builtins" or keep_unaliased:
             imports.append(aliased_import)
         else:
             imports.apply_alias(aliased_import)
     for model in models:
-        model.set_field_name_bindings(bindings)
+        if not isinstance(model, TypeAliasBase):
+            model.set_field_name_bindings(bindings)
 
 
 def _expand_export_module_path(module: ModulePath) -> ModulePath:
@@ -4266,11 +4277,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 root_type_field.constraints, model_field.constraints
                             )
                             if (
-                                number_constraints := root_type_field.__dict__.get(
-                                    _TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY
+                                type_dependent_constraints := root_type_field.__dict__.get(
+                                    _TYPE_DEPENDENT_CONSTRAINTS_KEY
                                 )
                             ) is not None:
-                                model_field.__dict__[_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY] = number_constraints
+                                model_field.__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent_constraints
 
                         replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                             data_type,
@@ -5256,22 +5267,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 model.clear_imports_cache()
 
     def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
-        """Apply override to entire field's data_type, with number constraints only when the new type takes them."""
+        """Apply override to entire field's data_type, keeping type-dependent constraints that the new type takes."""
         data_type = deepcopy(field.data_type)
         data_type.import_ = override_import
         data_type.alias = override_import.import_
-        if (number_constraints := field.__dict__.get(_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY)) is not None:
+        if (type_dependent_constraints := field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY)) is not None:
             constraints = field.constraints
             is_model = isinstance(constraints, ConstraintsBase)
             values = {
                 key: value
                 for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
-                if value is not None and key not in number_constraints
+                if value is not None and key not in type_dependent_constraints
             }
-            keywords = self.data_type_manager.type_number_constraint_keywords(
+            keywords = self.data_type_manager.type_constraint_keywords(
                 f"{override_import.from_}.{override_import.import_}"
             )
-            values.update({key: value for key, value in number_constraints.items() if key in keywords})
+            values.update({key: value for key, value in type_dependent_constraints.items() if key in keywords})
             field.constraints = type(constraints).model_validate(values) if is_model else values
         self.generation_store.replace_field_type(field, data_type)
         self.generation_store.detach_data_type_ref(field.data_type)

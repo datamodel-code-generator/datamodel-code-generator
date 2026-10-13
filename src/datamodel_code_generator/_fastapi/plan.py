@@ -24,6 +24,7 @@ from datamodel_code_generator._fastapi.routes import (
     placeholders,
     route_path,
 )
+from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import (
     NO_SCALAR_KIND,
     STYLED,
@@ -218,7 +219,9 @@ class MediaSpec:
 
     A form an adapter reads comes with the plans of its members: a member is read as text in its field's kind, or,
     as a multipart member without one, as JSON. `additional` reads the properties the form's schema types without
-    declaring them, when that is not as the text they come as, which any other member is.
+    declaring them, when that is not as the text they come as, which any other member is. `extras` says JSON whose
+    type reaches a Pydantic dataclass that allows extra members, which a response writes through the runtime's
+    serializer, as Pydantic's own writes none.
     """
 
     media_type: str
@@ -228,6 +231,7 @@ class MediaSpec:
     fields: tuple[FieldPlan, ...] = ()
     json_parts: tuple[JsonPartSpec, ...] = ()
     additional: FieldPlan | JsonPartSpec | None = None
+    extras: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -366,8 +370,12 @@ class OperationSpec:
 
     @property
     def native_primary(self) -> bool:
-        """Return whether FastAPI's response_model sends bare primary values."""
-        return self.primary is not None and self.primary.decision.transport == "fastapi_native"
+        """Return whether FastAPI's response_model sends bare primary values, which would leave out extra members."""
+        return (
+            (primary := self.primary) is not None
+            and primary.decision.transport == "fastapi_native"
+            and not (primary.media is not None and primary.media.extras)
+        )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -543,6 +551,7 @@ class Planner:  # noqa: PLR0904
             for member in reversed(request.batch.fields)
             if member.model_facts is not None
         }
+        self.extras = extras_symbols(self.symbols, self.members)
         self.parameter_plans = parameter_plans(wire)
         self.scheme_declarations = {
             (declaration.use_site.document, declaration.name): declaration
@@ -1162,13 +1171,19 @@ class Planner:  # noqa: PLR0904
         )
 
     def media(self, declaration: WireDeclaration) -> MediaSpec:
-        """Return one media declaration with its normalized type, kind, and type use."""
+        """Return one media declaration with its normalized type, kind, type use, and whether it keeps extras."""
         media_type = normalize_media_type(declaration.name or "")
+        kind = media_kind(media_type)
+        use = self.use(declaration.schemas)
         return MediaSpec(
             media_type=media_type,
-            kind=media_kind(media_type),
-            use=self.use(declaration.schemas),
+            kind=kind,
+            use=use,
             declaration=declaration,
+            extras=kind == "json"
+            and use is not None
+            and use.type is not None
+            and not self.extras.isdisjoint(named_symbols(use.type)),
         )
 
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:

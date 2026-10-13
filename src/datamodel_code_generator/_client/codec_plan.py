@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._target_contract import (
@@ -101,6 +102,8 @@ class CodecRuntime:
         return tuple(f"model_codecs/{name}.py" for name in (*self.imports, self.module))
 
 
+EXTRAS: Final = "extras_serializer"
+EXTRAS_MODULE: Final = "pydantic_extras"
 CODEC_RUNTIMES: Final[dict[CodecBackend, CodecRuntime]] = {
     "pydantic_v2.BaseModel": CodecRuntime("pydantic_models", "PydanticCodec", ("pydantic_adapters",)),
     "pydantic_v2.dataclass": CodecRuntime("pydantic_dataclasses", "PydanticDataclassCodec", ("pydantic_adapters",)),
@@ -168,11 +171,16 @@ class Model:
 
 @dataclass(frozen=True, slots=True)
 class CodecUse:
-    """One directional use's acquired native type and optional stdlib conversion."""
+    """One directional use's acquired native type and optional stdlib conversion.
+
+    `extras` says the type reaches a Pydantic dataclass that allows extra members, which its codec writes through the
+    runtime's serializer, as Pydantic's own writes none.
+    """
 
     use: TypeUseId
     type: TypeView
     shape: Shape = None
+    extras: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,6 +201,11 @@ class ClientCodecs:
     def runtime(self) -> CodecRuntime:
         """Return the codec runtime of the package's backend."""
         return CODEC_RUNTIMES[self.backend]
+
+    @property
+    def extras(self) -> bool:
+        """Return whether a codec writes the extra members of Pydantic dataclasses."""
+        return any(item.extras for item in self.uses)
 
 
 def _name(value: TypeView) -> str | None:
@@ -418,6 +431,7 @@ def plan_client_codecs(  # ruff: ignore[too-many-arguments]
     A use whose type `names` cannot import in a generated module is reported instead.
     """
     planner = _Planner(backend, facts)
+    extras = extras_symbols(facts.symbols, facts.members)
     planned = []
     for use in batch.type_uses:
         if use.id not in uses or use.id.direction == "neutral" or use.schema is None:
@@ -436,7 +450,7 @@ def plan_client_codecs(  # ruff: ignore[too-many-arguments]
             )
             continue
         shape = planner.shape(use.type, use.schema) if CODEC_RUNTIMES[backend].mapped else None
-        planned.append(CodecUse(use.id, use.type, shape))
+        planned.append(CodecUse(use.id, use.type, shape, not extras.isdisjoint(named_symbols(use.type))))
     return ClientCodecs(
         tuple(planned),
         tuple(planner.models[key] for key in sorted(planner.models)),

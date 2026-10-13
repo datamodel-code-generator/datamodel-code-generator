@@ -33,7 +33,8 @@ model_codecs/msgspec_structs.py: .media, __future__, collections.abc, msgspec, m
 model_codecs/parameter_reads.py: .errors, .media, .parameters, .unset, __future__, collections.abc, dataclasses, itertools, re, typing
 model_codecs/parameters.py: .errors, .media, __future__, collections.abc, dataclasses, re, typing, urllib.parse
 model_codecs/pydantic_adapters.py: .media, __future__, collections.abc, pydantic, pydantic_core, typing, typing_extensions
-model_codecs/pydantic_dataclasses.py: .pydantic_adapters, __future__, typing_extensions
+model_codecs/pydantic_dataclasses.py: .pydantic_adapters, __future__, collections.abc, pydantic, pydantic_core, typing, typing_extensions
+model_codecs/pydantic_extras.py: __future__, functools, pydantic, pydantic_core, typing
 model_codecs/pydantic_models.py: .pydantic_adapters, __future__, pydantic, typing_extensions
 model_codecs/stdlib_dataclasses.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
 model_codecs/stdlib_typeddicts.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid

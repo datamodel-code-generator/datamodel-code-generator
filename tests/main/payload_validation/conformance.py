@@ -201,26 +201,6 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         ),
         "msgspec conversion rejects unions containing multiple string-like key types",
     ),
-    **dict.fromkeys(
-        (
-            "jsonschema/compound_property_names/nonstring_complex_patterns.json",
-            "jsonschema/compound_property_names/nonstring_length.json",
-            "jsonschema/compound_property_names/nonstring_literal.json",
-            "jsonschema/compound_property_names/nonstring_lookbehind.json",
-            "jsonschema/compound_property_names/unconstrained_oneof.json",
-            "jsonschema/compound_property_names/unrestricted_type_union.json",
-            "jsonschema/compound_property_names/unsupported_mixed.json",
-            "jsonschema/compound_property_names/unsupported_nonstring.json",
-            "jsonschema/compound_property_names/unsupported_nonstring_union.json",
-            "jsonschema/compound_property_names/unsupported_one_constrained.json",
-            "jsonschema/compound_property_names/unsupported_oneof.json",
-        ),
-        "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
-    ),
-    **dict.fromkeys(
-        ("jsonschema/root_alias_constraints/null_pattern.json",),
-        "msgspec conversion rejects constraint metadata on generated null-only aliases",
-    ),
     "jsonschema/type_union_constraints/enum_field.json": (
         "msgspec conversion only supports Enum classes with homogeneous str or int values"
     ),

@@ -105,7 +105,11 @@
     "typing-nocov-e2e:ubuntu-24.04:3/5:",
     "typing-nocov-e2e:ubuntu-24.04:4/5:",
     "typing-nocov-e2e:ubuntu-24.04:5/5:",
-    "typing-pydantic214-nocov-e2e:ubuntu-24.04:/:"
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:1/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:2/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:3/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:4/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:5/5:"
   ],
   "coverage_count": 42,
   "coverage_needs_only_producers": true,
@@ -126,7 +130,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 97,
+  "job_count": 101,
   "permissions": {
     "contents": "read"
   },

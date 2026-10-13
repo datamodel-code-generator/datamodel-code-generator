@@ -418,6 +418,32 @@ jobs:
             name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
             os: ubuntu-24.04
             coverage: false
+            shard: 1
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 2
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 3
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 4
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 5
+            shard_total: 5
     runs-on: ${{ matrix.os }}
     env: *test-http-backends-env
     steps: *test-http-backends-steps

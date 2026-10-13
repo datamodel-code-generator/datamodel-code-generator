@@ -134,6 +134,8 @@ _SCHEME_FACTS: Final[dict[SchemeKind, tuple[str, ...]]] = {
 
 _SERVER_RUNTIME: Final = ("server/application.py", "server/openapi.py", "server/responses.py")
 _SECURITY_RUNTIME: Final = ("server/security.py",)
+_EXTRAS_MODULE: Final = "_runtime.model_codecs.pydantic_extras"
+_EXTRAS_RUNTIME: Final = ("model_codecs/pydantic_extras.py",)
 _INPUT_RUNTIME: Final = (
     "model_codecs/errors.py",
     "model_codecs/media.py",
@@ -192,6 +194,18 @@ def _reads_inputs(spec: OperationSpec) -> bool:
     """Return whether an operation reads an input through an adapter."""
     return (spec.body is not None and spec.body.decision.transport == "adapter") or any(
         argument.kind == "adapter" for argument in spec.arguments
+    )
+
+
+def _keeps_extras(spec: OperationSpec) -> bool:
+    """Return whether an operation's response media, or chosen primary media, writes extras of Pydantic dataclasses."""
+    primary = spec.primary
+    return any(
+        media is not None and media.extras and _body_status(spec, status)
+        for status, media in (
+            *((response.status, default_media(response)) for response in spec.responses),
+            *(((str(primary.status), primary.media),) if primary is not None else ()),
+        )
     )
 
 
@@ -598,10 +612,14 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
         )
 
     def runtime(self) -> Iterator[RenderedFile]:
-        """Copy the server runtime, with security for schemes and the request adapters when an operation uses them."""
+        """Copy the server runtime, with security for schemes and the request adapters when an operation uses them.
+
+        The serializer that writes the extra members of Pydantic dataclasses comes when a response writes them.
+        """
         security = _SECURITY_RUNTIME if self.plan.schemes else ()
         inputs = _INPUT_RUNTIME if any(map(_reads_inputs, self.plan.operations)) else ()
-        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs)):
+        extras = _EXTRAS_RUNTIME if any(map(_keeps_extras, self.plan.operations)) else ()
+        for path, text in runtime_sources((*_SERVER_RUNTIME, *security, *inputs, *extras)):
             yield RenderedFile(path=path, kind="runtime", text=text, verbatim=True)
 
     def application(self) -> Templated:
@@ -1021,6 +1039,8 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
             entries.append(f"charset={encoding!r}")
         if media.kind != "binary" and media.use is not None and media.use.type is not None:
             entries.append(f"model={module.annotation(media.use.type)}")
+        if media.extras:
+            entries.append(f"dump={module.local(_EXTRAS_MODULE, 'extras_json')}")
         if null:
             entries.append("null=True")
     return f"{module.local('_runtime.server.responses', 'Declared')}({', '.join(entries)})"
@@ -1189,7 +1209,12 @@ def _registration(module: Module, spec: OperationSpec) -> Registration:
     facts = {name: getattr(value, "value", None) for name, value in contract.facts}
     primary = spec.primary
     model = response_class = ""
-    if spec.native_primary and primary is not None and primary.media is not None and primary.media.use is not None:
+    if (
+        primary is not None
+        and primary.decision.transport == "fastapi_native"
+        and primary.media is not None
+        and primary.media.use is not None
+    ):
         assert primary.media.use.type is not None
         model = module.annotation(primary.media.use.type)
     else:

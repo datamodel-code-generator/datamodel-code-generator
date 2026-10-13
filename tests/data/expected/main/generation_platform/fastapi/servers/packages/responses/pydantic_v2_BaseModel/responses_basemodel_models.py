@@ -5,8 +5,15 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, ConfigDict, RootModel
 from typing_extensions import TypeAliasType
+
+
+class Tally(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    total: int | None = None
 
 
 class Pet(BaseModel):

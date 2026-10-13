@@ -8,8 +8,8 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib_typeddicts import Model, TypedDictCodec
+from .._runtime.model_codecs.stdlib_typeddicts import TypedDictCodec
 
 
-codec_0: Final[TypedDictCodec[models.FieldItemsPostResponseItem]] = TypedDictCodec(None, MODELS)
+codec_0: Final[TypedDictCodec[models.FieldItemsPostResponseItem]] = TypedDictCodec(None, {})
 """Codec of /paths/~1items/post response_body (response 200 application/json)."""

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
-from collections.abc import Coroutine, Mapping
+from collections.abc import Callable, Coroutine, Mapping
 from dataclasses import dataclass, field
 from typing import Final, Generic, Literal, cast
 
@@ -37,6 +37,7 @@ class Declared:
     """One declared response: its default media type with that type's kind and charset, and the model its body takes.
 
     `null` says the body is JSON of a type that accepts null, so the response sends None as `null` instead of no body.
+    `dump` writes a JSON body by the model's adapter, for a model whose adapter's own dump leaves out what it holds.
     The model's adapter is built when the response first sends a body; a concurrent first send builds an equal one.
     """
 
@@ -45,6 +46,7 @@ class Declared:
     charset: str = "utf-8"
     model: object = None
     null: bool = False
+    dump: Callable[[TypeAdapter[object], object], bytes] | None = None
     _adapter: TypeAdapter[object] | None = field(default=None, init=False, repr=False, compare=False)
 
     def adapter(self) -> TypeAdapter[object] | None:
@@ -127,7 +129,9 @@ def _content(declared: Declared, body: object) -> bytes:
         except ValidationError as error:
             raise ResponseValidationError(error.errors(include_url=False)) from error
         if json_media:
-            return adapter.dump_json(value, by_alias=True, exclude_unset=True)
+            if (dump := declared.dump) is None:
+                return adapter.dump_json(value, by_alias=True, exclude_unset=True)
+            return dump(adapter, value)
         payload = adapter.dump_python(value, by_alias=True)
     if isinstance(payload, bytes):
         return payload

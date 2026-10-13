@@ -5252,6 +5252,46 @@ def test_main_number_constraints_on_non_numbers(output_file: Path, expected_file
     )
 
 
+_OTHER_TYPE_CONSTRAINT_CASES: list[tuple[str, list[str]]] = [
+    ("default.py", []),
+    ("field_constraints.py", ["--field-constraints"]),
+    ("use_annotated.py", ["--use-annotated"]),
+    ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+    ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+]
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("source", "expected_file", "extra_args"),
+    [
+        *((source, *case) for source in ("string", "array") for case in _OTHER_TYPE_CONSTRAINT_CASES),
+        (
+            "string",
+            "type_overrides.py",
+            [
+                "--field-constraints",
+                "--type-overrides",
+                json.dumps({"StringConstraintsOnOtherTypes.overridden_min_length": "builtins.str"}),
+            ],
+        ),
+    ],
+)
+def test_main_string_and_array_constraints_on_other_types(
+    output_file: Path, source: str, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test string and array keywords constrain only fields whose schema or emitted types hold them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{source}_constraints_on_other_types.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{source}_constraints_on_other_types/{expected_file}",
+        extra_args=extra_args,
+        force_exec_validation=True,
+    )
+
+
 def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
     """Test number keywords still constrain formats that --type-mappings maps to a number or a duration."""
     run_main_and_assert(
@@ -9243,18 +9283,17 @@ def test_main_jsonschema_property_names_additional_properties_schema_with_proper
         force_exec_validation=True,
     )
     # Pydantic validates constrained typed-extra keys only in this supported range.
-    if not version.parse("2.11") <= version.parse(PYDANTIC_VERSION) < version.parse("2.13"):
-        return
-    assert_generated_model_json_validation(
-        output_file,
-        module_name="property_names_additional_properties_schema_with_properties",
-        model_name="KnownAndNamedExtra",
-        valid_json='{"name":"known","valid_key":1}',
-        invalid_json='{"name":"known","Invalid":1}',
-        expected_error_type="string_pattern_mismatch",
-        expected_attribute_path=("__pydantic_extra__",),
-        expected_attribute_value={"valid_key": 1},
-    )
+    if version.parse("2.11") <= version.parse(PYDANTIC_VERSION) < version.parse("2.13"):  # pragma: no cover
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="property_names_additional_properties_schema_with_properties",
+            model_name="KnownAndNamedExtra",
+            valid_json='{"name":"known","valid_key":1}',
+            invalid_json='{"name":"known","Invalid":1}',
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=("__pydantic_extra__",),
+            expected_attribute_value={"valid_key": 1},
+        )
 
 
 def test_main_jsonschema_property_names_true_additional_properties_schema_with_properties(output_file: Path) -> None:

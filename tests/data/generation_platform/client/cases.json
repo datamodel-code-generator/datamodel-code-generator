@@ -4308,6 +4308,15 @@
       "signature_style": "unpack"
     }
   },
+  "modelless-bodies": {
+    "input": "modelless-bodies.yaml",
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "config": {}
+  },
   "caching": {
     "input": "caching.yaml",
     "references": [

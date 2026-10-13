@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import Final
 from uuid import UUID
 
-from .._runtime.model_codecs.stdlib_typeddicts import Model, TypedDictCodec
+from .._runtime.model_codecs.stdlib_typeddicts import TypedDictCodec
 
 
-codec_0: Final[TypedDictCodec[UUID]] = TypedDictCodec(UUID, MODELS)
+codec_0: Final[TypedDictCodec[UUID]] = TypedDictCodec(UUID, {})
 """Codec of /paths/~1native/post request_body (request application/json)."""

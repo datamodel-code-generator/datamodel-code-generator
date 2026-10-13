@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StringConstraintsOnOtherTypes",
+  "type": "object",
+  "properties": {
+    "untyped_min_length": {
+      "minLength": 2
+    },
+    "untyped_pattern": {
+      "pattern": "^a"
+    },
+    "untyped_mixed": {
+      "minimum": 5,
+      "maxLength": 3,
+      "pattern": "^b"
+    },
+    "integer_min_length": {
+      "type": "integer",
+      "minLength": 2
+    },
+    "integer_pattern": {
+      "type": "integer",
+      "pattern": "^1"
+    },
+    "boolean_max_length": {
+      "type": "boolean",
+      "maxLength": 2
+    },
+    "nullable_integer_max_length": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maxLength": 2
+    },
+    "array_length": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "pattern": "^a",
+      "maxItems": 4
+    },
+    "string_or_integer_min_length": {
+      "type": [
+        "string",
+        "integer"
+      ],
+      "minLength": 2
+    },
+    "map_or_null_min_length": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "minLength": 2
+    },
+    "overridden_min_length": {
+      "minLength": 2
+    }
+  }
+}
