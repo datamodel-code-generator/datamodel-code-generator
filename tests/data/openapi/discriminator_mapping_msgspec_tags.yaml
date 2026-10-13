@@ -14,15 +14,24 @@ components:
         mapping:
           cat: "#/components/schemas/Cat"
           dog: "#/components/schemas/Dog"
-    Animal:
+    Mammal:
       oneOf:
         - $ref: "#/components/schemas/Cat"
-        - $ref: "#/components/schemas/Bird"
+        - $ref: "#/components/schemas/Dog"
       discriminator:
         propertyName: pet-type
         mapping:
-          feline: "#/components/schemas/Cat"
-          bird: "#/components/schemas/Bird"
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Quoted:
+      oneOf:
+        - $ref: "#/components/schemas/Left"
+        - $ref: "#/components/schemas/Right"
+      discriminator:
+        propertyName: "side's\\name"
+        mapping:
+          "l'eft": "#/components/schemas/Left"
+          "r\\ight": "#/components/schemas/Right"
     Owner:
       type: object
       required: [vehicle]
@@ -33,16 +42,6 @@ components:
             - $ref: "#/components/schemas/Bike"
           discriminator:
             propertyName: kind
-        shape:
-          oneOf:
-            - $ref: "#/components/schemas/Circle"
-            - $ref: "#/components/schemas/Square"
-          discriminator:
-            propertyName: shapeType
-            mapping:
-              circle: "#/components/schemas/Circle"
-              round: "#/components/schemas/Circle"
-              square: "#/components/schemas/Square"
     Cat:
       type: object
       required: [pet-type, name]
@@ -59,12 +58,20 @@ components:
           type: string
         name:
           type: string
-    Bird:
+    Left:
       type: object
-      required: [pet-type]
+      required: ["side's\\name"]
       properties:
-        pet-type:
+        "side's\\name":
           type: string
+    Right:
+      type: object
+      required: ["side's\\name", width]
+      properties:
+        "side's\\name":
+          type: string
+        width:
+          type: integer
     Car:
       type: object
       required: [kind, wheels]
@@ -79,19 +86,3 @@ components:
       properties:
         kind:
           type: string
-    Circle:
-      type: object
-      required: [shapeType, radius]
-      properties:
-        shapeType:
-          type: string
-        radius:
-          type: number
-    Square:
-      type: object
-      required: [shapeType, side]
-      properties:
-        shapeType:
-          type: string
-        side:
-          type: number

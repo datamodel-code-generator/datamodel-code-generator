@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import Literal, TypeAlias
+from typing import TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import Struct
 
 
 class Cat(Struct, tag_field='pet-type', tag='cat'):
@@ -16,8 +16,12 @@ class Dog(Struct, tag_field='pet-type', tag='dog'):
     name: str
 
 
-class Bird(Struct, tag_field='pet-type', tag='bird'):
+class Left(Struct, tag_field="side's\\name", tag="l'eft"):
     pass
+
+
+class Right(Struct, tag_field="side's\\name", tag='r\\ight'):
+    width: int
 
 
 class Car(Struct, tag_field='kind', tag='Car'):
@@ -28,21 +32,14 @@ class Bike(Struct, tag_field='kind', tag='Bike'):
     pass
 
 
-class Circle(Struct):
-    shapeType: Literal['circle', 'round']
-    radius: float
-
-
-class Square(Struct, tag_field='shapeType', tag='square'):
-    side: float
-
-
 Pet: TypeAlias = Cat | Dog
 
 
-Animal: TypeAlias = Cat | Bird
+Mammal: TypeAlias = Cat | Dog
+
+
+Quoted: TypeAlias = Left | Right
 
 
 class Owner(Struct):
     vehicle: Car | Bike
-    shape: Circle | Square | UnsetType = UNSET
