@@ -4776,7 +4776,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22petType%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
+        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22pet-type%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
       },
       {
         "method": "GET",
@@ -4788,7 +4788,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+        "url": "/pets/1?pet=%7B%22pet-type%22%3A%22dog%22%7D"
       },
       {
         "method": "GET",
@@ -4927,7 +4927,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22petType%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
+        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22pet-type%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
       },
       {
         "method": "GET",
@@ -4939,7 +4939,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+        "url": "/pets/1?pet=%7B%22pet-type%22%3A%22dog%22%7D"
       },
       {
         "method": "GET",

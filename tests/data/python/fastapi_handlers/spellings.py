@@ -25,7 +25,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     class Pets(server.services.PetsService):
         def list_pets(self, *, invalid: bool | None) -> object:
             calls.append(f"list_pets(invalid={invalid!r})")
-            return [{"petType": "dog", "bark": True}, {"petType": "dog" if invalid else "cat", "name": "Mimi"}]
+            return [{"pet-type": "dog", "bark": True}, {"pet-type": "dog" if invalid else "cat", "name": "Mimi"}]
 
         def get_code(self, *, invalid: bool | None) -> object:
             calls.append(f"get_code(invalid={invalid!r})")
@@ -44,8 +44,8 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_pet(self, **arguments: object) -> object:
             calls.append(f"get_pet({', '.join(f'{key}={_plain(value)!r}' for key, value in arguments.items())})")
             if arguments["petId"] == 1:
-                return {"petType": "cat", "name": "Mimi"}
-            return {"petType": "dog", "bark": True}
+                return {"pet-type": "cat", "name": "Mimi"}
+            return {"pet-type": "dog", "bark": True}
 
     class Fields(server.services.FieldsService):
         def post_field(self, *, body: object) -> object:
