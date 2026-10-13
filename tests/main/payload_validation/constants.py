@@ -425,6 +425,15 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
     "openapi/pattern_lookaround.yaml::components.schemas.info": (
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI lookaround pattern validators"
     ),
+    "jsonschema/rust_unsupported_pattern.json": (
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to backreference and lookaround pattern validators"
+    ),
+    "openapi/pattern_backreference.yaml::components.schemas.Doubled": (
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI backreference pattern validators"
+    ),
+    "jsonschema/type_alias_annotated/shadowed_imports.json": (
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
+    ),
     **dict.fromkeys(
         (
             "jsonschema/type_alias_lookaround/annotated_root.json",
@@ -438,10 +447,14 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
     ),
 }
 PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS = (
+    "jsonschema/collapse_root_models_lookaround.json",
+    "jsonschema/collapse_root_models_lookaround_inheritance.json",
+    "jsonschema/collapse_root_models_lookaround_root.json",
     "jsonschema/lookaround_anyof_nullable.json",
     "jsonschema/lookaround_dict.json",
     "jsonschema/lookaround_union_types.json",
     "jsonschema/nested_lookaround_array.json",
+    "jsonschema/rust_unsupported_pattern.json",
     "jsonschema/schema_validators_runtime_root_cross_module/a.json",
     "jsonschema/type_alias_lookaround/annotated_root.json",
     "jsonschema/type_alias_lookaround/inherited.json",
@@ -450,7 +463,7 @@ PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS = (
     "jsonschema/type_alias_lookaround/tree/schema_a.json",
     "jsonschema/type_alias_lookaround/tree/schema_b.json",
 )
-"""Lookaround aliases a dataclass reaches: the dataclass config selects the engine, so they need Pydantic 2.5."""
+"""Patterns for Python's engine a dataclass reaches: its config selects the engine, so they need Pydantic 2.5."""
 PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
     *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
     "jsonschema/lookaround_mixed_constraints.json",

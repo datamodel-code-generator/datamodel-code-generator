@@ -49,6 +49,9 @@ paths:
           in: path
           required: true
           schema: {type: string}
+        - name: portion
+          in: path
+          schema: {type: string}
       responses:
         '200':
           description: Duplicate headers and media.

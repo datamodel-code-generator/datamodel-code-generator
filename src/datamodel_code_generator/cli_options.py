@@ -23,6 +23,7 @@ from datamodel_code_generator.deprecations import deprecation_message
 from datamodel_code_generator.enums import (
     AllExportsScope,
     DataModelType,
+    InputFileType,
     NamingStrategy,
     ReuseScope,
     TargetPydanticVersion,
@@ -984,6 +985,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             CLIOptionRelation(
                 option="--server-model-package", message="`--generate-server` requires `--server-model-package`."
             ),
+            CLIOptionRelation(
+                option="--input-file-type",
+                value=InputFileType.OpenAPI.value,
+                message="`--generate-server` requires `--input-file-type openapi`.",
+            ),
         ),
         conflicts=(
             CLIOptionRelation(
@@ -1126,6 +1132,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             CLIOptionRelation(option="--client-package", message="`--generate-client` requires `--client-package`."),
             CLIOptionRelation(
                 option="--client-model-package", message="`--generate-client` requires `--client-model-package`."
+            ),
+            CLIOptionRelation(
+                option="--input-file-type",
+                value=InputFileType.OpenAPI.value,
+                message="`--generate-client` requires `--input-file-type openapi`.",
             ),
         ),
         conflicts=(

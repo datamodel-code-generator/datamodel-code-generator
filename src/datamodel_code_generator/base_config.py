@@ -96,10 +96,11 @@ def _selected_target(config: Any) -> tuple[str, str] | None:
     return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
 
 
-def _missing_target_options(config: Any, *, output: bool = True) -> str | None:
-    """Return why the target a config selects cannot run without the options it requires, or None when it can.
+def _target_options_error(config: Any, *, output: bool = True) -> str | None:
+    """Return why the target a config selects cannot run with its options, or None when it can.
 
-    Without `output`, the package directory is not required: a run that writes nothing does not use it.
+    A target needs its required options and an input explicitly typed as OpenAPI. Without `output`, the package
+    directory is not required: a run that writes nothing does not use it.
     """
     if (selected := _selected_target(config)) is None:
         return None
@@ -107,6 +108,8 @@ def _missing_target_options(config: Any, *, output: bool = True) -> str | None:
     required = _TARGET_REQUIRED if output else _TARGET_REQUIRED[1:]
     if missing := [_flag(field) for name in required if getattr(config, field := f"{prefix}{name}") is None]:
         return f"{_flag(selector)} requires {_option_list(missing)}"
+    if (input_file_type := InputFileType(config.input_file_type)) is not InputFileType.OpenAPI:
+        return f"{_flag(selector)} requires --input-file-type openapi, not {input_file_type.value}"
     return None
 
 

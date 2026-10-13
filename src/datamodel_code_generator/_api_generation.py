@@ -199,7 +199,7 @@ def prepare_target(
             option_path="model_config.target_pydantic_version",
             message=f"The {generator.kind} target {needed}",
         )
-    if (problem := _root_problem(input_, effective)) is None:
+    if (problem := _root_problem(input_)) is None:
         return effective
     option_path, message = problem
     raise APIGenerationError((
@@ -216,16 +216,12 @@ def model_requirement(scopes: Iterable[OpenAPIScope] | None, selector: str) -> s
     return f"{selector} requires --openapi-scopes to include api"
 
 
-def _root_problem(input_: _GenerationInput, effective: GenerateConfig) -> tuple[str, str] | None:
-    from datamodel_code_generator.enums import InputFileType  # noqa: PLC0415
-
+def _root_problem(input_: _GenerationInput) -> tuple[str, str] | None:
     match input_:
         case list():
             return "input", "Target generation reads one root document, not a list"
         case Path() if input_.is_dir():
             return "input", "Target generation reads one root document, not a directory"
-        case _ if effective.input_file_type not in {InputFileType.Auto, InputFileType.OpenAPI}:
-            return "model_config.input_file_type", "Target generation reads an OpenAPI document"
     return None
 
 

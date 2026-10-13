@@ -181,6 +181,11 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
             "--generate-client requires --client-package and --client-model-package",
         ),
         ({**SERVER, **CLIENT}, "--generate-server and --generate-client cannot be used together"),
+        ({**SERVER, "input_file_type": "auto"}, "--generate-server requires --input-file-type openapi, not auto"),
+        (
+            {**CLIENT, "input_file_type": InputFileType.JsonSchema},
+            "--generate-client requires --input-file-type openapi, not jsonschema",
+        ),
         ({**SERVER, "openapi_scopes": ["schemas"]}, "--generate-server requires --openapi-scopes to include api"),
         (
             {**SERVER, "output_model_type": "msgspec.Struct"},
@@ -231,6 +236,8 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         "requires-package",
         "client-requires-package",
         "both",
+        "input-file-type",
+        "client-input-file-type",
         "api-scope",
         "backend",
         "target-python",

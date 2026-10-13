@@ -59,7 +59,7 @@
   },
   "inputs": {
     "input": {"text": "inline.yaml"},
-    "model": {"openapi_scopes": ["api"], "input_file_type": "auto"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"check": {"exit": "DIFF", "config": {"server_operation_names": {"urn:dcg:root#/paths/~1items/get": "items"}}}},
       {
@@ -75,7 +75,7 @@
   },
   "validation": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "input_file_type": "auto"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"check": {"exit": "ERROR", "model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
       {"check": {"exit": "DIFF", "model": {"output_model_type": "pydantic_v2.dataclass"}}}
