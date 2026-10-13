@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import Annotated, Any, Final
 
 import nullable_basemodel_models
-from fastapi import APIRouter, Body, Depends, params
+from fastapi import APIRouter, Body, Depends, Form, params
 from fastapi.responses import Response
 
 from .._generated import contract
@@ -426,6 +426,142 @@ def _add_post_draft(
     )
 
 
+def _add_post_note(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_note_handler = checked(
+        default.post_note,
+        'The default.post_note method of POST /notes',
+    )
+
+    def post_note(
+        *,
+        body: Annotated[nullable_basemodel_models.FieldNotesPostRequest | None, Depends(contract.PostNote.BODY)],
+    ) -> object:
+        return dispatch(
+            post_note_handler(
+                body=body,
+            ),
+            contract.PostNote.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/notes',
+        post_note,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postNote',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_note'),
+    )
+
+
+def _add_post_form(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_form_handler = checked(
+        default.post_form,
+        'The default.post_form method of POST /forms',
+    )
+
+    def post_form(
+        *,
+        body: Annotated[nullable_basemodel_models.FieldFormsPostRequest, Form(media_type='application/x-www-form-urlencoded')],
+    ) -> object:
+        return dispatch(
+            post_form_handler(
+                body=body,
+            ),
+            contract.PostForm.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/forms',
+        post_form,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postForm',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_form'),
+    )
+
+
+def _add_upload(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    upload_handler = checked(
+        default.upload,
+        'The default.upload method of POST /uploads',
+    )
+
+    def upload(
+        *,
+        body: Annotated[nullable_basemodel_models.FieldUploadsPostRequest, Depends(contract.Upload.BODY)],
+    ) -> object:
+        return dispatch(
+            upload_handler(
+                body=body,
+            ),
+            contract.Upload.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/uploads',
+        upload,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='upload',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('upload'),
+    )
+
+
+def _add_post_extended(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_extended_handler = checked(
+        default.post_extended,
+        'The default.post_extended method of POST /extended',
+    )
+
+    def post_extended(
+        *,
+        body: Annotated[nullable_basemodel_models.FieldExtendedPostRequest | None, Depends(contract.PostExtended.BODY)],
+    ) -> object:
+        return dispatch(
+            post_extended_handler(
+                body=body,
+            ),
+            contract.PostExtended.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/extended',
+        post_extended,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postExtended',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_extended'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('post_text', _add_post_text),
     ('post_list', _add_post_list),
@@ -439,6 +575,10 @@ LITERAL_ROUTES: Final = (
     ('post_item', _add_post_item),
     ('post_id', _add_post_id),
     ('post_draft', _add_post_draft),
+    ('post_note', _add_post_note),
+    ('post_form', _add_post_form),
+    ('upload', _add_upload),
+    ('post_extended', _add_post_extended),
 )
 TEMPLATED_ROUTES: Final = ()
 

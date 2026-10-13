@@ -1,0 +1,8 @@
+Pet:
+  type: object
+  properties:
+    name:
+      type: string
+Unreferenced:
+  type: string
+  description: Left out of the served document.

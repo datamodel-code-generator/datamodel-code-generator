@@ -1,0 +1,8 @@
+Order:
+  type: object
+  properties:
+    pet:
+      $ref: "../shared/pet.yaml#/Pet"
+Unreferenced:
+  type: object
+  description: Left out of the served document.

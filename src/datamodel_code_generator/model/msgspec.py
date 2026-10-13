@@ -141,6 +141,7 @@ class Struct(DataModel):
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
     REQUIRES_MODEL_LEVEL_KW_ONLY: ClassVar[bool] = True
     SUPPORTS_BOOLEAN_LITERAL: ClassVar[bool] = False
+    SUPPORTS_NULL_ENUM_MEMBER: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
@@ -357,7 +358,7 @@ class Struct(DataModel):
 
     def apply_discriminator_tag(self, field: DataModelFieldBase, field_name: str, value: Any) -> None:
         """Configure msgspec's tag and exclude the discriminator from instance fields."""
-        self.add_base_class_kwarg("tag_field", f"'{field_name}'")
+        self.add_base_class_kwarg("tag_field", repr(field_name))
         self.add_base_class_kwarg("tag", repr(value))
         field.extras["is_classvar"] = True
 

@@ -2066,16 +2066,60 @@ def _get_discriminator_values(
     if require_literal:
         return []
 
-    discriminator_values: list[DiscriminatorValue] = []
-    if mapping:
-        _check_discriminator_mapping_paths(discriminator_model, mapping, discriminator_values)
-        if not discriminator_values:
-            for base_reference in filter(
-                None, (base_class.reference for base_class in discriminator_model.base_classes)
-            ):
-                _check_discriminator_mapping_paths(base_reference, mapping, discriminator_values)
+    return _get_mapping_discriminator_values(discriminator_model, mapping) or [discriminator_model.path.split("/")[-1]]
 
-    return discriminator_values or [discriminator_model.path.split("/")[-1]]
+
+def _get_mapping_discriminator_values(
+    discriminator_model: DataModel, mapping: dict[str, str]
+) -> list[DiscriminatorValue]:
+    """Return the mapping values that select a variant directly or through its base classes."""
+    discriminator_values: list[DiscriminatorValue] = []
+    if not mapping:
+        return discriminator_values
+    _check_discriminator_mapping_paths(discriminator_model, mapping, discriminator_values)
+    if not discriminator_values:
+        for base_reference in filter(None, (base_class.reference for base_class in discriminator_model.base_classes)):
+            _check_discriminator_mapping_paths(base_reference, mapping, discriminator_values)
+    return discriminator_values
+
+
+_DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]
+
+
+def _apply_discriminator_tags(
+    owner: DataModel,
+    tags: list[_DiscriminatorTag],
+    tag_field: str,
+    mapping: dict[str, str],
+    *,
+    can_retain_cache: bool,
+) -> None:
+    """Tag every variant of a union, or none when one of them cannot carry exactly this union's value."""
+    if untaggable := [
+        model.class_name
+        for model, field, value in tags
+        if value is None
+        or any(mapped != value for mapped in _get_mapping_discriminator_values(model, mapping))
+        or any(other is not field and other.extras.get("is_classvar") for other in model.fields)
+    ]:
+        warn(
+            f"Discriminator {tag_field!r} of {owner.class_name} cannot be represented as msgspec tags: "
+            f"{', '.join(untaggable)} cannot take exactly one tag for it; its variants are left untagged.",
+            stacklevel=2,
+        )
+        return
+    for model, field, value in tags:
+        model.apply_discriminator_tag(field, tag_field, value)
+        _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
+
+def _get_mapped_discriminator_tag(
+    values: list[DiscriminatorValue], enum_source: Enum | None
+) -> DiscriminatorValue | None:
+    """Return the wire tag of a variant whose discriminator resolves to exactly one value."""
+    if len(values) != 1:
+        return None
+    return Parser._get_enum_discriminator_literal(enum_source, values[0]) if enum_source else values[0]  # noqa: SLF001
 
 
 def _remove_discriminator(field: DataModelFieldBase) -> None:
@@ -3633,8 +3677,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 field_name, alias = self.model_resolver.get_valid_field_name_and_alias(
                     field_name=property_name, model_type=self.field_name_model_type
                 )
-                discriminator["propertyName"] = field_name
                 mapping = discriminator.get("mapping", {})
+                field.extras["discriminator"] = discriminator = {**discriminator, "propertyName": field_name}
                 # Any type cannot be a discriminated union variant (Pydantic v2 rejects it)
                 has_any_variant = any(_is_any_variant(dt) for dt in field.data_type.data_types)
                 if has_any_variant:  # pragma: no cover
@@ -3659,6 +3703,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if field_name != property_name and alias is None:
                         alias = property_name
 
+                tags: list[_DiscriminatorTag] = []
                 for data_type in field.data_type.data_types:
                     if not data_type.reference:  # pragma: no cover
                         continue
@@ -3683,26 +3728,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             field.SUPPORTS_DISCRIMINATOR or discriminator_field.original_name != field_name
                         ):
                             continue
-                        const_value = discriminator_field.extras.get("const")
                         expected_value = discriminator_values[0] if discriminator_values else None
-
-                        const_match = const_value is not None and const_value == expected_value
-
                         if (
                             len(literals := discriminator_field.data_type.literals) == 1
                             and (literal := literals[0]) == expected_value
                         ):
                             has_one_literal = True
                             match discriminator_model:
-                                case _ if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:  # pragma: no cover
-                                    discriminator_model.apply_discriminator_tag(
-                                        discriminator_field,
-                                        field_name,
-                                        expected_value,
-                                    )
-                                    _clear_model_imports_cache_if_retained(
-                                        discriminator_model, can_retain_cache=can_retain_cache
-                                    )
+                                case _ if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                                    tags.append((discriminator_model, discriminator_field, literal))
                                 case _:
                                     self.__set_force_optional_discriminator_literal_default(
                                         discriminator_model,
@@ -3711,19 +3745,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                         can_retain_cache=can_retain_cache,
                                     )
                             # Found the discriminator field, no need to keep looking
-                            break
-
-                        # For msgspec with const value but no literal (type: string + const case)
-                        if const_match and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:  # pragma: no cover
-                            has_one_literal = True
-                            discriminator_model.apply_discriminator_tag(
-                                discriminator_field,
-                                field_name,
-                                const_value,
-                            )
-                            _clear_model_imports_cache_if_retained(
-                                discriminator_model, can_retain_cache=can_retain_cache
-                            )
                             break
 
                         enum_source = discriminator_field.data_type.find_source(Enum)
@@ -3745,7 +3766,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
-                        if (
+                        if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                            tags.append((
+                                discriminator_model,
+                                discriminator_field,
+                                _get_mapped_discriminator_tag(discriminator_values, enum_source),
+                            ))
+                        elif (
                             self.force_optional_for_required_fields
                             and (
                                 literal_default := _get_single_discriminator_default(
@@ -3766,7 +3793,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         has_one_literal = True
                     if not has_one_literal:
                         new_data_type = self._create_discriminator_data_type(
-                            _get_enum_from_base(
+                            base_enum_source := _get_enum_from_base(
                                 discriminator_model, field_name, use_field_name=field.SUPPORTS_DISCRIMINATOR
                             ),
                             discriminator_values,
@@ -3797,6 +3824,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             self.model_resolver.prepare_explicit_field_aliases(
                                 [discriminator_field], discriminator_model.reference, self.field_name_model_type
                             )
+                        if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                            tags.append((
+                                discriminator_model,
+                                discriminator_field,
+                                _get_mapped_discriminator_tag(discriminator_values, base_enum_source),
+                            ))
+                if tags:
+                    _apply_discriminator_tags(model, tags, property_name, mapping, can_retain_cache=can_retain_cache)
             has_imported_literal = any(import_ == IMPORT_LITERAL for import_ in imports)
             if has_imported_literal:  # pragma: no cover
                 imports.append(IMPORT_LITERAL)

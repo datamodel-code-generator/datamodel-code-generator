@@ -106,3 +106,14 @@ class DefaultService(Protocol):
         """
         Handle GET /notes.
         """
+
+    @abstractmethod
+    def post_memo(
+        self,
+        *,
+        case: str,
+        body: nullable_results_basemodel_models.FieldMemosPostRequest | None,
+    ) -> nullable_results_basemodel_models.FieldMemosPostResponse | None | HTTPResult[nullable_results_basemodel_models.FieldMemosPostResponse | None] | Response:
+        """
+        Handle POST /memos.
+        """

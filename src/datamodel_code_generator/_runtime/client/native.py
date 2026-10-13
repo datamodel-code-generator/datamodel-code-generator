@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal, cast
 import httpx2
 
 from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DecodeError
-from .logical import Delivery
+from .retry import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Collection, Iterator
