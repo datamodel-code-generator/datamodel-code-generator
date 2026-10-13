@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from datamodel_code_generator import generate, load_pyproject_config
+from datamodel_code_generator import LeftoverFilesWarning, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
 from tests.api_generation.support.client_generation import (
     client_cli_arguments,
@@ -719,6 +719,58 @@ def test_client_cli_shadowed_module(tmp_path: Path, monkeypatch: pytest.MonkeyPa
             f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
         )
     assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-module.txt")
+
+
+def test_client_cli_leftover_files(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Warn on each run that leaves the modules of a removed resource in place, which a check lists as extra.
+
+    A first run and a check warn about nothing. As an error, the warning stops the run, like any Python warning.
+    """
+    monkeypatch.chdir(tmp_path)
+    for name in ("v1.yaml", "v2.yaml"):
+        shutil.copy2(SOURCE / "regeneration" / name, name)
+    lines = []
+    for run, document, options, action, expected_exit in (
+        ("first", "v1.yaml", [], "always", Exit.OK),
+        ("changed", "v2.yaml", [], "always", Exit.OK),
+        ("json", "v2.yaml", ["--output-format", "json"], "always", Exit.OK),
+        ("check", "v2.yaml", ["--check"], "always", Exit.DIFF),
+        ("error", "v2.yaml", [], "error", Exit.ERROR),
+    ):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter(action, LeftoverFilesWarning)
+            run_main_with_args(["--input", document, *DOC_OPTIONS, *options], expected_exit=expected_exit)
+        captured = capsys.readouterr()
+        lines.append(f"# {run} run")
+        lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
+        lines.extend(
+            line
+            for line in (captured.out + captured.err).splitlines()
+            if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
+
+
+def test_client_cli_leftover_files_jobs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Warn once for each job of a batch about the files its own package holds, not those beside or inside another.
+
+    Files that are not Python modules, and those of a `__pycache__` directory, are not reported, as in a check.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-shared-models-jobs.toml")
+    run_main_with_args(["--all-jobs"])
+    for name in ("old.py", "server/old.py", "server/notes.md", "client/old.py", "client/__pycache__/old.py"):
+        (path := tmp_path / name).parent.mkdir(exist_ok=True)
+        path.touch()
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_with_args(["--all-jobs"])
+    assert_output(
+        "".join(f"{item.category.__name__}: {item.message}\n" for item in recorded),
+        EXPECTED / "cli" / "leftover-files-jobs.txt",
+    )
 
 
 def test_client_cli_shared_models_jobs(

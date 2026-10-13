@@ -14,7 +14,7 @@ from collections import OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from functools import cached_property, lru_cache
-from itertools import accumulate
+from itertools import accumulate, takewhile
 from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar
@@ -1354,6 +1354,22 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
     )
 
 
+def _is_hidden_by_earlier_field(field: DataModelFieldBase, name: str) -> bool:
+    """Return whether an earlier field of the class has bound ``name`` when the field's value is evaluated.
+
+    Only an output that keeps a field named like a type and writes that type as a string can meet this.
+    """
+    parent = field.parent
+    return (
+        parent is not None
+        and parent.RESOLVES_STRING_ANNOTATIONS_FROM_MODULE
+        and any(
+            earlier.name == name and parent.field_binds_class_attribute(earlier)
+            for earlier in takewhile(lambda earlier: earlier is not field, parent.fields)
+        )
+    )
+
+
 def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[DataModel]) -> str | None:
     """Return the nested model name usable as a default_factory for optional fields."""
     for data_type in field.data_type.data_types or (field.data_type,):
@@ -1369,7 +1385,9 @@ def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[Dat
                 source.__dict__[_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY] = required_fields
             if required_fields:
                 return None
-            factory_name = data_type.alias or source.class_name
+            if _is_hidden_by_earlier_field(field, source.class_name):
+                return f"lambda: {source.class_name}()"
+            factory_name = source.class_name if data_type._is_quoted_reference else data_type.alias or source.class_name  # noqa: SLF001
             parent_order = (
                 field.parent.__dict__.get(_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY) if field.parent is not None else None
             )
@@ -1900,6 +1918,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = False
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = False
     NORMALIZES_FIELD_NAMES: ClassVar[bool] = False
+    RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = False
     SUPPORTS_KW_ONLY: ClassVar[bool] = False
     REQUIRES_MODEL_LEVEL_KW_ONLY: ClassVar[bool] = False
     SUPPORTS_BOOLEAN_LITERAL: ClassVar[bool] = True
@@ -2458,14 +2477,48 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.__dict__[self._IMPORTS_CACHE_KEY] = imports
         return imports
 
-    def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:  # noqa: ARG002, PLR6301
+    def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:
+        """Return whether the class body assigns a field call or a default to the field's name."""
+        return bool(field.field) or type(self).FIELD_ASSIGNMENT_CHECKER(field)
+
+    def class_attribute_hides_named_type(  # noqa: PLR6301
+        self,
+        field: DataModelFieldBase,  # noqa: ARG002
+        *,
+        assigned: bool,
+        resolved_late: bool,  # noqa: ARG002
+        as_string: bool,  # noqa: ARG002
+    ) -> bool:
+        """Return whether a class attribute named like the field hides the type that its annotation names.
+
+        ``assigned`` tells that the finished class body assigns a value to the field's name, ``resolved_late``
+        that the annotation is resolved once the class exists instead of right after that assignment, and
+        ``as_string`` that the library resolves it from a string.
+        """
+        return assigned
+
+    def assigns_forward_reference_field(  # noqa: PLR6301
+        self,
+        field: DataModelFieldBase,  # noqa: ARG002
+        positions: Mapping[str, int],  # noqa: ARG002
+        index: int,  # noqa: ARG002
+    ) -> bool:
+        """Return whether ``assign_forward_reference_fields`` writes the field by assignment."""
+        return False
+
+    def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
         """Render fields by assignment when ``Field()`` inside ``Annotated`` is unsafe for a forward reference.
 
         ``positions`` maps the path of each model in the module to its order and ``index`` is this model's order.
         The neutral model policy intentionally changes nothing. Output backends whose target mishandles such a
-        field can override this hook and return whether a field changed.
+        field override ``assigns_forward_reference_field``; the result tells whether a field changed.
         """
-        return False
+        changed = False
+        for field in self.fields:
+            if self.assigns_forward_reference_field(field, positions, index):
+                field.use_annotated = False
+                changed = True
+        return changed
 
     def clear_imports_cache(self) -> None:
         """Clear cached imports after import-affecting model, field, or data type mutations."""

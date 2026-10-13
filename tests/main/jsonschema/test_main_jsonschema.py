@@ -2708,65 +2708,378 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("backend", "strategy", "expected_file", "field_name"),
+    ("backend", "schema", "target_python_version", "options", "expected_file", "field_name"),
     [
         pytest.param(
             DataModelType.PydanticV2Dataclass,
-            None,
+            "speed.json",
+            "3.10",
+            [],
             "field_type_collision_runtime/pydantic_dataclass.py",
             "Bar_1",
             id="pydantic-dataclass",
         ),
         pytest.param(
             DataModelType.PydanticV2Dataclass,
-            "rename-type",
+            "speed.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_py314.py",
+            "Bar_1",
+            id="pydantic-dataclass-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_required.py",
+            "Bar",
+            id="pydantic-dataclass-required",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_required_py314.py",
+            "Bar",
+            id="pydantic-dataclass-required-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/pydantic_dataclass_required_no_future_imports.py",
+            "Bar",
+            id="pydantic-dataclass-required-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "described.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_described.py",
+            "Bar_1",
+            id="pydantic-dataclass-described",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "described.json",
+            "3.10",
+            ["--use-annotated"],
+            "field_type_collision_runtime/pydantic_dataclass_described_annotated.py",
+            "Bar",
+            id="pydantic-dataclass-described-annotated",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "inherited.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_inherited.py",
+            "Bar_1",
+            id="pydantic-dataclass-inherited",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "subclass.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_subclass.py",
+            "Bar_1",
+            id="pydantic-dataclass-subclass",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "nullable.json",
+            "3.10",
+            ["--strip-default-none"],
+            "field_type_collision_runtime/pydantic_dataclass_nullable_strip_default_none.py",
+            "Bar_1",
+            id="pydantic-dataclass-nullable-strip-default-none",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.10",
+            ["--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_required_slots.py",
+            "Bar_1",
+            id="pydantic-dataclass-required-slots",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.14",
+            ["--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_required_slots_py314.py",
+            "Bar",
+            id="pydantic-dataclass-required-slots-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.10",
+            ["--disable-future-imports", "--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_required_slots_no_future_imports.py",
+            "Bar",
+            id="pydantic-dataclass-required-slots-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "self_named.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_self_named.py",
+            "Bar",
+            id="pydantic-dataclass-self-named",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "self_named.json",
+            "3.10",
+            ["--target-pydantic-version", "2"],
+            "field_type_collision_runtime/pydantic_dataclass_self_named_pydantic_2.py",
+            "Bar",
+            id="pydantic-dataclass-self-named-pydantic-2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "self_named.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_self_named_py314.py",
+            "Bar",
+            id="pydantic-dataclass-self-named-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "forward.json",
+            "3.10",
+            ["--use-annotated"],
+            "field_type_collision_runtime/pydantic_dataclass_forward_annotated.py",
+            "Bar",
+            id="pydantic-dataclass-forward-annotated",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "forward.json",
+            "3.10",
+            ["--use-annotated", "--target-pydantic-version", "2"],
+            "field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2.py",
+            "Bar",
+            id="pydantic-dataclass-forward-annotated-pydantic-2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "forward.json",
+            "3.10",
+            ["--use-annotated", "--target-pydantic-version", "2", "--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2_slots.py",
+            "Bar_1",
+            id="pydantic-dataclass-forward-annotated-pydantic-2-slots",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "speed.json",
+            "3.10",
+            ["--field-type-collision-strategy", "rename-type"],
             "field_type_collision_runtime/pydantic_dataclass_rename_type.py",
             "Bar",
             id="pydantic-dataclass-rename-type",
         ),
         pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.10",
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_runtime/pydantic_dataclass_required.py",
+            "Bar",
+            id="pydantic-dataclass-required-rename-type",
+        ),
+        pytest.param(
             DataModelType.MsgspecStruct,
-            None,
+            "speed.json",
+            "3.10",
+            [],
             "field_type_collision_runtime/msgspec.py",
-            "Bar_1",
+            "Bar",
             id="msgspec",
         ),
         pytest.param(
             DataModelType.MsgspecStruct,
-            "rename-type",
-            "field_type_collision_runtime/msgspec.py",
-            "Bar_1",
-            id="msgspec-rename-type-ignored",
+            "required.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/msgspec_required.py",
+            "Bar",
+            id="msgspec-required",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "speed.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/msgspec_py314.py",
+            "Bar",
+            id="msgspec-py314",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "required.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/msgspec_required_py314.py",
+            "Bar",
+            id="msgspec-required-py314",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/msgspec_later_py314.py",
+            "Bar",
+            id="msgspec-later-py314",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "speed.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_no_future_imports.py",
+            "Bar",
+            id="msgspec-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "required.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_required_no_future_imports.py",
+            "Bar",
+            id="msgspec-required-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "required.json",
+            "3.14",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_required_py314_no_future_imports.py",
+            "Bar",
+            id="msgspec-required-py314-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_later_no_future_imports.py",
+            "Bar",
+            id="msgspec-later-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "inherited.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_inherited_no_future_imports.py",
+            "Bar",
+            id="msgspec-inherited-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "defaults.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_defaults_no_future_imports.py",
+            "Bar",
+            id="msgspec-defaults-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "defaults.json",
+            "3.11",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_defaults_py311_no_future_imports.py",
+            "Bar",
+            id="msgspec-defaults-py311-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.10",
+            ["--use-default-factory-for-optional-nested-models"],
+            "field_type_collision_runtime/msgspec_later_default_factory.py",
+            "Bar",
+            id="msgspec-later-default-factory",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.10",
+            ["--disable-future-imports", "--use-default-factory-for-optional-nested-models"],
+            "field_type_collision_runtime/msgspec_later_default_factory_no_future_imports.py",
+            "Bar",
+            id="msgspec-later-default-factory-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "speed.json",
+            "3.11",
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_runtime/msgspec_rename_type.py",
+            "Bar",
+            id="msgspec-rename-type",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "speed.json",
+            "3.14",
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_runtime/msgspec_py314.py",
+            "Bar",
+            id="msgspec-rename-type-py314",
         ),
     ],
 )
 def test_main_jsonschema_field_type_collision_runtime(
     output_file: Path,
     backend: DataModelType,
-    strategy: str | None,
+    schema: str,
+    target_python_version: str,
+    options: list[str],
     expected_file: str,
     field_name: str,
 ) -> None:
-    """Keep generated dataclass and msgspec references usable when a field shares the type name."""
+    """Keep a field named like its type unless the class would hide the type, on every Python from the target on.
+
+    The output runs as an imported module, where its own annotation mode applies.
+    """
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "speed.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / schema,
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=expected_file,
+        skip_code_validation=True,
         extra_args=[
             "--output-model-type",
             backend.value,
             "--target-python-version",
-            "3.11",
+            target_python_version,
             "--class-name",
             "Payload",
             "--disable-timestamp",
             "--formatters",
             "builtin",
-            *(["--field-type-collision-strategy", strategy] if strategy else []),
+            *options,
         ],
     )
+    if sys.version_info[:2] < tuple(map(int, target_python_version.split("."))):
+        pytest.skip(f"the output targets Python {target_python_version} or later")
     payload_path = DATA_PATH / "payloads" / "field_type_collision_runtime"
     with _generated_model(output_file, "field_type_collision_runtime", "Payload") as model:
         validator = partial(msgspec.json.decode, type=model)
@@ -2775,33 +3088,64 @@ def test_main_jsonschema_field_type_collision_runtime(
             case DataModelType.PydanticV2Dataclass:
                 validator = _model_json_validator(model)
                 error_type = ValidationError
-        parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
+        valid_payload = "valid_defaults.json" if schema == "defaults.json" else "valid.json"
+        parsed = validator((payload_path / valid_payload).read_text(encoding="utf-8"))
         with pytest.raises(error_type):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
         assert_output(f"{getattr(parsed.values.left, field_name).x}\n", payload_path / "runtime.txt")
 
 
-@pytest.mark.parametrize("exact_imports", [False, True], ids=["module-import", "exact-import"])
-def test_main_jsonschema_field_type_collision_cross_module(output_dir: Path, exact_imports: bool) -> None:
-    """Keep cross-module aliases bound to their original types with rename-type."""
+@pytest.mark.parametrize(
+    ("backend", "options", "expected_directory"),
+    [
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            ["--field-type-collision-strategy", "rename-type"],
+            "default",
+            id="module-import",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "exact",
+            id="exact-import",
+        ),
+        pytest.param(DataModelType.PydanticV2Dataclass, [], "default", id="module-import-rename-field"),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass, ["--use-exact-imports"], "exact", id="exact-import-rename-field"
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type"],
+            "base_model",
+            id="base-model-module-import",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "base_model_exact",
+            id="base-model-exact-import",
+        ),
+    ],
+)
+def test_main_jsonschema_field_type_collision_cross_module(
+    output_dir: Path, backend: DataModelType, options: list[str], expected_directory: str
+) -> None:
+    """Keep a field named like a type of another module, whose annotation names the type differently."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_cross_module",
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH
-        / "field_type_collision_cross_module"
-        / ("exact" if exact_imports else "default"),
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "field_type_collision_cross_module" / expected_directory,
         extra_args=[
             "--output-model-type",
-            DataModelType.PydanticV2Dataclass.value,
-            "--field-type-collision-strategy",
-            "rename-type",
+            backend.value,
             "--target-python-version",
             "3.11",
             "--disable-timestamp",
             "--formatters",
             "builtin",
-            *(["--use-exact-imports"] if exact_imports else []),
+            *options,
         ],
     )
     payload_path = DATA_PATH / "payloads" / "field_type_collision_cross_module"
@@ -2811,6 +3155,32 @@ def test_main_jsonschema_field_type_collision_cross_module(output_dir: Path, exa
         with pytest.raises(ValidationError):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
         assert_output(f"{parsed.Bar.x}\n", payload_path / "runtime.txt")
+
+
+def test_main_jsonschema_field_type_collision_inherited_modules(output_dir: Path) -> None:
+    """Rename an inherited field named like its type under one name in every module of its family."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_inherited_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "field_type_collision_inherited_modules",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2Dataclass.value,
+            "--target-python-version",
+            "3.11",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    payload_path = DATA_PATH / "payloads" / "field_type_collision_cross_module"
+    with _generated_package_module(output_dir, "b") as module:
+        validator = _model_json_validator(module.Child)
+        parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
+        with pytest.raises(ValidationError):
+            validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
+        assert_output(f"{parsed.Bar_1.x}\n", payload_path / "runtime.txt")
 
 
 def test_main_reuse_model_discriminator_literal(output_file: Path) -> None:

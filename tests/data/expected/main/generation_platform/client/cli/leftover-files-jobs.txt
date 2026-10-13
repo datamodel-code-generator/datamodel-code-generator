@@ -1,0 +1,2 @@
+LeftoverFilesWarning: server: These Python files are no longer generated and are left in place: server/old.py. Delete the ones you no longer need.
+LeftoverFilesWarning: client: These Python files are no longer generated and are left in place: client/old.py. Delete the ones you no longer need.
