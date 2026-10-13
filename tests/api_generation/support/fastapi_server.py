@@ -7,6 +7,7 @@ import inspect
 import json
 import shutil
 import sys
+import warnings
 from functools import partial
 from itertools import starmap
 from pathlib import Path
@@ -15,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
-from datamodel_code_generator import DataModelType, generate
+from datamodel_code_generator import DataModelType, LeftoverFilesWarning, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.client_generation import formatter_refusal
@@ -195,8 +196,8 @@ def fastapi_server_report(
     """Generate one server per backend, replay the case's builds, applications, and requests.
 
     A case with a `previous` document first generates the package from it, so that the generation the case serves
-    leaves the modules only that document needs in place; the report says whether each `stale` module is still a
-    file and whether serving imported it. Return the report and each backend's generated modules.
+    leaves the modules only that document needs in place and warns about them; the report says whether each `stale`
+    module is still a file and whether serving imported it. Return the report and each backend's generated modules.
     """
     case = json.loads((SOURCE / "servers.json").read_text(encoding="utf-8"))[case_name]
     services = importlib.import_module(f"tests.data.python.fastapi_handlers.{case['services']}")
@@ -213,10 +214,13 @@ def fastapi_server_report(
         if (previous := case.get("previous")) is not None:
             _generate({**case, "input": previous}, backend, root, package)
         try:
-            _generate(case, backend, root, package)
+            with warnings.catch_warnings(record=True) as recorded:
+                warnings.simplefilter("always", LeftoverFilesWarning)
+                _generate(case, backend, root, package)
         except RuntimeError as error:
             lines.append(f"  {formatter_refusal(error)}")
             continue
+        lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
         packages[backend.replace(".", "_")] = _generated(root, package, package_snapshots)
         try:
             server, models = _import(package, _models(case, package))

@@ -21,7 +21,7 @@
   "modular-extra": {"modular": true, "write": {"models/extra.py": "# stale model\n"}},
   "modular-missing": {"modular": true, "remove": ["models"]},
   "stale": {"options": ["--openapi-include-paths", "/pets"], "changed": true},
-  "stale-regenerated": {"options": ["--openapi-include-paths", "/pets"], "regenerate": true, "changed": true},
+  "stale-regenerated": {"options": ["--openapi-include-paths", "/pets"], "regenerate": true, "changed": true, "warnings": "leftover-warning.txt"},
   "edited-regenerated": {"append": {"server/services.py": "# changed\n"}, "regenerate": true, "changed": false},
   "leftover-manifest": {"write": {"server/.dcg-target-manifest.json": "{\"format\": 1}\n"}},
   "foreign": {"fresh": true, "write": {"server/routers/__init__.py": "# Someone else's module.\n"}},

@@ -1787,6 +1787,30 @@ def _restore_inherited_field_names_for_unique_aliases(
     return False
 
 
+def _own_named_reference(field: DataModelFieldBase) -> Reference | None:
+    """Return the referenced type that the field's annotation names like the field."""
+    for data_type in field.data_type.all_data_types:
+        if (reference := data_type.reference) is not None and (data_type.alias or reference.short_name) == field.name:
+            return reference
+    return None
+
+
+def _hidden_type_names(model: DataModel) -> Collection[str | None]:
+    """Return the names of the model's fields that hide a type named by an annotation of the model.
+
+    Python looks an annotation up in the class namespace first. A library that resolves string annotations
+    from the module still finds such a type when it is written as a string, like a forward reference.
+    """
+    if not type(model).RESOLVES_STRING_ANNOTATIONS_FROM_MODULE:
+        return ()
+    return {
+        reference.short_name
+        for field in model.fields
+        for data_type in field.data_type.all_data_types
+        if (reference := data_type.reference) is not None and not data_type.alias
+    } & {field.name for field in model.fields}
+
+
 def _rename_field_preserving_alias(field: DataModelFieldBase, new_name: str) -> None:
     """Rename a Python field without losing an existing source-name alias."""
     if field.alias is None:
@@ -2586,6 +2610,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._has_bound_python_types = False
         self._has_runtime_expressions = False
         self._constrained_decimal_alias_model_ids: set[int] = set()
+        self._hidden_named_types: dict[tuple[str, str | None], bool] = {}
 
         self.keyword_only = config.keyword_only
         self.target_pydantic_version = config.target_pydantic_version
@@ -4711,7 +4736,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         can_retain_cache: bool,
     ) -> None:
-        if not self.data_model_type.SUPPORTS_FIELD_RENAMING:
+        if not (self.data_model_type.SUPPORTS_FIELD_RENAMING and self.data_model_type.NORMALIZES_FIELD_NAMES):
             return
 
         rename_type = (
@@ -4773,6 +4798,153 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         field.alias = field_name
                     field.name = f"{current_name}_"
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
+    def __same_named_fields(self, model: DataModel) -> list[DataModelFieldBase]:
+        """Return the fields of the model whose annotation refers to a type named like the field."""
+        model_type = self.data_model_type
+        if "Enum" in model.base_class or (not model.BASE_CLASS and not isinstance(model, model_type)):
+            return []
+        return [
+            field
+            for field in model.fields
+            if field.name != model_type.TYPED_EXTRA_FIELD_NAME
+            and any(
+                (reference := data_type.reference) is not None and reference.short_name == field.name
+                for data_type in field.data_type.all_data_types
+            )
+        ]
+
+    def __hides_named_type(
+        self,
+        model: DataModel,
+        field: DataModelFieldBase,
+        positions: Mapping[str, int],
+        *,
+        use_deferred_annotations: bool,
+    ) -> bool:
+        """Return whether the finished class hides the type that the field's annotation names like the field.
+
+        The class body binds the field's name when the template writes an assignment, which constructor
+        ordering and the assignment form of a forward reference add after this step. The annotation is resolved
+        from a string under the future import and as a quoted forward reference, and native deferred annotations
+        resolve a forward reference once the class exists as well.
+        """
+        if (reference := _own_named_reference(field)) is None:
+            return False
+        index = positions.get(model.path)
+        is_forward = index is not None and positions.get(reference.path, -1) >= index
+        writes_strings = use_deferred_annotations and not self.target_python_version.has_native_deferred_annotations
+        return model.class_attribute_hides_named_type(
+            field,
+            assigned=model.field_binds_class_attribute(field)
+            or (
+                (inherited := self.__get_inherited_constructor_info(model)) is not None
+                and self.__get_constructor_field_adjustment(
+                    field,
+                    inherited,
+                    Parser._get_constructor_field_policy(model),
+                    supports_inherited_override=model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT,
+                )
+                is not None
+            )
+            or (
+                self.use_annotated
+                and use_deferred_annotations
+                and index is not None
+                and bool(field.field)
+                and model.assigns_forward_reference_field(field, positions, index)
+            ),
+            resolved_late=writes_strings or is_forward,
+            as_string=writes_strings or (is_forward and not use_deferred_annotations),
+        )
+
+    def __rename_named_type(self, field: DataModelFieldBase, class_names: set[str]) -> None:
+        """Rename the type that the field hides."""
+        source = next(
+            cast("DataModel", reference.source)
+            for data_type in field.data_type.all_data_types
+            if (reference := data_type.reference) is not None and reference.short_name == field.name
+        )
+        resolver = ModelResolver(snake_case_field=self.snake_case_field, remove_suffix_number=True)
+        resolver._reset_for_reuse(class_names.copy())  # noqa: SLF001
+        resolver.exclude_names.add(cast("str", field.name))
+        source.class_name = resolver.add(["type"], source.class_name).name
+        class_names.add(source.class_name)
+
+    def __family_hides_named_type(
+        self,
+        model: DataModel,
+        field_name: str | None,
+        derived_models: Mapping[str, list[DataModel]],
+        positions: Mapping[str, int],
+        *,
+        use_deferred_annotations: bool,
+    ) -> bool:
+        """Return whether a class of the model's inheritance family hides the type named like its field.
+
+        The classes of one family write the field under one name, so one decision covers all of them.
+        """
+        if (hidden := self._hidden_named_types.get((model.path, field_name))) is not None:
+            return hidden
+        family = {model.path: model}
+        pending = [model]
+        while pending:
+            current = pending.pop()
+            for relative in chain(_find_base_classes(current), derived_models.get(current.path, ())):
+                if relative.path not in family:
+                    family[relative.path] = relative
+                    pending.append(relative)
+        hidden = any(
+            field.name == field_name
+            and self.__hides_named_type(member, field, positions, use_deferred_annotations=use_deferred_annotations)
+            for member in family.values()
+            for field in self.__same_named_fields(member)
+        )
+        self._hidden_named_types.update(dict.fromkeys(((path, field_name) for path in family), hidden))
+        return hidden
+
+    def __rename_fields_hiding_types(
+        self, models: list[DataModel], *, can_retain_cache: bool, use_deferred_annotations: bool
+    ) -> None:
+        """Rename a field named like the type it names where the finished class hides that type."""
+        model_type = self.data_model_type
+        if model_type.NORMALIZES_FIELD_NAMES or not model_type.SUPPORTS_FIELD_RENAMING:
+            return
+        declarations = [(model, fields) for model in models if (fields := self.__same_named_fields(model))]
+        if not declarations:
+            return
+        positions = {model.path: index for index, model in enumerate(models)}
+        derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
+        for derived_model in {id(model): model for model in chain(self.results, models)}.values():
+            for base_class in _find_base_classes(derived_model):
+                derived_models[base_class.path].append(derived_model)
+        rename_type = (
+            self.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
+            and model_type.SUPPORTS_FIELD_TYPE_RENAMING
+        )
+        class_names = {model.class_name for model in models} if rename_type else set()
+        for model, fields in declarations:
+            for field in fields:
+                field_name = field.name
+                if not self.__family_hides_named_type(
+                    model, field_name, derived_models, positions, use_deferred_annotations=use_deferred_annotations
+                ) or not any(
+                    (reference := data_type.reference) is not None
+                    and reference.short_name == field_name
+                    and not (rename_type and data_type.alias and data_type.alias != field_name)
+                    for data_type in field.data_type.all_data_types
+                ):
+                    continue
+                if rename_type:
+                    self.__rename_named_type(field, class_names)
+                    continue
+                resolver = ModelResolver(
+                    exclude_names={cast("str", field_name)},
+                    snake_case_field=self.snake_case_field,
+                    remove_suffix_number=True,
+                )
+                _rename_field_preserving_alias(field, resolver._get_unique_field_name(cast("str", field_name)))  # noqa: SLF001
+                _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __set_one_literal_on_default(self, models: list[DataModel], *, can_retain_cache: bool) -> None:
         if not self.use_one_literal_as_default:
@@ -5078,19 +5250,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return overridden
 
     @staticmethod
-    def __disable_union_operator_for_forward_ref(data_type: DataType) -> None:
+    def __disable_union_operator_for_forward_ref(data_type: DataType, *, use_typing_generics: bool = False) -> None:
+        """Keep a quoted name out of ``|`` and, with ``use_typing_generics``, out of builtin generics."""
         data_type.use_union_operator = False
         parent = data_type.parent
         while isinstance(parent, DataType):
             if parent.is_union:
                 parent.use_union_operator = False
+            if use_typing_generics:
+                parent.use_standard_collections = False
             parent = parent.parent
 
     @staticmethod
     def __forward_references(
-        field: DataModelFieldBase, model: DataModel, model_index: Mapping[str, int], index: int
+        field: DataModelFieldBase,
+        model: DataModel,
+        model_index: Mapping[str, int],
+        index: int,
+        hidden_names: Collection[str | None] = (),
     ) -> list[tuple[DataType, str]]:
-        """Collect the field's references to same-module models declared at or after the model."""
+        """Collect the field's references to same-module models declared at or after the model.
+
+        A model whose name is in ``hidden_names`` counts as declared later.
+        """
         forward_references: list[tuple[DataType, str]] = []
         for data_type in field.data_type.all_data_types:
             if not data_type.reference:
@@ -5098,11 +5280,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             source = data_type.reference.source
             if not isinstance(source, DataModel):
                 continue  # pragma: no cover
-            if isinstance(source, TypeStatement):
-                continue  # pragma: no cover
             if source.module_path != model.module_path:
                 continue
             name = data_type.reference.short_name
+            if name in hidden_names and not data_type.alias:
+                forward_references.append((data_type, name))
+                continue
+            if isinstance(source, TypeStatement):
+                continue  # pragma: no cover
             source_index = model_index.get(name)
             if source_index is not None and source_index >= index:
                 forward_references.append((data_type, name))
@@ -5163,7 +5348,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for quoted in (container, *wrappers):
                 quoted.use_union_operator = False
             for nested in container.all_data_types:
-                if (reference := nested.reference) and nested.alias == f'"{reference.short_name}"':
+                if (reference := nested.reference) and nested._is_quoted_reference:  # noqa: SLF001
                     nested.alias = reference.short_name
         for root in deferred[0][1][:1]:
             _flatten_union_members(root)
@@ -5178,13 +5363,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         defers_recursive_containers: bool,
         generation_store: GenerationStore,
         can_retain_cache: bool,
+        hidden_type_names: Callable[[DataModel], Collection[str | None]],
+        use_typing_generics: bool,
     ) -> None:
         """Update type aliases and RootModels to properly handle forward references per PEP 484.
 
         When annotations are not deferred (no ``from __future__ import annotations`` and no
         native PEP 649 deferred annotations), self-referencing fields in regular DataModel
         classes also need their type aliased to a quoted string so that static analysers
-        (e.g. Ruff F821) and older runtimes do not trip over the forward reference.
+        (e.g. Ruff F821) and older runtimes do not trip over the forward reference. The same
+        holds for the types that ``hidden_type_names`` reports as hidden by a field of the model.
+        ``use_typing_generics`` writes ``List["Name"]`` for a library that cannot resolve ``list["Name"]``.
         """
         model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
         alias_cycles: Mapping[int, int] | None = None
@@ -5208,14 +5397,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 continue
 
             has_aliased_forward_ref = False
+            hidden_names = () if use_deferred_annotations else hidden_type_names(model)
             for field in model.fields:
                 if not process_all_fields and not field.requires_immediate_forward_reference_resolution:
                     continue
-                if not (forward_references := cls.__forward_references(field, model, model_index, i)):
+                if not (forward_references := cls.__forward_references(field, model, model_index, i, hidden_names)):
                     continue
                 for data_type, name in forward_references:
                     data_type.alias = f'"{name}"'
-                    cls.__disable_union_operator_for_forward_ref(data_type)
+                    cls.__disable_union_operator_for_forward_ref(
+                        data_type, use_typing_generics=use_typing_generics and not use_deferred_annotations
+                    )
                 if defers_recursive_containers and model.DEFERS_RECURSIVE_TYPE_HINT:
                     if alias_cycles is None:
                         alias_cycles = cls.__deferrable_alias_cycles(models, model_index)
@@ -5893,17 +6085,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _has_forward_references(self, models: list[DataModel]) -> bool:  # noqa: PLR6301
         """Return whether a module contains a self or forward model reference.
 
+        A type hidden by a field of its class counts as one: the library has to resolve it from a string.
         This remains an instance method because ``snooper_to_methods`` does not
         preserve staticmethod descriptors on parser subclasses.
         """
         positions = {model.path: index for index, model in enumerate(models)}
         for index, model in enumerate(models):
+            hidden_names = _hidden_type_names(model)
             for field in model.fields:
                 for data_type in field.data_type.all_data_types:
                     if (
                         (reference := data_type.reference)
                         and (reference_index := positions.get(reference.path)) is not None
-                        and reference_index >= index
+                        and (reference_index >= index or (reference.short_name in hidden_names and not data_type.alias))
                     ):
                         return True
         return False
@@ -6463,6 +6657,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.__set_one_literal_on_default(models, can_retain_cache=can_retain_cache)
         for model in models:
             model.refresh_field_config()
+        self.__rename_fields_hiding_types(
+            models, can_retain_cache=can_retain_cache, use_deferred_annotations=use_deferred_annotations
+        )
         self.__fix_constructor_field_ordering(models)
 
         return self.__remove_overridden_models(models)
@@ -6498,6 +6695,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             or _is_pydantic_version_at_least(target, _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM),
             generation_store=self.generation_store,
             can_retain_cache=can_retain_cache,
+            hidden_type_names=_hidden_type_names,
+            use_typing_generics=self.data_model_type.RESOLVES_STRING_ANNOTATIONS_FROM_MODULE
+            and not self.target_python_version.has_string_arguments_in_builtin_generics,
         )
         if not unused_models:
             live_models = models
@@ -7262,6 +7462,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         unused_models: list[DataModel] = []
         module_to_import: dict[ModulePath, Imports] = {}
         contexts: list[ModuleContext] = []
+        self._hidden_named_types.clear()
 
         if self.collapse_root_models:
             self.__set_circular_root_model_paths(

@@ -1243,15 +1243,13 @@ def _compare_directories(
 
     Two inputs can generate a single-module file at the directory path: it is compared as the file at that path.
     """
+    from datamodel_code_generator._leftover_files import python_files  # noqa: PLC0415
+
     changed_files: list[DirectoryChangedFile] = []
 
     generated_files = {path.relative_to(generated_dir) for path in generated_dir.rglob("*.py")}
 
-    actual_files: set[Path] = set()
-    if actual_dir.exists():
-        for path in actual_dir.rglob("*.py"):
-            if "__pycache__" not in path.parts:
-                actual_files.add(path.relative_to(actual_dir))
+    actual_files = python_files(actual_dir)
 
     if comparison.input_diff:
         for files, output in ((generated_files, generated_dir), (actual_files, actual_dir)):
