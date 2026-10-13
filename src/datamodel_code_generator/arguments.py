@@ -554,7 +554,7 @@ model_options.add_argument(
     "'2': Pydantic 2.0+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
-    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic).",
+    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine).",
     choices=[v.value for v in TargetPydanticVersion],
     default=None,
 )

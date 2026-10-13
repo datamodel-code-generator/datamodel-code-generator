@@ -16318,6 +16318,55 @@ _BYTES_PATTERN_PYTHON_ENGINE = ('{"blob": "aa"}', '{"blob": "ab"}', ("blob",), "
             "rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints_target_2_14.py",
             _BYTES_PATTERN_PYTHON_ENGINE,
         ),
+        (
+            "rust_unsupported_pattern_bytes_alias.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_alias.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_nullable.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_nullable.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints", "--strict-types", "bytes"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_strict_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_union.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_union.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
     ],
 )
 def test_main_rust_unsupported_pattern_bytes(
@@ -16333,7 +16382,9 @@ def test_main_rust_unsupported_pattern_bytes(
     Pydantic compiles ``bytes`` patterns from 2.14 on and ignores them before. An unset or older target writes
     what 0.83.0 wrote, so the other patterns of the model keep the default engine, including syntax only the
     Rust engine accepts; that output imports on the releases that ignore the pattern, and the 2.14 target
-    output on the releases that compile it.
+    output on the releases that compile it. Type aliases, nullable types and strict ``bytes`` follow the same
+    rule. A union with a string member, such as ``str | bytes``, selects Python's engine for every target,
+    because Pydantic compiles its pattern for the string member on every release.
     """
     compiles_bytes_patterns = installed_pydantic_runs_target(TargetPydanticVersion.V2_14.value)
     runs = compiles_bytes_patterns == (target_pydantic_version == TargetPydanticVersion.V2_14.value)
@@ -16361,7 +16412,10 @@ def test_main_rust_unsupported_pattern_bytes(
         )
 
 
-def test_main_rust_unsupported_pattern_bytes_without_constraints(output_file: Path) -> None:
+@pytest.mark.parametrize("target_pydantic_version", [None, "2", "2.12", "2.14"])
+def test_main_rust_unsupported_pattern_bytes_without_constraints(
+    target_pydantic_version: str | None, output_file: Path
+) -> None:
     """Without ``--use-annotated`` or ``--field-constraints`` the ``bytes`` pattern is dropped for every target."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_bytes.json",
@@ -16369,7 +16423,7 @@ def test_main_rust_unsupported_pattern_bytes_without_constraints(output_file: Pa
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file="rust_unsupported_pattern_bytes_pydantic_v2.py",
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--target-pydantic-version", "2.14"],
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *target_pydantic_args(target_pydantic_version)],
         force_exec_validation=True,
     )
 

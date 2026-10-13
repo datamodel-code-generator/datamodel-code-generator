@@ -115,12 +115,13 @@ When the target is unset:
 
 | `bytes` patterns the Rust regex engine rejects | Unset, `2`, `2.11`, `2.12` | `2.14` |
 | --- | --- | --- |
-| Model regex engine (2.14 compiles `bytes` patterns, earlier releases ignore them) | Default engine | `regex_engine="python-re"` |
+| Model regex engine (2.14 compiles the patterns of plain and optional `bytes` fields, 2.11 to 2.13 ignore them) | Default engine | `regex_engine="python-re"` |
 
 The `bytes` rule is not applied to an unset target, because `python-re` changes how the other patterns of the model
 match on every Pydantic release. A `bytes` pattern with syntax such as a backreference then fails at import on
-Pydantic 2.14 unless `--target-pydantic-version 2.14` is passed; see
-[Regular Expression Patterns](jsonschema.md#regular-expression-patterns).
+Pydantic 2.14 unless `--target-pydantic-version 2.14` is passed, and on Pydantic 2.12 for a `bytes | MISSING` field
+(`--use-missing-sentinel`), whose pattern 2.12 compiles as well. Pydantic 2.0 to 2.10 rejects any rendered `bytes`
+pattern at import. See [Regular Expression Patterns](jsonschema.md#regular-expression-patterns).
 
 Patterns that need Python's regex engine, such as lookaround assertions (see
 [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)), rely on `regex_engine="python-re"`, which

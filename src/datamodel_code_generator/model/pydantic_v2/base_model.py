@@ -1033,8 +1033,12 @@ def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
 def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> DataType | None:
     """Return the string type a pattern constrains, looking through unions of string types such as ``str | None``.
 
-    Pydantic compiles ``bytes`` patterns from 2.14 on and ignores them before, so ``bytes`` counts only for an
-    explicit target of ``model`` that has them: an unset target keeps the default engine of older releases.
+    Pydantic compiles the patterns of plain and optional ``bytes`` fields from 2.14 on, ignores them from 2.11
+    to 2.13 and rejects them at import before, so ``bytes`` counts only for an explicit target of ``model`` that
+    compiles them: an unset target keeps the default engine of older releases. Pydantic 2.12 also compiles the
+    pattern of a ``bytes | MISSING`` field, which keeps the default engine like the other unset-target output.
+    Otherwise a ``bytes`` member is left out of a union, whose string members Pydantic constrains on every
+    release.
     """
     if (
         (type_name := data_type.type) in _STRING_PATTERN_TYPES
@@ -1046,13 +1050,18 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
     ):
         return data_type
     if (
-        data_type.type is None
-        and (members := data_type.data_types)
-        and not any(getattr(data_type, flag) for flag in _CONTAINER_DATA_TYPE_FLAGS)
-        and all(_string_pattern_data_type(member, model) is member for member in members)
+        data_type.type is not None
+        or not (members := data_type.data_types)
+        or any(getattr(data_type, flag) for flag in _CONTAINER_DATA_TYPE_FLAGS)
     ):
-        return members[0]
-    return None
+        return None
+    string_type: DataType | None = None
+    for member in members:
+        if _string_pattern_data_type(member, model) is member:
+            string_type = string_type or member
+        elif member.type not in _BYTES_PATTERN_TYPES:
+            return None
+    return string_type
 
 
 def _needs_python_regex_engine(pattern: str, data_type: DataType, model: DataModel | None) -> bool:
