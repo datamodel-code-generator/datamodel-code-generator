@@ -14257,10 +14257,11 @@ APIConnectionError None ConnectError('connection refused')
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.howto.errors-output -->
 
-Every exception a client raises derives from `SDKError`, and all of them come from `client.errors`. A declared error
-status raises the subclass of its status with the body decoded by the declared error schema, as `NotFoundError` and
-`ConflictError` do above; catch `APIStatusError` for any of them. A failure to reach the server raises
-`APIConnectionError` with the HTTPX2 exception as `cause`.
+Every exception the client defines derives from `SDKError` and comes from `client.errors`; Python's own exceptions,
+such as `TypeError` for an unknown keyword, pass through unchanged. A declared error status raises the subclass of
+its status with the body decoded by the declared error schema, as `NotFoundError` and `ConflictError` do above; catch
+`APIStatusError` for any of them. A failure to reach the server raises `APIConnectionError` with the HTTPX2 exception
+as `cause`.
 
 | Exception | Raised for |
 |---|---|

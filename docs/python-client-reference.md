@@ -994,13 +994,16 @@ run with an `Error` that names the file in the custom template directory and, wh
 
 ## Errors
 
-Every exception a client raises derives from `SDKError`, and all of them are imported from `client.errors`. Each
+Every exception the client defines derives from `SDKError` and is imported from `client.errors`. Python's own
+exceptions pass through unchanged: `TypeError` for keywords a method cannot bind, `FileExistsError` for an existing
+download target without `overwrite=True`, and the native cancellation exception of a cancelled task. Each `SDKError`
 constructor is keyword-only and does not validate field values. Each carries `reason`, a stable snake_case symbol or
 `None`, `operation_id`, `info`, the response metadata when one arrived, `cause`, and the measurements `attempt_count`,
-`elapsed`, and `request_id`. Messages name only safe call metadata (the class, `operation_id`, `reason`, and a few
-class-specific details), never payloads, headers, or credentials. A secondary failure beside the primary error, such as
-a cleanup or invalidation failure, is named in the primary error's `__notes__`, never in an attribute or in its
-place.
+`elapsed`, and `request_id`. Messages name safe call metadata (the class, `operation_id`, `reason`, and a few
+class-specific details), never headers or credentials. The one payload a message carries is the start of the response
+body in an `APIStatusError` message, described below; treat that message as response data before you log it. A
+secondary failure beside the primary error, such as a cleanup or invalidation failure, is named in the primary error's
+`__notes__`, never in an attribute or in its place.
 
 | Exception | Raised for | Fields beside the shared ones |
 |---|---|---|
