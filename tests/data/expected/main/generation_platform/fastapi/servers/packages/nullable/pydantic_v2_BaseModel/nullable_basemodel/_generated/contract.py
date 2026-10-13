@@ -34,6 +34,7 @@ OperationDependencies = TypedDict(
         'post_note': Sequence[params.Depends],
         'post_form': Sequence[params.Depends],
         'upload': Sequence[params.Depends],
+        'post_extended': Sequence[params.Depends],
     },
     total=False,
 )
@@ -200,6 +201,18 @@ class Upload:
 
     BODY: Final = BodyAdapter(
         media=(BodyMedia(media_type='multipart/form-data', kind='multipart', adapter=TypeAdapter(nullable_basemodel_models.FieldUploadsPostRequest), fields=(FieldPlan('file', 'string'), FieldPlan('note', 'string')), json_parts=(JsonPart('meta', TypeAdapter(nullable_basemodel_models.Meta)),)),),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class PostExtended:
+    """Plans of the post_extended operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_basemodel_models.FieldExtendedPostRequest | None)),),
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},

@@ -59,3 +59,8 @@ class Reply:
 class FieldNotesPostRequest:
     text: str
     replies: list[Reply | None] | None = None
+
+
+@dataclass
+class FieldExtendedPostRequest(Item):
+    note: str | None = None
