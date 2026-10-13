@@ -4114,7 +4114,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         tag_field, _tag_values = tag_data
         match obj.extras.get("discriminator"):
             case dict() as discriminator:
-                discriminator["propertyName"] = tag_field
+                obj.extras["discriminator"] = {**discriminator, "propertyName": tag_field}
             case _:
                 obj.extras["discriminator"] = {"propertyName": tag_field}
 

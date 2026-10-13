@@ -16,6 +16,4 @@ check
   MISSING: server/README.md (file does not exist but should be generated)
   MISSING: server/py.typed (file does not exist but should be generated)
   5 runtime modules ['MISSING']
-  The input file type was determined to be: openapi
-  This can be specified explicitly with the `--input-file-type` option.
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

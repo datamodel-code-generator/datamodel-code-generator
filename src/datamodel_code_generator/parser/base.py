@@ -3633,8 +3633,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 field_name, alias = self.model_resolver.get_valid_field_name_and_alias(
                     field_name=property_name, model_type=self.field_name_model_type
                 )
-                discriminator["propertyName"] = field_name
                 mapping = discriminator.get("mapping", {})
+                field.extras["discriminator"] = discriminator = {**discriminator, "propertyName": field_name}
                 # Any type cannot be a discriminated union variant (Pydantic v2 rejects it)
                 has_any_variant = any(_is_any_variant(dt) for dt in field.data_type.data_types)
                 if has_any_variant:  # pragma: no cover

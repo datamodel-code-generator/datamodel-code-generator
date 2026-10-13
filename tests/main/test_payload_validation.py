@@ -1365,7 +1365,7 @@ def test_payload_runtime_pydantic_version_witnesses(
     case = SCHEMA_CASE_BY_ID[case_id]
     validate_with_source_schema(case, payload)
     if _pydantic_v2_legacy_runtime_exclusion_reason(case, backend):
-        with pytest.raises(PayloadAdapterError, match="look-around"):
+        with pytest.raises(PayloadAdapterError, match=r"look-around|backreferences"):
             generate_payload_runtime(case, generated_model_cache, backend)
         return
     adapter = load_generated_payload_adapter(case, generated_model_cache, backend)

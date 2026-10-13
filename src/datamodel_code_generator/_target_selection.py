@@ -166,10 +166,10 @@ def generate_selected_target(input_: _GenerationInput, config: GenerateConfig) -
     metadata and a remote lock update is written, and every model and package file is returned under the path its
     import path implies, as a write run in the working directory would generate it.
     """
-    from datamodel_code_generator.base_config import _missing_target_options  # noqa: PLC0415
+    from datamodel_code_generator.base_config import _target_options_error  # noqa: PLC0415
 
-    if (missing := _missing_target_options(config, output=config.output is not None)) is not None:
-        raise Error(missing)
+    if (problem := _target_options_error(config, output=config.output is not None)) is not None:
+        raise Error(problem)
     with PROCESS_STATE_LOCK:
         cwd = Path.cwd()
     bases = config._target_document_bases or {}  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]

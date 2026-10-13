@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from datamodel_code_generator import Error, InvalidClassNameError
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._target_documents import shown
 
 if TYPE_CHECKING:
@@ -84,8 +83,6 @@ def _run(  # noqa: PLR0913, PLR0917
     from datamodel_code_generator._target_selection import target_of  # noqa: PLC0415
 
     lockfile = _target_lockfile(config, pyproject_path)
-    if config.input_model:
-        raise _refused(_selector(config))
     generator, target = target_of(config, partial(_base, config, namespace, pyproject_path))
     effective = _target_settings(config, args, lockfile)
     if batch is not None:
@@ -288,10 +285,6 @@ def _next_step(target: TargetConfig, dependencies: tuple[str, ...]) -> str:
     return f"Add the runtime dependencies of {target.package} to your project:\n  uv add {arguments}"
 
 
-def _refused(selector: str) -> APIGenerationError:
-    return APIGenerationError((_conflict(f"{selector} cannot be used with --input-model"),))
-
-
 def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field: str) -> Path:
     """Return the directory that the documents a setting names resolve against.
 
@@ -305,10 +298,6 @@ def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field:
         if (file := _json_file(source)) is not None:
             return (Path.cwd() / file).parent
     return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
-
-
-def _conflict(message: str) -> Diagnostic:
-    return Diagnostic(code="E_CONFIG_CONFLICT", severity="error", stage="config", message=message)
 
 
 def _failure(error: Exception, *, encoding: str = "utf-8") -> None:
