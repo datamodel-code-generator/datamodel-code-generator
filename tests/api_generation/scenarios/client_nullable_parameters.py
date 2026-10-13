@@ -1,8 +1,9 @@
 """Send None for nullable parameters and bodies.
 
 An optional style parameter is left out, and a required one is refused. An inline object schema that admits null sends
-and decodes None as its body and its result, and still checks an object against its schema. A form or multipart body
-has no null to send, so such a schema's declared properties still travel as its fields and parts.
+and decodes None as its body and its result, its properties declared directly or through allOf, and still checks an
+object against its schema. A form or multipart body has no null to send, so such a schema's declared properties still
+travel as its fields and parts.
 """
 
 from __future__ import annotations
@@ -75,6 +76,15 @@ def nullable_bodies(package: ModuleType, lines: list[str]) -> None:
         record(lines, "send and decode null", lambda: api.default.post_note(body=None))
         record(lines, "send and decode an object", lambda: api.default.post_note(body=note))
         record(lines, "decode an object without its required member", lambda: api.default.post_note(body=None))
+        extended = request_body(package, "postExtended", None, {"text": "a"})
+        exchange.respond(
+            json_response(200, None), json_response(200, {"text": "b", "tag": "t"}), json_response(200, {})
+        )
+        record(lines, "send and decode null through allOf", lambda: api.default.post_extended(body=None))
+        record(lines, "send and decode an object through allOf", lambda: api.default.post_extended(body=extended))
+        record(
+            lines, "decode an allOf object without its required member", lambda: api.default.post_extended(body=None)
+        )
         _forms(package, api, exchange, lines)
     run(lambda: _async_nullable_bodies(package, lines))
     lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]

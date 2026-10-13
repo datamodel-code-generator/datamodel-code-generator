@@ -5492,6 +5492,29 @@
         "data": {
           "note": "n"
         }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "name": "a",
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "note": "n"
+        }
       }
     ],
     "package_snapshots": [
@@ -5797,6 +5820,29 @@
             }
           ]
         }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "name": "a",
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "note": "n"
+        }
       }
     ],
     "package_snapshots": []
@@ -5853,6 +5899,29 @@
               "text": "b"
             }
           ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "name": "a",
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "note": "n"
         }
       }
     ]
