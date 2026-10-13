@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forward",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/leaf"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "type": "object",
+      "properties": {
+        "Bar": {
+          "$ref": "#/$defs/Bar",
+          "description": "Named like its type."
+        }
+      },
+      "required": [
+        "Bar"
+      ]
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "back": {
+          "$ref": "#/$defs/leaf"
+        }
+      }
+    }
+  }
+}

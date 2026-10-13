@@ -238,7 +238,7 @@ def client_binding_report(
         for change in changes.pop(label, ()):
             edit = {key: change[key] for key in ("old", "new", "append") if key in change}
             edited = _sources(
-                *render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
+                *render(f"{count}-{change['id']}", {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
             )
             lines.extend((
                 f"change {label} {change['id']}",

@@ -798,6 +798,11 @@ class DataType(_BaseModel):
         self.__dict__.pop(_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY, None)
 
     @property
+    def _is_quoted_reference(self) -> bool:
+        """Return whether the referenced model is written as a quoted name."""
+        return (reference := self.reference) is not None and self.alias == f'"{reference.short_name}"'
+
+    @property
     def _is_forward_reference(self) -> bool:
         """Return whether the type renders as one quoted forward reference, before any nullability."""
         return self.__dict__.get(_FORWARD_REFERENCE_DATA_TYPE_KEY, False)

@@ -110,6 +110,11 @@ class PythonVersion(Enum):
         return self._is_py_312_or_later
 
     @property
+    def has_string_arguments_in_builtin_generics(self) -> bool:
+        """Check if ``typing`` resolves a quoted name inside ``list[...]`` and other builtin generics (3.11+)."""
+        return self._is_py_311_or_later
+
+    @property
     def has_native_deferred_annotations(self) -> bool:
         """Check if Python version has native deferred annotations (Python 3.14+)."""
         return self._is_py_314_or_later
