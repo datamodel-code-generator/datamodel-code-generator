@@ -27,6 +27,7 @@ from datamodel_code_generator.imports import (
     IMPORT_ULID,
     IMPORT_UUID,
 )
+from datamodel_code_generator.model.pydantic_v2 import imports as pydantic_imports
 from datamodel_code_generator.model.pydantic_v2._output_context import (
     ANNOTATED_CONSTRAINTS_CONTEXT as _ANNOTATED_CONSTRAINTS_CONTEXT,
 )
@@ -77,6 +78,8 @@ from datamodel_code_generator.python_literal import PythonCode
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+    NUMBER_BOUND_KEYWORDS,
+    NUMBER_KEYWORDS,
     DataType,
     StrictTypes,
     Types,
@@ -86,7 +89,8 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.types import DataTypeManager as _DataTypeManagerBase
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Collection, Iterator, Mapping, Sequence
+    from types import ModuleType
 
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Import
@@ -208,6 +212,11 @@ def _get_regex_literal(pattern: str) -> str:
     return PythonCode(raw_literal, pattern)
 
 
+def _number_constraint_keywords(keywords: frozenset[str], *imports: Import) -> dict[str, frozenset[str]]:
+    """Map the import paths of Pydantic types to the number keywords they take."""
+    return {f"{import_.from_}.{import_.import_}": keywords for import_ in imports}
+
+
 class _PydanticDataTypeManager(_DataTypeManagerBase):
     """Base data type manager for Pydantic models with constrained types."""
 
@@ -223,6 +232,33 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         "NonNegativeFloat": ("minimum",),
         "NonPositiveFloat": ("maximum",),
     }
+    NUMBER_CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
+        **_DataTypeManagerBase.NUMBER_CONSTRAINT_KEYWORDS,
+        **_number_constraint_keywords(
+            NUMBER_KEYWORDS,
+            IMPORT_CONINT,
+            IMPORT_CONFLOAT,
+            IMPORT_CONDECIMAL,
+            IMPORT_STRICT_INT,
+            IMPORT_STRICT_FLOAT,
+            IMPORT_POSITIVE_INT,
+            IMPORT_NEGATIVE_INT,
+            IMPORT_NON_NEGATIVE_INT,
+            IMPORT_NON_POSITIVE_INT,
+            IMPORT_POSITIVE_FLOAT,
+            IMPORT_NEGATIVE_FLOAT,
+            IMPORT_NON_NEGATIVE_FLOAT,
+            IMPORT_NON_POSITIVE_FLOAT,
+        ),
+        **_number_constraint_keywords(
+            NUMBER_BOUND_KEYWORDS,
+            IMPORT_AWARE_DATETIME,
+            IMPORT_NAIVE_DATETIME,
+            IMPORT_PAST_DATETIME,
+            IMPORT_FUTURE_DATETIME,
+        ),
+    })
+    KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (*_DataTypeManagerBase.KNOWN_TYPE_IMPORTS, pydantic_imports)
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
         (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
         (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,

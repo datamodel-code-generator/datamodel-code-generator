@@ -1,0 +1,152 @@
+{
+  "python_types": {
+    "valid": {
+      "count": 5,
+      "wait": "PT5S",
+      "wait_step": "PT4S",
+      "at": "2020-01-02T03:04:05Z",
+      "at_step": "2020-01-02T03:04:04Z",
+      "clock": "00:30:00",
+      "seconds": 5,
+      "plain": 1,
+      "price": "1.5",
+      "step": 1.5,
+      "nullable_wait": null,
+      "optional_count": 3,
+      "timeout": "PT1S",
+      "delay": "PT1S",
+      "day": "2020-01-02",
+      "label": "name",
+      "count_or_label": "name",
+      "counts": [
+        1
+      ]
+    },
+    "invalid": {
+      "count": -1,
+      "wait": "-PT1S",
+      "wait_step": "PT3S",
+      "at": "1969-12-31T23:59:59Z",
+      "at_step": "2020-01-02T03:04:05Z",
+      "clock": "02:00:00",
+      "seconds": -1,
+      "plain": -1,
+      "price": "0",
+      "step": 0.75,
+      "nullable_wait": "PT10S",
+      "optional_count": 11,
+      "timeout": "-PT1S",
+      "delay": "-PT1S",
+      "day": "1969-12-31",
+      "label": "",
+      "count_or_label": -1,
+      "counts": [
+        -1
+      ]
+    }
+  },
+  "custom_types": {
+    "valid": {
+      "ratio": "1/2",
+      "scale": "3",
+      "amount": "name",
+      "pause": "PT1S",
+      "total": 1
+    },
+    "invalid": {
+      "ratio": "21/2",
+      "scale": "-3",
+      "amount": "",
+      "pause": "-PT1S",
+      "total": -1
+    }
+  },
+  "type_overrides": {
+    "valid": {
+      "ratio": "1/2",
+      "scale": "3",
+      "amount": "1.5",
+      "pause": "2020-01-02",
+      "total": 1
+    },
+    "invalid": {
+      "ratio": "21/2",
+      "scale": "-3",
+      "amount": "-1.5",
+      "pause": "1969-12-31",
+      "total": -1
+    }
+  },
+  "known_types": {
+    "valid": {
+      "aware": "1970-01-01T00:00:04Z",
+      "naive": "1970-01-01T00:00:04",
+      "positive": 4,
+      "past": "2000-01-02",
+      "identifier": "12345678-1234-4678-9234-567812345678",
+      "secret": "s",
+      "link": "https://example.com/",
+      "anything": "x",
+      "items": [
+        "a"
+      ],
+      "queue": [
+        "a"
+      ],
+      "folder": "a/b"
+    },
+    "invalid": {
+      "aware": "1970-01-01T00:00:00Z",
+      "naive": "1970-01-01T00:00:12",
+      "positive": 11,
+      "past": "1969-12-31",
+      "identifier": "12345678-1234-4678-9234-567812345679",
+      "secret": "",
+      "link": "https://example.org/",
+      "anything": -1,
+      "items": [
+        -1
+      ],
+      "queue": [
+        -1
+      ],
+      "folder": ""
+    }
+  },
+  "collapsed_roots": {
+    "valid": {
+      "wait": "PT1S",
+      "label": "name",
+      "count": 5,
+      "labels": [
+        "name"
+      ]
+    },
+    "invalid": {
+      "wait": "-PT1S",
+      "label": "",
+      "count": -1,
+      "labels": [
+        ""
+      ]
+    }
+  },
+  "collapsed_root_type_overrides": {
+    "valid": {
+      "wait": "2020-01-02",
+      "label": "5",
+      "count": "name",
+      "labels": [
+        "name"
+      ]
+    },
+    "invalid": {
+      "wait": "1969-12-31",
+      "label": "11",
+      "count": "",
+      "labels": [
+        ""
+      ]
+    }
+  }
+}

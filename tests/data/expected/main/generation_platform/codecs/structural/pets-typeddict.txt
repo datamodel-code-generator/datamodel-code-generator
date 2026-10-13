@@ -1,14 +1,14 @@
-use /paths/~1pets/get parameter query limit: StdlibCodec
-use /paths/~1pets/get parameter query tags: StdlibCodec
-use /paths/~1pets/get parameter query filter: StdlibCodec
-use /paths/~1pets/get response_body 200: StdlibCodec
-use /paths/~1pets/post request_body: StdlibCodec
-use /paths/~1pets/post response_body 201: StdlibCodec
-use /paths/~1pets~1lookup/get response_body 200: StdlibCodec
-use /paths/~1pets~1{id}~1photo/get parameter path id: StdlibCodec
-use /paths/~1pets~1{id}/patch parameter path id: StdlibCodec
-use /paths/~1pets~1{id}/patch request_body: StdlibCodec
-use /paths/~1pets~1{id}/patch response_body 200: StdlibCodec
+use /paths/~1pets/get parameter query limit: TypedDictCodec
+use /paths/~1pets/get parameter query tags: TypedDictCodec
+use /paths/~1pets/get parameter query filter: TypedDictCodec
+use /paths/~1pets/get response_body 200: TypedDictCodec
+use /paths/~1pets/post request_body: TypedDictCodec
+use /paths/~1pets/post response_body 201: TypedDictCodec
+use /paths/~1pets~1lookup/get response_body 200: TypedDictCodec
+use /paths/~1pets~1{id}~1photo/get parameter path id: TypedDictCodec
+use /paths/~1pets~1{id}/patch parameter path id: TypedDictCodec
+use /paths/~1pets~1{id}/patch request_body: TypedDictCodec
+use /paths/~1pets~1{id}/patch response_body 200: TypedDictCodec
 create-server-decode: native {'name': 'Mimi', 'status': 'new', 'password': 'pw'} json={"name":"Mimi","status":"new","password":"pw"}
 create-client-from-wire: native {'id': 7, 'name': 'Mimi', 'status': 'new', 'extra': True} json={"id":7,"name":"Mimi","status":"new","extra":true}
 create-client-encode-native: json={"id":1,"name":"Mimi","status":"new","password":"pw"}

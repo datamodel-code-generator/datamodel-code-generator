@@ -92,6 +92,9 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/schema_validators_multiple_aliases_property_count.json": (
         "opt-in schema-validator e2e fixture; payload validation intentionally uses default generation"
     ),
+    "jsonschema/type_alias_lookaround/multiple_bases.json": (
+        "msgspec.Struct generation rejects two generated bases with fields; test_type_alias_lookaround validates it"
+    ),
     "jsonschema/rust_only_syntax.json": (
         "Rust-only regex syntax that Python's re rejects or warns about; test_main_rust_only_syntax validates it"
     ),
@@ -280,6 +283,8 @@ MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
     "jsonschema/missing_sentinel_payload.json",
     "openapi/missing_sentinel_nullable.yaml::components.schemas.MissingSentinelNullable",
 )
+TYPE_ALIAS_TYPE_PAYLOAD_ARGS = ("--use-type-alias", "--target-python-version", "3.11")
+"""Write roots as ``TypeAliasType``: Pydantic before 2.10 cannot build models that use ``type`` statements."""
 PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str, ...]]] = {
     **{
         f"jsonschema/type_union_constraints/{name}.json": dict.fromkeys(
@@ -291,6 +296,11 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         case_id: {PayloadBackend.PYDANTIC_V2: ("--use-missing-sentinel",)}
         for case_id in MISSING_SENTINEL_PAYLOAD_CASE_IDS
     },
+    **{
+        f"jsonschema/type_alias_lookaround/{name}.json": {PayloadBackend.PYDANTIC_V2: TYPE_ALIAS_TYPE_PAYLOAD_ARGS}
+        for name in ("nested", "siblings", "inherited")
+    },
+    "jsonschema/type_alias_lookaround/annotated_root.json": {PayloadBackend.PYDANTIC_V2: ("--use-annotated",)},
     **{
         f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))
         for name in (
@@ -347,7 +357,8 @@ PYDANTIC_V2_0_RUNTIME_MAX_VERSION = "2.1.0"
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION = "2.12.0"
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION = "2.10.0"
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION = "2.5.2"
-PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION = "2.8.0"
+PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION = "2.11.0"
+"""The oldest Pydantic whose payload target, the newest target it runs, writes compiled alias patterns (2.8)."""
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS = (
     "jsonschema/numeric_constraint_precision/ordinary.json",
     "jsonschema/native_decimal_default_constrained.json",
@@ -414,29 +425,43 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
     "openapi/pattern_lookaround.yaml::components.schemas.info": (
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI lookaround pattern validators"
     ),
-    "jsonschema/type_alias_lookaround/tree/schema_a.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "jsonschema/type_alias_lookaround/tree/schema_b.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
+    **dict.fromkeys(
+        (
+            "jsonschema/type_alias_lookaround/annotated_root.json",
+            "jsonschema/type_alias_lookaround/inherited.json",
+            "jsonschema/type_alias_lookaround/nested.json",
+            "jsonschema/type_alias_lookaround/siblings.json",
+            "jsonschema/type_alias_lookaround/tree/schema_a.json",
+            "jsonschema/type_alias_lookaround/tree/schema_b.json",
+        ),
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators",
     ),
 }
-PYDANTIC_V2_DATACLASS_COMPILED_PATTERN_CASE_IDS = (
-    *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
+PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS = (
     "jsonschema/lookaround_anyof_nullable.json",
     "jsonschema/lookaround_dict.json",
-    "jsonschema/lookaround_mixed_constraints.json",
     "jsonschema/lookaround_union_types.json",
     "jsonschema/nested_lookaround_array.json",
-    "jsonschema/root_alias_constraints/lookaround.json",
     "jsonschema/schema_validators_runtime_root_cross_module/a.json",
+    "jsonschema/type_alias_lookaround/annotated_root.json",
+    "jsonschema/type_alias_lookaround/inherited.json",
+    "jsonschema/type_alias_lookaround/nested.json",
+    "jsonschema/type_alias_lookaround/siblings.json",
     "jsonschema/type_alias_lookaround/tree/schema_a.json",
     "jsonschema/type_alias_lookaround/tree/schema_b.json",
 )
+"""Lookaround aliases a dataclass reaches: the dataclass config selects the engine, so they need Pydantic 2.5."""
+PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
+    *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
+    "jsonschema/lookaround_mixed_constraints.json",
+    "jsonschema/root_alias_constraints/lookaround.json",
+)
+"""Lookaround aliases validated on their own: only a compiled pattern carries the engine without a config."""
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
-        PYDANTIC_V2_DATACLASS_COMPILED_PATTERN_CASE_IDS,
-        "Pydantic before 2.8.0 cannot validate compiled lookaround patterns in type aliases",
+        PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS,
+        "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string lookaround "
+        "patterns that a bare type alias has no model config to select regex_engine='python-re' for",
     ),
 }
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
@@ -450,6 +475,10 @@ PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] 
         ),
     },
     PayloadBackend.PYDANTIC_V2_DATACLASS: {
+        **{
+            case_id: PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES[case_id]
+            for case_id in PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS
+        },
         "jsonschema/use_decimal_for_multiple_of.json": (
             "Pydantic before 2.5.0 can reject schema-valid dataclass float multipleOf values near float boundaries"
         ),

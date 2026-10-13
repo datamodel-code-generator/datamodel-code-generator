@@ -9,7 +9,7 @@ from typing import Final
 
 import models._internal as models__internal
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models__internal.Kind]] = PydanticCodec(models__internal.Kind)
 """Codec of /paths/~1items/get parameter (request query kind)."""

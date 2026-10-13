@@ -82,5 +82,5 @@ The package copies the runtime modules its capabilities and model backend need:
 
 - `_runtime`: `__init__.py`
 - `_runtime/client`: `__init__.py`, `client.py`, `content.py`, `errors.py`, `logical.py`, `media.py`, `native.py`, `operations.py`, `options.py`, `paths.py`, `positions.py`, `raw.py`, `responses.py`, `retry.py`, `timing.py`, `urls.py`
-- `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `native.py`, `parameters.py`, `unset.py`
+- `_runtime/model_codecs`: `__init__.py`, `errors.py`, `media.py`, `parameters.py`, `pydantic_adapters.py`, `pydantic_models.py`, `unset.py`
 - `_runtime/protocols`: `__init__.py`, `errors.py`, `records.py`, `references.py`, `signatures.py`, `values.py`, `verification.py`, `webhook_events.py`, `webhook_keys.py`, `webhooks.py`

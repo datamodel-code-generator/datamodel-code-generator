@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
 
 codec_0: Final[PydanticDataclassCodec[models.RecordRequest]] = PydanticDataclassCodec(models.RecordRequest)

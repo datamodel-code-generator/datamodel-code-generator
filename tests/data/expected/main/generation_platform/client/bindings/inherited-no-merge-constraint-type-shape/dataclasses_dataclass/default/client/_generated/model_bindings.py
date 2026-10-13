@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Fixed, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Fixed, Model
 
 
 
@@ -21,122 +21,122 @@ MODELS: Final[dict[type, Model]] = {
     models.Child: Model((Field('enumValue', 'enumValue'), Field('constValue', 'constValue'), Field('uuidValue', 'uuidValue'), Field('singleAnyValue', 'singleAnyValue'), Field('singleOneValue', 'singleOneValue'), Field('mixedValue', 'mixedValue'), Field('integerValue', 'integerValue'), Field('stringValue', 'stringValue'), Field('arrayValue', 'arrayValue'), Field('numberValue', 'numberValue'), Field('booleanValue', 'booleanValue'), Field('tupleValue', 'tupleValue', Fixed((None, None))), Field('containsTrueValue', 'containsTrueValue'), Field('containsFalseValue', 'containsFalseValue'), Field('containsCountValue', 'containsCountValue'), Field('propertyNamesValue', 'propertyNamesValue'), Field('nullableValue', 'nullableValue'), Field('nonNullableValue', 'nonNullableValue'), Field('refSiblingValue', 'refSiblingValue'), Field('unconstrainedUnionValue', 'unconstrainedUnionValue'), Field('mixedUntypedEnumValue', 'mixedUntypedEnumValue'), Field('nullableTypeListValue', 'nullableTypeListValue'), Field('nullableAnyValue', 'nullableAnyValue'), Field('nullableOneValue', 'nullableOneValue'), Field('nullableArrayValue', 'nullableArrayValue'), Field('nullableMappingValue', 'nullableMappingValue'), Field('unionArrayItemsValue', 'unionArrayItemsValue'), Field('unionArrayContainsValue', 'unionArrayContainsValue'), Field('unionArrayLengthValue', 'unionArrayLengthValue'), Field('unionObjectValuesValue', 'unionObjectValuesValue'), Field('unionObjectNamesValue', 'unionObjectNamesValue'), Field('unionObjectCountValue', 'unionObjectCountValue'), Field('nestedObjectValue', 'nestedObjectValue', models.NestedObjectValue), Field('itemsTrueValue', 'itemsTrueValue'), Field('mappingTrueValue', 'mappingTrueValue'), Field('directTrueValue', 'directTrueValue'), Field('anyFalseValue', 'anyFalseValue'), Field('oneFalseValue', 'oneFalseValue'))),
 }
 
-codec_0: Final[StdlibCodec[models.EnumValue]] = StdlibCodec(models.EnumValue, MODELS)
+codec_0: Final[DataclassCodec[models.EnumValue]] = DataclassCodec(models.EnumValue, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.EnumValue]] = StdlibCodec(models.EnumValue, MODELS)
+codec_1: Final[DataclassCodec[models.EnumValue]] = DataclassCodec(models.EnumValue, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.ConstValue]] = StdlibCodec(None, MODELS)
+codec_2: Final[DataclassCodec[models.ConstValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.ConstValue]] = StdlibCodec(None, MODELS)
+codec_3: Final[DataclassCodec[models.ConstValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.UuidValue]] = StdlibCodec(None, MODELS)
+codec_4: Final[DataclassCodec[models.UuidValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.UuidValue]] = StdlibCodec(None, MODELS)
+codec_5: Final[DataclassCodec[models.UuidValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.SingleAnyValue]] = StdlibCodec(None, MODELS)
+codec_6: Final[DataclassCodec[models.SingleAnyValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.SingleAnyValue]] = StdlibCodec(None, MODELS)
+codec_7: Final[DataclassCodec[models.SingleAnyValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""
 
-codec_8: Final[StdlibCodec[models.SingleOneValue]] = StdlibCodec(None, MODELS)
+codec_8: Final[DataclassCodec[models.SingleOneValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~14/post request_body (request application/json)."""
 
-codec_9: Final[StdlibCodec[models.SingleOneValue]] = StdlibCodec(None, MODELS)
+codec_9: Final[DataclassCodec[models.SingleOneValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~14/post response_body (response 200 application/json)."""
 
-codec_10: Final[StdlibCodec[models.MixedValue]] = StdlibCodec(None, MODELS)
+codec_10: Final[DataclassCodec[models.MixedValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~15/post request_body (request application/json)."""
 
-codec_11: Final[StdlibCodec[models.MixedValue]] = StdlibCodec(None, MODELS)
+codec_11: Final[DataclassCodec[models.MixedValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~15/post response_body (response 200 application/json)."""
 
-codec_12: Final[StdlibCodec[models.TupleValue]] = StdlibCodec(Fixed((None, None)), MODELS)
+codec_12: Final[DataclassCodec[models.TupleValue]] = DataclassCodec(Fixed((None, None)), MODELS)
 """Codec of /paths/~1bindings~16/post request_body (request application/json)."""
 
-codec_13: Final[StdlibCodec[models.TupleValue]] = StdlibCodec(Fixed((None, None)), MODELS)
+codec_13: Final[DataclassCodec[models.TupleValue]] = DataclassCodec(Fixed((None, None)), MODELS)
 """Codec of /paths/~1bindings~16/post response_body (response 200 application/json)."""
 
-codec_14: Final[StdlibCodec[models.RefSiblingInnerValue]] = StdlibCodec(None, MODELS)
+codec_14: Final[DataclassCodec[models.RefSiblingInnerValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~17/post request_body (request application/json)."""
 
-codec_15: Final[StdlibCodec[models.RefSiblingInnerValue]] = StdlibCodec(None, MODELS)
+codec_15: Final[DataclassCodec[models.RefSiblingInnerValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~17/post response_body (response 200 application/json)."""
 
-codec_16: Final[StdlibCodec[models.RefSiblingValue]] = StdlibCodec(None, MODELS)
+codec_16: Final[DataclassCodec[models.RefSiblingValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~18/post request_body (request application/json)."""
 
-codec_17: Final[StdlibCodec[models.RefSiblingValue]] = StdlibCodec(None, MODELS)
+codec_17: Final[DataclassCodec[models.RefSiblingValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~18/post response_body (response 200 application/json)."""
 
-codec_18: Final[StdlibCodec[models.UnconstrainedUnionValue]] = StdlibCodec(None, MODELS)
+codec_18: Final[DataclassCodec[models.UnconstrainedUnionValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~19/post request_body (request application/json)."""
 
-codec_19: Final[StdlibCodec[models.UnconstrainedUnionValue]] = StdlibCodec(None, MODELS)
+codec_19: Final[DataclassCodec[models.UnconstrainedUnionValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~19/post response_body (response 200 application/json)."""
 
-codec_20: Final[StdlibCodec[models.MixedUntypedEnumValue]] = StdlibCodec(models.MixedUntypedEnumValue, MODELS)
+codec_20: Final[DataclassCodec[models.MixedUntypedEnumValue]] = DataclassCodec(models.MixedUntypedEnumValue, MODELS)
 """Codec of /paths/~1bindings~110/post request_body (request application/json)."""
 
-codec_21: Final[StdlibCodec[models.MixedUntypedEnumValue]] = StdlibCodec(models.MixedUntypedEnumValue, MODELS)
+codec_21: Final[DataclassCodec[models.MixedUntypedEnumValue]] = DataclassCodec(models.MixedUntypedEnumValue, MODELS)
 """Codec of /paths/~1bindings~110/post response_body (response 200 application/json)."""
 
-codec_22: Final[StdlibCodec[models.NullableTypeListValue]] = StdlibCodec(None, MODELS)
+codec_22: Final[DataclassCodec[models.NullableTypeListValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~111/post request_body (request application/json)."""
 
-codec_23: Final[StdlibCodec[models.NullableTypeListValue]] = StdlibCodec(None, MODELS)
+codec_23: Final[DataclassCodec[models.NullableTypeListValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~111/post response_body (response 200 application/json)."""
 
-codec_24: Final[StdlibCodec[models.NullableAnyValue]] = StdlibCodec(None, MODELS)
+codec_24: Final[DataclassCodec[models.NullableAnyValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~112/post request_body (request application/json)."""
 
-codec_25: Final[StdlibCodec[models.NullableAnyValue]] = StdlibCodec(None, MODELS)
+codec_25: Final[DataclassCodec[models.NullableAnyValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~112/post response_body (response 200 application/json)."""
 
-codec_26: Final[StdlibCodec[models.NullableOneValue]] = StdlibCodec(None, MODELS)
+codec_26: Final[DataclassCodec[models.NullableOneValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~113/post request_body (request application/json)."""
 
-codec_27: Final[StdlibCodec[models.NullableOneValue]] = StdlibCodec(None, MODELS)
+codec_27: Final[DataclassCodec[models.NullableOneValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~113/post response_body (response 200 application/json)."""
 
-codec_28: Final[StdlibCodec[models.ArrayStringUnionValue]] = StdlibCodec(None, MODELS)
+codec_28: Final[DataclassCodec[models.ArrayStringUnionValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~114/post request_body (request application/json)."""
 
-codec_29: Final[StdlibCodec[models.ArrayStringUnionValue]] = StdlibCodec(None, MODELS)
+codec_29: Final[DataclassCodec[models.ArrayStringUnionValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~114/post response_body (response 200 application/json)."""
 
-codec_30: Final[StdlibCodec[models.ObjectStringUnionValue]] = StdlibCodec(None, MODELS)
+codec_30: Final[DataclassCodec[models.ObjectStringUnionValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~115/post request_body (request application/json)."""
 
-codec_31: Final[StdlibCodec[models.ObjectStringUnionValue]] = StdlibCodec(None, MODELS)
+codec_31: Final[DataclassCodec[models.ObjectStringUnionValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~115/post response_body (response 200 application/json)."""
 
-codec_32: Final[StdlibCodec[models.DetailValue]] = StdlibCodec(models.DetailValue, MODELS)
+codec_32: Final[DataclassCodec[models.DetailValue]] = DataclassCodec(models.DetailValue, MODELS)
 """Codec of /paths/~1bindings~116/post request_body (request application/json)."""
 
-codec_33: Final[StdlibCodec[models.DetailValue]] = StdlibCodec(models.DetailValue, MODELS)
+codec_33: Final[DataclassCodec[models.DetailValue]] = DataclassCodec(models.DetailValue, MODELS)
 """Codec of /paths/~1bindings~116/post response_body (response 200 application/json)."""
 
-codec_34: Final[StdlibCodec[models.NodeValue]] = StdlibCodec(models.NodeValue, MODELS)
+codec_34: Final[DataclassCodec[models.NodeValue]] = DataclassCodec(models.NodeValue, MODELS)
 """Codec of /paths/~1bindings~117/post request_body (request application/json)."""
 
-codec_35: Final[StdlibCodec[models.NodeValue]] = StdlibCodec(models.NodeValue, MODELS)
+codec_35: Final[DataclassCodec[models.NodeValue]] = DataclassCodec(models.NodeValue, MODELS)
 """Codec of /paths/~1bindings~117/post response_body (response 200 application/json)."""
 
-codec_36: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_36: Final[DataclassCodec[models.Base]] = DataclassCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~118/post request_body (request application/json)."""
 
-codec_37: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_37: Final[DataclassCodec[models.Base]] = DataclassCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~118/post response_body (response 200 application/json)."""
 
-codec_38: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_38: Final[DataclassCodec[models.Child]] = DataclassCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~119/post request_body (request application/json)."""
 
-codec_39: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_39: Final[DataclassCodec[models.Child]] = DataclassCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~119/post response_body (response 200 application/json)."""
