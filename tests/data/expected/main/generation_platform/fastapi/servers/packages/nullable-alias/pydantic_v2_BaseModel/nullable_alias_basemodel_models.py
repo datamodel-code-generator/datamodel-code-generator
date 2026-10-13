@@ -44,3 +44,12 @@ FieldIdsPostRequest = TypeAliasType("FieldIdsPostRequest", UUID)
 
 
 FieldDraftsPostRequest = TypeAliasType("FieldDraftsPostRequest", str | None)
+
+
+class Reply(BaseModel):
+    text: str | None = None
+
+
+class FieldNotesPostRequest(BaseModel):
+    text: str
+    replies: list[Reply] | None = None

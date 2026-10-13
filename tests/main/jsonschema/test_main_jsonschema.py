@@ -11866,6 +11866,25 @@ def test_main_msgspec_discriminator_with_type_string(output_file: Path) -> None:
     )
 
 
+def test_main_msgspec_discriminator_mapping_tags(output_file: Path) -> None:
+    """Tag msgspec variants whose discriminator value comes from the mapping or the schema name."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_msgspec_tags.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="discriminator_mapping_msgspec_tags.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @MSGSPEC_LEGACY_BLACK_SKIP
 def test_main_msgspec_discriminator_with_meta(output_file: Path) -> None:
     """Test msgspec Struct generation with discriminator ClassVar having Meta constraints."""

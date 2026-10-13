@@ -26,9 +26,9 @@ from ..client.errors import (
     add_secondary,
     is_transport,
 )
-from ..client.logical import Delivery
 from ..client.operations import request_errors
 from ..client.options import RequestOptions
+from ..client.retry import Delivery
 from ..client.timing import SYSTEM_CLOCK, Clock
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError

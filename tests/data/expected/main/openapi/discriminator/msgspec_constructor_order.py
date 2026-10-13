@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Literal, TypeAlias
+from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
@@ -15,18 +15,16 @@ class Type(Enum):
     my_third_object = 'my_third_object'
 
 
-class ObjectBase(Struct):
-    type: Annotated[Literal['type1'], Meta(description='Object type')]
+class ObjectBase(Struct, tag_field='type', tag='type1'):
     name: Annotated[str, Meta(description='Name of the object')] | UnsetType = UNSET
 
 
-class CreateObjectRequest(ObjectBase):
+class CreateObjectRequest(ObjectBase, tag_field='type', tag='type2'):
     name: Annotated[str, Meta(description='Name of the object')]
-    type: Annotated[Literal['type2'], Meta(description='Object type')]
 
 
-class UpdateObjectRequest(ObjectBase):
-    type: Literal['type3']
+class UpdateObjectRequest(ObjectBase, tag_field='type', tag='type3'):
+    pass
 
 
 Demo: TypeAlias = ObjectBase | CreateObjectRequest | UpdateObjectRequest

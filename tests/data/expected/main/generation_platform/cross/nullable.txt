@@ -90,3 +90,17 @@ get_thing
   get_thing(case='thing')
   < 200 application/json
   = Thing(id=1)
+post_memo None
+  > POST /memos?case=none [application/json]
+  post_memo(case='none', body=None)
+  < 200 application/json
+  = None
+post_memo value
+  > POST /memos?case=memo [application/json]
+  post_memo(case='memo', body=FieldMemosPostRequest(text='a'))
+  < 200 application/json
+  = FieldMemosPostResponse(text='m')
+post_memo refused
+  > POST /memos?case=none [application/json]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"missing","loc":["body","text"],"msg":"<msg>"}]} [operation_id='postMemo', status_code=422, body=b'{"detail":[{"type":"missing","loc":["body","text"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"missing","loc":["body","text"],"msg":"<msg>"}]}', truncated=False]

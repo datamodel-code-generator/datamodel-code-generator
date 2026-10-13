@@ -1,6 +1,6 @@
 # nullable-results-alias
 serve pydantic_v2.BaseModel
-service DefaultService: get_anything, get_list, get_name, get_note, get_pet, get_text, get_thing, get_value, head_text
+service DefaultService: get_anything, get_list, get_name, get_note, get_pet, get_text, get_thing, get_value, head_text, post_memo
 service DefaultService without its methods: TypeError
 > GET /texts?case=none
   get_text(none)

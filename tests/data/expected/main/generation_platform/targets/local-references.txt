@@ -1,0 +1,28 @@
+# local-references
+write secrets/creds.yaml
+generate
+  Error: Blocked unsafe local $ref: ../../secrets/creds.yaml
+  Reason: the generated server serves the source document, so a referenced file must be inside the input directory.
+  Input directory: <root>/spec/local
+  Resolved path: <root>/secrets/creds.yaml
+  Move the referenced schemas under the input directory.
+check
+  Error: Blocked unsafe local $ref: ../../secrets/creds.yaml
+  Reason: the generated server serves the source document, so a referenced file must be inside the input directory.
+  Input directory: <root>/spec/local
+  Resolved path: <root>/secrets/creds.yaml
+  Move the referenced schemas under the input directory.
+generate
+  Error: Blocked unsafe local $ref: ../../secrets/creds.yaml
+  Reason: the generated server serves the source document, so a referenced file must be inside the input directory.
+  Input directory: <root>/spec/local
+  Resolved path: <root>/secrets/creds.yaml
+  Move the referenced schemas under the input directory.
+generate
+  Error: Blocked unsafe local $ref: ../../secrets/creds.yaml
+  Reason: the generated server serves the source document, so a referenced file must be inside the input directory.
+  Input directory: <root>/spec/local
+  Resolved path: <root>/secrets/creds.yaml
+  Move the referenced schemas under the input directory.
+tree
+  secrets/creds.yaml

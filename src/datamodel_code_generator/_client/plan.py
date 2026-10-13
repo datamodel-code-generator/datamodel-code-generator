@@ -25,7 +25,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     property_members,
 )
 from datamodel_code_generator._runtime.client.media import most_specific
-from datamodel_code_generator._runtime.client.multipart import PartPlan
+from datamodel_code_generator._runtime.client.parts import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BuiltinType,
