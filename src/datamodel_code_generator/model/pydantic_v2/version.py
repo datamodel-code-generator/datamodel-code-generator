@@ -22,6 +22,7 @@ PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM: Final = "2.10"
 PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM: Final = "2.10"
 PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM: Final = "2.11"
 PYDANTIC_V2_MISSING_MINIMUM: Final = "2.14"
+PYDANTIC_V2_BYTES_PATTERN_MINIMUM: Final = "2.14"
 
 
 @cache
@@ -35,6 +36,15 @@ def target_supports(target_version: TargetPydanticVersion | str | None, minimum:
 def model_target_supports(model: DataModel | None, minimum: str) -> bool:
     """Return whether the target recorded for ``model`` has a feature added in ``minimum``."""
     return target_supports(None if model is None else model.extra_template_data.get("target_pydantic_version"), minimum)
+
+
+def explicit_model_target_supports(model: DataModel | None, minimum: str) -> bool:
+    """Return whether an explicit target recorded for ``model`` has a feature added in ``minimum``.
+
+    An unset target does not: its newest forms also run on the Pydantic releases before the newest one.
+    """
+    target = None if model is None else model.extra_template_data.get("target_pydantic_version")
+    return target is not None and target_supports(target, minimum)
 
 
 def _includes_dict_key_reference_classes(model: DataModel) -> bool:

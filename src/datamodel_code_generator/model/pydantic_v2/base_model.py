@@ -81,13 +81,14 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
     PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM,
+    PYDANTIC_V2_BYTES_PATTERN_MINIMUM,
     PYDANTIC_V2_COMPILED_PATTERN_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
     PYDANTIC_V2_MISSING_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
+    explicit_model_target_supports,
     model_target_supports,
-    target_supports,
 )
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
@@ -493,14 +494,19 @@ _PYDANTIC_V2_DEFAULT_FIELD_KEYS: frozenset[str] = frozenset({
 
 
 def _compiled_python_pattern(
-    pattern: object, data_type: DataType, prefix: str | None, prepared: dict[str, PythonRuntimeExpression]
+    pattern: object,
+    data_type: DataType,
+    prefix: str | None,
+    prepared: dict[str, PythonRuntimeExpression],
+    model: DataModel | None,
 ) -> PythonRuntimeExpression | None:
     """Keep a Python pattern independent of its consuming model's config.
 
-    A ``None`` prefix selects every pattern that needs Python's engine, as ``has_lookaround_pattern`` does.
+    A ``None`` prefix selects every pattern that needs Python's engine, as ``has_lookaround_pattern`` does
+    for ``model``, the model that owns the pattern.
     """
     if not isinstance(pattern, str) or not (
-        _needs_python_regex_engine(pattern, data_type) if prefix is None else pattern.startswith(prefix)
+        _needs_python_regex_engine(pattern, data_type, model) if prefix is None else pattern.startswith(prefix)
     ):
         return None
     pattern = str(pattern)
@@ -519,7 +525,11 @@ def _prepare_field_python_pattern(
     if isinstance(field.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression) or not (
         isinstance(field, _PydanticBaseDataModelField)
         and isinstance(field.constraints, Constraints)
-        and (pattern := _compiled_python_pattern(field.constraints.pattern, field.data_type, prefix, prepared))
+        and (
+            pattern := _compiled_python_pattern(
+                field.constraints.pattern, field.data_type, prefix, prepared, field.parent
+            )
+        )
         and not field._has_anyurl_outside_container()  # noqa: SLF001
     ):
         return False
@@ -535,24 +545,28 @@ def _prepare_python_patterns(
     _prepare_field_python_pattern(field, prefix, prepared)
     for data_type in field.data_type.all_data_types:
         if data_type.kwargs and (
-            pattern := _compiled_python_pattern(data_type.kwargs.get("pattern"), data_type, prefix, prepared)
+            pattern := _compiled_python_pattern(
+                data_type.kwargs.get("pattern"), data_type, prefix, prepared, field.parent
+            )
         ):
             data_type.kwargs["pattern"] = pattern
             data_type._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
 
 
-def _copy_alias_data_type(data_type: DataType, prepared: dict[str, PythonRuntimeExpression] | None) -> DataType | None:
+def _copy_alias_data_type(
+    data_type: DataType, prepared: dict[str, PythonRuntimeExpression] | None, model: DataModel | None
+) -> DataType | None:
     """Copy only the path to alias-specific nodes; collapsed fields may share the other nodes.
 
     ``con*`` calls render as ``Annotated`` constraints because type checkers reject calls in aliases,
     and patterns that need Python's engine are compiled because an alias has no model config.
     Without ``prepared`` the patterns stay strings, for targets that predate compiled patterns.
     """
-    nested = [_copy_alias_data_type(nested_type, prepared) for nested_type in data_type.data_types]
-    dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared)
+    nested = [_copy_alias_data_type(nested_type, prepared, model) for nested_type in data_type.data_types]
+    dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared, model)
     kwargs = data_type.kwargs
     pattern = (
-        _compiled_python_pattern(kwargs.get("pattern"), data_type, None, prepared)
+        _compiled_python_pattern(kwargs.get("pattern"), data_type, None, prepared, model)
         if kwargs and prepared is not None
         else None
     )
@@ -609,7 +623,7 @@ def _prepare_type_alias_field(
     """
     compiled = prepared if model_target_supports(field.parent, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM) else None
     changed = compiled is not None and _prepare_field_python_pattern(field, None, compiled)
-    if (data_type := _copy_alias_data_type(field.data_type, compiled)) is None:
+    if (data_type := _copy_alias_data_type(field.data_type, compiled, field.parent)) is None:
         return changed
     replace_data_type(field, data_type)
     return True
@@ -921,8 +935,7 @@ class DataModelField(_PydanticBaseDataModelField):
 
     def _missing_sentinel_import(self) -> Import:
         """Import MISSING from pydantic for an explicit 2.14+ target; an unset target keeps the experimental path."""
-        target = None if self.parent is None else self.parent.extra_template_data.get("target_pydantic_version")
-        if target is not None and target_supports(target, PYDANTIC_V2_MISSING_MINIMUM):
+        if explicit_model_target_supports(self.parent, PYDANTIC_V2_MISSING_MINIMUM):
             return IMPORT_PYDANTIC_MISSING
         return IMPORT_MISSING
 
@@ -957,7 +970,8 @@ class DataModelField(_PydanticBaseDataModelField):
 _LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
 
 
-_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr", "bytes", "StrictBytes"})
+_STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
+_BYTES_PATTERN_TYPES: frozenset[str | None] = frozenset({"bytes", "StrictBytes"})
 _UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
 _REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
 _REGEX_TOKEN: re.Pattern[str] = re.compile(
@@ -1016,30 +1030,42 @@ def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
     return (rejected, minimum_python)
 
 
-def _string_pattern_data_type(data_type: DataType) -> DataType | None:
-    """Return the string type a pattern constrains, looking through unions of string types such as ``str | None``."""
-    if data_type.type in _STRING_PATTERN_TYPES or getattr(data_type, "annotated_string", False):
+def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> DataType | None:
+    """Return the string type a pattern constrains, looking through unions of string types such as ``str | None``.
+
+    Pydantic compiles ``bytes`` patterns from 2.14 on and ignores them before, so ``bytes`` counts only for an
+    explicit target of ``model`` that has them: an unset target keeps the default engine of older releases.
+    """
+    if (
+        (type_name := data_type.type) in _STRING_PATTERN_TYPES
+        or getattr(data_type, "annotated_string", False)
+        or (
+            type_name in _BYTES_PATTERN_TYPES
+            and explicit_model_target_supports(model, PYDANTIC_V2_BYTES_PATTERN_MINIMUM)
+        )
+    ):
         return data_type
     if (
         data_type.type is None
         and (members := data_type.data_types)
         and not any(getattr(data_type, flag) for flag in _CONTAINER_DATA_TYPE_FLAGS)
-        and all(_string_pattern_data_type(member) is member for member in members)
+        and all(_string_pattern_data_type(member, model) is member for member in members)
     ):
         return members[0]
     return None
 
 
-def _needs_python_regex_engine(pattern: str, data_type: DataType) -> bool:
-    """Return whether an emitted pattern needs Python's ``re``.
+def _needs_python_regex_engine(pattern: str, data_type: DataType, model: DataModel | None) -> bool:
+    """Return whether a pattern emitted for ``model`` needs Python's ``re``.
 
     Lookaround keeps its long-standing textual check. Other syntax is detected statically for string patterns
-    and keyed on the target Python version, so the output never depends on the installed pydantic-core or on
-    the Python running the generator. A pattern Python's ``re`` also rejects fails at import either way.
+    and keyed on the target Python and Pydantic versions, so the output never depends on the installed
+    pydantic-core or on the Python running the generator. A pattern Python's ``re`` also rejects fails at
+    import either way.
     """
     if _LOOKAROUND_PATTERN.search(pattern) is not None:
         return True
-    if (string_type := _string_pattern_data_type(data_type)) is None:
+    if (string_type := _string_pattern_data_type(data_type, model)) is None:
         return False
     scan = _scan_regex_syntax(pattern)
     return scan is not None and scan[0] and string_type.python_version.version_key >= scan[1]
@@ -1176,13 +1202,13 @@ def has_lookaround_pattern(
         _visited = set()
     for field in fields:
         pattern = isinstance(field.constraints, Constraints) and field.constraints.pattern
-        if pattern and _needs_python_regex_engine(pattern, field.data_type):
+        if pattern and _needs_python_regex_engine(pattern, field.data_type, field.parent):
             return True
         for data_type in field.data_type.all_data_types:
             pattern = (data_type.kwargs or {}).get("pattern")
             if isinstance(pattern, PythonRuntimeExpression):
                 pattern = str(pattern)
-            if pattern and _needs_python_regex_engine(pattern, data_type):
+            if pattern and _needs_python_regex_engine(pattern, data_type, field.parent):
                 return True
             if not follow_references or data_type.reference is None:
                 continue
