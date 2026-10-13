@@ -49,7 +49,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     UnionType,
 )
-from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis
+from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -718,6 +718,16 @@ class Planner:  # noqa: PLR0904
             )
             for placeholder in dict.fromkeys(names)
             if placeholder not in declared
+        )
+        template = path_placeholders(operation.path)
+        self.problems.extend(
+            _problem(
+                "F_ROUTE_INVALID",
+                f"The path parameter {declaration.name!r} of {_label(operation)} names no path placeholder",
+                declaration.use_site,
+            )
+            for declaration in operation.parameters
+            if fact(declaration, "in") == "path" and declaration.name not in template
         )
         body = None if operation.request_body is None else self.body(operation, operation.request_body)
         responses = tuple(self.response(operation, response) for response in operation.responses)

@@ -1,0 +1,68 @@
+{
+  "Base": [
+    {
+      "payload": {
+        "code": "abc"
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "code": "badly"
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Left": [
+    {
+      "payload": {
+        "code": "abc",
+        "x": 1
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "code": "badly"
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Holder": [
+    {
+      "payload": {
+        "left": {
+          "code": "abc"
+        },
+        "right": {
+          "code": "abc"
+        }
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "left": {
+          "code": "badly"
+        }
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    },
+    {
+      "payload": {
+        "right": {
+          "code": "badly"
+        }
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ]
+}

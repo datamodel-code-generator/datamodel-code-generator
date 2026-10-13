@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
 codec_0: Final[MsgspecCodec[models.FieldPetsPostQueryTagParameter]] = MsgspecCodec(models.FieldPetsPostQueryTagParameter)
 """Codec of /paths/~1pets/post parameter (request query tag)."""

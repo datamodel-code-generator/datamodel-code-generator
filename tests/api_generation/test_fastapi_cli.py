@@ -1026,6 +1026,38 @@ def test_fastapi_cli_target_python(
     )
 
 
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--target-pydantic-version", "2"],
+        ["--target-pydantic-version", "2.11", "--check"],
+        ["--target-pydantic-version", "2.12", "--output-format", "json"],
+        ["--target-pydantic-version", "2.12", "--use-missing-sentinel"],
+        ["--target-pydantic-version", "2", "--output-model-type", "pydantic_v2.dataclass"],
+    ],
+    ids=["2", "2.11-check", "2.12-json", "2.12-missing", "2-dataclass"],
+)
+def test_fastapi_cli_target_pydantic(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a server generation whose explicit target pydantic version is older than the pydantic it requires."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*arguments),
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: --target-pydantic-version: The fastapi target needs a target pydantic version of 2.13 or later; "
+            "leave it unset or use '2.14'\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
 def test_fastapi_cli_target_python_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Take the target Python version from pyproject.toml when the command line leaves it out."""
     monkeypatch.chdir(tmp_path)

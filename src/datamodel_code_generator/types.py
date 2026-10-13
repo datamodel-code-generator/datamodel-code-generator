@@ -47,6 +47,7 @@ from pydantic import (
 from pydantic_core import core_schema
 from typing_extensions import TypeIs
 
+from datamodel_code_generator import imports as generator_imports
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -162,6 +163,7 @@ __getattr__ = create_module_getattr(
 if TYPE_CHECKING:
     import builtins
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from types import ModuleType
 
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.enums import StrictTypes
@@ -1265,6 +1267,25 @@ def _create_context_data_type(  # noqa: PLR0913, PLR0917
     return context_data_type
 
 
+NUMBER_KEYWORDS: frozenset[str] = frozenset({
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "multipleOf",
+})
+NUMBER_BOUND_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS - {"multipleOf"}
+_NO_NUMBER_KEYWORDS: frozenset[str] = frozenset()
+
+
+@cache
+def _import_paths(module: ModuleType) -> frozenset[str]:
+    """Return the import path of every type or name a generator imports module declares."""
+    return frozenset(
+        f"{import_.from_}.{import_.import_}" for import_ in vars(module).values() if isinstance(import_, Import)
+    )
+
+
 class DataTypeManager(ABC):
     """Abstract base class for managing type mappings in code generation.
 
@@ -1279,6 +1300,16 @@ class DataTypeManager(ABC):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     DEFAULT_VALUE_DESCRIPTORS: ClassVar[Mapping[tuple[str | None, str], DefaultValueDescriptor]] = MappingProxyType({})
+    NUMBER_CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
+        "int": NUMBER_KEYWORDS,
+        "float": NUMBER_KEYWORDS,
+        "decimal.Decimal": NUMBER_KEYWORDS,
+        "datetime.timedelta": NUMBER_BOUND_KEYWORDS,
+        "datetime.datetime": NUMBER_BOUND_KEYWORDS,
+        "datetime.time": NUMBER_BOUND_KEYWORDS,
+    })
+    KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
+    ANNOTATION_UNIONS_TAKE_NUMBER_CONSTRAINTS: ClassVar[bool] = True
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -1363,6 +1394,72 @@ class DataTypeManager(ABC):
         if (kwargs := data_type.kwargs) is not None:
             copied_data_type.kwargs = deepcopy(kwargs)
         return copied_data_type
+
+    def number_constraint_keywords(self, data_type: DataType) -> frozenset[str]:
+        """Return the number keywords that every member of an emitted type takes in this output model."""
+        if data_type.data_types:
+            if (
+                data_type.is_list  # noqa: PLR0916
+                or data_type.is_set
+                or data_type.is_frozen_set
+                or data_type.is_dict
+                or data_type.is_mapping
+                or data_type.is_sequence
+                or data_type.is_tuple
+            ):
+                return _NO_NUMBER_KEYWORDS
+            return frozenset.intersection(*map(self.number_constraint_keywords, data_type.data_types))
+        if data_type.python_type is None:
+            import_ = None if data_type.reference else data_type.import_
+            return self.type_number_constraint_keywords(
+                f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or ""
+            )
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            PythonTypeBoundName,
+            PythonTypeSubscript,
+            is_union_python_type_expr,
+            iter_python_type_expr_qualified_names,
+            python_type_expr_arguments,
+            python_type_expr_base_name,
+        )
+
+        expression = data_type.python_type.expression
+        members = (expression,)
+        if is_union_python_type_expr(expression):
+            if not self.ANNOTATION_UNIONS_TAKE_NUMBER_CONSTRAINTS:
+                return _NO_NUMBER_KEYWORDS
+            members = tuple(
+                member
+                for member in python_type_expr_arguments(expression)
+                if python_type_expr_base_name(member) != NONE
+            )
+        keywords = NUMBER_KEYWORDS
+        for member in members:
+            base = member.base if isinstance(member, PythonTypeSubscript) else member
+            keywords &= self.type_number_constraint_keywords(
+                f"{base.import_from}.{base.import_name}"
+                if isinstance(base, PythonTypeBoundName) and base.import_from
+                else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base)
+            )
+        return keywords
+
+    def type_number_constraint_keywords(self, path: str) -> frozenset[str]:
+        """Return the number keywords a type takes: its table entry, none for a known type, all for an unknown one.
+
+        The table lists the keywords that the output model enforces on a type across its supported versions.
+        A known type is a Python builtin, a standard-library type of the import registry or a type that the
+        generator itself imports; a type the generator cannot classify keeps the keywords the schema declares.
+        """
+        path = path.removeprefix("builtins.")
+        if (keywords := self.NUMBER_CONSTRAINT_KEYWORDS.get(path)) is not None:
+            return keywords
+        if not path or any(path in _import_paths(module) for module in self.KNOWN_TYPE_IMPORTS):
+            return _NO_NUMBER_KEYWORDS
+        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
+            is_known_python_type_path,
+        )
+
+        return _NO_NUMBER_KEYWORDS if is_known_python_type_path(path) else NUMBER_KEYWORDS
 
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType:  # noqa: FBT001
         """Create a DataType from a fully qualified Python path."""

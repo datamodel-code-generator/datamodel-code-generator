@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from pydantic import BaseModel, Field
 
 
 class NumberConstraintsOnMappedFormats(BaseModel):
     boolean_numeric_minimum: int | None = Field(None, ge=5)
+    string_span_maximum: timedelta | None = Field(None, le=10)

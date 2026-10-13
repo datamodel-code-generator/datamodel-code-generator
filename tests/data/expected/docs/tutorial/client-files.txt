@@ -26,8 +26,9 @@ client/_runtime/client/urls.py
 client/_runtime/model_codecs/__init__.py
 client/_runtime/model_codecs/errors.py
 client/_runtime/model_codecs/media.py
-client/_runtime/model_codecs/native.py
 client/_runtime/model_codecs/parameters.py
+client/_runtime/model_codecs/pydantic_adapters.py
+client/_runtime/model_codecs/pydantic_models.py
 client/_runtime/model_codecs/unset.py
 client/errors.py
 client/model_codecs.py

@@ -50,19 +50,19 @@ render dataclasses.dataclass schemas-collapsed
 render typing.TypedDict api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py dataclasses_dataclass/api
+  model_bindings.py typing_TypedDict/api
 render typing.TypedDict api-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py dataclasses_dataclass/api-collapsed
+  model_bindings.py typing_TypedDict/api-collapsed
 render typing.TypedDict paths
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py dataclasses_dataclass/api
+  model_bindings.py typing_TypedDict/api
 render typing.TypedDict schemas-collapsed
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py dataclasses_dataclass/api-collapsed
+  model_bindings.py typing_TypedDict/api-collapsed
 render msgspec.Struct api
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-missing-reference.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py

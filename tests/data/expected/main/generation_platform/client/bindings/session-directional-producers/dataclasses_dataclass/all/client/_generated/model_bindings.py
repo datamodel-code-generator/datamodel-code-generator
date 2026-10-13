@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Items, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Items, Model
 
 
 
@@ -22,26 +22,26 @@ MODELS: Final[dict[type, Model]] = {
     models.ChildResponse: Model((Field('id', 'id'), Field('name', 'name'))),
 }
 
-codec_0: Final[StdlibCodec[models.ARequest]] = StdlibCodec(models.ARequest, MODELS)
+codec_0: Final[DataclassCodec[models.ARequest]] = DataclassCodec(models.ARequest, MODELS)
 """Codec of /paths/~1a/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.AResponse]] = StdlibCodec(models.AResponse, MODELS)
+codec_1: Final[DataclassCodec[models.AResponse]] = DataclassCodec(models.AResponse, MODELS)
 """Codec of /paths/~1a/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.BRequest]] = StdlibCodec(models.BRequest, MODELS)
+codec_2: Final[DataclassCodec[models.BRequest]] = DataclassCodec(models.BRequest, MODELS)
 """Codec of /paths/~1b/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.BResponse]] = StdlibCodec(models.BResponse, MODELS)
+codec_3: Final[DataclassCodec[models.BResponse]] = DataclassCodec(models.BResponse, MODELS)
 """Codec of /paths/~1b/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.Array]] = StdlibCodec(Items(models.A), MODELS)
+codec_4: Final[DataclassCodec[models.Array]] = DataclassCodec(Items(models.A), MODELS)
 """Codec of /paths/~1array/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.Array]] = StdlibCodec(Items(models.A), MODELS)
+codec_5: Final[DataclassCodec[models.Array]] = DataclassCodec(Items(models.A), MODELS)
 """Codec of /paths/~1array/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.ChildRequest]] = StdlibCodec(models.ChildRequest, MODELS)
+codec_6: Final[DataclassCodec[models.ChildRequest]] = DataclassCodec(models.ChildRequest, MODELS)
 """Codec of /paths/~1child/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.ChildResponse]] = StdlibCodec(models.ChildResponse, MODELS)
+codec_7: Final[DataclassCodec[models.ChildResponse]] = DataclassCodec(models.ChildResponse, MODELS)
 """Codec of /paths/~1child/post response_body (response 200 application/json)."""

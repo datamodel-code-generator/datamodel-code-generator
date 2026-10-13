@@ -93,7 +93,7 @@ get_item level
   = None
 get_serving
   > GET /foods/apple/servings/2
-  get_serving(food_id='apple', serving=2, portion=None)
+  get_serving(food_id='apple', serving=2)
   < 204 -
   = None
 get_serving refused serving

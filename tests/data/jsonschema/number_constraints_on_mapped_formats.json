@@ -7,6 +7,11 @@
       "type": "boolean",
       "format": "numeric",
       "minimum": 5
+    },
+    "string_span_maximum": {
+      "type": "string",
+      "format": "span",
+      "maximum": 10
     }
   }
 }

@@ -25,7 +25,7 @@ render dataclasses.dataclass remapped
 render typing.TypedDict plain
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   models.py
-  model_bindings.py dataclasses_dataclass/plain
+  model_bindings.py typing_TypedDict/plain
 render typing.TypedDict remapped
   warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Missing' in session-global-imports-partial.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
   diagnostic Error: /paths/~1native/post/requestBody/content/application~1json/schema: The typing.TypedDict converter has no conversion for the custom_uuid.UUID type

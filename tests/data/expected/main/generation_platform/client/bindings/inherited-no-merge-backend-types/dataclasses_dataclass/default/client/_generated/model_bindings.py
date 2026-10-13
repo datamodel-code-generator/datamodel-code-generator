@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
@@ -17,32 +17,32 @@ MODELS: Final[dict[type, Model]] = {
     models.Child: Model((Field('direct', 'direct'), Field('inline', 'inline'), Field('array', 'array'), Field('mapping', 'mapping'), Field('deep', 'deep'), Field('arrayRoot', 'arrayRoot'), Field('mappingRoot', 'mappingRoot'))),
 }
 
-codec_0: Final[StdlibCodec[models.ScalarValue]] = StdlibCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.ScalarValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.ScalarValue]] = StdlibCodec(None, MODELS)
+codec_1: Final[DataclassCodec[models.ScalarValue]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.ScalarArray]] = StdlibCodec(None, MODELS)
+codec_2: Final[DataclassCodec[models.ScalarArray]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.ScalarArray]] = StdlibCodec(None, MODELS)
+codec_3: Final[DataclassCodec[models.ScalarArray]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.ScalarMapping]] = StdlibCodec(None, MODELS)
+codec_4: Final[DataclassCodec[models.ScalarMapping]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.ScalarMapping]] = StdlibCodec(None, MODELS)
+codec_5: Final[DataclassCodec[models.ScalarMapping]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_6: Final[DataclassCodec[models.Base]] = DataclassCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_7: Final[DataclassCodec[models.Base]] = DataclassCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""
 
-codec_8: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_8: Final[DataclassCodec[models.Child]] = DataclassCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~14/post request_body (request application/json)."""
 
-codec_9: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_9: Final[DataclassCodec[models.Child]] = DataclassCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~14/post response_body (response 200 application/json)."""

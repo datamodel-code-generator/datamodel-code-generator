@@ -1,0 +1,4 @@
+ratio
+scale
+pause
+total

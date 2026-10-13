@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator.enums import _pydantic_version_key
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_V2_MISSING_MINIMUM
+from datamodel_code_generator.enums import TargetPydanticVersion, _pydantic_version_key
+from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_V2_MISSING_MINIMUM, target_supports
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -25,6 +25,8 @@ MODEL_DEPENDENCIES: Final = (
     ("pendulum", "pendulum>=3.2"),
 )
 PYDANTIC_FLOOR: Final = "2.13.5"
+PYDANTIC_TARGET_MINIMUM: Final = PYDANTIC_FLOOR.rpartition(".")[0]
+PYDANTIC_BACKENDS: Final = frozenset({"pydantic_v2.BaseModel", "pydantic_v2.dataclass"})
 PYDANTIC_IMPORT_MINIMUMS: Final = (("pydantic.MISSING", PYDANTIC_V2_MISSING_MINIMUM),)
 _PLAN_DEFAULTS: Final[dict[str, object]] = {
     "style": None,
@@ -116,6 +118,16 @@ def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:
             if any(item == name or item.startswith(f"{name}.") for item in imported)
         )
     )
+
+
+def pydantic_target_problem(backend: str, target: TargetPydanticVersion | None) -> str | None:
+    """Say what a package that requires pydantic needs of an explicit target older than the floor, or None."""
+    if backend not in PYDANTIC_BACKENDS or target_supports(target, PYDANTIC_TARGET_MINIMUM):
+        return None
+    allowed = " or ".join(
+        repr(item.value) for item in TargetPydanticVersion if target_supports(item, PYDANTIC_TARGET_MINIMUM)
+    )
+    return f"needs a target pydantic version of {PYDANTIC_TARGET_MINIMUM} or later; leave it unset or use {allowed}"
 
 
 def pydantic_dependency(imported: frozenset[str]) -> str:
