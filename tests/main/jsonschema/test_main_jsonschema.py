@@ -3096,18 +3096,40 @@ def test_main_jsonschema_field_type_collision_runtime(
 
 
 @pytest.mark.parametrize(
-    ("options", "expected_directory"),
+    ("backend", "options", "expected_directory"),
     [
-        pytest.param(["--field-type-collision-strategy", "rename-type"], "default", id="module-import"),
         pytest.param(
-            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"], "exact", id="exact-import"
+            DataModelType.PydanticV2Dataclass,
+            ["--field-type-collision-strategy", "rename-type"],
+            "default",
+            id="module-import",
         ),
-        pytest.param([], "default", id="module-import-rename-field"),
-        pytest.param(["--use-exact-imports"], "exact", id="exact-import-rename-field"),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "exact",
+            id="exact-import",
+        ),
+        pytest.param(DataModelType.PydanticV2Dataclass, [], "default", id="module-import-rename-field"),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass, ["--use-exact-imports"], "exact", id="exact-import-rename-field"
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type"],
+            "base_model",
+            id="base-model-module-import",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "base_model_exact",
+            id="base-model-exact-import",
+        ),
     ],
 )
 def test_main_jsonschema_field_type_collision_cross_module(
-    output_dir: Path, options: list[str], expected_directory: str
+    output_dir: Path, backend: DataModelType, options: list[str], expected_directory: str
 ) -> None:
     """Keep a field named like a type of another module, whose annotation names the type differently."""
     run_main_and_assert(
@@ -3117,7 +3139,7 @@ def test_main_jsonschema_field_type_collision_cross_module(
         expected_directory=EXPECTED_JSON_SCHEMA_PATH / "field_type_collision_cross_module" / expected_directory,
         extra_args=[
             "--output-model-type",
-            DataModelType.PydanticV2Dataclass.value,
+            backend.value,
             "--target-python-version",
             "3.11",
             "--disable-timestamp",
