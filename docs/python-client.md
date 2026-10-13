@@ -63,6 +63,8 @@ never renamed.
 Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your
 project. With Pydantic models the minimum is `pydantic>=2.13.5`, and `pydantic>=2.14` when
 `--target-pydantic-version 2.14` with `--use-missing-sentinel` makes the models import `MISSING` from `pydantic`.
+An explicit `--target-pydantic-version` older than that minimum (`2`, `2.11` or `2.12`) is refused with `Error:` and
+exit code 2 for those models; leave it unset or use `2.14`. The other model backends do not use the option.
 `--check` compares without writing and prints the differences as for models, and `--output-format json`
 emits the model generation and check payloads, as with `--generate-server`. `--diff-against` and `--watch` also work
 as they do with `--generate-server`.
