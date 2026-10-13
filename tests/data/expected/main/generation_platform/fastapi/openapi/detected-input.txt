@@ -1,3 +1,0 @@
-# detected-input
-same True
-components ['pathItems', 'schemas']

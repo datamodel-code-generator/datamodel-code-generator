@@ -238,6 +238,9 @@ the file is given, and to a symbolic link's directory when the file is given thr
 `--generate-server` requires `--server-output`, `--server-package`, and `--server-model-package`, and a `--server-*`
 option given on the command line requires `--generate-server`; both stop with `Error:` and exit code 2. Server keys
 of `pyproject.toml` are validated like model keys, but have no effect while no server is selected.
+`--generate-server` also requires `--input-file-type openapi`: an input type left to detection, `auto`, or any other
+type stops with `Error: --generate-server requires --input-file-type openapi, not auto` (naming the given type) and
+exit code 2 before the input is read.
 
 The package serves every operation under `paths` of the input; a path item under `components.pathItems` that no
 path references has no URL and is not served. To leave paths out, pass
@@ -273,6 +276,7 @@ models only.
 
 ```toml
 [tool.datamodel-codegen]
+input-file-type = "openapi"
 output-model-type = "pydantic_v2.BaseModel"
 openapi-scopes = ["schemas", "api"]
 target-python-version = "3.11"
