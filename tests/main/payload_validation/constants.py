@@ -280,6 +280,8 @@ MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
     "jsonschema/missing_sentinel_payload.json",
     "openapi/missing_sentinel_nullable.yaml::components.schemas.MissingSentinelNullable",
 )
+TYPE_ALIAS_TYPE_PAYLOAD_ARGS = ("--use-type-alias", "--target-python-version", "3.11")
+"""Write roots as ``TypeAliasType``: Pydantic before 2.10 cannot build models that use ``type`` statements."""
 PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str, ...]]] = {
     **{
         f"jsonschema/type_union_constraints/{name}.json": dict.fromkeys(
@@ -291,6 +293,11 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         case_id: {PayloadBackend.PYDANTIC_V2: ("--use-missing-sentinel",)}
         for case_id in MISSING_SENTINEL_PAYLOAD_CASE_IDS
     },
+    **{
+        f"jsonschema/type_alias_lookaround/{name}.json": {PayloadBackend.PYDANTIC_V2: TYPE_ALIAS_TYPE_PAYLOAD_ARGS}
+        for name in ("nested", "siblings", "inherited")
+    },
+    "jsonschema/type_alias_lookaround/annotated_root.json": {PayloadBackend.PYDANTIC_V2: ("--use-annotated",)},
     **{
         f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))
         for name in (
@@ -415,11 +422,16 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
     "openapi/pattern_lookaround.yaml::components.schemas.info": (
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI lookaround pattern validators"
     ),
-    "jsonschema/type_alias_lookaround/tree/schema_a.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "jsonschema/type_alias_lookaround/tree/schema_b.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
+    **dict.fromkeys(
+        (
+            "jsonschema/type_alias_lookaround/annotated_root.json",
+            "jsonschema/type_alias_lookaround/inherited.json",
+            "jsonschema/type_alias_lookaround/nested.json",
+            "jsonschema/type_alias_lookaround/siblings.json",
+            "jsonschema/type_alias_lookaround/tree/schema_a.json",
+            "jsonschema/type_alias_lookaround/tree/schema_b.json",
+        ),
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators",
     ),
 }
 PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS = (
@@ -428,10 +440,14 @@ PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS = (
     "jsonschema/lookaround_union_types.json",
     "jsonschema/nested_lookaround_array.json",
     "jsonschema/schema_validators_runtime_root_cross_module/a.json",
+    "jsonschema/type_alias_lookaround/annotated_root.json",
+    "jsonschema/type_alias_lookaround/inherited.json",
+    "jsonschema/type_alias_lookaround/nested.json",
+    "jsonschema/type_alias_lookaround/siblings.json",
     "jsonschema/type_alias_lookaround/tree/schema_a.json",
     "jsonschema/type_alias_lookaround/tree/schema_b.json",
 )
-"""Lookaround aliases a dataclass uses: the dataclass config selects the engine, so they need Pydantic 2.5."""
+"""Lookaround aliases a dataclass reaches: the dataclass config selects the engine, so they need Pydantic 2.5."""
 PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
     *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
     "jsonschema/lookaround_mixed_constraints.json",

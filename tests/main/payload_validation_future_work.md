@@ -188,9 +188,10 @@ Current version-specific exclusions:
   under older runtimes.
 - The payload target of Pydantic before 2.11.0 is `2`, which predates compiled
   patterns (Pydantic 2.8) and keeps string lookaround patterns in generated type
-  aliases. A bare alias has no model config to select the engine, so the
-  Pydantic v2 dataclass payload runtime matrix skips only the classified bare
-  alias cases under those runtimes.
+  aliases. Every generated model or dataclass that reaches such an alias selects
+  the engine, but a bare alias has no model config, so the Pydantic v2 dataclass
+  payload runtime matrix skips only the classified bare alias cases under those
+  runtimes.
 - Pydantic before 2.5.0 can reject schema-valid Decimal `multipleOf` values near
   float-originated boundaries, so only the classified Decimal `multipleOf` cases
   are skipped under older runtimes.

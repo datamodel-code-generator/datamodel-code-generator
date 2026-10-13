@@ -6585,6 +6585,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.__apply_generic_base_class(contexts)
         all_models = [model for ctx in contexts for model in ctx.models]
         self.__prepare_type_alias_fields(contexts, unused_models)
+        self.data_model_type.finalize_type_alias_users(all_models)
         self.__mark_set_item_models_hashable(all_models)
         self._finalize_structured_imports(contexts)
         if self.use_default_factory_for_optional_nested_models:

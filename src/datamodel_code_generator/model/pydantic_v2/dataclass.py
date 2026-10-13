@@ -28,9 +28,11 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _config_dict_items,
+    _model_references,
     _safe_config_dict_items,
     assign_forward_reference_fields,
     has_lookaround_pattern,
+    models_reaching_string_pattern_aliases,
 )
 from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONFIG_DICT,
@@ -184,8 +186,26 @@ class DataClass(_DataclassReuseMixin, DataModel):
         if self._lookaround_regex_engine_checked:
             return
         self._lookaround_regex_engine_checked = True
-        if not has_lookaround_pattern(self.fields, follow_references=True):
+        if has_lookaround_pattern(self.fields, follow_references=True):
+            self._select_python_regex_engine()
+
+    @classmethod
+    def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
+        """Select Python's regex engine in every dataclass that reaches a string pattern type alias.
+
+        A dataclass inherits the config of its first base only and builds the fields of its other bases
+        with its own, so the references of its fields and of those bases count.
+        """
+        if not (reached := models_reaching_string_pattern_aliases(models)):
             return
+        for model in models:
+            if isinstance(model, cls) and any(
+                id(reference.source) in reached for reference in _model_references(model, model.base_classes[1:])
+            ):
+                model._select_python_regex_engine()  # noqa: SLF001
+
+    def _select_python_regex_engine(self) -> None:
+        """Set ``regex_engine`` in the dataclass config."""
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
         config = self.extra_template_data.setdefault("config", {})
         config["regex_engine"] = '"python-re"'

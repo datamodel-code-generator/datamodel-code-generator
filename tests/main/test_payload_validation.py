@@ -1336,15 +1336,16 @@ def test_payload_runtime_version_policies() -> None:
         ),
         *(
             pytest.param(
-                PayloadBackend.PYDANTIC_V2_DATACLASS,
+                PayloadBackend(backend),
                 case_id,
                 payloads["valid"],
                 [payloads["invalid"]],
-                id=f"dataclass:{case_id}",
+                id=f"alias:{backend}:{case_id}",
             )
-            for case_id, payloads in json.loads(
-                (RUNTIME_COMPATIBILITY_PATH / "dataclass_version_cases.json").read_text()
+            for backend, cases in json.loads(
+                (RUNTIME_COMPATIBILITY_PATH / "alias_version_cases.json").read_text()
             ).items()
+            for case_id, payloads in cases.items()
         ),
     ],
 )
@@ -1357,8 +1358,9 @@ def test_payload_runtime_pydantic_version_witnesses(
 ) -> None:
     """Verify old-runtime failures and restored round trips with actual Pydantic adapters.
 
-    The payload target of Pydantic before 2.11 is 2, which keeps string lookaround patterns in dataclass
-    aliases: a dataclass that uses the alias selects the engine from Pydantic 2.5 on, a bare alias cannot.
+    The payload target of Pydantic before 2.11 is 2, which keeps string lookaround patterns in type aliases:
+    every model or dataclass that reaches the alias selects the engine from Pydantic 2.5 on, also through a
+    nested model, the bases of a model it uses, or a ``RootModel``; a bare alias cannot.
     """
     case = SCHEMA_CASE_BY_ID[case_id]
     validate_with_source_schema(case, payload)

@@ -16024,15 +16024,51 @@ def test_main_lookaround_anyof_nullable_pydantic_v2_dataclass_json_validation(ou
     )
 
 
+_STRING_PATTERN_TARGET_RUNTIME = pytest.mark.skipif(
+    not installed_pydantic_runs_target("2.5"),
+    reason="String lookaround patterns take the engine from a model config, which needs Pydantic 2.5",
+)
+_TARGET_2_12_RUNTIME = pytest.mark.skipif(
+    not installed_pydantic_runs_target("2.12"), reason="The target needs Pydantic 2.12"
+)
+
+
 @pytest.mark.parametrize(
     ("output_model_type", "target_pydantic_version", "expected_file", "attribute_path"),
     [
-        ("pydantic_v2.BaseModel", "2", "lookaround_anyof_nullable_pydantic_v2.py", ("value", "root")),
-        ("pydantic_v2.BaseModel", "2.12", "lookaround_anyof_nullable_pydantic_v2.py", ("value", "root")),
-        ("pydantic_v2.dataclass", "2", "lookaround_anyof_nullable_pydantic_v2_dataclass_target_2.py", ("value",)),
-        ("pydantic_v2.dataclass", "2.12", "lookaround_anyof_nullable_pydantic_v2_dataclass.py", ("value",)),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "2",
+            "lookaround_anyof_nullable_pydantic_v2.py",
+            ("value", "root"),
+            id="base-model-target-2",
+            marks=_STRING_PATTERN_TARGET_RUNTIME,
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "2.12",
+            "lookaround_anyof_nullable_pydantic_v2.py",
+            ("value", "root"),
+            id="base-model-target-2.12",
+            marks=_TARGET_2_12_RUNTIME,
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            "2",
+            "lookaround_anyof_nullable_pydantic_v2_dataclass_target_2.py",
+            ("value",),
+            id="dataclass-target-2",
+            marks=_STRING_PATTERN_TARGET_RUNTIME,
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            "2.12",
+            "lookaround_anyof_nullable_pydantic_v2_dataclass.py",
+            ("value",),
+            id="dataclass-target-2.12",
+            marks=_TARGET_2_12_RUNTIME,
+        ),
     ],
-    ids=["base-model-target-2", "base-model-target-2.12", "dataclass-target-2", "dataclass-target-2.12"],
 )
 def test_main_lookaround_anyof_nullable_target_pydantic_version(
     output_model_type: str,
@@ -16046,6 +16082,7 @@ def test_main_lookaround_anyof_nullable_target_pydantic_version(
     ``--target-pydantic-version 2`` keeps the string pattern in the dataclass alias, whose engine the
     dataclass config selects, as 0.83.0 wrote it; a newer target writes what an unset target does. The
     ``RootModel`` written for ``BaseModel`` carries its own config, so it is the same for every target.
+    Each parameter runs on the Pydantic releases that can import its output.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
@@ -16055,7 +16092,6 @@ def test_main_lookaround_anyof_nullable_target_pydantic_version(
         expected_file=expected_file,
         extra_args=["--output-model-type", output_model_type, *target_pydantic_args(target_pydantic_version)],
         force_exec_validation=True,
-        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
     )
     assert_generated_model_json_validation(
         output_file,
