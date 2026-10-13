@@ -3,18 +3,26 @@
 from __future__ import annotations
 
 import json
+import os
+import shlex
 import shutil
+import subprocess
+import sys
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.client_generation import SOURCE, client_options, copy_references
+from tests.api_generation.support.client_publication import PACKAGE
 from tests.api_generation.support.strict_typing import checked, marked_lines, negative
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 SAMPLES = SOURCE / "typing"
+_MODEL_LIBRARIES = (
+    "from importlib.util import find_spec; print(*(name for name in ('pydantic', 'msgspec') if find_spec(name)))"
+)
 
 
 def client_typing_report(
@@ -85,3 +93,25 @@ def client_regenerated_typing_report(root: Path) -> str:
     _generate_pets(source / "v2.yaml", root)
     lines.extend(checked(root, ["extensions.py"], "v2 extensions.py"))
     return "\n".join(lines) + "\n"
+
+
+def client_dependency_typing_report(project: Path, environment: Path, stderr: str) -> str:
+    """Check a generated package with an interpreter that holds only the dependencies its generation printed.
+
+    The dependencies are installed at their printed minimums into a new environment, whose model libraries the report
+    names before the checkers' findings over the package and its models.
+    """
+    added = next(line for line in stderr.splitlines() if line.lstrip().startswith("uv add "))
+    dependencies = shlex.split(added)[2:]
+    subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, environment], check=True)
+    python = environment / ("Scripts" if os.name == "nt" else "bin") / "python"
+    install = ["uv", "pip", "install", "--quiet", "--python", python, "--resolution", "lowest-direct", *dependencies]
+    subprocess.run(install, check=True)
+    held = subprocess.run([python, "-I", "-c", _MODEL_LIBRARIES], check=True, capture_output=True, text=True)
+    targets = [PACKAGE, f"{PACKAGE}_models.py"]
+    return "\n".join([
+        f"dependencies {' '.join(dependencies)}",
+        f"installed model libraries {held.stdout.strip() or '-'}",
+        *checked(project, targets, " and ".join(targets), python),
+        "",
+    ])

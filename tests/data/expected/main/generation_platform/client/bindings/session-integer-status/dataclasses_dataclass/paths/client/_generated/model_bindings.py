@@ -8,8 +8,8 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Model
 
 
-codec_0: Final[StdlibCodec[models.FieldItemsPostResponseItem]] = StdlibCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.FieldItemsPostResponseItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1items/post response_body (response 200 application/json)."""

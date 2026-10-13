@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models.FieldUsersGetQueryCursorParameter]] = PydanticCodec(models.FieldUsersGetQueryCursorParameter)
 """Codec of /paths/~1users/get parameter (request query cursor)."""

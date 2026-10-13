@@ -8,8 +8,14 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import DataModelType
-from tests.api_generation.support.client_typing import client_regenerated_typing_report, client_typing_report
+from tests.api_generation.support.client_publication import capability_arguments
+from tests.api_generation.support.client_typing import (
+    client_dependency_typing_report,
+    client_regenerated_typing_report,
+    client_typing_report,
+)
 from tests.conftest import assert_output
+from tests.main.conftest import run_main_with_args
 
 EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "client" / "typing"
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
@@ -22,6 +28,36 @@ def test_client_typing_no_success(backend: DataModelType, case: str, tmp_path: P
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(client_typing_report(tmp_path, backend, case, ()), EXPECTED / "no-success.txt")
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        "minimal",
+        "minimal-pydantic-dataclass",
+        "minimal-dataclass",
+        "minimal-typeddict",
+        "minimal-msgspec",
+        "all",
+        "all-pydantic-dataclass",
+        "all-dataclass",
+        "all-typeddict",
+        "all-msgspec",
+    ],
+)
+def test_client_typing_printed_dependencies(profile: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Check a package of each backend clean where only the dependencies its generation prints are installed.
+
+    The other lanes check against an environment that holds every model library, where a package that imports a
+    library its backend does not need still resolves.
+    """
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    run_main_with_args(capability_arguments(profile, tmp_path / "project"))
+    assert_output(
+        client_dependency_typing_report(tmp_path / "project", tmp_path / "environment", capsys.readouterr().err),
+        EXPECTED / "dependencies" / f"{profile}.txt",
+    )
 
 
 @pytest.mark.parametrize("case", ["pets-protocols", "pets-protocols-unpack"])

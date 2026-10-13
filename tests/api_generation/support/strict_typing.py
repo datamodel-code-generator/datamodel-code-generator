@@ -1,4 +1,7 @@
-"""Run mypy, Pyright, and ty in strict modes over a directory, and report their errors by file, line, and rule."""
+"""Run mypy, Pyright, and ty in strict modes over a directory, and report their errors by file, line, and rule.
+
+The checkers resolve imports with the test interpreter, or with another interpreter a caller names.
+"""
 
 from __future__ import annotations
 
@@ -40,7 +43,7 @@ def _diagnostics(completed: subprocess.CompletedProcess[str], found: Found) -> F
     return found
 
 
-def _mypy(root: Path, targets: list[str]) -> Found:
+def _mypy(root: Path, targets: list[str], python: str | Path = sys.executable) -> Found:
     completed = _run(
         [
             *MYPY,
@@ -48,7 +51,7 @@ def _mypy(root: Path, targets: list[str]) -> Found:
             "--follow-imports=silent",
             "--no-incremental",
             "--python-executable",
-            sys.executable,
+            python,
             "--python-version",
             PYTHON_VERSION,
             *targets,
@@ -58,7 +61,7 @@ def _mypy(root: Path, targets: list[str]) -> Found:
     return _diagnostics(completed, [(match[1], int(match[2]), match[3]) for match in _MYPY.finditer(completed.stdout)])
 
 
-def _pyright(root: Path, targets: list[str]) -> Found:
+def _pyright(root: Path, targets: list[str], python: str | Path = sys.executable) -> Found:
     (root / "pyrightconfig.json").write_text(
         json.dumps({
             "typeCheckingMode": "strict",
@@ -68,9 +71,7 @@ def _pyright(root: Path, targets: list[str]) -> Found:
         }),
         encoding="utf-8",
     )
-    completed = _run(
-        [*PYRIGHT, "--outputjson", "--pythonpath", sys.executable, "--project", "pyrightconfig.json"], root
-    )
+    completed = _run([*PYRIGHT, "--outputjson", "--pythonpath", python, "--project", "pyrightconfig.json"], root)
     return _diagnostics(
         completed,
         [
@@ -85,13 +86,13 @@ def _pyright(root: Path, targets: list[str]) -> Found:
     )
 
 
-def _ty(root: Path, targets: list[str]) -> Found:
+def _ty(root: Path, targets: list[str], python: str | Path = sys.executable) -> Found:
     completed = _run(
         [
             BIN / "ty",
             "check",
             "--python",
-            sys.executable,
+            python,
             "--python-version",
             PYTHON_VERSION,
             "--output-format",
@@ -108,11 +109,11 @@ def _ty(root: Path, targets: list[str]) -> Found:
 CHECKERS = (("mypy", _mypy), ("pyright", _pyright), ("ty", _ty))
 
 
-def checked(root: Path, targets: list[str], label: str) -> list[str]:
-    """Report each checker's errors over the targets, or that it found none."""
+def checked(root: Path, targets: list[str], label: str, python: str | Path = sys.executable) -> list[str]:
+    """Report each checker's errors over the targets, or that it found none, resolving imports with an interpreter."""
     lines: list[str] = []
     for name, check in CHECKERS:
-        found = check(root, targets)
+        found = check(root, targets, python)
         lines.append(f"{name} {label}: {'clean' if not found else ''}".rstrip())
         lines.extend(f"  {file}:{line} {rule}" for file, line, rule in sorted(found))
     return lines

@@ -21,6 +21,7 @@ from datamodel_code_generator import (
     OpenAPIScope,
     PythonVersion,
     ServerType,
+    TargetPydanticVersion,
     generate,
     load_pyproject_config,
 )
@@ -193,6 +194,20 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
             "--target-python-version: The fastapi target needs a target Python version of 3.11 or later",
         ),
         (
+            {**SERVER, "target_pydantic_version": "2.12"},
+            (
+                "--target-pydantic-version: The fastapi target needs a target pydantic version of 2.13 or later; "
+                "leave it unset or use '2.14'"
+            ),
+        ),
+        (
+            {**CLIENT, "target_pydantic_version": TargetPydanticVersion.V2},
+            (
+                "--target-pydantic-version: The client target needs a target pydantic version of 2.13 or later; "
+                "leave it unset or use '2.14'"
+            ),
+        ),
+        (
             {**SERVER, "server_primary_responses": {"/paths/~1pets/post": {"status_code": 700}}},
             (
                 "Invalid --server-primary-responses: /paths/~1pets/post.status_code: "
@@ -219,6 +234,8 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         "api-scope",
         "backend",
         "target-python",
+        "target-pydantic",
+        "client-target-pydantic",
         "json-value",
         "package",
         "keyed",

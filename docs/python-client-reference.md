@@ -397,6 +397,10 @@ conversion rules, as they do for unknown object members. Dataclass and TypedDict
 such text is a decoding error, like text that cannot become a `Decimal`, date or `UUID` leaf; their JSON bodies are
 still constructed without added schema validation. Repeated undeclared members keep their last value.
 
+A package holds the codec of its own model backend only. A Pydantic package imports no msgspec, a msgspec package no
+Pydantic, and a dataclass or TypedDict package neither, so the package imports, and mypy, Pyright, and ty check it,
+with only the dependencies that generation prints installed.
+
 Generated clients send and read model values through their model backend, with no validation layer of their own:
 
 | Backend | Sends | Receives |
@@ -431,7 +435,7 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   the default it was generated with, so a later change of the server's default does not apply until you regenerate,
   and a default that breaks its own schema's constraints is sent as it is. A path parameter that names a placeholder
   of its path is a required argument without a default, as OpenAPI requires, even when the document leaves out
-  `required` or declares it `false`.
+  `required` or declares it `false`; a document with a path parameter that names no placeholder of its path is refused.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
   `DecodeError` with the reason `invalid_value`. Read-only and write-only behavior follows the generated model options.

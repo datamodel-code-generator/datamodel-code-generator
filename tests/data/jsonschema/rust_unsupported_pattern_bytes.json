@@ -6,6 +6,10 @@
       "type": "string",
       "format": "binary",
       "pattern": "^(a)\\1$"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^abc$"
     }
   }
 }

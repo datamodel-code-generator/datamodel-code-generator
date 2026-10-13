@@ -8,26 +8,26 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.ShipTo: Model((Field('postal-code', 'postal-code'),), True),
-    models.ChildRequest: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note')), True),
-    models.ChildResponse: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note'), Field('id', 'id')), True),
-    models.RenamedParentRequest: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note')), True),
-    models.RenamedParentResponse: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note'), Field('id', 'id')), True),
+    models.ShipTo: Model((Field('postal-code', 'postal-code'),)),
+    models.ChildRequest: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note'))),
+    models.ChildResponse: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note'), Field('id', 'id'))),
+    models.RenamedParentRequest: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note'))),
+    models.RenamedParentResponse: Model((Field('ship-to', 'ship-to', models.ShipTo), Field('note', 'note'), Field('id', 'id'))),
 }
 
-codec_0: Final[StdlibCodec[models.ChildRequest]] = StdlibCodec(models.ChildRequest, MODELS)
+codec_0: Final[TypedDictCodec[models.ChildRequest]] = TypedDictCodec(models.ChildRequest, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.ChildResponse]] = StdlibCodec(models.ChildResponse, MODELS)
+codec_1: Final[TypedDictCodec[models.ChildResponse]] = TypedDictCodec(models.ChildResponse, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.RenamedParentRequest]] = StdlibCodec(models.RenamedParentRequest, MODELS)
+codec_2: Final[TypedDictCodec[models.RenamedParentRequest]] = TypedDictCodec(models.RenamedParentRequest, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.RenamedParentResponse]] = StdlibCodec(models.RenamedParentResponse, MODELS)
+codec_3: Final[TypedDictCodec[models.RenamedParentResponse]] = TypedDictCodec(models.RenamedParentResponse, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""

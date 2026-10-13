@@ -204,7 +204,8 @@ Add the runtime dependencies of server to your project:
 Run it. The command names only the minimum version of each package, so uv adds the latest release. It grows with
 what the document uses: `python-multipart` for forms, `email-validator` for `format: email`, `python-ulid` for
 `format: ulid`, and `pydantic>=2.14` when `--target-pydantic-version 2.14` with `--use-missing-sentinel` makes the
-models import `MISSING`.
+models import `MISSING`. An explicit `--target-pydantic-version` older than the minimum (`2`, `2.11` or `2.12`) is
+refused with `Error:` and exit code 2; leave it unset or use `2.14`.
 
 The run wrote the models and the `server` package:
 
@@ -1179,9 +1180,9 @@ whenever the request omits the parameter, however the model options spell the ty
 `--field-constraints`; a parameter whose type stays a root model receives that model with its own default. How
 strictly a value follows the OpenAPI document is decided by the model generation options, not by the server.
 
-A path parameter that names a placeholder of its path is required, as OpenAPI requires, even when the document
-leaves out `required` or declares it `false`, and a default it declares is not used; the served document keeps the
-declaration as written.
+A path parameter is required, as OpenAPI requires, even when the document leaves out `required` or declares it
+`false`, and a default it declares is not used; the served document keeps the declaration as written. A document with
+a path parameter that names no placeholder of its path is refused.
 
 FastAPI cannot read some inputs, so a generated *adapter* reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,

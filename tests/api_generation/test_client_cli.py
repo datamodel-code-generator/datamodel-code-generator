@@ -575,6 +575,9 @@ def test_client_cli_generation_json(
         ("target-2.14-missing", ["--target-pydantic-version", "2.14", "--use-missing-sentinel"]),
         ("target-2.14", ["--target-pydantic-version", "2.14"]),
         ("unset-target-missing", ["--use-missing-sentinel"]),
+        ("target-2-msgspec", ["--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct"]),
+        ("target-2-dataclass", ["--target-pydantic-version", "2", "--output-model-type", "dataclasses.dataclass"]),
+        ("target-2-typed-dict", ["--target-pydantic-version", "2", "--output-model-type", "typing.TypedDict"]),
     ],
 )
 def test_client_cli_pydantic_dependency(
@@ -584,7 +587,10 @@ def test_client_cli_pydantic_dependency(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Print and document the pydantic requirement that the pydantic imports of the models need."""
+    """Print and document the pydantic requirement that the pydantic imports of the models need.
+
+    A backend without pydantic prints no pydantic requirement, so it accepts any target pydantic version.
+    """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("options.yaml"),
@@ -603,6 +609,38 @@ def test_client_cli_pydantic_dependency(
             *(line for line in readme if "pydantic>=" in line),
         )),
         EXPECTED / "cli" / "pydantic-dependency" / f"{name}.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--target-pydantic-version", "2"],
+        ["--target-pydantic-version", "2.11", "--check"],
+        ["--target-pydantic-version", "2.12", "--output-format", "json"],
+        ["--target-pydantic-version", "2.12", "--use-missing-sentinel"],
+        ["--target-pydantic-version", "2", "--output-model-type", "pydantic_v2.dataclass"],
+    ],
+    ids=["2", "2.11-check", "2.12-json", "2.12-missing", "2-dataclass"],
+)
+def test_client_cli_target_pydantic(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client generation whose explicit target pydantic version is older than the pydantic it requires."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, *arguments],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: --target-pydantic-version: The client target needs a target pydantic version of 2.13 or later; "
+            "leave it unset or use '2.14'\n"
+        ),
+        output_should_not_exist=True,
     )
 
 

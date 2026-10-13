@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models.FieldSearchGetQuerystringCriteriaParameter]] = PydanticCodec(models.FieldSearchGetQuerystringCriteriaParameter)
 """Codec of /paths/~1search/get parameter (request querystring criteria application/x-www-form-urlencoded)."""

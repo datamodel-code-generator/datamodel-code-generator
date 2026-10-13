@@ -8,37 +8,37 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Choice, Field, Items, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Choice, Field, Items, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.RecursiveNode: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.RecursiveNode))), True),
-    models.RecursiveBase: Model((Field('nextValue', 'nextValue', models.RecursiveNode), Field('childrenValue', 'childrenValue', models.RecursiveNode), Field('deepValue', 'deepValue', models.RecursiveNode)), True),
-    models.Next: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.RecursiveNode))), True),
-    models.NextValue: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', models.Next), Field('children', 'children', Items(models.RecursiveNode))), True),
-    models.Child: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.RecursiveNode))), True),
-    models.ChildrenValue: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.Child))), True),
-    models.Child1: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', models.Next), Field('children', 'children', Items(models.RecursiveNode))), True),
-    models.Next1: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.Child1))), True),
-    models.DeepValue: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', models.Next1), Field('children', 'children', Items(models.RecursiveNode))), True),
-    models.RecursiveChild: Model((Field('nextValue', 'nextValue', models.NextValue), Field('childrenValue', 'childrenValue', models.ChildrenValue), Field('deepValue', 'deepValue', models.DeepValue)), True),
+    models.RecursiveNode: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.RecursiveNode)))),
+    models.RecursiveBase: Model((Field('nextValue', 'nextValue', models.RecursiveNode), Field('childrenValue', 'childrenValue', models.RecursiveNode), Field('deepValue', 'deepValue', models.RecursiveNode))),
+    models.Next: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.RecursiveNode)))),
+    models.NextValue: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', models.Next), Field('children', 'children', Items(models.RecursiveNode)))),
+    models.Child: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.RecursiveNode)))),
+    models.ChildrenValue: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.Child)))),
+    models.Child1: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', models.Next), Field('children', 'children', Items(models.RecursiveNode)))),
+    models.Next1: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', Choice((('object', models.RecursiveNode),))), Field('children', 'children', Items(models.Child1)))),
+    models.DeepValue: Model((Field('name', 'name'), Field('count', 'count'), Field('next', 'next', models.Next1), Field('children', 'children', Items(models.RecursiveNode)))),
+    models.RecursiveChild: Model((Field('nextValue', 'nextValue', models.NextValue), Field('childrenValue', 'childrenValue', models.ChildrenValue), Field('deepValue', 'deepValue', models.DeepValue))),
 }
 
-codec_0: Final[StdlibCodec[models.RecursiveNode]] = StdlibCodec(models.RecursiveNode, MODELS)
+codec_0: Final[TypedDictCodec[models.RecursiveNode]] = TypedDictCodec(models.RecursiveNode, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.RecursiveNode]] = StdlibCodec(models.RecursiveNode, MODELS)
+codec_1: Final[TypedDictCodec[models.RecursiveNode]] = TypedDictCodec(models.RecursiveNode, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.RecursiveBase]] = StdlibCodec(models.RecursiveBase, MODELS)
+codec_2: Final[TypedDictCodec[models.RecursiveBase]] = TypedDictCodec(models.RecursiveBase, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.RecursiveBase]] = StdlibCodec(models.RecursiveBase, MODELS)
+codec_3: Final[TypedDictCodec[models.RecursiveBase]] = TypedDictCodec(models.RecursiveBase, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.RecursiveChild]] = StdlibCodec(models.RecursiveChild, MODELS)
+codec_4: Final[TypedDictCodec[models.RecursiveChild]] = TypedDictCodec(models.RecursiveChild, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.RecursiveChild]] = StdlibCodec(models.RecursiveChild, MODELS)
+codec_5: Final[TypedDictCodec[models.RecursiveChild]] = TypedDictCodec(models.RecursiveChild, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""

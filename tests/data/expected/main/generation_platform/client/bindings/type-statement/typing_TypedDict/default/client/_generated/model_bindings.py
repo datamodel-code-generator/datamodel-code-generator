@@ -8,43 +8,43 @@ from __future__ import annotations
 import models
 from typing import Final, Optional
 
-from .._runtime.model_codecs.stdlib import Choice, Field, Fixed, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Choice, Field, Fixed, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.NullableRecord: Model((Field('value', 'value'),), True),
-    models.Base: Model((Field('kind', 'kind'),), True),
-    models.Child: Model((Field('kind', 'kind'), Field('extra', 'extra')), True),
-    models.Holder: Model((Field('record', 'record', Choice((('object', models.NullableRecord),))), Field('name', 'name'), Field('maybe', 'maybe'), Field('pair', 'pair', Fixed((None, None))), Field('base', 'base', models.Base)), True),
+    models.NullableRecord: Model((Field('value', 'value'),)),
+    models.Base: Model((Field('kind', 'kind'),)),
+    models.Child: Model((Field('kind', 'kind'), Field('extra', 'extra'))),
+    models.Holder: Model((Field('record', 'record', Choice((('object', models.NullableRecord),))), Field('name', 'name'), Field('maybe', 'maybe'), Field('pair', 'pair', Fixed((None, None))), Field('base', 'base', models.Base))),
 }
 
-codec_0: Final[StdlibCodec[models.Holder]] = StdlibCodec(models.Holder, MODELS)
+codec_0: Final[TypedDictCodec[models.Holder]] = TypedDictCodec(models.Holder, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Holder]] = StdlibCodec(models.Holder, MODELS)
+codec_1: Final[TypedDictCodec[models.Holder]] = TypedDictCodec(models.Holder, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[Optional[models.NullableRecord]]] = StdlibCodec(Choice((('object', models.NullableRecord),)), MODELS)
+codec_2: Final[TypedDictCodec[Optional[models.NullableRecord]]] = TypedDictCodec(Choice((('object', models.NullableRecord),)), MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[Optional[models.NullableRecord]]] = StdlibCodec(Choice((('object', models.NullableRecord),)), MODELS)
+codec_3: Final[TypedDictCodec[Optional[models.NullableRecord]]] = TypedDictCodec(Choice((('object', models.NullableRecord),)), MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.NullableName]] = StdlibCodec(None, MODELS)
+codec_4: Final[TypedDictCodec[models.NullableName]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.NullableName]] = StdlibCodec(None, MODELS)
+codec_5: Final[TypedDictCodec[models.NullableName]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_6: Final[TypedDictCodec[models.Base]] = TypedDictCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_7: Final[TypedDictCodec[models.Base]] = TypedDictCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""
 
-codec_8: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_8: Final[TypedDictCodec[models.Child]] = TypedDictCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~14/post request_body (request application/json)."""
 
-codec_9: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_9: Final[TypedDictCodec[models.Child]] = TypedDictCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~14/post response_body (response 200 application/json)."""
