@@ -50,15 +50,15 @@ FieldDraftsPostRequest = TypeAliasType("FieldDraftsPostRequest", str | None)
 
 @dataclass
 class Reply:
-    text: str | None = None
+    text: str | MISSING = MISSING
 
 
 @dataclass
 class FieldNotesPostRequest:
     text: str
-    replies: list[Reply] | None = None
+    replies: list[Reply] | MISSING = MISSING
 
 
 @dataclass
 class FieldExtendedPostRequest(Item):
-    note: str | None = None
+    note: str | MISSING = MISSING

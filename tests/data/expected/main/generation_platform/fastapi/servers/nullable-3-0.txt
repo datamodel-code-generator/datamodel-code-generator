@@ -222,7 +222,7 @@ service DefaultService without its methods: TypeError
 > POST /notes
 < 422 application/json [{"type": "missing", "loc": ["body"]}]
 > POST /notes
-  post_note(body=FieldNotesPostRequest(text='a', replies=None))
+  post_note(body=FieldNotesPostRequest(text='a', replies=MISSING))
 < 204 - b''
 > POST /notes
 < 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
