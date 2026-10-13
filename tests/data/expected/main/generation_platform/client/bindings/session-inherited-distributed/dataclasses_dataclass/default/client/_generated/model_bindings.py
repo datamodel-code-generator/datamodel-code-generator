@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Choice, Field, Items, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import Choice, DataclassCodec, Field, Items, Model
 
 
 
@@ -19,14 +19,14 @@ MODELS: Final[dict[type, Model]] = {
     models.Child: Model((Field('payload', 'payload', Choice((('array', Items(models.PayloadItem)), ('object', models.Payload1))), omit_none=True),)),
 }
 
-codec_0: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_0: Final[DataclassCodec[models.Child]] = DataclassCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_1: Final[DataclassCodec[models.Child]] = DataclassCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.Parent]] = StdlibCodec(models.Parent, MODELS)
+codec_2: Final[DataclassCodec[models.Parent]] = DataclassCodec(models.Parent, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Parent]] = StdlibCodec(models.Parent, MODELS)
+codec_3: Final[DataclassCodec[models.Parent]] = DataclassCodec(models.Parent, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""

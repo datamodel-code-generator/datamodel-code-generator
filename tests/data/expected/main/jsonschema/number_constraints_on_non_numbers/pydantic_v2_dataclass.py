@@ -22,8 +22,8 @@ class NumberConstraintsOnNonNumbers:
     string_minimum: str | None = None
     string_length_and_minimum: str | None = Field(None, min_length=2)
     date_maximum: date | None = None
-    date_time_exclusive_minimum: AwareDatetime | None = None
-    time_exclusive_maximum: time | None = None
+    date_time_exclusive_minimum: AwareDatetime | None = Field(None, gt=5)
+    time_exclusive_maximum: time | None = Field(None, lt=10)
     boolean_multiple_of: bool | None = None
     nullable_string_minimum: str | None = None
     array_minimum: list[str] | None = None

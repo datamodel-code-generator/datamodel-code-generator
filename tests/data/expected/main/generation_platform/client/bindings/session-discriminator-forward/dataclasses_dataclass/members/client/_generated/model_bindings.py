@@ -8,7 +8,7 @@ from __future__ import annotations
 from models import grandchild, request, request_base, request_v1, request_v2, request_version_enum
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Choice, Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import Choice, DataclassCodec, Field, Model
 
 
 
@@ -19,38 +19,38 @@ MODELS: Final[dict[type, Model]] = {
     grandchild.Grandchild: Model((Field('version', 'version'), Field('request_id', 'request_id'))),
 }
 
-codec_0: Final[StdlibCodec[grandchild.Grandchild]] = StdlibCodec(grandchild.Grandchild, MODELS)
+codec_0: Final[DataclassCodec[grandchild.Grandchild]] = DataclassCodec(grandchild.Grandchild, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[grandchild.Grandchild]] = StdlibCodec(grandchild.Grandchild, MODELS)
+codec_1: Final[DataclassCodec[grandchild.Grandchild]] = DataclassCodec(grandchild.Grandchild, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[request.Request]] = StdlibCodec(Choice((), 'version', (('v1', request_v1.RequestV1), ('v2', request_v2.RequestV2))), MODELS)
+codec_2: Final[DataclassCodec[request.Request]] = DataclassCodec(Choice((), 'version', (('v1', request_v1.RequestV1), ('v2', request_v2.RequestV2))), MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[request.Request]] = StdlibCodec(Choice((), 'version', (('v1', request_v1.RequestV1), ('v2', request_v2.RequestV2))), MODELS)
+codec_3: Final[DataclassCodec[request.Request]] = DataclassCodec(Choice((), 'version', (('v1', request_v1.RequestV1), ('v2', request_v2.RequestV2))), MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[request_version_enum.RequestVersionEnum]] = StdlibCodec(request_version_enum.RequestVersionEnum, MODELS)
+codec_4: Final[DataclassCodec[request_version_enum.RequestVersionEnum]] = DataclassCodec(request_version_enum.RequestVersionEnum, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[request_version_enum.RequestVersionEnum]] = StdlibCodec(request_version_enum.RequestVersionEnum, MODELS)
+codec_5: Final[DataclassCodec[request_version_enum.RequestVersionEnum]] = DataclassCodec(request_version_enum.RequestVersionEnum, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[request_base.RequestBase]] = StdlibCodec(request_base.RequestBase, MODELS)
+codec_6: Final[DataclassCodec[request_base.RequestBase]] = DataclassCodec(request_base.RequestBase, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[request_base.RequestBase]] = StdlibCodec(request_base.RequestBase, MODELS)
+codec_7: Final[DataclassCodec[request_base.RequestBase]] = DataclassCodec(request_base.RequestBase, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""
 
-codec_8: Final[StdlibCodec[request_v1.RequestV1]] = StdlibCodec(request_v1.RequestV1, MODELS)
+codec_8: Final[DataclassCodec[request_v1.RequestV1]] = DataclassCodec(request_v1.RequestV1, MODELS)
 """Codec of /paths/~1bindings~14/post request_body (request application/json)."""
 
-codec_9: Final[StdlibCodec[request_v1.RequestV1]] = StdlibCodec(request_v1.RequestV1, MODELS)
+codec_9: Final[DataclassCodec[request_v1.RequestV1]] = DataclassCodec(request_v1.RequestV1, MODELS)
 """Codec of /paths/~1bindings~14/post response_body (response 200 application/json)."""
 
-codec_10: Final[StdlibCodec[request_v2.RequestV2]] = StdlibCodec(request_v2.RequestV2, MODELS)
+codec_10: Final[DataclassCodec[request_v2.RequestV2]] = DataclassCodec(request_v2.RequestV2, MODELS)
 """Codec of /paths/~1bindings~15/post request_body (request application/json)."""
 
-codec_11: Final[StdlibCodec[request_v2.RequestV2]] = StdlibCodec(request_v2.RequestV2, MODELS)
+codec_11: Final[DataclassCodec[request_v2.RequestV2]] = DataclassCodec(request_v2.RequestV2, MODELS)
 """Codec of /paths/~1bindings~15/post response_body (response 200 application/json)."""

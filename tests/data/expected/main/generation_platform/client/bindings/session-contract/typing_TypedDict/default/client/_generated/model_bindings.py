@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 MODELS: Final[dict[type, Model]] = {
     models.Record: Model(
@@ -18,65 +18,62 @@ MODELS: Final[dict[type, Model]] = {
             Field('wire-name', 'wire-name'),
             Field('nullable', 'nullable'),
             Field('items', 'items'),
-        ),
-        True,
+        )
     ),
-    models.Problem: Model((Field('message', 'message'),), True),
-    models.FieldRecordsIdPostQueryFilterParameter: Model(
-        (Field('active', 'active'),), True
-    ),
+    models.Problem: Model((Field('message', 'message'),)),
+    models.FieldRecordsIdPostQueryFilterParameter: Model((Field('active', 'active'),)),
 }
 
-codec_0: Final[StdlibCodec[models.FieldRecordsIdPostHeaderTraceParameter]] = (
-    StdlibCodec(None, MODELS)
+codec_0: Final[TypedDictCodec[models.FieldRecordsIdPostHeaderTraceParameter]] = (
+    TypedDictCodec(None, MODELS)
 )
 """Codec of /paths/~1records~1{id}/post parameter (request header trace)."""
 
-codec_1: Final[StdlibCodec[models.FieldRecordsIdPostQueryFilterParameter]] = (
-    StdlibCodec(models.FieldRecordsIdPostQueryFilterParameter, MODELS)
+codec_1: Final[TypedDictCodec[models.FieldRecordsIdPostQueryFilterParameter]] = (
+    TypedDictCodec(models.FieldRecordsIdPostQueryFilterParameter, MODELS)
 )
 """Codec of /paths/~1records~1{id}/post parameter (request query filter application/json)."""
 
-codec_2: Final[StdlibCodec[models.FieldRecordsIdPostPathIdParameter]] = StdlibCodec(
-    None, MODELS
+codec_2: Final[TypedDictCodec[models.FieldRecordsIdPostPathIdParameter]] = (
+    TypedDictCodec(None, MODELS)
 )
 """Codec of /paths/~1records~1{id}/post parameter (request path id)."""
 
-codec_3: Final[StdlibCodec[models.PageParameter]] = StdlibCodec(None, MODELS)
+codec_3: Final[TypedDictCodec[models.PageParameter]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1records~1{id}/post parameter (request query page)."""
 
-codec_4: Final[StdlibCodec[models.Record]] = StdlibCodec(models.Record, MODELS)
+codec_4: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1records~1{id}/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.Record]] = StdlibCodec(models.Record, MODELS)
+codec_5: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1records~1{id}/post request_body (request application/vnd.acme+json)."""
 
-codec_6: Final[StdlibCodec[models.Record]] = StdlibCodec(models.Record, MODELS)
+codec_6: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1records~1{id}/post request_body (request multipart/form-data)."""
 
-codec_7: Final[StdlibCodec[models.Record]] = StdlibCodec(models.Record, MODELS)
+codec_7: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1records~1{id}/post response_body (response 201 application/json)."""
 
-codec_8: Final[StdlibCodec[models.FieldRecordsIdPostResponse201LocationHeader]] = (
-    StdlibCodec(None, MODELS)
+codec_8: Final[TypedDictCodec[models.FieldRecordsIdPostResponse201LocationHeader]] = (
+    TypedDictCodec(None, MODELS)
 )
 """Codec of /paths/~1records~1{id}/post response_header (response Location 201)."""
 
-codec_9: Final[StdlibCodec[models.FieldRecordsIdPostResponse201XLimitHeader]] = (
-    StdlibCodec(None, MODELS)
+codec_9: Final[TypedDictCodec[models.FieldRecordsIdPostResponse201XLimitHeader]] = (
+    TypedDictCodec(None, MODELS)
 )
 """Codec of /paths/~1records~1{id}/post response_header (response X-Limit 201)."""
 
-codec_10: Final[StdlibCodec[models.Problem]] = StdlibCodec(models.Problem, MODELS)
+codec_10: Final[TypedDictCodec[models.Problem]] = TypedDictCodec(models.Problem, MODELS)
 """Codec of /paths/~1records~1{id}/post response_body (response 4XX application/problem+json)."""
 
-codec_11: Final[StdlibCodec[models.FieldRecordsIdPostPathIdParameter]] = StdlibCodec(
-    None, MODELS
+codec_11: Final[TypedDictCodec[models.FieldRecordsIdPostPathIdParameter]] = (
+    TypedDictCodec(None, MODELS)
 )
 """Codec of /paths/~1records~1{id}/get parameter (request path id)."""
 
-codec_12: Final[StdlibCodec[models.PageParameter]] = StdlibCodec(None, MODELS)
+codec_12: Final[TypedDictCodec[models.PageParameter]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1records~1{id}/get parameter (request query page)."""
 
-codec_13: Final[StdlibCodec[models.Record]] = StdlibCodec(models.Record, MODELS)
+codec_13: Final[TypedDictCodec[models.Record]] = TypedDictCodec(models.Record, MODELS)
 """Codec of /paths/~1records~1{id}/get response_body (response 200 application/json)."""

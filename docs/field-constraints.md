@@ -98,6 +98,70 @@ No errors! 🎉
 
 ---
 
+## 🔢 Which fields keep number keywords
+
+`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` are written on a field in two cases.
+
+**The schema holds a number.** The schema type is `number` or `integer`, the schema has no `type`, or the type and
+format map to a number type (`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps
+to one). All five keywords are written, as `con*` types by default and as `Field()` arguments with
+`--field-constraints` or `--use-annotated`.
+
+**The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
+`duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. Pydantic models and
+dataclasses write these keywords only as `Field()` arguments, so this case needs `--field-constraints` or
+`--use-annotated` (root models and type aliases follow the same options); without them such a field has no bound.
+`msgspec.Struct` writes them as `Meta(...)`.
+
+| Python type | Pydantic | msgspec |
+|-------------|----------|---------|
+| `int`, `float` | all five keywords | all five keywords |
+| `Decimal` | all five keywords | none |
+| `timedelta` | the four bounds, read as seconds | none |
+| `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
+| `time` | the four bounds, read as seconds since midnight | none |
+| a type the generator does not know (`fractions.Fraction`, a class of your own) | all five keywords | all five keywords |
+| any other known type: `str`, `bytes`, `bool`, `None`, `date`, `UUID`, `Any`, `object`, paths, IP addresses, lists, dicts and other containers | none | none |
+
+`multipleOf` is not written on `timedelta`, `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field,
+and later versions ignore the keyword or fail on valid values. A `date` takes no number keyword in any Pydantic
+version. `msgspec` accepts number constraints on `int` and `float` only, so a type the generator does not know has to
+be one of them at runtime, for example a `NewType` of `int`.
+Pydantic 2.11 cannot build a `time` field that has a number bound; use Pydantic 2.12 or later for such schemas.
+
+A known type is a Python builtin, a standard-library type, or a type the generator itself imports; its row above
+decides. A union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the keywords
+in Pydantic models and `int | str` does not; `msgspec` writes no number constraint on an `x-python-type` union.
+Custom templates receive the same values as the built-in ones.
+
+A named schema whose `allOf` merges into one scalar type, such as
+`{"allOf": [{"type": "string", "format": "duration"}, {"minimum": 0}]}`, is a root model of that type and follows the
+same table.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {"type": "string", "x-python-type": "int", "minimum": 0},
+    "wait": {"type": "string", "format": "duration", "minimum": 0},
+    "at": {"type": "string", "format": "date-time", "minimum": 0},
+    "day": {"type": "string", "format": "date", "minimum": 0}
+  }
+}
+```
+
+With `--field-constraints`:
+
+```python
+class Model(BaseModel):
+    count: int | None = Field(None, ge=0)
+    wait: timedelta | None = Field(None, ge=0)
+    at: AwareDatetime | None = Field(None, ge=0)
+    day: date | None = None
+```
+
+---
+
 ## 📖 See Also
 
 - 🖥️ [CLI Reference: `--field-constraints`](cli-reference/field-customization.md#field-constraints) - Detailed CLI option documentation with examples

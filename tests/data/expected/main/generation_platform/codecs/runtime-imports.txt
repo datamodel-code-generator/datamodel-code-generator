@@ -28,10 +28,14 @@ client/urls.py: __future__, dataclasses, functools, httpx2, re, typing, urllib.p
 model_codecs/__init__.py: -
 model_codecs/errors.py: __future__
 model_codecs/media.py: .errors, __future__, collections.abc, dataclasses, decimal, json, math, re, typing, typing_extensions, urllib.parse
-model_codecs/native.py: .media, __future__, collections.abc, msgspec, msgspec.json, pydantic, pydantic_core, typing, typing_extensions
+model_codecs/msgspec_structs.py: .media, __future__, collections.abc, msgspec, msgspec.json, typing, typing_extensions
 model_codecs/parameter_reads.py: .errors, .media, .parameters, .unset, __future__, collections.abc, dataclasses, itertools, re, typing
 model_codecs/parameters.py: .errors, .media, __future__, collections.abc, dataclasses, re, typing, urllib.parse
-model_codecs/stdlib.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
+model_codecs/pydantic_adapters.py: .media, __future__, collections.abc, pydantic, pydantic_core, typing, typing_extensions
+model_codecs/pydantic_dataclasses.py: .pydantic_adapters, __future__, typing_extensions
+model_codecs/pydantic_models.py: .pydantic_adapters, __future__, pydantic, typing_extensions
+model_codecs/stdlib_dataclasses.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
+model_codecs/stdlib_typeddicts.py: .media, __future__, base64, collections.abc, dataclasses, datetime, decimal, enum, json, typing, typing_extensions, uuid
 model_codecs/unset.py: __future__, typing_extensions
 protocols/__init__.py: -
 protocols/adapters.py: ..client.errors, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, types, typing, typing_extensions

@@ -1352,8 +1352,10 @@ select the TC rules, to introspect the annotations at run time. Custom
 templates and custom formatters must keep the class and field names of the models: the client binds each operation
 to the names in the generated model graph and does not read the rendered model source.
 
-The generated package needs `httpx2>=2.13.0` and the other requirements of the printed `uv add` command. project. With Pydantic models the minimum is `pydantic>=2.13.5`, and `pydantic>=2.14` when
+The generated package needs `httpx2>=2.13.0` and the other requirements of the printed `uv add` command. With Pydantic models the minimum is `pydantic>=2.13.5`, and `pydantic>=2.14` when
 `--target-pydantic-version 2.14` with `--use-missing-sentinel` makes the models import `MISSING` from `pydantic`.
+An explicit `--target-pydantic-version` older than that minimum (`2`, `2.11` or `2.12`) is refused with `Error:` and
+exit code 2 for those models; leave it unset or use `2.14`. The other model backends do not use the option.
 
 ### Generator options
 

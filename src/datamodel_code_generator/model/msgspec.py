@@ -8,6 +8,7 @@ from __future__ import annotations
 import keyword
 from functools import wraps
 from math import isfinite
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
 from datamodel_code_generator import Error
@@ -34,6 +35,7 @@ from datamodel_code_generator.python_literal import (
 from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import (
     NONE,
+    NUMBER_KEYWORDS,
     DataType,
     _create_context_data_type,
     chain_as_tuple,
@@ -66,7 +68,7 @@ class _MsgspecFieldRenderPlan(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from pathlib import Path
 
     from datamodel_code_generator.reference import Reference
@@ -981,6 +983,11 @@ class DataTypeManager(_DataTypeManager):
 
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
+    NUMBER_CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
+        "int": NUMBER_KEYWORDS,
+        "float": NUMBER_KEYWORDS,
+    })
+    ANNOTATION_UNIONS_TAKE_NUMBER_CONSTRAINTS: ClassVar[bool] = False
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)

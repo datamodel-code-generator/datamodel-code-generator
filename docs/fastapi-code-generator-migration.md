@@ -289,8 +289,9 @@ checkers point at the implementations to update.
 - **The models file has more names.** A schema written inline takes a derived name such as `FieldPetsGetResponse`, and
   parameters get type aliases. Declare schemas under `components` to name them yourself, as the tutorial does.
 - **Generation is stricter.** A path placeholder without a declared path parameter stops the run, where fcg ignored it.
-  A path parameter that names a placeholder is required, as OpenAPI says, even when the document leaves out
-  `required`, as fcg also treated it.
+  A path parameter that names no placeholder of its operation's path is refused with an error instead of being
+  generated, and every other path parameter is required even when the document leaves out `required` or declares it
+  `false`.
 - **Modular references need a directory.** When the document references schemas in other modules, `--output` must name
   a directory, not a file.
 
