@@ -98,6 +98,7 @@ When the target is unset:
 | Deprecated fields (2.7+) | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
 | Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
 | `--alias-generator` field aliases (2.8+) | `alias=` on every `BaseModel` field | `alias=` only where the generated alias differs |
+| Type alias patterns that need Python's regex engine (2.8+) | String pattern; every model that uses the alias sets `regex_engine="python-re"` | Compiled `re.compile(...)` pattern |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
 | `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
@@ -111,6 +112,17 @@ When the target is unset:
 | `--use-missing-sentinel` import | Unset, `2.12` | `2.14` |
 | --- | --- | --- |
 | `MISSING` (2.14 deprecates the experimental path) | `from pydantic.experimental.missing_sentinel import MISSING` | `from pydantic import MISSING` |
+
+Patterns that need Python's regex engine, such as lookaround assertions (see
+[Regular Expression Patterns](jsonschema.md#regular-expression-patterns)), rely on `regex_engine="python-re"`, which
+Pydantic added in 2.5. With every target, a model that has such a pattern fails at import on Pydantic 2.0 to 2.4. A type
+alias (`--use-type-alias`, and the root schemas of `pydantic_v2.dataclass` output) has no config of its own:
+
+- With `2` its pattern stays a string, and every generated `BaseModel` or `pydantic_v2.dataclass` that uses the alias
+  sets `regex_engine="python-re"`, so those models validate on Pydantic 2.5 and later. To validate such an alias on its
+  own, select the engine yourself: `TypeAdapter(Alias, config=ConfigDict(regex_engine="python-re"))`.
+- Unset, or with `2.11` and later, the alias carries a compiled `re.compile(...)` pattern, which needs Pydantic 2.8 and
+  validates on its own.
 
 With `2` and `--use-annotated`, a `BaseModel`, `RootModel` or `pydantic_v2.dataclass` field whose type names a model
 defined later in the same module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11

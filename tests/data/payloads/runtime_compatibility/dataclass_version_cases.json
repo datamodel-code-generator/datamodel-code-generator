@@ -1,0 +1,5 @@
+{
+  "jsonschema/lookaround_anyof_nullable.json": {"valid": {"value": "aB"}, "invalid": {"value": "ab"}},
+  "jsonschema/nested_lookaround_array.json": {"valid": {"codes": ["A1"]}, "invalid": {"codes": ["a1"]}},
+  "jsonschema/root_alias_constraints/lookaround.json": {"valid": "a", "invalid": "b"}
+}

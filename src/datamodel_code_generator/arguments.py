@@ -551,7 +551,7 @@ model_options.add_argument(
     help="Oldest Pydantic version the generated code must support. "
     "Unset: the newest supported feature forms, with populate_by_name config like '2' "
     "and the experimental MISSING import like '2.12'. "
-    "'2': Pydantic 2.0+ compatible (uses populate_by_name). "
+    "'2': Pydantic 2.0+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
     "'2.14': Pydantic 2.14+ (imports MISSING from pydantic).",

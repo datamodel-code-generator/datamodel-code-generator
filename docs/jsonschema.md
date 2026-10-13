@@ -226,7 +226,10 @@ pydantic-core release, so a model that uses it fails at import. For Pydantic v2 
 OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
 the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
 the installed pydantic-core or on the Python running the generator, and it is the same for every
-`--target-pydantic-version`.
+`--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
+whatever the target. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
+with `--target-pydantic-version 2`, every model that uses the alias selects the engine (see
+[Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 
 | Pattern syntax | Example | Generated model |
 |----------------|---------|-----------------|

@@ -81,6 +81,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
     PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM,
+    PYDANTIC_V2_COMPILED_PATTERN_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
     PYDANTIC_V2_MISSING_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
@@ -540,16 +541,21 @@ def _prepare_python_patterns(
             data_type._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
 
 
-def _copy_alias_data_type(data_type: DataType, prepared: dict[str, PythonRuntimeExpression]) -> DataType | None:
+def _copy_alias_data_type(data_type: DataType, prepared: dict[str, PythonRuntimeExpression] | None) -> DataType | None:
     """Copy only the path to alias-specific nodes; collapsed fields may share the other nodes.
 
     ``con*`` calls render as ``Annotated`` constraints because type checkers reject calls in aliases,
     and patterns that need Python's engine are compiled because an alias has no model config.
+    Without ``prepared`` the patterns stay strings, for targets that predate compiled patterns.
     """
     nested = [_copy_alias_data_type(nested_type, prepared) for nested_type in data_type.data_types]
     dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared)
     kwargs = data_type.kwargs
-    pattern = _compiled_python_pattern(kwargs.get("pattern"), data_type, None, prepared) if kwargs else None
+    pattern = (
+        _compiled_python_pattern(kwargs.get("pattern"), data_type, None, prepared)
+        if kwargs and prepared is not None
+        else None
+    )
     base = (
         _ANNOTATED_CONSTRAINT_BASES.get((import_.from_, import_.import_))
         if (import_ := data_type.import_) is not None and data_type.is_func and kwargs
@@ -597,9 +603,13 @@ def _prepare_type_alias_field(
     prepared: dict[str, PythonRuntimeExpression],
     replace_data_type: Callable[[DataModelFieldBase, DataType], None],
 ) -> bool:
-    """Make a type alias body a valid type expression that validates without a model config."""
-    changed = _prepare_field_python_pattern(field, None, prepared)
-    if (data_type := _copy_alias_data_type(field.data_type, prepared)) is None:
+    """Make a type alias body a valid type expression that validates without a model config.
+
+    A target that predates compiled patterns keeps string patterns: the models that use the alias select the engine.
+    """
+    compiled = prepared if model_target_supports(field.parent, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM) else None
+    changed = compiled is not None and _prepare_field_python_pattern(field, None, compiled)
+    if (data_type := _copy_alias_data_type(field.data_type, compiled)) is None:
         return changed
     replace_data_type(field, data_type)
     return True
@@ -1131,10 +1141,25 @@ def assign_forward_reference_fields(model: DataModel, positions: Mapping[str, in
     return changed
 
 
+def _type_alias_fields(model: object) -> list[DataModelFieldBase] | None:
+    """Return the fields of a referenced type alias, which has no config to select a regex engine.
+
+    An alias that reuses another alias has no fields of its own and names that alias as its base.
+    """
+    from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
+
+    while isinstance(model, TypeAliasBase):
+        if model.fields or not model.base_classes or (reference := model.base_classes[0].reference) is None:
+            return model.fields
+        model = reference.source
+    return None
+
+
 def has_lookaround_pattern(
     fields: list[DataModelFieldBase],
     *,
     follow_references: bool = False,
+    aliases_only: bool = False,
     _visited: set[int] | None = None,
 ) -> bool:
     """Check if any field has a regex pattern that needs pydantic's ``python-re`` regex engine.
@@ -1145,6 +1170,7 @@ def has_lookaround_pattern(
     When ``follow_references`` is True, also inspect patterns reachable through referenced
     models (generated type aliases/root types) -- needed for Pydantic v2 dataclasses, where
     alias patterns are compiled with the consuming dataclass's config rather than their own.
+    ``aliases_only`` follows type aliases alone, because every other referenced model has its own config.
     """
     if _visited is None:
         _visited = set()
@@ -1161,10 +1187,12 @@ def has_lookaround_pattern(
             if not follow_references or data_type.reference is None:
                 continue
             source = data_type.reference.source
-            source_fields = getattr(source, "fields", None)
+            source_fields = _type_alias_fields(source) if aliases_only else getattr(source, "fields", None)
             if source_fields is not None and id(source) not in _visited:
                 _visited.add(id(source))
-                if has_lookaround_pattern(source_fields, follow_references=True, _visited=_visited):
+                if has_lookaround_pattern(
+                    source_fields, follow_references=True, aliases_only=aliases_only, _visited=_visited
+                ):
                     return True
     return False
 
@@ -1618,8 +1646,14 @@ class BaseModel(BaseModelBase):
         """Select Python's regex engine for lookaround patterns that fields gained after ``__init__``.
 
         Collapsed root models inline their patterns; a config that already names an engine is kept.
+        A target that predates compiled patterns keeps string patterns in type aliases, which then
+        take the engine from each model that uses them.
         """
-        if not has_lookaround_pattern(self.fields):
+        if not has_lookaround_pattern(
+            self.fields,
+            follow_references=not model_target_supports(self, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM),
+            aliases_only=True,
+        ):
             return
         config_parameters = dict(_config_dict_items(self.extra_template_data.get("config")))
         if "regex_engine" in config_parameters:

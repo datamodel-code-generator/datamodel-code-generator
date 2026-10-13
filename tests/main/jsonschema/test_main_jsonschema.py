@@ -16024,6 +16024,51 @@ def test_main_lookaround_anyof_nullable_pydantic_v2_dataclass_json_validation(ou
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "target_pydantic_version", "expected_file", "attribute_path"),
+    [
+        ("pydantic_v2.BaseModel", "2", "lookaround_anyof_nullable_pydantic_v2.py", ("value", "root")),
+        ("pydantic_v2.BaseModel", "2.12", "lookaround_anyof_nullable_pydantic_v2.py", ("value", "root")),
+        ("pydantic_v2.dataclass", "2", "lookaround_anyof_nullable_pydantic_v2_dataclass_target_2.py", ("value",)),
+        ("pydantic_v2.dataclass", "2.12", "lookaround_anyof_nullable_pydantic_v2_dataclass.py", ("value",)),
+    ],
+    ids=["base-model-target-2", "base-model-target-2.12", "dataclass-target-2", "dataclass-target-2.12"],
+)
+def test_main_lookaround_anyof_nullable_target_pydantic_version(
+    output_model_type: str,
+    target_pydantic_version: str,
+    expected_file: str,
+    attribute_path: tuple[str, ...],
+    output_file: Path,
+) -> None:
+    """Compile a lookaround alias pattern only for a target that has compiled patterns (Pydantic 2.8).
+
+    ``--target-pydantic-version 2`` keeps the string pattern in the dataclass alias, whose engine the
+    dataclass config selects, as 0.83.0 wrote it; a newer target writes what an unset target does. The
+    ``RootModel`` written for ``BaseModel`` carries its own config, so it is the same for every target.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", output_model_type, *target_pydantic_args(target_pydantic_version)],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="lookaround_anyof_nullable_target_pydantic_version",
+        model_name="Model",
+        valid_json='{"value": "ABC"}',
+        invalid_json='{"value": "abc"}',
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=attribute_path,
+        expected_attribute_value="ABC",
+    )
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.benchmark
 def test_main_lookaround_mixed_constraints_pydantic_v2(output_file: Path) -> None:

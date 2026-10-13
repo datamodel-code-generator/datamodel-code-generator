@@ -347,7 +347,8 @@ PYDANTIC_V2_0_RUNTIME_MAX_VERSION = "2.1.0"
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION = "2.12.0"
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION = "2.10.0"
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION = "2.5.2"
-PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION = "2.8.0"
+PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION = "2.11.0"
+"""The oldest Pydantic whose payload target, the newest target it runs, writes compiled alias patterns (2.8)."""
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS = (
     "jsonschema/numeric_constraint_precision/ordinary.json",
     "jsonschema/native_decimal_default_constrained.json",
@@ -421,22 +422,27 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
     ),
 }
-PYDANTIC_V2_DATACLASS_COMPILED_PATTERN_CASE_IDS = (
-    *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
+PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS = (
     "jsonschema/lookaround_anyof_nullable.json",
     "jsonschema/lookaround_dict.json",
-    "jsonschema/lookaround_mixed_constraints.json",
     "jsonschema/lookaround_union_types.json",
     "jsonschema/nested_lookaround_array.json",
-    "jsonschema/root_alias_constraints/lookaround.json",
     "jsonschema/schema_validators_runtime_root_cross_module/a.json",
     "jsonschema/type_alias_lookaround/tree/schema_a.json",
     "jsonschema/type_alias_lookaround/tree/schema_b.json",
 )
+"""Lookaround aliases a dataclass uses: the dataclass config selects the engine, so they need Pydantic 2.5."""
+PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
+    *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
+    "jsonschema/lookaround_mixed_constraints.json",
+    "jsonschema/root_alias_constraints/lookaround.json",
+)
+"""Lookaround aliases validated on their own: only a compiled pattern carries the engine without a config."""
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2_DATACLASS: dict.fromkeys(
-        PYDANTIC_V2_DATACLASS_COMPILED_PATTERN_CASE_IDS,
-        "Pydantic before 2.8.0 cannot validate compiled lookaround patterns in type aliases",
+        PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS,
+        "Pydantic before 2.11.0 runs target 2, which predates compiled patterns (2.8) and keeps string lookaround "
+        "patterns that a bare type alias has no model config to select regex_engine='python-re' for",
     ),
 }
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
@@ -450,6 +456,10 @@ PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] 
         ),
     },
     PayloadBackend.PYDANTIC_V2_DATACLASS: {
+        **{
+            case_id: PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES[case_id]
+            for case_id in PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS
+        },
         "jsonschema/use_decimal_for_multiple_of.json": (
             "Pydantic before 2.5.0 can reject schema-valid dataclass float multipleOf values near float boundaries"
         ),
