@@ -1,0 +1,33 @@
+openapi: 3.1.0
+info:
+  title: Raw text bodies
+  version: 1.0.0
+servers:
+  - url: https://raw.example.com
+paths:
+  /reports:
+    get:
+      operationId: downloadReport
+      responses:
+        '200':
+          description: The report as CSV, in whatever bytes it holds.
+          content:
+            text/csv:
+              schema: {type: string, format: binary}
+  /notes:
+    post:
+      operationId: uploadNote
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {$ref: '#/components/schemas/Note'}
+      responses:
+        '200':
+          description: The stored note.
+          content:
+            text/plain:
+              schema: {$ref: '#/components/schemas/Note'}
+components:
+  schemas:
+    Note: {type: string, format: binary}

@@ -47,6 +47,7 @@ from datamodel_code_generator._target_contract import (
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
         Direction,
         FieldSlot,
@@ -166,6 +167,12 @@ class _WirePlanner:
         self.diagnostics: list[CodecDiagnostic] = []
         self.version = batch.openapi
         self.uses = {use.id: use for use in batch.type_uses}
+
+
+def body_kind(media_type: str, use: TypeUseBinding | None) -> MediaKind:
+    """Return how a body of a normalized media type is carried: a text body of one raw binary string as raw bytes."""
+    kind = media_kind(media_type)
+    return "binary" if kind == "text" and use is not None and use.octets else kind
 
 
 def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:

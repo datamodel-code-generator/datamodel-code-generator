@@ -27,6 +27,7 @@ from datamodel_code_generator._fastapi.routes import (
 from datamodel_code_generator._openapi_wire_plan import (
     NO_SCALAR_KIND,
     STYLED,
+    body_kind,
     content_types,
     form_extras,
     form_members,
@@ -1164,12 +1165,8 @@ class Planner:  # noqa: PLR0904
     def media(self, declaration: WireDeclaration) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, and type use."""
         media_type = normalize_media_type(declaration.name or "")
-        return MediaSpec(
-            media_type=media_type,
-            kind=media_kind(media_type),
-            use=self.use(declaration.schemas),
-            declaration=declaration,
-        )
+        use = self.use(declaration.schemas)
+        return MediaSpec(media_type=media_type, kind=body_kind(media_type, use), use=use, declaration=declaration)
 
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:
         """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model."""

@@ -116,6 +116,7 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "pagination",
         "streams",
         "ndjson",
+        "raw",
     ],
 )
 def test_generated_client(case: str, tmp_path: Path) -> None:

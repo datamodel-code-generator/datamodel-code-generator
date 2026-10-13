@@ -4,7 +4,8 @@ Both targets share one models module. The server's services record the typed arg
 wire recorder in front of the application records each request line and response status, and every call reports
 the value the client returned or the error it raised. The calls run synchronously and with asyncio, in process
 through HTTPX2's ASGI transports and, for a case that asks for it, over a local Uvicorn socket; transports that
-agree print one section.
+agree print one section. A case that names other `BACKENDS` also calls the server through a client of each, generated
+with its own models module, and reports each client under its backend's name where it disagrees.
 """
 
 from __future__ import annotations
@@ -196,19 +197,29 @@ def _generate(scenario: ModuleType, root: Path, package: str) -> str:
         server_model_package=f"{package}_models",
     )
     served = models.read_bytes()
-    generate(
-        source,
-        **model,
-        generate_client="httpx2",
-        client_output=root / f"{package}_client",
-        client_package=f"{package}_client",
-        client_model_package=f"{package}_models",
-        **{
-            f"client_{key}": json.loads((SOURCE / value).read_text(encoding="utf-8")) if key == "protocols" else value
-            for key, value in getattr(scenario, "CLIENT", {}).items()
-        },
-    )
+    client = {
+        f"client_{key}": json.loads((SOURCE / value).read_text(encoding="utf-8")) if key == "protocols" else value
+        for key, value in getattr(scenario, "CLIENT", {}).items()
+    }
+    for suffix, backend in _clients(scenario):
+        generate(
+            source,
+            **{**model, "output_model_type": backend, "output": root / f"{package}{suffix}_models.py"},
+            generate_client="httpx2",
+            client_output=root / f"{package}_client{suffix}",
+            client_package=f"{package}_client{suffix}",
+            client_model_package=f"{package}{suffix}_models",
+            **client,
+        )
     return f"models shared {models.read_bytes() == served}\n"
+
+
+def _clients(scenario: ModuleType) -> list[tuple[str, DataModelType]]:
+    """Return the package suffix and model backend of each client of a case: the shared models' first."""
+    return [
+        ("", DataModelType.PydanticV2BaseModel),
+        *((f"_{backend.value.replace('.', '_')}", backend) for backend in getattr(scenario, "BACKENDS", ())),
+    ]
 
 
 def _drained(value: object) -> object:
@@ -320,18 +331,28 @@ def cross_report(case: str, root: Path) -> str:
     scenario = importlib.import_module(f"tests.api_generation.scenarios.cross_{case}")
     header = _generate(scenario, root, case)
     reports: dict[str, str] = {}
-    with generated_root(root, case, f"{case}_client"):
-        server, client = import_generated(case), import_generated(f"{case}_client")
-        models = importlib.import_module(f"{case}_models")
+    suffixes = [suffix for suffix, _ in _clients(scenario)]
+    with generated_root(root, case, *(f"{case}_client{suffix}" for suffix in suffixes)):
+        server = import_generated(case)
+        clients = [
+            (
+                suffix.replace("_", " ", 1),
+                import_generated(f"{case}_client{suffix}"),
+                importlib.import_module(f"{case}{suffix}_models"),
+            )
+            for suffix in suffixes
+        ]
         recorder = Recorder()
-        app = server.create_app(**scenario.services(server, models, recorder))
+        app = server.create_app(**scenario.services(server, clients[0][2], recorder))
         if hasattr(scenario, "extend"):
             scenario.extend(app, recorder)
         for name, reach, native, anative in _transports(scenario, recorder.wire(app)):
             with reach as options:
-                shared = {"models": models, "client": client, "options": options}
-                reports[f"{name} sync"] = _sync_report(scenario, f"{case} {name}", native, shared, recorder.lines)
-                reports[f"{name} async"] = asyncio.run(
-                    _async_report(scenario, f"{case} {name}", anative, shared, recorder.lines)
-                )
+                for label, client, models in clients:
+                    shared = {"models": models, "client": client, "options": options}
+                    title = f"{case} {name}{label}"
+                    reports[f"{name}{label} sync"] = _sync_report(scenario, title, native, shared, recorder.lines)
+                    reports[f"{name}{label} async"] = asyncio.run(
+                        _async_report(scenario, title, anative, shared, recorder.lines)
+                    )
     return _MESSAGE.sub('"msg":"<msg>"', header + agreeing_backends(reports))

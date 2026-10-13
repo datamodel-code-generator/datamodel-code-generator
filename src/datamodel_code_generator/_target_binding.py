@@ -781,7 +781,8 @@ class _PartsRecord:
 class _SchemaRecord:
     """What the walk recorded of an acquired schema that its model types do not say.
 
-    `binary` is where the first raw binary string sits that the schema's values carry as text.
+    `binary` is where the first raw binary string sits that the schema's values carry as text, and `octets` says the
+    schema of a text media is one raw binary string, which the media carries as the raw body.
     """
 
     default: LiteralScalar | None
@@ -789,6 +790,7 @@ class _SchemaRecord:
     parts: _PartsRecord | None
     encoding: EncodingFacts | None
     binary: SourceLocation | None = None
+    octets: bool = False
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -2391,7 +2393,9 @@ class _Reader(_SchemaLocations):
             if media is not None and media.strip().lower().startswith("multipart/")
             else None
         )
-        if text or kind in _TEXT_MEDIA or declaration.tokens[-1] == "itemSchema":
+        item = declaration.tokens[-1] == "itemSchema"
+        octets = kind == "text" and not (text or item) and self.raw_bytes(self.whole(declaration)[1])
+        if not octets and (text or item or kind in _TEXT_MEDIA):
             binary = None if (found := self.binary(declaration)) is None else locate(found)
         else:
             binary = None if parts is None else parts.binary
@@ -2403,6 +2407,7 @@ class _Reader(_SchemaLocations):
             if text or media is None or kind in _FORMS
             else None,
             binary,
+            octets,
         )
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
@@ -2472,12 +2477,7 @@ class _Reader(_SchemaLocations):
         order = walked[declaration] = len(walked)
         low = order
         raw = _mapping(self.borrow(declaration))
-        format_ = raw.get("format")
-        found = (
-            declaration
-            if isinstance(format_, str) and format_ in self.formats and "string" in _json_types(raw)
-            else None
-        )
+        found = declaration if self.raw_bytes(raw) else None
         for child in self._subschemas(declaration, raw):
             if found is not None:
                 break
@@ -2486,6 +2486,11 @@ class _Reader(_SchemaLocations):
         while (found is not None or low == order) and len(walked) > order:
             self.binaries[walked.popitem()[0]] = found
         return found, low
+
+    def raw_bytes(self, raw: dict[str, YamlValue]) -> bool:
+        """Return whether a schema is a string the models type as raw bytes."""
+        format_ = raw.get("format")
+        return isinstance(format_, str) and format_ in self.formats and "string" in _json_types(raw)
 
     def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
         """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
@@ -3461,6 +3466,7 @@ class _Contracts(_SchemaUses):
                 keywords=record.keywords,
                 encoding=record.encoding,
                 binary=record.binary,
+                octets=record.octets,
             )
         return uses
 

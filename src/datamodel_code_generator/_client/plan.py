@@ -19,6 +19,7 @@ from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_A
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._openapi_wire_plan import (
     STYLED,
+    body_kind,
     content_types,
     form_extras,
     parameter_plans,
@@ -734,8 +735,8 @@ class Planner:
             message = f"The media type {declaration.name!r} of {_label(operation)} is not a media type"
             self.problems.append(_problem("E_METADATA_REQUIRED", message, declaration.use_site))
             media_type = declaration.name or ""
-        kind = media_kind(media_type)
         use = self.use(declaration.schemas)
+        kind = body_kind(media_type, use)
         essence = media_type.partition(";")[0]
         if (reason := _unsupported(kind, essence, use, request=request)) is not None:
             message = f"The {media_type} media of {_label(operation)} {reason}"
