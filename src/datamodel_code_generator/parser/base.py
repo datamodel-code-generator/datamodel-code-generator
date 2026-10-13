@@ -437,6 +437,7 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
         return
     reserved_names.update(imports.get_effective_name(from_, name) for from_, names in imports.items() for name in names)
     bindings: dict[str, str] = {}
+    aliased_imports: dict[_PythonTypeImportKey, Import] = {}
     for name, (from_, imported_name) in shadowable_imports.items():
         if name not in collisions:
             continue
@@ -448,10 +449,12 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
         reserved_names.add(alias)
         aliased_import = Import(from_=from_, import_=imported_name, alias=alias)
         bindings[name] = alias
+        aliased_imports[from_, imported_name] = aliased_import
         if from_ == "builtins":
             imports.append(aliased_import)
         else:
             imports.apply_alias(aliased_import)
+    _apply_structured_import_aliases(models, aliased_imports, can_retain_cache=False)
     for model in models:
         model.set_field_name_bindings(bindings)
 
