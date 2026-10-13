@@ -1,0 +1,16 @@
+{
+  "backend": "typing.TypedDict",
+  "package": "codec_aliases_typeddict_enums",
+  "scopes": ["schemas", "paths", "api"],
+  "options": {"enum_field_as_literal": "none"},
+  "cases": [
+    {"name": "choice-server-decode-enum", "use": "/paths/~1choices/post request_body", "op": "decode",
+     "value": {"color_or_count": "red", "word_or_list": "w"}},
+    {"name": "choice-server-decode-count", "use": "/paths/~1choices/post request_body", "op": "decode",
+     "value": {"color_or_count": 3}},
+    {"name": "choice-server-decode-unknown-member", "use": "/paths/~1choices/post request_body", "op": "decode",
+     "value": {"color_or_count": "blue"}},
+    {"name": "choice-server-response-enum", "use": "/paths/~1choices/post response_body 200", "op": "encode",
+     "value": {"result": "choice-server-decode-enum", "attr": "value"}}
+  ]
+}

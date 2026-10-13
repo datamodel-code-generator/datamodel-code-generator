@@ -8,33 +8,33 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.BaseRequest: Model((Field('raw-note', 'raw-note'), Field('secret', 'secret')), True),
-    models.BaseResponse: Model((Field('raw-note', 'raw-note'), Field('id', 'id')), True),
-    models.ChildRequest: Model((Field('raw-note', 'raw-note'), Field('secret', 'secret')), True),
-    models.ChildResponse: Model((Field('raw-note', 'raw-note'), Field('id', 'id')), True),
-    models.GrandChildRequest: Model((Field('raw-note', 'raw-note'), Field('secret', 'secret')), True),
-    models.GrandChildResponse: Model((Field('raw-note', 'raw-note'), Field('id', 'id')), True),
+    models.BaseRequest: Model((Field('raw-note', 'raw-note'), Field('secret', 'secret'))),
+    models.BaseResponse: Model((Field('raw-note', 'raw-note'), Field('id', 'id'))),
+    models.ChildRequest: Model((Field('raw-note', 'raw-note'), Field('secret', 'secret'))),
+    models.ChildResponse: Model((Field('raw-note', 'raw-note'), Field('id', 'id'))),
+    models.GrandChildRequest: Model((Field('raw-note', 'raw-note'), Field('secret', 'secret'))),
+    models.GrandChildResponse: Model((Field('raw-note', 'raw-note'), Field('id', 'id'))),
 }
 
-codec_0: Final[StdlibCodec[models.BaseRequest]] = StdlibCodec(models.BaseRequest, MODELS)
+codec_0: Final[TypedDictCodec[models.BaseRequest]] = TypedDictCodec(models.BaseRequest, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.BaseResponse]] = StdlibCodec(models.BaseResponse, MODELS)
+codec_1: Final[TypedDictCodec[models.BaseResponse]] = TypedDictCodec(models.BaseResponse, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.ChildRequest]] = StdlibCodec(models.ChildRequest, MODELS)
+codec_2: Final[TypedDictCodec[models.ChildRequest]] = TypedDictCodec(models.ChildRequest, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.ChildResponse]] = StdlibCodec(models.ChildResponse, MODELS)
+codec_3: Final[TypedDictCodec[models.ChildResponse]] = TypedDictCodec(models.ChildResponse, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.GrandChildRequest]] = StdlibCodec(models.GrandChildRequest, MODELS)
+codec_4: Final[TypedDictCodec[models.GrandChildRequest]] = TypedDictCodec(models.GrandChildRequest, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.GrandChildResponse]] = StdlibCodec(models.GrandChildResponse, MODELS)
+codec_5: Final[TypedDictCodec[models.GrandChildResponse]] = TypedDictCodec(models.GrandChildResponse, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""

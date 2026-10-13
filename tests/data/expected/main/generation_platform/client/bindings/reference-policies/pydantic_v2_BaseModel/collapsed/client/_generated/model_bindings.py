@@ -9,7 +9,7 @@ import models
 from pydantic import SerializeAsAny
 from typing import Final, Optional
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
 codec_0: Final[PydanticCodec[models.Holder]] = PydanticCodec(models.Holder)

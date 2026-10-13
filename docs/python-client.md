@@ -63,6 +63,8 @@ never renamed.
 Generation ends by printing to stderr the `uv add` command that adds the runtime dependencies of the package to your
 project. With Pydantic models the minimum is `pydantic>=2.13.5`, and `pydantic>=2.14` when
 `--target-pydantic-version 2.14` with `--use-missing-sentinel` makes the models import `MISSING` from `pydantic`.
+An explicit `--target-pydantic-version` older than that minimum (`2`, `2.11` or `2.12`) is refused with `Error:` and
+exit code 2 for those models; leave it unset or use `2.14`. The other model backends do not use the option.
 `--check` compares without writing and prints the differences as for models, and `--output-format json`
 emits the model generation and check payloads, as with `--generate-server`. `--diff-against` and `--watch` also work
 as they do with `--generate-server`.
@@ -241,6 +243,10 @@ text is its canonical JSON literal. Pydantic and msgspec receive any other text 
 conversion rules, as they do for unknown object members. Dataclass and TypedDict codecs validate nothing, so for them
 such text is a decoding error, like text that cannot become a `Decimal`, date or `UUID` leaf; their JSON bodies are
 still constructed without added schema validation. Repeated undeclared members keep their last value.
+
+A package holds the codec of its own model backend only. A Pydantic package imports no msgspec, a msgspec package no
+Pydantic, and a dataclass or TypedDict package neither, so the package imports, and mypy, Pyright, and ty check it,
+with only the dependencies that generation prints installed.
 
 The generated `model_codecs` module exports `UNSET` and `JSONValue`. Parameter parsing records and wire
 validation errors are implementation details. `UNSET`, also exported from `pkg.options`, is a

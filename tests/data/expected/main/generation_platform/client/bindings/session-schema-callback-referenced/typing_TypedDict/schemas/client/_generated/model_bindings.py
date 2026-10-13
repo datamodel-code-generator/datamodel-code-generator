@@ -8,13 +8,13 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Item: Model((Field('id', 'id'),), True),
+    models.Item: Model((Field('id', 'id'),)),
 }
 
-codec_0: Final[StdlibCodec[models.Item]] = StdlibCodec(models.Item, MODELS)
+codec_0: Final[TypedDictCodec[models.Item]] = TypedDictCodec(models.Item, MODELS)
 """Codec of /paths/~1items/post response_body (response 200 application/json)."""

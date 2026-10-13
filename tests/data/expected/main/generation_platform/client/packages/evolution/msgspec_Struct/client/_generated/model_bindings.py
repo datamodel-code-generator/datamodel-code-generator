@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
 codec_0: Final[MsgspecCodec[models.FieldOrdersOrderIdGetPathOrderIdParameter]] = MsgspecCodec(models.FieldOrdersOrderIdGetPathOrderIdParameter)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request path orderId)."""

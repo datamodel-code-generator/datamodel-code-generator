@@ -641,14 +641,14 @@
         "context": {
           "imports": "from typing import Final\n\nimport models",
           "codec_imports": [
-            "from .._runtime.model_codecs.native import PydanticCodec",
-            "from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec"
+            "from .._runtime.model_codecs.pydantic_models import PydanticCodec",
+            "from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec"
           ],
           "models_annotation": "Final[dict[type, Model]]",
           "models": [
             {
               "type": "models.Pet",
-              "value": "Model((Field('name', 'name'),), True)"
+              "value": "Model((Field('name', 'name'),))"
             },
             {
               "type": "models.日本",
@@ -658,8 +658,8 @@
           "codecs": [
             {
               "name": "codec_0",
-              "annotation": "Final[StdlibCodec[models.Pet]]",
-              "value": "StdlibCodec(models.Pet, MODELS)",
+              "annotation": "Final[TypedDictCodec[models.Pet]]",
+              "value": "TypedDictCodec(models.Pet, MODELS)",
               "description": "Codec of /paths/~1pets/get response_body (response 200 application/json)."
             },
             {
@@ -676,7 +676,7 @@
         "context": {
           "imports": "from typing import Final\n\nimport models",
           "codec_imports": [
-            "from .._runtime.model_codecs.native import PydanticCodec"
+            "from .._runtime.model_codecs.pydantic_models import PydanticCodec"
           ],
           "models_annotation": "",
           "models": [],
