@@ -12,7 +12,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
 from datamodel_code_generator import Error
-from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
+from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, _nested_model_default_factory
@@ -74,6 +74,16 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import Reference
 
 
+def _default_factory_type_name(data_type: DataType) -> str:
+    """Return the name a default factory uses for the referenced type.
+
+    The factory runs once the module defines the type, so a quoted forward reference is named directly.
+    """
+    if (alias := data_type.alias) and not data_type._is_quoted_reference:  # noqa: SLF001
+        return alias
+    return cast("DataModel", cast("Reference", data_type.reference).source).class_name
+
+
 def has_field_assignment(field: DataModelFieldBase) -> bool:
     """Return whether a msgspec field renders with a default assignment."""
     return field.use_default_with_required or not (field.required or field.should_strip_default_none())
@@ -107,8 +117,6 @@ def import_extender(cls: type[DataModelFieldBaseT]) -> type[DataModelFieldBaseT]
             if plan.needs_unset_import:
                 extra_imports.append(IMPORT_MSGSPEC_UNSET)
         imports = original_getter(self)
-        if isinstance(self, DataModelField) and self._not_required and not self.nullable and self.data_type.is_optional:
-            imports = tuple(import_ for import_ in imports if import_ != IMPORT_OPTIONAL)
         return chain_as_tuple(imports, extra_imports)
 
     cls.imports = property(new_imports)  # ty: ignore[invalid-assignment]
@@ -119,7 +127,7 @@ class Struct(DataModel):
     """DataModel implementation for msgspec.Struct."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "msgspec.jinja2"
-    SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
+    RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
     BASE_CLASS: ClassVar[str] = "msgspec.Struct"
     BASE_CLASS_NAME: ClassVar[str] = "Struct"
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"
@@ -896,7 +904,7 @@ class DataModelField(DataModelFieldBase):
                 ):
                     return (
                         f"lambda: {self._PARSE_METHOD}({represent_python_value(self.default)},  "
-                        f"type=list[{data_type_child.alias or data_type_child.reference.source.class_name}])"
+                        f"type=list[{_default_factory_type_name(data_type_child)}])"
                     )
             elif data_type.reference and (
                 isinstance(data_type.reference.source, Struct)
@@ -910,10 +918,9 @@ class DataModelField(DataModelFieldBase):
                         continue
                     if isinstance(self.default, dict) and any(dt.is_dict for dt in self.data_type.data_types):
                         continue
+                name = _default_factory_type_name(data_type)
                 model_type = (
-                    self.data_type.type_hint
-                    if self.data_type.is_list
-                    else data_type.alias or data_type.reference.source.class_name
+                    self.data_type.type_hint.replace(data_type.alias or name, name) if self.data_type.is_list else name
                 )
                 return f"lambda: {self._PARSE_METHOD}({represent_python_value(self.default)},  type={model_type})"
         return None

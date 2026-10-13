@@ -6,7 +6,7 @@ Generates pydantic.dataclasses.dataclass decorated classes with validation suppo
 from __future__ import annotations
 
 import keyword
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -30,7 +30,7 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
     _config_dict_items,
     _model_references,
     _safe_config_dict_items,
-    assign_forward_reference_fields,
+    assigns_forward_reference_field,
     has_lookaround_pattern,
     models_reaching_string_pattern_aliases,
 )
@@ -38,7 +38,11 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONFIG_DICT,
     IMPORT_PYDANTIC_DATACLASS,
 )
-from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes
+from datamodel_code_generator.model.pydantic_v2.version import (
+    PYDANTIC_V2_DATACLASS_OWN_NAME_MINIMUM,
+    _includes_dict_key_reference_classes,
+    model_target_supports,
+)
 from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
@@ -170,9 +174,46 @@ class DataClass(_DataclassReuseMixin, DataModel):
 
         self._lookaround_regex_engine_checked = False
 
+    def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301
+        """Return whether ``dataclass.jinja2`` writes an assignment for the field."""
+        if field.field and not field.annotated:
+            return True
+        return (
+            not cast("DataModelField", field).has_default_factory_in_field
+            and (not field.required or field.use_default_with_required)
+            and (field.represented_default != "None" or not field.strip_default_none or field.data_type.is_optional)
+        )
+
+    def class_attribute_hides_named_type(
+        self, field: DataModelFieldBase, *, assigned: bool, resolved_late: bool, as_string: bool
+    ) -> bool:
+        """Return whether a class attribute named like the field hides the type that its annotation names.
+
+        From a string Pydantic 2.10 resolves the name of the class itself before its attributes, and a field of
+        a class with slots stays an attribute once the class exists.
+        """
+        if (
+            as_string
+            and any(
+                (reference := data_type.reference) is not None and reference.path == self.path
+                for data_type in field.data_type.all_data_types
+            )
+            and model_target_supports(self, PYDANTIC_V2_DATACLASS_OWN_NAME_MINIMUM)
+        ):
+            return False
+        return super().class_attribute_hides_named_type(
+            field, assigned=assigned, resolved_late=resolved_late, as_string=as_string
+        ) or (resolved_late and bool(self.dataclass_arguments.get("slots")))
+
+    def assigns_forward_reference_field(
+        self, field: DataModelFieldBase, positions: Mapping[str, int], index: int
+    ) -> bool:
+        """Leave ``Annotated`` for a field that names a later model when the target predates Pydantic 2.11."""
+        return assigns_forward_reference_field(self, field, positions, index)
+
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
         """Write fields that name a later model by assignment, keeping required fields before defaults."""
-        if not assign_forward_reference_fields(self, positions, index):
+        if not super().assign_forward_reference_fields(positions, index):
             return False
         self.fields.sort(key=_has_pydantic_dataclass_field_assignment)
         return True

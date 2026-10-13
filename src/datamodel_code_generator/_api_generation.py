@@ -572,10 +572,12 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
     file within one filesystem, also into an output directory that is a mount point. A file that already holds its
     bytes is left out, so an unchanged target stages nothing and writes nothing. The journal reports a staged module
     that a package directory shadows, so an unchanged one is reported here: a run warns whether or not it writes.
+    The Python files that the target output holds and the run does not generate are reported before any is written.
     """
     from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
 
     planned = tuple(artifacts)
+    _warn_leftover(target)
     warn_shadowed_modules(target.cwd / artifact.path for artifact in planned if artifact.action == "unchanged")
     if not (changed := [artifact for artifact in planned if artifact.action == "write"]):
         return []
@@ -608,6 +610,29 @@ def _stage(target: PlannedTarget, artifacts: Iterable[GeneratedArtifact], stack:
         (source := staging / str(len(files))).write_bytes(artifact.content)
         files.append(StagedFile(source, cwd / artifact.path, resolved / artifact.path.relative_to(destination), anchor))
     return files
+
+
+def _warn_leftover(target: PlannedTarget) -> None:
+    """Warn about the Python files under the target output that the run does not generate, as `--check` lists them.
+
+    Models generated inside the target output are part of it. A run that plans no target file writes no package.
+    """
+    artifacts = target.project.artifacts
+    package, cwd = target.package, target.cwd
+    if not (generated := {artifact.path.relative_to(package) for artifact in artifacts if artifact.kind == "target"}):
+        return
+    from datamodel_code_generator._leftover_files import warn_leftover_files  # noqa: PLC0415
+
+    root = (cwd / package).resolve()
+    paths = [artifact.path for artifact in artifacts if artifact.kind == "model"]
+    if (models := target.models) is None:
+        generated.update(
+            location.relative_to(root) for path in paths if (location := (cwd / path).resolve()).is_relative_to(root)
+        )
+    elif (location := (cwd / models).resolve()).is_relative_to(root):
+        inner = location.relative_to(root)
+        generated.update(inner / path.relative_to(models) for path in paths)
+    warn_leftover_files(root, generated, shown(package, cwd))
 
 
 def publish_target(target: PlannedTarget) -> None:

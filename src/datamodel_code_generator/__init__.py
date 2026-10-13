@@ -578,6 +578,10 @@ class DocumentationAnnotationWarning(UserWarning):
     """Warn that a served document leaves out an annotation that has no JSON form."""
 
 
+class LeftoverFilesWarning(UserWarning):
+    """Warn that a generated package holds Python files that the generation left in place and does not generate."""
+
+
 class InvalidClassNameError(Error):
     """Raised when a schema title cannot be converted to a valid Python class name."""
 
@@ -2923,6 +2927,7 @@ __all__ = [
     "InvalidClassNameError",
     "InvalidFileFormatError",
     "JsonSchemaVersion",
+    "LeftoverFilesWarning",
     "LiteralType",
     "ModuleSplitMode",
     "NamingStrategy",
