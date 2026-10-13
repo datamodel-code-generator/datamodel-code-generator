@@ -14,7 +14,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20260909",
+    preset="<newest-standard-py312-preset>",
     output=Path("models.py"),
     generate_client=ClientType.HTTPX2,
     client_output=Path("client"),

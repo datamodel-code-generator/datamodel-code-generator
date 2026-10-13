@@ -9997,6 +9997,9 @@ the `server_*` or `client_*` options configure it. They are the options of `--ge
 and the `--server-*` and `--client-*` flags under their Python names, as for model options: choices are enums such as
 `ServerType` (their string values also work), and the options that take JSON on the command line take mappings.
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
+<!-- fmt: off -->
+
 ```python
 from pathlib import Path
 
@@ -10024,6 +10027,9 @@ generate(
     server_body_modes={"/paths/~1upload/post": "request"},
 )
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
 
 With an `output`, `generate()` writes the models and the package together and returns `None`. Without one, it writes
 nothing but the model metadata and a remote lock update, and returns `GeneratedModules` with every model and package
@@ -12553,29 +12559,10 @@ datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 
 ### Python API
 
-The quick start's settings, as command-line options:
-
-<!-- BEGIN AUTO-GENERATED FASTAPI QUICK START -->
-```bash
-datamodel-codegen \
-  --input openapi.yaml \
-  --input-file-type openapi \
-  --openapi-scopes schemas api \
-  --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20260909 \
-  --output models.py \
-  --generate-server fastapi \
-  --server-output server \
-  --server-package server \
-  --server-model-package models
-```
-
-The preset supplies the model options, as in the model [quick start](getting-started.md).
-<!-- END AUTO-GENERATED FASTAPI QUICK START -->
-
-`generate()` takes the server options under their Python names, with the model options; the choices are enums of
-`datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
-options take mappings keyed by the same operation references:
+`generate()` takes the settings of the [quick start](#2-generate-the-server) as keyword arguments: the server
+options under their Python names, with the model options; the choices are enums of `datamodel_code_generator` such as
+`ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON options take mappings keyed by the
+same operation references:
 
 <!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
@@ -12614,6 +12601,9 @@ with the same settings does, so one `pyproject.toml` can describe model-only job
 `generate-server` in each server job or in a profile it selects, not in the base table, when other jobs generate
 models only.
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: fastapi-server.batch-jobs -->
+<!-- fmt: off -->
+
 ```toml
 [tool.datamodel-codegen]
 input-file-type = "openapi"
@@ -12637,6 +12627,9 @@ input = "openapi.yaml"
 output = "app/models.py"
 server-output = "app/server"
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.batch-jobs -->
 
 ```bash
 datamodel-codegen --all-jobs
@@ -12962,6 +12955,16 @@ or a custom template directory without a `fastapi` directory, keeps its builtin 
 in the `_fastapi/templates` directory of the installed package; copy one to start from it. An override may include
 or import the other builtin templates.
 
+!!! warning "Overrides are not checked against the builtin roles"
+
+    A file of the `fastapi` directory that is not one of these role names is ignored without a warning, so a
+    misspelled or renamed role keeps its builtin template. A value that an override names and the builtin no longer
+    provides, such as one that an older copy of a builtin template uses, renders as an empty string, as Jinja's default
+    `Undefined` does; the values a role receives can change while server generation is experimental. Generation can
+    then succeed and write a package that fails when it is imported. After each upgrade, compare your overrides with the
+    current builtin templates, and in CI import the generated package, or run `datamodel-codegen --check` and your
+    tests.
+
 ```text
 templates/
 ├── fastapi/
@@ -12978,27 +12981,31 @@ precedence over the extra data:
 {"#all#": {"team": "the platform team"}}
 ```
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: fastapi-server.templates.command -->
+<!-- fmt: off -->
+
 ```bash
 datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
+  --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
   --preset standard-py312-20260909 \
-  --openapi-scopes schemas api \
   --output models.py \
-  --custom-template-dir templates \
-  --extra-template-data extra.json \
   --generate-server fastapi \
   --server-output server \
   --server-package server \
-  --server-model-package models
+  --server-model-package models \
+  --custom-template-dir templates \
+  --extra-template-data extra.json
 ```
 
-The values a role receives can change while server generation is experimental, and a value that an older copy of a
-builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
-compare an override with the current builtin template after an upgrade. The templates write every module, class,
-function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
-Each role receives these top-level values, where `imports` is the module's import block:
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.templates.command -->
+
+The templates write every module, class, function, signature, and call; they receive records of names, type
+annotations, and the values of the runtime plans. Each role receives these top-level values, where `imports` is the
+module's import block:
 
 | Role | Values |
 | --- | --- |
@@ -17804,12 +17811,20 @@ one to start from it. Each role receives the values its builtin template uses an
 `#all#` entry of [`--extra-template-data`](cli-reference/template-customization.md#extra-template-data); the role's
 own values take precedence over the extra data.
 
-The values a role receives can change while client generation is experimental, and a value that an older copy of a
-builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
-compare an override with the current builtin template after an upgrade. The templates write every module, class,
-function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
-Each role receives these top-level values, where `imports` is the module's import block and the facade's `module`,
-which the builtin template does not use, is the module's dotted path in the package, empty for the package itself:
+!!! warning "Overrides are not checked against the builtin roles"
+
+    A file of the `client` directory that is not one of these role names is ignored without a warning, so a
+    misspelled or renamed role keeps its builtin template. A value that an override names and the builtin no longer
+    provides, such as one that an older copy of a builtin template uses, renders as an empty string, as Jinja's default
+    `Undefined` does; the values a role receives can change while client generation is experimental. Generation can
+    then succeed and write a package that fails when it is imported. After each upgrade, compare your overrides with the
+    current builtin templates, and in CI import the generated package, or run `datamodel-codegen --check` and your
+    tests.
+
+The templates write every module, class, function, signature, and call; they receive records of names, type
+annotations, and the values of the runtime plans. Each role receives these top-level values, where `imports` is the
+module's import block and the facade's `module`, which the builtin template does not use, is the module's dotted path
+in the package, empty for the package itself:
 
 | Role | Values |
 | --- | --- |
@@ -18655,7 +18670,7 @@ Write a separate JSON map from source schema references to the final generated m
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --emit-model-metadata model-map.json --module-split-mode single --disable-timestamp # (1)!
+    datamodel-codegen --input model_metadata.json --emit-model-metadata model-map.json --module-split-mode single --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--emit-model-metadata` - the option documented here
@@ -18789,7 +18804,7 @@ Default is UTF-8, which is the standard encoding for JSON and most modern text f
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --encoding utf-8 # (1)!
+    datamodel-codegen --input encoding_test.json --encoding utf-8 # (1)!
     ```
 
     1. :material-arrow-left: `--encoding` - the option documented here
@@ -18849,7 +18864,7 @@ instead of generating duplicate classes from external schema files.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --external-ref-mapping common.yaml=mypackage.shared.models # (1)!
+    datamodel-codegen --input api.yaml --input-file-type openapi --external-ref-mapping common.yaml=mypackage.shared.models # (1)!
     ```
 
     1. :material-arrow-left: `--external-ref-mapping` - the option documented here
@@ -18930,7 +18945,7 @@ and paired dependency errors do not fall back.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --http-backend auto # (1)!
+    datamodel-codegen --input pet_simple.json --http-backend auto # (1)!
     ```
 
     1. :material-arrow-left: `--http-backend` - the option documented here
@@ -19062,7 +19077,7 @@ not `--input-file-type yaml`. The `yaml` type treats the file as raw data and in
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type json # (1)!
+    datamodel-codegen --input pet.json --input-file-type json # (1)!
     ```
 
     1. :material-arrow-left: `--input-file-type` - the option documented here
@@ -19311,7 +19326,7 @@ new projects. The preset name pins generated Python syntax and backports.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --preset standard-py312-20260619 # (1)!
+    datamodel-codegen --input person.json --preset standard-py312-20260619 # (1)!
     ```
 
     1. :material-arrow-left: `--preset` - the option documented here
@@ -19400,7 +19415,7 @@ or OpenAPI (3.0, 3.1, 3.2). Default is 'auto' (detected from $schema or openapi 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --schema-version draft-07 # (1)!
+    datamodel-codegen --input simple_string.json --schema-version draft-07 # (1)!
     ```
 
     1. :material-arrow-left: `--schema-version` - the option documented here
@@ -19642,7 +19657,7 @@ The `--schema-version-mode` option controls how schema version validation is per
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --schema-version-mode lenient # (1)!
+    datamodel-codegen --input simple_string.json --schema-version-mode lenient # (1)!
     ```
 
     1. :material-arrow-left: `--schema-version-mode` - the option documented here
@@ -19831,7 +19846,7 @@ depend on the generator of the installed Pydantic.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field --alias-generator to_camel --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input alias_generator.json --snake-case-field --alias-generator to_camel --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--alias-generator` - the option documented here
@@ -19908,7 +19923,7 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-extra-fields # (1)!
+    datamodel-codegen --input api.yaml --allow-extra-fields # (1)!
     ```
 
     1. :material-arrow-left: `--allow-extra-fields` - the option documented here
@@ -20211,7 +20226,7 @@ exactly.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name __ParsedModel --allow-leading-underscore-class-name --disable-timestamp # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name __ParsedModel --allow-leading-underscore-class-name --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--allow-leading-underscore-class-name` - the option documented here
@@ -20290,7 +20305,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-population-by-field-name # (1)!
+    datamodel-codegen --input api.yaml --allow-population-by-field-name # (1)!
     ```
 
     1. :material-arrow-left: `--allow-population-by-field-name` - the option documented here
@@ -20588,7 +20603,7 @@ The `--base-class` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --base-class custom_module.Base # (1)!
+    datamodel-codegen --input api.yaml --base-class custom_module.Base # (1)!
     ```
 
     1. :material-arrow-left: `--base-class` - the option documented here
@@ -20886,7 +20901,7 @@ adding `BaseModel`. Ensure your mixins inherit from `BaseModel` if needed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --base-class-map '{"Person": "custom.bases.PersonBase", "Animal": "custom.bases.AnimalBase"}' # (1)!
+    datamodel-codegen --input base_class_map.json --base-class-map '{"Person": "custom.bases.PersonBase", "Animal": "custom.bases.AnimalBase"}' # (1)!
     ```
 
     1. :material-arrow-left: `--base-class-map` - the option documented here
@@ -20970,7 +20985,7 @@ naming convention than what's in the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name ValidModelName # (1)!
+    datamodel-codegen --input invalid_model_name.json --class-name ValidModelName # (1)!
     ```
 
     1. :material-arrow-left: `--class-name` - the option documented here
@@ -21053,7 +21068,7 @@ prefix or suffix specified by --class-name-prefix or --class-name-suffix:
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-suffix Schema --class-name-affix-scope models # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-suffix Schema --class-name-affix-scope models # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-affix-scope` - the option documented here
@@ -21137,7 +21152,7 @@ code or avoiding conflicts with existing classes.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-prefix Api # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-prefix Api # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-prefix` - the option documented here
@@ -21221,7 +21236,7 @@ classes (e.g., adding 'Schema' or 'Model' suffix).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-suffix Schema # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-suffix Schema # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-suffix` - the option documented here
@@ -21305,7 +21320,7 @@ by replacing all references to duplicate models with the canonical model.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --collapse-reuse-models # (1)!
+    datamodel-codegen --input duplicate_models.json --reuse-model --collapse-reuse-models # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-reuse-models` - the option documented here
@@ -21379,7 +21394,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --collapse-root-models # (1)!
+    datamodel-codegen --input const.yaml --collapse-root-models # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-root-models` - the option documented here
@@ -21586,7 +21601,7 @@ root models. 'child' keeps the inner model's name, 'parent' uses the wrapper's n
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --collapse-root-models --collapse-root-models-name-strategy child # (1)!
+    datamodel-codegen --input collapse_root_models_name_strategy_child.json --collapse-root-models --collapse-root-models-name-strategy child # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-root-models-name-strategy` - the option documented here
@@ -21663,7 +21678,7 @@ control over dataclass generation.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --dataclass-arguments '{"slots": true, "order": true}' # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --output-model-type dataclasses.dataclass --dataclass-arguments '{"slots": true, "order": true}' # (1)!
     ```
 
     1. :material-arrow-left: `--dataclass-arguments` - the option documented here
@@ -22001,7 +22016,7 @@ For example, `{"model": "Schema"}` changes `Item1` to `ItemSchema`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --duplicate-name-suffix '{"model": "Schema"}' # (1)!
+    datamodel-codegen --input input.json --duplicate-name-suffix '{"model": "Schema"}' # (1)!
     ```
 
     1. :material-arrow-left: `--duplicate-name-suffix` - the option documented here
@@ -22089,7 +22104,7 @@ The `--enable-faux-immutability` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-faux-immutability # (1)!
+    datamodel-codegen --input api.yaml --enable-faux-immutability # (1)!
     ```
 
     1. :material-arrow-left: `--enable-faux-immutability` - the option documented here
@@ -22402,7 +22417,7 @@ The `--force-optional` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --force-optional # (1)!
+    datamodel-codegen --input api.yaml --force-optional # (1)!
     ```
 
     1. :material-arrow-left: `--force-optional` - the option documented here
@@ -22686,7 +22701,7 @@ keyword-only arguments.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --frozen-dataclasses # (1)!
+    datamodel-codegen --input simple_frozen_test.json --output-model-type dataclasses.dataclass --frozen-dataclasses # (1)!
     ```
 
     1. :material-arrow-left: `--frozen-dataclasses` - the option documented here
@@ -22761,7 +22776,7 @@ same schema produce the same ordering, which keeps diffs stable.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --keep-model-order # (1)!
+    datamodel-codegen --input inheritance_forward_ref.json --keep-model-order # (1)!
     ```
 
     1. :material-arrow-left: `--keep-model-order` - the option documented here
@@ -22952,7 +22967,7 @@ positional argument errors.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --frozen-dataclasses --keyword-only --target-python-version 3.10 # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --output-model-type dataclasses.dataclass --frozen-dataclasses --keyword-only --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--keyword-only` - the option documented here
@@ -23347,7 +23362,7 @@ to the model's ConfigDict json_schema_extra.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-extra-keys x-custom-metadata # (1)!
+    datamodel-codegen --input model_extras.json --model-extra-keys x-custom-metadata # (1)!
     ```
 
     1. :material-arrow-left: `--model-extra-keys` - the option documented here
@@ -23406,7 +23421,7 @@ from the schema to the model's ConfigDict json_schema_extra with the x- prefix s
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-extra-keys-without-x-prefix x-custom-metadata x-version # (1)!
+    datamodel-codegen --input model_extras.json --model-extra-keys-without-x-prefix x-custom-metadata x-version # (1)!
     ```
 
     1. :material-arrow-left: `--model-extra-keys-without-x-prefix` - the option documented here
@@ -23472,7 +23487,7 @@ of being silently suffixed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-name-map '{"#/definitions/Foo": "RenamedFoo", "Bar": "RenamedBar", "model-name": "OriginalMapped"}' # (1)!
+    datamodel-codegen --input model_name_map.json --model-name-map '{"#/definitions/Foo": "RenamedFoo", "Bar": "RenamedBar", "model-name": "OriginalMapped"}' # (1)!
     ```
 
     1. :material-arrow-left: `--model-name-map` - the option documented here
@@ -23578,7 +23593,7 @@ under `primary-first`, a primary name is one the root document declares.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --naming-strategy parent-prefixed # (1)!
+    datamodel-codegen --input input.json --naming-strategy parent-prefixed # (1)!
     ```
 
     1. :material-arrow-left: `--naming-strategy` - the option documented here
@@ -23675,7 +23690,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input null_and_array.json --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--output-model-type` - the option documented here
@@ -24249,7 +24264,7 @@ appears in different contexts within an OpenAPI specification.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --parent-scoped-naming --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
+    datamodel-codegen --input duplicate_models2.yaml --parent-scoped-naming --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
     ```
 
     1. :material-arrow-left: `--parent-scoped-naming` - the option documented here
@@ -24405,7 +24420,7 @@ code duplication in the output.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model # (1)!
+    datamodel-codegen --input duplicate_enum.json --reuse-model # (1)!
     ```
 
     1. :material-arrow-left: `--reuse-model` - the option documented here
@@ -24527,7 +24542,7 @@ The `--reuse-scope` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --reuse-scope tree # (1)!
+    datamodel-codegen --input reuse_scope_tree --reuse-model --reuse-scope tree # (1)!
     ```
 
     1. :material-arrow-left: `--reuse-scope` - the option documented here
@@ -24646,7 +24661,7 @@ object is just a container for $defs and not a meaningful model itself.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --skip-root-model # (1)!
+    datamodel-codegen --input skip_root_model_test.json --output-model-type pydantic_v2.BaseModel --skip-root-model # (1)!
     ```
 
     1. :material-arrow-left: `--skip-root-model` - the option documented here
@@ -24711,7 +24726,7 @@ where optional fields have defaults but cannot accept `None` values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-nullable # (1)!
+    datamodel-codegen --input nullable.yaml --strict-nullable # (1)!
     ```
 
     1. :material-arrow-left: `--strict-nullable` - the option documented here
@@ -24953,7 +24968,7 @@ default to None.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strip-default-none # (1)!
+    datamodel-codegen --input api.yaml --strip-default-none # (1)!
     ```
 
     1. :material-arrow-left: `--strip-default-none` - the option documented here
@@ -25240,7 +25255,7 @@ See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-pydantic-version 2.11 --allow-population-by-field-name --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input person.json --target-pydantic-version 2.11 --allow-population-by-field-name --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--target-pydantic-version` - the option documented here
@@ -25327,7 +25342,7 @@ This affects import statements and type annotation syntax in generated code.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-python-version 3.10 --use-standard-collections # (1)!
+    datamodel-codegen --input person.json --target-python-version 3.10 --use-standard-collections # (1)!
     ```
 
     1. :material-arrow-left: `--target-python-version` - the option documented here
@@ -25413,7 +25428,7 @@ their discriminator tag, a separate mode that cannot be combined with
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --union-mode left_to_right --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input combine_any_of_object.json --union-mode left_to_right --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--union-mode` - the option documented here
@@ -25542,7 +25557,7 @@ as `str = 'value'`, not `str | None = 'value'`, unless the schema allows null.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-default # (1)!
+    datamodel-codegen --input use_default_with_const.json --output-model-type pydantic_v2.BaseModel --use-default # (1)!
     ```
 
     1. :material-arrow-left: `--use-default` - the option documented here
@@ -25628,7 +25643,7 @@ not executed to determine whether a factory is usable.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-default-factory-for-optional-nested-models # (1)!
+    datamodel-codegen --input default_factory_nested_model.json --use-default-factory-for-optional-nested-models # (1)!
     ```
 
     1. :material-arrow-left: `--use-default-factory-for-optional-nested-models` - the option documented here
@@ -25780,7 +25795,7 @@ default values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-default-kwarg # (1)!
+    datamodel-codegen --input annotated.graphql --use-default-kwarg # (1)!
     ```
 
     1. :material-arrow-left: `--use-default-kwarg` - the option documented here
@@ -25855,7 +25870,7 @@ The `--use-frozen-field` flag generates frozen field definitions:
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-frozen-field # (1)!
+    datamodel-codegen --input use_frozen_field.json --use-frozen-field # (1)!
     ```
 
     1. :material-arrow-left: `--use-frozen-field` - the option documented here
@@ -25951,7 +25966,7 @@ Generate a shared base class with model configuration to avoid repetition (DRY).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-fields forbid --output-model-type pydantic_v2.BaseModel --use-generic-base-class # (1)!
+    datamodel-codegen --input extra_fields.json --extra-fields forbid --output-model-type pydantic_v2.BaseModel --use-generic-base-class # (1)!
     ```
 
     1. :material-arrow-left: `--use-generic-base-class` - the option documented here
@@ -26069,7 +26084,7 @@ difference between an omitted field and a nullable field set to `None`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-missing-sentinel # (1)!
+    datamodel-codegen --input missing_sentinel.json --output-model-type pydantic_v2.BaseModel --use-missing-sentinel # (1)!
     ```
 
     1. :material-arrow-left: `--use-missing-sentinel` - the option documented here
@@ -26150,7 +26165,7 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-one-literal-as-default --enum-field-as-literal one # (1)!
+    datamodel-codegen --input enum_models.yaml --use-one-literal-as-default --enum-field-as-literal one # (1)!
     ```
 
     1. :material-arrow-left: `--use-one-literal-as-default` - the option documented here
@@ -26483,7 +26498,7 @@ instead of silently ignoring this option.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-root-model-sequence-interface --class-name Pets # (1)!
+    datamodel-codegen --input root_model_sequence_interface.json --output-model-type pydantic_v2.BaseModel --use-root-model-sequence-interface --class-name Pets # (1)!
     ```
 
     1. :material-arrow-left: `--use-root-model-sequence-interface` - the option documented here
@@ -26571,7 +26586,7 @@ polymorphic types and inheritance hierarchies.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-serialize-as-any # (1)!
+    datamodel-codegen --input serialize_as_any.yaml --use-serialize-as-any # (1)!
     ```
 
     1. :material-arrow-left: `--use-serialize-as-any` - the option documented here
@@ -26681,7 +26696,7 @@ type, providing better type safety and IDE support.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-subclass-enum # (1)!
+    datamodel-codegen --input enums.graphql --use-subclass-enum # (1)!
     ```
 
     1. :material-arrow-left: `--use-subclass-enum` - the option documented here
@@ -26830,7 +26845,7 @@ providing fine-grained control over generated names independent of schema defini
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --aliases openapi/aliases.json --target-python-version 3.10 # (1)!
+    datamodel-codegen --input api.yaml --aliases openapi/aliases.json --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--aliases` - the option documented here
@@ -27244,7 +27259,7 @@ naming conventions for constants.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --capitalize-enum-members # (1)!
+    datamodel-codegen --input many_case_enum.json --capitalize-enum-members # (1)!
     ```
 
     1. :material-arrow-left: `--capitalize-enum-members` - the option documented here
@@ -27301,7 +27316,7 @@ Supports scoped format (ClassName.field) for hierarchical overrides.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --default-values default_values/scoped_defaults.json # (1)!
+    datamodel-codegen --input default_values_override.json --default-values default_values/scoped_defaults.json # (1)!
     ```
 
     1. :material-arrow-left: `--default-values` - the option documented here
@@ -27375,7 +27390,7 @@ cannot be deserialized remain serialized so the generated module stays importabl
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --deserialize-default-values decimal --target-python-version 3.10 # (1)!
+    datamodel-codegen --input serialized_decimal_defaults.json --deserialize-default-values decimal --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--deserialize-default-values` - the option documented here
@@ -27548,7 +27563,7 @@ The `--empty-enum-field-name` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --empty-enum-field-name empty # (1)!
+    datamodel-codegen --input special_enum.json --empty-enum-field-name empty # (1)!
     ```
 
     1. :material-arrow-left: `--empty-enum-field-name` - the option documented here
@@ -27621,7 +27636,7 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-fields allow # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --extra-fields allow # (1)!
     ```
 
     1. :material-arrow-left: `--extra-fields` - the option documented here
@@ -27977,7 +27992,7 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-constraints # (1)!
+    datamodel-codegen --input api_constrained.yaml --field-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--field-constraints` - the option documented here
@@ -28423,7 +28438,7 @@ The `--field-extra-keys` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-extra-keys key2 --field-extra-keys-without-x-prefix x-repr # (1)!
+    datamodel-codegen --input extras.json --field-extra-keys key2 --field-extra-keys-without-x-prefix x-repr # (1)!
     ```
 
     1. :material-arrow-left: `--field-extra-keys` - the option documented here
@@ -28518,7 +28533,7 @@ in Field(). This is useful for custom schema extensions and vendor-specific meta
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-include-all-keys --field-extra-keys-without-x-prefix x-repr # (1)!
+    datamodel-codegen --input extras.json --field-include-all-keys --field-extra-keys-without-x-prefix x-repr # (1)!
     ```
 
     1. :material-arrow-left: `--field-extra-keys-without-x-prefix` - the option documented here
@@ -28623,7 +28638,7 @@ The `--field-include-all-keys` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-include-all-keys # (1)!
+    datamodel-codegen --input person.json --field-include-all-keys # (1)!
     ```
 
     1. :material-arrow-left: `--field-include-all-keys` - the option documented here
@@ -28702,7 +28717,7 @@ to preserve the original field name, instead of renaming the field and adding an
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --field-type-collision-strategy rename-type # (1)!
+    datamodel-codegen --input field_has_same_name.json --output-model-type pydantic_v2.BaseModel --field-type-collision-strategy rename-type # (1)!
     ```
 
     1. :material-arrow-left: `--field-type-collision-strategy` - the option documented here
@@ -28772,7 +28787,7 @@ Existing generated output is preserved unless this option is enabled.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --infer-union-variant-names # (1)!
+    datamodel-codegen --input infer_union_variant_names.json --infer-union-variant-names # (1)!
     ```
 
     1. :material-arrow-left: `--infer-union-variant-names` - the option documented here
@@ -28894,7 +28909,7 @@ With this flag, only Python-safe names are used without aliases.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-alias # (1)!
+    datamodel-codegen --input no_alias.json --no-alias # (1)!
     ```
 
     1. :material-arrow-left: `--no-alias` - the option documented here
@@ -28984,7 +28999,7 @@ match the generated Python type.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --preset standard-py310-20260826 --no-deserialize-default-values --disable-timestamp --formatters builtin # (1)!
+    datamodel-codegen --input serialized_decimal_defaults.json --preset standard-py310-20260826 --no-deserialize-default-values --disable-timestamp --formatters builtin # (1)!
     ```
 
     1. :material-arrow-left: `--no-deserialize-default-values` - the option documented here
@@ -29067,7 +29082,7 @@ snake_case conversion.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field --original-field-name-delimiter " " # (1)!
+    datamodel-codegen --input space_field_enum.json --snake-case-field --original-field-name-delimiter " " # (1)!
     ```
 
     1. :material-arrow-left: `--original-field-name-delimiter` - the option documented here
@@ -29133,7 +29148,7 @@ The `--remove-special-field-name-prefix` flag configures the code generation beh
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --remove-special-field-name-prefix # (1)!
+    datamodel-codegen --input special_prefix_model.json --remove-special-field-name-prefix # (1)!
     ```
 
     1. :material-arrow-left: `--remove-special-field-name-prefix` - the option documented here
@@ -29200,7 +29215,7 @@ or validation aliases while using separate output-only names for serialization.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --aliases aliases/serialization_aliases.json --serialization-aliases aliases/serialization_aliases_output.json --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input serialization_aliases.json --aliases aliases/serialization_aliases.json --serialization-aliases aliases/serialization_aliases_output.json --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--serialization-aliases` - the option documented here
@@ -29505,7 +29520,7 @@ The `--set-default-enum-member` flag is deprecated. Use `--deserialize-default-v
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --set-default-enum-member # (1)!
+    datamodel-codegen --input duplicate_enum.json --reuse-model --set-default-enum-member # (1)!
     ```
 
     1. :material-arrow-left: `--set-default-enum-member` - the option documented here
@@ -29625,7 +29640,7 @@ conventions (PEP 8).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field # (1)!
+    datamodel-codegen --input invalid_enum_name.json --snake-case-field # (1)!
     ```
 
     1. :material-arrow-left: `--snake-case-field` - the option documented here
@@ -29686,7 +29701,7 @@ The `--special-field-name-prefix` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --special-field-name-prefix special # (1)!
+    datamodel-codegen --input special_enum.json --special-field-name-prefix special # (1)!
     ```
 
     1. :material-arrow-left: `--special-field-name-prefix` - the option documented here
@@ -29762,7 +29777,7 @@ This provides better IDE support for hovering over attributes. Requires
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-field-description --use-attribute-docstrings # (1)!
+    datamodel-codegen --input use_attribute_docstrings_test.json --output-model-type pydantic_v2.BaseModel --use-field-description --use-attribute-docstrings # (1)!
     ```
 
     1. :material-arrow-left: `--use-attribute-docstrings` - the option documented here
@@ -29831,7 +29846,7 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-enum-values-in-discriminator --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input discriminator_enum.yaml --use-enum-values-in-discriminator --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-enum-values-in-discriminator` - the option documented here
@@ -29939,7 +29954,7 @@ generated models, preserving documentation from the original schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-type-alias --use-field-description # (1)!
+    datamodel-codegen --input type_alias.json --use-type-alias --use-field-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-field-description` - the option documented here
@@ -30315,7 +30330,7 @@ is visible in IDE intellisense.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-field-description-example # (1)!
+    datamodel-codegen --input extras.json --use-field-description-example # (1)!
     ```
 
     1. :material-arrow-left: `--use-field-description-example` - the option documented here
@@ -30414,7 +30429,7 @@ documentation without using Field() wrappers.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-inline-field-description # (1)!
+    datamodel-codegen --input api_multiline_docstrings.yaml --use-inline-field-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-inline-field-description` - the option documented here
@@ -30758,7 +30773,7 @@ useful for preserving documentation from your schema in the generated code.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-schema-description # (1)!
+    datamodel-codegen --input api_multiline_docstrings.yaml --use-schema-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-schema-description` - the option documented here
@@ -31048,7 +31063,7 @@ serializing to the original JSON property name.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-serialization-alias --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input no_alias.json --use-serialization-alias --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-serialization-alias` - the option documented here
@@ -31138,7 +31153,7 @@ format as the default.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-field-description --use-single-line-docstring # (1)!
+    datamodel-codegen --input person.json --use-field-description --use-single-line-docstring # (1)!
     ```
 
     1. :material-arrow-left: `--use-single-line-docstring` - the option documented here
@@ -31220,7 +31235,7 @@ This is useful when schemas have descriptive titles that should be preserved.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-title-as-name # (1)!
+    datamodel-codegen --input titles.json --use-title-as-name # (1)!
     ```
 
     1. :material-arrow-left: `--use-title-as-name` - the option documented here
@@ -31473,7 +31488,7 @@ even in multiple inheritance scenarios where two parent schemas define the same 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allof-class-hierarchy always # (1)!
+    datamodel-codegen --input allof_root_model_constraints.json --allof-class-hierarchy always # (1)!
     ```
 
     1. :material-arrow-left: `--allof-class-hierarchy` - the option documented here
@@ -31812,7 +31827,7 @@ other properties separate.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allof-merge-mode constraints # (1)!
+    datamodel-codegen --input allof_root_model_constraints.json --allof-merge-mode constraints # (1)!
     ```
 
     1. :material-arrow-left: `--allof-merge-mode` - the option documented here
@@ -32458,7 +32473,7 @@ postponed evaluation of annotations (PEP 563).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-future-imports --target-python-version 3.10 # (1)!
+    datamodel-codegen --input keep_model_order_field_references.json --disable-future-imports --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--disable-future-imports` - the option documented here
@@ -32529,7 +32544,7 @@ of Enum classes for all enumerations.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enum-field-as-literal all # (1)!
+    datamodel-codegen --input enums.graphql --enum-field-as-literal all # (1)!
     ```
 
     1. :material-arrow-left: `--enum-field-as-literal` - the option documented here
@@ -33009,7 +33024,7 @@ You can pass the mapping either inline as JSON or as a path to a JSON file.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enum-field-as-literal-map '{"status": "literal"}' # (1)!
+    datamodel-codegen --input enum_field_as_literal_map.json --enum-field-as-literal-map '{"status": "literal"}' # (1)!
     ```
 
     1. :material-arrow-left: `--enum-field-as-literal-map` - the option documented here
@@ -33096,7 +33111,7 @@ defined enum members.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --ignore-enum-constraints # (1)!
+    datamodel-codegen --input enums.graphql --ignore-enum-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--ignore-enum-constraints` - the option documented here
@@ -33232,7 +33247,7 @@ across Python target versions.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --target-python-version 3.10 --import-overrides '{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}' # (1)!
+    datamodel-codegen --input datetime.json --output-model-type typing.TypedDict --target-python-version 3.10 --import-overrides '{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}' # (1)!
     ```
 
     1. :material-arrow-left: `--import-overrides` - the option documented here
@@ -33300,7 +33315,7 @@ Use this option for compatibility with type checkers that don't yet support PEP 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --no-use-closed-typed-dict # (1)!
+    datamodel-codegen --input typed_dict_closed.json --output-model-type typing.TypedDict --no-use-closed-typed-dict # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-closed-typed-dict` - the option documented here
@@ -33361,7 +33376,7 @@ Python 3.11+, falling back to standard Enum classes instead.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-python-version 3.11 --no-use-specialized-enum # (1)!
+    datamodel-codegen --input enums.graphql --target-python-version 3.11 --no-use-specialized-enum # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-specialized-enum` - the option documented here
@@ -33648,7 +33663,7 @@ versions or when explicit typing imports are preferred.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-use-standard-collections # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --no-use-standard-collections # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-standard-collections` - the option documented here
@@ -33860,7 +33875,7 @@ for older Python versions or when explicit typing imports are preferred.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-use-union-operator # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --no-use-union-operator # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-union-operator` - the option documented here
@@ -34070,7 +34085,7 @@ or 'FutureDate' for future dates only. This is a Pydantic v2 only feature.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-date-class PastDate # (1)!
+    datamodel-codegen --input date_class.yaml --output-date-class PastDate # (1)!
     ```
 
     1. :material-arrow-left: `--output-date-class` - the option documented here
@@ -34129,7 +34144,7 @@ or 'datetime' for standard Python datetime objects.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-datetime-class AwareDatetime # (1)!
+    datamodel-codegen --input datetime.yaml --output-datetime-class AwareDatetime # (1)!
     ```
 
     1. :material-arrow-left: `--output-datetime-class` - the option documented here
@@ -34198,7 +34213,7 @@ in Pydantic models, ensuring values match exactly without automatic conversion.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-types str bytes int float bool # (1)!
+    datamodel-codegen --input strict_types.json --strict-types str bytes int float bool # (1)!
     ```
 
     1. :material-arrow-left: `--strict-types` - the option documented here
@@ -34315,7 +34330,7 @@ The `--type-mappings` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --type-mappings binary=string # (1)!
+    datamodel-codegen --input type_mappings.json --output-model-type pydantic_v2.BaseModel --type-mappings binary=string # (1)!
     ```
 
     1. :material-arrow-left: `--type-mappings` - the option documented here
@@ -34401,7 +34416,7 @@ instead of generating them.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --type-overrides '{"CustomType": "my_app.types.CustomType"}' # (1)!
+    datamodel-codegen --input type_overrides_test.json --type-overrides '{"CustomType": "my_app.types.CustomType"}' # (1)!
     ```
 
     1. :material-arrow-left: `--type-overrides` - the option documented here
@@ -34484,7 +34499,7 @@ generated type to enforce uniqueness for array schemas.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-annotated # (1)!
+    datamodel-codegen --input annotated.graphql --output-model-type pydantic_v2.BaseModel --use-annotated # (1)!
     ```
 
     1. :material-arrow-left: `--use-annotated` - the option documented here
@@ -34893,7 +34908,7 @@ parameters based on `additionalProperties` constraints in the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --use-closed-typed-dict # (1)!
+    datamodel-codegen --input typed_dict_closed.json --output-model-type typing.TypedDict --use-closed-typed-dict # (1)!
     ```
 
     1. :material-arrow-left: `--use-closed-typed-dict` - the option documented here
@@ -34952,7 +34967,7 @@ precise decimal arithmetic when validating values against the constraint.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-decimal-for-multiple-of # (1)!
+    datamodel-codegen --input use_decimal_for_multiple_of.json --use-decimal-for-multiple-of # (1)!
     ```
 
     1. :material-arrow-left: `--use-decimal-for-multiple-of` - the option documented here
@@ -35039,7 +35054,7 @@ otherwise imports from `typing`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-generic-container-types # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --use-generic-container-types # (1)!
     ```
 
     1. :material-arrow-left: `--use-generic-container-types` - the option documented here
@@ -35250,7 +35265,7 @@ conint/confloat with ge/le parameters.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-non-positive-negative-number-constrained-types # (1)!
+    datamodel-codegen --input use_non_positive_negative.json --use-non-positive-negative-number-constrained-types # (1)!
     ```
 
     1. :material-arrow-left: `--use-non-positive-negative-number-constrained-types` - the option documented here
@@ -35425,7 +35440,7 @@ item schemas. This helps generate stricter type hints for unstructured values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --target-python-version 3.10 --use-object-type # (1)!
+    datamodel-codegen --input use_object_type.json --output-model-type typing.TypedDict --target-python-version 3.10 --use-object-type # (1)!
     ```
 
     1. :material-arrow-left: `--use-object-type` - the option documented here
@@ -35497,7 +35512,7 @@ If you need a different datetime class for `date-time` fields, use
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-pendulum # (1)!
+    datamodel-codegen --input use_pendulum.json --use-pendulum # (1)!
     ```
 
     1. :material-arrow-left: `--use-pendulum` - the option documented here
@@ -35568,7 +35583,7 @@ instead of class definitions, improving mypy type inference.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-root-model-type-alias --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input root_model_type_alias.json --use-root-model-type-alias --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-root-model-type-alias` - the option documented here
@@ -35645,7 +35660,7 @@ This is the default behavior for Python 3.11+ targets.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-python-version 3.11 --use-specialized-enum # (1)!
+    datamodel-codegen --input subclass_enum.json --target-python-version 3.11 --use-specialized-enum # (1)!
     ```
 
     1. :material-arrow-left: `--use-specialized-enum` - the option documented here
@@ -35786,7 +35801,7 @@ code for Python 3.10+ where built-in types support subscripting.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-standard-collections # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --use-standard-collections # (1)!
     ```
 
     1. :material-arrow-left: `--use-standard-collections` - the option documented here
@@ -35998,7 +36013,7 @@ output types. Pydantic already uses these types by default.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --use-standard-primitive-types # (1)!
+    datamodel-codegen --input use_standard_primitive_types.json --output-model-type dataclasses.dataclass --use-standard-primitive-types # (1)!
     ```
 
     1. :material-arrow-left: `--use-standard-primitive-types` - the option documented here
@@ -36066,7 +36081,7 @@ are optional.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --use-total-false-for-typed-dict --use-frozen-field # (1)!
+    datamodel-codegen --input use_total_false_for_typed_dict.json --output-model-type typing.TypedDict --use-total-false-for-typed-dict --use-frozen-field # (1)!
     ```
 
     1. :material-arrow-left: `--use-total-false-for-typed-dict` - the option documented here
@@ -36321,7 +36336,7 @@ with `minItems == maxItems == len(items)`, generate a tuple type instead of a li
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-tuple-for-fixed-items # (1)!
+    datamodel-codegen --input items_array_tuple.json --use-tuple-for-fixed-items # (1)!
     ```
 
     1. :material-arrow-left: `--use-tuple-for-fixed-items` - the option documented here
@@ -36379,7 +36394,7 @@ list. An empty fixed-length array becomes `tuple[()]`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-tuple-for-fixed-length-arrays --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input fixed_length_array_tuples.yaml --use-tuple-for-fixed-length-arrays --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-tuple-for-fixed-length-arrays` - the option documented here
@@ -36534,7 +36549,7 @@ syntax. This feature is experimental.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-type-alias # (1)!
+    datamodel-codegen --input type_alias.graphql --use-type-alias # (1)!
     ```
 
     1. :material-arrow-left: `--use-type-alias` - the option documented here
@@ -36743,7 +36758,7 @@ continues to use native `type` statements.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --use-type-alias-type --target-python-version 3.10 # (1)!
+    datamodel-codegen --input type_alias.json --output-model-type typing.TypedDict --use-type-alias-type --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--use-type-alias-type` - the option documented here
@@ -36885,7 +36900,7 @@ This is the default behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-annotated --use-union-operator # (1)!
+    datamodel-codegen --input annotated.graphql --output-model-type pydantic_v2.BaseModel --use-annotated --use-union-operator # (1)!
     ```
 
     1. :material-arrow-left: `--use-union-operator` - the option documented here
@@ -36960,7 +36975,7 @@ to true, enforcing uniqueness at the type level.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-unique-items-as-set --field-constraints # (1)!
+    datamodel-codegen --input api_constrained.yaml --use-unique-items-as-set --field-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--use-unique-items-as-set` - the option documented here
@@ -37368,7 +37383,7 @@ is useful when using custom types defined in external modules (e.g.,
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --additional-imports datetime.datetime,datetime.date,mymodule.myclass.MyCustomPythonClass # (1)!
+    datamodel-codegen --input additional-imports.graphql --additional-imports datetime.datetime,datetime.date,mymodule.myclass.MyCustomPythonClass # (1)!
     ```
 
     1. :material-arrow-left: `--additional-imports` - the option documented here
@@ -37462,7 +37477,7 @@ The `@` prefix is optional and will be added automatically if missing.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --class-decorators @dataclass_json --additional-imports dataclasses_json.dataclass_json # (1)!
+    datamodel-codegen --input simple_frozen_test.json --output-model-type dataclasses.dataclass --class-decorators @dataclass_json --additional-imports dataclasses_json.dataclass_json # (1)!
     ```
 
     1. :material-arrow-left: `--class-decorators` - the option documented here
@@ -37535,7 +37550,7 @@ headers, or other metadata to generated files.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-file-header "# Copyright 2024 MyCompany" # (1)!
+    datamodel-codegen --input no_alias.json --custom-file-header "# Copyright 2024 MyCompany" # (1)!
     ```
 
     1. :material-arrow-left: `--custom-file-header` - the option documented here
@@ -37622,7 +37637,7 @@ timestamp, version, and command metadata. The default `replace` mode preserves e
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-file-header "# Copyright {year}" --custom-file-header-mode prepend --disable-timestamp --enable-version-header # (1)!
+    datamodel-codegen --input simple_string.json --custom-file-header "# Copyright {year}" --custom-file-header-mode prepend --disable-timestamp --enable-version-header # (1)!
     ```
 
     1. :material-arrow-left: `--custom-file-header-mode` - the option documented here
@@ -37679,7 +37694,7 @@ to be inserted at the top of generated Python files.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-file-header-path custom_file_header.txt # (1)!
+    datamodel-codegen --input api.yaml --custom-file-header-path custom_file_header.txt # (1)!
     ```
 
     1. :material-arrow-left: `--custom-file-header-path` - the option documented here
@@ -37963,7 +37978,7 @@ formatting rules beyond what black/isort provide.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-formatters tests.data.python.custom_formatters.add_comment # (1)!
+    datamodel-codegen --input custom-scalar-types.graphql --custom-formatters tests.data.python.custom_formatters.add_comment # (1)!
     ```
 
     1. :material-arrow-left: `--custom-formatters` - the option documented here
@@ -38045,7 +38060,7 @@ configuration to user-defined formatter modules.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-formatters-kwargs formatter_kwargs.json # (1)!
+    datamodel-codegen --input pet_simple.json --custom-formatters-kwargs formatter_kwargs.json # (1)!
     ```
 
     1. :material-arrow-left: `--custom-formatters-kwargs` - the option documented here
@@ -38111,7 +38126,7 @@ to the templates.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-template-dir templates --extra-template-data openapi/extra_data.json # (1)!
+    datamodel-codegen --input api.yaml --custom-template-dir templates --extra-template-data openapi/extra_data.json # (1)!
     ```
 
     1. :material-arrow-left: `--custom-template-dir` - the option documented here
@@ -38436,7 +38451,7 @@ The `--disable-appending-item-suffix` flag configures the code generation behavi
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-appending-item-suffix --field-constraints # (1)!
+    datamodel-codegen --input api_constrained.yaml --disable-appending-item-suffix --field-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--disable-appending-item-suffix` - the option documented here
@@ -38785,7 +38800,7 @@ The `--disable-timestamp` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-timestamp # (1)!
+    datamodel-codegen --input pattern.json --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--disable-timestamp` - the option documented here
@@ -38863,7 +38878,7 @@ values are shown as `<redacted>`, and `--url` like the `filename` line without i
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-command-header # (1)!
+    datamodel-codegen --input api.yaml --enable-command-header # (1)!
     ```
 
     1. :material-arrow-left: `--enable-command-header` - the option documented here
@@ -39143,7 +39158,7 @@ recognize the `@generated` marker.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-generated-header-marker # (1)!
+    datamodel-codegen --input api.yaml --enable-generated-header-marker # (1)!
     ```
 
     1. :material-arrow-left: `--enable-generated-header-marker` - the option documented here
@@ -39421,7 +39436,7 @@ The `--enable-version-header` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-version-header # (1)!
+    datamodel-codegen --input api.yaml --enable-version-header # (1)!
     ```
 
     1. :material-arrow-left: `--enable-version-header` - the option documented here
@@ -39704,7 +39719,7 @@ model settings like Config classes, enabling customization beyond standard optio
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-template-data openapi/extra_data.json # (1)!
+    datamodel-codegen --input api.yaml --extra-template-data openapi/extra_data.json # (1)!
     ```
 
     1. :material-arrow-left: `--extra-template-data` - the option documented here
@@ -39997,7 +40012,7 @@ See the formatter guides for installation and custom-template limitations.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --formatters isort # (1)!
+    datamodel-codegen --input pet_simple.json --formatters isort # (1)!
     ```
 
     1. :material-arrow-left: `--formatters` - the option documented here
@@ -40074,7 +40089,7 @@ are unsupported and generation fails fast.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --generate-schema-validators --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
+    datamodel-codegen --input schema_validators.json --generate-schema-validators --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--generate-schema-validators` - the option documented here
@@ -40533,7 +40548,7 @@ The `--no-treat-dot-as-module` flag prevents splitting dotted schema names.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-treat-dot-as-module # (1)!
+    datamodel-codegen --input treat_dot_as_module_single --no-treat-dot-as-module # (1)!
     ```
 
     1. :material-arrow-left: `--no-treat-dot-as-module` - the option documented here
@@ -40605,7 +40620,7 @@ require manual `model_rebuild()` calls for cross-module runtime references.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --no-use-type-checking-imports --disable-timestamp # (1)!
+    datamodel-codegen --input modular.yaml --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --no-use-type-checking-imports --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-type-checking-imports` - the option documented here
@@ -40992,7 +41007,7 @@ shared base class that owns schema-derived runtime validators. It is only used w
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --generate-schema-validators --schema-validator-base-class-name SharedSchemaValidatorBase --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
+    datamodel-codegen --input schema_validators_custom_base_class_name.json --generate-schema-validators --schema-validator-base-class-name SharedSchemaValidatorBase --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--schema-validator-base-class-name` - the option documented here
@@ -41123,7 +41138,7 @@ additional validator backends without adding them in this release.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --schema-validator-type pydantic-v2 --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
+    datamodel-codegen --input schema_validators.json --schema-validator-type pydantic-v2 --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--schema-validator-type` - the option documented here
@@ -41584,7 +41599,7 @@ The `--strict-dotted-module-names` flag applies only to automatic module inferen
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-dotted-module-names # (1)!
+    datamodel-codegen --input invalid_dotted_schema_name.yaml --strict-dotted-module-names # (1)!
     ```
 
     1. :material-arrow-left: `--strict-dotted-module-names` - the option documented here
@@ -41665,7 +41680,7 @@ The `--treat-dot-as-module` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --treat-dot-as-module # (1)!
+    datamodel-codegen --input treat_dot_as_module_single --treat-dot-as-module # (1)!
     ```
 
     1. :material-arrow-left: `--treat-dot-as-module` - the option documented here
@@ -41737,7 +41752,7 @@ helps maintain consistency with codebases that prefer double-quote formatting.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-double-quotes # (1)!
+    datamodel-codegen --input all_of_any_of_base_class_ref.json --use-double-quotes # (1)!
     ```
 
     1. :material-arrow-left: `--use-double-quotes` - the option documented here
@@ -41904,7 +41919,7 @@ modules are generated. For single-file output, the difference is minimal.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-exact-imports # (1)!
+    datamodel-codegen --input pet_simple.json --use-exact-imports # (1)!
     ```
 
     1. :material-arrow-left: `--use-exact-imports` - the option documented here
@@ -41968,7 +41983,7 @@ for multi-module Pydantic output where runtime imports might otherwise be preser
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --use-type-checking-imports --disable-timestamp # (1)!
+    datamodel-codegen --input modular.yaml --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --use-type-checking-imports --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--use-type-checking-imports` - the option documented here
@@ -42359,7 +42374,7 @@ This allows injecting custom validation logic into generated models.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --validators tests/data/jsonschema/field_validators_config.json --output-model-type pydantic_v2.BaseModel --use-annotated --disable-timestamp # (1)!
+    datamodel-codegen --input field_validators.json --validators tests/data/jsonschema/field_validators_config.json --output-model-type pydantic_v2.BaseModel --use-annotated --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--validators` - the option documented here
@@ -42437,7 +42452,7 @@ single-line strings in the generated code.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --wrap-string-literal # (1)!
+    datamodel-codegen --input long_description.json --wrap-string-literal # (1)!
     ```
 
     1. :material-arrow-left: `--wrap-string-literal` - the option documented here
@@ -42560,7 +42575,7 @@ models that include both path and query parameters.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --include-path-parameters --openapi-scopes schemas paths parameters # (1)!
+    datamodel-codegen --input include_path_parameters.yaml --include-path-parameters --openapi-scopes schemas paths parameters # (1)!
     ```
 
     1. :material-arrow-left: `--include-path-parameters` - the option documented here
@@ -42656,7 +42671,7 @@ at build time or runtime.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --openapi-include-info-version # (1)!
+    datamodel-codegen --input api.yaml --openapi-include-info-version # (1)!
     ```
 
     1. :material-arrow-left: `--openapi-include-info-version` - the option documented here
@@ -42936,7 +42951,7 @@ The `--openapi-include-paths` flag allows filtering which paths are processed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --openapi-scopes paths schemas --openapi-include-paths /pets* # (1)!
+    datamodel-codegen --input body_and_parameters.yaml --openapi-scopes paths schemas --openapi-include-paths /pets* # (1)!
     ```
 
     1. :material-arrow-left: `--openapi-include-paths` - the option documented here
@@ -43361,7 +43376,7 @@ The `--openapi-scopes` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --openapi-scopes paths schemas # (1)!
+    datamodel-codegen --input body_and_parameters.yaml --openapi-scopes paths schemas # (1)!
     ```
 
     1. :material-arrow-left: `--openapi-scopes` - the option documented here
@@ -43825,7 +43840,7 @@ validation for API requests and responses without a shared base model.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --read-only-write-only-model-type request-response # (1)!
+    datamodel-codegen --input read_only_write_only.yaml --output-model-type pydantic_v2.BaseModel --read-only-write-only-model-type request-response # (1)!
     ```
 
     1. :material-arrow-left: `--read-only-write-only-model-type` - the option documented here
@@ -43907,7 +43922,7 @@ The `--use-operation-id-as-name` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
+    datamodel-codegen --input api.yaml --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
     ```
 
     1. :material-arrow-left: `--use-operation-id-as-name` - the option documented here
@@ -44192,7 +44207,7 @@ clear names like ResourceGetResponse200, ResourceGetResponse400, ResourceGetResp
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-status-code-in-response-name --openapi-scopes schemas paths # (1)!
+    datamodel-codegen --input use_status_code_in_response_name.yaml --use-status-code-in-response-name --openapi-scopes schemas paths # (1)!
     ```
 
     1. :material-arrow-left: `--use-status-code-in-response-name` - the option documented here
@@ -44289,7 +44304,7 @@ The `--validation` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --validation # (1)!
+    datamodel-codegen --input api.yaml --validation # (1)!
     ```
 
     1. :material-arrow-left: `--validation` - the option documented here
@@ -44594,7 +44609,7 @@ don't expect this field in input data.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --graphql-no-typename # (1)!
+    datamodel-codegen --input no-typename.graphql --graphql-no-typename # (1)!
     ```
 
     1. :material-arrow-left: `--graphql-no-typename` - the option documented here
@@ -44740,7 +44755,7 @@ uses the complete module path. Requires `--all-exports-scope=recursive`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --all-exports-scope recursive --all-exports-collision-strategy minimal-prefix # (1)!
+    datamodel-codegen --input modular.yaml --all-exports-scope recursive --all-exports-collision-strategy minimal-prefix # (1)!
     ```
 
     1. :material-arrow-left: `--all-exports-collision-strategy` - the option documented here
@@ -45313,7 +45328,7 @@ Use 'recursive' to include all descendant exports with collision handling.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --all-exports-scope children # (1)!
+    datamodel-codegen --input modular.yaml --all-exports-scope children # (1)!
     ```
 
     1. :material-arrow-left: `--all-exports-scope` - the option documented here
@@ -45950,7 +45965,7 @@ Automatically enabled when using `--url` input.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-remote-refs # (1)!
+    datamodel-codegen --input root_id.json --allow-remote-refs # (1)!
     ```
 
     1. :material-arrow-left: `--allow-remote-refs` - the option documented here
@@ -46042,7 +46057,7 @@ and generated code stay in sync. Works with both single files and directory outp
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-timestamp --check # (1)!
+    datamodel-codegen --input person.json --disable-timestamp --check # (1)!
     ```
 
     1. :material-arrow-left: `--check` - the option documented here
@@ -46188,7 +46203,7 @@ or potential issues). Useful for clean output in CI/CD pipelines.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-warnings # (1)!
+    datamodel-codegen --input all_of_with_object.json --disable-warnings # (1)!
     ```
 
     1. :material-arrow-left: `--disable-warnings` - the option documented here
@@ -46311,7 +46326,7 @@ instead of coalescing it.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --fail-on-multi-module-stdout --disable-timestamp # (1)!
+    datamodel-codegen --input person.json --fail-on-multi-module-stdout --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--fail-on-multi-module-stdout` - the option documented here
@@ -46776,7 +46791,7 @@ testing without project configuration.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --ignore-pyproject # (1)!
+    datamodel-codegen --input ignore_pyproject_example.json --ignore-pyproject # (1)!
     ```
 
     1. :material-arrow-left: `--ignore-pyproject` - the option documented here
@@ -47004,7 +47019,7 @@ create an __init__.py that re-exports all models for convenient imports.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --module-split-mode single --all-exports-scope recursive --use-exact-imports # (1)!
+    datamodel-codegen --input input.json --module-split-mode single --all-exports-scope recursive --use-exact-imports # (1)!
     ```
 
     1. :material-arrow-left: `--module-split-mode` - the option documented here
@@ -47119,7 +47134,7 @@ Note: This option only affects modular output with tree-level model reuse.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --shared-module-name my_shared # (1)!
+    datamodel-codegen --input pet_simple.json --shared-module-name my_shared # (1)!
     ```
 
     1. :material-arrow-left: `--shared-module-name` - the option documented here
@@ -47182,7 +47197,7 @@ generation instead. Existing empty schemas remain valid references.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-refs # (1)!
+    datamodel-codegen --input empty_local_ref.json --strict-refs # (1)!
     ```
 
     1. :material-arrow-left: `--strict-refs` - the option documented here
@@ -47317,7 +47332,7 @@ Press Ctrl+C to stop watching.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --watch --check # (1)!
+    datamodel-codegen --input person.json --watch --check # (1)!
     ```
 
     1. :material-arrow-left: `--watch` - the option documented here
@@ -47403,7 +47418,7 @@ the generator waits the specified time before regenerating.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --watch --watch-delay 1.5 # (1)!
+    datamodel-codegen --input person.json --watch --watch-delay 1.5 # (1)!
     ```
 
     1. :material-arrow-left: `--watch-delay` - the option documented here
@@ -47506,7 +47521,7 @@ overrides it for that operation.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-body-arguments both # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-body-arguments both # (1)!
     ```
 
     1. :material-arrow-left: `--client-body-arguments` - the option documented here
@@ -47923,7 +47938,7 @@ servers keep them.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-default-base-url https://api.example.com/v1 # (1)!
+    datamodel-codegen --input options-unserved.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-default-base-url https://api.example.com/v1 # (1)!
     ```
 
     1. :material-arrow-left: `--client-default-base-url` - the option documented here
@@ -48062,7 +48077,7 @@ generates.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--client-model-package` - the option documented here
@@ -48388,7 +48403,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-operations '{"/paths/~1pets/get": {"name": "list_all", "parameter_names": {"query:limit": "page_size"}}}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-operations '{"/paths/~1pets/get": {"name": "list_all", "parameter_names": {"query:limit": "page_size"}}}' # (1)!
     ```
 
     1. :material-arrow-left: `--client-operations` - the option documented here
@@ -48706,7 +48721,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--client-output` - the option documented here
@@ -49023,7 +49038,7 @@ generation prints name the package by it; the package imports its own modules re
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--client-package` - the option documented here
@@ -49343,7 +49358,7 @@ references name resolve against the directory of the JSON file that holds them, 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-protocols protocols.json # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-protocols protocols.json # (1)!
     ```
 
     1. :material-arrow-left: `--client-protocols` - the option documented here
@@ -49573,7 +49588,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-resource-names '{"pets": "animals"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-resource-names '{"pets": "animals"}' # (1)!
     ```
 
     1. :material-arrow-left: `--client-resource-names` - the option documented here
@@ -49890,7 +49905,7 @@ against the document's URL when it is read from one.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-server-base-url https://api.example.com/ # (1)!
+    datamodel-codegen --input options-relative.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-server-base-url https://api.example.com/ # (1)!
     ```
 
     1. :material-arrow-left: `--client-server-base-url` - the option documented here
@@ -50031,7 +50046,7 @@ Declare the arguments of the operation methods (experimental).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-signature-style unpack # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-signature-style unpack # (1)!
     ```
 
     1. :material-arrow-left: `--client-signature-style` - the option documented here
@@ -50335,7 +50350,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--generate-client` - the option documented here
@@ -50658,7 +50673,7 @@ pyproject.toml, here as `generate-server = "fastapi"`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--generate-server` - the option documented here
@@ -50798,7 +50813,7 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-mode request # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-mode request # (1)!
     ```
 
     1. :material-arrow-left: `--server-body-mode` - the option documented here
@@ -50940,7 +50955,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-modes '{"/paths/~1pets~1{name}/put": "request"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-modes '{"/paths/~1pets~1{name}/put": "request"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-body-modes` - the option documented here
@@ -51081,7 +51096,7 @@ methods. `--server-handler-modes` overrides it for single operations.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-mode async # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-mode async # (1)!
     ```
 
     1. :material-arrow-left: `--server-handler-mode` - the option documented here
@@ -51225,7 +51240,7 @@ table.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-modes '{"/paths/~1pets/post": "async"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-modes '{"/paths/~1pets/post": "async"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-handler-modes` - the option documented here
@@ -51365,7 +51380,7 @@ Each service method takes a `request` keyword argument as well as the operation'
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-include-request # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-include-request # (1)!
     ```
 
     1. :material-arrow-left: `--server-include-request` - the option documented here
@@ -51509,7 +51524,7 @@ Choose how the server package lays out its routes (experimental).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-layout single # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-layout single # (1)!
     ```
 
     1. :material-arrow-left: `--server-layout` - the option documented here
@@ -51752,7 +51767,7 @@ generates.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--server-model-package` - the option documented here
@@ -51893,7 +51908,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-operation-names '{"/paths/~1pets/get": "list_all"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-operation-names '{"/paths/~1pets/get": "list_all"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-operation-names` - the option documented here
@@ -52034,7 +52049,7 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--server-output` - the option documented here
@@ -52174,7 +52189,7 @@ generation prints name the package by it; the package imports its own modules re
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--server-package` - the option documented here
@@ -52315,7 +52330,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-parameter-names '{"/paths/~1pets/get": {"query:limit": "page_size"}}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-parameter-names '{"/paths/~1pets/get": {"query:limit": "page_size"}}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-parameter-names` - the option documented here
@@ -52457,7 +52472,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-primary-responses '{"/paths/~1pets/post": {"status_code": 201}}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-primary-responses '{"/paths/~1pets/post": {"status_code": 201}}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-primary-responses` - the option documented here
@@ -52700,7 +52715,7 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-router-names '{"tag:pets": "animals"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-router-names '{"tag:pets": "animals"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-router-names` - the option documented here

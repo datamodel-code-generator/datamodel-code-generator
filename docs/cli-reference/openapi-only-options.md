@@ -47,7 +47,7 @@ models that include both path and query parameters.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --include-path-parameters --openapi-scopes schemas paths parameters # (1)!
+    datamodel-codegen --input include_path_parameters.yaml --include-path-parameters --openapi-scopes schemas paths parameters # (1)!
     ```
 
     1. :material-arrow-left: `--include-path-parameters` - the option documented here
@@ -143,7 +143,7 @@ at build time or runtime.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --openapi-include-info-version # (1)!
+    datamodel-codegen --input api.yaml --openapi-include-info-version # (1)!
     ```
 
     1. :material-arrow-left: `--openapi-include-info-version` - the option documented here
@@ -423,7 +423,7 @@ The `--openapi-include-paths` flag allows filtering which paths are processed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --openapi-scopes paths schemas --openapi-include-paths /pets* # (1)!
+    datamodel-codegen --input body_and_parameters.yaml --openapi-scopes paths schemas --openapi-include-paths /pets* # (1)!
     ```
 
     1. :material-arrow-left: `--openapi-include-paths` - the option documented here
@@ -848,7 +848,7 @@ The `--openapi-scopes` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --openapi-scopes paths schemas # (1)!
+    datamodel-codegen --input body_and_parameters.yaml --openapi-scopes paths schemas # (1)!
     ```
 
     1. :material-arrow-left: `--openapi-scopes` - the option documented here
@@ -1312,7 +1312,7 @@ validation for API requests and responses without a shared base model.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --read-only-write-only-model-type request-response # (1)!
+    datamodel-codegen --input read_only_write_only.yaml --output-model-type pydantic_v2.BaseModel --read-only-write-only-model-type request-response # (1)!
     ```
 
     1. :material-arrow-left: `--read-only-write-only-model-type` - the option documented here
@@ -1394,7 +1394,7 @@ The `--use-operation-id-as-name` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
+    datamodel-codegen --input api.yaml --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
     ```
 
     1. :material-arrow-left: `--use-operation-id-as-name` - the option documented here
@@ -1679,7 +1679,7 @@ clear names like ResourceGetResponse200, ResourceGetResponse400, ResourceGetResp
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-status-code-in-response-name --openapi-scopes schemas paths # (1)!
+    datamodel-codegen --input use_status_code_in_response_name.yaml --use-status-code-in-response-name --openapi-scopes schemas paths # (1)!
     ```
 
     1. :material-arrow-left: `--use-status-code-in-response-name` - the option documented here
@@ -1776,7 +1776,7 @@ The `--validation` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --validation # (1)!
+    datamodel-codegen --input api.yaml --validation # (1)!
     ```
 
     1. :material-arrow-left: `--validation` - the option documented here

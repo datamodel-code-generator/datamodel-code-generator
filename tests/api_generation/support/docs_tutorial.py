@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from scripts.build_docs_examples import pyproject_table
+from scripts.build_docs_examples import pyproject_table, with_newest_preset
 from tests.main.conftest import run_main_with_args
 
 if TYPE_CHECKING:
@@ -52,8 +52,13 @@ def generate_project(
     *,
     server_url: str = SERVER_URL,
 ) -> Project:
-    """Copy a documentation project, point its document at the server URL, and run `datamodel-codegen` in it."""
+    """Copy a documentation project, point its document at the server URL, and run `datamodel-codegen` in it.
+
+    The project's scripts get the newest standard preset its guide renders in place of the placeholder.
+    """
     shutil.copytree(source, root)
+    for script in root.glob("*.py"):
+        script.write_text(with_newest_preset(script.read_text(encoding="utf-8")), encoding="utf-8")
     document = root / "openapi.yaml"
     document.write_text(document.read_text(encoding="utf-8").replace(SERVER_URL, server_url), encoding="utf-8")
     (root / "pyproject.toml").write_text(f"{pyproject_table(arguments)}\n", encoding="utf-8")

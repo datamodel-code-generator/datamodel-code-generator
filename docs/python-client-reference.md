@@ -940,12 +940,20 @@ one to start from it. Each role receives the values its builtin template uses an
 `#all#` entry of [`--extra-template-data`](cli-reference/template-customization.md#extra-template-data); the role's
 own values take precedence over the extra data.
 
-The values a role receives can change while client generation is experimental, and a value that an older copy of a
-builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
-compare an override with the current builtin template after an upgrade. The templates write every module, class,
-function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
-Each role receives these top-level values, where `imports` is the module's import block and the facade's `module`,
-which the builtin template does not use, is the module's dotted path in the package, empty for the package itself:
+!!! warning "Overrides are not checked against the builtin roles"
+
+    A file of the `client` directory that is not one of these role names is ignored without a warning, so a
+    misspelled or renamed role keeps its builtin template. A value that an override names and the builtin no longer
+    provides, such as one that an older copy of a builtin template uses, renders as an empty string, as Jinja's default
+    `Undefined` does; the values a role receives can change while client generation is experimental. Generation can
+    then succeed and write a package that fails when it is imported. After each upgrade, compare your overrides with the
+    current builtin templates, and in CI import the generated package, or run `datamodel-codegen --check` and your
+    tests.
+
+The templates write every module, class, function, signature, and call; they receive records of names, type
+annotations, and the values of the runtime plans. Each role receives these top-level values, where `imports` is the
+module's import block and the facade's `module`, which the builtin template does not use, is the module's dotted path
+in the package, empty for the package itself:
 
 | Role | Values |
 | --- | --- |

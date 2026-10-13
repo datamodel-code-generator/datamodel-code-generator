@@ -35,6 +35,8 @@ HOWTO = DOCS_PROJECTS / "howto"
 EXPECTED_HOWTO = EXPECTED_DOCS_PROJECTS / "howto"
 CLIENT_HOWTO = DOCS_PROJECTS / "client-howto"
 EXPECTED_CLIENT_HOWTO = EXPECTED_DOCS_PROJECTS / "client-howto"
+SNIPPETS = DOCS_PROJECTS / "snippets"
+PRESET_PLACEHOLDER = "<newest-standard-py312-preset>"
 CLIENT_HOWTO_SCRIPTS = ("calls", "responses", "options", "retries", "auth", "oauth", "signing", "errors")
 API_TARGET_OPTIONS: dict[str, tuple[str, ...]] = {
     "server": (
@@ -153,13 +155,27 @@ def command(arguments: Iterable[str]) -> str:
     return " \\\n  ".join(("datamodel-codegen", *lines))
 
 
-def api_quick_start_arguments(target: str) -> tuple[str, ...]:
-    """Return the quick-start arguments of the `server` or `client` target, with the newest standard py312 preset."""
+def newest_preset() -> str:
+    """Return the newest standard preset of the quick start's Python version, which every guide and its tests use."""
     from scripts import build_preset_docs  # ruff: ignore[import-outside-top-level]
 
-    preset = build_preset_docs._get_latest_preset_name_by_prefix(  # ruff: ignore[private-member-access]
+    return build_preset_docs._get_latest_preset_name_by_prefix(  # ruff: ignore[private-member-access]
         "standard", target_python_version=build_preset_docs.QUICK_START_TARGET_PYTHON_VERSION
     )
+
+
+def with_newest_preset(text: str) -> str:
+    """Fill the preset placeholder of a documentation fixture with the newest standard preset."""
+    return text.replace(PRESET_PLACEHOLDER, newest_preset())
+
+
+def read_with_newest_preset(path: Path) -> str:
+    """Read a documentation fixture with its preset placeholder filled in."""
+    return with_newest_preset(read_text(path))
+
+
+def api_quick_start_arguments(target: str) -> tuple[str, ...]:
+    """Return the quick-start arguments of the `server` or `client` target, with the newest standard py312 preset."""
     return (
         "--input",
         "openapi.yaml",
@@ -171,7 +187,7 @@ def api_quick_start_arguments(target: str) -> tuple[str, ...]:
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        preset,
+        newest_preset(),
         "--output",
         "models.py",
         *API_TARGET_OPTIONS[target],
@@ -511,6 +527,20 @@ def fastapi_server_examples() -> tuple[DocsExample, ...]:
                 "howto.tests",
                 lambda: fenced("python", excerpt(test, "def test_upload_and_get_photo(", "def test_credentials(")),
             ),
+            ("batch-jobs", lambda: fenced("toml", read_with_newest_preset(SNIPPETS / "batch-jobs.toml"))),
+            (
+                "templates.command",
+                lambda: fenced(
+                    "bash",
+                    command((
+                        *api_quick_start_arguments("server"),
+                        "--custom-template-dir",
+                        "templates",
+                        "--extra-template-data",
+                        "extra.json",
+                    )),
+                ),
+            ),
         )
     )
 
@@ -553,7 +583,7 @@ def python_client_examples() -> tuple[DocsExample, ...]:
             ("howto.pyproject", lambda: fenced("toml", pyproject_table(DOCS_PROJECT_OPTIONS["client-howto"][1]))),
             ("howto.fake", lambda: details("fake.py", "python", read_text(CLIENT_HOWTO / "fake.py"))),
             *(example for script in CLIENT_HOWTO_SCRIPTS for example in client_script_examples(script)),
-            ("howto.generate", lambda: fenced("python", read_text(CLIENT_HOWTO / "generate.py"))),
+            ("howto.generate", lambda: fenced("python", read_with_newest_preset(CLIENT_HOWTO / "generate.py"))),
             ("howto.shelter", lambda: fenced("python", read_text(CLIENT_HOWTO / "shelter.py"))),
             ("howto.test", lambda: fenced("python", read_text(CLIENT_HOWTO / "test_client.py"))),
         )
@@ -576,8 +606,13 @@ def docs_examples() -> tuple[DocsExample, ...]:
             example_id="fastapi-server.nested-models.command",
             path=DOCS / "fastapi-server.md",
             render=lambda: fenced(
-                "bash", command(json.loads(read_text(FASTAPI_CLI_DATA / "nested-models-example.json")))
+                "bash", command(json.loads(read_with_newest_preset(FASTAPI_CLI_DATA / "nested-models-example.json")))
             ),
+        ),
+        DocsExample(
+            example_id="using-as-module.server",
+            path=DOCS / "using_as_module.md",
+            render=lambda: fenced("python", read_with_newest_preset(SNIPPETS / "server-generate.py")),
         ),
         DocsExample(
             example_id="openapi.quick-start.schema",

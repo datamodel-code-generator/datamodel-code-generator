@@ -1012,29 +1012,10 @@ datamodel-codegen --server-handler-modes '{"/paths/~1pets/get": "async"}'
 
 ### Python API
 
-The quick start's settings, as command-line options:
-
-<!-- BEGIN AUTO-GENERATED FASTAPI QUICK START -->
-```bash
-datamodel-codegen \
-  --input openapi.yaml \
-  --input-file-type openapi \
-  --openapi-scopes schemas api \
-  --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20260909 \
-  --output models.py \
-  --generate-server fastapi \
-  --server-output server \
-  --server-package server \
-  --server-model-package models
-```
-
-The preset supplies the model options, as in the model [quick start](getting-started.md).
-<!-- END AUTO-GENERATED FASTAPI QUICK START -->
-
-`generate()` takes the server options under their Python names, with the model options; the choices are enums of
-`datamodel_code_generator` such as `ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON
-options take mappings keyed by the same operation references:
+`generate()` takes the settings of the [quick start](#2-generate-the-server) as keyword arguments: the server
+options under their Python names, with the model options; the choices are enums of `datamodel_code_generator` such as
+`ServerType` and `ServerHandlerMode`, whose string values also work, and the JSON options take mappings keyed by the
+same operation references:
 
 <!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
@@ -1073,6 +1054,9 @@ with the same settings does, so one `pyproject.toml` can describe model-only job
 `generate-server` in each server job or in a profile it selects, not in the base table, when other jobs generate
 models only.
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: fastapi-server.batch-jobs -->
+<!-- fmt: off -->
+
 ```toml
 [tool.datamodel-codegen]
 input-file-type = "openapi"
@@ -1096,6 +1080,9 @@ input = "openapi.yaml"
 output = "app/models.py"
 server-output = "app/server"
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.batch-jobs -->
 
 ```bash
 datamodel-codegen --all-jobs
@@ -1421,6 +1408,16 @@ or a custom template directory without a `fastapi` directory, keeps its builtin 
 in the `_fastapi/templates` directory of the installed package; copy one to start from it. An override may include
 or import the other builtin templates.
 
+!!! warning "Overrides are not checked against the builtin roles"
+
+    A file of the `fastapi` directory that is not one of these role names is ignored without a warning, so a
+    misspelled or renamed role keeps its builtin template. A value that an override names and the builtin no longer
+    provides, such as one that an older copy of a builtin template uses, renders as an empty string, as Jinja's default
+    `Undefined` does; the values a role receives can change while server generation is experimental. Generation can
+    then succeed and write a package that fails when it is imported. After each upgrade, compare your overrides with the
+    current builtin templates, and in CI import the generated package, or run `datamodel-codegen --check` and your
+    tests.
+
 ```text
 templates/
 ├── fastapi/
@@ -1437,27 +1434,31 @@ precedence over the extra data:
 {"#all#": {"team": "the platform team"}}
 ```
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: fastapi-server.templates.command -->
+<!-- fmt: off -->
+
 ```bash
 datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
+  --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
   --preset standard-py312-20260909 \
-  --openapi-scopes schemas api \
   --output models.py \
-  --custom-template-dir templates \
-  --extra-template-data extra.json \
   --generate-server fastapi \
   --server-output server \
   --server-package server \
-  --server-model-package models
+  --server-model-package models \
+  --custom-template-dir templates \
+  --extra-template-data extra.json
 ```
 
-The values a role receives can change while server generation is experimental, and a value that an older copy of a
-builtin template names renders as nothing, which usually stops the run with an invalid generated source file;
-compare an override with the current builtin template after an upgrade. The templates write every module, class,
-function, signature, and call; they receive records of names, type annotations, and the values of the runtime plans.
-Each role receives these top-level values, where `imports` is the module's import block:
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.templates.command -->
+
+The templates write every module, class, function, signature, and call; they receive records of names, type
+annotations, and the values of the runtime plans. Each role receives these top-level values, where `imports` is the
+module's import block:
 
 | Role | Values |
 | --- | --- |
