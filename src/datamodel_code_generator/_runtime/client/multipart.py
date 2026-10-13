@@ -16,6 +16,7 @@ from io import UnsupportedOperation
 from os import SEEK_END, SEEK_SET, urandom
 from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, TypeVar, cast
 
+import httpx2
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
@@ -27,32 +28,20 @@ from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
 from .body_sources import BinaryBodies, BodyBindings, BoundBody
 from .errors import DecodeError
 from .logical import in_thread
-from .media import encode_text, most_specific, normalized, with_charset
+from .media import encode_text
+from .parts import MEDIA_OUTSIDE_ENCODING, PartPlan
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Iterator
-    from typing import Any, Protocol
+    from typing import Any
 
     from ..model_codecs.media import JSONValue
     from .bodies import BinaryContent, BinarySource
     from .content import AsyncContent, BodyEntry, SyncContent
 
-    class PartCodec(Protocol):
-        """The codec of a sent member's values, as the generated operation registry binds it."""
-
-        def dump(self, value: Any) -> object:
-            """Return the JSON value of a value."""
-            ...
-
-        @property
-        def errors(self) -> tuple[type[Exception], ...]:
-            """Return the failures of the codec's backend."""
-            ...
-
 
 PartT = TypeVar("PartT")
 PartT_co = TypeVar("PartT_co", covariant=True)
-PartKind: TypeAlias = Literal["string", "integer", "number", "boolean", "json"]
 ContentT_co = TypeVar("ContentT_co", bound="SyncBinaryBody | AsyncBinaryBody", covariant=True)
 Entry: TypeAlias = tuple[str, str | None, object, str | None, tuple[tuple[str, str], ...]]
 
@@ -61,7 +50,6 @@ _PART: Final = "A multipart part must be a FieldPart or a FilePart named by a st
 _SYNC: Final = (
     "A multipart file part must be read synchronously: bytes, a binary file object, a path, or an iterable of bytes"
 )
-_MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
 _DISPOSITION: Final = "A part's Content-Disposition comes from its name and filename, so its headers may not name it"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
@@ -200,48 +188,6 @@ else:
     )
 
 
-class PartPlan:
-    """How one form-data member is sent or read: its kind, repeats, codec, media types, and style.
-
-    A received part is read in its lexical kind, or as JSON. A sent value is encoded by the codec, when the member
-    has one, and each item of a repeated member becomes its own part: JSON for a member of the JSON kind, whose type
-    has no one scalar kind, and for any other by the value's shape. The media types of the member's encoding bound
-    the media type a part names, and the first concrete one is its default. A member whose encoding gives a query
-    style writes a part for each name and value that style gives its value.
-    """
-
-    __slots__ = ("codec", "content_types", "kind", "name", "repeated", "style")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        name: str,
-        kind: PartKind = "string",
-        *,
-        repeated: bool = False,
-        codec: PartCodec | None = None,
-        content_types: tuple[str, ...] = (),
-        style: ParameterPlan | None = None,
-    ) -> None:
-        """Keep the member's name, kind, repeats, codec, media, and style."""
-        self.name = name
-        self.kind: PartKind = kind
-        self.repeated = repeated
-        self.codec = codec
-        self.content_types = content_types
-        self.style = style
-
-    def media(self, named: str | None) -> str | None:
-        """Return the media type of a part: the one it names within the encoding's, or the encoding's default.
-
-        A named media type is sent normalized, with the charset of the declared type it falls within when it names none.
-        """
-        if named is None:
-            return next((media for media in self.content_types if "*" not in media.partition(";")[0]), None)
-        if (wanted := normalized(named)) is None or (declared := most_specific(wanted, self.content_types)) is None:
-            raise ParameterEncodingError(_MEDIA)
-        return with_charset(wanted, declared)
-
-
 _ANY: Final = PartPlan("")
 
 
@@ -332,8 +278,6 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
     without parts has no media type, as HTTPX2 sends none. A part header naming Content-Disposition is refused, as
     HTTPX2 writes it itself, and HTTPX2 checks every part's name and headers before any file input is opened.
     """
-    import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
-
     if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
         raise _malformed(None, ValueError(_DISPOSITION))
     try:
@@ -348,7 +292,7 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
     return FormParts(tuple(entries), sent), sent
 
 
-def _shaped(plan: PartPlan | None) -> str | None:
+def _shaped(plan: PartPlan | None) -> Literal["application/json"] | None:
     """Return the media type a member's plan gives each value: JSON for the JSON kind, else the value's shape's."""
     return _JSON if plan is not None and plan.kind == "json" else None
 
@@ -438,7 +382,7 @@ def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> E
     try:
         media_type = plan.media(part.content_type) if plan.content_types else part.content_type
         if media_type is None and plan.content_types:
-            raise ParameterEncodingError(_MEDIA)
+            raise ParameterEncodingError(MEDIA_OUTSIDE_ENCODING)
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
     return _entry(part.name, part.content, media_type or _OCTETS, part.headers, part.filename)
@@ -524,8 +468,6 @@ class MultipartAttempt:
 
         A threaded attempt, one with a file the call opened from a path, is read in a thread in async mode.
         """
-        import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
-
         self._threaded = threaded
         native = httpx2.Request(
             "POST",

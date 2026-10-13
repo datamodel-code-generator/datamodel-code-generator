@@ -1,0 +1,34 @@
+[
+  {
+    "convert": {
+      "color": null
+    },
+    "decode": {
+      "color": null
+    }
+  },
+  {
+    "convert": {
+      "color": "red",
+      "level": 2,
+      "status": "ready"
+    },
+    "decode": {
+      "color": "red",
+      "level": 2,
+      "status": "ready"
+    }
+  },
+  {
+    "convert": {
+      "color": "green",
+      "level": null,
+      "status": null
+    },
+    "decode": {
+      "color": "green",
+      "level": null,
+      "status": null
+    }
+  }
+]

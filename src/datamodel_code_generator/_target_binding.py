@@ -19,7 +19,7 @@ from keyword import iskeyword
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
-from urllib.parse import unquote, urljoin
+from urllib.parse import ParseResult, unquote, urljoin
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
@@ -254,6 +254,10 @@ class _LiteralCycleError(_UnsupportedError):
         super().__init__()
 
 
+class _UnservedReferenceError(Error):
+    """A reference to a local file that the served source document would publish."""
+
+
 class MetadataCycleError(Exception):
     """A detected cycle in an API metadata fact at its original source location."""
 
@@ -346,8 +350,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
         config: OpenAPIParserConfig | None = None,
+        serves_source: bool,
     ) -> None:
         """Start with no acquisitions, walked operations or emitted modules."""
+        self.serves_source = serves_source
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
@@ -376,6 +382,29 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             for found in ("binary", *(format_ for type_, format_ in self.type_mappings if type_ == "string"))
             if self._get_type_with_mappings("string", found) == Types.binary
             and not self._is_base64_encoded_binary_mapping("string", found)
+        )
+
+    def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
+        """Refuse a local file that a served source document would publish, before reading it.
+
+        A document read from a URL references no local file; any other document only files inside the input
+        directory, after resolving `..` and symbolic links.
+        """
+        if self.serves_source and path not in self._local_ref_path_cache and (reason := self._unserved(path)):
+            msg = f"Blocked unsafe local $ref: {ref}\nReason: the generated server serves the source document, {reason}"
+            raise _UnservedReferenceError(msg)
+        return super()._resolve_local_ref_path(path, ref)
+
+    def _unserved(self, path: Path) -> str | None:
+        """Return why the served document cannot hold a local file, or None when it can."""
+        if isinstance(self.source, ParseResult):
+            return "which was read from a URL, so it cannot reference a local file."
+        if (resolved := path.resolve()).is_relative_to(base := self.base_path.resolve()):
+            return None
+        return (
+            "so a referenced file must be inside the input directory.\n"
+            f"Input directory: {base}\nResolved path: {resolved}\n"
+            "Move the referenced schemas under the input directory."
         )
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
@@ -644,10 +673,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     def load_document(self, document: str) -> dict[str, YamlValue] | None:
         """Load a document that only links or security schemes reference, as the walk loads every other document.
 
-        None is a document that the loader cannot read, decode or fetch, or a name that no file can have.
+        None is a document that the loader cannot read, decode or fetch, or a name that no file can have; a local file
+        the served document would publish is refused.
         """
         try:
             raw = self._get_ref_body(document)
+        except _UnservedReferenceError:
+            raise
         except (Error, OSError, UnicodeDecodeError):
             return None
         self._api_documents[document] = raw
@@ -1290,6 +1322,10 @@ class _Hints:
         annotation, static = variants if len(variants) > 1 else (variants[0], None)
         return self.hint(annotation, None if static == annotation else static)
 
+    def optional(self, base: TypeView) -> ModelHint:
+        """Return the hint of a type that also takes None, in the configured type style."""
+        return self.composed(self.hint_type.model_construct(), base=base, is_optional=True)
+
     def leaf(self, data_type: DataType, enum: SymbolId | None = None) -> ModelHint:
         """Render one DataType without its containers and optionality, as the model's own type hint spells it.
 
@@ -1393,9 +1429,21 @@ class _Projector:
         except _NotEmittedError:
             return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
 
-    def declaration(self, reference: Reference) -> TypeProjection:
+    def declaration(self, reference: Reference, *, nullable: bool = False) -> TypeProjection:
+        """Project a schema's own model, which as a nullable value also takes None when an object model stands for it.
+
+        An object model, unlike an alias or a root model, cannot hold the null its schema admits.
+        """
         try:
-            return TypeProjection(self._imports(self._reference_value(reference, serialize_as_any=False)))
+            value = self._reference_value(reference, serialize_as_any=False)
+            if (
+                nullable
+                and isinstance(value, GeneratedSymbolType)
+                and (model := self.binder.models[value.symbol]).nullable
+                and self.binder.policies[id(model)].kind == "model"
+            ):
+                value = UnionType((value, NoneType()), preserve_order=False, hint=self.hints.optional(value))
+            return TypeProjection(self._imports(value))
         except _UnsupportedError:
             return TypeProjection(None, "BND_TYPE_EXPRESSION_UNSUPPORTED")
         except _NotEmittedError:
@@ -3003,13 +3051,20 @@ class _SchemaUses(_Models):
     """Bind the schemas the models were generated from, nested ones included."""
 
     def projection(
-        self, declaration: _Declaration, projection: Projection, direction: Direction, *, inline: bool = False
+        self,
+        declaration: _Declaration,
+        projection: Projection,
+        direction: Direction,
+        *,
+        inline: bool = False,
+        nullable: bool = False,
     ) -> TypeProjection:
         """Bind an acquired declaration: its emitted model wins over a direct reference type.
 
         A declaration the parser emitted nothing for, such as a recursive reference with sibling keywords, binds
         the model-free type of its schema, which is the referenced model. An inlined projection reads each alias and
-        root model as the type it stands for.
+        root model as the type it stands for, and a nullable one, a value an operation sends or receives in a media
+        that can carry null, takes the null its schema admits; a form or multipart body has no null to send.
         """
         binder = self.binder
         parser = self.parser
@@ -3024,7 +3079,7 @@ class _SchemaUses(_Models):
             or binder.final(reference, direction) is not None
             or binder.unwrapped(reference) is not None
         ):
-            return projector.declaration(reference)
+            return projector.declaration(reference, nullable=nullable)
         if data_type is not None:
             return projector.project(data_type)
         return self.lightweight(declaration, direction, inline=inline)
@@ -3088,14 +3143,15 @@ class _SchemaUses(_Models):
             status,
             media,
         )
-        projected = self.projection(schema, projection, direction)
+        nullable = role != "schema" and (media is None or _media_kind(media) not in _FORMS)
+        projected = self.projection(schema, projection, direction, nullable=nullable)
         members = (
             self.members_at(projected.value.symbol, schema, direction)
             if isinstance(projected.value, GeneratedSymbolType)
             else ()
         )
         argument = (
-            self.projection(schema, projection, direction, inline=True).value
+            self.projection(schema, projection, direction, inline=True, nullable=nullable).value
             if role == "parameter" and projected.value is not None
             else None
         )
@@ -3768,7 +3824,6 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Iterator, Mapping
-    from urllib.parse import ParseResult
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType

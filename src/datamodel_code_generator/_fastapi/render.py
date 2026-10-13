@@ -438,10 +438,11 @@ class BodyPlan:
 
 @dataclass(frozen=True, slots=True)
 class ResponsesPlan:
-    """The responses plan of one operation: the declared responses, the primary status, and HEAD."""
+    """The responses plan of one operation: the declared responses, the primary status and chosen media, and HEAD."""
 
     responses: str
     primary: str
+    media: str
     head: bool
 
 
@@ -986,28 +987,43 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
 
 
 def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
-    """Return the OperationResponses keywords of one operation: each declared response's default media and model."""
-    responses: list[str] = []
-    for response in spec.responses:
-        entries: list[str] = []
-        if _body_status(spec, response.status) and (media := default_media(response)) is not None:
-            entries.append(f"media_type={media.media_type!r}")
-            if media.kind != "json":
-                entries.append(f"kind={media.kind!r}")
-            if (encoding := charset(media.media_type)) != "utf-8":
-                entries.append(f"charset={encoding!r}")
-            if media.kind != "binary" and media.use is not None and media.use.type is not None:
-                entries.append(f"model={module.annotation(media.use.type)}")
-            if response.null:
-                entries.append("null=True")
-        declared = module.local("_runtime.server.responses", "Declared")
-        responses.append(f"{response.status!r}: {declared}({', '.join(entries)})")
-    primary = spec.primary
-    return ResponsesPlan(
-        responses="{" + ", ".join(responses) + "}",
-        primary=str(primary.status) if primary is not None and not spec.native_primary else "",
-        head=spec.head,
-    )
+    """Return the OperationResponses keywords of one operation: each declared response's default media and model.
+
+    A primary response the route sends itself with a chosen media other than its default also declares that media.
+    """
+    responses = [
+        f"{response.status!r}: "
+        + _declared(
+            module, default_media(response) if _body_status(spec, response.status) else None, null=response.null
+        )
+        for response in spec.responses
+    ]
+    status = media = ""
+    if (primary := spec.primary) is not None and not spec.native_primary:
+        status = str(primary.status)
+        if (
+            (chosen := primary.media) is not None
+            and chosen is not default_media(primary.response)
+            and _body_status(spec, status)
+        ):
+            media = _declared(module, chosen, null=primary.null)
+    return ResponsesPlan(responses="{" + ", ".join(responses) + "}", primary=status, media=media, head=spec.head)
+
+
+def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
+    """Return the Declared value of a response's media, its kind, charset, and model, or of a response without one."""
+    entries: list[str] = []
+    if media is not None:
+        entries.append(f"media_type={media.media_type!r}")
+        if media.kind != "json":
+            entries.append(f"kind={media.kind!r}")
+        if (encoding := charset(media.media_type)) != "utf-8":
+            entries.append(f"charset={encoding!r}")
+        if media.kind != "binary" and media.use is not None and media.use.type is not None:
+            entries.append(f"model={module.annotation(media.use.type)}")
+        if null:
+            entries.append("null=True")
+    return f"{module.local('_runtime.server.responses', 'Declared')}({', '.join(entries)})"
 
 
 def _body_status(spec: OperationSpec, status: str) -> bool:

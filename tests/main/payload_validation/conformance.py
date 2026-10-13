@@ -347,9 +347,6 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "openapi/enum_models.yaml::components.schemas.version": (
         "msgspec conversion does not accept nullable enum aliases generated from OpenAPI schemas"
     ),
-    "jsonschema/nullable_enum_literal_typed_dict.json": (
-        "msgspec conversion only supports Enum classes with homogeneous str or int values"
-    ),
     "jsonschema/oneof_const_enum_bool.json": (
         "msgspec conversion only supports Enum classes with homogeneous str or int values"
     ),

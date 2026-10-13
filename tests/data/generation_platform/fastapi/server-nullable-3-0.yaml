@@ -99,6 +99,35 @@ paths:
             schema: {type: string, nullable: true}
       responses:
         "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+              required: [text]
+              properties:
+                text: {type: string}
+                replies: {type: array, items: {type: object, nullable: true, properties: {text: {type: string}}}}
+      responses:
+        "204": {description: Done.}
+  /extended:
+    post:
+      operationId: postExtended
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+              allOf: [{$ref: "#/components/schemas/Item"}, {properties: {note: {type: string}}}]
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Item: {type: object, required: [name], properties: {name: {type: string}}}

@@ -1,6 +1,6 @@
 # nullable-alias
 serve pydantic_v2.BaseModel
-service DefaultService: post_anything, post_choice, post_color, post_draft, post_id, post_item, post_list, post_name, post_text, post_value
+service DefaultService: post_anything, post_choice, post_color, post_draft, post_extended, post_id, post_item, post_list, post_name, post_note, post_text, post_value
 service DefaultService without its methods: TypeError
 > POST /texts
   post_text(body=None)

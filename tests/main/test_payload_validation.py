@@ -177,6 +177,7 @@ BACKEND_ACCEPTANCE_CASE_IDS = {
         "jsonschema/array_field_constraints.json",
         "openapi/api.yaml::components.schemas.Pet",
         "openapi/additional_properties.yaml::components.schemas.Error",
+        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Cat",
     ),
     PayloadBackend.DATACLASSES: (
         "jsonschema/pydantic_v2_runtime_value.json",

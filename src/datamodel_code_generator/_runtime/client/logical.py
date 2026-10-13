@@ -6,13 +6,13 @@ it with `run_sync`, its I/O blocking inside awaits that never suspend.
 
 from __future__ import annotations
 
-from enum import Enum
 from functools import partial
 from typing import TYPE_CHECKING, Final, Generic, TypeVar
 
 import anyio
 
 from .errors import APITimeoutError, SDKError, add_secondary, kept_primary
+from .retry import Delivery
 from .timing import Budget, ResolvedTimeoutOptions
 
 if TYPE_CHECKING:
@@ -23,14 +23,6 @@ if TYPE_CHECKING:
 
 ErrorT = TypeVar("ErrorT", bound=SDKError)
 T = TypeVar("T")
-
-
-class Delivery(Enum):
-    """How far a send got, which only retry and helper decisions read: never sent, possibly sent, or answered."""
-
-    NOT_SENT = "NOT_SENT"
-    MAYBE_SENT = "MAYBE_SENT"
-    RESPONSE_STARTED = "RESPONSE_STARTED"
 
 
 _REACHED: Final = (Delivery.NOT_SENT, Delivery.MAYBE_SENT, Delivery.RESPONSE_STARTED)

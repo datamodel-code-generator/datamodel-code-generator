@@ -1,6 +1,6 @@
 # nullable
 serve pydantic_v2.BaseModel
-service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_id, post_item, post_list, post_name, post_pet, post_text, post_value
+service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_name, post_note, post_pet, post_text, post_value, upload
 service DefaultService without its methods: TypeError
 > POST /texts
   post_text(body=FieldTextsPostRequest(root=None))
@@ -118,8 +118,36 @@ service DefaultService without its methods: TypeError
 > POST /drafts
   post_draft(body=None)
 < 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=FieldNotesPostRequest(text='a'))
+< 204 - b''
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /forms
+  post_form(body=FieldFormsPostRequest(name='n', tags=['a', 'b'], count=2))
+< 204 - b''
+> POST /forms
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /uploads
+  upload(body=FieldUploadsPostRequest(file=b'file body', note='n', meta=Meta(size=3)))
+< 204 - b''
+> POST /uploads
+< 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
+> POST /extended
+  post_extended(body=None)
+< 204 - b''
+> POST /extended
+  post_extended(body=FieldExtendedPostRequest(name='a', note='n'))
+< 204 - b''
+> POST /extended
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
 serve pydantic_v2.dataclass
-service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_id, post_item, post_list, post_name, post_pet, post_text, post_value
+service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_name, post_note, post_pet, post_text, post_value, upload
 service DefaultService without its methods: TypeError
 > POST /texts
   post_text(body=None)
@@ -237,3 +265,31 @@ service DefaultService without its methods: TypeError
 > POST /drafts
   post_draft(body=None)
 < 204 - b''
+> POST /notes
+  post_note(body=None)
+< 204 - b''
+> POST /notes
+  post_note(body=FieldNotesPostRequest(text='a'))
+< 204 - b''
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body", "text"]}]
+> POST /notes
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /forms
+  post_form(body=FieldFormsPostRequest(name='n', tags=['a', 'b'], count=2))
+< 204 - b''
+> POST /forms
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /uploads
+  upload(body=FieldUploadsPostRequest(file=b'file body', note='n', meta=Meta(size=3)))
+< 204 - b''
+> POST /uploads
+< 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
+> POST /extended
+  post_extended(body=None)
+< 204 - b''
+> POST /extended
+  post_extended(body=FieldExtendedPostRequest(name='a', note='n'))
+< 204 - b''
+> POST /extended
+< 422 application/json [{"type": "missing", "loc": ["body", "name"]}]

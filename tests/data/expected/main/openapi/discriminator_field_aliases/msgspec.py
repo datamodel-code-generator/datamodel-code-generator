@@ -4,17 +4,16 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Literal, TypeAlias
+from typing import TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType, field
+from msgspec import UNSET, Struct, UnsetType
 
 
 class CatKind(Enum):
     cat = 'cat'
 
 
-class Cat(Struct):
-    cat_kind: Literal['cat'] = field(name='petType')
+class Cat(Struct, tag_field='petType', tag='cat'):
     meow: str | UnsetType = UNSET
 
 
@@ -22,8 +21,7 @@ class DogKind(Enum):
     dog = 'dog'
 
 
-class Dog(Struct):
-    dog_kind: Literal['dog'] = field(name='petType')
+class Dog(Struct, tag_field='petType', tag='dog'):
     bark: str | UnsetType = UNSET
 
 
