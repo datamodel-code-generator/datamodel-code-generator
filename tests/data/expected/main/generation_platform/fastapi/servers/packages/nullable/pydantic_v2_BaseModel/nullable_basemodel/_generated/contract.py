@@ -12,7 +12,8 @@ import nullable_basemodel_models
 from fastapi import params
 from pydantic import TypeAdapter
 
-from .._runtime.server.requests import BodyAdapter, BodyMedia
+from .._runtime.model_codecs.media import FieldPlan
+from .._runtime.server.requests import BodyAdapter, BodyMedia, JsonPart
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
@@ -31,6 +32,8 @@ OperationDependencies = TypedDict(
         'post_id': Sequence[params.Depends],
         'post_draft': Sequence[params.Depends],
         'post_note': Sequence[params.Depends],
+        'post_form': Sequence[params.Depends],
+        'upload': Sequence[params.Depends],
     },
     total=False,
 )
@@ -176,6 +179,27 @@ class PostNote:
 
     BODY: Final = BodyAdapter(
         media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_basemodel_models.FieldNotesPostRequest | None)),),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class PostForm:
+    """Plans of the post_form operation."""
+
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class Upload:
+    """Plans of the upload operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='multipart/form-data', kind='multipart', adapter=TypeAdapter(nullable_basemodel_models.FieldUploadsPostRequest), fields=(FieldPlan('file', 'string'), FieldPlan('note', 'string')), json_parts=(JsonPart('meta', TypeAdapter(nullable_basemodel_models.Meta)),)),),
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},

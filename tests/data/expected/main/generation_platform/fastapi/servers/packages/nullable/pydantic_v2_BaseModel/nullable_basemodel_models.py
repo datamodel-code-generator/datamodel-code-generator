@@ -58,3 +58,19 @@ class FieldDraftsPostRequest(RootModel[str | None]):
 
 class FieldNotesPostRequest(BaseModel):
     text: str
+
+
+class FieldFormsPostRequest(BaseModel):
+    name: str
+    tags: list[str] | None = None
+    count: int | None = None
+
+
+class Meta(BaseModel):
+    size: int | None = None
+
+
+class FieldUploadsPostRequest(BaseModel):
+    file: bytes
+    note: str | None = None
+    meta: Meta | None = None

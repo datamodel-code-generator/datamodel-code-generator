@@ -2942,8 +2942,8 @@ class _SchemaUses(_Models):
 
         A declaration the parser emitted nothing for, such as a recursive reference with sibling keywords, binds
         the model-free type of its schema, which is the referenced model. An inlined projection reads each alias and
-        root model as the type it stands for, and a nullable one, a value an operation sends or receives, takes the
-        null its schema admits.
+        root model as the type it stands for, and a nullable one, a value an operation sends or receives in a media
+        that can carry null, takes the null its schema admits; a form or multipart body has no null to send.
         """
         binder = self.binder
         parser = self.parser
@@ -3022,7 +3022,7 @@ class _SchemaUses(_Models):
             status,
             media,
         )
-        nullable = role != "schema"
+        nullable = role != "schema" and (media is None or _media_kind(media) not in _FORMS)
         projected = self.projection(schema, projection, direction, nullable=nullable)
         members = (
             self.members_at(projected.value.symbol, schema, direction)

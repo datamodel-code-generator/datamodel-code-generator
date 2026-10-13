@@ -11,6 +11,12 @@
 text
   Field required [type=missing, input_value={}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None
@@ -24,6 +30,12 @@ text
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=TypeError("FieldNotesPostResponse.__init__() missing 1 required positional argument: 'text'")] invalid_value
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None
@@ -37,6 +49,12 @@ text
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   decode an object without its required member = {}
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None
@@ -50,6 +68,12 @@ text
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=ValidationError('Object missing required field `text`')] invalid_value
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
   > POST https://api.example.com/notes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
   async send and decode null = None

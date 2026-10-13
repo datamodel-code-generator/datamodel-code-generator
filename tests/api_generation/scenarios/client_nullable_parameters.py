@@ -1,16 +1,20 @@
 """Send None for nullable parameters and bodies.
 
 An optional style parameter is left out, and a required one is refused. An inline object schema that admits null sends
-and decodes None as its body and its result, and still checks an object against its schema.
+and decodes None as its body and its result, and still checks an object against its schema. A form or multipart body
+has no null to send, so such a schema's declared properties still travel as its fields and parts.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import importlib
+import re
+from typing import TYPE_CHECKING, Any, Final
 
 from tests.api_generation.support.client_runtime import (
     Exchange,
     arecord,
+    form_part,
     json_response,
     raw_response,
     record,
@@ -20,6 +24,8 @@ from tests.api_generation.support.client_runtime import (
 
 if TYPE_CHECKING:
     from types import ModuleType
+
+_BOUNDARY: Final = re.compile(r"\b[0-9a-f]{32}\b")
 
 
 def nullable_parameters(package: ModuleType, lines: list[str]) -> None:
@@ -69,7 +75,23 @@ def nullable_bodies(package: ModuleType, lines: list[str]) -> None:
         record(lines, "send and decode null", lambda: api.default.post_note(body=None))
         record(lines, "send and decode an object", lambda: api.default.post_note(body=note))
         record(lines, "decode an object without its required member", lambda: api.default.post_note(body=None))
+        _forms(package, api, exchange, lines)
     run(lambda: _async_nullable_bodies(package, lines))
+    lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
+
+
+def _forms(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send the declared properties of form and multipart schemas that admit null as fields and parts."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    form = request_body(package, "postForm", None, {"name": "n", "tags": ["a", "b"], "count": 2})
+    upload = bodies.MultipartBody((
+        bodies.FilePart("file", b"data", filename="a.txt", content_type="text/plain"),
+        bodies.FieldPart("note", "n"),
+        bodies.FieldPart("meta", form_part(package, "upload", "meta", {"size": 3})),
+    ))
+    exchange.respond(raw_response(204), raw_response(204))
+    record(lines, "send a form's declared fields", lambda: api.default.post_form(body=form))
+    record(lines, "send declared parts", lambda: api.default.upload(body=upload))
 
 
 async def _async_nullable_bodies(package: ModuleType, lines: list[str]) -> None:

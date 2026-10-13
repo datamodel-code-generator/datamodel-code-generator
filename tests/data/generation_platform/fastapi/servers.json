@@ -5347,6 +5347,54 @@
       {
         "method": "POST",
         "url": "/notes"
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "name": "n",
+          "tags": [
+            "a",
+            "b"
+          ],
+          "count": "2"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "count": "2"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": {
+          "file": [
+            "a.txt",
+            "file body",
+            "text/plain"
+          ]
+        },
+        "data": {
+          "note": "n",
+          "meta": "{\"size\": 3}"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": {
+          "other": [
+            "x.txt",
+            "x",
+            "text/plain"
+          ]
+        },
+        "data": {
+          "note": "n"
+        }
       }
     ],
     "package_snapshots": [
