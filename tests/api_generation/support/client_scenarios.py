@@ -42,6 +42,7 @@ from tests.api_generation.scenarios.client_naming import (
     naming_snake,
 )
 from tests.api_generation.scenarios.client_native import native_codec_backends, native_faults, native_wire
+from tests.api_generation.scenarios.client_nullable_enums import nullable_enums
 from tests.api_generation.scenarios.client_nullable_parameters import nullable_parameters
 from tests.api_generation.scenarios.client_oauth_client_credentials import oauth_client_credentials
 from tests.api_generation.scenarios.client_oauth_refresh import oauth_refresh
@@ -883,6 +884,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "nullable-enums": ("nullable-enums", ("dataclasses.dataclass", "msgspec.Struct"), nullable_enums),
     "nullable-parameters": ("nullable-parameters", ("pydantic_v2.BaseModel",), nullable_parameters),
     "parameter-kinds": ("parameter-kinds", BACKENDS, parameter_kinds),
     "parameter-kinds-decimal": ("parameter-kinds-decimal", BACKENDS, parameter_kinds),

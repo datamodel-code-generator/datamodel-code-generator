@@ -1,0 +1,47 @@
+{
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "color": {
+      "$ref": "#/$defs/Color"
+    },
+    "level": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "enum": [
+        2,
+        1,
+        null
+      ]
+    },
+    "status": {
+      "enum": [
+        "ready",
+        null
+      ]
+    }
+  },
+  "required": [
+    "color"
+  ],
+  "$defs": {
+    "Color": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "red",
+        null,
+        "green"
+      ],
+      "x-enum-varnames": [
+        "Red",
+        "Missing",
+        "Green"
+      ]
+    }
+  }
+}

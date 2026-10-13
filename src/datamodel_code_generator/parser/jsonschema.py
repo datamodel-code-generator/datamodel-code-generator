@@ -11544,7 +11544,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         enum_fields: list[DataModelFieldBase] = []
 
-        if None in obj.enum and (obj.type == "string" or obj.nullable):
+        if None in obj.enum and (
+            obj.type == "string" or obj.nullable or not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
+        ):
             nullable: bool = True
             enum_times = [e for e in obj.enum if e is not None]
         else:
@@ -11556,10 +11558,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         enum_names = obj.x_enum_varnames or obj.x_enum_names
         enum_descriptions = obj.x_enum_descriptions
 
-        for i, enum_part in enumerate(enum_times):
+        for i, enum_part in enumerate(obj.enum):
             match enum_part:
                 case str():
                     default = EnumMemberValue(enum_part)
+                case None if nullable:
+                    continue
                 case None:
                     default = NULL_ENUM_MEMBER_VALUE
                 case _:

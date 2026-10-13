@@ -4695,6 +4695,9 @@
       "body_arguments": "both"
     }
   },
+  "nullable-enums": {
+    "input": "nullable-enums.yaml"
+  },
   "nullable-parameters": {
     "input": "nullable-parameters.yaml"
   },

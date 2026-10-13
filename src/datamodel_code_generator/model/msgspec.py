@@ -141,6 +141,7 @@ class Struct(DataModel):
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
     REQUIRES_MODEL_LEVEL_KW_ONLY: ClassVar[bool] = True
     SUPPORTS_BOOLEAN_LITERAL: ClassVar[bool] = False
+    SUPPORTS_NULL_ENUM_MEMBER: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
