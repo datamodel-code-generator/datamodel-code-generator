@@ -1,0 +1,88 @@
+openapi: 3.1.0
+info:
+  title: Discriminator values from the mapping
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: pet-type
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Mammal:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: pet-type
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Quoted:
+      oneOf:
+        - $ref: "#/components/schemas/Left"
+        - $ref: "#/components/schemas/Right"
+      discriminator:
+        propertyName: "side's\\name"
+        mapping:
+          "l'eft": "#/components/schemas/Left"
+          "r\\ight": "#/components/schemas/Right"
+    Owner:
+      type: object
+      required: [vehicle]
+      properties:
+        vehicle:
+          oneOf:
+            - $ref: "#/components/schemas/Car"
+            - $ref: "#/components/schemas/Bike"
+          discriminator:
+            propertyName: kind
+    Cat:
+      type: object
+      required: [pet-type, name]
+      properties:
+        pet-type:
+          type: string
+        name:
+          type: string
+    Dog:
+      type: object
+      required: [pet-type, name]
+      properties:
+        pet-type:
+          type: string
+        name:
+          type: string
+    Left:
+      type: object
+      required: ["side's\\name"]
+      properties:
+        "side's\\name":
+          type: string
+    Right:
+      type: object
+      required: ["side's\\name", width]
+      properties:
+        "side's\\name":
+          type: string
+        width:
+          type: integer
+    Car:
+      type: object
+      required: [kind, wheels]
+      properties:
+        kind:
+          type: string
+        wheels:
+          type: integer
+    Bike:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string

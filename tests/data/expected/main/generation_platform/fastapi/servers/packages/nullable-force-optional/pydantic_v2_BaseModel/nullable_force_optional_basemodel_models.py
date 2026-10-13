@@ -49,3 +49,12 @@ class FieldIdsPostRequest(RootModel[UUID | None]):
 
 class FieldDraftsPostRequest(RootModel[str | None]):
     root: str | None = None
+
+
+class Reply(BaseModel):
+    text: str | None = None
+
+
+class FieldNotesPostRequest(BaseModel):
+    text: str | None = None
+    replies: list[Reply] | None = None

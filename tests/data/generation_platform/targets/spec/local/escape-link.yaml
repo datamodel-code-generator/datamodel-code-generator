@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: Escape
+  version: 1.0.0
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          description: Orders
+          links:
+            next:
+              $ref: "../../secrets/creds.yaml#/link"

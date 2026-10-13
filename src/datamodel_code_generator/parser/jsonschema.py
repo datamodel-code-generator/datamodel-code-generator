@@ -3145,7 +3145,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
             description=obj.description if self.use_schema_description else None,
-            nullable=obj.type_has_null,
+            nullable=self._object_nullable(obj),
             keyword_only=self.keyword_only,
             treat_dot_as_module=self.treat_dot_as_module,
             dataclass_arguments=self.dataclass_arguments,
@@ -3570,6 +3570,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         imports[full_path] = import_
         binding_names.add(import_.binding_name)
         return import_
+
+    def _object_nullable(self, obj: JsonSchemaObject) -> bool:
+        """Return whether an object model's schema admits null, by its types or by nullable under strict nullability."""
+        return obj.type_has_null or (self.strict_nullable and obj.nullable is True)
 
     def _cache_ref_data_type_facts(self, resolved_ref: str, obj: JsonSchemaObject) -> None:
         self._ref_data_type_facts[resolved_ref] = (
@@ -4114,7 +4118,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         tag_field, _tag_values = tag_data
         match obj.extras.get("discriminator"):
             case dict() as discriminator:
-                discriminator["propertyName"] = tag_field
+                obj.extras["discriminator"] = {**discriminator, "propertyName": tag_field}
             case _:
                 obj.extras["discriminator"] = {"propertyName": tag_field}
 
@@ -10280,7 +10284,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 extra_template_data=self.extra_template_data,
                 path=self.current_source_path,
                 description=obj.description if self.use_schema_description else None,
-                nullable=obj.type_has_null,
+                nullable=self._object_nullable(obj),
                 keyword_only=self.keyword_only,
                 treat_dot_as_module=self.treat_dot_as_module,
                 dataclass_arguments=self.dataclass_arguments,

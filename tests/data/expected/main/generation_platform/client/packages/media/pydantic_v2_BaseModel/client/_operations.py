@@ -10,7 +10,7 @@ from typing import Final
 import models
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import MultipartForm, PartPlan
+from ._runtime.client.multipart import MultipartForm
 from ._runtime.client.multipart_responses import (
     PartsReader,
     file_part,
@@ -33,6 +33,7 @@ from ._runtime.client.operations import (
     text_branch,
     wire_branch,
 )
+from ._runtime.client.parts import PartPlan
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.documents import (

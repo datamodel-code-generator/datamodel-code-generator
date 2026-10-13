@@ -45,12 +45,12 @@ class Day(RootModel[date]):
 
 
 class Cat(BaseModel):
-    petType: Literal['cat']
+    pet_type: Literal['cat'] = Field(..., alias='pet-type')
     name: str
 
 
 class Dog(BaseModel):
-    petType: Literal['dog']
+    pet_type: Literal['dog'] = Field(..., alias='pet-type')
     bark: bool
 
 
@@ -70,9 +70,9 @@ FieldPetsGetQueryInvalidParameter = TypeAliasType("FieldPetsGetQueryInvalidParam
 
 
 class FieldPetsGetResponse(
-    RootModel[List[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]]
+    RootModel[List[Annotated[Union[Cat, Dog], Field(discriminator='pet_type')]]]
 ):
-    root: List[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]
+    root: List[Annotated[Union[Cat, Dog], Field(discriminator='pet_type')]]
 
 
 FieldCountsGetQueryInvalidParameter = TypeAliasType("FieldCountsGetQueryInvalidParameter", bool)
@@ -121,4 +121,4 @@ FieldPetsPetIdGetQueryLabelParameter = TypeAliasType(
 
 
 class Pet(RootModel[Union[Cat, Dog]]):
-    root: Union[Cat, Dog] = Field(..., discriminator='petType')
+    root: Union[Cat, Dog] = Field(..., discriminator='pet_type')
