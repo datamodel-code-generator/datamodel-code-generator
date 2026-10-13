@@ -1786,6 +1786,14 @@ def _restore_inherited_field_names_for_unique_aliases(
     return False
 
 
+def _names_type_as(field: DataModelFieldBase, name: str) -> bool:
+    """Return whether the field's annotation names a referenced type as ``name``."""
+    return any(
+        (reference := data_type.reference) is not None and (data_type.alias or reference.short_name) == name
+        for data_type in field.data_type.all_data_types
+    )
+
+
 def _rename_field_preserving_alias(field: DataModelFieldBase, new_name: str) -> None:
     """Rename a Python field without losing an existing source-name alias."""
     if field.alias is None:
@@ -2585,6 +2593,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._has_bound_python_types = False
         self._has_runtime_expressions = False
         self._constrained_decimal_alias_model_ids: set[int] = set()
+        self._same_named_type_shadowing: dict[tuple[str, str], bool] = {}
 
         self.keyword_only = config.keyword_only
         self.target_pydantic_version = config.target_pydantic_version
@@ -4698,15 +4707,74 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             use_deferred_annotations=use_deferred_annotations,
         )
 
+    def __derived_models(self, models: list[DataModel]) -> dict[str, list[DataModel]]:
+        """Map the path of each base model to the models that inherit from it."""
+        derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
+        for model in chain(self.results, models):
+            for base_class in _find_base_classes(model):
+                derived_models[base_class.path].append(model)
+        return derived_models
+
+    def __shadows_same_named_type(
+        self,
+        model: DataModel,
+        field_name: str,
+        models: list[DataModel],
+        derived_models: Callable[[], Mapping[str, list[DataModel]]],
+        *,
+        use_deferred_annotations: bool,
+    ) -> bool:
+        """Return whether an annotation finds the field named like a type instead of that type.
+
+        Python evaluates an annotation in the class namespace when it is not a string: right after the field's
+        value is assigned or, with native deferred annotations, once the class exists. The output library
+        resolves string annotations. The classes of one inheritance family write the field under one name, so
+        one decision covers all of them.
+        """
+        model_type = type(model)
+        evaluates_lazily = self.target_python_version.has_native_deferred_annotations
+        writes_strings = use_deferred_annotations and not evaluates_lazily
+        if writes_strings and not model_type.RESOLVES_STRING_ANNOTATIONS_IN_CLASS_NAMESPACE:
+            return False
+        if (shadowed := self._same_named_type_shadowing.get((model.path, field_name))) is not None:
+            return shadowed
+        keeps_class_attributes = model_type.KEEPS_FIELDS_AS_CLASS_ATTRIBUTES and (evaluates_lazily or writes_strings)
+        forward_reference_positions: Mapping[str, int] = (
+            {module_model.path: index for index, module_model in enumerate(models)}
+            if self.use_annotated and use_deferred_annotations
+            else {}
+        )
+        family = {model.path: model}
+        pending = [model]
+        while pending:
+            current = pending.pop()
+            for relative_model in chain(_find_base_classes(current), derived_models().get(current.path, ())):
+                if relative_model.path not in family:
+                    family[relative_model.path] = relative_model
+                    pending.append(relative_model)
+        shadowed = any(
+            _names_type_as(field, field_name)
+            and (keeps_class_attributes or member.field_binds_class_attribute(field, forward_reference_positions))
+            for member in family.values()
+            for field in member.fields
+            if field.name == field_name
+        )
+        for path in family:
+            self._same_named_type_shadowing[path, field_name] = shadowed
+        return shadowed
+
     def __change_field_name(  # noqa: PLR0912
         self,
         models: list[DataModel],
         *,
         can_retain_cache: bool,
+        use_deferred_annotations: bool,
     ) -> None:
         if not self.data_model_type.SUPPORTS_FIELD_RENAMING:
             return
 
+        normalizes_field_names = self.data_model_type.NORMALIZES_FIELD_NAMES
+        derived_models = cache(partial(self.__derived_models, models))
         rename_type = (
             self.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
             and self.data_model_type.SUPPORTS_FIELD_TYPE_RENAMING
@@ -4735,9 +4803,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if rename_type and colliding_reference is None and reference_name == field_name:
                         colliding_reference = reference
 
+                if not normalizes_field_names and not (
+                    field_name in reference_type_names
+                    and self.__shadows_same_named_type(
+                        model, field_name, models, derived_models, use_deferred_annotations=use_deferred_annotations
+                    )
+                ):
+                    continue
+
                 if colliding_reference is not None or (
-                    not rename_type
-                    and (self.data_model_type.NORMALIZES_FIELD_NAMES or field_name in reference_type_names)
+                    not rename_type and (normalizes_field_names or field_name in reference_type_names)
                 ):
                     resolver = resolver or ModelResolver(
                         snake_case_field=self.snake_case_field,
@@ -4758,7 +4833,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
                 if (
-                    self.data_model_type.NORMALIZES_FIELD_NAMES
+                    normalizes_field_names
                     and (current_name := field.name) in self.builtin_names
                     and any(_is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types)
                 ):
@@ -6437,7 +6512,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             raise _CollapseRootModelsRecursionError from exc
         self.__set_default_enum_member(models, can_retain_cache=can_retain_cache)
         self.__sort_models(models, imports, use_deferred_annotations=use_deferred_annotations)
-        self.__change_field_name(models, can_retain_cache=can_retain_cache)
+        self.__change_field_name(
+            models, can_retain_cache=can_retain_cache, use_deferred_annotations=use_deferred_annotations
+        )
         self.__restore_inherited_field_names_for_unique_aliases(models)
         self.__apply_discriminator_type(models, imports, can_retain_cache=can_retain_cache)
         self.__set_one_literal_on_default(models, can_retain_cache=can_retain_cache)

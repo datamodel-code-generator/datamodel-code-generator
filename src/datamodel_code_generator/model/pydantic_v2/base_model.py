@@ -1122,13 +1122,26 @@ def assign_forward_reference_fields(model: DataModel, positions: Mapping[str, in
         return False
     changed = False
     for field in model.fields:
-        if field.use_annotated and any(
-            (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
-            for data_type in field.data_type.all_data_types
-        ):
+        if _is_annotated_forward_reference(field, positions, index):
             field.use_annotated = False
             changed = True
     return changed
+
+
+def assigns_forward_reference_field(
+    model: DataModel, field: DataModelFieldBase, positions: Mapping[str, int], index: int
+) -> bool:
+    """Return whether ``assign_forward_reference_fields`` writes ``field`` of ``model`` by assignment."""
+    return not model_target_supports(
+        model, PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM
+    ) and _is_annotated_forward_reference(field, positions, index)
+
+
+def _is_annotated_forward_reference(field: DataModelFieldBase, positions: Mapping[str, int], index: int) -> bool:
+    return field.use_annotated and any(
+        (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
+        for data_type in field.data_type.all_data_types
+    )
 
 
 def has_lookaround_pattern(

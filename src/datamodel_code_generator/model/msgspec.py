@@ -66,7 +66,7 @@ class _MsgspecFieldRenderPlan(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from pathlib import Path
 
     from datamodel_code_generator.reference import Reference
@@ -118,6 +118,8 @@ class Struct(DataModel):
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "msgspec.jinja2"
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
+    RESOLVES_STRING_ANNOTATIONS_IN_CLASS_NAMESPACE: ClassVar[bool] = False
+    KEEPS_FIELDS_AS_CLASS_ATTRIBUTES: ClassVar[bool] = True
     BASE_CLASS: ClassVar[str] = "msgspec.Struct"
     BASE_CLASS_NAME: ClassVar[str] = "Struct"
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"
@@ -145,6 +147,12 @@ class Struct(DataModel):
         ("allow_population_by_field_name", True): None,
         ("use_attribute_docstrings", True): None,
     }
+
+    def field_binds_class_attribute(
+        self, field: DataModelFieldBase, forward_reference_positions: Mapping[str, int]
+    ) -> bool:
+        """Return whether the class body assigns a default or a ``field()`` call to the field's name."""
+        return bool(field.field) or super().field_binds_class_attribute(field, forward_reference_positions)
 
     def __init__(  # noqa: PLR0913
         self,

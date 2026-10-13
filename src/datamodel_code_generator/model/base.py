@@ -1900,6 +1900,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = False
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = False
     NORMALIZES_FIELD_NAMES: ClassVar[bool] = False
+    RESOLVES_STRING_ANNOTATIONS_IN_CLASS_NAMESPACE: ClassVar[bool] = True
+    KEEPS_FIELDS_AS_CLASS_ATTRIBUTES: ClassVar[bool] = False
     SUPPORTS_KW_ONLY: ClassVar[bool] = False
     REQUIRES_MODEL_LEVEL_KW_ONLY: ClassVar[bool] = False
     SUPPORTS_BOOLEAN_LITERAL: ClassVar[bool] = True
@@ -2457,6 +2459,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         )
         self.__dict__[self._IMPORTS_CACHE_KEY] = imports
         return imports
+
+    def field_binds_class_attribute(
+        self,
+        field: DataModelFieldBase,
+        forward_reference_positions: Mapping[str, int],  # noqa: ARG002
+    ) -> bool:
+        """Return whether the class body assigns a value to the field's name.
+
+        ``forward_reference_positions`` maps the path of each model in the module to its order when
+        ``assign_forward_reference_fields`` runs afterwards, and is empty otherwise.
+        """
+        return type(self).FIELD_ASSIGNMENT_CHECKER(field)
 
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:  # noqa: ARG002, PLR6301
         """Render fields by assignment when ``Field()`` inside ``Annotated`` is unsafe for a forward reference.

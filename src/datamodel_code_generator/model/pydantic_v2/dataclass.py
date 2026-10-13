@@ -30,6 +30,7 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
     _config_dict_items,
     _safe_config_dict_items,
     assign_forward_reference_fields,
+    assigns_forward_reference_field,
     has_lookaround_pattern,
 )
 from datamodel_code_generator.model.pydantic_v2.imports import (
@@ -167,6 +168,16 @@ class DataClass(_DataclassReuseMixin, DataModel):
             )
 
         self._lookaround_regex_engine_checked = False
+
+    def field_binds_class_attribute(
+        self, field: DataModelFieldBase, forward_reference_positions: Mapping[str, int]
+    ) -> bool:
+        """Return whether the class body assigns a value or a ``Field()`` call to the field's name."""
+        return super().field_binds_class_attribute(field, forward_reference_positions) or (
+            bool(field.field)
+            and (index := forward_reference_positions.get(self.path)) is not None
+            and assigns_forward_reference_field(self, field, forward_reference_positions, index)
+        )
 
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
         """Write fields that name a later model by assignment, keeping required fields before defaults."""
