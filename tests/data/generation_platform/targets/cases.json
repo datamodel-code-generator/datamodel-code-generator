@@ -139,9 +139,11 @@
     "input": {"path": "local/escape.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"write": ["secrets/creds.yaml", "token: SECRET-MARKER\n"]},
+      {"write": ["secrets/creds.yaml", "token: SECRET-MARKER\nlink: {operationId: listOrders, description: SECRET-MARKER}\nscheme: {type: apiKey, in: header, name: SECRET-MARKER}\n"]},
       {"generate": {"exit": "ERROR"}},
       {"check": {"exit": "ERROR", "model": {"allow_remote_refs": true}}},
+      {"generate": {"exit": "ERROR", "input": {"path": "local/escape-link.yaml"}}},
+      {"generate": {"exit": "ERROR", "input": {"path": "local/escape-scheme.yaml"}}},
       {"tree": null}
     ]
   },

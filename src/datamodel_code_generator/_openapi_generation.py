@@ -71,8 +71,13 @@ class TargetGenerationSession:
 
     _supports_api_scope: ClassVar[bool] = True
 
-    def __init__(self, *, output: Path, model_package: str, root_selector_document: str, serves_source: bool) -> None:
-        """Keep explicit logical addresses without loading an input or backend."""
+    def __init__(
+        self, *, output: Path, model_package: str, root_selector_document: str, serves_source: bool = False
+    ) -> None:
+        """Keep explicit logical addresses without loading an input or backend.
+
+        A session whose target serves the source document refuses the local files that document would publish.
+        """
         self._output = output
         self._model_package = model_package
         self._root_selector_document = root_selector_document

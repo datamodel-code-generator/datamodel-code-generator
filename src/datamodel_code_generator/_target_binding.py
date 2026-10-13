@@ -253,6 +253,10 @@ class _LiteralCycleError(_UnsupportedError):
         super().__init__()
 
 
+class _UnservedReferenceError(Error):
+    """A reference to a local file that the served source document would publish."""
+
+
 class MetadataCycleError(Exception):
     """A detected cycle in an API metadata fact at its original source location."""
 
@@ -378,7 +382,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """
         if self.serves_source and path not in self._local_ref_path_cache and (reason := self._unserved(path)):
             msg = f"Blocked unsafe local $ref: {ref}\nReason: the generated server serves the source document, {reason}"
-            raise Error(msg)
+            raise _UnservedReferenceError(msg)
         return super()._resolve_local_ref_path(path, ref)
 
     def _unserved(self, path: Path) -> str | None:
@@ -659,10 +663,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     def load_document(self, document: str) -> dict[str, YamlValue] | None:
         """Load a document that only links or security schemes reference, as the walk loads every other document.
 
-        None is a document that the loader cannot read, decode or fetch, or a name that no file can have.
+        None is a document that the loader cannot read, decode or fetch, or a name that no file can have; a local file
+        the served document would publish is refused.
         """
         try:
             raw = self._get_ref_body(document)
+        except _UnservedReferenceError:
+            raise
         except (Error, OSError, UnicodeDecodeError):
             return None
         self._api_documents[document] = raw
