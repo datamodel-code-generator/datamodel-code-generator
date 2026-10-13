@@ -13,7 +13,10 @@ import pytest
 pytest.importorskip("fastapi")
 
 from scripts.build_docs_examples import (
+    CLIENT_HOWTO,
+    CLIENT_HOWTO_SCRIPTS,
     DOCS_PROJECTS,
+    EXPECTED_CLIENT_HOWTO,
     EXPECTED_DOCS_PROJECTS,
     TUTORIAL,
     api_quick_start_arguments,
@@ -219,5 +222,18 @@ def test_docs_tutorial_client(
         )
         assert_output(client.notice, expected / "client-notice.txt")
         assert_output(client.files, expected / "client-files.txt")
+        assert_docs_file(client.root / "client/resources/pets/_sync.py", "tutorial/client/resources/pets/_sync.py")
         for script in ("call.py", "call_async.py"):
             assert_output(run_python(client.root, script), expected / script.replace(".py", ".txt"))
+
+
+@PRESET
+def test_docs_client_howto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Run the client how-to scripts against their stand-in API, then the tests of code that uses the client."""
+    project = generate_project(
+        CLIENT_HOWTO, tmp_path / "client-howto", docs_project_arguments("client-howto"), monkeypatch, capsys
+    )
+    assert_output(project.notice, EXPECTED_CLIENT_HOWTO / "notice.txt")
+    for script in (*CLIENT_HOWTO_SCRIPTS, "generate"):
+        assert_output(run_python(project.root, f"{script}.py"), EXPECTED_CLIENT_HOWTO / f"{script}.txt")
+    assert_output(run_tests(project.root, "test_client.py"), EXPECTED_CLIENT_HOWTO / "pytest.txt")
