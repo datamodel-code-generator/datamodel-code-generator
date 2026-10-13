@@ -406,9 +406,10 @@ def test_main_root_ref(output_file: Path) -> None:
 
 
 def test_main_string_min_max_items_compat(output_file: Path) -> None:
-    """A string field carrying minItems/maxItems generates a usable plain str.
+    """A string field carrying minItems/maxItems generates a usable constr().
 
-    minItems/maxItems are inapplicable to strings in JSON Schema, so they are dropped.
+    Compatibility case: minItems/maxItems are inapplicable to strings in JSON
+    Schema, but when present they map to constr(min_length=, max_length=).
     Mapping them to min_items/max_items produced constr(min_items=...), which
     raises TypeError the moment the generated pydantic v2 model is built.
     """

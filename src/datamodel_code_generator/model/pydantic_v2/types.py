@@ -187,7 +187,7 @@ number_kwargs: tuple[str, ...] = (
     "exclusiveMinimum",
 )
 
-string_kwargs: tuple[str, ...] = ("pattern", "minLength", "maxLength")
+string_kwargs: tuple[str, ...] = ("pattern", "minLength", "maxLength", "minItems", "maxItems")
 _ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
 
 bytes_kwargs: tuple[str, ...] = ("minLength", "maxLength")

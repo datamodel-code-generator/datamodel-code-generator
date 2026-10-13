@@ -195,6 +195,7 @@ _NUMBER_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = (
 _VALUE_STRING_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = ("pattern", "minLength", "maxLength")
 _ARRAY_CONSTRAINT_KEYS = frozenset({"maxItems", "minItems", "uniqueItems"})
 _NO_CONSTRAINT_KEYWORDS: frozenset[str] = frozenset()
+_DECLARED_STRING_CONSTRAINT_KEYWORDS: frozenset[str] = STRING_KEYWORDS | {"minItems", "maxItems"}
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 _INHERITED_NESTED_SCHEMA_FIELDS = (
     "items",
@@ -490,6 +491,13 @@ def _qualified_python_type_import(qualified_name: str) -> Import:
     return _QUALIFIED_PYTHON_TYPE_IMPORT_ALIASES.get(qualified_name) or Import.from_full_path(qualified_name)
 
 
+_STRING_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = (
+    "pattern",
+    "minLength",
+    "maxLength",
+    "minItems",
+    "maxItems",
+)
 _BYTES_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = ("minLength", "maxLength")
 _NUMBER_CONSTRAINT_TYPES = frozenset({
     Types.int32,
@@ -529,7 +537,7 @@ def _get_data_type_constraint_kwargs(
         case number_type if number_type in _NUMBER_CONSTRAINT_TYPES:
             keys = _NUMBER_CONSTRAINT_KEYS
         case Types.string:
-            keys = _VALUE_STRING_CONSTRAINT_KEYS
+            keys = _STRING_CONSTRAINT_KEYS
         case Types.binary:
             keys = _BYTES_CONSTRAINT_KEYS
         case _:
@@ -1927,13 +1935,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _declared_constraint_keywords(self, obj: JsonSchemaObject) -> frozenset[str]:
-        """Return the type-dependent keywords whose kind a declared type of the schema holds."""
+        """Return the type-dependent keywords whose kind a declared type of the schema holds.
+
+        A declared string also holds minItems and maxItems, which are written as its length bounds.
+        """
         if (types := obj.type) is None:
             return _NO_CONSTRAINT_KEYWORDS
         types = (types,) if isinstance(types, str) else types
         return frozenset().union(
             NUMBER_KEYWORDS if self._accepts_number_constraints(obj, types) else _NO_CONSTRAINT_KEYWORDS,
-            STRING_KEYWORDS if "string" in types else _NO_CONSTRAINT_KEYWORDS,
+            _DECLARED_STRING_CONSTRAINT_KEYWORDS if "string" in types else _NO_CONSTRAINT_KEYWORDS,
             ARRAY_KEYWORDS if "array" in types else _NO_CONSTRAINT_KEYWORDS,
         )
 

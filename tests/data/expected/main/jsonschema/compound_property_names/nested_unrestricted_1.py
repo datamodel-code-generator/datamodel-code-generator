@@ -11,5 +11,5 @@ class Root1(RootModel[Any]):
     root: Any
 
 
-class Root(RootModel[dict[Any | Root1 | Root1, Any]]):
-    root: dict[Any | Root1 | Root1, Any] = Field(..., title='Root')
+class Root(RootModel[dict[Any | Root1, Any]]):
+    root: dict[Any | Root1, Any] = Field(..., title='Root')

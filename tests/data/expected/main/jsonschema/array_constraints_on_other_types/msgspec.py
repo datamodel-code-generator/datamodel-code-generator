@@ -12,5 +12,5 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 class ArrayConstraintsOnOtherTypes(Struct):
     untyped_items: Any | UnsetType = UNSET
     number_min_items: float | UnsetType = UNSET
-    string_items: Annotated[str, Meta(min_length=1)] | UnsetType = UNSET
+    string_items: Annotated[str, Meta(max_length=5, min_length=2)] | UnsetType = UNSET
     untyped_items_schema: Annotated[list[int], Meta(min_length=1)] | UnsetType = UNSET

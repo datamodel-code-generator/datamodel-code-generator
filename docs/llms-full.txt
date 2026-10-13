@@ -8543,7 +8543,8 @@ class Model(BaseModel):
 They follow the same two cases as number keywords: a schema type `string` takes the string keywords and a schema type
 `array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
 without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
-"pattern": "^1"}` leaves the field unconstrained, and `minItems` on a `string` is not written as a string length.
+"pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
+`maxItems` as its length bounds.
 
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|

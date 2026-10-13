@@ -12,5 +12,5 @@ from pydantic import BaseModel, Field
 class ArrayConstraintsOnOtherTypes(BaseModel):
     untyped_items: Any | None = None
     number_min_items: float | None = None
-    string_items: Annotated[str | None, Field(min_length=1)] = None
+    string_items: Annotated[str | None, Field(max_length=5, min_length=2)] = None
     untyped_items_schema: Annotated[list[int] | None, Field(min_length=1)] = None

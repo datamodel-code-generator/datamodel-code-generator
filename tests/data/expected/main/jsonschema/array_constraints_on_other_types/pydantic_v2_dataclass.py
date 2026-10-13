@@ -14,5 +14,5 @@ from pydantic.dataclasses import dataclass
 class ArrayConstraintsOnOtherTypes:
     untyped_items: Any | None = None
     number_min_items: float | None = None
-    string_items: str | None = Field(None, min_length=1)
+    string_items: str | None = Field(None, max_length=5, min_length=2)
     untyped_items_schema: list[int] | None = Field(None, min_length=1)

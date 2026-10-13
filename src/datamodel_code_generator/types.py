@@ -86,6 +86,7 @@ OPTIONAL_PREFIX = f"{OPTIONAL}["
 _RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY = "_runtime_expression_imports"
 _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
+_RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
 
 
 class DefaultValueRecipe(Enum):
@@ -961,8 +962,7 @@ class DataType(_BaseModel):
             )
 
         data_types: list[str] = []
-        for data_type in self.data_types:
-            data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
+        for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint):
             if not data_type_type or data_type_type in data_types:
                 continue
 
@@ -984,13 +984,30 @@ class DataType(_BaseModel):
             self.import_ = self.import_ or IMPORT_ANY
         elif len(data_types) == 1:
             type_ = data_types[0]
-        elif self.use_union_operator:
-            type_ = UNION_OPERATOR_DELIMITER.join(data_types)
         else:
-            type_ = f"{UNION_PREFIX}{UNION_DELIMITER.join(data_types)}]"
+            type_ = self._join_union_member_type_hints(data_types)
 
         if wrap_discriminator and (discriminator := self.discriminator):
             type_ = self._wrap_discriminator_type_hint(type_, discriminator)
+        return type_
+
+    def _iter_union_member_type_hints(self, *, use_base_type_hint: bool) -> Iterator[str]:
+        """Yield the hints of union members, spreading a member union that renders as a plain union."""
+        for data_type in self.data_types:
+            data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
+            if (rendered := data_type.__dict__.get(_RENDERED_UNION_MEMBERS_KEY)) and rendered[0] == data_type_type:
+                yield from rendered[1]
+            else:
+                yield data_type_type
+
+    def _join_union_member_type_hints(self, data_types: list[str]) -> str:
+        """Join union member hints, remembering them so that an enclosing union can spread this one."""
+        type_ = (
+            UNION_OPERATOR_DELIMITER.join(data_types)
+            if self.use_union_operator
+            else f"{UNION_PREFIX}{UNION_DELIMITER.join(data_types)}]"
+        )
+        self.__dict__[_RENDERED_UNION_MEMBERS_KEY] = (type_, tuple(data_types))
         return type_
 
     def _render_ordered_union_type_hint(
@@ -1001,8 +1018,7 @@ class DataType(_BaseModel):
     ) -> str:
         data_types: list[str] = []
         seen_data_types: set[str] = set()
-        for data_type in self.data_types:
-            data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
+        for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint):
             if not data_type_type or data_type_type in seen_data_types:
                 continue
             seen_data_types.add(data_type_type)
@@ -1014,10 +1030,8 @@ class DataType(_BaseModel):
                 self.import_ = self.import_ or IMPORT_ANY
             case 1:
                 type_ = data_types[0]
-            case _ if self.use_union_operator:
-                type_ = UNION_OPERATOR_DELIMITER.join(data_types)
             case _:
-                type_ = f"{UNION_PREFIX}{UNION_DELIMITER.join(data_types)}]"
+                type_ = self._join_union_member_type_hints(data_types)
 
         if wrap_discriminator and (discriminator := self.discriminator):
             type_ = self._wrap_discriminator_type_hint(type_, discriminator)
