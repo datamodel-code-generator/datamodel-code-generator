@@ -287,12 +287,16 @@ class ResponseSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PrimarySpec:
-    """The response a bare return value takes, and how FastAPI sends it."""
+    """The response a bare return value takes, its media, and how FastAPI sends it.
+
+    `null` says the media is JSON of a type that accepts null, so a bare None is sent as `null`.
+    """
 
     status: int
     response: ResponseSpec
     media: MediaSpec | None
     decision: Decision
+    null: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1267,13 +1271,15 @@ class Planner:  # noqa: PLR0904
         spec = ResponseSpec(
             status=status if status == "default" else status.upper(), declaration=declaration, media=media
         )
-        if (
-            (item := default_media(spec)) is not None
-            and item.kind == "json"
-            and self.takes_null(None if item.use is None else item.use.type)
-        ):
-            return replace(spec, null=True)
-        return spec
+        return replace(spec, null=True) if self.json_null(default_media(spec)) else spec
+
+    def json_null(self, media: MediaSpec | None) -> bool:
+        """Return whether a media is JSON of a type that accepts null, so its response sends None as `null`."""
+        return (
+            media is not None
+            and media.kind == "json"
+            and self.takes_null(None if media.use is None else media.use.type)
+        )
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
         """Choose the primary response and decide whether FastAPI's response_model sends bare values."""
@@ -1287,7 +1293,7 @@ class Planner:  # noqa: PLR0904
         response = exact[status]
         media = default_media(response)
         decision = _primary_decision(operation, status, media)
-        return PrimarySpec(status=status, response=response, media=media, decision=decision)
+        return PrimarySpec(status=status, response=response, media=media, decision=decision, null=response.null)
 
     def chosen(
         self, operation: OperationContract, exact: dict[int, ResponseSpec], choice: ResponseChoice
@@ -1309,7 +1315,9 @@ class Planner:  # noqa: PLR0904
             )
             return None
         decision = _primary_decision(operation, choice.status_code, media)
-        return PrimarySpec(status=choice.status_code, response=response, media=media, decision=decision)
+        return PrimarySpec(
+            status=choice.status_code, response=response, media=media, decision=decision, null=self.json_null(media)
+        )
 
     def arguments(  # noqa: PLR0913
         self,

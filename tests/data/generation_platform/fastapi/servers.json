@@ -3358,6 +3358,41 @@
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
     ],
+    "config": {
+      "server_primary_responses": {
+        "/paths/~1things/post": {
+          "status_code": 201
+        },
+        "/paths/~1text/get": {
+          "status_code": 200,
+          "media_type": "text/plain"
+        },
+        "/paths/~1text/head": {
+          "status_code": 200,
+          "media_type": "text/plain"
+        },
+        "/paths/~1latin/get": {
+          "status_code": 200,
+          "media_type": "text/plain; charset=iso-8859-1"
+        },
+        "/paths/~1bytes/get": {
+          "status_code": 200,
+          "media_type": "application/octet-stream"
+        },
+        "/paths/~1problems/get": {
+          "status_code": 200,
+          "media_type": "application/problem+json"
+        },
+        "/paths/~1notes/get": {
+          "status_code": 200,
+          "media_type": "application/vnd.note+json"
+        },
+        "/paths/~1chosen/get": {
+          "status_code": 200,
+          "media_type": "application/json"
+        }
+      }
+    },
     "apps": [
       {
         "set": "standard",
@@ -3395,6 +3430,54 @@
             "url": "/documents/2"
           },
           {
+            "method": "POST",
+            "url": "/things",
+            "json": {
+              "id": 1,
+              "name": "Mimi"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/text"
+          },
+          {
+            "method": "HEAD",
+            "url": "/text"
+          },
+          {
+            "method": "GET",
+            "url": "/latin"
+          },
+          {
+            "method": "GET",
+            "url": "/bytes"
+          },
+          {
+            "method": "GET",
+            "url": "/problems"
+          },
+          {
+            "method": "GET",
+            "url": "/problems?mode=result"
+          },
+          {
+            "method": "GET",
+            "url": "/problems?mode=invalid"
+          },
+          {
+            "method": "GET",
+            "url": "/notes"
+          },
+          {
+            "method": "GET",
+            "url": "/notes?empty=true"
+          },
+          {
+            "method": "GET",
+            "url": "/chosen"
+          },
+          {
             "openapi": [
               "/greetings",
               "get",
@@ -3406,6 +3489,20 @@
               "/pets/{id}",
               "get",
               "404"
+            ]
+          },
+          {
+            "openapi": [
+              "/text",
+              "get",
+              "200"
+            ]
+          },
+          {
+            "openapi": [
+              "/problems",
+              "get",
+              "200"
             ]
           }
         ]

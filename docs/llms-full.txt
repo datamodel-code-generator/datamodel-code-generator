@@ -12924,7 +12924,9 @@ A service method returns the value of its primary response, which FastAPI valida
 `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`). Without a
 [`--server-primary-responses`](cli-reference/target-generation-options.md#server-primary-responses) entry, the
 primary response is `200` when the operation declares it, or else its lowest success status, or else its lowest
-status.
+status. A bare value is sent with the `media_type` its entry names, such as `text/plain` of a response that also
+declares JSON, and validated and serialized with that media type's model; without a `media_type`, it takes the
+response's default media type.
 
 An `HTTPResult(status_code, body, headers)` sends another status or extra headers. The package validates and
 serializes its body with the model and default media type of the response that declares the status: exactly, by its
