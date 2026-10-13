@@ -318,7 +318,7 @@ The package needs these distributions at run time:
 
 - `httpx2>=2.13.0`
 - `typing-extensions>=4.16`
-- `pydantic>=2.13.5`
+- `pydantic>=2.14.0`
 
 Each generation reports them; add them to your project, for example with `uv add`.
 

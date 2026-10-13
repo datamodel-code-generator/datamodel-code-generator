@@ -169,7 +169,7 @@
   canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
+  canonical cyclic ! ValueError: Circular reference detected [] note='when serializing list item 0'
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
@@ -181,7 +181,7 @@
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
   snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan [] note="when serializing dict item 'progress'"
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -506,7 +506,7 @@
   canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
+  canonical cyclic ! ValueError: Circular reference detected [] note='when serializing list item 0'
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
@@ -518,7 +518,7 @@
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
   snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan [] note="when serializing dict item 'progress'"
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -662,7 +662,7 @@
   errors dir = ['ProtocolDataError']
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  configured client list = [Pet(id=1, name='cat', tag=None)]
+  configured client list = [Pet(id=1, name='cat', tag=MISSING)]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   configured view list = []
@@ -671,7 +671,7 @@
   default helper settings list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async configured client list = [Pet(id=2, name='dog', tag=None)]
+  async configured client list = [Pet(id=2, name='dog', tag=MISSING)]
 # pets-protocols dataclasses.dataclass
   client imports load protocols=[]
   dir lists lazy names=(True, True)
@@ -843,7 +843,7 @@
   canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
+  canonical cyclic ! ValueError: Circular reference detected [] note='when serializing list item 0'
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
@@ -855,7 +855,7 @@
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
   snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan [] note="when serializing dict item 'progress'"
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -1180,7 +1180,7 @@
   canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
+  canonical cyclic ! ValueError: Circular reference detected [] note='when serializing list item 0'
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
@@ -1192,7 +1192,7 @@
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
   snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan [] note="when serializing dict item 'progress'"
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -1517,7 +1517,7 @@
   canonical integer key = (b'{"1":"secret-cursor"}', True)
   canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
+  canonical cyclic ! ValueError: Circular reference detected [] note='when serializing list item 0'
   canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
@@ -1529,7 +1529,7 @@
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
   snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan [] note="when serializing dict item 'progress'"
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None

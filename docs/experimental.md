@@ -54,7 +54,7 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 
 HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
 
-`--generate-client httpx2` generates the models at `--output` and a client package at `--client-output`; `--client-package` and `--client-model-package` name their import paths, and the other `--client-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check`, `--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with `--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`.
+`--generate-client httpx2` generates the models at `--output` and a client package at `--client-output`; `--client-package` and `--client-model-package` name their import paths, and the other `--client-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check`, `--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with `--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`, and `--use-missing-sentinel` for `pydantic_v2.dataclass` models.
 
 ### `cli-option.generate-schema-validators`
 
@@ -74,7 +74,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
-`--generate-server fastapi` generates the models at `--output` and a server package at `--server-output`; `--server-package` and `--server-model-package` name their import paths, and the other `--server-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check` compares without writing, `--diff-against` compares the files two inputs render, `--watch` regenerates after input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and generation prints a `uv add` command to stderr. `generate()` takes them as `generate_server` and the `server_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`.
+`--generate-server fastapi` generates the models at `--output` and a server package at `--server-output`; `--server-package` and `--server-model-package` name their import paths, and the other `--server-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check` compares without writing, `--diff-against` compares the files two inputs render, `--watch` regenerates after input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and generation prints a `uv add` command to stderr. `generate()` takes them as `generate_server` and the `server_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`, and `--use-missing-sentinel` for `pydantic_v2.dataclass` models.
 
 ### `cli-option.install-skill`
 
@@ -104,7 +104,7 @@ The only currently implemented backend is 'pydantic-v2', which preserves the exi
 
 Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.
 
-The option requires Pydantic v2 BaseModel output and a target Pydantic version that supports the MISSING sentinel.
+The option requires Pydantic v2 BaseModel or dataclass output and a target Pydantic version that supports the MISSING sentinel. Server and client generation require it for Pydantic v2 dataclass output, and import MISSING from pydantic when the target Pydantic version is unset.
 
 ### `cli-option.use-type-alias`
 

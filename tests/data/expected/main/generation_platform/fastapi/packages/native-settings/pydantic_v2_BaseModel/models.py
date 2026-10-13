@@ -6,8 +6,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, RootModel
-from pydantic.experimental.missing_sentinel import MISSING
+from pydantic import MISSING, AliasChoices, BaseModel, ConfigDict, Field, RootModel
 
 
 class Named(BaseModel):

@@ -78,7 +78,7 @@
     "model": {"openapi_scopes": ["api"], "input_file_type": "auto"},
     "steps": [
       {"check": {"exit": "ERROR", "model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
-      {"check": {"exit": "DIFF", "model": {"output_model_type": "pydantic_v2.dataclass"}}}
+      {"check": {"exit": "DIFF", "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}}}
     ]
   },
   "empty": {
@@ -385,7 +385,7 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-dict.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null},
@@ -393,7 +393,7 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-dict.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null},
@@ -417,7 +417,7 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-list.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null},
@@ -425,7 +425,7 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-list.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null},
@@ -449,7 +449,7 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-mutual.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null},
@@ -457,7 +457,7 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-mutual.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null}
@@ -492,7 +492,7 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-reference.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null},
@@ -500,7 +500,7 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-reference.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
         }
       },
       {"tree": null}

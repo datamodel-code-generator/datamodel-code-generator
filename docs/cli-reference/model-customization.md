@@ -43,7 +43,7 @@
 | [`--use-default-kwarg`](#use-default-kwarg) | Use default= keyword argument instead of positional argument... |
 | [`--use-frozen-field`](#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly p... |
 | [`--use-generic-base-class`](#use-generic-base-class) | Generate a shared base class with model configuration to avo... |
-| [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for optional fields without ... |
+| [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel... |
 | [`--use-one-literal-as-default`](#use-one-literal-as-default) | Use single literal value as default when enum has only one o... |
 | [`--use-root-model-sequence-interface`](#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes im... |
 | [`--use-serialize-as-any`](#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
@@ -6304,18 +6304,18 @@ Generate a shared base class with model configuration to avoid repetition (DRY).
 
 ## `--use-missing-sentinel` {#use-missing-sentinel}
 
-Use Pydantic's MISSING sentinel for optional fields without defaults.
+Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
 
 The `--use-missing-sentinel` flag generates `MISSING` as the default for optional
-Pydantic v2 fields that do not define a schema default. This preserves the
-difference between an omitted field and a nullable field set to `None`.
+Pydantic v2 BaseModel or dataclass fields that do not define a schema default. This
+preserves the difference between an omitted field and a nullable field set to `None`.
 
 **Related:** [`--strict-nullable`](#strict-nullable), [`--target-pydantic-version`](#target-pydantic-version)
 
 **Option relationships:**
 
 - **Implies:** [`--target-pydantic-version`](model-customization.md#target-pydantic-version) = `2.12`
-- **Requires:** [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel` - `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`.
+- **Requires:** [`--output-model-type`](model-customization.md#output-model-type) - `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`.
 
 !!! tip "Usage"
 

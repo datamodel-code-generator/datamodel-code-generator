@@ -7,14 +7,14 @@ from enum import StrEnum
 from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import MISSING, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 
 @dataclass
 class Item:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 Name = TypeAliasType("Name", str | None)
@@ -25,7 +25,7 @@ class ColorEnum(StrEnum):
     blue = 'blue'
 
 
-Color = TypeAliasType("Color", ColorEnum | None)
+Color = TypeAliasType("Color", ColorEnum | None | MISSING)
 
 
 FieldTextsPostRequest = TypeAliasType(
@@ -33,7 +33,7 @@ FieldTextsPostRequest = TypeAliasType(
 )
 
 
-FieldListsPostRequest = TypeAliasType("FieldListsPostRequest", list[int] | None)
+FieldListsPostRequest = TypeAliasType("FieldListsPostRequest", list[int] | MISSING)
 
 
 FieldChoicesPostRequest = TypeAliasType("FieldChoicesPostRequest", Item | int | None)

@@ -35,4 +35,4 @@
   paired = Paired(x='s', y='t')
   > GET https://api.example.com/overlaps
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  single, which the paired schema refuses = Paired(x='s', y=None)
+  single, which the paired schema refuses = Paired(x='s', y=MISSING)

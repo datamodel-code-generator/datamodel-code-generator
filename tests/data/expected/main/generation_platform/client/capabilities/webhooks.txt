@@ -1,6 +1,6 @@
 # webhooks
 backend pydantic_v2.BaseModel
-dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.13.5
+dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.14.0
 imports of the dependencies httpx2 pydantic typing_extensions
 other third-party imports anyio pydantic_core
 copied runtime

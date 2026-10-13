@@ -96,21 +96,23 @@ ALIASES: Final = frozenset({"alias"})
 class ItemStep:
     """One step of an items accessor: an attribute, a required or optional TypedDict key, or a root model's root.
 
-    `none` says the value it reads may be None, and `unset` that it may be msgspec's UNSET, as for an optional member
-    of a Struct.
+    `none` says the value it reads may be None, `unset` that it may be msgspec's UNSET, as for an optional member of a
+    Struct, and `missing` that it may be Pydantic's MISSING, as for a field that defaults to it.
     """
 
     kind: StepKind
     name: str
     none: bool = False
     unset: bool = False
+    missing: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class ModelField:
     """A field of a generated model by its wire name: its attribute, or key, its type, and what its model gives it.
 
-    `required` says the model's constructor needs the field; `member` is the field's binding in its consumer.
+    `required` says the model's constructor needs the field, and `missing` that it defaults to Pydantic's MISSING;
+    `member` is the field's binding in its consumer.
     """
 
     wire_name: str
@@ -120,6 +122,7 @@ class ModelField:
     read_only: bool
     write_only: bool
     member: FieldUseBinding
+    missing: bool = False
 
 
 def _partial(symbol: FinalModelSymbol) -> bool:
@@ -201,6 +204,7 @@ class ModelFacts:
                 read_only=facts.read_only,
                 write_only=facts.write_only,
                 member=member,
+                missing=facts.backend.emitted.emitted_default_kind == "pydantic_missing",
             )
 
     def root(self, symbol: SymbolId) -> TypeView | None:

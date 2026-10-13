@@ -16,9 +16,10 @@ from typing import TYPE_CHECKING, Any
 from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
-from datamodel_code_generator import DataModelType, LeftoverFilesWarning, generate
+from datamodel_code_generator import LeftoverFilesWarning, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
+from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.client_generation import formatter_refusal
 from tests.api_generation.support.fastapi_generation import SOURCE, server_options
 from tests.api_generation.support.generated_packages import forget_generated, import_generated
@@ -51,7 +52,7 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
             "input_file_type": "openapi",
             "target_python_version": "3.11",
             "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
-            "output_model_type": DataModelType(backend),
+            **backend_settings(backend),
             "disable_timestamp": True,
             "formatters": [Formatter.BUILTIN],
             **model,

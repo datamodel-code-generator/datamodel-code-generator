@@ -251,9 +251,9 @@ sets 3.12). Each run ends by printing the runtime dependencies of its package to
 
 ```text
 Add the runtime dependencies of server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
 Add the runtime dependencies of client to your project:
-  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.13.5"
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.14.0"
 ```
 
 <!-- fmt: on -->

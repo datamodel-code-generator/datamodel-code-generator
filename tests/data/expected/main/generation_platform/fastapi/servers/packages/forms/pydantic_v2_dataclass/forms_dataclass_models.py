@@ -3,27 +3,27 @@
 
 from __future__ import annotations
 
-from pydantic import ConfigDict, conint
+from pydantic import MISSING, ConfigDict, conint
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class Others:
-    base: str | None = None
+    base: str | MISSING = MISSING
 
 
 @dataclass
 class Filter:
-    color: str | None = None
-    minAge: conint(ge=0) | None = None
+    color: str | MISSING = MISSING
+    minAge: conint(ge=0) | MISSING = MISSING
 
 
 @dataclass
 class FieldFormsPostRequest:
     name: str
     count: int | None = 1
-    tags: list[str] | None = None
+    tags: list[str] | MISSING = MISSING
 
 
 FieldNotesPostRequest = TypeAliasType("FieldNotesPostRequest", dict[str, str])
@@ -32,53 +32,53 @@ FieldNotesPostRequest = TypeAliasType("FieldNotesPostRequest", dict[str, str])
 @dataclass
 class FieldUploadsPostRequest:
     file: bytes
-    note: str | None = None
+    note: str | MISSING = MISSING
 
 
 @dataclass
 class FieldBatchesPostRequest:
     files: list[bytes]
-    label: str | None = None
+    label: str | MISSING = MISSING
 
 
 @dataclass
 class FieldSearchesPostRequest:
     filter: Filter
-    filters: list[Filter] | None = None
-    tags: list[str] | None = None
-    file: bytes | None = None
+    filters: list[Filter] | MISSING = MISSING
+    tags: list[str] | MISSING = MISSING
+    file: bytes | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class FieldExtrasPostRequest:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class FieldExtraListsPostRequest:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class FieldExtraScoresPostRequest:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass
 class FieldExtraBasesPostRequest(Others):
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class FieldExtraPatternsPostRequest:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class FieldExtraProfilesPostRequest:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class FieldExtraProfilesPostRequest1:
-    count: int | None = None
+    count: int | MISSING = MISSING

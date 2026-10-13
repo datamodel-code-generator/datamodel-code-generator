@@ -8,6 +8,7 @@ import shlex
 import shutil
 from typing import TYPE_CHECKING
 
+from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.client_generation import SOURCE, client_options, copy_references
 from tests.api_generation.support.model_codec_reports import third_party_imports
 
@@ -28,14 +29,17 @@ def capability_arguments(profile: str, root: Path) -> list[str]:
     source = shutil.copy2(SOURCE / case["input"], root / case["input"])
     copy_references(case, root)
     config = case.get("config", {})
+    backend = case.get("backend", "pydantic_v2.BaseModel")
     arguments = [
         *("--input", str(source), "--input-file-type", "openapi", "--output", str(root / f"{PACKAGE}_models.py")),
         *("--target-python-version", "3.11", "--openapi-scopes", "schemas", "api"),
-        *("--output-model-type", case.get("backend", "pydantic_v2.BaseModel")),
+        *("--output-model-type", backend),
         *("--formatters", "builtin", "--disable-timestamp", "--generate-client", "httpx2"),
         *("--client-output", str(root / PACKAGE), "--client-package", PACKAGE),
         *("--client-model-package", f"{PACKAGE}_models"),
     ]
+    if backend_settings(backend).get("use_missing_sentinel"):
+        arguments.append("--use-missing-sentinel")
     if paths := case.get("model", {}).get("openapi_include_paths"):
         arguments.extend(("--openapi-include-paths", *paths))
     if "protocols" in config:

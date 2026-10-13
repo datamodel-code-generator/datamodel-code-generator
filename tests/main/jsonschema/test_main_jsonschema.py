@@ -1064,11 +1064,11 @@ def test_use_default_pydantic_v2_with_json_schema_const(output_file: Path) -> No
 
 @pytest.mark.cli_doc(
     options=["--use-missing-sentinel"],
-    option_description="""Use Pydantic's MISSING sentinel for optional fields without defaults.
+    option_description="""Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
 
 The `--use-missing-sentinel` flag generates `MISSING` as the default for optional
-Pydantic v2 fields that do not define a schema default. This preserves the
-difference between an omitted field and a nullable field set to `None`.""",
+Pydantic v2 BaseModel or dataclass fields that do not define a schema default. This
+preserves the difference between an omitted field and a nullable field set to `None`.""",
     input_schema="jsonschema/missing_sentinel.json",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-missing-sentinel"],
     golden_output="jsonschema/missing_sentinel.py",
@@ -1076,11 +1076,11 @@ difference between an omitted field and a nullable field set to `None`.""",
 )
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_main_jsonschema_use_missing_sentinel(output_file: Path) -> None:
-    """Use Pydantic's MISSING sentinel for optional fields without defaults.
+    """Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
 
     The `--use-missing-sentinel` flag generates `MISSING` as the default for optional
-    Pydantic v2 fields that do not define a schema default. This preserves the
-    difference between an omitted field and a nullable field set to `None`.
+    Pydantic v2 BaseModel or dataclass fields that do not define a schema default. This
+    preserves the difference between an omitted field and a nullable field set to `None`.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "missing_sentinel.json",
@@ -1173,6 +1173,50 @@ def test_main_jsonschema_use_missing_sentinel_explicit_pydantic_v2_12(output_fil
 
 
 @pytest.mark.parametrize(
+    ("extra_args", "expected_file"),
+    [
+        ([], "missing_sentinel_dataclass.py"),
+        (["--use-annotated", "--field-constraints"], "missing_sentinel_dataclass_annotated.py"),
+        (["--frozen-dataclasses", "--keyword-only"], "missing_sentinel_dataclass_frozen.py"),
+    ],
+    ids=["alias-allof", "annotated", "frozen-keyword-only"],
+)
+def test_main_jsonschema_use_missing_sentinel_pydantic_dataclass(
+    extra_args: list[str], expected_file: str, output_file: Path
+) -> None:
+    """Default unset optional Pydantic dataclass fields to MISSING, through aliases, constraints, and inheritance."""
+    runs = installed_pydantic_runs_target(TargetPydanticVersion.V2_14.value)
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "missing_sentinel_dataclass.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--use-missing-sentinel",
+            "--target-pydantic-version",
+            TargetPydanticVersion.V2_14.value,
+            *extra_args,
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not runs,
+    )
+    if runs:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=expected_file.removesuffix(".py"),
+            model_name="Pet",
+            valid_json='{"id": 1, "name": "a", "owner": null, "pet-age": 3}',
+            invalid_json='{"id": 1, "name": "a", "owner": null, "tag": null}',
+            expected_error_type="string_type",
+            expected_attribute_path=("pet_age",),
+            expected_attribute_value=3,
+        )
+
+
+@pytest.mark.parametrize(
     ("extra_args", "expected_stderr_contains"),
     [
         (
@@ -1187,7 +1231,10 @@ def test_main_jsonschema_use_missing_sentinel_explicit_pydantic_v2_12(output_fil
         ),
         (
             ["--output-model-type", "dataclasses.dataclass", "--use-missing-sentinel"],
-            "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`",
+            (
+                "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+                "or `pydantic_v2.dataclass`"
+            ),
         ),
     ],
 )

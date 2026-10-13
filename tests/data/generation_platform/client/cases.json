@@ -4695,6 +4695,9 @@
       "body_arguments": "both"
     }
   },
+  "missing-sentinel": {
+    "input": "missing-sentinel.yaml"
+  },
   "nullable-parameters": {
     "input": "nullable-parameters.yaml"
   },

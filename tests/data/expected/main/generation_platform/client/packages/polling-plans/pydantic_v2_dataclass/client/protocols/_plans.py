@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 import models
+from pydantic import MISSING
 
 from .. import _operations
 from .._runtime.protocols.pagination import PageBinding
@@ -39,21 +40,27 @@ def _result_1(
     data: GetJobResponse,
 ) -> models.Report | None:
     """Return the result of jobs.inline in its final poll."""
-    return data.result
+    if (value_0 := data.result) is MISSING:
+        return None
+    return value_0
 
 
 def _immediate_1(
     data: CreateJobResponse,
 ) -> models.Report | None:
     """Return the result of jobs.inline in an immediate create response."""
-    return data.result
+    if (value_0 := data.result) is MISSING:
+        return None
+    return value_0
 
 
 def _result_5(
     data: GetJobResponse,
 ) -> models.Report | None:
     """Return the result of jobs.tracked in its final poll."""
-    return data.result
+    if (value_0 := data.result) is MISSING:
+        return None
+    return value_0
 
 
 PLAN_0: Final[PollingPlan[GetReportResponse, GetJobResponse, CreateJobResponse]] = PollingPlan(

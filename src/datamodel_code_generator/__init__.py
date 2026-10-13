@@ -620,8 +620,11 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
     if not config.use_missing_sentinel:
         return config
 
-    if config.output_model_type is not DataModelType.PydanticV2BaseModel:
-        msg = "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`"
+    if config.output_model_type not in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}:
+        msg = (
+            "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+            "or `pydantic_v2.dataclass`"
+        )
         raise Error(msg)
 
     match target_version := config.target_pydantic_version:

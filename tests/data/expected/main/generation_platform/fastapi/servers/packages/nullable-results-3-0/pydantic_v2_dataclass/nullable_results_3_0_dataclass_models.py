@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Any
 
-from pydantic import Field
+from pydantic import MISSING, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -29,7 +29,7 @@ class ColorEnum(StrEnum):
     blue = 'blue'
 
 
-Color = TypeAliasType("Color", ColorEnum | None)
+Color = TypeAliasType("Color", ColorEnum | None | MISSING)
 
 
 FieldTextsGetQueryCaseParameter = TypeAliasType("FieldTextsGetQueryCaseParameter", str)
@@ -55,7 +55,7 @@ FieldTextsHeadResponse = TypeAliasType("FieldTextsHeadResponse", str | None)
 FieldListsGetQueryCaseParameter = TypeAliasType("FieldListsGetQueryCaseParameter", str)
 
 
-FieldListsGetResponse = TypeAliasType("FieldListsGetResponse", list[int] | None)
+FieldListsGetResponse = TypeAliasType("FieldListsGetResponse", list[int] | None | MISSING)
 
 
 FieldNamesGetQueryCaseParameter = TypeAliasType("FieldNamesGetQueryCaseParameter", str)
