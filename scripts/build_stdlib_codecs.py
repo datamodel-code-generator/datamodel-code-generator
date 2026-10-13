@@ -11,7 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from jinja2 import Environment, StrictUndefined
+from jinja2 import Environment, StrictUndefined, select_autoescape
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "src/datamodel_code_generator/_runtime/model_codecs/stdlib.py.jinja2"
@@ -21,7 +21,11 @@ BACKENDS = {"stdlib_dataclasses.py": "dataclass", "stdlib_typeddicts.py": "typed
 def derived_sources() -> dict[Path, str]:
     """Render the codec module of each backend from the one source, in memory."""
     environment = Environment(
-        autoescape=False, keep_trailing_newline=True, lstrip_blocks=True, trim_blocks=True, undefined=StrictUndefined
+        autoescape=select_autoescape(["html", "xml"], default_for_string=False),
+        keep_trailing_newline=True,
+        lstrip_blocks=True,
+        trim_blocks=True,
+        undefined=StrictUndefined,
     )
     template = environment.from_string(SOURCE.read_text(encoding="utf-8"))
     return {SOURCE.with_name(name): template.render(backend=backend) for name, backend in BACKENDS.items()}
