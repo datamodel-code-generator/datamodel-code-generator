@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Any, Final, Union
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
 
 codec_0: Final[PydanticDataclassCodec[int]] = PydanticDataclassCodec(int)

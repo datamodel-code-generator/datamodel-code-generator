@@ -539,17 +539,17 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Pet: Model((Field('name', 'name'),), True),
+    models.Pet: Model((Field('name', 'name'),)),
     models.日本: Model((Field('{braces}', 'braces'),)),
 }
 
-codec_0: Final[StdlibCodec[models.Pet]] = StdlibCodec(models.Pet, MODELS)
+codec_0: Final[TypedDictCodec[models.Pet]] = TypedDictCodec(models.Pet, MODELS)
 """Codec of /paths/~1pets/get response_body (response 200 application/json)."""
 
 codec_1: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
@@ -564,7 +564,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
 codec_0: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)

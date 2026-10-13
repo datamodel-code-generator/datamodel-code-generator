@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models.FieldFilesFileNameExtGetPathFileNameParameter]] = PydanticCodec(models.FieldFilesFileNameExtGetPathFileNameParameter)
 """Codec of /paths/~1files~1{fileName}.{ext}/get parameter (request path fileName)."""

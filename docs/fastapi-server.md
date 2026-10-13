@@ -99,8 +99,9 @@ Generation ends by printing to stderr the `uv add` command that adds the runtime
 including what the models import, such as `email-validator` for `format: email` and `python-ulid` for
 `format: ulid`. It names only the minimum version each one needs, so uv adds the latest release and your lock file
 keeps it; the minimum is `pydantic>=2.13.5`, and `pydantic>=2.14` when `--target-pydantic-version 2.14` with
-`--use-missing-sentinel` makes the models import `MISSING` from `pydantic`. Run it, then start the application with
-an ASGI server:
+`--use-missing-sentinel` makes the models import `MISSING` from `pydantic`. An explicit `--target-pydantic-version`
+older than that minimum (`2`, `2.11` or `2.12`) is refused with `Error:` and exit code 2; leave it unset or use
+`2.14`. Run the command, then start the application with an ASGI server:
 
 ```bash
 uv add uvicorn

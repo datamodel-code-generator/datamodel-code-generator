@@ -4836,7 +4836,7 @@ def test_main_number_constraints_on_non_numbers(output_file: Path, expected_file
 
 
 def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
-    """Test number keywords still constrain a non-string type and format that --type-mappings maps to a number."""
+    """Test number keywords still constrain formats that --type-mappings maps to a number or a duration."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_mapped_formats.json",
         output_path=output_file,
@@ -4847,11 +4847,148 @@ def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
             "--field-constraints",
             "--type-mappings",
             "boolean+numeric=integer",
+            "string+span=duration",
             "--formatters",
             "builtin",
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+    )
+
+
+_NUMBER_CONSTRAINT_TYPE_OVERRIDES = json.dumps({
+    "NumberConstraintsOnCustomTypes.amount": "decimal.Decimal",
+    "NumberConstraintsOnCustomTypes.pause": "datetime.date",
+})
+_COLLAPSED_ROOT_TYPE_OVERRIDES = json.dumps({
+    "NumberConstraintsOnCollapsedRoots.wait": "datetime.date",
+    "NumberConstraintsOnCollapsedRoots.label": "decimal.Decimal",
+    "NumberConstraintsOnCollapsedRoots.count": "builtins.str",
+})
+
+
+@pytest.mark.parametrize(
+    ("source", "expected_file", "extra_args", "payload_case"),
+    [
+        ("python_types", "default.py", [], "python_types"),
+        ("python_types", "field_constraints.py", ["--field-constraints"], "python_types"),
+        ("python_types", "use_annotated.py", ["--use-annotated"], "python_types"),
+        ("python_types", "type_alias.py", ["--field-constraints", "--use-type-alias"], "python_types"),
+        (
+            "python_types",
+            "pydantic_v2_dataclass.py",
+            ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"],
+            "python_types",
+        ),
+        ("python_types", "msgspec.py", ["--output-model-type", "msgspec.Struct"], "python_types"),
+        ("python_types", "dataclass.py", ["--output-model-type", "dataclasses.dataclass", "--field-constraints"], None),
+        ("python_types", "typed_dict.py", ["--output-model-type", "typing.TypedDict", "--field-constraints"], None),
+        pytest.param(
+            "python_types",
+            "custom_template.py",
+            ["--field-constraints", "--custom-template-dir", str(DATA_PATH / "templates_numeric_null")],
+            "python_types",
+            id="custom_template",
+        ),
+        ("custom_types", "field_constraints.py", ["--field-constraints"], "custom_types"),
+        ("custom_types", "msgspec.py", ["--output-model-type", "msgspec.Struct"], None),
+        (
+            "custom_types",
+            "type_overrides.py",
+            ["--field-constraints", "--type-overrides", _NUMBER_CONSTRAINT_TYPE_OVERRIDES],
+            "type_overrides",
+        ),
+        (
+            "custom_types",
+            "type_overrides_msgspec.py",
+            ["--output-model-type", "msgspec.Struct", "--type-overrides", _NUMBER_CONSTRAINT_TYPE_OVERRIDES],
+            None,
+        ),
+        (
+            "custom_types",
+            "type_overrides_typed_dict.py",
+            [
+                "--output-model-type",
+                "typing.TypedDict",
+                "--field-constraints",
+                "--type-overrides",
+                _NUMBER_CONSTRAINT_TYPE_OVERRIDES,
+            ],
+            None,
+        ),
+        ("known_types", "field_constraints.py", ["--field-constraints"], "known_types"),
+        (
+            "collapsed_roots",
+            "collapse.py",
+            ["--field-constraints", "--collapse-root-models"],
+            "collapsed_roots",
+        ),
+        (
+            "collapsed_roots",
+            "collapse_type_overrides.py",
+            ["--field-constraints", "--collapse-root-models", "--type-overrides", _COLLAPSED_ROOT_TYPE_OVERRIDES],
+            "collapsed_root_type_overrides",
+        ),
+        (
+            "collapsed_roots",
+            "collapse_type_overrides_msgspec.py",
+            [
+                "--output-model-type",
+                "msgspec.Struct",
+                "--collapse-root-models",
+                "--type-overrides",
+                _COLLAPSED_ROOT_TYPE_OVERRIDES,
+            ],
+            "collapsed_root_type_overrides",
+        ),
+        (
+            "collapsed_roots",
+            "collapse_type_overrides_typed_dict.py",
+            [
+                "--output-model-type",
+                "typing.TypedDict",
+                "--field-constraints",
+                "--collapse-root-models",
+                "--type-overrides",
+                _COLLAPSED_ROOT_TYPE_OVERRIDES,
+            ],
+            None,
+        ),
+    ],
+)
+def test_main_number_constraints_on_emitted_types(
+    output_file: Path, source: str, expected_file: str, extra_args: list[str], payload_case: str | None
+) -> None:
+    """Test each number keyword constrains a string-typed field whose emitted Python type takes it, at runtime too."""
+    name = f"number_constraints_on_{source}"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}/{expected_file}",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    if payload_case is None:
+        return
+    payloads = json.loads((DATA_PATH / "payloads/number_constraints_on_python_types.json").read_text())[payload_case]
+    with _generated_model(output_file, name, "".join(part.title() for part in name.split("_"))) as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if "msgspec.Struct" not in extra_args:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(error_type):
+                validate(json.dumps({field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "\n".join(rejected) + "\n",
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
     )
 
 
@@ -16024,6 +16161,87 @@ def test_main_lookaround_anyof_nullable_pydantic_v2_dataclass_json_validation(ou
     )
 
 
+_STRING_PATTERN_TARGET_RUNTIME = pytest.mark.skipif(
+    not installed_pydantic_runs_target("2.5"),
+    reason="String lookaround patterns take the engine from a model config, which needs Pydantic 2.5",
+)
+_TARGET_2_12_RUNTIME = pytest.mark.skipif(
+    not installed_pydantic_runs_target("2.12"), reason="The target needs Pydantic 2.12"
+)
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "target_pydantic_version", "expected_file", "attribute_path"),
+    [
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "2",
+            "lookaround_anyof_nullable_pydantic_v2.py",
+            ("value", "root"),
+            id="base-model-target-2",
+            marks=_STRING_PATTERN_TARGET_RUNTIME,
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "2.12",
+            "lookaround_anyof_nullable_pydantic_v2.py",
+            ("value", "root"),
+            id="base-model-target-2.12",
+            marks=_TARGET_2_12_RUNTIME,
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            "2",
+            "lookaround_anyof_nullable_pydantic_v2_dataclass_target_2.py",
+            ("value",),
+            id="dataclass-target-2",
+            marks=_STRING_PATTERN_TARGET_RUNTIME,
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            "2.12",
+            "lookaround_anyof_nullable_pydantic_v2_dataclass.py",
+            ("value",),
+            id="dataclass-target-2.12",
+            marks=_TARGET_2_12_RUNTIME,
+        ),
+    ],
+)
+def test_main_lookaround_anyof_nullable_target_pydantic_version(
+    output_model_type: str,
+    target_pydantic_version: str,
+    expected_file: str,
+    attribute_path: tuple[str, ...],
+    output_file: Path,
+) -> None:
+    """Compile a lookaround alias pattern only for a target that has compiled patterns (Pydantic 2.8).
+
+    ``--target-pydantic-version 2`` keeps the string pattern in the dataclass alias, whose engine the
+    dataclass config selects, as 0.83.0 wrote it; a newer target writes what an unset target does. The
+    ``RootModel`` written for ``BaseModel`` carries its own config, so it is the same for every target.
+    Each parameter runs on the Pydantic releases that can import its output.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", output_model_type, *target_pydantic_args(target_pydantic_version)],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="lookaround_anyof_nullable_target_pydantic_version",
+        model_name="Model",
+        valid_json='{"value": "ABC"}',
+        invalid_json='{"value": "abc"}',
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=attribute_path,
+        expected_attribute_value="ABC",
+    )
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.benchmark
 def test_main_lookaround_mixed_constraints_pydantic_v2(output_file: Path) -> None:
@@ -16163,26 +16381,186 @@ def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file
     )
 
 
+_BYTES_PATTERN_RUST_ENGINE = ('{"code": "abc"}', '{"code": "abc\\n"}', ("code",), "abc")
+"""Payloads showing the default engine: ``$`` does not match before a final newline."""
+_BYTES_PATTERN_RUST_ONLY_SYNTAX = ('{"name": "é"}', '{"name": "1"}', ("name",), "é")
+"""Payloads showing the default engine: a Unicode class, which Python's ``re`` rejects, compiles."""
+_BYTES_PATTERN_PYTHON_ENGINE = ('{"blob": "aa"}', '{"blob": "ab"}', ("blob",), "aa")
+"""Payloads showing Python's engine: Pydantic 2.14 applies the ``bytes`` pattern with a ``str`` validator."""
+
+
 @pytest.mark.parametrize(
-    ("args", "expected_file"),
+    ("schema", "args", "target_pydantic_version", "expected_file", "payloads"),
     [
-        ([], "rust_unsupported_pattern_bytes_pydantic_v2.py"),
-        (["--use-annotated"], "rust_unsupported_pattern_bytes_pydantic_v2_annotated.py"),
-        (["--field-constraints"], "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py"),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
+            None,
+            "rust_unsupported_pattern_bytes_pydantic_v2_annotated.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "2",
+            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "2.12",
+            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_unicode.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_unicode_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ONLY_SYNTAX,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_pydantic_v2_annotated_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_pydantic_v2_dataclass_field_constraints_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_alias.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_alias.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_alias_pydantic_v2_field_constraints_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_nullable.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_RUST_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_nullable.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_nullable_pydantic_v2_field_constraints_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints", "--strict-types", "bytes"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_pydantic_v2_field_constraints_strict_target_2_14.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_union.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--field-constraints"],
+            None,
+            "rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
+        (
+            "rust_unsupported_pattern_bytes_union.json",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--field-constraints"],
+            "2.14",
+            "rust_unsupported_pattern_bytes_union_pydantic_v2_field_constraints.py",
+            _BYTES_PATTERN_PYTHON_ENGINE,
+        ),
     ],
 )
-def test_main_rust_unsupported_pattern_bytes(args: list[str], expected_file: str, output_file: Path) -> None:
-    """Emitted ``bytes`` patterns select Python's regex engine like string patterns, as Pydantic 2.14 compiles them.
+def test_main_rust_unsupported_pattern_bytes(
+    schema: str,
+    args: list[str],
+    target_pydantic_version: str | None,
+    expected_file: str,
+    payloads: tuple[str, str, tuple[str, ...], Any],
+    output_file: Path,
+) -> None:
+    """Emitted ``bytes`` patterns select Python's regex engine only for ``--target-pydantic-version 2.14``.
 
-    Without ``--use-annotated`` or ``--field-constraints`` the pattern is dropped, so the default engine stays.
+    Pydantic compiles ``bytes`` patterns from 2.14 on and ignores them before. An unset or older target writes
+    what 0.83.0 wrote, so the other patterns of the model keep the default engine, including syntax only the
+    Rust engine accepts; that output imports on the releases that ignore the pattern, and the 2.14 target
+    output on the releases that compile it. Type aliases, nullable types and strict ``bytes`` follow the same
+    rule. A union with a string member, such as ``str | bytes``, selects Python's engine for every target,
+    because Pydantic compiles its pattern for the string member on every release.
     """
+    compiles_bytes_patterns = installed_pydantic_runs_target(TargetPydanticVersion.V2_14.value)
+    runs = compiles_bytes_patterns == (target_pydantic_version == TargetPydanticVersion.V2_14.value)
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / schema,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[*args, *target_pydantic_args(target_pydantic_version)],
+        force_exec_validation=True,
+        skip_code_validation=not runs,
+    )
+    if runs:
+        valid_json, invalid_json, attribute_path, attribute_value = payloads
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="rust_unsupported_pattern_bytes",
+            model_name="Model",
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type="string_pattern_mismatch",
+            expected_attribute_path=attribute_path,
+            expected_attribute_value=attribute_value,
+        )
+
+
+@pytest.mark.parametrize("target_pydantic_version", [None, "2", "2.12", "2.14"])
+def test_main_rust_unsupported_pattern_bytes_without_constraints(
+    target_pydantic_version: str | None, output_file: Path
+) -> None:
+    """Without ``--use-annotated`` or ``--field-constraints`` the ``bytes`` pattern is dropped for every target."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_bytes.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
+        expected_file="rust_unsupported_pattern_bytes_pydantic_v2.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *target_pydantic_args(target_pydantic_version)],
         force_exec_validation=True,
     )
 

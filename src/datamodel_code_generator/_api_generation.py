@@ -162,6 +162,7 @@ def prepare_target(
         Error,
         _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
     )
+    from datamodel_code_generator._target_render import pydantic_target_problem  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
     if sys.version_info < _PYTHON_MINIMUM:
@@ -191,6 +192,12 @@ def prepare_target(
             code="E_CONFIG_VALUE",
             option_path="model_config.target_python_version",
             message=f"The {generator.kind} target needs a target Python version of {_PYTHON_MINIMUM_TEXT} or later",
+        )
+    if (needed := pydantic_target_problem(backend.value, model_config.target_pydantic_version)) is not None:
+        raise config_error(
+            code="E_CONFIG_VALUE",
+            option_path="model_config.target_pydantic_version",
+            message=f"The {generator.kind} target {needed}",
         )
     if (problem := _root_problem(input_, effective)) is None:
         return effective

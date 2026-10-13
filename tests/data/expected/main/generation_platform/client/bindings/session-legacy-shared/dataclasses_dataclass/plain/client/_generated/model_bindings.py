@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
@@ -17,17 +17,17 @@ MODELS: Final[dict[type, Model]] = {
     models.SharedResponse: Model((Field('value', 'value'),)),
 }
 
-codec_0: Final[StdlibCodec[models.SharedRequest]] = StdlibCodec(models.SharedRequest, MODELS)
+codec_0: Final[DataclassCodec[models.SharedRequest]] = DataclassCodec(models.SharedRequest, MODELS)
 """Codec of /paths/~1a/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.SharedResponse]] = StdlibCodec(models.SharedResponse, MODELS)
+codec_1: Final[DataclassCodec[models.SharedResponse]] = DataclassCodec(models.SharedResponse, MODELS)
 """Codec of /paths/~1a/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.SharedResponse]] = StdlibCodec(models.SharedResponse, MODELS)
+codec_2: Final[DataclassCodec[models.SharedResponse]] = DataclassCodec(models.SharedResponse, MODELS)
 """Codec of /paths/~1a/post response_body (response 201 application/json)."""
 
-codec_3: Final[StdlibCodec[models.SharedRequest]] = StdlibCodec(models.SharedRequest, MODELS)
+codec_3: Final[DataclassCodec[models.SharedRequest]] = DataclassCodec(models.SharedRequest, MODELS)
 """Codec of /paths/~1b/post request_body (request application/json)."""
 
-codec_4: Final[StdlibCodec[models.SharedResponse]] = StdlibCodec(models.SharedResponse, MODELS)
+codec_4: Final[DataclassCodec[models.SharedResponse]] = DataclassCodec(models.SharedResponse, MODELS)
 """Codec of /paths/~1b/post response_body (response 200 application/json)."""

@@ -8,7 +8,7 @@ from __future__ import annotations
 from models import grandchild, request, request_base, request_v1, request_v2, request_version_enum
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
 
 codec_0: Final[PydanticDataclassCodec[grandchild.Grandchild]] = PydanticDataclassCodec(grandchild.Grandchild)

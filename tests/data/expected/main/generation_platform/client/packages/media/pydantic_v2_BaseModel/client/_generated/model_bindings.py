@@ -9,7 +9,7 @@ from typing import Any, Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models.FieldFormsPostRequest]] = PydanticCodec(models.FieldFormsPostRequest)
 """Codec of /paths/~1forms/post request_body (request application/x-www-form-urlencoded)."""

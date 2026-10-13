@@ -9,30 +9,30 @@ import models
 from models import sub
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    sub.ChildModel: Model((Field('id', 'id'), Field('parent', 'parent', models.RootModel)), True),
-    sub.AnotherChild: Model((Field('sibling', 'sibling', sub.ChildModel),), True),
-    models.RootModel: Model((Field('id', 'id'),), True),
+    sub.ChildModel: Model((Field('id', 'id'), Field('parent', 'parent', models.RootModel))),
+    sub.AnotherChild: Model((Field('sibling', 'sibling', sub.ChildModel),)),
+    models.RootModel: Model((Field('id', 'id'),)),
 }
 
-codec_0: Final[StdlibCodec[models.RootModel]] = StdlibCodec(models.RootModel, MODELS)
+codec_0: Final[TypedDictCodec[models.RootModel]] = TypedDictCodec(models.RootModel, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.RootModel]] = StdlibCodec(models.RootModel, MODELS)
+codec_1: Final[TypedDictCodec[models.RootModel]] = TypedDictCodec(models.RootModel, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[sub.ChildModel]] = StdlibCodec(sub.ChildModel, MODELS)
+codec_2: Final[TypedDictCodec[sub.ChildModel]] = TypedDictCodec(sub.ChildModel, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[sub.ChildModel]] = StdlibCodec(sub.ChildModel, MODELS)
+codec_3: Final[TypedDictCodec[sub.ChildModel]] = TypedDictCodec(sub.ChildModel, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[sub.AnotherChild]] = StdlibCodec(sub.AnotherChild, MODELS)
+codec_4: Final[TypedDictCodec[sub.AnotherChild]] = TypedDictCodec(sub.AnotherChild, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[sub.AnotherChild]] = StdlibCodec(sub.AnotherChild, MODELS)
+codec_5: Final[TypedDictCodec[sub.AnotherChild]] = TypedDictCodec(sub.AnotherChild, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
