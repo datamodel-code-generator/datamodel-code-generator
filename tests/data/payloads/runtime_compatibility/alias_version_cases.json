@@ -18,6 +18,28 @@
     }
   },
   "pydantic_v2_dataclass": {
+    "jsonschema/collapse_root_models_lookaround.json": {
+      "valid": {
+        "code": "abc",
+        "codes": ["abc"],
+        "either": "abc",
+        "byName": {"key": "abc"},
+        "other": {"own": "ok", "code": "abc"}
+      },
+      "invalid": {"code": "badly"}
+    },
+    "jsonschema/collapse_root_models_lookaround_inheritance.json": {
+      "valid": {"own": "ok", "code": "abc"},
+      "invalid": {"code": "badly"}
+    },
+    "jsonschema/collapse_root_models_lookaround_root.json": {
+      "valid": {"codes": ["abc"]},
+      "invalid": {"codes": ["badly"]}
+    },
+    "jsonschema/rust_unsupported_pattern.json": {
+      "valid": {"pair": "aa", "doubled": "aa", "plain": "abc", "holder": {"name": "abc"}},
+      "invalid": {"pair": "ab"}
+    },
     "jsonschema/lookaround_anyof_nullable.json": {"valid": {"value": "aB"}, "invalid": {"value": "ab"}},
     "jsonschema/nested_lookaround_array.json": {"valid": {"codes": ["A1"]}, "invalid": {"codes": ["a1"]}},
     "jsonschema/root_alias_constraints/lookaround.json": {"valid": "a", "invalid": "b"},

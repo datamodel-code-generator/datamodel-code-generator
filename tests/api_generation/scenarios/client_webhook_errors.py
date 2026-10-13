@@ -26,8 +26,6 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
     configuration = {
         "field_path": (secret,),
         "reason": "binding_mismatch",
-        "source_uri": f"https://example.com/{secret}",
-        "source_pointer": f"/{secret}",
         "helper_id": secret,
     }
     for error, fields in (
