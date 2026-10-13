@@ -1915,8 +1915,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return any(field in obj.model_fields_set for field in constraint_fields)
 
     def _accepts_number_constraints(self, obj: JsonSchemaObject) -> bool:
-        """Return whether a declared type of the schema holds numbers, as number, integer or a numeric string format."""
-        if (types := obj.type) is None or types in ("number", "integer"):  # noqa: PLR6201
+        """Return whether a declared type of the schema holds numbers, as number, integer or a numeric string format.
+
+        A schema without a declared type leaves each number keyword to the emitted Python type.
+        """
+        if (types := obj.type) is None:
+            return False
+        if types in ("number", "integer"):  # noqa: PLR6201
             return True
         format_ = obj.format or "default"
         return any(

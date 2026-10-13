@@ -102,16 +102,15 @@ No errors! 🎉
 
 `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` are written on a field in two cases.
 
-**The schema holds a number.** The schema type is `number` or `integer`, the schema has no `type`, or the type and
-format map to a number type (`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps
-to one). All five keywords are written, as `con*` types by default and as `Field()` arguments with
-`--field-constraints` or `--use-annotated`.
+**The schema holds a number.** The schema type is `number` or `integer`, or the type and format map to a number type
+(`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps to one). All five keywords
+are written, as `con*` types by default and as `Field()` arguments with `--field-constraints` or `--use-annotated`.
 
 **The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
-`duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. Pydantic models and
-dataclasses write these keywords only as `Field()` arguments, so this case needs `--field-constraints` or
-`--use-annotated` (root models and type aliases follow the same options); without them such a field has no bound.
-`msgspec.Struct` writes them as `Meta(...)`.
+`duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
+written as `Any`, which takes no number keyword. Pydantic models and dataclasses write these keywords only as `Field()`
+arguments, so this case needs `--field-constraints` or `--use-annotated` (root models and type aliases follow the same
+options); without them such a field has no bound. `msgspec.Struct` writes them as `Meta(...)`.
 
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|
