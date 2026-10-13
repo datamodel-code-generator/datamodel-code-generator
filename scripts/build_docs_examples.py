@@ -28,6 +28,43 @@ BINDING_LINES = ("plain", "async plain", "async list with")
 FASTAPI_CLI_DATA = TEST_DATA / "generation_platform" / "fastapi" / "cli"
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
 OPENAPI_DATA = TEST_DATA / "openapi"
+DOCS_PROJECTS = TEST_DATA / "docs"
+EXPECTED_DOCS_PROJECTS = TEST_DATA / "expected" / "docs"
+TUTORIAL = DOCS_PROJECTS / "tutorial"
+EXPECTED_TUTORIAL = EXPECTED_DOCS_PROJECTS / "tutorial"
+HOWTO = DOCS_PROJECTS / "howto"
+EXPECTED_HOWTO = EXPECTED_DOCS_PROJECTS / "howto"
+API_TARGET_OPTIONS: dict[str, tuple[str, ...]] = {
+    "server": (
+        "--generate-server",
+        "fastapi",
+        "--server-output",
+        "server",
+        "--server-package",
+        "server",
+        "--server-model-package",
+        "models",
+    ),
+    "client": (
+        "--generate-client",
+        "httpx2",
+        "--client-output",
+        "client",
+        "--client-package",
+        "client",
+        "--client-model-package",
+        "models",
+    ),
+}
+DOCS_PROJECT_OPTIONS: dict[str, tuple[str, ...]] = {
+    "tutorial": (),
+    "howto": (
+        "--server-include-request",
+        "--server-handler-modes",
+        '{"/paths/~1pets~1{petId}~1photo/put": "async"}',
+    ),
+}
+TREE_BRANCHES = (("├── ", "│   "), ("└── ", "    "))
 
 BEGIN_MARKER_TEMPLATE = "<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: {example_id} -->"
 END_MARKER_TEMPLATE = "<!-- END AUTO-GENERATED DOC EXAMPLE: {example_id} -->"
@@ -100,6 +137,87 @@ def command(arguments: Iterable[str]) -> str:
         else:
             lines[-1] += f" {argument}"
     return " \\\n  ".join(("datamodel-codegen", *lines))
+
+
+def api_quick_start_arguments(target: str) -> tuple[str, ...]:
+    """Return the quick-start arguments of the `server` or `client` target, with the newest standard py312 preset."""
+    from scripts import build_preset_docs  # ruff: ignore[import-outside-top-level]
+
+    preset = build_preset_docs._get_latest_preset_name_by_prefix(  # ruff: ignore[private-member-access]
+        "standard", target_python_version=build_preset_docs.QUICK_START_TARGET_PYTHON_VERSION
+    )
+    return (
+        "--input",
+        "openapi.yaml",
+        "--input-file-type",
+        "openapi",
+        "--openapi-scopes",
+        "schemas",
+        "api",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--preset",
+        preset,
+        "--output",
+        "models.py",
+        *API_TARGET_OPTIONS[target],
+    )
+
+
+def docs_project_arguments(project: str) -> tuple[str, ...]:
+    """Return the server arguments of a documentation project: the quick start's and the project's own."""
+    return (*api_quick_start_arguments("server"), *DOCS_PROJECT_OPTIONS[project])
+
+
+def toml_value(values: list[str]) -> str:
+    """Render an option's values as TOML: `true` for a flag, a string for one value, and a list for several."""
+    strings = [f"'{value}'" if '"' in value else json.dumps(value) for value in values]
+    if not strings:
+        return "true"
+    return strings[0] if len(strings) == 1 else f"[{', '.join(strings)}]"
+
+
+def pyproject_table(arguments: Iterable[str]) -> str:
+    """Render command-line arguments as the `[tool.datamodel-codegen]` table that sets the same options."""
+    options: dict[str, list[str]] = {}
+    values: list[str] = []
+    for argument in arguments:
+        if argument.startswith("--"):
+            options[argument.removeprefix("--")] = values = []
+        else:
+            values.append(argument)
+    return "\n".join(["[tool.datamodel-codegen]", *(f"{key} = {toml_value(value)}" for key, value in options.items())])
+
+
+def file_tree(listing: str, *, depth: int | None = None) -> str:
+    """Render a sorted listing of files as a tree.
+
+    Private modules are left out, and private directories, or those `depth` levels below a top-level one, are one line.
+    """
+    root: dict[str, dict] = {}
+    for line in listing.splitlines():
+        node, parts = root, line.split("/")
+        for level, directory in enumerate(parts[:-1]):
+            node = node.setdefault(f"{directory}/", {})
+            if directory.startswith("_") or (depth is not None and level == depth):
+                break
+        else:
+            if not parts[-1].startswith("_") or parts[-1] == "__init__.py":
+                node[parts[-1]] = {}
+
+    def branches(node: dict[str, dict], prefix: str) -> list[str]:
+        lines: list[str] = []
+        for index, (name, children) in enumerate(node.items()):
+            branch, indent = TREE_BRANCHES[index == len(node) - 1]
+            lines.extend((f"{prefix}{branch}{name}", *branches(children, prefix + indent)))
+        return lines
+
+    return "\n".join(line for name, children in root.items() for line in (name, *branches(children, "")))
+
+
+def indented(content: str) -> str:
+    """Indent a rendered example for a content tab, ending it where the indented end marker starts."""
+    return f"\n{indent_markdown(content.strip())}\n\n    "
 
 
 def details(summary: str, language: str, content: str) -> str:
@@ -280,9 +398,129 @@ def render_webhook_error_fields() -> str:
     return "\n".join(rows) + "\n"
 
 
+def excerpt(path: Path, *needles: str) -> str:
+    """Return the first block of a module that contains each needle, in turn, separated as top-level definitions.
+
+    A needle that starts with `def ` selects the whole function, and any other needle the lines between blank lines
+    that hold it, such as a statement group or a class with its first method.
+    """
+    return "\n\n\n".join(
+        blocks(path, needle, limit=1, separator="\n\n\n" if needle.startswith("def ") else "\n\n").strip("\n")
+        for needle in needles
+    )
+
+
+def api_overview_examples(page: str, path: Path) -> tuple[DocsExample, ...]:
+    """Return the server and client overview of README.md or docs/index.md, rendered from the tested tutorial."""
+    return tuple(
+        DocsExample(example_id=f"{page}.server-client.{name}", path=path, render=render)
+        for name, render in (
+            (
+                "openapi",
+                lambda: details("Input (<code>openapi.yaml</code>)", "yaml", read_text(TUTORIAL / "openapi.yaml")),
+            ),
+            (
+                "commands",
+                lambda: fenced(
+                    "bash",
+                    "\n\n".join(
+                        f"# {title}\n{command(api_quick_start_arguments(target))}"
+                        for target, title in (
+                            ("server", "FastAPI server package in server/"),
+                            ("client", "HTTPX2 client package in client/"),
+                        )
+                    ),
+                ),
+            ),
+            (
+                "notice",
+                lambda: fenced(
+                    "text",
+                    "\n".join(read_text(EXPECTED_TUTORIAL / name) for name in ("notice.txt", "client-notice.txt")),
+                ),
+            ),
+            (
+                "tree",
+                lambda: fenced(
+                    "text",
+                    file_tree(
+                        "\n".join(
+                            dict.fromkeys(
+                                line
+                                for name in ("files.txt", "client-files.txt")
+                                for line in read_text(EXPECTED_TUTORIAL / name).splitlines()
+                            )
+                        ),
+                        depth=1,
+                    ),
+                ),
+            ),
+            ("app", lambda: fenced("python", read_text(TUTORIAL / "app.py"))),
+            ("call", lambda: fenced("python", read_text(TUTORIAL / "call.py"))),
+            ("output", lambda: fenced("text", read_text(EXPECTED_TUTORIAL / "call.txt").removeprefix("exit 0\n"))),
+        )
+    )
+
+
+def fastapi_server_examples() -> tuple[DocsExample, ...]:
+    """Return the tutorial and how-to examples of docs/fastapi-server.md, rendered from the tested projects."""
+    app, test = HOWTO / "app.py", HOWTO / "test_app.py"
+    return tuple(
+        DocsExample(example_id=f"fastapi-server.{name}", path=DOCS / "fastapi-server.md", render=render)
+        for name, render in (
+            ("tutorial.openapi", lambda: details("openapi.yaml", "yaml", read_text(TUTORIAL / "openapi.yaml"))),
+            (
+                "tutorial.pyproject",
+                lambda: indented(fenced("toml", pyproject_table(docs_project_arguments("tutorial")))),
+            ),
+            ("tutorial.command", lambda: indented(fenced("bash", command(docs_project_arguments("tutorial"))))),
+            ("tutorial.notice", lambda: fenced("text", read_text(EXPECTED_TUTORIAL / "notice.txt"))),
+            ("tutorial.tree", lambda: fenced("text", file_tree(read_text(EXPECTED_TUTORIAL / "files.txt")))),
+            (
+                "tutorial.services",
+                lambda: fenced("python", read_python_output(EXPECTED_TUTORIAL / "server/services.py")),
+            ),
+            ("tutorial.app", lambda: fenced("python", read_text(TUTORIAL / "app.py"))),
+            ("tutorial.test", lambda: fenced("python", read_text(TUTORIAL / "test_app.py"))),
+            (
+                "tutorial.inline-names",
+                lambda: fenced(
+                    "python", excerpt(EXPECTED_TUTORIAL / "models.py", "type FieldPetsGet", "type FieldPetsPetId")
+                ),
+            ),
+            ("howto.openapi", lambda: details("openapi.yaml", "yaml", read_text(HOWTO / "openapi.yaml"))),
+            ("howto.pyproject", lambda: fenced("toml", pyproject_table(DOCS_PROJECT_OPTIONS["howto"]))),
+            ("howto.services", lambda: fenced("python", read_python_output(EXPECTED_HOWTO / "server/services.py"))),
+            ("howto.errors", lambda: fenced("python", blocks(app, "    def get_photo("))),
+            ("howto.async", lambda: fenced("python", blocks(app, "    async def upload_photo("))),
+            (
+                "howto.dependencies",
+                lambda: fenced("python", excerpt(app, "def tenant(", "class PhotoStore:", "class Photos(", "app = ")),
+            ),
+            ("howto.authorize", lambda: fenced("python", excerpt(app, "USERS =", "def authorize(", "app = "))),
+            (
+                "howto.app",
+                lambda: fenced(
+                    "python",
+                    f"{blocks(app, 'from fastapi import', 'from server import')}\n\n\n{excerpt(app, 'app = ')}",
+                ),
+            ),
+            ("howto.notice", lambda: fenced("text", read_text(EXPECTED_HOWTO / "notice.txt"))),
+            ("howto.models", lambda: fenced("python", excerpt(EXPECTED_HOWTO / "models.py", "class PhotoUpload("))),
+            (
+                "howto.tests",
+                lambda: fenced("python", excerpt(test, "def test_upload_and_get_photo(", "def test_credentials(")),
+            ),
+        )
+    )
+
+
 def docs_examples() -> tuple[DocsExample, ...]:
     """Return all generated docs example sections."""
     return (
+        *api_overview_examples("readme", ROOT / "README.md"),
+        *api_overview_examples("index", DOCS / "index.md"),
+        *fastapi_server_examples(),
         DocsExample(
             example_id="fastapi-server.nested-models.command",
             path=DOCS / "fastapi-server.md",

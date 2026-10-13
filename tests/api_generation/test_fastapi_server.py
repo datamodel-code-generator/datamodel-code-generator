@@ -12,13 +12,21 @@ import pytest
 
 pytest.importorskip("fastapi")
 
+from scripts.build_docs_examples import (
+    DOCS_PROJECTS,
+    EXPECTED_DOCS_PROJECTS,
+    TUTORIAL,
+    api_quick_start_arguments,
+    docs_project_arguments,
+)
 from tests.api_generation.support.cross_targets import cross_report
+from tests.api_generation.support.docs_tutorial import generate_project, run_python, run_tests, serve
 from tests.api_generation.support.fastapi_charsets import text_charsets
 from tests.api_generation.support.fastapi_openapi import SCENARIOS, fastapi_openapi_report
 from tests.api_generation.support.fastapi_server import fastapi_server_report
 from tests.api_generation.support.fastapi_upstream import fastapi_upstream_report
 from tests.api_generation.support.model_codec_builtin import builtin_codec_report, builtin_codec_startup_report
-from tests.conftest import assert_generated_modules_output, assert_output
+from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content
 from tests.main.conftest import EXPERIMENTAL_MISSING_IMPORT_WARNING
 
 DATA = Path(__file__).parents[1] / "data"
@@ -27,6 +35,7 @@ CODEC_EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi/servers"
 CROSS = Path(__file__).parents[1] / "data/expected/main/generation_platform/cross"
 PRESET = pytest.mark.skipif(sys.version_info < (3, 12), reason="the quick-start preset emits type statements")
+assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
 
 
 @pytest.mark.parametrize(
@@ -178,3 +187,37 @@ def test_pydantic_codec_startup(cases: str, tmp_path: Path) -> None:
         builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path, server=True),
         CODEC_EXPECTED / f"{cases}.txt",
     )
+
+
+@PRESET
+@pytest.mark.parametrize("project", ["tutorial", "howto"])
+def test_docs_project(
+    project: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Generate a documentation project from the pyproject.toml its guide shows, then run the project's own tests."""
+    generated = generate_project(
+        DOCS_PROJECTS / project, tmp_path / project, docs_project_arguments(project), monkeypatch, capsys
+    )
+    expected = EXPECTED_DOCS_PROJECTS / project
+    assert_output(generated.notice, expected / "notice.txt")
+    assert_output(generated.files, expected / "files.txt")
+    for name in ("models.py", "server/services.py"):
+        assert_docs_file(generated.root / name, f"{project}/{name}")
+    assert_output(run_tests(generated.root, "test_app.py"), expected / "pytest.txt")
+
+
+@PRESET
+def test_docs_tutorial_client(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Serve the tutorial with uvicorn and call it with the client generated from the same document."""
+    server = generate_project(TUTORIAL, tmp_path / "server", docs_project_arguments("tutorial"), monkeypatch, capsys)
+    expected = EXPECTED_DOCS_PROJECTS / "tutorial"
+    with serve(server.root) as url:
+        client = generate_project(
+            TUTORIAL, tmp_path / "client", api_quick_start_arguments("client"), monkeypatch, capsys, server_url=url
+        )
+        assert_output(client.notice, expected / "client-notice.txt")
+        assert_output(client.files, expected / "client-files.txt")
+        for script in ("call.py", "call_async.py"):
+            assert_output(run_python(client.root, script), expected / script.replace(".py", ".txt"))
