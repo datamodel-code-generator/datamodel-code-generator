@@ -13064,9 +13064,11 @@ or import the other builtin templates.
 
     A file of the `fastapi` directory that is not one of these role names is ignored without a warning, so a
     misspelled or renamed role keeps its builtin template. A value that an override names and the builtin no longer
-    provides, such as one that an older copy of a builtin template uses, renders as an empty string, as Jinja's default
-    `Undefined` does; the values a role receives can change while server generation is experimental. Generation can
-    then succeed and write a package that fails when it is imported. After each upgrade, compare your overrides with the
+    provides, such as one that an older copy of a builtin template uses, prints as an empty string and iterates as
+    nothing, as Jinja's default `Undefined` does; the values a role receives can change while server generation is
+    experimental. Generation can then succeed and write a package that fails when it is imported. Reading an attribute
+    of such a value, or calling it, fails the render instead, which stops the run with an `Error` that names the
+    template. After each upgrade, compare your overrides with the
     current builtin templates, and in CI import the generated package, or run `datamodel-codegen --check` and your
     tests.
 
@@ -17926,9 +17928,11 @@ own values take precedence over the extra data.
 
     A file of the `client` directory that is not one of these role names is ignored without a warning, so a
     misspelled or renamed role keeps its builtin template. A value that an override names and the builtin no longer
-    provides, such as one that an older copy of a builtin template uses, renders as an empty string, as Jinja's default
-    `Undefined` does; the values a role receives can change while client generation is experimental. Generation can
-    then succeed and write a package that fails when it is imported. After each upgrade, compare your overrides with the
+    provides, such as one that an older copy of a builtin template uses, prints as an empty string and iterates as
+    nothing, as Jinja's default `Undefined` does; the values a role receives can change while client generation is
+    experimental. Generation can then succeed and write a package that fails when it is imported. Reading an attribute
+    of such a value, or calling it, fails the render instead, which stops the run with an `Error` that names the
+    template. After each upgrade, compare your overrides with the
     current builtin templates, and in CI import the generated package, or run `datamodel-codegen --check` and your
     tests.
 
