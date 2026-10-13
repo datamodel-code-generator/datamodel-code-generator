@@ -1117,8 +1117,8 @@ generates.""",
                 options=["--client-signature-style"],
                 option_description="""Declare the arguments of the operation methods (experimental).
 
-`explicit` (the default) declares each argument as a keyword parameter; `unpack` declares one
-`**kwargs: Unpack[TypedDict]` per operation, whose keys are the same arguments.""",
+`explicit` (the default) declares each argument as a keyword parameter; `unpack` declares
+`**kwargs: Unpack[TypedDict]` with one TypedDict per overload of each operation, whose keys are the same arguments.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-signature-style", "unpack"],
                 golden_output=f"{DOC_OUTPUT}/signature-style/_sync.py",
@@ -1153,7 +1153,8 @@ overrides it for that operation.""",
                 option_description="""Name the resources of tags (experimental).
 
 The JSON object, inline or in a file, maps a tag to the dotted namespace of the resource its operations join, such
-as `{"pets": "store.pets"}` for `client.store.pets`. Other operations join the resource of their first tag. In
+as `{"pets": "store.pets"}` for `client.store.pets`. Other operations join the resource of their first tag, and
+operations without a tag join the resource `default`. In
 pyproject.toml, `client-resource-names` is a table, and a command-line value replaces the whole table.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-resource-names", '{"pets": "animals"}'],
