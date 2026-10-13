@@ -320,7 +320,10 @@ def _generate_models(
         if lock is not None or not staged.remote_lock_resolved:
             staged.resolve_remote_lock(lock)
         session = TargetGenerationSession(
-            output=output, model_package=target.model_package, root_selector_document=source.identity
+            output=output,
+            model_package=target.model_package,
+            root_selector_document=source.identity,
+            serves_source=target._serves_source,  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         )
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)

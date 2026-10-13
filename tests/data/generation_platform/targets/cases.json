@@ -133,7 +133,27 @@
       "allow_private_network": true,
       "allow_remote_refs": true
     },
-    "steps": [{"check": {"exit": "DIFF"}}]
+    "steps": [{"check": {"exit": "DIFF"}}, {"check": {"exit": "ERROR", "input": {"url": "local.json"}}}]
+  },
+  "local-references": {
+    "input": {"path": "local/escape.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"write": ["secrets/creds.yaml", "token: SECRET-MARKER\n"]},
+      {"generate": {"exit": "ERROR"}},
+      {"check": {"exit": "ERROR", "model": {"allow_remote_refs": true}}},
+      {"tree": null}
+    ]
+  },
+  "local-references-symlink": {
+    "input": {"path": "local/linked.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"write": ["secrets/creds.yaml", "token: SECRET-MARKER\n"]},
+      {"symlink": ["spec/local/linked", "../../secrets"]},
+      {"generate": {"exit": "ERROR"}},
+      {"tree": null}
+    ]
   },
   "publish": {
     "input": {"path": "api.yaml"},

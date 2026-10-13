@@ -562,7 +562,10 @@ schemes, webhooks, and the selected paths with all their operations as they are 
 Components stay when something kept references them, and so do the `allOf` subtypes of a kept discriminator base.
 What a reference names in another loaded document, or in a path that is left out, joins the components of the
 kind the reference's position holds, under its own name or a numbered one when the name is taken; an OpenAPI 3.0
-path item, or a media type before 3.2, has no component kind and is copied in place. References are rewritten
+path item, or a media type before 3.2, has no component kind and is copied in place. Since the document publishes
+what it references, a server generation reads a local file only inside the input document's directory, after `..`
+and symbolic links resolve, and none for a document read from a URL: it fails on any other local file reference
+before reading the file, with or without `--allow-remote-refs`. References are rewritten
 relative to the document, so a schema's `$id` is left out; a reference resolves as the models resolve it,
 through `$id`, `$anchor`, and `$dynamicAnchor`. A reference that names nothing the generation loaded stays as it
 is, with a warning. A link whose `operationRef` names a path that is left
