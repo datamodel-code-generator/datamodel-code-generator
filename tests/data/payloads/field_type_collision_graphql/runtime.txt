@@ -1,0 +1,1 @@
+{"required":[{"x":2,"__typename":"Bar"}],"Bar":{"x":1,"__typename":"Bar"},"__typename":"Holder"}

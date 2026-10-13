@@ -355,6 +355,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                     use_standard_collections=self.use_standard_collections,
                 )
                 data_type.data_types = [new_data_type]
+                new_data_type.parent = data_type
 
                 data_type = new_data_type
             elif graphql.is_non_null_type(obj):  # pragma: no cover
