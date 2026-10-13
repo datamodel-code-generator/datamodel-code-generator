@@ -28,7 +28,13 @@ from datamodel_code_generator.format import Formatter
 from scripts.build_docs_examples import read_with_newest_preset
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
 from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
-from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args, run_main_with_system_exit
+from tests.main.conftest import (
+    TIMESTAMP,
+    InputFileTypeLiteral,
+    run_main_and_assert,
+    run_main_with_args,
+    run_main_with_system_exit,
+)
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "fastapi"
@@ -747,6 +753,53 @@ def test_fastapi_cli_usage(
         capsys=capsys,
         expected_stderr=f"Error: {message}\n",
         output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_file_type", "given"),
+    [(None, "auto"), ("auto", "auto"), ("jsonschema", "jsonschema")],
+    ids=["omitted", "auto", "jsonschema"],
+)
+def test_fastapi_cli_input_file_type(
+    input_file_type: InputFileTypeLiteral | None, given: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Refuse a server unless the input is given as OpenAPI, before reading the input."""
+    run_main_and_assert(
+        input_path=tmp_path / "missing.yaml",
+        output_path=tmp_path / "models.py",
+        input_file_type=input_file_type,
+        extra_args=_server(),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"Error: --generate-server requires --input-file-type openapi, not {given}\n",
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("line", "given"),
+    [("", "auto"), ('input-file-type = "auto"\n', "auto"), ('input-file-type = "jsonschema"\n', "jsonschema")],
+    ids=["omitted", "auto", "jsonschema"],
+)
+def test_fastapi_cli_pyproject_input_file_type(
+    line: str, given: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a server pyproject.toml selects unless it gives the input as OpenAPI, writing nothing."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        (CLI / "pyproject-server.toml").read_text(encoding="utf-8").replace('input-file-type = "openapi"\n', line),
+        encoding="utf-8",
+    )
+    run_main_with_args(
+        [],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"Error: --generate-server requires --input-file-type openapi, not {given}\n",
+    )
+    assert_output(
+        f"written: {sorted(path.name for path in tmp_path.iterdir() if path.name != 'pyproject.toml')}\n",
+        EXPECTED.parent / "generate" / "nothing-written.txt",
     )
 
 

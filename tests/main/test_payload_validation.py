@@ -177,6 +177,7 @@ BACKEND_ACCEPTANCE_CASE_IDS = {
         "jsonschema/array_field_constraints.json",
         "openapi/api.yaml::components.schemas.Pet",
         "openapi/additional_properties.yaml::components.schemas.Error",
+        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Cat",
     ),
     PayloadBackend.DATACLASSES: (
         "jsonschema/pydantic_v2_runtime_value.json",
@@ -1365,7 +1366,7 @@ def test_payload_runtime_pydantic_version_witnesses(
     case = SCHEMA_CASE_BY_ID[case_id]
     validate_with_source_schema(case, payload)
     if _pydantic_v2_legacy_runtime_exclusion_reason(case, backend):
-        with pytest.raises(PayloadAdapterError, match="look-around"):
+        with pytest.raises(PayloadAdapterError, match=r"look-around|backreferences"):
             generate_payload_runtime(case, generated_model_cache, backend)
         return
     adapter = load_generated_payload_adapter(case, generated_model_cache, backend)

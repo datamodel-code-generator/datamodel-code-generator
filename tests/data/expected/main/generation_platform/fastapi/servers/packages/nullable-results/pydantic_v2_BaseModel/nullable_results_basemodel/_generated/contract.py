@@ -10,7 +10,9 @@ from typing import Final, TypedDict
 
 import nullable_results_basemodel_models
 from fastapi import params
+from pydantic import TypeAdapter
 
+from .._runtime.server.requests import BodyAdapter, BodyMedia
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
@@ -25,6 +27,7 @@ OperationDependencies = TypedDict(
         'get_pet': Sequence[params.Depends],
         'get_thing': Sequence[params.Depends],
         'get_note': Sequence[params.Depends],
+        'post_memo': Sequence[params.Depends],
     },
     total=False,
 )
@@ -104,4 +107,15 @@ class GetNote:
     RESPONSES: Final = OperationResponses(
         responses={'200': Declared(media_type='text/plain', kind='text', model=nullable_results_basemodel_models.FieldNotesGetResponse)},
         primary=200,
+    )
+
+
+class PostMemo:
+    """Plans of the post_memo operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_results_basemodel_models.FieldMemosPostRequest | None)),),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.FieldMemosPostResponse | None, null=True)},
     )

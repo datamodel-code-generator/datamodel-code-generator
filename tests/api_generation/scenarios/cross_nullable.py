@@ -1,7 +1,8 @@
 """Call the nullable results server through its client with type alias models: `null` under each declared response.
 
 The server answers each call's `case` with a bare `None`, an `HTTPResult` without a body, or a value; the client
-reports the `None` or value it decoded, or the error it raised.
+reports the `None` or value it decoded, or the error it raised. An inline object schema that admits null takes
+`None` as its body and its result, and still refuses an object its schema does not.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 DOCUMENT = "fastapi/server-nullable-results.yaml"
 MODEL = {"use_type_alias": True}
 CLIENT = {"default_base_url": "https://nullable.example.com"}
-OPERATIONS = ("get_text", "get_list", "get_name", "get_value", "get_anything", "get_pet", "get_thing")
+OPERATIONS = ("get_text", "get_list", "get_name", "get_value", "get_anything", "get_pet", "get_thing", "post_memo")
 
 
 def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[str, object]:
@@ -34,17 +35,18 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
         "word": lambda: "abc",
         "numbers": lambda: [1, 2],
         "thing": lambda: models.Thing(id=1),
+        "memo": lambda: models.FieldMemosPostResponse(text="m"),
     }
     return {
         "default": service(
-            server.services.DefaultService, record, **dict.fromkeys(OPERATIONS, lambda case: answers[case]())
+            server.services.DefaultService, record, **dict.fromkeys(OPERATIONS, lambda case, **_: answers[case]())
         )
     }
 
 
 def calls(kit: Kit) -> Calls:
     """Return a call for each response that may be null, through the response view where the media type matters."""
-    api = kit.api.default
+    api, models = kit.api.default, kit.models
     view = api.with_response
     once = kit.connect(max_retries=0).default
     rate = kit.module("types.default").decode_get_text_header
@@ -70,4 +72,7 @@ def calls(kit: Kit) -> Calls:
         ("get_anything null result", lambda: api.get_anything(case="result")),
         ("get_pet None", lambda: view.get_pet(case="none")),
         ("get_thing", lambda: api.get_thing(case="thing")),
+        ("post_memo None", lambda: api.post_memo(case="none", body=None)),
+        ("post_memo value", lambda: api.post_memo(case="memo", body=models.FieldMemosPostRequest(text="a"))),
+        ("post_memo refused", lambda: api.post_memo(case="none", body=models.FieldMemosPostRequest.model_construct())),
     ]

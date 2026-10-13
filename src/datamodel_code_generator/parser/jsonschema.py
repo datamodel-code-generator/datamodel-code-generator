@@ -3145,7 +3145,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
             description=obj.description if self.use_schema_description else None,
-            nullable=obj.type_has_null,
+            nullable=self._object_nullable(obj),
             keyword_only=self.keyword_only,
             treat_dot_as_module=self.treat_dot_as_module,
             dataclass_arguments=self.dataclass_arguments,
@@ -3570,6 +3570,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         imports[full_path] = import_
         binding_names.add(import_.binding_name)
         return import_
+
+    def _object_nullable(self, obj: JsonSchemaObject) -> bool:
+        """Return whether an object model's schema admits null, by its types or by nullable under strict nullability."""
+        return obj.type_has_null or (self.strict_nullable and obj.nullable is True)
 
     def _cache_ref_data_type_facts(self, resolved_ref: str, obj: JsonSchemaObject) -> None:
         self._ref_data_type_facts[resolved_ref] = (
@@ -4114,7 +4118,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         tag_field, _tag_values = tag_data
         match obj.extras.get("discriminator"):
             case dict() as discriminator:
-                discriminator["propertyName"] = tag_field
+                obj.extras["discriminator"] = {**discriminator, "propertyName": tag_field}
             case _:
                 obj.extras["discriminator"] = {"propertyName": tag_field}
 
@@ -9014,6 +9018,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase],
         base_classes: list[Reference],
         required: list[str],
+        nullable: bool = False,
     ) -> DataType:
         if self.generate_schema_validators:
             obj = self._merge_conditional_properties(obj)
@@ -9194,6 +9199,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 extra_template_data=self.extra_template_data,
                 path=self.current_source_path,
                 description=obj.description if self.use_schema_description else None,
+                nullable=nullable,
                 keyword_only=self.keyword_only,
                 treat_dot_as_module=self.treat_dot_as_module,
                 dataclass_arguments=self.dataclass_arguments,
@@ -9714,6 +9720,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return self._parse_all_of_root_value(name, merged_root, path)
             return self._parse_all_of_merged_root(name, merged_root, path)
 
+        nullable = self._object_nullable(obj)
         merged_all_of_obj = self._merge_all_of_object(obj)
         if merged_all_of_obj:
             return self._parse_object_common_part(
@@ -9724,6 +9731,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 fields=[],
                 base_classes=[],
                 required=[],
+                nullable=nullable,
             )
 
         root_model_result = self._handle_allof_root_model_with_constraints(name, obj, path)
@@ -9766,6 +9774,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 fields=fields,
                 base_classes=base_classes,
                 required=required,
+                nullable=nullable,
             )
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
         self._set_schema_metadata(reference.path, obj)
@@ -10280,7 +10289,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 extra_template_data=self.extra_template_data,
                 path=self.current_source_path,
                 description=obj.description if self.use_schema_description else None,
-                nullable=obj.type_has_null,
+                nullable=self._object_nullable(obj),
                 keyword_only=self.keyword_only,
                 treat_dot_as_module=self.treat_dot_as_module,
                 dataclass_arguments=self.dataclass_arguments,
@@ -11544,7 +11553,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         enum_fields: list[DataModelFieldBase] = []
 
-        if None in obj.enum and (obj.type == "string" or obj.nullable):
+        if None in obj.enum and (
+            obj.type == "string" or obj.nullable or not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
+        ):
             nullable: bool = True
             enum_times = [e for e in obj.enum if e is not None]
         else:
@@ -11556,10 +11567,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         enum_names = obj.x_enum_varnames or obj.x_enum_names
         enum_descriptions = obj.x_enum_descriptions
 
-        for i, enum_part in enumerate(enum_times):
+        for i, enum_part in enumerate(obj.enum):
             match enum_part:
                 case str():
                     default = EnumMemberValue(enum_part)
+                case None if nullable:
+                    continue
                 case None:
                     default = NULL_ENUM_MEMBER_VALUE
                 case _:

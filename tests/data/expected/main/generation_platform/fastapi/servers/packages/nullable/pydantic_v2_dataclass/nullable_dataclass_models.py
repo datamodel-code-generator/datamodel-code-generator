@@ -52,3 +52,32 @@ FieldIdsPostRequest = TypeAliasType("FieldIdsPostRequest", UUID)
 
 
 FieldDraftsPostRequest = TypeAliasType("FieldDraftsPostRequest", str | None)
+
+
+@dataclass
+class FieldNotesPostRequest:
+    text: str
+
+
+@dataclass
+class FieldFormsPostRequest:
+    name: str
+    tags: list[str] | None = None
+    count: int | None = None
+
+
+@dataclass
+class Meta:
+    size: int | None = None
+
+
+@dataclass
+class FieldUploadsPostRequest:
+    file: bytes
+    note: str | None = None
+    meta: Meta | None = None
+
+
+@dataclass
+class FieldExtendedPostRequest(Item):
+    note: str | None = None

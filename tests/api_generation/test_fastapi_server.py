@@ -64,6 +64,7 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "bodies",
         "nullable",
         "nullable-3-0",
+        "nullable-3-0-strict",
         "nullable-alias",
         "nullable-force-optional",
         "results",
