@@ -108,11 +108,29 @@ brings `--check`, `--watch`, `--diff-against`, [batch jobs](fastapi-server.md#ba
 ## Move your handlers
 
 In fcg, the generated `main.py` holds a function for each operation, and you replace its `pass` with your logic. For the
-tutorial's `getPet`, fcg generates this, and the lines inside are yours:
+tutorial's `getPet`, fcg 0.8.1 generates this `main.py`, shown without its other operations; the `HTTPException`
+import, `PETS`, and the body of `get_pet` are yours:
 
 <!-- fmt: off -->
 
 ```python
+from __future__ import annotations
+
+from typing import Union
+
+from fastapi import FastAPI, HTTPException, Path
+
+from .models import Error, Pet
+
+app = FastAPI(
+    title='Pets',
+    version='1.0',
+    servers=[{'url': 'http://localhost:8000'}],
+)
+
+PETS: dict[int, Pet] = {}
+
+
 @app.get(
     '/pets/{petId}',
     response_model=Pet,
