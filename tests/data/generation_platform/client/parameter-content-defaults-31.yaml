@@ -22,3 +22,17 @@ paths:
               content:
                 text/plain:
                   schema: {type: string}
+  /foods/{food_id}/servings/{serving}:
+    get:
+      operationId: getServing
+      parameters:
+        - name: food_id
+          in: path
+          schema: {type: string}
+        - name: serving
+          in: path
+          required: false
+          schema: {type: integer, default: 1}
+      responses:
+        '204':
+          description: Served.

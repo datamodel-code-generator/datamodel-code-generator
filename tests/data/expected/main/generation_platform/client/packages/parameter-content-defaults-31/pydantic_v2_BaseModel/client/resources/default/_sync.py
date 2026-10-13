@@ -12,7 +12,7 @@ from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...options import RequestOptions
 from ...responses import RawResponse, Response
-from ...types.default import SearchResponse
+from ...types.default import GetServingResponse, SearchResponse
 
 
 class DefaultResource:
@@ -52,6 +52,22 @@ class DefaultResource:
             options=options,
         ).data
 
+    def get_serving(
+        self,
+        *,
+        food_id: str,
+        serving: int,
+        options: RequestOptions | None = None,
+    ) -> GetServingResponse:
+        """
+        Call GET /foods/{food_id}/servings/{serving}.
+        """
+        return self._core.execute(
+            _operations.OPERATION_1,
+            (food_id, serving),
+            options=options,
+        ).data
+
 
 class DefaultWithResponse:
     """The default operations, returning each result with its response metadata."""
@@ -72,6 +88,22 @@ class DefaultWithResponse:
         return self._core.execute(
             _operations.OPERATION_0,
             (q,),
+            options=options,
+        )
+
+    def get_serving(
+        self,
+        *,
+        food_id: str,
+        serving: int,
+        options: RequestOptions | None = None,
+    ) -> Response[GetServingResponse]:
+        """
+        Call GET /foods/{food_id}/servings/{serving}.
+        """
+        return self._core.execute(
+            _operations.OPERATION_1,
+            (food_id, serving),
             options=options,
         )
 
@@ -98,6 +130,22 @@ class DefaultWithRawResponse:
             options=options,
         )
 
+    def get_serving(
+        self,
+        *,
+        food_id: str,
+        serving: int,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """
+        Call GET /foods/{food_id}/servings/{serving}.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_1,
+            (food_id, serving),
+            options=options,
+        )
+
 
 class DefaultWithStreamingResponse:
     """The default operations, returning blocks that send each call on entry and stream its response."""
@@ -118,5 +166,21 @@ class DefaultWithStreamingResponse:
         return self._core.stream(
             _operations.OPERATION_0,
             (q,),
+            options=options,
+        )
+
+    def get_serving(
+        self,
+        *,
+        food_id: str,
+        serving: int,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """
+        Call GET /foods/{food_id}/servings/{serving}.
+        """
+        return self._core.stream(
+            _operations.OPERATION_1,
+            (food_id, serving),
             options=options,
         )

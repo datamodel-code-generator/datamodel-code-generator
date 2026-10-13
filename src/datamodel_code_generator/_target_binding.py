@@ -79,7 +79,7 @@ from datamodel_code_generator._target_contract import (
     WireDeclaration,
 )
 from datamodel_code_generator._target_module import TypeComposer
-from datamodel_code_generator._target_naming import TargetNames
+from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
@@ -3383,7 +3383,9 @@ class _Contracts(_SchemaUses):
         name: str | None = None,
         status: str | None = None,
         media: str | None = None,
+        placeholders: Container[str] = (),
     ) -> WireDeclaration:
+        """Bind one parameter or header; a path parameter naming a placeholder is required, as OpenAPI requires."""
         wire_name = name if name is not None else str(value.get("name", ""))
         location = str(value["in"]) if "in" in value else None
         schemas: tuple[TypeUseId, ...] = ()
@@ -3425,7 +3427,11 @@ class _Contracts(_SchemaUses):
             wire_name,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
-            _facts(value, _PARAMETER_FACTS, declared),
+            _facts(
+                {**value, "required": True} if location == "path" and wire_name in placeholders else value,
+                _PARAMETER_FACTS,
+                declared,
+            ),
             schemas,
             children,
         )
@@ -3504,8 +3510,9 @@ class _Contracts(_SchemaUses):
             parent,
             locate(_Declaration(use_site.document, use_site.tokens[:-1]), "use") if parent is not None else None,
         )
+        placeholders = frozenset(path_placeholders(item.use_site.tokens[-1]))
         parameters = tuple(
-            self.parameter(target, value, used, identity, "parameter")
+            self.parameter(target, value, used, identity, "parameter", placeholders=placeholders)
             for used, target, value in walked.parameters
             if target not in self.ignored_declarations
         )
