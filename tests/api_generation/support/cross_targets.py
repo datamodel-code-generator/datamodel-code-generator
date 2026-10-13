@@ -204,7 +204,11 @@ def _generate(scenario: ModuleType, root: Path, package: str) -> str:
     for suffix, backend in _clients(scenario):
         generate(
             source,
-            **{**model, "output_model_type": backend, "output": root / f"{package}{suffix}_models.py"},
+            **{
+                **model,
+                "output_model_type": backend or model["output_model_type"],
+                "output": root / f"{package}{suffix}_models.py",
+            },
             generate_client="httpx2",
             client_output=root / f"{package}_client{suffix}",
             client_package=f"{package}_client{suffix}",
@@ -214,10 +218,10 @@ def _generate(scenario: ModuleType, root: Path, package: str) -> str:
     return f"models shared {models.read_bytes() == served}\n"
 
 
-def _clients(scenario: ModuleType) -> list[tuple[str, DataModelType]]:
-    """Return the package suffix and model backend of each client of a case: the shared models' first."""
+def _clients(scenario: ModuleType) -> list[tuple[str, DataModelType | None]]:
+    """Return the package suffix and model backend of each client of a case: the shared models' first, as None."""
     return [
-        ("", DataModelType.PydanticV2BaseModel),
+        ("", None),
         *((f"_{backend.value.replace('.', '_')}", backend) for backend in getattr(scenario, "BACKENDS", ())),
     ]
 
