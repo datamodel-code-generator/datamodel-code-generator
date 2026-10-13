@@ -140,8 +140,24 @@ paths:
               schema: {type: string}
             application/json:
               schema: {$ref: "#/components/schemas/Pet"}
+  /tallies:
+    get:
+      operationId: getTally
+      responses:
+        "200":
+          description: The pet or a tally with extra members.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            application/vnd.tally+json:
+              schema: {$ref: "#/components/schemas/Tally"}
 components:
   schemas:
+    Tally:
+      type: object
+      properties:
+        total: {type: integer}
+      additionalProperties: true
     Pet:
       type: object
       required: [id, name]

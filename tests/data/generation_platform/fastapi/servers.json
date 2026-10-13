@@ -3410,6 +3410,10 @@
         "/paths/~1chosen/get": {
           "status_code": 200,
           "media_type": "application/json"
+        },
+        "/paths/~1tallies/get": {
+          "status_code": 200,
+          "media_type": "application/vnd.tally+json"
         }
       }
     },
@@ -3496,6 +3500,10 @@
           {
             "method": "GET",
             "url": "/chosen"
+          },
+          {
+            "method": "GET",
+            "url": "/tallies"
           },
           {
             "openapi": [

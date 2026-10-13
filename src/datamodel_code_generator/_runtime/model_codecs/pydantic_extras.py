@@ -25,8 +25,8 @@ def extras_serializer(adapter: TypeAdapter[Any]) -> SchemaSerializer:
 
 
 def extras_json(adapter: TypeAdapter[Any], value: object) -> bytes:
-    """Write a value as JSON by its adapter's aliases, with the extra members of its dataclasses."""
-    return extras_serializer(adapter).to_json(value, by_alias=True)
+    """Write a value as JSON by its adapter's aliases without unset fields, and its dataclasses' extra members."""
+    return extras_serializer(adapter).to_json(value, by_alias=True, exclude_unset=True)
 
 
 def _keeping(schema: object) -> object:
