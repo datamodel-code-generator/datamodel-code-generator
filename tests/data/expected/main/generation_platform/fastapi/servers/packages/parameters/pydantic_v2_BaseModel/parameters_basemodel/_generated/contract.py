@@ -31,6 +31,7 @@ OperationDependencies = TypedDict(
         'get_pair': Sequence[params.Depends],
         'get_menu': Sequence[params.Depends],
         'get_item': Sequence[params.Depends],
+        'get_serving': Sequence[params.Depends],
     },
     total=False,
 )
@@ -182,6 +183,15 @@ class GetItem:
         record=Parameters,
         path=RawPath(template='/items/{level}', names=frozenset({'level'})),
     )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class GetServing:
+    """Plans of the get_serving operation."""
+
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},
         primary=204,

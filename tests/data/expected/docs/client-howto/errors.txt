@@ -1,0 +1,6 @@
+exit 0
+> GET https://eu.shelter.example/v1/pets/99 authorization: Bearer s3cret
+404 Error(message='/pets/99 not found')
+> POST https://eu.shelter.example/v1/pets/1/adoption authorization: Bearer s3cret
+ConflictError Error code: 409 - {"message":"Mimi is already adopted"}
+APIConnectionError None ConnectError('connection refused')

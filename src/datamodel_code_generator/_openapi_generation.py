@@ -71,11 +71,17 @@ class TargetGenerationSession:
 
     _supports_api_scope: ClassVar[bool] = True
 
-    def __init__(self, *, output: Path, model_package: str, root_selector_document: str) -> None:
-        """Keep explicit logical addresses without loading an input or backend."""
+    def __init__(
+        self, *, output: Path, model_package: str, root_selector_document: str, serves_source: bool = False
+    ) -> None:
+        """Keep explicit logical addresses without loading an input or backend.
+
+        A session whose target serves the source document refuses the local files that document would publish.
+        """
         self._output = output
         self._model_package = model_package
         self._root_selector_document = root_selector_document
+        self._serves_source = serves_source
         self._next_attempt = 0
         self._candidate: BoundAttempt | None = None
         self._model_imports: frozenset[str] = frozenset()
@@ -90,7 +96,7 @@ class TargetGenerationSession:
         from datamodel_code_generator._target_binding import TargetApiOpenAPIParser  # noqa: PLC0415
 
         self._next_attempt += 1
-        parser = TargetApiOpenAPIParser(source, config=config)
+        parser = TargetApiOpenAPIParser(source, config=config, serves_source=self._serves_source)
         parser.attempt = AttemptId(self._next_attempt)
         return parser
 

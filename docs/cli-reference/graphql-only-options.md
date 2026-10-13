@@ -30,7 +30,7 @@ don't expect this field in input data.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --graphql-no-typename # (1)!
+    datamodel-codegen --input no-typename.graphql --graphql-no-typename # (1)!
     ```
 
     1. :material-arrow-left: `--graphql-no-typename` - the option documented here

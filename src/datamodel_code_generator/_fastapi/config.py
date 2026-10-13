@@ -43,6 +43,7 @@ class FastAPIConfig(TargetConfig):
     """Settings of one FastAPI server target; model settings stay in the model configuration."""
 
     _option_prefix: ClassVar[str] = "server"
+    _serves_source: ClassVar[bool] = True
 
     layout: Layout = "routers"
     handler_mode: HandlerMode = "sync"

@@ -98,8 +98,6 @@ class ConfigurationError(SDKError):
         *,
         field_path: tuple[str | int, ...] = (),
         reason: str = "invalid_value",
-        source_uri: str | None = None,
-        source_pointer: str | None = None,
         helper_id: str | None = None,
         operation_id: str | None = None,
         info: ResponseInfo | None = None,
@@ -108,8 +106,6 @@ class ConfigurationError(SDKError):
         """Keep where the setting lives, which rule it broke, and the helper that refused it."""
         super().__init__(reason=reason, operation_id=operation_id, info=info, cause=cause)
         self.field_path = tuple(field_path)
-        self.source_uri = source_uri
-        self.source_pointer = source_pointer
         self.helper_id = helper_id
 
     def _details(self) -> tuple[tuple[str, object], ...]:

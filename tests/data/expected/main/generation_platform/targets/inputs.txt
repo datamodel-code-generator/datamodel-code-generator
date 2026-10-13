@@ -13,13 +13,9 @@ check
   MISSING: server/README.md (file does not exist but should be generated)
   MISSING: server/py.typed (file does not exist but should be generated)
   5 runtime modules ['MISSING']
-  The input file type was determined to be: openapi
-  This can be specified explicitly with the `--input-file-type` option.
 check
-  The input file type was determined to be: openapi
-  This can be specified explicitly with the `--input-file-type` option.
   Error: The --server-operation-names entry '/paths/~1items/get' in 'urn:dcg:root' selects no root path operation
 check
   Error: input: Target generation reads one root document, not a directory
 check
-  Error: --input-file-type: Target generation reads an OpenAPI document
+  Error: --generate-server requires --input-file-type openapi, not jsonschema

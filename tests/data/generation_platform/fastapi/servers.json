@@ -744,6 +744,18 @@
           {
             "method": "GET",
             "url": "/pairs/ab/2/1/of/2"
+          },
+          {
+            "method": "GET",
+            "url": "/foods/apple/servings/2"
+          },
+          {
+            "method": "GET",
+            "url": "/foods/apple/servings/0"
+          },
+          {
+            "method": "GET",
+            "url": "/foods/apple/servings/"
           }
         ]
       },
