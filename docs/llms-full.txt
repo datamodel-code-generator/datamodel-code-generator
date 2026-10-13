@@ -15441,7 +15441,7 @@ place.
 
 | Exception | Raised for | Fields beside the shared ones |
 |---|---|---|
-| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed`, `response_consumed`, and `invalid_state` | `field_path`, `reason` (`invalid_value` by default), `source_uri`, `source_pointer`, `helper_id` |
+| `ConfigurationError` | A setting, argument, or call the client refused, including the reasons `client_closed`, `response_consumed`, and `invalid_state` | `field_path`, `reason` (`invalid_value` by default), `helper_id` |
 | `APIConnectionError` | A classified I/O failure of the transport, with the native failure as `cause`; the reason is `None` for a transport failure, `delivery_unknown` when a WebSocket send or an upload append or completion may have reached the server and is never sent again, and `negotiation_failed` for a WebSocket 101 that selected no offered subprotocol | None |
 | `APITimeoutError` | A subclass of `APIConnectionError`: a phase cap that expired, with the reason `phase_timeout`, or the call's or stream's total timeout, with the reason `deadline_exceeded` | None |
 | `APIStatusError` | A final status the operation does not declare as a success | `status_code`, `headers`, `request_id`, `body`, `body_bytes`, `truncated` |
