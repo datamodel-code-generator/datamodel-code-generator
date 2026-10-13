@@ -34,8 +34,11 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import (
+    ARRAY_KEYWORDS,
+    LENGTH_KEYWORDS,
     NONE,
     NUMBER_KEYWORDS,
+    STRING_KEYWORDS,
     DataType,
     _create_context_data_type,
     chain_as_tuple,
@@ -990,11 +993,18 @@ class DataTypeManager(_DataTypeManager):
 
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
-    NUMBER_CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
+    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
         "int": NUMBER_KEYWORDS,
         "float": NUMBER_KEYWORDS,
+        "str": STRING_KEYWORDS,
+        "bytes": LENGTH_KEYWORDS,
+        "bytearray": LENGTH_KEYWORDS,
+        "list": ARRAY_KEYWORDS,
+        "set": ARRAY_KEYWORDS,
+        "frozenset": ARRAY_KEYWORDS,
+        "tuple": ARRAY_KEYWORDS,
     })
-    ANNOTATION_UNIONS_TAKE_NUMBER_CONSTRAINTS: ClassVar[bool] = False
+    ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = False
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)

@@ -14,4 +14,4 @@ class Commons(RootModel[Any]):
 
 
 class DefaultArray(RootModel[list[Any]]):
-    root: list[Any] = Field(..., max_length=100, min_length=1)
+    root: list[Any]

@@ -406,10 +406,9 @@ def test_main_root_ref(output_file: Path) -> None:
 
 
 def test_main_string_min_max_items_compat(output_file: Path) -> None:
-    """A string field carrying minItems/maxItems generates a usable constr().
+    """A string field carrying minItems/maxItems generates a usable plain str.
 
-    Compatibility case: minItems/maxItems are inapplicable to strings in JSON
-    Schema, but when present they map to constr(min_length=, max_length=).
+    minItems/maxItems are inapplicable to strings in JSON Schema, so they are dropped.
     Mapping them to min_items/max_items produced constr(min_items=...), which
     raises TypeError the moment the generated pydantic v2 model is built.
     """
@@ -5200,6 +5199,46 @@ def test_main_number_constraints_on_non_numbers(output_file: Path, expected_file
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=f"number_constraints_on_non_numbers/{expected_file}",
+        extra_args=extra_args,
+        force_exec_validation=True,
+    )
+
+
+_OTHER_TYPE_CONSTRAINT_CASES: list[tuple[str, list[str]]] = [
+    ("default.py", []),
+    ("field_constraints.py", ["--field-constraints"]),
+    ("use_annotated.py", ["--use-annotated"]),
+    ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+    ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+]
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("source", "expected_file", "extra_args"),
+    [
+        *((source, *case) for source in ("string", "array") for case in _OTHER_TYPE_CONSTRAINT_CASES),
+        (
+            "string",
+            "type_overrides.py",
+            [
+                "--field-constraints",
+                "--type-overrides",
+                json.dumps({"StringConstraintsOnOtherTypes.overridden_min_length": "builtins.str"}),
+            ],
+        ),
+    ],
+)
+def test_main_string_and_array_constraints_on_other_types(
+    output_file: Path, source: str, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test string and array keywords constrain only fields whose schema or emitted types hold them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{source}_constraints_on_other_types.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{source}_constraints_on_other_types/{expected_file}",
         extra_args=extra_args,
         force_exec_validation=True,
     )

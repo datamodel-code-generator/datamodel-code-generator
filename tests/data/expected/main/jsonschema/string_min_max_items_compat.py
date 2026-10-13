@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel
 
 
 class Model(BaseModel):
-    code: constr(min_length=2, max_length=5) | None = None
+    code: str | None = None

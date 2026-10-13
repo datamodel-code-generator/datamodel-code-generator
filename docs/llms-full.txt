@@ -8497,7 +8497,7 @@ options); without them such a field has no bound. `msgspec.Struct` writes them a
 | `timedelta` | the four bounds, read as seconds | none |
 | `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
 | `time` | the four bounds, read as seconds since midnight | none |
-| a type the generator does not know (`fractions.Fraction`, a class of your own) | all five keywords | all five keywords |
+| a type the generator does not know (`fractions.Fraction`, a class of your own) or a model that the schema references | all five keywords | all five keywords |
 | any other known type: `str`, `bytes`, `bool`, `None`, `date`, `UUID`, `Any`, `object`, paths, IP addresses, lists, dicts and other containers | none | none |
 
 `multipleOf` is not written on `timedelta`, `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field,
@@ -8535,6 +8535,45 @@ class Model(BaseModel):
     wait: timedelta | None = Field(None, ge=0)
     at: AwareDatetime | None = Field(None, ge=0)
     day: date | None = None
+```
+
+## 🔤 Which fields keep string and array keywords
+
+`minLength`, `maxLength` and `pattern` hold for strings, and `minItems`, `maxItems` and `uniqueItems` hold for arrays.
+They follow the same two cases as number keywords: a schema type `string` takes the string keywords and a schema type
+`array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
+without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
+"pattern": "^1"}` leaves the field unconstrained, and `minItems` on a `string` is not written as a string length.
+
+| Python type | Pydantic | msgspec |
+|-------------|----------|---------|
+| `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
+| `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
+| `conbytes`, `EmailStr`, `SecretStr` | `minLength`, `maxLength` | none |
+| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems` | `minItems`, `maxItems` |
+| a type the generator does not know or a model that the schema references | all of them | all of them |
+| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts | none | none |
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {"type": "string", "minLength": 2},
+    "any": {"minLength": 2},
+    "count": {"type": "integer", "pattern": "^1"},
+    "tags": {"items": {"type": "string"}, "minItems": 1, "minLength": 3}
+  }
+}
+```
+
+With `--field-constraints`:
+
+```python
+class Model(BaseModel):
+    code: str | None = Field(None, min_length=2)
+    any: Any | None = None
+    count: int | None = None
+    tags: list[str] | None = Field(None, min_length=1)
 ```
 
 ---
