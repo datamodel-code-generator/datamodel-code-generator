@@ -352,11 +352,13 @@ def _iter_aliased_from_import_lines(
     aliases: list[tuple[int, str, bool]],
     line_length: int,
 ) -> Iterator[str]:
+    """Keep aliased names, and plain names also imported under an alias, on their own lines like isort."""
     sorted_aliases = sorted(aliases, key=lambda item: _alias_sort_key(item[1]))
+    renamed = {_alias_imported_name(alias) for _, alias, is_aliased in aliases if is_aliased}
     chunk: list[str] = []
     chunk_group: int | None = None
     for group_index, alias, is_aliased in sorted_aliases:
-        if is_aliased:
+        if is_aliased or alias in renamed:
             if chunk:
                 yield _format_from_import(module, chunk, line_length)
                 chunk = []
