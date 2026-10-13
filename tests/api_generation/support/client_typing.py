@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import warnings
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope, generate
@@ -76,12 +77,16 @@ def _generate_pets(source: Path, root: Path) -> None:
 def client_regenerated_typing_report(root: Path) -> str:
     """Check user code against the package of an API, then report what each checker finds once a later version is out.
 
-    The later version removes an operation the user code calls and renames a parameter it passes.
+    The later version removes an operation the user code calls and renames a parameter it passes, and its generation
+    warns about the modules of the removed resource that it leaves in place.
     """
     source = SOURCE / "regeneration"
     _generate_pets(source / "v1.yaml", root)
     shutil.copyfile(source / "extensions.py", root / "extensions.py")
     lines = checked(root, ["pets", "extensions.py"], "v1 pets and extensions.py")
-    _generate_pets(source / "v2.yaml", root)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.filterwarnings("always", ".*Python files are no longer generated", UserWarning)
+        _generate_pets(source / "v2.yaml", root)
+    lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
     lines.extend(checked(root, ["extensions.py"], "v2 extensions.py"))
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
