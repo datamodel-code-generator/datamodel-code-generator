@@ -88,6 +88,18 @@ def test_marked_section_replacement_uses_end_marker_after_begin() -> None:
     )
 
 
+def test_marked_section_replacement_indents_as_the_begin_marker() -> None:
+    """A marked section inside a content tab keeps the generated block and its end marker in the tab."""
+    markdown = '=== "Python"\n\n    <!-- BEGIN -->\n    stale\n    <!-- END -->\n\nAfter\n'
+
+    assert_output(
+        build_preset_docs._replace_marked_section(
+            markdown, "<!-- BEGIN -->", "<!-- END -->", "```python\nx = 1\n\ny = 2\n```\n"
+        ),
+        EXPECTED_PRESET_DOCS_PATH / "marked_section_replacement_indented.txt",
+    )
+
+
 def test_preset_config_supports_enum_backed_string_and_sequence_options() -> None:
     """Preset config keeps string-backed enum and sequence options typed after validation."""
     enum_item = PresetConfig(extra_fields=ExtraFields.Forbid).items()[0]

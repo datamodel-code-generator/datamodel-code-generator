@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 _AUTH_FIELDS = ("reason", "status_code", "oauth_error")
-_CONFIGURATION_FIELDS = ("reason", "field_path", "source_uri", "source_pointer", "helper_id")
+_CONFIGURATION_FIELDS = ("reason", "field_path", "helper_id")
 
 
 def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -> None:
@@ -42,13 +42,7 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
         ))
         values = dict(required)
         if name == "ConfigurationError":
-            values.update(
-                field_path=["private-secret"],
-                reason="invalid_scope",
-                source_uri="https://private-secret.example/schema",
-                source_pointer="/private-secret",
-                info=info,
-            )
+            values.update(field_path=["private-secret"], reason="invalid_scope", info=info)
         else:
             values.update(status_code=400)
         error = constructor(**values, operation_id="auth_operation", cause=cause)

@@ -114,8 +114,13 @@ an HTTPX2 client package, in the same run as the models. The models stay the run
 methods take and return the generated models, so the server and the client parse and produce the same classes you already
 use. Every generated file is regenerated on each run; keep your own code outside the generated packages.
 
+This example is the [FastAPI server tutorial](fastapi-server.md#quick-start), and the tests of this project run it as shown.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: index.server-client.openapi -->
 <details>
 <summary>Input (<code>openapi.yaml</code>)</summary>
+
+<!-- fmt: off -->
 
 ```yaml
 openapi: 3.1.0
@@ -126,6 +131,19 @@ servers:
   - url: http://localhost:8000
 paths:
   /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pets"}
     post:
       operationId: createPet
       tags: [pets]
@@ -155,6 +173,11 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Pet"}
+        "404":
+          description: No pet has this ID.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
 components:
   schemas:
     NewPet:
@@ -170,11 +193,24 @@ components:
         id: {type: integer}
         name: {type: string}
         tag: {type: string}
+    Pets:
+      type: array
+      items: {$ref: "#/components/schemas/Pet"}
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}
 ```
 
+<!-- fmt: on -->
 </details>
+<!-- END AUTO-GENERATED DOC EXAMPLE: index.server-client.openapi -->
 
 **Commands**
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: index.server-client.commands -->
+<!-- fmt: off -->
 
 ```bash
 # FastAPI server package in server/
@@ -204,8 +240,14 @@ datamodel-codegen \
   --client-model-package models
 ```
 
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: index.server-client.commands -->
+
 `--openapi-scopes` must include `api`, and both need Python 3.11 or later, to run and as the target version (the preset
 sets 3.12). Each run ends by printing the runtime dependencies of its package to stderr:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: index.server-client.notice -->
+<!-- fmt: off -->
 
 ```text
 Add the runtime dependencies of server to your project:
@@ -214,67 +256,120 @@ Add the runtime dependencies of client to your project:
   uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.13.5"
 ```
 
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: index.server-client.notice -->
+
 **Generated files (trimmed)**
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: index.server-client.tree -->
+<!-- fmt: off -->
+
 ```text
-models.py              # NewPet, Pet
+models.py
 server/
-├── __init__.py        # create_app, build_router
-├── application.py
-├── services.py        # PetsService Protocol
-├── routers/pets.py
 ├── README.md
-└── _generated/, _runtime/
+├── __init__.py
+├── _generated/
+├── _runtime/
+├── application.py
+├── py.typed
+├── routers/
+└── services.py
 client/
-├── __init__.py        # Client, AsyncClient
-├── resources/pets/
-├── types/pets/
-├── options.py, errors.py, responses.py
-└── _generated/, _runtime/
+├── __init__.py
+├── _generated/
+├── _generated_docs/
+├── _runtime/
+├── errors.py
+├── model_codecs.py
+├── options.py
+├── py.typed
+├── resources/
+├── responses.py
+└── types/
 ```
 
-**Implement the server** by subclassing the generated service Protocol in a module of your own; type checkers report a
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: index.server-client.tree -->
+
+**Implement the server** in `app.py` by subclassing the generated service Protocol; type checkers report a
 missing method or a mismatched signature:
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: index.server-client.app -->
+<!-- fmt: off -->
+
 ```python
-# app.py
-from models import NewPet, Pet
-from server import create_app
+from models import Error, NewPet, Pet, Pets
+from server import HTTPResult, create_app
 from server.services import PetsService
 
 
-class Pets(PetsService):
+class PetStore(PetsService):
     def __init__(self) -> None:
         self.pets: dict[int, Pet] = {}
+
+    def list_pets(self, *, limit: int) -> Pets:
+        return Pets(list(self.pets.values())[:limit])
 
     def create_pet(self, *, body: NewPet) -> Pet:
         pet = Pet(id=len(self.pets) + 1, name=body.name, tag=body.tag)
         self.pets[pet.id] = pet
         return pet
 
-    def get_pet(self, *, pet_id: int) -> Pet:
-        return self.pets[pet_id]
+    def get_pet(self, *, pet_id: int) -> Pet | HTTPResult[Error]:
+        if (pet := self.pets.get(pet_id)) is None:
+            return HTTPResult(404, Error(message=f"Pet {pet_id} not found"))
+        return pet
 
 
-app = create_app(pets=Pets())
+app = create_app(pets=PetStore())
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: index.server-client.app -->
 
 ```bash
 uv add uvicorn
 uv run uvicorn app:app
 ```
 
-**Call it with the client**, which sends to the document's server URL by default:
+**Call it with the client** in `call.py`, which sends to the document's server URL by default:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: index.server-client.call -->
+<!-- fmt: off -->
 
 ```python
 from client import Client
+from client.errors import NotFoundError
 from models import NewPet
 
 with Client() as client:
     pet = client.pets.create_pet(body=NewPet(name="Mimi", tag="cat"))
-    print(client.pets.get_pet(pet_id=pet.id))
-# id=1 name='Mimi' tag='cat'
+    print(pet)
+    for listed in client.pets.list_pets(limit=10).root:
+        print(listed.name)
+    try:
+        client.pets.get_pet(pet_id=99)
+    except NotFoundError as error:
+        print(error.status_code, error.body)
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: index.server-client.call -->
+
+It prints:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: index.server-client.output -->
+<!-- fmt: off -->
+
+```text
+id=1 name='Mimi' tag='cat'
+Mimi
+404 message='Pet 99 not found'
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: index.server-client.output -->
 
 `AsyncClient` offers the same methods as coroutines. See [FastAPI Server Generation](fastapi-server.md) and [Python Client Generation](python-client.md) for every option, the
 `pyproject.toml` settings, authentication, and the Python API.

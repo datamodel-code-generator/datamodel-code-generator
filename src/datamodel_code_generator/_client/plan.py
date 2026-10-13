@@ -40,7 +40,13 @@ from datamodel_code_generator._target_contract import (
     TypeUseBinding,
     UnionType,
 )
-from datamodel_code_generator._target_naming import WINDOWS_DEVICES, NameScope, explicit_name, operation_basis
+from datamodel_code_generator._target_naming import (
+    WINDOWS_DEVICES,
+    NameScope,
+    explicit_name,
+    operation_basis,
+    path_placeholders,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping
@@ -683,14 +689,24 @@ class Planner:
             for location, name in explicit
         )
         paths = {spec.wire_name for spec in specs if spec.location == "path"}
+        template = path_placeholders(operation.path)
         self.problems.extend(
             _problem(
                 "E_METADATA_REQUIRED",
                 f"The path placeholder {placeholder!r} of {_label(operation)} has no path parameter",
                 operation.id.use_site,
             )
-            for placeholder in dict.fromkeys(_PLACEHOLDER.findall(operation.path))
+            for placeholder in dict.fromkeys(template)
             if placeholder not in paths
+        )
+        self.problems.extend(
+            _problem(
+                "E_METADATA_REQUIRED",
+                f"The path parameter {declaration.name!r} of {_label(operation)} names no path placeholder",
+                declaration.use_site,
+            )
+            for declaration in operation.parameters
+            if fact(declaration, "in") == "path" and declaration.name not in template
         )
         return tuple(specs)
 

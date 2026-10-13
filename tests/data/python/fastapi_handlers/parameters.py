@@ -50,6 +50,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_item(self, **arguments: object) -> None:
             record("get_item", arguments)
 
+        def get_serving(self, **arguments: object) -> None:
+            record("get_serving", arguments)
+
     return {"default": {"default": Default()}}
 
 
