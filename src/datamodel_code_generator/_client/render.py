@@ -76,7 +76,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.client.multipart import PartPlan
+    from datamodel_code_generator._runtime.client.parts import PartPlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelHint,
@@ -921,7 +921,7 @@ def _core_call(
 def _part_plan(module: TargetModule, plan: PartPlan) -> str:
     """Return the PartPlan constructor of one form-data member."""
     repeated = ", repeated=True" if plan.repeated else ""
-    return f"{module.local('_runtime.client.multipart', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
+    return f"{module.local('_runtime.client.parts', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
 
 
 class _Typing:
@@ -1963,7 +1963,7 @@ class _Registry(_Typing):
         """Return the PartPlan constructor of one member of a body sent as parts."""
         plan = part.plan
         return _call(
-            module.local("_runtime.client.multipart", "PartPlan"),
+            module.local("_runtime.client.parts", "PartPlan"),
             (
                 ("", repr(plan.name)),
                 *((("", repr(plan.kind)),) if plan.kind == "json" else ()),

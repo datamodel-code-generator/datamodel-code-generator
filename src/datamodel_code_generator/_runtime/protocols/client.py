@@ -26,12 +26,12 @@ from ..client.client import (
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
-from ..client.logical import Delivery, LogicalCallContext, run_sync
+from ..client.logical import LogicalCallContext, run_sync
 from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.positions import secret_names
 from ..client.raw import AsyncRawResponse, RawResponse, refuse, released
 from ..client.responses import HeadersView, Response
-from ..client.retry import RetryTiming, retry_delay
+from ..client.retry import Delivery, RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, request_origin, strip_query
 from ..model_codecs.unset import UNSET
