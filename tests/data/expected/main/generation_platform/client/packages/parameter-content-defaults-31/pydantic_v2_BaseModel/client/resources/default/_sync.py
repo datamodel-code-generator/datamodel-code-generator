@@ -10,7 +10,7 @@ from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...options import RequestOptions
+from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types.default import GetServingResponse, SearchResponse
 
@@ -57,6 +57,7 @@ class DefaultResource:
         *,
         food_id: str,
         serving: int,
+        portion: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> GetServingResponse:
         """
@@ -64,7 +65,7 @@ class DefaultResource:
         """
         return self._core.execute(
             _operations.OPERATION_1,
-            (food_id, serving),
+            (food_id, serving, portion),
             options=options,
         ).data
 
@@ -96,6 +97,7 @@ class DefaultWithResponse:
         *,
         food_id: str,
         serving: int,
+        portion: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> Response[GetServingResponse]:
         """
@@ -103,7 +105,7 @@ class DefaultWithResponse:
         """
         return self._core.execute(
             _operations.OPERATION_1,
-            (food_id, serving),
+            (food_id, serving, portion),
             options=options,
         )
 
@@ -135,6 +137,7 @@ class DefaultWithRawResponse:
         *,
         food_id: str,
         serving: int,
+        portion: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """
@@ -142,7 +145,7 @@ class DefaultWithRawResponse:
         """
         return self._core.execute_raw(
             _operations.OPERATION_1,
-            (food_id, serving),
+            (food_id, serving, portion),
             options=options,
         )
 
@@ -174,6 +177,7 @@ class DefaultWithStreamingResponse:
         *,
         food_id: str,
         serving: int,
+        portion: str | UNSET = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """
@@ -181,6 +185,6 @@ class DefaultWithStreamingResponse:
         """
         return self._core.stream(
             _operations.OPERATION_1,
-            (food_id, serving),
+            (food_id, serving, portion),
             options=options,
         )

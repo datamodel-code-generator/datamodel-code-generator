@@ -143,6 +143,7 @@ class DefaultService(Protocol):
         *,
         food_id: str,
         serving: int,
+        portion: str | None,
     ) -> None | HTTPResult[None] | Response:
         """
         Handle GET /foods/{food_id}/servings/{serving}.

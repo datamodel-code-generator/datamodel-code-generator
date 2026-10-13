@@ -101,6 +101,7 @@ paths:
       parameters:
         - {name: food_id, in: path, schema: {type: string}}
         - {name: serving, in: path, required: false, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: portion, in: path, schema: {type: string}}
       responses:
         "204": {description: Done.}
 components:

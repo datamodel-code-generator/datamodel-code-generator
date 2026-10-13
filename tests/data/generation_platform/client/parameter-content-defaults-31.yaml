@@ -33,6 +33,9 @@ paths:
           in: path
           required: false
           schema: {type: integer, default: 1}
+        - name: portion
+          in: path
+          schema: {type: string}
       responses:
         '204':
           description: Served.

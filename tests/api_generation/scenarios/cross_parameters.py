@@ -2,7 +2,8 @@
 
 The document also holds repeated path placeholders, dotted and non-ASCII names, root model and literal defaults.
 A refused path parameter is reported under the name the document gives it, however the route path spells it. Path
-parameters that leave out `required` or declare it false are required arguments of both the client and the server.
+parameters that leave out `required` or declare it false are required arguments of both the client and the server,
+unless they name no placeholder of the path.
 """
 
 from __future__ import annotations
