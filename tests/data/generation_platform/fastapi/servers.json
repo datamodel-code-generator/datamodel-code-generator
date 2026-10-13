@@ -1709,6 +1709,26 @@
       {
         "method": "GET",
         "url": "/notes?case=word"
+      },
+      {
+        "method": "POST",
+        "url": "/memos?case=none",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/memos?case=null",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/memos?case=none",
+        "json": {}
       }
     ],
     "package_snapshots": [
@@ -5303,6 +5323,30 @@
       {
         "method": "POST",
         "url": "/drafts"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {}
+      },
+      {
+        "method": "POST",
+        "url": "/notes"
       }
     ],
     "package_snapshots": [
@@ -5571,9 +5615,102 @@
       {
         "method": "POST",
         "url": "/drafts"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {}
+      },
+      {
+        "method": "POST",
+        "url": "/notes"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a",
+          "replies": [
+            null,
+            {
+              "text": "b"
+            }
+          ]
+        }
       }
     ],
     "package_snapshots": []
+  },
+  "nullable-3-0-strict": {
+    "input": "server-nullable-3-0.yaml",
+    "services": "bodies",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/post": "async"
+      }
+    },
+    "package_snapshots": [],
+    "model": {
+      "strict_nullable": true
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/notes",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {}
+      },
+      {
+        "method": "POST",
+        "url": "/notes"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a",
+          "replies": [
+            null,
+            {
+              "text": "b"
+            }
+          ]
+        }
+      }
+    ]
   },
   "nullable-alias": {
     "input": "server-nullable-3-0.yaml",

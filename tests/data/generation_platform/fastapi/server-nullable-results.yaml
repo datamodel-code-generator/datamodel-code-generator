@@ -127,6 +127,22 @@ paths:
           content:
             text/plain:
               schema: {type: [string, "null"]}
+  /memos:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    post:
+      operationId: postMemo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "200":
+          description: A memo or null.
+          content:
+            application/json:
+              schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
 components:
   schemas:
     Thing: {type: object, required: [id], properties: {id: {type: integer}}}

@@ -30,6 +30,7 @@ OperationDependencies = TypedDict(
         'post_item': Sequence[params.Depends],
         'post_id': Sequence[params.Depends],
         'post_draft': Sequence[params.Depends],
+        'post_note': Sequence[params.Depends],
     },
     total=False,
 )
@@ -164,6 +165,18 @@ class PostId:
 class PostDraft:
     """Plans of the post_draft operation."""
 
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class PostNote:
+    """Plans of the post_note operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_basemodel_models.FieldNotesPostRequest | None)),),
+    )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},
         primary=204,

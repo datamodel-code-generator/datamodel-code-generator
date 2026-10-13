@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import nullable_results_basemodel_models
-from fastapi import APIRouter, Query, params
+from fastapi import APIRouter, Depends, Query, params
 from fastapi.responses import Response
 
 from .._generated import contract
@@ -329,6 +329,43 @@ def _add_get_note(
     )
 
 
+def _add_post_memo(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_memo_handler = checked(
+        default.post_memo,
+        'The default.post_memo method of POST /memos',
+    )
+
+    def post_memo(
+        *,
+        case: Annotated[str, Query(alias='case')],
+        body: Annotated[nullable_results_basemodel_models.FieldMemosPostRequest | None, Depends(contract.PostMemo.BODY)],
+    ) -> object:
+        return dispatch(
+            post_memo_handler(
+                case=case,
+                body=body,
+            ),
+            contract.PostMemo.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/memos',
+        post_memo,
+        methods=['POST'],
+        status_code=200,
+        response_model=nullable_results_basemodel_models.FieldMemosPostResponse | None,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='postMemo',
+        response_description='A memo or null.',
+        dependencies=wiring.dependencies.get('post_memo'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('get_text', _add_get_text),
     ('head_text', _add_head_text),
@@ -339,6 +376,7 @@ LITERAL_ROUTES: Final = (
     ('get_pet', _add_get_pet),
     ('get_thing', _add_get_thing),
     ('get_note', _add_get_note),
+    ('post_memo', _add_post_memo),
 )
 TEMPLATED_ROUTES: Final = ()
 

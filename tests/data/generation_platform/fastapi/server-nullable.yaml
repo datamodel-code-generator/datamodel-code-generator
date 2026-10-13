@@ -119,6 +119,16 @@ paths:
             schema: {type: [string, "null"]}
       responses:
         "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Item: {type: object, required: [name], properties: {name: {type: string}}}

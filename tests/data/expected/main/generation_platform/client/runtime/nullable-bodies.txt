@@ -1,0 +1,55 @@
+# nullable-parameters pydantic_v2.BaseModel, pydantic_v2.dataclass
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = FieldNotesPostResponse(text='b')
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=1 validation error for nullable[FieldNotesPostResponse]
+text
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None
+# nullable-parameters dataclasses.dataclass
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = FieldNotesPostResponse(text='b')
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=TypeError("FieldNotesPostResponse.__init__() missing 1 required positional argument: 'text'")] invalid_value
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None
+# nullable-parameters typing.TypedDict
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = {'text': 'b'}
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member = {}
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None
+# nullable-parameters msgspec.Struct
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = FieldNotesPostResponse(text='b')
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=ValidationError('Object missing required field `text`')] invalid_value
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None

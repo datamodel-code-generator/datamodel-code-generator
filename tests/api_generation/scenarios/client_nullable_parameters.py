@@ -1,10 +1,22 @@
-"""Send None for nullable parameters: an optional style parameter is left out, and a required one is refused."""
+"""Send None for nullable parameters and bodies.
+
+An optional style parameter is left out, and a required one is refused. An inline object schema that admits null sends
+and decodes None as its body and its result, and still checks an object against its schema.
+"""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from tests.api_generation.support.client_runtime import Exchange, arecord, raw_response, record, run
+from tests.api_generation.support.client_runtime import (
+    Exchange,
+    arecord,
+    json_response,
+    raw_response,
+    record,
+    request_body,
+    run,
+)
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -45,4 +57,26 @@ async def _async_nullable_parameters(package: ModuleType, lines: list[str]) -> N
             lambda: api.default.get_items(cap=None, tags=None, X_Trace=None, session=None),
         )
         await arecord(lines, "async refuse a null required query", lambda: api.default.get_needed(key="k", need=None))
+    await http.aclose()
+
+
+def nullable_bodies(package: ModuleType, lines: list[str]) -> None:
+    """Send and decode null as an inline object schema's body and result, then send and check objects."""
+    exchange = Exchange(lines)
+    note = request_body(package, "postNote", None, {"text": "a"})
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        exchange.respond(json_response(200, None), json_response(200, {"text": "b"}), json_response(200, {}))
+        record(lines, "send and decode null", lambda: api.default.post_note(body=None))
+        record(lines, "send and decode an object", lambda: api.default.post_note(body=note))
+        record(lines, "decode an object without its required member", lambda: api.default.post_note(body=None))
+    run(lambda: _async_nullable_bodies(package, lines))
+
+
+async def _async_nullable_bodies(package: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    http = exchange.async_client()
+    api: Any
+    async with package.AsyncClient(http_client=http) as api:
+        exchange.respond(json_response(200, None))
+        await arecord(lines, "async send and decode null", lambda: api.default.post_note(body=None))
     await http.aclose()

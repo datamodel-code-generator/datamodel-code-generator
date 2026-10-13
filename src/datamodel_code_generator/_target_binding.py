@@ -1271,6 +1271,10 @@ class _Hints:
         annotation, static = variants if len(variants) > 1 else (variants[0], None)
         return self.hint(annotation, None if static == annotation else static)
 
+    def optional(self, base: TypeView) -> ModelHint:
+        """Return the hint of a type that also takes None, in the configured type style."""
+        return self.composed(self.hint_type.model_construct(), base=base, is_optional=True)
+
     def leaf(self, data_type: DataType, enum: SymbolId | None = None) -> ModelHint:
         """Render one DataType without its containers and optionality, as the model's own type hint spells it.
 
@@ -1374,9 +1378,21 @@ class _Projector:
         except _NotEmittedError:
             return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
 
-    def declaration(self, reference: Reference) -> TypeProjection:
+    def declaration(self, reference: Reference, *, nullable: bool = False) -> TypeProjection:
+        """Project a schema's own model, which as a nullable value also takes None when an object model stands for it.
+
+        An object model, unlike an alias or a root model, cannot hold the null its schema admits.
+        """
         try:
-            return TypeProjection(self._imports(self._reference_value(reference, serialize_as_any=False)))
+            value = self._reference_value(reference, serialize_as_any=False)
+            if (
+                nullable
+                and isinstance(value, GeneratedSymbolType)
+                and (model := self.binder.models[value.symbol]).nullable
+                and self.binder.policies[id(model)].kind == "model"
+            ):
+                value = UnionType((value, NoneType()), preserve_order=False, hint=self.hints.optional(value))
+            return TypeProjection(self._imports(value))
         except _UnsupportedError:
             return TypeProjection(None, "BND_TYPE_EXPRESSION_UNSUPPORTED")
         except _NotEmittedError:
@@ -2914,13 +2930,20 @@ class _SchemaUses(_Models):
     """Bind the schemas the models were generated from, nested ones included."""
 
     def projection(
-        self, declaration: _Declaration, projection: Projection, direction: Direction, *, inline: bool = False
+        self,
+        declaration: _Declaration,
+        projection: Projection,
+        direction: Direction,
+        *,
+        inline: bool = False,
+        nullable: bool = False,
     ) -> TypeProjection:
         """Bind an acquired declaration: its emitted model wins over a direct reference type.
 
         A declaration the parser emitted nothing for, such as a recursive reference with sibling keywords, binds
         the model-free type of its schema, which is the referenced model. An inlined projection reads each alias and
-        root model as the type it stands for.
+        root model as the type it stands for, and a nullable one, a value an operation sends or receives, takes the
+        null its schema admits.
         """
         binder = self.binder
         parser = self.parser
@@ -2935,7 +2958,7 @@ class _SchemaUses(_Models):
             or binder.final(reference, direction) is not None
             or binder.unwrapped(reference) is not None
         ):
-            return projector.declaration(reference)
+            return projector.declaration(reference, nullable=nullable)
         if data_type is not None:
             return projector.project(data_type)
         return self.lightweight(declaration, direction, inline=inline)
@@ -2999,14 +3022,15 @@ class _SchemaUses(_Models):
             status,
             media,
         )
-        projected = self.projection(schema, projection, direction)
+        nullable = role != "schema"
+        projected = self.projection(schema, projection, direction, nullable=nullable)
         members = (
             self.members_at(projected.value.symbol, schema, direction)
             if isinstance(projected.value, GeneratedSymbolType)
             else ()
         )
         argument = (
-            self.projection(schema, projection, direction, inline=True).value
+            self.projection(schema, projection, direction, inline=True, nullable=nullable).value
             if role == "parameter" and projected.value is not None
             else None
         )

@@ -54,3 +54,7 @@ class FieldIdsPostRequest(RootModel[UUID]):
 
 class FieldDraftsPostRequest(RootModel[str | None]):
     root: str | None
+
+
+class FieldNotesPostRequest(BaseModel):
+    text: str

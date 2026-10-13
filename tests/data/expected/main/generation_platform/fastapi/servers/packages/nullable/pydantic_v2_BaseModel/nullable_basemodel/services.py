@@ -136,3 +136,13 @@ class DefaultService(Protocol):
         """
         Handle POST /drafts.
         """
+
+    @abstractmethod
+    def post_note(
+        self,
+        *,
+        body: nullable_basemodel_models.FieldNotesPostRequest | None,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /notes.
+        """

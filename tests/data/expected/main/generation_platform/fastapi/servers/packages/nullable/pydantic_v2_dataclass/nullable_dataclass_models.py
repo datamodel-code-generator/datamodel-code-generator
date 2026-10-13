@@ -52,3 +52,8 @@ FieldIdsPostRequest = TypeAliasType("FieldIdsPostRequest", UUID)
 
 
 FieldDraftsPostRequest = TypeAliasType("FieldDraftsPostRequest", str | None)
+
+
+@dataclass
+class FieldNotesPostRequest:
+    text: str
