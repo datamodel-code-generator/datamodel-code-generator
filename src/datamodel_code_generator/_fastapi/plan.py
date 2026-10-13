@@ -49,7 +49,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     UnionType,
 )
-from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis
+from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -719,6 +719,16 @@ class Planner:  # noqa: PLR0904
             for placeholder in dict.fromkeys(names)
             if placeholder not in declared
         )
+        template = path_placeholders(operation.path)
+        self.problems.extend(
+            _problem(
+                "F_ROUTE_INVALID",
+                f"The path parameter {declaration.name!r} of {_label(operation)} names no path placeholder",
+                declaration.use_site,
+            )
+            for declaration in operation.parameters
+            if fact(declaration, "in") == "path" and declaration.name not in template
+        )
         body = None if operation.request_body is None else self.body(operation, operation.request_body)
         responses = tuple(self.response(operation, response) for response in operation.responses)
         primary = self.primary(operation, responses)
@@ -869,15 +879,16 @@ class Planner:  # noqa: PLR0904
             if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
             else self.kind(value)
         )
+        required = fact(declaration, "required") is True
         spec = ParameterSpec(
             location=location,
             wire_name=name,
-            required=fact(declaration, "required") is True,
+            required=required,
             use=use,
             plan=plan,
             decision=Decision(transport="adapter"),
             type=value,
-            default=default,
+            default=Default.ABSENT if required else default,
             local=declaration.declaration.location.document == operation.id.use_site.document,
         )
         if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):

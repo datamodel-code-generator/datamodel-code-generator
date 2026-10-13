@@ -234,16 +234,27 @@ the `server_*` or `client_*` options configure it. They are the options of `--ge
 and the `--server-*` and `--client-*` flags under their Python names, as for model options: choices are enums such as
 `ServerType` (their string values also work), and the options that take JSON on the command line take mappings.
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
+<!-- fmt: off -->
+
 ```python
 from pathlib import Path
 
-from datamodel_code_generator import InputFileType, OpenAPIScope, ServerHandlerMode, ServerType, generate
+from datamodel_code_generator import (
+    DataModelType,
+    InputFileType,
+    OpenAPIScope,
+    ServerHandlerMode,
+    ServerType,
+    generate,
+)
 
 generate(
     Path("openapi.yaml"),
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-    target_python_version="3.11",
+    output_model_type=DataModelType.PydanticV2BaseModel,
+    preset="standard-py312-20260909",
     output=Path("models.py"),
     generate_server=ServerType.FastAPI,
     server_output=Path("server"),
@@ -253,6 +264,9 @@ generate(
     server_body_modes={"/paths/~1upload/post": "request"},
 )
 ```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
 
 With an `output`, `generate()` writes the models and the package together and returns `None`. Without one, it writes
 nothing but the model metadata and a remote lock update, and returns `GeneratedModules` with every model and package

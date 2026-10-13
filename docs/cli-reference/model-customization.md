@@ -81,7 +81,7 @@ depend on the generator of the installed Pydantic.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field --alias-generator to_camel --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input alias_generator.json --snake-case-field --alias-generator to_camel --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--alias-generator` - the option documented here
@@ -158,7 +158,7 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-extra-fields # (1)!
+    datamodel-codegen --input api.yaml --allow-extra-fields # (1)!
     ```
 
     1. :material-arrow-left: `--allow-extra-fields` - the option documented here
@@ -461,7 +461,7 @@ exactly.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name __ParsedModel --allow-leading-underscore-class-name --disable-timestamp # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name __ParsedModel --allow-leading-underscore-class-name --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--allow-leading-underscore-class-name` - the option documented here
@@ -540,7 +540,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-population-by-field-name # (1)!
+    datamodel-codegen --input api.yaml --allow-population-by-field-name # (1)!
     ```
 
     1. :material-arrow-left: `--allow-population-by-field-name` - the option documented here
@@ -838,7 +838,7 @@ The `--base-class` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --base-class custom_module.Base # (1)!
+    datamodel-codegen --input api.yaml --base-class custom_module.Base # (1)!
     ```
 
     1. :material-arrow-left: `--base-class` - the option documented here
@@ -1136,7 +1136,7 @@ adding `BaseModel`. Ensure your mixins inherit from `BaseModel` if needed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --base-class-map '{"Person": "custom.bases.PersonBase", "Animal": "custom.bases.AnimalBase"}' # (1)!
+    datamodel-codegen --input base_class_map.json --base-class-map '{"Person": "custom.bases.PersonBase", "Animal": "custom.bases.AnimalBase"}' # (1)!
     ```
 
     1. :material-arrow-left: `--base-class-map` - the option documented here
@@ -1220,7 +1220,7 @@ naming convention than what's in the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name ValidModelName # (1)!
+    datamodel-codegen --input invalid_model_name.json --class-name ValidModelName # (1)!
     ```
 
     1. :material-arrow-left: `--class-name` - the option documented here
@@ -1303,7 +1303,7 @@ prefix or suffix specified by --class-name-prefix or --class-name-suffix:
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-suffix Schema --class-name-affix-scope models # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-suffix Schema --class-name-affix-scope models # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-affix-scope` - the option documented here
@@ -1387,7 +1387,7 @@ code or avoiding conflicts with existing classes.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-prefix Api # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-prefix Api # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-prefix` - the option documented here
@@ -1471,7 +1471,7 @@ classes (e.g., adding 'Schema' or 'Model' suffix).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-suffix Schema # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-suffix Schema # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-suffix` - the option documented here
@@ -1555,7 +1555,7 @@ by replacing all references to duplicate models with the canonical model.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --collapse-reuse-models # (1)!
+    datamodel-codegen --input duplicate_models.json --reuse-model --collapse-reuse-models # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-reuse-models` - the option documented here
@@ -1629,7 +1629,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --collapse-root-models # (1)!
+    datamodel-codegen --input const.yaml --collapse-root-models # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-root-models` - the option documented here
@@ -1836,7 +1836,7 @@ root models. 'child' keeps the inner model's name, 'parent' uses the wrapper's n
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --collapse-root-models --collapse-root-models-name-strategy child # (1)!
+    datamodel-codegen --input collapse_root_models_name_strategy_child.json --collapse-root-models --collapse-root-models-name-strategy child # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-root-models-name-strategy` - the option documented here
@@ -1913,7 +1913,7 @@ control over dataclass generation.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --dataclass-arguments '{"slots": true, "order": true}' # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --output-model-type dataclasses.dataclass --dataclass-arguments '{"slots": true, "order": true}' # (1)!
     ```
 
     1. :material-arrow-left: `--dataclass-arguments` - the option documented here
@@ -2251,7 +2251,7 @@ For example, `{"model": "Schema"}` changes `Item1` to `ItemSchema`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --duplicate-name-suffix '{"model": "Schema"}' # (1)!
+    datamodel-codegen --input input.json --duplicate-name-suffix '{"model": "Schema"}' # (1)!
     ```
 
     1. :material-arrow-left: `--duplicate-name-suffix` - the option documented here
@@ -2339,7 +2339,7 @@ The `--enable-faux-immutability` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-faux-immutability # (1)!
+    datamodel-codegen --input api.yaml --enable-faux-immutability # (1)!
     ```
 
     1. :material-arrow-left: `--enable-faux-immutability` - the option documented here
@@ -2652,7 +2652,7 @@ The `--force-optional` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --force-optional # (1)!
+    datamodel-codegen --input api.yaml --force-optional # (1)!
     ```
 
     1. :material-arrow-left: `--force-optional` - the option documented here
@@ -2936,7 +2936,7 @@ keyword-only arguments.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --frozen-dataclasses # (1)!
+    datamodel-codegen --input simple_frozen_test.json --output-model-type dataclasses.dataclass --frozen-dataclasses # (1)!
     ```
 
     1. :material-arrow-left: `--frozen-dataclasses` - the option documented here
@@ -3011,7 +3011,7 @@ same schema produce the same ordering, which keeps diffs stable.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --keep-model-order # (1)!
+    datamodel-codegen --input inheritance_forward_ref.json --keep-model-order # (1)!
     ```
 
     1. :material-arrow-left: `--keep-model-order` - the option documented here
@@ -3202,7 +3202,7 @@ positional argument errors.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --frozen-dataclasses --keyword-only --target-python-version 3.10 # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --output-model-type dataclasses.dataclass --frozen-dataclasses --keyword-only --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--keyword-only` - the option documented here
@@ -3597,7 +3597,7 @@ to the model's ConfigDict json_schema_extra.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-extra-keys x-custom-metadata # (1)!
+    datamodel-codegen --input model_extras.json --model-extra-keys x-custom-metadata # (1)!
     ```
 
     1. :material-arrow-left: `--model-extra-keys` - the option documented here
@@ -3656,7 +3656,7 @@ from the schema to the model's ConfigDict json_schema_extra with the x- prefix s
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-extra-keys-without-x-prefix x-custom-metadata x-version # (1)!
+    datamodel-codegen --input model_extras.json --model-extra-keys-without-x-prefix x-custom-metadata x-version # (1)!
     ```
 
     1. :material-arrow-left: `--model-extra-keys-without-x-prefix` - the option documented here
@@ -3722,7 +3722,7 @@ of being silently suffixed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-name-map '{"#/definitions/Foo": "RenamedFoo", "Bar": "RenamedBar", "model-name": "OriginalMapped"}' # (1)!
+    datamodel-codegen --input model_name_map.json --model-name-map '{"#/definitions/Foo": "RenamedFoo", "Bar": "RenamedBar", "model-name": "OriginalMapped"}' # (1)!
     ```
 
     1. :material-arrow-left: `--model-name-map` - the option documented here
@@ -3828,7 +3828,7 @@ under `primary-first`, a primary name is one the root document declares.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --naming-strategy parent-prefixed # (1)!
+    datamodel-codegen --input input.json --naming-strategy parent-prefixed # (1)!
     ```
 
     1. :material-arrow-left: `--naming-strategy` - the option documented here
@@ -3925,7 +3925,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input null_and_array.json --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--output-model-type` - the option documented here
@@ -4499,7 +4499,7 @@ appears in different contexts within an OpenAPI specification.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --parent-scoped-naming --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
+    datamodel-codegen --input duplicate_models2.yaml --parent-scoped-naming --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
     ```
 
     1. :material-arrow-left: `--parent-scoped-naming` - the option documented here
@@ -4655,7 +4655,7 @@ code duplication in the output.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model # (1)!
+    datamodel-codegen --input duplicate_enum.json --reuse-model # (1)!
     ```
 
     1. :material-arrow-left: `--reuse-model` - the option documented here
@@ -4777,7 +4777,7 @@ The `--reuse-scope` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --reuse-scope tree # (1)!
+    datamodel-codegen --input reuse_scope_tree --reuse-model --reuse-scope tree # (1)!
     ```
 
     1. :material-arrow-left: `--reuse-scope` - the option documented here
@@ -4896,7 +4896,7 @@ object is just a container for $defs and not a meaningful model itself.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --skip-root-model # (1)!
+    datamodel-codegen --input skip_root_model_test.json --output-model-type pydantic_v2.BaseModel --skip-root-model # (1)!
     ```
 
     1. :material-arrow-left: `--skip-root-model` - the option documented here
@@ -4961,7 +4961,7 @@ where optional fields have defaults but cannot accept `None` values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-nullable # (1)!
+    datamodel-codegen --input nullable.yaml --strict-nullable # (1)!
     ```
 
     1. :material-arrow-left: `--strict-nullable` - the option documented here
@@ -5203,7 +5203,7 @@ default to None.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strip-default-none # (1)!
+    datamodel-codegen --input api.yaml --strip-default-none # (1)!
     ```
 
     1. :material-arrow-left: `--strip-default-none` - the option documented here
@@ -5491,7 +5491,7 @@ See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-pydantic-version 2.11 --allow-population-by-field-name --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input person.json --target-pydantic-version 2.11 --allow-population-by-field-name --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--target-pydantic-version` - the option documented here
@@ -5578,7 +5578,7 @@ This affects import statements and type annotation syntax in generated code.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-python-version 3.10 --use-standard-collections # (1)!
+    datamodel-codegen --input person.json --target-python-version 3.10 --use-standard-collections # (1)!
     ```
 
     1. :material-arrow-left: `--target-python-version` - the option documented here
@@ -5664,7 +5664,7 @@ their discriminator tag, a separate mode that cannot be combined with
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --union-mode left_to_right --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input combine_any_of_object.json --union-mode left_to_right --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--union-mode` - the option documented here
@@ -5793,7 +5793,7 @@ as `str = 'value'`, not `str | None = 'value'`, unless the schema allows null.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-default # (1)!
+    datamodel-codegen --input use_default_with_const.json --output-model-type pydantic_v2.BaseModel --use-default # (1)!
     ```
 
     1. :material-arrow-left: `--use-default` - the option documented here
@@ -5879,7 +5879,7 @@ not executed to determine whether a factory is usable.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-default-factory-for-optional-nested-models # (1)!
+    datamodel-codegen --input default_factory_nested_model.json --use-default-factory-for-optional-nested-models # (1)!
     ```
 
     1. :material-arrow-left: `--use-default-factory-for-optional-nested-models` - the option documented here
@@ -6031,7 +6031,7 @@ default values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-default-kwarg # (1)!
+    datamodel-codegen --input annotated.graphql --use-default-kwarg # (1)!
     ```
 
     1. :material-arrow-left: `--use-default-kwarg` - the option documented here
@@ -6106,7 +6106,7 @@ The `--use-frozen-field` flag generates frozen field definitions:
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-frozen-field # (1)!
+    datamodel-codegen --input use_frozen_field.json --use-frozen-field # (1)!
     ```
 
     1. :material-arrow-left: `--use-frozen-field` - the option documented here
@@ -6202,7 +6202,7 @@ Generate a shared base class with model configuration to avoid repetition (DRY).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-fields forbid --output-model-type pydantic_v2.BaseModel --use-generic-base-class # (1)!
+    datamodel-codegen --input extra_fields.json --extra-fields forbid --output-model-type pydantic_v2.BaseModel --use-generic-base-class # (1)!
     ```
 
     1. :material-arrow-left: `--use-generic-base-class` - the option documented here
@@ -6320,7 +6320,7 @@ difference between an omitted field and a nullable field set to `None`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-missing-sentinel # (1)!
+    datamodel-codegen --input missing_sentinel.json --output-model-type pydantic_v2.BaseModel --use-missing-sentinel # (1)!
     ```
 
     1. :material-arrow-left: `--use-missing-sentinel` - the option documented here
@@ -6401,7 +6401,7 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-one-literal-as-default --enum-field-as-literal one # (1)!
+    datamodel-codegen --input enum_models.yaml --use-one-literal-as-default --enum-field-as-literal one # (1)!
     ```
 
     1. :material-arrow-left: `--use-one-literal-as-default` - the option documented here
@@ -6734,7 +6734,7 @@ instead of silently ignoring this option.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-root-model-sequence-interface --class-name Pets # (1)!
+    datamodel-codegen --input root_model_sequence_interface.json --output-model-type pydantic_v2.BaseModel --use-root-model-sequence-interface --class-name Pets # (1)!
     ```
 
     1. :material-arrow-left: `--use-root-model-sequence-interface` - the option documented here
@@ -6822,7 +6822,7 @@ polymorphic types and inheritance hierarchies.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-serialize-as-any # (1)!
+    datamodel-codegen --input serialize_as_any.yaml --use-serialize-as-any # (1)!
     ```
 
     1. :material-arrow-left: `--use-serialize-as-any` - the option documented here
@@ -6932,7 +6932,7 @@ type, providing better type safety and IDE support.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-subclass-enum # (1)!
+    datamodel-codegen --input enums.graphql --use-subclass-enum # (1)!
     ```
 
     1. :material-arrow-left: `--use-subclass-enum` - the option documented here
