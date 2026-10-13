@@ -95,7 +95,8 @@ class Capabilities:
     records name the runtime's unpacked-argument types. `schemes` marks a package that declares security schemes or
     operation security, usable or not; `binary_bodies` and `multipart_requests` one whose operations send binary or
     form-data bodies, `form_data` one with a URL-encoded body or response no schema describes, `response_headers` one
-    that decodes declared response headers, and `multipart_responses` one that reads multipart responses.
+    that decodes declared response headers, `multipart_responses` one that reads multipart responses, and `extras`
+    one whose codecs write the extra members of Pydantic dataclasses.
     """
 
     security: frozenset[Security]
@@ -109,6 +110,7 @@ class Capabilities:
     form_data: bool = False
     response_headers: bool = False
     multipart_responses: bool = False
+    extras: bool = False
 
     @property
     def oauth(self) -> bool:
@@ -141,6 +143,8 @@ class Capabilities:
             modules.update(_HEADERS)
         if self.multipart_responses:
             modules.update((*_MULTIPART, "client/multipart_responses.py"))
+        if self.extras:
+            modules.add("model_codecs/pydantic_extras.py")
         return tuple(sorted(modules))
 
     @property

@@ -6,7 +6,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client._compiled_templates import model_bindings as model_bindings_template
-from datamodel_code_generator._client.codec_plan import CODEC_RUNTIMES, Choice, Class, Fixed, Items, Values
+from datamodel_code_generator._client.codec_plan import (
+    CODEC_RUNTIMES,
+    EXTRAS,
+    EXTRAS_MODULE,
+    Choice,
+    Class,
+    Fixed,
+    Items,
+    Values,
+)
 from datamodel_code_generator._client.facade import statement
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
@@ -28,6 +37,7 @@ _NAMES: Final = (
     "Field",
     "Model",
     "MODELS",
+    EXTRAS,
     *(runtime.codec for runtime in CODEC_RUNTIMES.values()),
 )
 
@@ -125,6 +135,8 @@ class _Renderer:
             arguments = (
                 (self.shape(use.shape), "MODELS") if runtime.mapped else (self.module.hint(use.type, static=False),)
             )
+            if use.extras:
+                arguments = (*arguments, EXTRAS)
             final = self.module.name("typing", "Final")
             entries.append(
                 Codec(f"codec_{index}", f"{final}[{codec}[{static}]]", call(codec, arguments), _description(use.use))
@@ -132,6 +144,8 @@ class _Renderer:
             accessors.append(UseAccessors(use.use, f"codec_{index}"))
         names = sorted({runtime.codec, *self.records})
         imports = [statement(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
+        if self.plan.extras:
+            imports.append(statement(f".._runtime.model_codecs.{EXTRAS_MODULE}", [EXTRAS]))
         source = templated(
             "model_bindings.jinja2",
             model_bindings_template.render,
