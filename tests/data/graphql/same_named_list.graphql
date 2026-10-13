@@ -5,4 +5,5 @@ type Bar {
 type Holder {
   Bar: Bar
   required: [Bar!]!
+  nullable: [Bar]
 }

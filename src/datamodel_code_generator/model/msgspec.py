@@ -12,7 +12,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
 from datamodel_code_generator import Error
-from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
+from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, _nested_model_default_factory
@@ -117,8 +117,6 @@ def import_extender(cls: type[DataModelFieldBaseT]) -> type[DataModelFieldBaseT]
             if plan.needs_unset_import:
                 extra_imports.append(IMPORT_MSGSPEC_UNSET)
         imports = original_getter(self)
-        if isinstance(self, DataModelField) and self._not_required and not self.nullable and self.data_type.is_optional:
-            imports = tuple(import_ for import_ in imports if import_ != IMPORT_OPTIONAL)
         return chain_as_tuple(imports, extra_imports)
 
     cls.imports = property(new_imports)  # ty: ignore[invalid-assignment]
