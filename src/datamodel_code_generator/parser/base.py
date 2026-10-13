@@ -2078,6 +2078,28 @@ def _get_discriminator_values(
     return discriminator_values or [discriminator_model.path.split("/")[-1]]
 
 
+def _apply_discriminator_tag(
+    model: DataModel,
+    field: DataModelFieldBase,
+    tag_field: str,
+    value: DiscriminatorValue,
+    *,
+    can_retain_cache: bool,
+) -> None:
+    """Tag a variant with its wire discriminator value for outputs that require tagged unions."""
+    model.apply_discriminator_tag(field, tag_field, value)
+    _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
+
+def _get_mapped_discriminator_tag(
+    values: list[DiscriminatorValue], enum_source: Enum | None
+) -> DiscriminatorValue | None:
+    """Return the wire tag of a variant whose discriminator resolves to exactly one value."""
+    if len(values) != 1:
+        return None
+    return Parser._get_enum_discriminator_literal(enum_source, values[0]) if enum_source else values[0]  # noqa: SLF001
+
+
 def _remove_discriminator(field: DataModelFieldBase) -> None:
     field.extras.pop("discriminator", None)
     field.data_type.discriminator = None
@@ -3695,13 +3717,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             has_one_literal = True
                             match discriminator_model:
                                 case _ if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:  # pragma: no cover
-                                    discriminator_model.apply_discriminator_tag(
+                                    _apply_discriminator_tag(
+                                        discriminator_model,
                                         discriminator_field,
-                                        field_name,
-                                        expected_value,
-                                    )
-                                    _clear_model_imports_cache_if_retained(
-                                        discriminator_model, can_retain_cache=can_retain_cache
+                                        property_name,
+                                        literal,
+                                        can_retain_cache=can_retain_cache,
                                     )
                                 case _:
                                     self.__set_force_optional_discriminator_literal_default(
@@ -3716,13 +3737,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         # For msgspec with const value but no literal (type: string + const case)
                         if const_match and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:  # pragma: no cover
                             has_one_literal = True
-                            discriminator_model.apply_discriminator_tag(
+                            _apply_discriminator_tag(
+                                discriminator_model,
                                 discriminator_field,
-                                field_name,
+                                property_name,
                                 const_value,
-                            )
-                            _clear_model_imports_cache_if_retained(
-                                discriminator_model, can_retain_cache=can_retain_cache
+                                can_retain_cache=can_retain_cache,
                             )
                             break
 
@@ -3746,6 +3766,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
                         if (
+                            discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+                            and (tag := _get_mapped_discriminator_tag(discriminator_values, enum_source)) is not None
+                        ):
+                            _apply_discriminator_tag(
+                                discriminator_model,
+                                discriminator_field,
+                                property_name,
+                                tag,
+                                can_retain_cache=can_retain_cache,
+                            )
+                        elif (
                             self.force_optional_for_required_fields
                             and (
                                 literal_default := _get_single_discriminator_default(
@@ -3766,7 +3797,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         has_one_literal = True
                     if not has_one_literal:
                         new_data_type = self._create_discriminator_data_type(
-                            _get_enum_from_base(
+                            base_enum_source := _get_enum_from_base(
                                 discriminator_model, field_name, use_field_name=field.SUPPORTS_DISCRIMINATOR
                             ),
                             discriminator_values,
@@ -3796,6 +3827,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             )
                             self.model_resolver.prepare_explicit_field_aliases(
                                 [discriminator_field], discriminator_model.reference, self.field_name_model_type
+                            )
+                        if (
+                            discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+                            and (tag := _get_mapped_discriminator_tag(discriminator_values, base_enum_source))
+                            is not None
+                        ):
+                            _apply_discriminator_tag(
+                                discriminator_model,
+                                discriminator_field,
+                                property_name,
+                                tag,
+                                can_retain_cache=can_retain_cache,
                             )
             has_imported_literal = any(import_ == IMPORT_LITERAL for import_ in imports)
             if has_imported_literal:  # pragma: no cover

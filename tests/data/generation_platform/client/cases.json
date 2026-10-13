@@ -3860,6 +3860,10 @@
       ]
     }
   },
+  "unions-mapped": {
+    "input": "unions-mapped.yaml",
+    "config": {}
+  },
   "unions-legacy": {
     "input": "unions-legacy.yaml",
     "config": {}

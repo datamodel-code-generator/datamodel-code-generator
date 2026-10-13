@@ -278,6 +278,10 @@ EXCLUDED_CASES: dict[str, str] = {
         "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
         "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"
     ),
+    "jsonschema/discriminator_mapping_msgspec_tags.json": (
+        "discriminator tags come only from $defs mappings and schema names, which payload sampling does not constrain; "
+        "test_main_msgspec_discriminator_mapping_tags checks the generated tags"
+    ),
 }
 MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
     "jsonschema/missing_sentinel_payload.json",
