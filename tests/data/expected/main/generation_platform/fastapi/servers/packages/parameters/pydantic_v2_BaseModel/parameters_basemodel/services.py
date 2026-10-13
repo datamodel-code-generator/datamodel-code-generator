@@ -136,3 +136,15 @@ class DefaultService(Protocol):
         """
         Handle GET /items/{level}.
         """
+
+    @abstractmethod
+    def get_serving(
+        self,
+        *,
+        food_id: str,
+        serving: int,
+        portion: str | None,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /foods/{food_id}/servings/{serving}.
+        """

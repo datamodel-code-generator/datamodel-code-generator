@@ -1177,6 +1177,10 @@ whenever the request omits the parameter, however the model options spell the ty
 `--field-constraints`; a parameter whose type stays a root model receives that model with its own default. How
 strictly a value follows the OpenAPI document is decided by the model generation options, not by the server.
 
+A path parameter that names a placeholder of its path is required, as OpenAPI requires, even when the document
+leaves out `required` or declares it `false`, and a default it declares is not used; the served document keeps the
+declaration as written.
+
 FastAPI cannot read some inputs, so a generated *adapter* reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
 cookie arrays, header and path arrays, objects, enums and literals of non-string values, strict integers,
