@@ -118,6 +118,8 @@ def _validation_results(namespace: dict[str, Any], fixture: str, target_pydantic
         ("siblings", "siblings_dataclass", DATACLASS),
         ("inherited", "inherited", TYPE_ALIAS),
         ("inherited", "inherited_dataclass", DATACLASS),
+        ("multiple_bases", "multiple_bases", TYPE_ALIAS),
+        ("multiple_bases", "multiple_bases_dataclass", DATACLASS),
         ("annotated_root", "annotated_root", ["--use-annotated"]),
     ],
 )
@@ -129,7 +131,8 @@ def test_type_alias_lookaround(
     Collapsed BaseModel fields keep plain patterns and the model's ``regex_engine`` config. Compiled patterns
     need Pydantic 2.8, so ``--target-pydantic-version 2`` keeps string patterns in the aliases and selects the
     engine in every model that reaches them: through a nested model, through the bases of a model it uses,
-    or as a ``RootModel``, which then names no alias in its generic. Each target validates the same payloads.
+    as a dataclass whose first base does not carry the config, or as a ``RootModel``, which then names no
+    alias in its generic. Each target validates the same payloads.
     """
     run_main_and_assert(
         input_path=LOOKAROUND_SCHEMAS / f"{fixture}.json",

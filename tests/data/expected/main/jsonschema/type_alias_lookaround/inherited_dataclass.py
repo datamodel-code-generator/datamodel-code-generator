@@ -13,11 +13,6 @@ from typing_extensions import TypeAliasType
 Code = TypeAliasType("Code", Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'))])
 
 
-@dataclass
-class Plain:
-    label: str | None = None
-
-
 @dataclass(config=ConfigDict(regex_engine="python-re"))
 class Base:
     code: Code | None = None
@@ -34,12 +29,6 @@ class Right(Base):
 
 
 @dataclass
-class Both(Plain, Base):
-    z: int | None = None
-
-
-@dataclass
 class Holder:
     left: Left | None = None
     right: Right | None = None
-    both: Both | None = None

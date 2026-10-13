@@ -40,13 +40,12 @@
   "inherited": {
     "Base": [{"code": "abc"}, {"code": "badly"}],
     "Left": [{"code": "abc", "x": 1}, {"code": "badly"}],
+    "Holder": [{"left": {"code": "abc"}, "right": {"code": "abc"}}, {"left": {"code": "badly"}}, {"right": {"code": "badly"}}]
+  },
+  "multiple_bases": {
+    "Base": [{"code": "abc"}, {"code": "badly"}],
     "Both": [{"label": "a", "code": "abc", "z": 1}, {"code": "badly"}],
-    "Holder": [
-      {"left": {"code": "abc"}, "right": {"code": "abc"}, "both": {"code": "abc"}},
-      {"left": {"code": "badly"}},
-      {"right": {"code": "badly"}},
-      {"both": {"code": "badly"}}
-    ]
+    "Holder": [{"both": {"code": "abc"}}, {"both": {"code": "badly"}}]
   },
   "annotated_root": {
     "Codes": [{"k": "abc"}, {"k": "badly"}],

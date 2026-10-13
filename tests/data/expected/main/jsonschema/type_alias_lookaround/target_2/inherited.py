@@ -11,10 +11,6 @@ from typing_extensions import TypeAliasType
 Code = TypeAliasType("Code", Annotated[str, Field(pattern=r'^(?!bad)[a-z]+$')])
 
 
-class Plain(BaseModel):
-    label: str | None = None
-
-
 class Base(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
@@ -30,14 +26,9 @@ class Right(Base):
     y: int | None = None
 
 
-class Both(Plain, Base):
-    z: int | None = None
-
-
 class Holder(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
     left: Left | None = None
     right: Right | None = None
-    both: Both | None = None

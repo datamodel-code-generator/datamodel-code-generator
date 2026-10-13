@@ -92,6 +92,9 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/schema_validators_multiple_aliases_property_count.json": (
         "opt-in schema-validator e2e fixture; payload validation intentionally uses default generation"
     ),
+    "jsonschema/type_alias_lookaround/multiple_bases.json": (
+        "msgspec.Struct generation rejects two generated bases with fields; test_type_alias_lookaround validates it"
+    ),
     "jsonschema/rust_only_syntax.json": (
         "Rust-only regex syntax that Python's re rejects or warns about; test_main_rust_only_syntax validates it"
     ),

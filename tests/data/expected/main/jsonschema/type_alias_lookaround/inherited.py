@@ -12,10 +12,6 @@ from typing_extensions import TypeAliasType
 Code = TypeAliasType("Code", Annotated[str, Field(pattern=compile('^(?!bad)[a-z]+$'))])
 
 
-class Plain(BaseModel):
-    label: str | None = None
-
-
 class Base(BaseModel):
     code: Code | None = None
 
@@ -28,11 +24,6 @@ class Right(Base):
     y: int | None = None
 
 
-class Both(Plain, Base):
-    z: int | None = None
-
-
 class Holder(BaseModel):
     left: Left | None = None
     right: Right | None = None
-    both: Both | None = None

@@ -9,12 +9,8 @@
       "invalid": {"second": {"code": "badly"}}
     },
     "jsonschema/type_alias_lookaround/inherited.json": {
-      "valid": {
-        "left": {"code": "abc", "x": 1},
-        "right": {"code": "abc", "y": 2},
-        "both": {"label": "a", "code": "abc", "z": 3}
-      },
-      "invalid": {"both": {"code": "badly"}}
+      "valid": {"left": {"code": "abc", "x": 1}, "right": {"code": "abc", "y": 2}},
+      "invalid": {"right": {"code": "badly"}}
     },
     "jsonschema/type_alias_lookaround/annotated_root.json": {
       "valid": {"data": {"k": "abc"}},
@@ -34,12 +30,8 @@
       "invalid": {"second": {"code": "badly"}}
     },
     "jsonschema/type_alias_lookaround/inherited.json": {
-      "valid": {
-        "left": {"code": "abc", "x": 1},
-        "right": {"code": "abc", "y": 2},
-        "both": {"label": "a", "code": "abc", "z": 3}
-      },
-      "invalid": {"both": {"code": "badly"}}
+      "valid": {"left": {"code": "abc", "x": 1}, "right": {"code": "abc", "y": 2}},
+      "invalid": {"right": {"code": "badly"}}
     }
   }
 }

@@ -4,25 +4,16 @@
   "type": "object",
   "properties": {
     "left": {"$ref": "#/definitions/Left"},
-    "right": {"$ref": "#/definitions/Right"},
-    "both": {"$ref": "#/definitions/Both"}
+    "right": {"$ref": "#/definitions/Right"}
   },
   "definitions": {
     "Code": {"type": "string", "pattern": "^(?!bad)[a-z]+$"},
-    "Plain": {"type": "object", "properties": {"label": {"type": "string"}}},
     "Base": {"type": "object", "properties": {"code": {"$ref": "#/definitions/Code"}}},
     "Left": {
       "allOf": [{"$ref": "#/definitions/Base"}, {"type": "object", "properties": {"x": {"type": "integer"}}}]
     },
     "Right": {
       "allOf": [{"$ref": "#/definitions/Base"}, {"type": "object", "properties": {"y": {"type": "integer"}}}]
-    },
-    "Both": {
-      "allOf": [
-        {"$ref": "#/definitions/Plain"},
-        {"$ref": "#/definitions/Base"},
-        {"type": "object", "properties": {"z": {"type": "integer"}}}
-      ]
     }
   }
 }

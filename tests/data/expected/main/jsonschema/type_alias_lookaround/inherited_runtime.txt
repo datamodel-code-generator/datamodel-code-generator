@@ -32,24 +32,6 @@
       ]
     }
   ],
-  "Both": [
-    {
-      "payload": {
-        "label": "a",
-        "code": "abc",
-        "z": 1
-      },
-      "errors": []
-    },
-    {
-      "payload": {
-        "code": "badly"
-      },
-      "errors": [
-        "string_pattern_mismatch"
-      ]
-    }
-  ],
   "Holder": [
     {
       "payload": {
@@ -58,9 +40,6 @@
         },
         "right": {
           "code": "abc"
-        },
-        "both": {
-          "code": "abc"
         }
       },
       "errors": []
@@ -78,16 +57,6 @@
     {
       "payload": {
         "right": {
-          "code": "badly"
-        }
-      },
-      "errors": [
-        "string_pattern_mismatch"
-      ]
-    },
-    {
-      "payload": {
-        "both": {
           "code": "badly"
         }
       },
