@@ -4738,6 +4738,33 @@
       "use_single_line_docstring": true
     }
   },
+  "route-text": {
+    "input": "route-text.yaml",
+    "references": [
+      "protocols/route-text.json"
+    ],
+    "config": {
+      "protocols": "protocols/route-text.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
   "templates": {
     "input": "pets.yaml",
     "references": [
