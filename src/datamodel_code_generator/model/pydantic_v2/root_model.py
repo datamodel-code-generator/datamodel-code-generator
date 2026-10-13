@@ -12,7 +12,6 @@ from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
     _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY,
-    _STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY,
     BaseModel,
     _config_dict_items,
     _safe_config_dict_items,
@@ -27,6 +26,7 @@ IMPORT_SUPPORTS_INDEX = Import.from_full_path("typing.SupportsIndex")
 _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY = "sequence_base_class"
 _SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY = "sequence_item_type"
 _SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY = "sequence_slice_type"
+_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY = "string_pattern_alias_reached"
 _ROOT_MODEL_CONFIG_KEYS: frozenset[str] = frozenset({"regex_engine", "frozen"})
 
 

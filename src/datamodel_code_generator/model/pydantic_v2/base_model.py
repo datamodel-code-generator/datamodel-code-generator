@@ -264,7 +264,6 @@ _NO_ALIAS_INTERNAL_KEY = "_no_alias"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
 _COMPILED_PATTERN_KEY = "_compiled_python_pattern"
-_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY = "string_pattern_alias_reached"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
 _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY = "neutralize_root_model_extra_config"
 _MIN_QUOTED_STRING_LENGTH = 2
