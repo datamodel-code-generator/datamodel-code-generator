@@ -1217,7 +1217,7 @@ jobs:
         run: |
           set -uo pipefail
           failed=0
-          for tox_env in type docs pkg_meta cli-doc-coverage; do
+          for tox_env in type docs pkg_meta cli-doc-coverage base-install; do
             if ! tox r -vv --notest --skip-missing-interpreters false -e "$tox_env"; then
               failed=1
             fi
@@ -1231,7 +1231,7 @@ jobs:
         run: |
           set -uo pipefail
           failed=0
-          for tox_env in type docs pkg_meta cli-doc-coverage; do
+          for tox_env in type docs pkg_meta cli-doc-coverage base-install; do
             if ! tox run --skip-uv-sync --skip-pkg-install -e "$tox_env"; then
               failed=1
             fi

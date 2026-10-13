@@ -36,7 +36,7 @@ from .errors import (
     is_transport,
     kept_primary,
 )
-from .logical import Delivery, LogicalCallContext, run_sync
+from .logical import LogicalCallContext, run_sync
 from .media import normalized
 from .native import (
     async_decoded_bytes,
@@ -60,6 +60,7 @@ from .raw import MAX_ERROR_BODY_BYTES, AsyncRawResponse, RawResponse, buffered, 
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
     EMPTY_RETRY_HEADERS,
+    Delivery,
     RetryState,
     RetryTiming,
     bind_retry_headers,

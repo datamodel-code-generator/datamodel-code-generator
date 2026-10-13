@@ -357,7 +357,7 @@ class Struct(DataModel):
 
     def apply_discriminator_tag(self, field: DataModelFieldBase, field_name: str, value: Any) -> None:
         """Configure msgspec's tag and exclude the discriminator from instance fields."""
-        self.add_base_class_kwarg("tag_field", f"'{field_name}'")
+        self.add_base_class_kwarg("tag_field", repr(field_name))
         self.add_base_class_kwarg("tag", repr(value))
         field.extras["is_classvar"] = True
 

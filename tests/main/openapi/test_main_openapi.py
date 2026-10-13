@@ -646,6 +646,43 @@ def test_main_openapi_discriminator_enum_single_value_msgspec(output_file: Path)
     )
 
 
+def test_main_openapi_discriminator_mapping_msgspec_tags(output_file: Path) -> None:
+    """Tag msgspec variants whose discriminator value comes from the mapping or the schema name."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_mapping_msgspec_tags.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "mapping_msgspec_tags.py",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "msgspec.Struct",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_discriminator_mapping_msgspec_untagged(output_file: Path) -> None:
+    """Leave a msgspec union untagged and warn when a variant cannot take exactly one tag for it."""
+    run_generate_file_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_mapping_msgspec_untagged.yaml",
+        output_path=output_file,
+        input_file_type=InputFileType.OpenAPI,
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "mapping_msgspec_untagged.py",
+        expected_warnings=[
+            "Discriminator 'petType' of Animal cannot be represented as msgspec tags: Cat cannot take exactly one tag",
+            "Discriminator 'shapeType' of Owner cannot be represented as msgspec tags: Circle cannot take exactly one",
+            "Discriminator 'kind' of Kinded cannot be represented as msgspec tags: Cat, Dog cannot take exactly one",
+        ],
+        output_model_type=DataModelType.MsgspecStruct,
+        disable_timestamp=True,
+    )
+
+
 def test_main_openapi_discriminator_with_properties(output_file: Path) -> None:
     """Test OpenAPI generation with discriminator properties."""
     run_main_and_assert(
