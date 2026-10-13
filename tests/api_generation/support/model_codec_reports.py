@@ -232,11 +232,12 @@ def runtime_import_report(root: Path) -> str:
 
 
 def third_party_imports(root: Path) -> list[str]:
-    """List the top-level modules the files under a root import from outside the root and the standard library."""
+    """List the top-level modules the files under a root import from outside its modules and the standard library."""
     absolute = {
         ((node.module or "") if isinstance(node, ast.ImportFrom) else name).partition(".")[0]
         for path in root.rglob("*.py")
         for node, name in _imports(path)
         if not (isinstance(node, ast.ImportFrom) and node.level)
     }
-    return sorted(absolute - sys.stdlib_module_names - {path.stem for path in root.iterdir()})
+    written = {path.stem for path in root.iterdir() if path.suffix == ".py" or (path / "__init__.py").is_file()}
+    return sorted(absolute - sys.stdlib_module_names - written)

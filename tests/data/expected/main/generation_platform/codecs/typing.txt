@@ -3,41 +3,41 @@ pyright positive samples: clean
 ty positive samples: clean
 samples/codecs_negative.py: 11 marked lines
 mypy samples/codecs_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
-  34 assignment
-  35 arg-type
+  35 assignment
   36 arg-type
-  37 assignment
-  41 assignment
-  42 arg-type
+  37 arg-type
+  38 assignment
+  42 assignment
   43 arg-type
-  44 assignment
-  48 assignment
-  49 arg-type
-  50 assignment
+  44 arg-type
+  45 assignment
+  49 assignment
+  50 arg-type
+  51 assignment
 pyright samples/codecs_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
-  34 reportAssignmentType
-  35 reportArgumentType
+  35 reportAssignmentType
   36 reportArgumentType
-  37 reportAssignmentType
-  41 reportAssignmentType
-  42 reportArgumentType
+  37 reportArgumentType
+  38 reportAssignmentType
+  42 reportAssignmentType
   43 reportArgumentType
-  44 reportAssignmentType
-  48 reportAssignmentType
-  49 reportArgumentType
-  50 reportAssignmentType
+  44 reportArgumentType
+  45 reportAssignmentType
+  49 reportAssignmentType
+  50 reportArgumentType
+  51 reportAssignmentType
 ty samples/codecs_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
-  34 invalid-assignment
-  35 invalid-argument-type
+  35 invalid-assignment
   36 invalid-argument-type
-  37 invalid-assignment
-  41 invalid-assignment
-  42 invalid-argument-type
+  37 invalid-argument-type
+  38 invalid-assignment
+  42 invalid-assignment
   43 invalid-argument-type
-  44 invalid-assignment
-  48 invalid-assignment
-  49 invalid-argument-type
-  50 invalid-assignment
+  44 invalid-argument-type
+  45 invalid-assignment
+  49 invalid-assignment
+  50 invalid-argument-type
+  51 invalid-assignment
 samples/negative.py: 7 marked lines
 mypy samples/negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
   12 assignment

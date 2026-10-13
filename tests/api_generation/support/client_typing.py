@@ -105,12 +105,8 @@ def client_dependency_typing_report(project: Path, environment: Path, stderr: st
     dependencies = shlex.split(added)[2:]
     subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, environment], check=True)
     python = environment / ("Scripts" if os.name == "nt" else "bin") / "python"
-    subprocess.run(
-        ["uv", "pip", "install", "--quiet", "--python", python, "--resolution", "lowest-direct", *dependencies],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    install = ["uv", "pip", "install", "--quiet", "--python", python, "--resolution", "lowest-direct", *dependencies]
+    subprocess.run(install, check=True)
     held = subprocess.run([python, "-I", "-c", _MODEL_LIBRARIES], check=True, capture_output=True, text=True)
     targets = [PACKAGE, f"{PACKAGE}_models.py"]
     return "\n".join([

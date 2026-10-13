@@ -39,16 +39,8 @@ if TYPE_CHECKING:
 CodecBackend: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"
 ]
-CodecKind: TypeAlias = Literal["pydantic", "pydantic_dataclass", "msgspec", "stdlib"]
 JSONKind: TypeAlias = Literal["object", "array", "string", "number", "boolean"]
 Shape: TypeAlias = "Class | Items | Fixed | Values | Choice | None"
-_KINDS: Final[dict[CodecBackend, CodecKind]] = {
-    "pydantic_v2.BaseModel": "pydantic",
-    "pydantic_v2.dataclass": "pydantic_dataclass",
-    "msgspec.Struct": "msgspec",
-    "dataclasses.dataclass": "stdlib",
-    "typing.TypedDict": "stdlib",
-}
 _SEQUENCES: Final = {
     "list": "list",
     "typing.List": "list",
@@ -88,6 +80,33 @@ _JSON_KINDS: Final[dict[str | None, tuple[JSONKind, ...]]] = {
     "int": ("number",),
     "float": ("number",),
     "decimal.Decimal": ("string", "number"),
+}
+
+
+@dataclass(frozen=True, slots=True)
+class CodecRuntime:
+    """The runtime module and class of a backend's codec, the modules that one imports, and whether it maps fields.
+
+    A package's bindings import the codec from `module` and the package copies `modules`, so both follow one record.
+    """
+
+    module: str
+    codec: str
+    imports: tuple[str, ...] = ()
+    mapped: bool = False
+
+    @property
+    def modules(self) -> tuple[str, ...]:
+        """Return the runtime modules a package of the backend copies for its codec."""
+        return tuple(f"model_codecs/{name}.py" for name in (*self.imports, self.module))
+
+
+CODEC_RUNTIMES: Final[dict[CodecBackend, CodecRuntime]] = {
+    "pydantic_v2.BaseModel": CodecRuntime("pydantic_models", "PydanticCodec", ("pydantic_adapters",)),
+    "pydantic_v2.dataclass": CodecRuntime("pydantic_dataclasses", "PydanticDataclassCodec", ("pydantic_adapters",)),
+    "msgspec.Struct": CodecRuntime("msgspec_structs", "MsgspecCodec"),
+    "dataclasses.dataclass": CodecRuntime("stdlib_dataclasses", "DataclassCodec", mapped=True),
+    "typing.TypedDict": CodecRuntime("stdlib_typeddicts", "TypedDictCodec", mapped=True),
 }
 
 
@@ -145,7 +164,6 @@ class Model:
 
     symbol: SymbolId
     fields: tuple[Field, ...]
-    keyed: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +171,6 @@ class CodecUse:
     """One directional use's acquired native type and optional stdlib conversion."""
 
     use: TypeUseId
-    kind: CodecKind
     type: TypeView
     shape: Shape = None
 
@@ -171,6 +188,11 @@ class ClientCodecs:
     def __contains__(self, use: TypeUseId) -> bool:
         """Return whether a selected use has an acquired native codec."""
         return any(item.use == use for item in self.uses)
+
+    @property
+    def runtime(self) -> CodecRuntime:
+        """Return the codec runtime of the package's backend."""
+        return CODEC_RUNTIMES[self.backend]
 
 
 def _name(value: TypeView) -> str | None:
@@ -253,7 +275,7 @@ class _Planner:
                     and field.member.model_facts.backend.constructor_init
                     != KnownBackendValue(LiteralScalar(kind="bool", value=False))
                 )
-                self.models[symbol.id] = Model(symbol.id, fields, symbol.backend == "typeddict")
+                self.models[symbol.id] = Model(symbol.id, fields)
                 self.building.remove(symbol.id)
             return Class(value)
         if isinstance(value, GenericType):
@@ -413,11 +435,8 @@ def plan_client_codecs(  # ruff: ignore[too-many-arguments]
                 code="BND_TYPE_EXPRESSION_UNSUPPORTED",
             )
             continue
-        kind = _KINDS[backend]
-        shape = None
-        if kind == "stdlib":
-            shape = planner.shape(use.type, use.schema)
-        planned.append(CodecUse(use.id, kind, use.type, shape))
+        shape = planner.shape(use.type, use.schema) if CODEC_RUNTIMES[backend].mapped else None
+        planned.append(CodecUse(use.id, use.type, shape))
     return ClientCodecs(
         tuple(planned),
         tuple(planner.models[key] for key in sorted(planner.models)),

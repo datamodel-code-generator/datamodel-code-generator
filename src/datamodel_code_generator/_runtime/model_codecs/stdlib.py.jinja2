@@ -1,4 +1,8 @@
-"""Rename keys, build nested stdlib models and convert JSON-incompatible leaves without validating."""
+{#- The one source of stdlib_dataclasses.py and stdlib_typeddicts.py; scripts/build_stdlib_codecs.py derives them. -#}
+{% set dataclass = backend == "dataclass" %}
+{% set models = "dataclasses" if dataclass else "TypedDicts" %}
+# Derived from stdlib.py.jinja2 by datamodel-code-generator's scripts/build_stdlib_codecs.py; do not edit directly.
+"""Rename keys, build nested {{ models }} and convert JSON-incompatible leaves without validating."""
 
 from __future__ import annotations
 
@@ -37,15 +41,16 @@ class Field:
     wire: str
     name: str
     shape: Shape = None
+{% if dataclass %}
     omit_none: bool = False
+{% endif %}
 
 
 @dataclass(frozen=True, slots=True)
 class Model:
-    """The static field map of a dataclass or a dict-shaped TypedDict."""
+    """The static field map of a {{ "dataclass" if dataclass else "dict-shaped TypedDict" }}."""
 
     fields: tuple[Field, ...]
-    keyed: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,8 +99,8 @@ def _kind(value: object) -> JSONKind:
     return kind
 
 
-class StdlibCodec(Generic[T]):
-    """Use static names and discriminator facts to construct dataclasses and TypedDicts without validation."""
+class {{ "DataclassCodec" if dataclass else "TypedDictCodec" }}(Generic[T]):
+    """Use static names and discriminator facts to construct {{ models }} without validation."""
 
     __slots__ = ("models", "shape")
 
@@ -133,8 +138,11 @@ class StdlibCodec(Generic[T]):
         shape = dict(self.shape.kinds)["object"] if isinstance(self.shape, Choice) else self.shape
         type_ = cast("type", shape)
         model = self.models[type_]
-        entries = {field.name: fields[field.wire] for field in model.fields if field.wire in fields}
-        return entries if model.keyed else type_(**entries)
+{% if dataclass %}
+        return type_(**{field.name: fields[field.wire] for field in model.fields if field.wire in fields})
+{% else %}
+        return {field.name: fields[field.wire] for field in model.fields if field.wire in fields}
+{% endif %}
 
     def encode(self, value: T) -> bytes:
         """Serialize compact UTF-8 JSON, refusing non-finite JSON numbers."""
@@ -175,11 +183,13 @@ class StdlibCodec(Generic[T]):
                 for field in model.fields
                 if field.wire in mapping
             }
-            if model.keyed:
-                known = {field.wire for field in model.fields}
-                entries.update((key, item) for key, item in mapping.items() if key not in known)
-                return entries
+{% if dataclass %}
             return shape(**entries)
+{% else %}
+            known = {field.wire for field in model.fields}
+            entries.update((key, item) for key, item in mapping.items() if key not in known)
+            return entries
+{% endif %}
         if shape in {datetime, date, time}:
             return cast("type[datetime]", shape).fromisoformat(cast("str", value))
         if shape is UUID:
@@ -190,6 +200,7 @@ class StdlibCodec(Generic[T]):
             return base64.b64decode(cast("str", value), validate=True)
         return shape(value)
 
+{% if not dataclass %}
     def _dict_model(self, value: Mapping[str, object], shape: Shape) -> Model | None:
         if isinstance(shape, Choice):
             if shape.tag is not None:
@@ -202,6 +213,7 @@ class StdlibCodec(Generic[T]):
             return self.models.get(selected) if isinstance(selected, type) else None
         return self.models.get(shape) if isinstance(shape, type) else None
 
+{% endif %}
     def _dump(self, value: object, shape: Shape = None) -> object:  # ruff: ignore[too-many-return-statements]
         if value is None:
             return None
@@ -209,14 +221,17 @@ class StdlibCodec(Generic[T]):
             selected = dict(shape.kinds).get(_kind(value))
             if isinstance(selected, (Items, Fixed, Values)):
                 shape = selected
-        if (model := self.models.get(type(value))) is not None and not model.keyed:
+{% if dataclass %}
+        if (model := self.models.get(type(value))) is not None:
             return {
                 field.wire: self._dump(item, field.shape)
                 for field in model.fields
                 if (item := getattr(value, field.name)) is not None or not field.omit_none
             }
+{% endif %}
         if isinstance(value, Mapping):
             mapping = cast("Mapping[str, object]", value)
+{% if not dataclass %}
             if (model := self._dict_model(mapping, shape)) is not None:
                 by_name = {field.name: field for field in model.fields}
                 return {
@@ -225,6 +240,7 @@ class StdlibCodec(Generic[T]):
                     )
                     for key, item in mapping.items()
                 }
+{% endif %}
             value_shape = shape.value if isinstance(shape, Values) else None
             return {
                 str(key.value if isinstance(key, Enum) else key): self._dump(item, value_shape)

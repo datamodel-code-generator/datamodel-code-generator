@@ -97,6 +97,11 @@ Tests go through the public `generate()` function or the `datamodel-codegen` CLI
 internal objects, and use mocks only for abnormal paths (injected faults, marked with
 `@pytest.mark.abnormal_path`) and external services.
 
+A generated client copies the codec module of its own model backend only. The dataclass and TypedDict modules,
+`_runtime/model_codecs/stdlib_dataclasses.py` and `stdlib_typeddicts.py`, are derived from `stdlib.py.jinja2` beside
+them: edit that source and run `python scripts/build_stdlib_codecs.py`. Its `--check` option, which
+`tests/model_codecs/test_wire_values.py` runs, fails when a module differs from what the source derives.
+
 Expected output lives under `tests/data/expected/main/generation_platform/`:
 
 - `client/packages/<case>/<backend>/` and `fastapi/packages/<case>/<backend>/` hold generated packages, including
