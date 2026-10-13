@@ -48,7 +48,7 @@ from datamodel_code_generator._target_render import (
     runtime_sources,
 )
 from datamodel_code_generator._target_templates import builtin_role, templated
-from datamodel_code_generator.model.base import format_docstring
+from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.reference import snake_to_upper_camel
 
 if TYPE_CHECKING:
@@ -76,7 +76,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.client.multipart import PartPlan
+    from datamodel_code_generator._runtime.client.parts import PartPlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelHint,
@@ -793,6 +793,11 @@ def _handle(spec: PollingSpec, prefix: str) -> str:
     return f"{prefix}{''.join(map(snake_to_upper_camel, spec.helper.name.split('.')))}Handle"
 
 
+def _route(operation: OperationSpec) -> str:
+    """Return the method and path that a helper's docstrings cite, escaped for their literals."""
+    return escape_docstring(f"{operation.contract.method.upper()} {operation.contract.path}") or ""
+
+
 def _docstring(spec: OperationSpec, *, schema: bool) -> str:
     """Return the text of an operation's docstring: its configured description, or its route.
 
@@ -923,7 +928,7 @@ def _core_call(
 def _part_plan(module: TargetModule, plan: PartPlan) -> str:
     """Return the PartPlan constructor of one form-data member."""
     repeated = ", repeated=True" if plan.repeated else ""
-    return f"{module.local('_runtime.client.multipart', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
+    return f"{module.local('_runtime.client.parts', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
 
 
 class _Typing:
@@ -1965,7 +1970,7 @@ class _Registry(_Typing):
         """Return the PartPlan constructor of one member of a body sent as parts."""
         plan = part.plan
         return _call(
-            module.local("_runtime.client.multipart", "PartPlan"),
+            module.local("_runtime.client.parts", "PartPlan"),
             (
                 ("", repr(plan.name)),
                 *((("", repr(plan.kind)),) if plan.kind == "json" else ()),
@@ -2521,8 +2526,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     @staticmethod
     def what(spec: PaginationSpec | PollingSpec | CacheSpec | UploadSpec | StreamSpec | SocketSpec) -> str:
         """Return the docstring of a helper's class: its name, kind, and its operation's route."""
-        route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
-        return f"The {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {route}."
+        return f"The {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {_route(spec.operation)}."
 
     def leaf(  # noqa: PLR0913
         self,
@@ -2578,7 +2582,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         first, iterate, following, resume = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
         forwarded = [(f"{name}=", name) for name, _, _ in _HELPER_OPTIONS]
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         signature = (*(argument.record(module) for argument in (*arguments, *body)), *options)
         state = Parameter("state", module.local("_runtime.model_codecs.media", "JSONValue"))
         return [
@@ -2649,7 +2653,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *forwarded,
         ]
         start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         signature = (*(argument.record(module) for argument in (*arguments, *body)), *options)
         resume = module.local(_POLLING, "aresume_operation" if asynchronous else "resume_operation")
         state = Parameter("state", module.local("_runtime.model_codecs.media", "JSONValue"))
@@ -2689,7 +2693,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, operation)}]"
         fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         return Function(
             "fetch",
             (),
@@ -2707,7 +2711,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         assert cancel is not None
         base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
         receipt = f"{module.local('_runtime.protocols.records', 'CancelReceipt')}[{self.response(module, cancel)}]"
-        route = f"{cancel.contract.method.upper()} {cancel.contract.path}"
+        route = _route(cancel)
         return Handle(
             name,
             f"{base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]",
@@ -2793,7 +2797,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         forwarded = [(f"{name}=", name) for name, _, _ in _UPLOAD_OPTIONS]
         start = module.local(_UPLOADS, "astart_upload" if asynchronous else "start_upload")
         resume = module.local(_UPLOADS, "aresume_upload" if asynchronous else "resume_upload")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         started = (
             ("", "self._core"),
             plan,
@@ -2937,7 +2941,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((f"{name}=", name) for name, _, _ in _STREAM_OPTIONS),
         ]
         opener = module.local(runtime, "aopen_events" if asynchronous else "open_events")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         signature = (*(argument.record(module) for argument in (*arguments, *body)), *options)
         stream = _STREAM_KINDS[spec.helper.kind]
         returns = f"{handle}[{self.event_type(module, spec)}]"
@@ -3025,7 +3029,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((f"{name}=", name) for name, _, _ in _SOCKET_OPTIONS),
         ]
         opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         keywords = (*(argument.record(module) for argument in arguments), *options)
         sent, received = self.message_types(module, spec)
         returns = f"{session}[{sent}, {received}]"

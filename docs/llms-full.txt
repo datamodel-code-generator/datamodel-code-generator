@@ -12608,6 +12608,9 @@ On the command line, `--generate-server` requires `--server-output`, `--server-p
 and a `--server-*` option requires `--generate-server`; both stop with `Error:` and exit code 2. In Python,
 `generate()` needs `server_output` only with an `output`; see [Python API](#python-api). Server keys of
 `pyproject.toml` are validated like model keys, but have no effect while no server is selected.
+`--generate-server` also requires `--input-file-type openapi`: an input type left to detection, `auto`, or any other
+type stops with `Error: --generate-server requires --input-file-type openapi, not auto` (naming the given type) and
+exit code 2 before the input is read.
 
 Operations are grouped by their first tag, under the key `tag:<tag>`, and operations without a tag under the key
 `default`, which makes the `default` router module, the `DefaultService` Protocol, and the `default=` argument of
@@ -12929,7 +12932,9 @@ A service method returns the value of its primary response, which FastAPI valida
 `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`). Without a
 [`--server-primary-responses`](cli-reference/target-generation-options.md#server-primary-responses) entry, the
 primary response is `200` when the operation declares it, or else its lowest success status, or else its lowest
-status.
+status. A bare value is sent with the `media_type` its entry names, such as `text/plain` of a response that also
+declares JSON, and validated and serialized with that media type's model; without a `media_type`, it takes the
+response's default media type.
 
 An `HTTPResult(status_code, body, headers)` sends another status or extra headers. The package validates and
 serializes its body with the model and default media type of the response that declares the status: exactly, by its
@@ -12997,7 +13002,10 @@ callbacks and webhooks are documentation only, with no routes or service methods
 Components stay when something kept references them, and so do the `allOf` subtypes of a kept discriminator base.
 What a reference names in another loaded document, or in a path that is left out, joins the components of the
 kind the reference's position holds, under its own name or a numbered one when the name is taken; an OpenAPI 3.0
-path item, or a media type before 3.2, has no component kind and is copied in place. References are rewritten
+path item, or a media type before 3.2, has no component kind and is copied in place. Since the document publishes
+what it references, a server generation reads a local file only inside the input document's directory, after `..`
+and symbolic links resolve, and none for a document read from a URL: it fails on any other local file reference
+before reading the file, with or without `--allow-remote-refs`. References are rewritten
 relative to the document, so a schema's `$id` is left out; a reference resolves as the models resolve it,
 through `$id`, `$anchor`, and `$dynamicAnchor`. A reference that names nothing the generation loaded stays as it
 is, with a warning. A link whose `operationRef` names a path that is left out is left out, and so is a value without
@@ -14592,6 +14600,9 @@ the resource of that name.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
+`--generate-client` also requires `--input-file-type openapi`: an input type left to detection, `auto`, or any other
+type stops with `Error: --generate-client requires --input-file-type openapi, not auto` (naming the given type) and
+exit code 2 before the input is read.
 `--generate-client` cannot be used with `--generate-server`, and one selected on the command line replaces the other
 selected in `pyproject.toml`. Client keys of `pyproject.toml` are validated like model keys, but have no effect while
 no client is selected.
@@ -18465,10 +18476,12 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-client` requires `--input-file-type openapi`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Conflicts | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--generate-client` can not be used with `--generate-server`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-model-package`](target-generation-options.md#server-model-package) | `--generate-server` requires `--server-model-package`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-server` requires `--input-file-type openapi`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Conflicts | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--generate-server` can not be used with `--generate-client`. |
 | [`--server-body-mode`](target-generation-options.md#server-body-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-mode` requires `--generate-server fastapi`. |
 | [`--server-body-modes`](target-generation-options.md#server-body-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-modes` requires `--generate-server fastapi`. |
@@ -50500,6 +50513,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 - **Requires:** [`--client-output`](target-generation-options.md#client-output) - `--generate-client` requires `--client-output`.
 - **Requires:** [`--client-package`](target-generation-options.md#client-package) - `--generate-client` requires `--client-package`.
 - **Requires:** [`--client-model-package`](target-generation-options.md#client-model-package) - `--generate-client` requires `--client-model-package`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-client` requires `--input-file-type openapi`.
 - **Conflicts:** [`--generate-server`](target-generation-options.md#generate-server) - `--generate-client` can not be used with `--generate-server`.
 
 !!! tip "Usage"
@@ -50823,6 +50837,7 @@ pyproject.toml, here as `generate-server = "fastapi"`.
 - **Requires:** [`--server-output`](target-generation-options.md#server-output) - `--generate-server` requires `--server-output`.
 - **Requires:** [`--server-package`](target-generation-options.md#server-package) - `--generate-server` requires `--server-package`.
 - **Requires:** [`--server-model-package`](target-generation-options.md#server-model-package) - `--generate-server` requires `--server-model-package`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-server` requires `--input-file-type openapi`.
 - **Conflicts:** [`--generate-client`](target-generation-options.md#generate-client) - `--generate-server` can not be used with `--generate-client`.
 
 !!! tip "Usage"

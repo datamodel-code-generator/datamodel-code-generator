@@ -19,7 +19,7 @@ paths:
                     - {$ref: "#/components/schemas/Cat"}
                     - {$ref: "#/components/schemas/Dog"}
                   discriminator:
-                    propertyName: petType
+                    propertyName: pet-type
                     mapping: {cat: "#/components/schemas/Cat", dog: "#/components/schemas/Dog"}
   /counts:
     get:
@@ -155,19 +155,19 @@ components:
         - {$ref: "#/components/schemas/Cat"}
         - {$ref: "#/components/schemas/Dog"}
       discriminator:
-        propertyName: petType
+        propertyName: pet-type
         mapping: {cat: "#/components/schemas/Cat", dog: "#/components/schemas/Dog"}
     Cat:
       type: object
-      required: [petType, name]
+      required: [pet-type, name]
       properties:
-        petType: {const: cat}
+        pet-type: {const: cat}
         name: {type: string}
     Dog:
       type: object
-      required: [petType, bark]
+      required: [pet-type, bark]
       properties:
-        petType: {const: dog}
+        pet-type: {const: dog}
         bark: {type: boolean}
     Query:
       type: object

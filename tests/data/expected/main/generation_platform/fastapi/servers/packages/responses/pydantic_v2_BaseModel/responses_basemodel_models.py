@@ -32,3 +32,32 @@ FieldDocumentsIdGetPathIdParameter = TypeAliasType("FieldDocumentsIdGetPathIdPar
 
 
 FieldPetsIdGetPathIdParameter = TypeAliasType("FieldPetsIdGetPathIdParameter", int)
+
+
+class FieldTextGetResponse(RootModel[str]):
+    root: str
+
+
+class FieldTextHeadResponse(RootModel[str]):
+    root: str
+
+
+class FieldBytesGetResponse(RootModel[bytes]):
+    root: bytes
+
+
+class FieldProblemsGetQueryModeParameter(StrEnum):
+    bare = 'bare'
+    result = 'result'
+    invalid = 'invalid'
+
+
+FieldNotesGetQueryEmptyParameter = TypeAliasType("FieldNotesGetQueryEmptyParameter", bool)
+
+
+class FieldNotesGetResponse(RootModel[str | None]):
+    root: str | None
+
+
+class FieldChosenGetResponse(RootModel[str]):
+    root: str

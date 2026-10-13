@@ -43,7 +43,8 @@ from tests.api_generation.scenarios.client_naming import (
     naming_snake,
 )
 from tests.api_generation.scenarios.client_native import native_codec_backends, native_faults, native_wire
-from tests.api_generation.scenarios.client_nullable_parameters import nullable_parameters
+from tests.api_generation.scenarios.client_nullable_enums import nullable_enums
+from tests.api_generation.scenarios.client_nullable_parameters import nullable_bodies, nullable_parameters
 from tests.api_generation.scenarios.client_oauth_client_credentials import oauth_client_credentials
 from tests.api_generation.scenarios.client_oauth_refresh import oauth_refresh
 from tests.api_generation.scenarios.client_pagination import pagination, pagination_backends, pagination_limits
@@ -69,7 +70,7 @@ from tests.api_generation.scenarios.client_protocol_errors import protocol_error
 from tests.api_generation.scenarios.client_query import query
 from tests.api_generation.scenarios.client_raw import raw
 from tests.api_generation.scenarios.client_redirects import head_redirects, redirects
-from tests.api_generation.scenarios.client_regressions import json_decode_errors, no_success
+from tests.api_generation.scenarios.client_regressions import json_decode_errors, no_success, route_text
 from tests.api_generation.scenarios.client_retry_boundaries import retry_boundaries
 from tests.api_generation.scenarios.client_retry_calls import retry_calls
 from tests.api_generation.scenarios.client_retry_errors import retry_errors
@@ -844,6 +845,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
+    "route-text": ("route-text", ("pydantic_v2.BaseModel",), route_text),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), type_checking_pets),
     "type-checking-imports-on": ("type-checking-imports-on", ("pydantic_v2.BaseModel",), pets),
@@ -885,7 +887,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
     "missing-sentinel": ("missing-sentinel", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), missing_members),
+    "nullable-enums": ("nullable-enums", ("dataclasses.dataclass", "msgspec.Struct"), nullable_enums),
     "nullable-parameters": ("nullable-parameters", ("pydantic_v2.BaseModel",), nullable_parameters),
+    "nullable-bodies": ("nullable-parameters", BACKENDS, nullable_bodies),
     "parameter-kinds": ("parameter-kinds", BACKENDS, parameter_kinds),
     "parameter-kinds-decimal": ("parameter-kinds-decimal", BACKENDS, parameter_kinds),
     "parameter-kinds-literal": ("parameter-kinds-literal", BACKENDS, parameter_kinds),
@@ -955,6 +959,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-adapter-imports": ("webhooks-unsigned", ("pydantic_v2.BaseModel",), webhook_adapter_imports),
     "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
+    "unions-mapped": ("unions-mapped", BACKENDS, unions),
     "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-split": ("unions-split", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), split_unions),
     "discriminator-copies": (

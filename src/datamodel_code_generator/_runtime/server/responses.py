@@ -63,11 +63,13 @@ _UNDECLARED: Final = Declared()
 class OperationResponses:
     """An operation's declared responses by status key, and the status of a bare value the route sends itself.
 
-    FastAPI's response_model sends the bare value of an operation without that status.
+    FastAPI's response_model sends the bare value of an operation without that status. `primary_media` is the media
+    a bare value takes when it is chosen over the default media of the response that declares that status.
     """
 
     responses: Mapping[str, Declared]
     primary: int | None = None
+    primary_media: Declared | None = None
     head: bool = False
 
     def find(self, status: int) -> Declared | None:
@@ -85,15 +87,21 @@ def dispatch(value: object, plan: OperationResponses) -> object:
         return value
     if _is_result(value):
         return _respond(value.status_code, value.body, value.headers, plan)
-    return value if plan.primary is None else _respond(plan.primary, value, None, plan)
+    return value if plan.primary is None else _respond(plan.primary, value, None, plan, plan.primary_media)
 
 
 def _is_result(value: object) -> TypeIs[HTTPResult[object]]:
     return isinstance(value, HTTPResult)
 
 
-def _respond(status: int, body: object, headers: Mapping[str, str] | None, plan: OperationResponses) -> Response:
-    declared = plan.find(status) or _UNDECLARED
+def _respond(
+    status: int,
+    body: object,
+    headers: Mapping[str, str] | None,
+    plan: OperationResponses,
+    chosen: Declared | None = None,
+) -> Response:
+    declared = chosen or plan.find(status) or _UNDECLARED
     if (body is None and not declared.null) or plan.head or status < _MIN_CONTENT_STATUS or status in _EMPTY_STATUSES:
         if inspect.isawaitable(body):
             raise _unawaited(body)

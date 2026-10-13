@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import MultipartForm, PartPlan
+from ._runtime.client.multipart import MultipartForm
 from ._runtime.client.multipart_responses import PartsReader, file_part, parts_branch, value_part
 from ._runtime.client.operations import (
     BodyMedia,
@@ -22,6 +22,7 @@ from ._runtime.client.operations import (
     empty_branch,
     model_branch,
 )
+from ._runtime.client.parts import PartPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.pets import (
     AttachFilesResponse,

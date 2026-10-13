@@ -458,6 +458,10 @@ def test_client_cli_selector_replaces_pyproject(
             [*OPTIONS, *CLIENT, "--server-layout", "single"],
             "--server-layout requires --generate-server",
         ),
+        (
+            [*OPTIONS, *CLIENT, "--input-file-type", "jsonschema"],
+            "--generate-client requires --input-file-type openapi, not jsonschema",
+        ),
     ],
     ids=[
         "client-option",
@@ -466,6 +470,7 @@ def test_client_cli_selector_replaces_pyproject(
         "no-client-settings",
         "missing-settings",
         "server-option",
+        "input-file-type",
     ],
 )
 def test_client_cli_usage(

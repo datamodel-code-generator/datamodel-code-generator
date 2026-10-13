@@ -107,4 +107,8 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_note(self, *, case: str) -> object:
             return respond("get_note", case)
 
+        def post_memo(self, *, case: str, body: object) -> object:
+            del body
+            return respond("post_memo", case)
+
     return {"default": {"default": Default()}}

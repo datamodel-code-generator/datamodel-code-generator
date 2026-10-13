@@ -78,3 +78,16 @@ FieldNotesGetQueryCaseParameter = TypeAliasType("FieldNotesGetQueryCaseParameter
 
 
 FieldNotesGetResponse = TypeAliasType("FieldNotesGetResponse", str | None)
+
+
+FieldMemosPostQueryCaseParameter = TypeAliasType("FieldMemosPostQueryCaseParameter", str)
+
+
+@dataclass
+class FieldMemosPostRequest:
+    text: str
+
+
+@dataclass
+class FieldMemosPostResponse:
+    text: str

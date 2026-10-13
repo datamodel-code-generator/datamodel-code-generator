@@ -2871,6 +2871,7 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 - **Requires:** [`--client-output`](target-generation-options.md#client-output) - `--generate-client` requires `--client-output`.
 - **Requires:** [`--client-package`](target-generation-options.md#client-package) - `--generate-client` requires `--client-package`.
 - **Requires:** [`--client-model-package`](target-generation-options.md#client-model-package) - `--generate-client` requires `--client-model-package`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-client` requires `--input-file-type openapi`.
 - **Conflicts:** [`--generate-server`](target-generation-options.md#generate-server) - `--generate-client` can not be used with `--generate-server`.
 
 !!! tip "Usage"
@@ -3194,6 +3195,7 @@ pyproject.toml, here as `generate-server = "fastapi"`.
 - **Requires:** [`--server-output`](target-generation-options.md#server-output) - `--generate-server` requires `--server-output`.
 - **Requires:** [`--server-package`](target-generation-options.md#server-package) - `--generate-server` requires `--server-package`.
 - **Requires:** [`--server-model-package`](target-generation-options.md#server-model-package) - `--generate-server` requires `--server-model-package`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-server` requires `--input-file-type openapi`.
 - **Conflicts:** [`--generate-client`](target-generation-options.md#generate-client) - `--generate-server` can not be used with `--generate-client`.
 
 !!! tip "Usage"

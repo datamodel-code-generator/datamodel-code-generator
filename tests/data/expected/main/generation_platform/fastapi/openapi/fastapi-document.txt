@@ -88,29 +88,9 @@
         ],
         "summary": "Post Nullable",
         "operationId": "postNullable",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FieldJsonNullablePostRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
@@ -512,19 +492,6 @@
           "name"
         ],
         "title": "FieldFormPostRequest"
-      },
-      "FieldJsonNullablePostRequest": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "FieldJsonNullablePostRequest"
       },
       "HTTPValidationError": {
         "properties": {

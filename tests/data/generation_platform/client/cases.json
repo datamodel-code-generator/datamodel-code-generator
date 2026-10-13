@@ -3860,6 +3860,10 @@
       ]
     }
   },
+  "unions-mapped": {
+    "input": "unions-mapped.yaml",
+    "config": {}
+  },
   "unions-legacy": {
     "input": "unions-legacy.yaml",
     "config": {}
@@ -4698,6 +4702,9 @@
   "missing-sentinel": {
     "input": "missing-sentinel.yaml"
   },
+  "nullable-enums": {
+    "input": "nullable-enums.yaml"
+  },
   "nullable-parameters": {
     "input": "nullable-parameters.yaml"
   },
@@ -4740,6 +4747,33 @@
       "use_schema_description": true,
       "use_single_line_docstring": true
     }
+  },
+  "route-text": {
+    "input": "route-text.yaml",
+    "references": [
+      "protocols/route-text.json"
+    ],
+    "config": {
+      "protocols": "protocols/route-text.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
   },
   "templates": {
     "input": "pets.yaml",

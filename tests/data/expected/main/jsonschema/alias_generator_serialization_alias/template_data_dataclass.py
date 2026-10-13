@@ -12,5 +12,5 @@ from pydantic.dataclasses import dataclass
 class AliasGeneratorModel:
     firstName: str
     foo_bar: str
-    lastName: str | None = None
     weird_url: int = Field(..., serialization_alias='weird-url')
+    lastName: str | None = None
