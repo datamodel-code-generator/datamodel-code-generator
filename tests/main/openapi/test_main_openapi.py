@@ -7810,6 +7810,24 @@ def test_main_openapi_shadowed_imports(output_file: Path) -> None:
             ["--use-type-alias"],
             "annotated_model_type_alias.py",
         ),
+        (
+            "alias_description_property_names.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias"],
+            "alias_description_property_names.py",
+        ),
+        (
+            "annotated_property_use_annotated.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias", "--use-annotated"],
+            "annotated_property_use_annotated.py",
+        ),
+        (
+            "annotated_property_use_annotated.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias", "--use-annotated", "--target-python-version", "3.12"],
+            "annotated_property_type_statement.py",
+        ),
     ],
 )
 def test_main_openapi_field_name_collision_with_alias_constraints(

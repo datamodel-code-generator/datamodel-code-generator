@@ -417,7 +417,10 @@ def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bo
 
 
 def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
-    """Allocate aliases only where a property hides an emitted expression name."""
+    """Allocate aliases only where a property hides an emitted expression name.
+
+    Type aliases sit at module scope, so an import they name keeps its name beside the alias.
+    """
     field_names = {field.name for model in models for field in model.fields if field.name is not None}
     shadowable_imports = {
         effective_name: (from_, name)
@@ -436,8 +439,13 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
     if not collisions:
         return
     reserved_names.update(imports.get_effective_name(from_, name) for from_, names in imports.items() for name in names)
+    type_alias_imports = {
+        (import_.from_, import_.import_)
+        for model in models
+        if isinstance(model, TypeAliasBase)
+        for import_ in model.imports
+    }
     bindings: dict[str, str] = {}
-    aliased_imports: dict[_PythonTypeImportKey, Import] = {}
     for name, (from_, imported_name) in shadowable_imports.items():
         if name not in collisions:
             continue
@@ -447,16 +455,16 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
             alias = f"{name}_aliased_{suffix}"
             suffix += 1
         reserved_names.add(alias)
-        aliased_import = Import(from_=from_, import_=imported_name, alias=alias)
+        keep_unaliased = (from_, imported_name) in type_alias_imports
+        aliased_import = Import(from_=from_, import_=imported_name, alias=alias, keep_unaliased=keep_unaliased)
         bindings[name] = alias
-        aliased_imports[from_, imported_name] = aliased_import
-        if from_ == "builtins":
+        if from_ == "builtins" or keep_unaliased:
             imports.append(aliased_import)
         else:
             imports.apply_alias(aliased_import)
-    _apply_structured_import_aliases(models, aliased_imports, can_retain_cache=False)
     for model in models:
-        model.set_field_name_bindings(bindings)
+        if not isinstance(model, TypeAliasBase):
+            model.set_field_name_bindings(bindings)
 
 
 def _expand_export_module_path(module: ModulePath) -> ModulePath:

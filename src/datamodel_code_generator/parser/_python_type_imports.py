@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -32,9 +33,7 @@ class _StructuredImportAliasState:
     reserved_names: set[str]
     used_names: set[str]
     aliased_imports: dict[_ImportKey, Import]
-    renamable_model_names: set[str]
     template_import_keys: set[_ImportKey]
-    bound_import_keys: set[_ImportKey]
 
     def collect_import(self, imports_by_name: _ImportsByName, import_: Import) -> None:
         """Record an exact import identity under its effective binding name."""
@@ -67,13 +66,6 @@ class _StructuredImportAliasState:
         while (alias := f"{name}_{suffix}") in self.used_names:
             suffix += 1
         return alias
-
-    def renames_model(self, key: _ImportKey, name: str) -> bool:
-        """Tell whether a model named like an import the module already binds is renamed instead.
-
-        Ordinary imports keep their names this way, and template text such as ``Field(...)`` may name them.
-        """
-        return key in self.bound_import_keys and name in self.renamable_model_names
 
     def alias_import(self, import_: Import, alias: str) -> None:
         """Bind one exact import identity to an alias."""
@@ -127,21 +119,24 @@ def _collect_field_runtime_imports(state: _StructuredImportAliasState, models: I
                 state.collect_import(state.structured_imports_by_name, import_)
 
 
-def _alias_following_import_keys(model: DataModel) -> set[_ImportKey]:
-    """Return identities a model names only through consumers that follow an alias.
+def _alias_following_import_counts(model: DataModel) -> Counter[_ImportKey]:
+    """Count the imports a model holds for consumers that follow an alias.
 
-    Any other import of the model is named by template text such as ``Field(...)``, so its binding stays.
+    Each further import of the same identity is named by template text such as ``Field(...)``,
+    which may sit in the same model, so its binding stays.
     """
-    keys = {python_type_import_key(base_class.import_) for base_class in model.base_classes if base_class.import_}
+    counts = Counter(
+        python_type_import_key(base_class.import_) for base_class in model.base_classes if base_class.import_
+    )
     for field in model.fields:
-        keys.update(map(python_type_import_key, field.runtime_expression_imports))
+        counts.update(map(python_type_import_key, field.runtime_expression_imports))
         for data_type in field.data_type.all_data_types:
             if data_type.import_:
-                keys.add(python_type_import_key(data_type.import_))
+                counts[python_type_import_key(data_type.import_)] += 1
             if data_type.python_type:
-                keys.update(map(python_type_import_key, data_type.python_type.imports))
-            keys.update(map(python_type_import_key, data_type.runtime_expression_imports))
-    return keys
+                counts.update(map(python_type_import_key, data_type.python_type.imports))
+            counts.update(map(python_type_import_key, data_type.runtime_expression_imports))
+    return counts
 
 
 def _collect_model_context_imports(
@@ -159,12 +154,13 @@ def _collect_model_context_imports(
         # This public aggregate contains field, base, default, backend, and
         # additional imports. Unaliased structured identities are classified
         # above; an established alias remains the canonical module binding.
-        alias_following_keys: set[_ImportKey] | None = None
+        alias_following_counts: Counter[_ImportKey] | None = None
         for import_ in model.imports:
             if (key := python_type_import_key(import_)) in structured_import_keys and not import_.alias:
-                if alias_following_keys is None:
-                    alias_following_keys = _alias_following_import_keys(model)
-                if key in alias_following_keys:
+                if alias_following_counts is None:
+                    alias_following_counts = _alias_following_import_counts(model)
+                if alias_following_counts[key]:
+                    alias_following_counts[key] -= 1
                     continue
                 state.template_import_keys.add(key)
             state.collect_ordinary_import(import_)
@@ -174,7 +170,6 @@ def _collect_model_context_imports(
                 key = (from_, import_name)
                 alias = import_aggregate.alias.get(from_, {}).get(import_name)
                 if key in structured_import_keys and not alias:
-                    state.bound_import_keys.add(key)
                     continue
                 state.collect_ordinary_import(
                     Import(
@@ -192,11 +187,9 @@ def resolve_structured_import_aliases(
     import_aggregates: Iterable[Imports] = (),
 ) -> dict[_ImportKey, Import]:
     """Prefer established module bindings and alias structured imports around them."""
-    class_names = {model.class_name for model in models}
-    reserved_names = all_model_field_names | class_names
-    state = _StructuredImportAliasState(
-        {}, {}, {}, {}, reserved_names, set(reserved_names), {}, class_names - all_model_field_names, set(), set()
-    )
+    reserved_names = set(all_model_field_names)
+    reserved_names.update(model.class_name for model in models)
+    state = _StructuredImportAliasState({}, {}, {}, {}, reserved_names, set(reserved_names), {}, set())
     _collect_data_type_imports(state, data_types, all_model_field_names)
     _collect_field_runtime_imports(state, models)
     _collect_model_context_imports(state, models, import_aggregates)
@@ -234,11 +227,7 @@ def resolve_structured_import_aliases(
             if key in ordinary_keys:
                 kept_unaliased = True
                 continue
-            if (
-                not kept_unaliased
-                and not ordinary_keys
-                and (name not in state.reserved_names or state.renames_model(key, name))
-            ):
+            if not kept_unaliased and name not in state.reserved_names and not ordinary_keys:
                 kept_unaliased = True
                 continue
             state.alias_import(
