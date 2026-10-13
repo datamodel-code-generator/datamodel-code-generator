@@ -228,13 +228,6 @@ def document_resources(packages: dict[str, Any]) -> list[str]:
     ]
 
 
-@_scenario("hooks", "detected")
-def detected_input(packages: dict[str, Any]) -> list[str]:
-    """Serve the same document when the input type is detected, references into other documents bundled."""
-    given, detected = (_connected(packages[name].create_app).openapi() for name in ("hooks", "detected"))
-    return [f"same {given == detected}", f"components {sorted(detected['components'])}"]
-
-
 @_scenario("bodies")
 def fastapi_document(packages: dict[str, Any]) -> list[str]:
     """Serve FastAPI's own document instead of the source document."""

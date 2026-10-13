@@ -952,6 +952,9 @@ On the command line, `--generate-server` requires `--server-output`, `--server-p
 and a `--server-*` option requires `--generate-server`; both stop with `Error:` and exit code 2. In Python,
 `generate()` needs `server_output` only with an `output`; see [Python API](#python-api). Server keys of
 `pyproject.toml` are validated like model keys, but have no effect while no server is selected.
+`--generate-server` also requires `--input-file-type openapi`: an input type left to detection, `auto`, or any other
+type stops with `Error: --generate-server requires --input-file-type openapi, not auto` (naming the given type) and
+exit code 2 before the input is read.
 
 Operations are grouped by their first tag, under the key `tag:<tag>`, and operations without a tag under the key
 `default`, which makes the `default` router module, the `DefaultService` Protocol, and the `default=` argument of

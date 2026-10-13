@@ -31,6 +31,17 @@ def no_success(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_no_success(package, exchange, lines))
 
 
+def route_text(package: ModuleType, lines: list[str]) -> None:
+    """Import the helpers of a route that holds quotes and a backslash, and fetch through one."""
+    for module, name in (("_helpers", "NotesCurrentCache"), ("_async_helpers", "AsyncNotesCurrentCache")):
+        helper = getattr(importlib.import_module(f"{package.__name__}.protocols.{module}"), name)
+        lines.extend((f"  {name} {helper.__doc__}", f"  {name}.fetch {helper.fetch.__doc__}"))
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        exchange.respond(json_response(200, "note"))
+        record(lines, "fetch", lambda: api.protocols.notes.current.fetch().data)
+
+
 def _responses() -> Iterator[tuple[str, str, Any]]:
     """Yield declared errors and undeclared successes for the error-only operations."""
     yield "bodyless error", "create_archive", raw_response(409)
