@@ -568,6 +568,11 @@ def docs_examples() -> tuple[DocsExample, ...]:
         *fastapi_server_examples(),
         *python_client_examples(),
         DocsExample(
+            example_id="fastapi-code-generator-migration.command",
+            path=DOCS / "fastapi-code-generator-migration.md",
+            render=lambda: indented(fenced("bash", command(docs_project_arguments("tutorial")))),
+        ),
+        DocsExample(
             example_id="fastapi-server.nested-models.command",
             path=DOCS / "fastapi-server.md",
             render=lambda: fenced(

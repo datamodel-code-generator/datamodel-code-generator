@@ -64,6 +64,7 @@ python-client.howto.errors-output: python-client.md
 python-client.howto.generate: python-client.md
 python-client.howto.shelter: python-client.md
 python-client.howto.test: python-client.md
+fastapi-code-generator-migration.command: fastapi-code-generator-migration.md
 fastapi-server.nested-models.command: fastapi-server.md
 openapi.quick-start.schema: openapi.md
 openapi.quick-start.output: openapi.md

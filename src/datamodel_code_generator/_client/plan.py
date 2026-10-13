@@ -40,7 +40,13 @@ from datamodel_code_generator._target_contract import (
     TypeUseBinding,
     UnionType,
 )
-from datamodel_code_generator._target_naming import WINDOWS_DEVICES, NameScope, explicit_name, operation_basis
+from datamodel_code_generator._target_naming import (
+    WINDOWS_DEVICES,
+    NameScope,
+    explicit_name,
+    operation_basis,
+    path_placeholders,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping
@@ -689,7 +695,7 @@ class Planner:
                 f"The path placeholder {placeholder!r} of {_label(operation)} has no path parameter",
                 operation.id.use_site,
             )
-            for placeholder in dict.fromkeys(_PLACEHOLDER.findall(operation.path))
+            for placeholder in dict.fromkeys(path_placeholders(operation.path))
             if placeholder not in paths
         )
         return tuple(specs)

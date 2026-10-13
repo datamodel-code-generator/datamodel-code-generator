@@ -869,15 +869,16 @@ class Planner:  # noqa: PLR0904
             if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
             else self.kind(value)
         )
+        required = fact(declaration, "required") is True
         spec = ParameterSpec(
             location=location,
             wire_name=name,
-            required=fact(declaration, "required") is True,
+            required=required,
             use=use,
             plan=plan,
             decision=Decision(transport="adapter"),
             type=value,
-            default=default,
+            default=Default.ABSENT if required else default,
             local=declaration.declaration.location.document == operation.id.use_site.document,
         )
         if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):
