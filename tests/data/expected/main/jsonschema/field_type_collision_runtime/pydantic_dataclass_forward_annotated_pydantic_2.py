@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 
@@ -19,7 +21,7 @@ class Payload:
 
 @dataclass
 class Leaf:
-    Bar_1: Bar = Field(..., alias='Bar', description='Named like its type.')
+    Bar: Annotated[Bar, Field(description='Named like its type.')]
 
 
 @dataclass

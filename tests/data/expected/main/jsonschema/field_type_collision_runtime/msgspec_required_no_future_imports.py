@@ -9,7 +9,7 @@ class Bar(Struct):
 
 
 class Leaf(Struct):
-    Bar: Bar
+    Bar: "Bar"
 
 
 class Values(Struct):

@@ -66,7 +66,7 @@ class _MsgspecFieldRenderPlan(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable
     from pathlib import Path
 
     from datamodel_code_generator.reference import Reference
@@ -77,10 +77,9 @@ def _default_factory_type_name(data_type: DataType) -> str:
 
     The factory runs once the module defines the type, so a quoted forward reference is named directly.
     """
-    reference = cast("Reference", data_type.reference)
-    if (alias := data_type.alias) and alias != f'"{reference.short_name}"':
+    if (alias := data_type.alias) and not data_type._is_quoted_reference:  # noqa: SLF001
         return alias
-    return cast("DataModel", reference.source).class_name
+    return cast("DataModel", cast("Reference", data_type.reference).source).class_name
 
 
 def has_field_assignment(field: DataModelFieldBase) -> bool:
@@ -129,7 +128,6 @@ class Struct(DataModel):
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "msgspec.jinja2"
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
-    KEEPS_FIELDS_AS_CLASS_ATTRIBUTES: ClassVar[bool] = True
     BASE_CLASS: ClassVar[str] = "msgspec.Struct"
     BASE_CLASS_NAME: ClassVar[str] = "Struct"
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"
@@ -157,12 +155,6 @@ class Struct(DataModel):
         ("allow_population_by_field_name", True): None,
         ("use_attribute_docstrings", True): None,
     }
-
-    def field_binds_class_attribute(
-        self, field: DataModelFieldBase, forward_reference_positions: Mapping[str, int]
-    ) -> bool:
-        """Return whether the class body assigns a default or a ``field()`` call to the field's name."""
-        return bool(field.field) or super().field_binds_class_attribute(field, forward_reference_positions)
 
     def __init__(  # noqa: PLR0913
         self,

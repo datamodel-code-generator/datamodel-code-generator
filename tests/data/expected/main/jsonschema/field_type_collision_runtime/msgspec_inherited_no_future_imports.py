@@ -15,7 +15,7 @@ class Base(Struct):
 
 
 class Leaf(Base):
-    Bar: Bar
+    Bar: "Bar"
 
 
 class Values(Struct):

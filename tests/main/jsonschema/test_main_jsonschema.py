@@ -2713,7 +2713,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "speed.json",
-            "3.11",
+            "3.10",
             [],
             "field_type_collision_runtime/pydantic_dataclass.py",
             "Bar_1",
@@ -2731,7 +2731,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "required.json",
-            "3.11",
+            "3.10",
             [],
             "field_type_collision_runtime/pydantic_dataclass_required.py",
             "Bar",
@@ -2749,7 +2749,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "required.json",
-            "3.11",
+            "3.10",
             ["--disable-future-imports"],
             "field_type_collision_runtime/pydantic_dataclass_required_no_future_imports.py",
             "Bar",
@@ -2758,7 +2758,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "described.json",
-            "3.11",
+            "3.10",
             [],
             "field_type_collision_runtime/pydantic_dataclass_described.py",
             "Bar_1",
@@ -2767,7 +2767,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "described.json",
-            "3.11",
+            "3.10",
             ["--use-annotated"],
             "field_type_collision_runtime/pydantic_dataclass_described_annotated.py",
             "Bar",
@@ -2776,7 +2776,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "inherited.json",
-            "3.11",
+            "3.10",
             [],
             "field_type_collision_runtime/pydantic_dataclass_inherited.py",
             "Bar_1",
@@ -2784,8 +2784,80 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         ),
         pytest.param(
             DataModelType.PydanticV2Dataclass,
+            "subclass.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_subclass.py",
+            "Bar_1",
+            id="pydantic-dataclass-subclass",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "nullable.json",
+            "3.10",
+            ["--strip-default-none"],
+            "field_type_collision_runtime/pydantic_dataclass_nullable_strip_default_none.py",
+            "Bar_1",
+            id="pydantic-dataclass-nullable-strip-default-none",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.10",
+            ["--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_required_slots.py",
+            "Bar_1",
+            id="pydantic-dataclass-required-slots",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.14",
+            ["--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_required_slots_py314.py",
+            "Bar",
+            id="pydantic-dataclass-required-slots-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "required.json",
+            "3.10",
+            ["--disable-future-imports", "--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_required_slots_no_future_imports.py",
+            "Bar",
+            id="pydantic-dataclass-required-slots-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "self_named.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_self_named.py",
+            "Bar",
+            id="pydantic-dataclass-self-named",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "self_named.json",
+            "3.10",
+            ["--target-pydantic-version", "2"],
+            "field_type_collision_runtime/pydantic_dataclass_self_named_pydantic_2.py",
+            "Bar",
+            id="pydantic-dataclass-self-named-pydantic-2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "self_named.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_self_named_py314.py",
+            "Bar",
+            id="pydantic-dataclass-self-named-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
             "forward.json",
-            "3.11",
+            "3.10",
             ["--use-annotated"],
             "field_type_collision_runtime/pydantic_dataclass_forward_annotated.py",
             "Bar",
@@ -2794,16 +2866,25 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "forward.json",
-            "3.11",
+            "3.10",
             ["--use-annotated", "--target-pydantic-version", "2"],
             "field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2.py",
-            "Bar_1",
+            "Bar",
             id="pydantic-dataclass-forward-annotated-pydantic-2",
         ),
         pytest.param(
             DataModelType.PydanticV2Dataclass,
+            "forward.json",
+            "3.10",
+            ["--use-annotated", "--target-pydantic-version", "2", "--dataclass-arguments", '{"slots": true}'],
+            "field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2_slots.py",
+            "Bar_1",
+            id="pydantic-dataclass-forward-annotated-pydantic-2-slots",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
             "speed.json",
-            "3.11",
+            "3.10",
             ["--field-type-collision-strategy", "rename-type"],
             "field_type_collision_runtime/pydantic_dataclass_rename_type.py",
             "Bar",
@@ -2812,7 +2893,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.PydanticV2Dataclass,
             "required.json",
-            "3.11",
+            "3.10",
             ["--field-type-collision-strategy", "rename-type"],
             "field_type_collision_runtime/pydantic_dataclass_required.py",
             "Bar",
@@ -2821,7 +2902,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.MsgspecStruct,
             "speed.json",
-            "3.11",
+            "3.10",
             [],
             "field_type_collision_runtime/msgspec.py",
             "Bar",
@@ -2830,7 +2911,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.MsgspecStruct,
             "required.json",
-            "3.11",
+            "3.10",
             [],
             "field_type_collision_runtime/msgspec_required.py",
             "Bar",
@@ -2866,7 +2947,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.MsgspecStruct,
             "speed.json",
-            "3.11",
+            "3.10",
             ["--disable-future-imports"],
             "field_type_collision_runtime/msgspec_no_future_imports.py",
             "Bar",
@@ -2875,7 +2956,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.MsgspecStruct,
             "required.json",
-            "3.11",
+            "3.10",
             ["--disable-future-imports"],
             "field_type_collision_runtime/msgspec_required_no_future_imports.py",
             "Bar",
@@ -2893,7 +2974,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.MsgspecStruct,
             "later.json",
-            "3.11",
+            "3.10",
             ["--disable-future-imports"],
             "field_type_collision_runtime/msgspec_later_no_future_imports.py",
             "Bar",
@@ -2902,7 +2983,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.MsgspecStruct,
             "inherited.json",
-            "3.11",
+            "3.10",
             ["--disable-future-imports"],
             "field_type_collision_runtime/msgspec_inherited_no_future_imports.py",
             "Bar",
@@ -2911,11 +2992,47 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         pytest.param(
             DataModelType.MsgspecStruct,
             "defaults.json",
-            "3.11",
+            "3.10",
             ["--disable-future-imports"],
             "field_type_collision_runtime/msgspec_defaults_no_future_imports.py",
             "Bar",
             id="msgspec-defaults-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "defaults.json",
+            "3.11",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_defaults_py311_no_future_imports.py",
+            "Bar",
+            id="msgspec-defaults-py311-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.10",
+            ["--use-default-factory-for-optional-nested-models"],
+            "field_type_collision_runtime/msgspec_later_default_factory.py",
+            "Bar",
+            id="msgspec-later-default-factory",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.10",
+            ["--disable-future-imports", "--use-default-factory-for-optional-nested-models"],
+            "field_type_collision_runtime/msgspec_later_default_factory_no_future_imports.py",
+            "Bar",
+            id="msgspec-later-default-factory-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "speed.json",
+            "3.11",
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_runtime/msgspec_rename_type.py",
+            "Bar",
+            id="msgspec-rename-type",
         ),
         pytest.param(
             DataModelType.MsgspecStruct,
@@ -2924,7 +3041,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
             ["--field-type-collision-strategy", "rename-type"],
             "field_type_collision_runtime/msgspec_py314.py",
             "Bar",
-            id="msgspec-rename-type",
+            id="msgspec-rename-type-py314",
         ),
     ],
 )
@@ -2937,13 +3054,17 @@ def test_main_jsonschema_field_type_collision_runtime(
     expected_file: str,
     field_name: str,
 ) -> None:
-    """Keep a field named like its type; where the name hides the type, write a string or rename by backend."""
+    """Keep a field named like its type unless the class would hide the type, on every Python from the target on.
+
+    The output runs as an imported module, where its own annotation mode applies.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / schema,
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=expected_file,
+        skip_code_validation=True,
         extra_args=[
             "--output-model-type",
             backend.value,
@@ -2957,10 +3078,8 @@ def test_main_jsonschema_field_type_collision_runtime(
             *options,
         ],
     )
-    target = tuple(map(int, target_python_version.split(".")))
-    evaluates_eagerly = "--disable-future-imports" in options and target < (3, 14)
-    if sys.version_info[:2] < target or (evaluates_eagerly and sys.version_info[:2] >= (3, 14)):
-        return
+    if sys.version_info[:2] < tuple(map(int, target_python_version.split("."))):
+        pytest.skip(f"the output targets Python {target_python_version} or later")
     payload_path = DATA_PATH / "payloads" / "field_type_collision_runtime"
     with _generated_model(output_file, "field_type_collision_runtime", "Payload") as model:
         validator = partial(msgspec.json.decode, type=model)
