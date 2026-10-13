@@ -40,6 +40,9 @@ jobs:
           - tox_env: pydantic25
             name: pydantic25
             coverage_name: pydantic25
+          - tox_env: pydantic212
+            name: pydantic212
+            coverage_name: pydantic212
           - tox_env: pydantic213
             name: pydantic213
             coverage_name: pydantic213
