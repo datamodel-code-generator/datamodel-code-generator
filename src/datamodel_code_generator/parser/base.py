@@ -4979,9 +4979,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
             if (inherited := self.__get_inherited_constructor_info(model)) is None:
                 field_policy = Parser._get_constructor_field_policy(model)
-                if self.__has_local_constructor_ordering_conflict(model, field_policy):
+                order_key = self.__get_local_constructor_order_key(model, field_policy)
+                if self.__has_local_constructor_ordering_conflict(model, field_policy, order_key):
                     model.clear_imports_cache()
-                    self.generation_store.set_fields(model, sorted(model.fields, key=field_policy.has_assignment))
+                    self.generation_store.set_fields(model, sorted(model.fields, key=order_key))
                 elif restored_inherited_state:  # pragma: no cover - marker requires a generated base
                     model.clear_imports_cache()
                 continue
@@ -5017,25 +5018,37 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model.clear_imports_cache()
             self.generation_store.set_fields(model, sorted(model.fields, key=field_policy.has_assignment))
 
+    def __get_local_constructor_order_key(  # noqa: PLR6301
+        self,
+        model: DataModel,
+        field_policy: _ConstructorFieldPolicy,
+    ) -> Callable[[DataModelFieldBase], tuple[bool, bool]]:
+        """Return the positional order key that keeps both constructor and signature defaults last."""
+        if not model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT:
+            return lambda field: (field_policy.has_assignment(field), False)
+        # A required field rendered as ``= Field(...)`` is a dataclass default but required in the
+        # validator's signature, so it must precede fields with real defaults as well.
+        return lambda field: (field_policy.has_assignment(field), field_policy.classify_default(field)[0])
+
     def __has_local_constructor_ordering_conflict(  # noqa: PLR6301
         self,
         model: DataModel,
         field_policy: _ConstructorFieldPolicy,
+        order_key: Callable[[DataModelFieldBase], tuple[bool, bool]],
     ) -> bool:
         """Return whether a local required field follows a positional default."""
         if not model.SUPPORTS_KW_ONLY:
             return False
-        saw_assignment = False
+        previous_key = (False, False)
         for field in model.fields:
             if not field_policy.participates(field):
                 continue
             kw_only = field.constructor_keyword_only
             if kw_only is True or (kw_only is None and model.has_keyword_only_definition()):
                 continue
-            if field_policy.has_assignment(field):
-                saw_assignment = True
-            elif saw_assignment:
+            if (key := order_key(field)) < previous_key:
                 return True
+            previous_key = key
         return False
 
     @classmethod
