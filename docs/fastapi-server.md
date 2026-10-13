@@ -327,9 +327,10 @@ server run to the batch document, with file paths relative to that job's model o
 
 Every generation overwrites every generated file of the package, as it does the models, restoring any you edited
 or deleted. A file that is no longer generated, such as the router module of a removed tag, stays until you delete
-it, and `--check` lists it as an extra file. Keep the service implementations, the `authorize` callback, and the
-application in modules outside the package: `--check` treats every `.py` file under `--server-output` as generated,
-and a file at a path the package needs is overwritten.
+it, and `--check` lists it as an extra file. A generation that leaves such `.py` files in place names them in one
+`UserWarning`. Keep the service implementations, the `authorize` callback, and the application in modules outside
+the package: `--check` treats every `.py` file under `--server-output` as generated, and a file at a path the
+package needs is overwritten.
 
 The models can be part of the package. Name a model file or directory inside `--server-output` and its import path:
 

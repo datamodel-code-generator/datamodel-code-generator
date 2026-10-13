@@ -11765,9 +11765,10 @@ server run to the batch document, with file paths relative to that job's model o
 
 Every generation overwrites every generated file of the package, as it does the models, restoring any you edited
 or deleted. A file that is no longer generated, such as the router module of a removed tag, stays until you delete
-it, and `--check` lists it as an extra file. Keep the service implementations, the `authorize` callback, and the
-application in modules outside the package: `--check` treats every `.py` file under `--server-output` as generated,
-and a file at a path the package needs is overwritten.
+it, and `--check` lists it as an extra file. A generation that leaves such `.py` files in place names them in one
+`UserWarning`. Keep the service implementations, the `authorize` callback, and the application in modules outside
+the package: `--check` treats every `.py` file under `--server-output` as generated, and a file at a path the
+package needs is overwritten.
 
 The models can be part of the package. Name a model file or directory inside `--server-output` and its import path:
 
@@ -12212,9 +12213,10 @@ emits the model generation and check payloads, as with `--generate-server`. `--d
 as they do with `--generate-server`.
 
 As for models, every generation overwrites every generated file of the package, also one you edited, and never
-deletes one. The modules of a resource that is no longer generated stay until you delete them, and `--check` lists
-them as extra files; keep your own code outside the package, because `--check` treats every `.py` file under
-`--client-output` as generated. The models can live inside the package, such as `--output client/models.py` with
+deletes one. The modules of a resource that is no longer generated stay until you delete them: `--check` lists
+them as extra files, and a generation that leaves such `.py` files in place names them in one `UserWarning`. Keep
+your own code outside the package, because `--check` treats every `.py` file under `--client-output` as generated.
+The models can live inside the package, such as `--output client/models.py` with
 `--client-model-package client.models`, as for the [server package](fastapi-server.md#the-generated-package).
 
 ## Client settings

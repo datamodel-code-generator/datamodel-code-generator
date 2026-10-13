@@ -59,13 +59,17 @@ render msgspec.Struct typing
   models.py
   model_bindings.py msgspec_Struct/typing
 change msgspec.Struct typing element-type
-  @@ -12 +12 @@
+  @@ -0,0 +1 @@
+  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
+  @@ -12 +13 @@
   -    value: Tuple[()]
   +    value: Tuple[str]
 render msgspec.Struct standard
   models.py
   model_bindings.py msgspec_Struct/typing
 change msgspec.Struct standard element-type
-  @@ -11 +11 @@
+  @@ -0,0 +1 @@
+  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
+  @@ -11 +12 @@
   -    value: tuple[()]
   +    value: tuple[str]

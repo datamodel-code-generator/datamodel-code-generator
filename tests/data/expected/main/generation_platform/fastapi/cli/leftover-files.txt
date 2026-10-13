@@ -1,0 +1,9 @@
+# first run
+# narrowed run
+UserWarning: server: These Python files are no longer generated and are left in place: server/routers/store.py. Delete the ones you no longer need.
+# json run
+UserWarning: server: These Python files are no longer generated and are left in place: server/routers/store.py. Delete the ones you no longer need.
+# check run
+EXTRA: server/routers/store.py (no longer generated)
+# error run
+UserWarning: server: These Python files are no longer generated and are left in place: server/routers/store.py. Delete the ones you no longer need.
