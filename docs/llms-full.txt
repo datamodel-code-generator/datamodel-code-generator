@@ -12386,6 +12386,10 @@ conversion rules, as they do for unknown object members. Dataclass and TypedDict
 such text is a decoding error, like text that cannot become a `Decimal`, date or `UUID` leaf; their JSON bodies are
 still constructed without added schema validation. Repeated undeclared members keep their last value.
 
+A package holds the codec of its own model backend only. A Pydantic package imports no msgspec, a msgspec package no
+Pydantic, and a dataclass or TypedDict package neither, so the package imports, and mypy, Pyright, and ty check it,
+with only the dependencies that generation prints installed.
+
 The generated `model_codecs` module exports `UNSET` and `JSONValue`. Parameter parsing records and wire
 validation errors are implementation details. `UNSET`, also exported from `pkg.options`, is a
 `typing_extensions.Sentinel` ([PEP 661](https://peps.python.org/pep-0661/)), not an `Enum` member: it marks an
@@ -54255,7 +54259,11 @@ Expected output lives under `tests/data/expected/main/generation_platform/`:
 - `client/bindings/<case>/<backend>/<variant>/client/_generated/model_bindings.py` pins the model bindings each
   case generates.
 - `client/capabilities/*.txt` and the other `*.txt` reports list copied runtime modules by name. Line counts appear
-  only in `minimal`.
+  only in `minimal`. Each capability report also lists the modules the package imports from outside the standard
+  library: those of the printed dependencies, then the others, which only those dependencies' own requirements may
+  provide.
+- `client/typing/dependencies/*.txt` hold the checkers' findings for a package of each backend where only its
+  printed dependencies are installed.
 - Reports hold listings, diagnostics, and outcomes. Generated source is pinned as files at its generated path, not
   embedded in a report.
 

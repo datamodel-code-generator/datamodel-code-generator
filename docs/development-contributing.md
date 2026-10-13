@@ -104,7 +104,11 @@ Expected output lives under `tests/data/expected/main/generation_platform/`:
 - `client/bindings/<case>/<backend>/<variant>/client/_generated/model_bindings.py` pins the model bindings each
   case generates.
 - `client/capabilities/*.txt` and the other `*.txt` reports list copied runtime modules by name. Line counts appear
-  only in `minimal`.
+  only in `minimal`. Each capability report also lists the modules the package imports from outside the standard
+  library: those of the printed dependencies, then the others, which only those dependencies' own requirements may
+  provide.
+- `client/typing/dependencies/*.txt` hold the checkers' findings for a package of each backend where only its
+  printed dependencies are installed.
 - Reports hold listings, diagnostics, and outcomes. Generated source is pinned as files at its generated path, not
   embedded in a report.
 

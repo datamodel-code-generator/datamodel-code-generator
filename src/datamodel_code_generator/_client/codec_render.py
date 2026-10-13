@@ -1,4 +1,4 @@
-"""Render acquired native codec types and thin stdlib field maps for one client package."""
+"""Render the codecs of one client package's model backend, with thin field maps for a stdlib backend."""
 
 from __future__ import annotations
 
@@ -19,11 +19,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Templated
 
-_CODECS: Final[dict[CodecKind, str]] = {
-    "pydantic": "PydanticCodec",
-    "pydantic_dataclass": "PydanticDataclassCodec",
-    "msgspec": "MsgspecCodec",
-    "stdlib": "StdlibCodec",
+_CODECS: Final[dict[CodecKind, tuple[str, str]]] = {
+    "pydantic": ("pydantic_models", "PydanticCodec"),
+    "pydantic_dataclass": ("pydantic_dataclasses", "PydanticDataclassCodec"),
+    "msgspec": ("msgspec_structs", "MsgspecCodec"),
+    "stdlib": ("stdlib", "StdlibCodec"),
 }
 _NAMES: Final = (
     "Class",
@@ -34,7 +34,7 @@ _NAMES: Final = (
     "Field",
     "Model",
     "MODELS",
-    *_CODECS.values(),
+    *(codec for _, codec in _CODECS.values()),
 )
 
 
@@ -104,11 +104,9 @@ class _Renderer:
         return "None"
 
     def render(self) -> RenderedBindings:
-        codecs = sorted({_CODECS[use.kind] for use in self.plan.uses if use.kind != "stdlib"})
         models: list[ModelEntry] = []
         annotation = ""
         if any(use.kind == "stdlib" for use in self.plan.uses):
-            self.stdlib.add("StdlibCodec")
             self.stdlib.add("Model")
             for model in self.plan.models:
                 name = self.module.symbol(model.symbol)
@@ -126,8 +124,10 @@ class _Renderer:
             annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]"
         accessors = []
         entries = []
+        named: dict[str, set[str]] = {"stdlib": self.stdlib}
         for index, use in enumerate(self.plan.uses):
-            codec = _CODECS[use.kind]
+            module, codec = _CODECS[use.kind]
+            named.setdefault(module, set()).add(codec)
             static = self.module.hint(use.type)
             arguments = (
                 (self.shape(use.shape), "MODELS")
@@ -140,8 +140,8 @@ class _Renderer:
             )
             accessors.append(UseAccessors(use.use, f"codec_{index}"))
         imports = [
-            statement(f".._runtime.model_codecs.{module}", names)
-            for module, names in (("native", codecs), ("stdlib", sorted(self.stdlib)))
+            statement(f".._runtime.model_codecs.{module}", sorted(names))
+            for module, names in sorted(named.items())
             if names
         ]
         source = templated(

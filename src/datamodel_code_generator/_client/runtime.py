@@ -46,7 +46,6 @@ _CORE: Final = (
 )
 _PROTOCOLS: Final = (
     "protocols/client.py",
-    "protocols/caches.py",
     "protocols/options.py",
     "protocols/origins.py",
 )
@@ -64,7 +63,7 @@ _HELPERS: Final[dict[Helper, tuple[str, ...]]] = {
     "polling": (*_RESUMED, "protocols/polling.py"),
     "streams": (*_RESUMED, "protocols/streams.py"),
     "uploads": (*_RESUMED, "protocols/sources.py", "protocols/uploads.py"),
-    "cache": (*_BASE, "protocols/cache.py", "protocols/cache_stores.py"),
+    "cache": (*_BASE, "protocols/cache.py", "protocols/cache_stores.py", "protocols/caches.py"),
     "websocket": (*_BASE, "protocols/websocket.py"),
     "webhooks": (*_BASE, "protocols/values.py", "protocols/webhook_events.py", "protocols/webhooks.py"),
     "compression": ("client/compression.py",),
@@ -86,11 +85,12 @@ _KINDS: Final[dict[str, Helper]] = {
     "resumable_upload": "uploads",
     "webhook": "webhooks",
 }
+_PYDANTIC: Final = ("model_codecs/pydantic_adapters.py",)
 _BACKENDS: Final[dict[str, tuple[str, ...]]] = {
-    "pydantic": ("model_codecs/native.py",),
-    "pydantic_dataclass": ("model_codecs/native.py",),
-    "msgspec": ("model_codecs/native.py",),
-    "stdlib": ("model_codecs/native.py", "model_codecs/stdlib.py"),
+    "pydantic": (*_PYDANTIC, "model_codecs/pydantic_models.py"),
+    "pydantic_dataclass": (*_PYDANTIC, "model_codecs/pydantic_dataclasses.py"),
+    "msgspec": ("model_codecs/msgspec_structs.py",),
+    "stdlib": ("model_codecs/stdlib.py",),
 }
 
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 from uuid import UUID
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
 
 codec_0: Final[PydanticDataclassCodec[UUID]] = PydanticDataclassCodec(UUID)

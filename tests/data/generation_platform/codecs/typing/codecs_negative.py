@@ -8,7 +8,8 @@ from msgspec import Struct
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from datamodel_code_generator._runtime.model_codecs.native import MsgspecCodec, PydanticCodec
+from datamodel_code_generator._runtime.model_codecs.msgspec_structs import MsgspecCodec
+from datamodel_code_generator._runtime.model_codecs.pydantic_models import PydanticCodec
 from datamodel_code_generator._runtime.model_codecs.stdlib import StdlibCodec
 
 

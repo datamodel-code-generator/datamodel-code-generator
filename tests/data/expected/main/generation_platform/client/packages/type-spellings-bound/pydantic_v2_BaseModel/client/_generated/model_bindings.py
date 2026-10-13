@@ -11,7 +11,7 @@ import models
 
 import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models.Listed]] = PydanticCodec(models.Listed)
 """Codec of /paths/~1named/post parameter (request query listed)."""

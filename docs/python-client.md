@@ -242,6 +242,10 @@ conversion rules, as they do for unknown object members. Dataclass and TypedDict
 such text is a decoding error, like text that cannot become a `Decimal`, date or `UUID` leaf; their JSON bodies are
 still constructed without added schema validation. Repeated undeclared members keep their last value.
 
+A package holds the codec of its own model backend only. A Pydantic package imports no msgspec, a msgspec package no
+Pydantic, and a dataclass or TypedDict package neither, so the package imports, and mypy, Pyright, and ty check it,
+with only the dependencies that generation prints installed.
+
 The generated `model_codecs` module exports `UNSET` and `JSONValue`. Parameter parsing records and wire
 validation errors are implementation details. `UNSET`, also exported from `pkg.options`, is a
 `typing_extensions.Sentinel` ([PEP 661](https://peps.python.org/pep-0661/)), not an `Enum` member: it marks an

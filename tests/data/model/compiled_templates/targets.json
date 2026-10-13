@@ -641,7 +641,7 @@
         "context": {
           "imports": "from typing import Final\n\nimport models",
           "codec_imports": [
-            "from .._runtime.model_codecs.native import PydanticCodec",
+            "from .._runtime.model_codecs.pydantic_models import PydanticCodec",
             "from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec"
           ],
           "models_annotation": "Final[dict[type, Model]]",
@@ -676,7 +676,7 @@
         "context": {
           "imports": "from typing import Final\n\nimport models",
           "codec_imports": [
-            "from .._runtime.model_codecs.native import PydanticCodec"
+            "from .._runtime.model_codecs.pydantic_models import PydanticCodec"
           ],
           "models_annotation": "",
           "models": [],

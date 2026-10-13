@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models.FieldParameterPostHeaderXRequestKeyParameter]] = PydanticCodec(models.FieldParameterPostHeaderXRequestKeyParameter)
 """Codec of /paths/~1parameter/post parameter (request header X-Request-Key)."""

@@ -18,7 +18,7 @@ from models import (
 from models.owners import Pet as Pet_1
 from models.pets import Pet
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[FieldPetsGetQueryCursorParameter]] = PydanticCodec(FieldPetsGetQueryCursorParameter)
 """Codec of /paths/~1pets/get parameter (request query cursor)."""

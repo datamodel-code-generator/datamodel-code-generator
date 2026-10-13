@@ -8,11 +8,9 @@ from msgspec import Struct
 from pydantic import BaseModel
 from typing_extensions import TypedDict, assert_type
 
-from datamodel_code_generator._runtime.model_codecs.native import (
-    MsgspecCodec,
-    PydanticCodec,
-    PydanticDataclassCodec,
-)
+from datamodel_code_generator._runtime.model_codecs.msgspec_structs import MsgspecCodec
+from datamodel_code_generator._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
+from datamodel_code_generator._runtime.model_codecs.pydantic_models import PydanticCodec
 from datamodel_code_generator._runtime.model_codecs.stdlib import StdlibCodec
 
 
