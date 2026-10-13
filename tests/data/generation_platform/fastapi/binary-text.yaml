@@ -146,6 +146,65 @@ paths:
       responses:
         '204':
           description: Stored.
+  /notes:
+    post:
+      operationId: sendNote
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /graphs:
+    post:
+      operationId: sendGraph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Graph'}
+      responses:
+        '200':
+          description: An edge of the graph.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Edge'}
+  /anchors:
+    post:
+      operationId: sendAnchors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dynamic: {$dynamicRef: '#blob'}
+      responses:
+        '200':
+          description: The named blob.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labeled: {$ref: '#labeled'}
+  /pointers:
+    post:
+      operationId: sendPointer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to: {$dynamicRef: '#/components/schemas/Leaf'}
+      responses:
+        '204':
+          description: Stored.
 components:
   schemas:
     Chunk:
@@ -178,3 +237,25 @@ components:
       properties:
         name: {type: string}
         next: {$ref: '#/components/schemas/Node'}
+    Graph:
+      type: object
+      properties:
+        edges:
+          type: array
+          items: {$ref: '#/components/schemas/Edge'}
+        chunk: {$ref: '#/components/schemas/Chunk'}
+    Edge:
+      type: object
+      properties:
+        graph: {$ref: '#/components/schemas/Graph'}
+        label: {type: string}
+    Blob:
+      $dynamicAnchor: blob
+      type: object
+      properties:
+        octets: {type: string, format: binary}
+    Labeled:
+      $anchor: labeled
+      type: object
+      properties:
+        octets: {type: string, format: binary}

@@ -141,7 +141,7 @@ _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
-_TEXT_MEDIA: Final = frozenset({"json", "form"})
+_TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
 _HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
     "response_header",
     "request_encoding_header",
@@ -373,7 +373,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._callback_origin: _Declaration | None = None
         self._walked_schemas: list[tuple[int, _Declaration, YamlValue] | None] = []
         super().__init__(source, config=config)
-        self._reader = _Reader(self._api_documents, self.schema_locations, versions=[], binary=self._binary_formats())
+        self._reader = _Reader(
+            self._api_documents,
+            self.schema_locations,
+            versions=[],
+            binary=self._binary_formats(),
+            anchors=self._anchor_locations,
+        )
 
     def _binary_formats(self) -> frozenset[str]:
         """Return the string formats the models type as raw bytes, as `--type-mappings` leaves or makes them."""
@@ -405,6 +411,26 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             "so a referenced file must be inside the input directory.\n"
             f"Input directory: {base}\nResolved path: {resolved}\n"
             "Move the referenced schemas under the input directory."
+        )
+
+    def _anchor_locations(self, document: str, ref: str, *, dynamic: bool) -> tuple[str, ...]:
+        """Return where a reference by anchor name leads: the anchor it names, and every `$dynamicAnchor` of the name.
+
+        A `$dynamicRef` binds to an anchor of its dynamic scope, which may be any declaration of the name. Each
+        location names its document as the reference's own document names it.
+        """
+        aliases = self._schema_resource_document_aliases
+        physical = aliases.get(document, document)
+        base = self._schema_resource_root_bases.get(physical, physical)
+        found = [] if (lexical := self._schema_resource_locations.get(urljoin(base, ref))) is None else [lexical]
+        if dynamic:
+            name = ref.partition("#")[2]
+            found.extend(location for anchors in self._dynamic_anchors.values() if (location := anchors.get(name)))
+        documents = {location: alias for alias, location in aliases.items()}
+        return tuple(
+            dict.fromkeys(
+                f"{documents.get(path, path)}#{pointer}" for path, _, pointer in (item.partition("#") for item in found)
+            )
         )
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
@@ -2305,11 +2331,13 @@ class _Reader(_SchemaLocations):
         *,
         versions: list[str],
         binary: frozenset[str],
+        anchors: Callable[..., tuple[str, ...]],
     ) -> None:
         super().__init__(nodes, documents)
         self.loaded = documents
         self.versions = versions
         self.formats = binary
+        self.anchors = anchors
         self.binaries: dict[_Declaration, _Declaration | None] = {}
 
     @property
@@ -2460,9 +2488,10 @@ class _Reader(_SchemaLocations):
         return found, low
 
     def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
-        """Yield the schemas a schema's values are made of: its reference's, then its branches', members' and items'."""
-        if isinstance(ref := raw.get("$ref"), str) and (target := self.target(declaration, ref)) is not None:
-            yield target
+        """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
+        for keyword in ("$ref", "$dynamicRef"):
+            if isinstance(ref := raw.get(keyword), str):
+                yield from self._referenced(declaration, ref, dynamic=keyword == "$dynamicRef")
         if self.legacy and "$ref" in raw:
             return
         for keyword in ("allOf", "anyOf", "oneOf", "prefixItems", "items"):
@@ -2473,6 +2502,14 @@ class _Reader(_SchemaLocations):
         for keyword in ("items", "additionalProperties"):
             if isinstance(raw.get(keyword), dict):
                 yield _child(declaration, keyword)
+
+    def _referenced(self, declaration: _Declaration, ref: str, *, dynamic: bool) -> Iterator[_Declaration]:
+        """Yield the schema a JSON pointer reference names, or each schema an anchor reference may lead to."""
+        if (target := self.target(declaration, ref)) is not None:
+            yield target
+        else:
+            anchored = self.anchors(declaration.document, ref, dynamic=dynamic)
+            yield from filter(None, (self.target(declaration, location) for location in anchored))
 
     def encoding(self, schema: _Declaration, locate: _Locate, *, members: bool) -> EncodingFacts:
         """Return how a schema's values are written as text: as one value, as form members, and member by member.

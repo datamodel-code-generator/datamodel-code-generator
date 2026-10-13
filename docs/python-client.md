@@ -654,13 +654,13 @@ project, a call may give the fields of an object body as keyword arguments inste
 or its fields, never both. See [Body field arguments](python-client-reference.md#body-field-arguments) for which
 bodies take fields and how they are named.
 
-A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream` or `image/png`,
-or a file part of a multipart form can carry; the method takes such a body or part as `bytes`. Generation stops with
-an error when a binary string, at any depth of its schema and through references and `allOf`, would be sent as text:
-inside a JSON or URL-encoded body or response, a multipart part that is not a file, an item of a streamed response, or
-a parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
-others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names
-the operation, the media or parameter, and where the schema declares the string:
+A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream` or `image/png`, or a
+file part of a multipart form can carry; the method takes such a body or part as `bytes`. Generation stops with an error
+when a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as
+text: inside a JSON, `text/*` or URL-encoded body or response, a multipart part that is not a file, an item of a
+streamed response, or a parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8
+text and the others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The
+error names the operation, the media or parameter, and where the schema declares the string:
 
 ```text
 Error: /components/schemas/Blob/properties/data: The application/json request body of POST /blobs carries a binary
