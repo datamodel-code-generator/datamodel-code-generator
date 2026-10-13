@@ -2842,7 +2842,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
             "3.14",
             [],
             "field_type_collision_runtime/msgspec_py314.py",
-            "Bar_1",
+            "Bar",
             id="msgspec-py314",
         ),
         pytest.param(
@@ -2851,8 +2851,17 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
             "3.14",
             [],
             "field_type_collision_runtime/msgspec_required_py314.py",
-            "Bar_1",
+            "Bar",
             id="msgspec-required-py314",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/msgspec_later_py314.py",
+            "Bar",
+            id="msgspec-later-py314",
         ),
         pytest.param(
             DataModelType.MsgspecStruct,
@@ -2860,7 +2869,7 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
             "3.11",
             ["--disable-future-imports"],
             "field_type_collision_runtime/msgspec_no_future_imports.py",
-            "Bar_1",
+            "Bar",
             id="msgspec-no-future-imports",
         ),
         pytest.param(
@@ -2874,12 +2883,39 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
         ),
         pytest.param(
             DataModelType.MsgspecStruct,
+            "required.json",
+            "3.14",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_required_py314_no_future_imports.py",
+            "Bar",
+            id="msgspec-required-py314-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "later.json",
+            "3.11",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_later_no_future_imports.py",
+            "Bar",
+            id="msgspec-later-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
             "inherited.json",
             "3.11",
             ["--disable-future-imports"],
             "field_type_collision_runtime/msgspec_inherited_no_future_imports.py",
-            "Bar_1",
+            "Bar",
             id="msgspec-inherited-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "defaults.json",
+            "3.11",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_defaults_no_future_imports.py",
+            "Bar",
+            id="msgspec-defaults-no-future-imports",
         ),
         pytest.param(
             DataModelType.MsgspecStruct,
@@ -2887,8 +2923,8 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
             "3.14",
             ["--field-type-collision-strategy", "rename-type"],
             "field_type_collision_runtime/msgspec_py314.py",
-            "Bar_1",
-            id="msgspec-rename-type-ignored",
+            "Bar",
+            id="msgspec-rename-type",
         ),
     ],
 )
@@ -2901,7 +2937,7 @@ def test_main_jsonschema_field_type_collision_runtime(
     expected_file: str,
     field_name: str,
 ) -> None:
-    """Rename a field named like its type only where its annotation would find the field instead of the type."""
+    """Keep a field named like its type; where the name hides the type, write a string or rename by backend."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / schema,
         output_path=output_file,
@@ -2921,7 +2957,9 @@ def test_main_jsonschema_field_type_collision_runtime(
             *options,
         ],
     )
-    if "--disable-future-imports" in options and sys.version_info[:2] >= (3, 14):
+    target = tuple(map(int, target_python_version.split(".")))
+    evaluates_eagerly = "--disable-future-imports" in options and target < (3, 14)
+    if sys.version_info[:2] < target or (evaluates_eagerly and sys.version_info[:2] >= (3, 14)):
         return
     payload_path = DATA_PATH / "payloads" / "field_type_collision_runtime"
     with _generated_model(output_file, "field_type_collision_runtime", "Payload") as model:
@@ -2931,7 +2969,8 @@ def test_main_jsonschema_field_type_collision_runtime(
             case DataModelType.PydanticV2Dataclass:
                 validator = _model_json_validator(model)
                 error_type = ValidationError
-        parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
+        valid_payload = "valid_defaults.json" if schema == "defaults.json" else "valid.json"
+        parsed = validator((payload_path / valid_payload).read_text(encoding="utf-8"))
         with pytest.raises(error_type):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
         assert_output(f"{getattr(parsed.values.left, field_name).x}\n", payload_path / "runtime.txt")

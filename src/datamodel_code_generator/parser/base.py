@@ -18,7 +18,7 @@ from collections import Counter, OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache, partial
-from itertools import chain, groupby, pairwise
+from itertools import chain, groupby, pairwise, repeat
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -4715,6 +4715,37 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 derived_models[base_class.path].append(model)
         return derived_models
 
+    def __hidden_type_names(self, model: DataModel) -> Iterator[Collection[str | None]]:
+        """Yield, for each field of the model in order, the type names that a class attribute hides there.
+
+        Python looks an annotation up in the class namespace right after the field's value is assigned or, with
+        native deferred annotations, once the class exists. A library that resolves string annotations from the
+        module still finds such a type when it is written as a string, like a forward reference.
+        """
+        model_type = type(model)
+        fields = model.fields
+        names = (
+            {
+                reference.short_name
+                for field in fields
+                for data_type in field.data_type.all_data_types
+                if (reference := data_type.reference) is not None and not data_type.alias
+            }
+            & {field.name for field in fields}
+            if model_type.RESOLVES_STRING_ANNOTATIONS_FROM_MODULE
+            else set()
+        )
+        if not names or (
+            model_type.KEEPS_FIELDS_AS_CLASS_ATTRIBUTES and self.target_python_version.has_native_deferred_annotations
+        ):
+            yield from repeat(names, len(fields))
+            return
+        hidden_names: set[str | None] = set()
+        for field in fields:
+            if field.name in names and model.field_binds_class_attribute(field, {}):
+                hidden_names.add(field.name)
+            yield hidden_names
+
     def __shadows_same_named_type(
         self,
         model: DataModel,
@@ -4724,21 +4755,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         use_deferred_annotations: bool,
     ) -> bool:
-        """Return whether an annotation finds the field named like a type instead of that type.
+        """Return whether a field named like the type it names hides that type in its inheritance family.
 
-        Python evaluates an annotation in the class namespace when it is not a string: right after the field's
-        value is assigned or, with native deferred annotations, once the class exists. The output library
-        resolves string annotations. The classes of one inheritance family write the field under one name, so
-        one decision covers all of them.
+        The class body hides the type by assigning a value to the field's name. The classes of one family write
+        the field under one name, so one decision covers all of them.
         """
-        model_type = type(model)
-        evaluates_lazily = self.target_python_version.has_native_deferred_annotations
-        writes_strings = use_deferred_annotations and not evaluates_lazily
-        if writes_strings and not model_type.RESOLVES_STRING_ANNOTATIONS_IN_CLASS_NAMESPACE:
-            return False
         if (shadowed := self._same_named_type_shadowing.get((model.path, field_name))) is not None:
             return shadowed
-        keeps_class_attributes = model_type.KEEPS_FIELDS_AS_CLASS_ATTRIBUTES and (evaluates_lazily or writes_strings)
         forward_reference_positions: Mapping[str, int] = (
             {module_model.path: index for index, module_model in enumerate(models)}
             if self.use_annotated and use_deferred_annotations
@@ -4753,8 +4776,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     family[relative_model.path] = relative_model
                     pending.append(relative_model)
         shadowed = any(
-            _names_type_as(field, field_name)
-            and (keeps_class_attributes or member.field_binds_class_attribute(field, forward_reference_positions))
+            _names_type_as(field, field_name) and member.field_binds_class_attribute(field, forward_reference_positions)
             for member in family.values()
             for field in member.fields
             if field.name == field_name
@@ -5143,9 +5165,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     @staticmethod
     def __forward_references(
-        field: DataModelFieldBase, model: DataModel, model_index: Mapping[str, int], index: int
+        field: DataModelFieldBase,
+        model: DataModel,
+        model_index: Mapping[str, int],
+        index: int,
+        hidden_names: Collection[str | None] = (),
     ) -> list[tuple[DataType, str]]:
-        """Collect the field's references to same-module models declared at or after the model."""
+        """Collect the field's references to same-module models declared at or after the model.
+
+        A model whose name is in ``hidden_names`` counts as declared later.
+        """
         forward_references: list[tuple[DataType, str]] = []
         for data_type in field.data_type.all_data_types:
             if not data_type.reference:
@@ -5153,11 +5182,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             source = data_type.reference.source
             if not isinstance(source, DataModel):
                 continue  # pragma: no cover
-            if isinstance(source, TypeStatement):
-                continue  # pragma: no cover
             if source.module_path != model.module_path:
                 continue
             name = data_type.reference.short_name
+            if name in hidden_names and not data_type.alias:
+                forward_references.append((data_type, name))
+                continue
+            if isinstance(source, TypeStatement):
+                continue  # pragma: no cover
             source_index = model_index.get(name)
             if source_index is not None and source_index >= index:
                 forward_references.append((data_type, name))
@@ -5233,13 +5265,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         defers_recursive_containers: bool,
         generation_store: GenerationStore,
         can_retain_cache: bool,
+        hidden_type_names: Callable[[DataModel], Iterable[Collection[str | None]]],
     ) -> None:
         """Update type aliases and RootModels to properly handle forward references per PEP 484.
 
         When annotations are not deferred (no ``from __future__ import annotations`` and no
         native PEP 649 deferred annotations), self-referencing fields in regular DataModel
         classes also need their type aliased to a quoted string so that static analysers
-        (e.g. Ruff F821) and older runtimes do not trip over the forward reference.
+        (e.g. Ruff F821) and older runtimes do not trip over the forward reference. The same
+        holds for the types that ``hidden_type_names`` reports as hidden at each field.
         """
         model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
         alias_cycles: Mapping[int, int] | None = None
@@ -5263,10 +5297,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 continue
 
             has_aliased_forward_ref = False
-            for field in model.fields:
+            hidden_names_by_field = (
+                repeat((), len(model.fields)) if use_deferred_annotations else hidden_type_names(model)
+            )
+            for field, hidden_names in zip(model.fields, hidden_names_by_field, strict=True):
                 if not process_all_fields and not field.requires_immediate_forward_reference_resolution:
                     continue
-                if not (forward_references := cls.__forward_references(field, model, model_index, i)):
+                if not (forward_references := cls.__forward_references(field, model, model_index, i, hidden_names)):
                     continue
                 for data_type, name in forward_references:
                     data_type.alias = f'"{name}"'
@@ -5945,20 +5982,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.target_python_version.has_native_deferred_annotations or (with_import and not disable_future_imports)
         )
 
-    def _has_forward_references(self, models: list[DataModel]) -> bool:  # noqa: PLR6301
+    def _has_forward_references(self, models: list[DataModel]) -> bool:
         """Return whether a module contains a self or forward model reference.
 
-        This remains an instance method because ``snooper_to_methods`` does not
-        preserve staticmethod descriptors on parser subclasses.
+        A type hidden by a class attribute counts as one: the library has to resolve it from a string.
         """
         positions = {model.path: index for index, model in enumerate(models)}
         for index, model in enumerate(models):
-            for field in model.fields:
+            for field, hidden_names in zip(model.fields, self.__hidden_type_names(model), strict=True):
                 for data_type in field.data_type.all_data_types:
                     if (
                         (reference := data_type.reference)
                         and (reference_index := positions.get(reference.path)) is not None
-                        and reference_index >= index
+                        and (reference_index >= index or (reference.short_name in hidden_names and not data_type.alias))
                     ):
                         return True
         return False
@@ -6555,6 +6591,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             or _is_pydantic_version_at_least(target, _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM),
             generation_store=self.generation_store,
             can_retain_cache=can_retain_cache,
+            hidden_type_names=self.__hidden_type_names,
         )
         if not unused_models:
             live_models = models

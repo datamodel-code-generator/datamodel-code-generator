@@ -72,6 +72,17 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import Reference
 
 
+def _default_factory_type_name(data_type: DataType) -> str:
+    """Return the name a default factory uses for the referenced type.
+
+    The factory runs once the module defines the type, so a quoted forward reference is named directly.
+    """
+    reference = cast("Reference", data_type.reference)
+    if (alias := data_type.alias) and alias != f'"{reference.short_name}"':
+        return alias
+    return cast("DataModel", reference.source).class_name
+
+
 def has_field_assignment(field: DataModelFieldBase) -> bool:
     """Return whether a msgspec field renders with a default assignment."""
     return field.use_default_with_required or not (field.required or field.should_strip_default_none())
@@ -117,8 +128,7 @@ class Struct(DataModel):
     """DataModel implementation for msgspec.Struct."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "msgspec.jinja2"
-    SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
-    RESOLVES_STRING_ANNOTATIONS_IN_CLASS_NAMESPACE: ClassVar[bool] = False
+    RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
     KEEPS_FIELDS_AS_CLASS_ATTRIBUTES: ClassVar[bool] = True
     BASE_CLASS: ClassVar[str] = "msgspec.Struct"
     BASE_CLASS_NAME: ClassVar[str] = "Struct"
@@ -902,7 +912,7 @@ class DataModelField(DataModelFieldBase):
                 ):
                     return (
                         f"lambda: {self._PARSE_METHOD}({represent_python_value(self.default)},  "
-                        f"type=list[{data_type_child.alias or data_type_child.reference.source.class_name}])"
+                        f"type=list[{_default_factory_type_name(data_type_child)}])"
                     )
             elif data_type.reference and (
                 isinstance(data_type.reference.source, Struct)
@@ -916,10 +926,9 @@ class DataModelField(DataModelFieldBase):
                         continue
                     if isinstance(self.default, dict) and any(dt.is_dict for dt in self.data_type.data_types):
                         continue
+                name = _default_factory_type_name(data_type)
                 model_type = (
-                    self.data_type.type_hint
-                    if self.data_type.is_list
-                    else data_type.alias or data_type.reference.source.class_name
+                    self.data_type.type_hint.replace(data_type.alias or name, name) if self.data_type.is_list else name
                 )
                 return f"lambda: {self._PARSE_METHOD}({represent_python_value(self.default)},  type={model_type})"
         return None
