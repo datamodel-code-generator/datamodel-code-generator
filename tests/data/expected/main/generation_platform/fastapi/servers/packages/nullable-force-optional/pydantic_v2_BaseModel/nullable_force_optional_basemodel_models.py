@@ -58,3 +58,7 @@ class Reply(BaseModel):
 class FieldNotesPostRequest(BaseModel):
     text: str | None = None
     replies: list[Reply] | None = None
+
+
+class FieldExtendedPostRequest(Item):
+    note: str | None = None

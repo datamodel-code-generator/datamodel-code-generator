@@ -528,6 +528,40 @@ def _add_upload(
     )
 
 
+def _add_post_extended(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_extended_handler = checked(
+        default.post_extended,
+        'The default.post_extended method of POST /extended',
+    )
+
+    def post_extended(
+        *,
+        body: Annotated[nullable_basemodel_models.FieldExtendedPostRequest | None, Depends(contract.PostExtended.BODY)],
+    ) -> object:
+        return dispatch(
+            post_extended_handler(
+                body=body,
+            ),
+            contract.PostExtended.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/extended',
+        post_extended,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postExtended',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_extended'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('post_text', _add_post_text),
     ('post_list', _add_post_list),
@@ -544,6 +578,7 @@ LITERAL_ROUTES: Final = (
     ('post_note', _add_post_note),
     ('post_form', _add_post_form),
     ('upload', _add_upload),
+    ('post_extended', _add_post_extended),
 )
 TEMPLATED_ROUTES: Final = ()
 

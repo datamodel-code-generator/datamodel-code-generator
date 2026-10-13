@@ -166,3 +166,13 @@ class DefaultService(Protocol):
         """
         Handle POST /uploads.
         """
+
+    @abstractmethod
+    def post_extended(
+        self,
+        *,
+        body: nullable_basemodel_models.FieldExtendedPostRequest | None,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /extended.
+        """

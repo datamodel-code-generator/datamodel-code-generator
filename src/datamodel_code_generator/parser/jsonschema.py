@@ -9018,6 +9018,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase],
         base_classes: list[Reference],
         required: list[str],
+        nullable: bool = False,
     ) -> DataType:
         if self.generate_schema_validators:
             obj = self._merge_conditional_properties(obj)
@@ -9198,6 +9199,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 extra_template_data=self.extra_template_data,
                 path=self.current_source_path,
                 description=obj.description if self.use_schema_description else None,
+                nullable=nullable,
                 keyword_only=self.keyword_only,
                 treat_dot_as_module=self.treat_dot_as_module,
                 dataclass_arguments=self.dataclass_arguments,
@@ -9718,6 +9720,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return self._parse_all_of_root_value(name, merged_root, path)
             return self._parse_all_of_merged_root(name, merged_root, path)
 
+        nullable = self._object_nullable(obj)
         merged_all_of_obj = self._merge_all_of_object(obj)
         if merged_all_of_obj:
             return self._parse_object_common_part(
@@ -9728,6 +9731,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 fields=[],
                 base_classes=[],
                 required=[],
+                nullable=nullable,
             )
 
         root_model_result = self._handle_allof_root_model_with_constraints(name, obj, path)
@@ -9770,6 +9774,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 fields=fields,
                 base_classes=base_classes,
                 required=required,
+                nullable=nullable,
             )
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
         self._set_schema_metadata(reference.path, obj)

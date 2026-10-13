@@ -74,3 +74,7 @@ class FieldUploadsPostRequest(BaseModel):
     file: bytes
     note: str | None = None
     meta: Meta | None = None
+
+
+class FieldExtendedPostRequest(Item):
+    note: str | None = None
