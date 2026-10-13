@@ -25,6 +25,7 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
+from scripts.build_docs_examples import read_with_newest_preset
 from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
 from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
 from tests.main.conftest import TIMESTAMP, run_main_and_assert, run_main_with_args, run_main_with_system_exit
@@ -1268,7 +1269,7 @@ def test_fastapi_cli_nested_models_example(
     """
     monkeypatch.chdir(tmp_path)
     shutil.copy2(SOURCE / "pets.yaml", tmp_path / "api.yaml")
-    arguments = json.loads((CLI / "nested-models-example.json").read_text(encoding="utf-8"))
+    arguments = json.loads(read_with_newest_preset(CLI / "nested-models-example.json"))
     run_main_with_args(
         arguments,
         capsys=capsys,
