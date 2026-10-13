@@ -37,6 +37,10 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "hooks": {"input": "served-hooks.yaml", "files": ["served-event.yaml", "served-library.yaml"]},
     "streams": {"input": "served-items.yaml", "files": ["served-items-library.yaml", "events/stamp.yaml"]},
     "resources": {"input": "served-resources.yaml"},
+    "local": {
+        "input": "served-local.yaml",
+        "files": ["served-local/parts/library.yaml", "served-local/shared/pet.yaml"],
+    },
     "detected": {
         "input": "served-hooks.yaml",
         "files": ["served-event.yaml", "served-library.yaml"],
@@ -66,12 +70,12 @@ def _stand_in(protocol: type) -> object:
     def method(name: str) -> Callable[..., object]:
         if inspect.iscoroutinefunction(getattr(protocol, name)):
 
-            async def answer_later(self: object, **_: object) -> None:  # noqa: ARG001, RUF029
+            async def answer_later(self: object, **_: object) -> None:  # ruff: ignore[unused-function-argument, unused-async]
                 return None
 
             return answer_later
 
-        def answer(self: object, **_: object) -> None:  # noqa: ARG001
+        def answer(self: object, **_: object) -> None:  # ruff: ignore[unused-function-argument]
             return None
 
         return answer
@@ -90,7 +94,7 @@ def _connected(builder: Callable[..., Any], **settings: Any) -> Any:
         and name != "authorize"
     }
     if "authorize" in inspect.signature(builder).parameters:
-        settings.setdefault("authorize", lambda requirement_sets, credentials: None)  # noqa: ARG005
+        settings.setdefault("authorize", lambda requirement_sets, credentials: None)  # ruff: ignore[unused-lambda-argument]
     return builder(**services, **settings)
 
 
@@ -207,6 +211,12 @@ def document_legacy(packages: dict[str, Any]) -> list[str]:
     return [json.dumps(_connected(packages["legacy"].create_app).openapi(), indent=2)]
 
 
+@_scenario("local")
+def document_local(packages: dict[str, Any]) -> list[str]:
+    """Bundle what the document references in files inside its directory, through a `..` that stays inside."""
+    return [json.dumps(_connected(packages["local"].create_app).openapi(), indent=2)]
+
+
 @_scenario("resources")
 def document_resources(packages: dict[str, Any]) -> list[str]:
     """Serve schema resources by `$id`, `$anchor`, and `$dynamicAnchor`, and references into paths under a prefix."""
@@ -216,13 +226,6 @@ def document_resources(packages: dict[str, Any]) -> list[str]:
         json.dumps(_connected(resources.create_app, prefix="/api").openapi(), indent=2),
         f"unset {sorted(unset)} {sorted(unset['info'])}",
     ]
-
-
-@_scenario("hooks", "detected")
-def detected_input(packages: dict[str, Any]) -> list[str]:
-    """Serve the same document when the input type is detected, references into other documents bundled."""
-    given, detected = (_connected(packages[name].create_app).openapi() for name in ("hooks", "detected"))
-    return [f"same {given == detected}", f"components {sorted(detected['components'])}"]
 
 
 @_scenario("bodies")

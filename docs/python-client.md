@@ -1403,6 +1403,9 @@ the resource of that name.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
+`--generate-client` also requires `--input-file-type openapi`: an input type left to detection, `auto`, or any other
+type stops with `Error: --generate-client requires --input-file-type openapi, not auto` (naming the given type) and
+exit code 2 before the input is read.
 `--generate-client` cannot be used with `--generate-server`, and one selected on the command line replaces the other
 selected in `pyproject.toml`. Client keys of `pyproject.toml` are validated like model keys, but have no effect while
 no client is selected.

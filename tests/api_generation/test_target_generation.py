@@ -56,6 +56,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "target-grammar-modern",
         "target-grammar-misplaced",
         "python-floor",
+        "local-references",
     ],
 )
 def test_target_render(
@@ -224,6 +225,17 @@ def test_target_render_nested_models_symlink(
     assert_output(
         target_render_report("nested-models-symlink", tmp_path, monkeypatch, capsys),
         EXPECTED / "nested-models-symlink.txt",
+    )
+
+
+@pytest.mark.skipif(os.name == "nt", reason="directory symlink creation requires elevated privileges")
+def test_target_render_local_references_symlink(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a reference through a symlink in the input directory to a file outside it, before reading the file."""
+    assert_output(
+        target_render_report("local-references-symlink", tmp_path, monkeypatch, capsys),
+        EXPECTED / "local-references-symlink.txt",
     )
 
 

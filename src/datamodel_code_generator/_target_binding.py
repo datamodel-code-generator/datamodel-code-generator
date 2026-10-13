@@ -19,7 +19,7 @@ from keyword import iskeyword
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
-from urllib.parse import unquote, urljoin
+from urllib.parse import ParseResult, unquote, urljoin
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
@@ -253,6 +253,10 @@ class _LiteralCycleError(_UnsupportedError):
         super().__init__()
 
 
+class _UnservedReferenceError(Error):
+    """A reference to a local file that the served source document would publish."""
+
+
 class MetadataCycleError(Exception):
     """A detected cycle in an API metadata fact at its original source location."""
 
@@ -345,8 +349,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
         config: OpenAPIParserConfig | None = None,
+        serves_source: bool,
     ) -> None:
         """Start with no acquisitions, walked operations or emitted modules."""
+        self.serves_source = serves_source
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
@@ -367,6 +373,29 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._walked_schemas: list[tuple[int, _Declaration, YamlValue] | None] = []
         super().__init__(source, config=config)
         self._reader = _Reader(self._api_documents, self.schema_locations, versions=[])
+
+    def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
+        """Refuse a local file that a served source document would publish, before reading it.
+
+        A document read from a URL references no local file; any other document only files inside the input
+        directory, after resolving `..` and symbolic links.
+        """
+        if self.serves_source and path not in self._local_ref_path_cache and (reason := self._unserved(path)):
+            msg = f"Blocked unsafe local $ref: {ref}\nReason: the generated server serves the source document, {reason}"
+            raise _UnservedReferenceError(msg)
+        return super()._resolve_local_ref_path(path, ref)
+
+    def _unserved(self, path: Path) -> str | None:
+        """Return why the served document cannot hold a local file, or None when it can."""
+        if isinstance(self.source, ParseResult):
+            return "which was read from a URL, so it cannot reference a local file."
+        if (resolved := path.resolve()).is_relative_to(base := self.base_path.resolve()):
+            return None
+        return (
+            "so a referenced file must be inside the input directory.\n"
+            f"Input directory: {base}\nResolved path: {resolved}\n"
+            "Move the referenced schemas under the input directory."
+        )
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
         """Record the declaration a reference object resolves to."""
@@ -634,10 +663,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     def load_document(self, document: str) -> dict[str, YamlValue] | None:
         """Load a document that only links or security schemes reference, as the walk loads every other document.
 
-        None is a document that the loader cannot read, decode or fetch, or a name that no file can have.
+        None is a document that the loader cannot read, decode or fetch, or a name that no file can have; a local file
+        the served document would publish is refused.
         """
         try:
             raw = self._get_ref_body(document)
+        except _UnservedReferenceError:
+            raise
         except (Error, OSError, UnicodeDecodeError):
             return None
         self._api_documents[document] = raw
@@ -3677,7 +3709,6 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Iterator, Mapping
-    from urllib.parse import ParseResult
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType

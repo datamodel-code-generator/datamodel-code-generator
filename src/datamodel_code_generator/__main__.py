@@ -1679,8 +1679,9 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     from datamodel_code_generator.base_config import (  # noqa: PLC0415
         _TARGET_SELECTORS,
         _flag,
-        _missing_target_options,
         _option_list,
+        _selected_target,
+        _target_options_error,
     )
 
     explicit = _explicit_config_args(namespace)
@@ -1698,7 +1699,9 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
         if flags
     ]:
         return errors
-    return [] if (missing := _missing_target_options(config)) is None else [missing]
+    if config.input_model and (selected := _selected_target(config)) is not None:
+        return [f"{_flag(selected[0])} cannot be used with --input-model"]
+    return [] if (problem := _target_options_error(config)) is None else [problem]
 
 
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
