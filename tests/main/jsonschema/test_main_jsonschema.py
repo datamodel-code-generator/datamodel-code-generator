@@ -4858,7 +4858,12 @@ def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
 
 _NUMBER_CONSTRAINT_TYPE_OVERRIDES = json.dumps({
     "NumberConstraintsOnCustomTypes.amount": "decimal.Decimal",
-    "NumberConstraintsOnCustomTypes.pause": "datetime.time",
+    "NumberConstraintsOnCustomTypes.pause": "datetime.date",
+})
+_COLLAPSED_ROOT_TYPE_OVERRIDES = json.dumps({
+    "NumberConstraintsOnCollapsedRoots.wait": "datetime.date",
+    "NumberConstraintsOnCollapsedRoots.label": "decimal.Decimal",
+    "NumberConstraintsOnCollapsedRoots.count": "builtins.str",
 })
 
 
@@ -4911,12 +4916,50 @@ _NUMBER_CONSTRAINT_TYPE_OVERRIDES = json.dumps({
             ],
             None,
         ),
+        ("known_types", "field_constraints.py", ["--field-constraints"], "known_types"),
+        (
+            "collapsed_roots",
+            "collapse.py",
+            ["--field-constraints", "--collapse-root-models"],
+            "collapsed_roots",
+        ),
+        (
+            "collapsed_roots",
+            "collapse_type_overrides.py",
+            ["--field-constraints", "--collapse-root-models", "--type-overrides", _COLLAPSED_ROOT_TYPE_OVERRIDES],
+            "collapsed_root_type_overrides",
+        ),
+        (
+            "collapsed_roots",
+            "collapse_type_overrides_msgspec.py",
+            [
+                "--output-model-type",
+                "msgspec.Struct",
+                "--collapse-root-models",
+                "--type-overrides",
+                _COLLAPSED_ROOT_TYPE_OVERRIDES,
+            ],
+            "collapsed_root_type_overrides",
+        ),
+        (
+            "collapsed_roots",
+            "collapse_type_overrides_typed_dict.py",
+            [
+                "--output-model-type",
+                "typing.TypedDict",
+                "--field-constraints",
+                "--collapse-root-models",
+                "--type-overrides",
+                _COLLAPSED_ROOT_TYPE_OVERRIDES,
+            ],
+            None,
+        ),
     ],
 )
 def test_main_number_constraints_on_emitted_types(
     output_file: Path, source: str, expected_file: str, extra_args: list[str], payload_case: str | None
 ) -> None:
-    """Test number keywords constrain string-typed fields whose emitted Python type takes them, at runtime too."""
+    """Test each number keyword constrains a string-typed field whose emitted Python type takes it, at runtime too."""
     name = f"number_constraints_on_{source}"
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",

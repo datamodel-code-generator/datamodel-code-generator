@@ -3,25 +3,39 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from decimal import Decimal
 
-from pydantic import BaseModel, RootModel, conint
+from pydantic import AwareDatetime, BaseModel, RootModel, conint
+
+from tests.data.python.annotated_string_key_aliases import (
+    IntegerValueWithAVeryLongTypeAliasName,
+)
 
 
 class Timeout(RootModel[timedelta]):
     root: timedelta
 
 
+class Delay(RootModel[timedelta]):
+    root: timedelta
+
+
 class NumberConstraintsOnPythonTypes(BaseModel):
     count: int | None = None
     wait: timedelta | None = None
+    wait_step: timedelta | None = None
+    at: AwareDatetime | None = None
+    at_step: AwareDatetime | None = None
+    clock: time | None = None
+    seconds: IntegerValueWithAVeryLongTypeAliasName | None = None
     plain: conint(ge=0) | None = None
     price: Decimal | None = None
     step: float | None = None
     nullable_wait: timedelta | None = None
     optional_count: int | None = None
     timeout: Timeout | None = None
+    delay: Delay | None = None
     day: date | None = None
     label: str | None = None
     count_or_label: int | str | None = None

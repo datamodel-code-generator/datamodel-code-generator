@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import time
+from datetime import date
 from decimal import Decimal
 from fractions import Fraction
 from typing import Annotated
@@ -12,8 +12,8 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class NumberConstraintsOnCustomTypes(Struct):
-    ratio: Fraction | UnsetType = UNSET
-    scale: Fraction | UnsetType = UNSET
+    ratio: Annotated[Fraction, Meta(le=10)] | UnsetType = UNSET
+    scale: Annotated[Fraction, Meta(ge=0)] | UnsetType = UNSET
     amount: Decimal | UnsetType = UNSET
-    pause: time | UnsetType = UNSET
+    pause: date | UnsetType = UNSET
     total: Annotated[int, Meta(ge=0)] | UnsetType = UNSET

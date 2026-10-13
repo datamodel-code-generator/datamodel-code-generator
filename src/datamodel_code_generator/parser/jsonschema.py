@@ -1932,9 +1932,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _get_constraint_values(self, obj: JsonSchemaObject, data_type: DataType | None = None) -> dict[str, Any]:
-        """Return JSON Schema constraint values, with number keywords only for a field that holds numbers.
+        """Return JSON Schema constraint values, with the number keywords that the field takes.
 
-        A field holds numbers when its schema types do or when the emitted Python type takes number constraints.
+        A schema type that holds numbers takes all of them; otherwise the emitted Python type decides each keyword.
         """
         values = {
             constraint: value
@@ -1945,11 +1945,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             values
             and not values.keys().isdisjoint(_NUMBER_CONSTRAINT_KEYS)
             and not self._accepts_number_constraints(obj)
-            and not (data_type is not None and self.data_type_manager.accepts_number_constraints(data_type))
         ):
+            keywords = self.data_type_manager.number_constraint_keywords(data_type) if data_type else ()
             for key in _NUMBER_CONSTRAINT_KEYS:
-                values.pop(key, None)
+                if key not in keywords:
+                    values.pop(key, None)
         return values
+
+    def _mark_type_dependent_number_constraints(self, model_field: DataModelFieldBase, obj: JsonSchemaObject) -> None:
+        """Remember the number keywords the emitted type decides, so a scoped type override decides them again."""
+        if (
+            self._type_override_imports
+            and not self._accepts_number_constraints(obj)
+            and (
+                number_constraints := {
+                    key: value for key in _NUMBER_CONSTRAINT_KEYS if (value := getattr(obj, key)) is not None
+                }
+            )
+        ):
+            model_field.__dict__[_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY] = number_constraints
 
     def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
         """Check if an array field represents a fixed-length tuple."""
@@ -3327,17 +3341,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             model_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = (
                 field.default if field.has_default else _RAW_SCHEMA_DEFAULT_UNDEFINED
             )
-        if (
-            self._type_override_imports
-            and constraints is not None
-            and not self._accepts_number_constraints(field)
-            and (
-                number_constraints := {
-                    key: value for key in _NUMBER_CONSTRAINT_KEYS if (value := getattr(field, key)) is not None
-                }
-            )
-        ):
-            model_field.__dict__[_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY] = number_constraints
+        if constraints is not None:
+            self._mark_type_dependent_number_constraints(model_field, field)
         if _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY in field.__dict__:
             model_field.__dict__[_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY] = field.__dict__[
                 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY
@@ -11366,6 +11371,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 **self._data_model_field_common_kwargs(),
             )
         ]
+        if self.field_constraints and not self._should_skip_root_field_constraints_for_multiple_types(obj):
+            self._mark_type_dependent_number_constraints(fields[0], obj)
         root_default = default_value if has_default_override else UNDEFINED
         if data_model_root_type is not None:
             JsonSchemaParser._register_root_model_as(

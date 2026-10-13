@@ -11,8 +11,8 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class NumberConstraintsOnCustomTypes(Struct):
-    ratio: Fraction | UnsetType = UNSET
-    scale: Fraction | UnsetType = UNSET
+    ratio: Annotated[Fraction, Meta(le=10)] | UnsetType = UNSET
+    scale: Annotated[Fraction, Meta(ge=0)] | UnsetType = UNSET
     amount: str | UnsetType = UNSET
     pause: timedelta | UnsetType = UNSET
     total: Annotated[int, Meta(ge=0)] | UnsetType = UNSET

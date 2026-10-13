@@ -13,6 +13,31 @@
       "format": "duration",
       "minimum": 0
     },
+    "wait_step": {
+      "type": "string",
+      "format": "duration",
+      "multipleOf": 2
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time",
+      "minimum": 0
+    },
+    "at_step": {
+      "type": "string",
+      "format": "date-time",
+      "multipleOf": 2
+    },
+    "clock": {
+      "type": "string",
+      "format": "time",
+      "maximum": 3600
+    },
+    "seconds": {
+      "type": "string",
+      "x-python-type": "tests.data.python.annotated_string_key_aliases.IntegerValueWithAVeryLongTypeAliasName",
+      "minimum": 0
+    },
     "plain": {
       "type": "integer",
       "minimum": 0
@@ -43,6 +68,9 @@
     "timeout": {
       "$ref": "#/definitions/Timeout"
     },
+    "delay": {
+      "$ref": "#/definitions/Delay"
+    },
     "day": {
       "type": "string",
       "x-python-type": "datetime.date",
@@ -68,6 +96,17 @@
       "type": "string",
       "format": "duration",
       "minimum": 0
+    },
+    "Delay": {
+      "allOf": [
+        {
+          "type": "string",
+          "format": "duration"
+        },
+        {
+          "minimum": 0
+        }
+      ]
     }
   }
 }

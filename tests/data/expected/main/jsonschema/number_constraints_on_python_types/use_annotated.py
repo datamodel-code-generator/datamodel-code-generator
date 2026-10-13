@@ -3,26 +3,42 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from decimal import Decimal
 from typing import Annotated
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
+
+from tests.data.python.annotated_string_key_aliases import (
+    IntegerValueWithAVeryLongTypeAliasName,
+)
 
 
 class Timeout(RootModel[timedelta]):
     root: Annotated[timedelta, Field(ge=0)]
 
 
+class Delay(RootModel[timedelta]):
+    root: Annotated[timedelta, Field(ge=0)]
+
+
 class NumberConstraintsOnPythonTypes(BaseModel):
     count: Annotated[int | None, Field(ge=0)] = None
     wait: Annotated[timedelta | None, Field(ge=0)] = None
+    wait_step: timedelta | None = None
+    at: Annotated[AwareDatetime | None, Field(ge=0)] = None
+    at_step: AwareDatetime | None = None
+    clock: Annotated[time | None, Field(le=3600)] = None
+    seconds: Annotated[IntegerValueWithAVeryLongTypeAliasName | None, Field(ge=0)] = (
+        None
+    )
     plain: Annotated[int | None, Field(ge=0)] = None
     price: Annotated[Decimal | None, Field(gt=0)] = None
     step: Annotated[float | None, Field(multiple_of=0.5)] = None
     nullable_wait: Annotated[timedelta | None, Field(lt=10)] = None
     optional_count: Annotated[int | None, Field(le=10)] = None
     timeout: Timeout | None = None
+    delay: Delay | None = None
     day: date | None = None
     label: str | None = None
     count_or_label: int | str | None = None

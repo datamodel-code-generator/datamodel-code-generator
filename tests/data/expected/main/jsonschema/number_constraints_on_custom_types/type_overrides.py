@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import time
+from datetime import date
 from decimal import Decimal
 from fractions import Fraction
 
@@ -17,5 +17,5 @@ class NumberConstraintsOnCustomTypes(BaseModel):
     ratio: Fraction | None = Field(None, le=10)
     scale: Fraction | None = Field(None, ge=0)
     amount: Decimal | None = Field(None, ge=0)
-    pause: time | None = None
+    pause: date | None = None
     total: int | None = Field(None, ge=0)

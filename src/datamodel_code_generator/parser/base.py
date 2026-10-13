@@ -4205,6 +4205,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             model_field.constraints = ConstraintsBase.merge_constraints(
                                 root_type_field.constraints, model_field.constraints
                             )
+                            if (
+                                number_constraints := root_type_field.__dict__.get(
+                                    _TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY
+                                )
+                            ) is not None:
+                                model_field.__dict__[_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY] = number_constraints
 
                         replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                             data_type,
@@ -5037,11 +5043,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             is_model = isinstance(constraints, ConstraintsBase)
             values = {
                 key: value
-                for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints).items()
+                for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
                 if value is not None and key not in number_constraints
             }
-            if self.data_type_manager.type_name_accepts_number_constraints(override_import.import_, custom=True):
-                values.update(number_constraints)
+            keywords = self.data_type_manager.type_number_constraint_keywords(
+                f"{override_import.from_}.{override_import.import_}"
+            )
+            values.update({key: value for key, value in number_constraints.items() if key in keywords})
             field.constraints = type(constraints).model_validate(values) if is_model else values
         self.generation_store.replace_field_type(field, data_type)
         self.generation_store.detach_data_type_ref(field.data_type)

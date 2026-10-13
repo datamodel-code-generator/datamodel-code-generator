@@ -22,8 +22,8 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     string_minimum: str | None = None
     string_length_and_minimum: Annotated[str | None, Field(min_length=2)] = None
     date_maximum: date | None = None
-    date_time_exclusive_minimum: AwareDatetime | None = None
-    time_exclusive_maximum: time | None = None
+    date_time_exclusive_minimum: Annotated[AwareDatetime | None, Field(gt=5)] = None
+    time_exclusive_maximum: Annotated[time | None, Field(lt=10)] = None
     boolean_multiple_of: bool | None = None
     nullable_string_minimum: str | None = None
     array_minimum: list[str] | None = None

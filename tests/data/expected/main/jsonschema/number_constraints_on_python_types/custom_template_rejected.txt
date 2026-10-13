@@ -1,5 +1,8 @@
 count
 wait
+at
+clock
+seconds
 plain
 price
 step

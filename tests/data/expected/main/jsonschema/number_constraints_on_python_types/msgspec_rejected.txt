@@ -1,3 +1,4 @@
 count
+seconds
 plain
 step

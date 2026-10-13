@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import time
+from datetime import date
 from decimal import Decimal
 from fractions import Fraction
 from typing import NotRequired, TypedDict
@@ -13,5 +13,5 @@ class NumberConstraintsOnCustomTypes(TypedDict):
     ratio: NotRequired[Fraction]
     scale: NotRequired[Fraction]
     amount: NotRequired[Decimal]
-    pause: NotRequired[time]
+    pause: NotRequired[date]
     total: NotRequired[int]

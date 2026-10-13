@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnCollapsedRoots",
+  "type": "object",
+  "properties": {
+    "wait": {
+      "$ref": "#/definitions/Wait"
+    },
+    "label": {
+      "$ref": "#/definitions/Label"
+    },
+    "count": {
+      "$ref": "#/definitions/Count"
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Label"
+      }
+    }
+  },
+  "definitions": {
+    "Wait": {
+      "type": "string",
+      "format": "duration",
+      "minimum": 0
+    },
+    "Label": {
+      "type": "string",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "Count": {
+      "type": "string",
+      "x-python-type": "int",
+      "minimum": 0
+    }
+  }
+}
