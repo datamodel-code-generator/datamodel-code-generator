@@ -110,9 +110,7 @@ class _Renderer:
     def render(self) -> RenderedBindings:
         runtime = self.plan.runtime
         models: list[ModelEntry] = []
-        annotation = ""
         if runtime.mapped and self.plan.uses:
-            self.records.add("Model")
             for model in self.plan.models:
                 name = self.module.symbol(model.symbol)
                 fields = display(
@@ -126,14 +124,15 @@ class _Renderer:
                     for field in model.fields
                 )
                 models.append(ModelEntry(name, self.call("Model", fields)))
-            annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]"
+        annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]" if models else ""
+        registry = "MODELS" if models else "{}"
         accessors = []
         entries = []
         for index, use in enumerate(self.plan.uses):
             codec = runtime.codec
             static = self.module.hint(use.type)
             arguments = (
-                (self.shape(use.shape), "MODELS") if runtime.mapped else (self.module.hint(use.type, static=False),)
+                (self.shape(use.shape), registry) if runtime.mapped else (self.module.hint(use.type, static=False),)
             )
             if use.extras:
                 arguments = (*arguments, EXTRAS)
