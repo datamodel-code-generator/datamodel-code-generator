@@ -10,6 +10,28 @@
     },
     "dataclass": null
   },
+  "jsonschema/rust_unsupported_pattern.json": {
+    "2.0.3": {
+      "acceptance": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to backreference and lookaround pattern validators",
+      "round_trip": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to backreference and lookaround pattern validators"
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": null
+  },
+  "openapi/pattern_backreference.yaml::components.schemas.Doubled": {
+    "2.0.3": {
+      "acceptance": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI backreference pattern validators",
+      "round_trip": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI backreference pattern validators"
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": "OpenAPI pydantic dataclass full-matrix coverage remains representative until backend-specific alias, default, and composition limits are reduced"
+  },
   "jsonschema/compound_property_names/enum_oneof.json": {
     "2.0.3": {
       "acceptance": null,
