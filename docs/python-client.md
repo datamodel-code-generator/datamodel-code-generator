@@ -671,9 +671,11 @@ keep bytes, or send it as a whole binary body or a file part
 Declare such a value `format: byte`, which every backend sends as the same base64 text: Pydantic models hold it as a
 `Base64Str` and the other backends as the base64 `str`. With
 [`--type-mappings string+byte=binary`](cli-reference/typing-customization.md#type-mappings) every backend holds the
-decoded `bytes` instead (`Base64Bytes` in Pydantic models) and still sends base64. A `--type-mappings` entry that maps
-a format to `binary`, such as `password=binary`, makes its strings binary too, and one that maps `binary` to another
-format makes them text. A string with an OpenAPI 3.1 `contentMediaType` and no `contentEncoding` is a `str` in JSON and
+decoded `bytes` instead (`Base64Bytes` in Pydantic models) and still sends base64. Build a `Base64Bytes` field in
+Python from the base64 text, such as `base64.b64encode(data)`, not from the raw bytes: Pydantic decodes raw bytes
+leniently, so `b'\xff\x00'` becomes `b''` without an error. A `--type-mappings` entry that maps a format to `binary`,
+such as `password=binary`, makes its strings binary too, and one that maps `binary` to another format makes them
+text. A string with an OpenAPI 3.1 `contentMediaType` and no `contentEncoding` is a `str` in JSON and
 is sent as it is.
 
 ### Optional arguments, `UNSET`, and `None`

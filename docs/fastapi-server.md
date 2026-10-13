@@ -793,6 +793,8 @@ and it cannot write bytes that are not UTF-8. Declare such a value `format: byte
 same base64 text and Pydantic models hold as a `Base64Str`, or add
 [`--type-mappings string+byte=binary`](cli-reference/typing-customization.md#type-mappings) to hold the decoded bytes
 as a `Base64Bytes`, which also accepts bytes that are not UTF-8.
+Build a `Base64Bytes` field in Python from the base64 text, such as `base64.b64encode(data)`, not from the raw
+bytes: Pydantic decodes raw bytes leniently, so `b'\xff\x00'` becomes `b''` without an error.
 
 To stream a large upload or read the body yourself, generate the operation with
 [`--server-body-modes`](cli-reference/target-generation-options.md#server-body-modes) set to `request`, or
