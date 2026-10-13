@@ -8,6 +8,6 @@ from pydantic import BaseModel
 
 
 class Model(BaseModel):
-    a: str | bool | int | bool | None = None
+    a: str | bool | int | None = None
     b: bool | None = None
     c: int | bool | None = None

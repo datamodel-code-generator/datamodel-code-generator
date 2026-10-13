@@ -7813,6 +7813,75 @@ def test_main_openapi_shadowed_imports(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("input_file", "output_model_type", "extra_args", "expected_file"),
+    [
+        (
+            "field_model_name_collision.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias"],
+            "model_type_alias.py",
+        ),
+        ("field_model_name_collision.yaml", "pydantic_v2.BaseModel", [], "model_root_model.py"),
+        (
+            "field_model_name_collision.yaml",
+            "pydantic_v2.dataclass",
+            ["--use-type-alias"],
+            "model_dataclass_type_alias.py",
+        ),
+        (
+            "field_property_name_collision.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias"],
+            "property_type_alias.py",
+        ),
+        (
+            "field_property_name_collision.yaml",
+            "pydantic_v2.dataclass",
+            ["--use-type-alias"],
+            "property_dataclass_type_alias.py",
+        ),
+        (
+            "annotated_model_name_collision.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias"],
+            "annotated_model_type_alias.py",
+        ),
+        (
+            "alias_description_property_names.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias"],
+            "alias_description_property_names.py",
+        ),
+        (
+            "annotated_property_use_annotated.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias", "--use-annotated"],
+            "annotated_property_use_annotated.py",
+        ),
+        (
+            "annotated_property_use_annotated.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-type-alias", "--use-annotated", "--target-python-version", "3.12"],
+            "annotated_property_type_statement.py",
+        ),
+    ],
+)
+def test_main_openapi_field_name_collision_with_alias_constraints(
+    output_file: Path, input_file: str, output_model_type: str, extra_args: list[str], expected_file: str
+) -> None:
+    """Models and properties named like ``Field`` or ``Annotated`` keep template calls bound beside alias imports."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=f"field_name_collision/{expected_file}",
+        extra_args=["--output-model-type", output_model_type, "--disable-timestamp", *extra_args],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_shadowed_imports_base_and_fields(output_file: Path) -> None:
     """Test that aliased imports are applied to all fields, not just matching field names."""
     run_main_and_assert(

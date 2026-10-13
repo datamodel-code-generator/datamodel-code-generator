@@ -82,6 +82,10 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append("get_chosen()")
             return models.Pet(id=4, name="Pochi")
 
+        def get_tally(self) -> object:
+            calls.append("get_tally()")
+            return models.Tally(total=2, nested={"a": [1]})
+
     default = {"default": Default()}
     return {"standard": default, "plain": default, "included": default}
 

@@ -102,16 +102,15 @@ No errors! 🎉
 
 `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` are written on a field in two cases.
 
-**The schema holds a number.** The schema type is `number` or `integer`, the schema has no `type`, or the type and
-format map to a number type (`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps
-to one). All five keywords are written, as `con*` types by default and as `Field()` arguments with
-`--field-constraints` or `--use-annotated`.
+**The schema holds a number.** The schema type is `number` or `integer`, or the type and format map to a number type
+(`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps to one). All five keywords
+are written, as `con*` types by default and as `Field()` arguments with `--field-constraints` or `--use-annotated`.
 
 **The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
-`duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. Pydantic models and
-dataclasses write these keywords only as `Field()` arguments, so this case needs `--field-constraints` or
-`--use-annotated` (root models and type aliases follow the same options); without them such a field has no bound.
-`msgspec.Struct` writes them as `Meta(...)`.
+`duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
+written as `Any`, which takes no number keyword. Pydantic models and dataclasses write these keywords only as `Field()`
+arguments, so this case needs `--field-constraints` or `--use-annotated` (root models and type aliases follow the same
+options); without them such a field has no bound. `msgspec.Struct` writes them as `Meta(...)`.
 
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|
@@ -120,7 +119,7 @@ dataclasses write these keywords only as `Field()` arguments, so this case needs
 | `timedelta` | the four bounds, read as seconds | none |
 | `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
 | `time` | the four bounds, read as seconds since midnight | none |
-| a type the generator does not know (`fractions.Fraction`, a class of your own) | all five keywords | all five keywords |
+| a type the generator does not know (`fractions.Fraction`, a class of your own) or a model that the schema references | all five keywords | all five keywords |
 | any other known type: `str`, `bytes`, `bool`, `None`, `date`, `UUID`, `Any`, `object`, paths, IP addresses, lists, dicts and other containers | none | none |
 
 `multipleOf` is not written on `timedelta`, `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field,
@@ -158,6 +157,46 @@ class Model(BaseModel):
     wait: timedelta | None = Field(None, ge=0)
     at: AwareDatetime | None = Field(None, ge=0)
     day: date | None = None
+```
+
+## 🔤 Which fields keep string and array keywords
+
+`minLength`, `maxLength` and `pattern` hold for strings, and `minItems`, `maxItems` and `uniqueItems` hold for arrays.
+They follow the same two cases as number keywords: a schema type `string` takes the string keywords and a schema type
+`array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
+without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
+"pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
+`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
+
+| Python type | Pydantic | msgspec |
+|-------------|----------|---------|
+| `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
+| `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
+| `conbytes`, `EmailStr`, `SecretStr` | `minLength`, `maxLength` | none |
+| `list`, `set`, `frozenset`, `tuple`, `deque` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength` |
+| a type the generator does not know or a model that the schema references | all of them | all of them |
+| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts | none | none |
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {"type": "string", "minLength": 2},
+    "any": {"minLength": 2},
+    "count": {"type": "integer", "pattern": "^1"},
+    "tags": {"items": {"type": "string"}, "minItems": 1, "pattern": "^a"}
+  }
+}
+```
+
+With `--field-constraints`:
+
+```python
+class Model(BaseModel):
+    code: str | None = Field(None, min_length=2)
+    any: Any | None = None
+    count: int | None = None
+    tags: list[str] | None = Field(None, min_length=1)
 ```
 
 ---

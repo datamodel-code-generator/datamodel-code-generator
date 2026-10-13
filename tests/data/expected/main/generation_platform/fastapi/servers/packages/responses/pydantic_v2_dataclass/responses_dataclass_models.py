@@ -5,8 +5,14 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class Tally:
+    total: int | None = None
 
 
 @dataclass

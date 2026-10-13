@@ -1,6 +1,6 @@
 # responses
 serve pydantic_v2.BaseModel
-service DefaultService: create_thing, get_bytes, get_chosen, get_document, get_greeting, get_latin, get_note, get_pet, get_problem, get_text, head_text
+service DefaultService: create_thing, get_bytes, get_chosen, get_document, get_greeting, get_latin, get_note, get_pet, get_problem, get_tally, get_text, head_text
 service DefaultService without its methods: TypeError
 app standard
 > GET /greetings
@@ -58,6 +58,9 @@ app standard
 > GET /chosen
   get_chosen()
 < 200 application/json {"id":4,"name":"Pochi"}
+> GET /tallies
+  get_tally()
+< 200 application/vnd.tally+json {"total":2,"nested":{"a":[1]}}
 > openapi /greetings get 200
 < {"application/json": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404
@@ -109,7 +112,7 @@ app included
 > openapi /pets/{id} get 404
 < null
 serve pydantic_v2.dataclass
-service DefaultService: create_thing, get_bytes, get_chosen, get_document, get_greeting, get_latin, get_note, get_pet, get_problem, get_text, head_text
+service DefaultService: create_thing, get_bytes, get_chosen, get_document, get_greeting, get_latin, get_note, get_pet, get_problem, get_tally, get_text, head_text
 service DefaultService without its methods: TypeError
 app standard
 > GET /greetings
@@ -167,6 +170,9 @@ app standard
 > GET /chosen
   get_chosen()
 < 200 application/json {"id":4,"name":"Pochi"}
+> GET /tallies
+  get_tally()
+< 200 application/vnd.tally+json {"total":2,"nested":{"a":[1]}}
 > openapi /greetings get 200
 < {"application/json": {"schema": {"type": "string"}}}
 > openapi /pets/{id} get 404

@@ -78,8 +78,10 @@ from datamodel_code_generator.python_literal import PythonCode
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+    LENGTH_KEYWORDS,
     NUMBER_BOUND_KEYWORDS,
     NUMBER_KEYWORDS,
+    STRING_KEYWORDS,
     DataType,
     StrictTypes,
     Types,
@@ -212,8 +214,8 @@ def _get_regex_literal(pattern: str) -> str:
     return PythonCode(raw_literal, pattern)
 
 
-def _number_constraint_keywords(keywords: frozenset[str], *imports: Import) -> dict[str, frozenset[str]]:
-    """Map the import paths of Pydantic types to the number keywords they take."""
+def _constraint_keywords(keywords: frozenset[str], *imports: Import) -> dict[str, frozenset[str]]:
+    """Map the import paths of Pydantic types to the type-dependent keywords they take."""
     return {f"{import_.from_}.{import_.import_}": keywords for import_ in imports}
 
 
@@ -232,9 +234,9 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         "NonNegativeFloat": ("minimum",),
         "NonPositiveFloat": ("maximum",),
     }
-    NUMBER_CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
-        **_DataTypeManagerBase.NUMBER_CONSTRAINT_KEYWORDS,
-        **_number_constraint_keywords(
+    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
+        **_DataTypeManagerBase.CONSTRAINT_KEYWORDS,
+        **_constraint_keywords(
             NUMBER_KEYWORDS,
             IMPORT_CONINT,
             IMPORT_CONFLOAT,
@@ -250,13 +252,15 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             IMPORT_NON_NEGATIVE_FLOAT,
             IMPORT_NON_POSITIVE_FLOAT,
         ),
-        **_number_constraint_keywords(
+        **_constraint_keywords(
             NUMBER_BOUND_KEYWORDS,
             IMPORT_AWARE_DATETIME,
             IMPORT_NAIVE_DATETIME,
             IMPORT_PAST_DATETIME,
             IMPORT_FUTURE_DATETIME,
         ),
+        **_constraint_keywords(STRING_KEYWORDS, IMPORT_CONSTR, IMPORT_STRICT_STR, IMPORT_STRICT_BYTES),
+        **_constraint_keywords(LENGTH_KEYWORDS, IMPORT_CONBYTES, IMPORT_EMAIL_STR, IMPORT_SECRET_STR),
     })
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (*_DataTypeManagerBase.KNOWN_TYPE_IMPORTS, pydantic_imports)
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({

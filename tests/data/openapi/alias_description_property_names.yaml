@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info: {title: T, version: "1.0"}
+paths: {}
+components:
+  schemas:
+    PerPage: {type: integer, minimum: 1, maximum: 100, description: Page size.}
+    Holder:
+      type: object
+      properties:
+        Field: {type: string}
+        Annotated: {type: string}
+        x: {type: integer, description: X}

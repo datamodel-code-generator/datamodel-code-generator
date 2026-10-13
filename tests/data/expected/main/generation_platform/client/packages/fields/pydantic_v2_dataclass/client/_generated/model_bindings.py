@@ -10,6 +10,7 @@ from typing import Final
 import models
 
 from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_extras import extras_serializer
 
 codec_0: Final[PydanticDataclassCodec[models.FieldPetsPostQueryTagParameter]] = PydanticDataclassCodec(models.FieldPetsPostQueryTagParameter)
 """Codec of /paths/~1pets/post parameter (request query tag)."""
@@ -47,7 +48,7 @@ codec_10: Final[PydanticDataclassCodec[models.FieldOwnersPostRequest]] = Pydanti
 codec_11: Final[PydanticDataclassCodec[models.FieldPetsPetIdLabelsPutPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdLabelsPutPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1labels/put parameter (request path petId)."""
 
-codec_12: Final[PydanticDataclassCodec[models.Labels]] = PydanticDataclassCodec(models.Labels)
+codec_12: Final[PydanticDataclassCodec[models.Labels]] = PydanticDataclassCodec(models.Labels, extras_serializer)
 """Codec of /paths/~1pets~1{petId}~1labels/put request_body (request application/json)."""
 
 codec_13: Final[PydanticDataclassCodec[models.FieldPetsPetIdPhotoPutPathPetIdParameter]] = PydanticDataclassCodec(models.FieldPetsPetIdPhotoPutPathPetIdParameter)

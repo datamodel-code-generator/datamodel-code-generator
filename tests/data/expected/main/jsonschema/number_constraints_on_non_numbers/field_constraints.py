@@ -32,4 +32,4 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     number_minimum: float | None = Field(None, ge=5.0)
     integer_maximum: int | None = Field(None, le=10)
     string_or_number_minimum: str | confloat(ge=5.0) | None = None
-    untyped_minimum: Any | None = Field(None, ge=5)
+    untyped_minimum: Any | None = None

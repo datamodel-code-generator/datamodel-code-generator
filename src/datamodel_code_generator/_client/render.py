@@ -3268,6 +3268,7 @@ class ClientRenderer:
             ),
             response_headers=any(response.headers for spec in operations for response in spec.responses),
             multipart_responses=any(media.kind == "multipart" for media in received),
+            extras=self.codecs.extras,
         )
         resources = _Resources(
             self.plan,

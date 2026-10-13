@@ -32,4 +32,4 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     number_minimum: Annotated[float | None, Field(ge=5.0)] = None
     integer_maximum: Annotated[int | None, Field(le=10)] = None
     string_or_number_minimum: str | confloat(ge=5.0) | None = None
-    untyped_minimum: Annotated[Any | None, Field(ge=5)] = None
+    untyped_minimum: Any | None = None
