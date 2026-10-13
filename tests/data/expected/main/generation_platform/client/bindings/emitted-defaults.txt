@@ -86,9 +86,7 @@ render msgspec.Struct plain
   models.py
   model_bindings.py msgspec_Struct/plain
 change msgspec.Struct plain scope-noise
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -18,0 +20,12 @@
+  @@ -18,0 +19,12 @@
   +
   +    """missing: Optional[str] = None is documentation, not a declaration."""
   +

@@ -144,33 +144,23 @@ render msgspec.Struct standard
   models.py
   model_bindings.py msgspec_Struct/typing
 change msgspec.Struct standard list(object)
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -10 +11 @@
+  @@ -10 +10 @@
   -Model: TypeAlias = list
   +Model: TypeAlias = list[object]
 change msgspec.Struct standard list(())
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -10 +11 @@
+  @@ -10 +10 @@
   -Model: TypeAlias = list
   +Model: TypeAlias = list[()]
 change msgspec.Struct standard list()
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -10 +11 @@
+  @@ -10 +10 @@
   -Model: TypeAlias = list
   +Model: TypeAlias = list[]
 change msgspec.Struct standard tuple(())
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -10 +11 @@
+  @@ -10 +10 @@
   -Model: TypeAlias = list
   +Model: TypeAlias = tuple[()]
 change msgspec.Struct standard dict
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -10 +11 @@
+  @@ -10 +10 @@
   -Model: TypeAlias = list
   +Model: TypeAlias = dict
 render msgspec.Struct generic

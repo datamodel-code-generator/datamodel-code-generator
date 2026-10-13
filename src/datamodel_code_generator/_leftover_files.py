@@ -1,12 +1,15 @@
 """Find the Python files of an output directory, and warn about those a generation left in place.
 
-This module is a dependency-free leaf, so the output comparison of `--check` and the target writers can share it.
+This module imports nothing but the warning category, so the output comparison of `--check` and the target writers
+can share it.
 """
 
 from __future__ import annotations
 
 import warnings
 from typing import TYPE_CHECKING
+
+from datamodel_code_generator import LeftoverFilesWarning
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
@@ -31,5 +34,6 @@ def warn_leftover_files(directory: Path, generated: AbstractSet[Path], shown: Pa
     warnings.warn(
         f"{shown.as_posix()}: These Python files are no longer generated and are left in place: {names}. "
         "Delete the ones you no longer need.",
+        LeftoverFilesWarning,
         stacklevel=2,
     )

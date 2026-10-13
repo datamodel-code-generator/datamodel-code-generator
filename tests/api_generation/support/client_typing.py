@@ -7,7 +7,7 @@ import shutil
 import warnings
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope, generate
+from datamodel_code_generator import DataModelType, GenerateConfig, LeftoverFilesWarning, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.client_generation import SOURCE, client_options, copy_references
 from tests.api_generation.support.strict_typing import checked, marked_lines, negative
@@ -85,7 +85,7 @@ def client_regenerated_typing_report(root: Path) -> str:
     shutil.copyfile(source / "extensions.py", root / "extensions.py")
     lines = checked(root, ["pets", "extensions.py"], "v1 pets and extensions.py")
     with warnings.catch_warnings(record=True) as recorded:
-        warnings.filterwarnings("always", ".*Python files are no longer generated", UserWarning)
+        warnings.simplefilter("always", LeftoverFilesWarning)
         _generate_pets(source / "v2.yaml", root)
     lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
     lines.extend(checked(root, ["extensions.py"], "v2 extensions.py"))

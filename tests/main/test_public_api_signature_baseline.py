@@ -93,6 +93,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "DefaultValueTypeWarning",
         "DefaultPutDict",
         "DocumentationAnnotationWarning",
+        "LeftoverFilesWarning",
         "Error",
         "FieldTypeCollisionStrategy",
         "GenerateConfig",

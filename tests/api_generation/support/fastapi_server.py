@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
-from datamodel_code_generator import DataModelType, generate
+from datamodel_code_generator import DataModelType, LeftoverFilesWarning, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.client_generation import formatter_refusal
@@ -215,7 +215,7 @@ def fastapi_server_report(
             _generate({**case, "input": previous}, backend, root, package)
         try:
             with warnings.catch_warnings(record=True) as recorded:
-                warnings.filterwarnings("always", ".*Python files are no longer generated", UserWarning)
+                warnings.simplefilter("always", LeftoverFilesWarning)
                 _generate(case, backend, root, package)
         except RuntimeError as error:
             lines.append(f"  {formatter_refusal(error)}")

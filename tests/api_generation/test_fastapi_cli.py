@@ -12,6 +12,7 @@ import pytest
 from datamodel_code_generator import (
     DataModelType,
     InputFileType,
+    LeftoverFilesWarning,
     OpenAPIScope,
     PythonVersion,
     ServerBodyMode,
@@ -1286,13 +1287,15 @@ def test_fastapi_cli_leftover_files(
         ("error", narrowed, "error", Exit.ERROR),
     ):
         with warnings.catch_warnings(record=True) as recorded:
-            warnings.simplefilter(action, UserWarning)
+            warnings.simplefilter(action, LeftoverFilesWarning)
             run_main_with_args(["--input", "pets.yaml", *DOC_OPTIONS, *options], expected_exit=expected_exit)
         captured = capsys.readouterr()
         lines.append(f"# {run} run")
         lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
         lines.extend(
-            line for line in (captured.out + captured.err).splitlines() if line.startswith(("EXTRA", "UserWarning"))
+            line
+            for line in (captured.out + captured.err).splitlines()
+            if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
         )
     assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
 

@@ -105,33 +105,23 @@ render msgspec.Struct default
   models.py
   model_bindings.py msgspec_Struct/default
 change msgspec.Struct default field
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -16 +17 @@
+  @@ -16 +16 @@
   -    bad: str
   +    bad: int
 change msgspec.Struct default function
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -16,0 +18,3 @@
+  @@ -16,0 +17,3 @@
   +
   +def Bad():
   +    return 1
 change msgspec.Struct default delete
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -16,0 +18,2 @@
+  @@ -16,0 +17,2 @@
   +
   +del Bad
 change msgspec.Struct default unpack
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -16,0 +18,2 @@
+  @@ -16,0 +17,2 @@
   +
   +Bad, other = int, str
 change msgspec.Struct default augmented
-  @@ -0,0 +1 @@
-  +warning UserWarning: client: These Python files are no longer generated and are left in place: client/_runtime/model_codecs/stdlib.py. Delete the ones you no longer need.
-  @@ -16,0 +18,2 @@
+  @@ -16,0 +17,2 @@
   +
   +Bad |= int
