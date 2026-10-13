@@ -1,0 +1,6 @@
+use /paths/~1choices/post request_body: TypedDictCodec
+use /paths/~1choices/post response_body 200: TypedDictCodec
+choice-server-decode-enum: native {'color_or_count': <Color.red: 'red'>, 'word_or_list': 'w'} json={"color_or_count":"red","word_or_list":"w"}
+choice-server-decode-count: native {'color_or_count': 3} json={"color_or_count":3}
+choice-server-decode-unknown-member: ValueError
+choice-server-response-enum: json={"color_or_count":"red","word_or_list":"w"}

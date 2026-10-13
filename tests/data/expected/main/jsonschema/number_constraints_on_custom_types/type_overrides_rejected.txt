@@ -1,0 +1,4 @@
+ratio
+scale
+amount
+total

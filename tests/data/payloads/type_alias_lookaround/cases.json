@@ -26,5 +26,29 @@
   },
   "tree": {
     "Code": ["abc", "badly"]
+  },
+  "nested": {
+    "Code": ["abc", "badly"],
+    "Inner": [{"first": "abc", "second": "abc"}, {"second": "badly"}],
+    "Holder": [{"inner": {"first": "abc", "second": "abc"}}, {"inner": {"first": "badly"}}, {"inner": {"second": "badly"}}]
+  },
+  "siblings": {
+    "First": [{"code": "abc"}, {"code": "badly"}],
+    "Second": [{"code": "abc", "count": 1}, {"code": "badly"}],
+    "Holder": [{"first": {"code": "abc"}, "second": {"code": "abc"}}, {"first": {"code": "badly"}}, {"second": {"code": "badly"}}]
+  },
+  "inherited": {
+    "Base": [{"code": "abc"}, {"code": "badly"}],
+    "Left": [{"code": "abc", "x": 1}, {"code": "badly"}],
+    "Holder": [{"left": {"code": "abc"}, "right": {"code": "abc"}}, {"left": {"code": "badly"}}, {"right": {"code": "badly"}}]
+  },
+  "multiple_bases": {
+    "Base": [{"code": "abc"}, {"code": "badly"}],
+    "Both": [{"label": "a", "code": "abc", "z": 1}, {"code": "badly"}],
+    "Holder": [{"both": {"code": "abc"}}, {"both": {"code": "badly"}}]
+  },
+  "annotated_root": {
+    "Codes": [{"k": "abc"}, {"k": "badly"}],
+    "Holder": [{"data": {"k": "abc"}}, {"data": {"k": "badly"}}]
   }
 }

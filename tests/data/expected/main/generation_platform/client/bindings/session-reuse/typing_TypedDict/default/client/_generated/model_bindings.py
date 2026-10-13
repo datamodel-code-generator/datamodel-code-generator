@@ -8,17 +8,17 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.First: Model((Field('value', 'value'),), True),
-    models.Second: Model((Field('value', 'value'),), True),
+    models.First: Model((Field('value', 'value'),)),
+    models.Second: Model((Field('value', 'value'),)),
 }
 
-codec_0: Final[StdlibCodec[models.First]] = StdlibCodec(models.First, MODELS)
+codec_0: Final[TypedDictCodec[models.First]] = TypedDictCodec(models.First, MODELS)
 """Codec of /paths/~1first/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Second]] = StdlibCodec(models.Second, MODELS)
+codec_1: Final[TypedDictCodec[models.Second]] = TypedDictCodec(models.Second, MODELS)
 """Codec of /paths/~1second/post request_body (request application/json)."""

@@ -8,25 +8,25 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.BaseRequest: Model((Field('value', 'value'), Field('note', 'note')), True),
-    models.Base: Model((Field('value', 'value'), Field('id', 'id'), Field('note', 'note')), True),
-    models.ChildRequest: Model((Field('value', 'value'), Field('note', 'note')), True),
-    models.Child: Model((Field('value', 'value'), Field('id', 'id'), Field('note', 'note')), True),
+    models.BaseRequest: Model((Field('value', 'value'), Field('note', 'note'))),
+    models.Base: Model((Field('value', 'value'), Field('id', 'id'), Field('note', 'note'))),
+    models.ChildRequest: Model((Field('value', 'value'), Field('note', 'note'))),
+    models.Child: Model((Field('value', 'value'), Field('id', 'id'), Field('note', 'note'))),
 }
 
-codec_0: Final[StdlibCodec[models.BaseRequest]] = StdlibCodec(models.BaseRequest, MODELS)
+codec_0: Final[TypedDictCodec[models.BaseRequest]] = TypedDictCodec(models.BaseRequest, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_1: Final[TypedDictCodec[models.Base]] = TypedDictCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.ChildRequest]] = StdlibCodec(models.ChildRequest, MODELS)
+codec_2: Final[TypedDictCodec[models.ChildRequest]] = TypedDictCodec(models.ChildRequest, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_3: Final[TypedDictCodec[models.Child]] = TypedDictCodec(models.Child, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""

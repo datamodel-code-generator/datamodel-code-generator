@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 
 
 class Model(BaseModel):
     blob: bytes | None = None
+    code: constr(pattern=r'^abc$') | None = None

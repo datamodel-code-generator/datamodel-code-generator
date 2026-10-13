@@ -32,3 +32,11 @@ paths:
         - {name: y, in: path, required: true, schema: {type: string}}
       responses:
         "204": {description: Done.}
+  /h/{i}:
+    get:
+      operationId: stray
+      parameters:
+        - {name: i, in: path, required: true, schema: {type: string}}
+        - {name: portion, in: path, schema: {type: string}}
+      responses:
+        "204": {description: Done.}

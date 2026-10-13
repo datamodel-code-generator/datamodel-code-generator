@@ -4649,7 +4649,8 @@ Output never depends on the Pydantic installed with datamodel-code-generator.
   `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
 - **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
 - **2.14**: The 2.12 forms, with `--use-missing-sentinel` importing `MISSING` from `pydantic` instead of the
-  `pydantic.experimental.missing_sentinel` path that Pydantic 2.14 deprecates
+  `pydantic.experimental.missing_sentinel` path that Pydantic 2.14 deprecates, and Python's regex engine for
+  `bytes` patterns the Rust engine rejects, which Pydantic compiles from 2.14 on
 
 See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.""",
     input_schema="jsonschema/person.json",

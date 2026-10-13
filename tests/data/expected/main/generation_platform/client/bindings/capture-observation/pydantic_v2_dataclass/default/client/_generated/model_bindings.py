@@ -9,7 +9,7 @@ import models
 from pydantic import constr
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
 
 codec_0: Final[PydanticDataclassCodec[models.ItemRequest]] = PydanticDataclassCodec(models.ItemRequest)

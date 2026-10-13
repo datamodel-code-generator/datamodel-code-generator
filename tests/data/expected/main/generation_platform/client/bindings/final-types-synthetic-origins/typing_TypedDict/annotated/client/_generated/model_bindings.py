@@ -8,35 +8,35 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Payload: Model((Field('normal', 'normal'),), True),
-    models.Required: Model((Field('normal', 'normal'), Field('undeclared', 'undeclared')), True),
+    models.Payload: Model((Field('normal', 'normal'),)),
+    models.Required: Model((Field('normal', 'normal'), Field('undeclared', 'undeclared'))),
 }
 
-codec_0: Final[StdlibCodec[models.Payload]] = StdlibCodec(models.Payload, MODELS)
+codec_0: Final[TypedDictCodec[models.Payload]] = TypedDictCodec(models.Payload, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Payload]] = StdlibCodec(models.Payload, MODELS)
+codec_1: Final[TypedDictCodec[models.Payload]] = TypedDictCodec(models.Payload, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.Dictionary]] = StdlibCodec(None, MODELS)
+codec_2: Final[TypedDictCodec[models.Dictionary]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Dictionary]] = StdlibCodec(None, MODELS)
+codec_3: Final[TypedDictCodec[models.Dictionary]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.Choice]] = StdlibCodec(None, MODELS)
+codec_4: Final[TypedDictCodec[models.Choice]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.Choice]] = StdlibCodec(None, MODELS)
+codec_5: Final[TypedDictCodec[models.Choice]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.Required]] = StdlibCodec(models.Required, MODELS)
+codec_6: Final[TypedDictCodec[models.Required]] = TypedDictCodec(models.Required, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.Required]] = StdlibCodec(models.Required, MODELS)
+codec_7: Final[TypedDictCodec[models.Required]] = TypedDictCodec(models.Required, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""

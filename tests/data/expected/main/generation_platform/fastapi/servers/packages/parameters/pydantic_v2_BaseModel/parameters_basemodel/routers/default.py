@@ -406,13 +406,11 @@ def _add_get_serving(
         *,
         food_id: Annotated[str, Path(alias='food_id')],
         serving: Annotated[int, Field(ge=1), Path(alias='serving')],
-        portion: Annotated[str | None, Path(alias='portion')] = None,
     ) -> object:
         return dispatch(
             get_serving_handler(
                 food_id=food_id,
                 serving=serving,
-                portion=portion,
             ),
             contract.GetServing.RESPONSES,
         )

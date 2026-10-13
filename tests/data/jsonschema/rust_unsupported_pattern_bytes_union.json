@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "blob": {
+      "$ref": "#/definitions/Blob"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^abc$"
+    }
+  },
+  "definitions": {
+    "Blob": {
+      "pattern": "^(a)\\1$",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Text"
+        },
+        {
+          "$ref": "#/definitions/Binary"
+        }
+      ]
+    },
+    "Text": {
+      "type": "string"
+    },
+    "Binary": {
+      "type": "string",
+      "format": "binary"
+    }
+  }
+}
