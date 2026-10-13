@@ -9236,7 +9236,7 @@ def test_main_jsonschema_property_names_additional_properties_schema_with_proper
         force_exec_validation=True,
     )
     # Pydantic validates constrained typed-extra keys only in this supported range.
-    if version.parse("2.11") <= version.parse(PYDANTIC_VERSION) < version.parse("2.13"):  # pragma: no cover
+    if version.parse("2.11") <= version.parse(PYDANTIC_VERSION) < version.parse("2.13"):
         assert_generated_model_json_validation(
             output_file,
             module_name="property_names_additional_properties_schema_with_properties",
