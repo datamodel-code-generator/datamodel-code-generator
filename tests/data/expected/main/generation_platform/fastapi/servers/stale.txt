@@ -1,5 +1,6 @@
 # stale
 serve pydantic_v2.BaseModel
+LeftoverFilesWarning: <root>/stale_basemodel: These Python files are no longer generated and are left in place: <root>/stale_basemodel/routers/pets.py, <root>/stale_basemodel/routers/store.py. Delete the ones you no longer need.
 service DefaultService: get_value
 service DefaultService without its methods: TypeError
 > GET /values/7

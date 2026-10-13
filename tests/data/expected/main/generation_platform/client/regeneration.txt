@@ -63,6 +63,7 @@
   file pets/types/pets/_operations.py
   file pets_models.py
   runtime files 24
+  LeftoverFilesWarning: <root>/pets: These Python files are no longer generated and are left in place: <root>/pets/extensions.py, <root>/pets/resources/archive/__init__.py, <root>/pets/resources/archive/_async.py, <root>/pets/resources/archive/_sync.py, <root>/pets/types/archive/__init__.py, <root>/pets/types/archive/_operations.py. Delete the ones you no longer need.
   pets/extensions.py unchanged True
   pets/_client.py still edited False
   pets/resources/orders/__init__.py still foreign False

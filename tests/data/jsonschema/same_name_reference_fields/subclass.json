@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Subclass",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/leaf"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "required": [
+        "Bar"
+      ],
+      "properties": {
+        "Bar": {
+          "$ref": "#/$defs/Bar"
+        }
+      }
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    },
+    "base": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

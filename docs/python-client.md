@@ -1315,9 +1315,13 @@ FastAPI's `TestClient` is an `httpx2.Client` too: pass `http_client=TestClient(a
 
 Run the same command again after the OpenAPI document changes. The methods change with the operations, so type
 checkers point at the calls to update. As for models, every generation overwrites every generated file of the package, also one you edited, and never
-deletes one. The modules of a resource that is no longer generated stay until you delete them, and `--check` lists
-them as extra files; keep your own code outside the package, because `--check` treats every `.py` file under
-`--client-output` as generated. The models can live inside the package, such as `--output client/models.py` with
+deletes one. The modules of a resource that is no longer generated stay until you delete them: `--check` lists
+them as extra files, and a generation that leaves such `.py` files in place names them in one
+`LeftoverFilesWarning`, which Python shows once per process for the same text, also under `--watch` and repeated
+`generate()` calls. Silence exactly this warning with
+`warnings.simplefilter("ignore", datamodel_code_generator.LeftoverFilesWarning)` around `generate()`, or with
+`ignore::datamodel_code_generator.LeftoverFilesWarning` in pytest's `filterwarnings`. Keep your own code outside
+the package, because `--check` treats every `.py` file under `--client-output` as generated. The models can live inside the package, such as `--output client/models.py` with
 `--client-model-package client.models`, as for the [server package](fastapi-server.md#the-generated-package).
 
 `--check` compares without writing and prints the differences as for models, and `--output-format json`

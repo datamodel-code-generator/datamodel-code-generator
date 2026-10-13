@@ -12,6 +12,7 @@ import pytest
 from datamodel_code_generator import (
     DataModelType,
     InputFileType,
+    LeftoverFilesWarning,
     OpenAPIScope,
     PythonVersion,
     ServerBodyMode,
@@ -252,7 +253,8 @@ def test_fastapi_cli_check_outputs(
 ) -> None:
     """Compare real model and target text without publishing or changing any output file.
 
-    A fresh case checks a tree no generation wrote; a regenerate case generates over its edits before the check.
+    A fresh case checks a tree no generation wrote; a regenerate case generates over its edits before the check,
+    which warns about the files it leaves in place and no longer generates.
     A case can name its model and server outputs, with the arguments that give their import paths. A model
     directory in such a nested layout is not importable under its own name, as the model checks of the helper
     import it, so they are left out for it.
@@ -299,16 +301,22 @@ def test_fastapi_cli_check_outputs(
         (path := tmp_path / name).write_text(path.read_text(encoding=encoding), encoding=encoding, newline=newline)
     for name in case.get("binary", ()):
         (tmp_path / name).write_bytes((CLI / "non-text.dat").read_bytes())
-    if case.get("regenerate"):
-        run_main_and_assert(
-            input_path=source,
-            input_file_type="openapi",
-            output_path=output,
-            extra_args=_server(*options, *case.get("options", ()), output=server),
-            capsys=capsys,
-            expected_stderr=notice.read_text(encoding="utf-8"),
-            skip_code_validation=unvalidated,
-        )
+    with warnings.catch_warnings(record=True) as regenerated:
+        warnings.simplefilter("always", UserWarning)
+        if case.get("regenerate"):
+            run_main_and_assert(
+                input_path=source,
+                input_file_type="openapi",
+                output_path=output,
+                extra_args=_server(*options, *case.get("options", ()), output=server),
+                capsys=capsys,
+                expected_stderr=notice.read_text(encoding="utf-8"),
+                skip_code_validation=unvalidated,
+            )
+    assert_output(
+        "\n".join(f"{item.category.__name__}: {item.message}" for item in regenerated),
+        EXPECTED / "cli" / case.get("warnings", "no-warning.txt"),
+    )
     before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
     if case.get("nested"):
         monkeypatch.chdir(tmp_path / "server")
@@ -1290,6 +1298,38 @@ def test_fastapi_cli_nested_job(
         expected_stdout_path=EXPECTED / "cli" / "check" / "extra-python.txt",
         assert_no_stderr=True,
     )
+
+
+def test_fastapi_cli_leftover_files(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Warn on each run that leaves the router of a removed path in place, which a check lists as extra.
+
+    A first run and a check warn about nothing. As an error, the warning stops the run, like any Python warning.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    narrowed = ["--openapi-include-paths", "/pets"]
+    lines = []
+    for run, options, action, expected_exit in (
+        ("first", [], "always", Exit.OK),
+        ("narrowed", narrowed, "always", Exit.OK),
+        ("json", [*narrowed, "--output-format", "json"], "always", Exit.OK),
+        ("check", [*narrowed, "--check"], "always", Exit.DIFF),
+        ("error", narrowed, "error", Exit.ERROR),
+    ):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter(action, LeftoverFilesWarning)
+            run_main_with_args(["--input", "pets.yaml", *DOC_OPTIONS, *options], expected_exit=expected_exit)
+        captured = capsys.readouterr()
+        lines.append(f"# {run} run")
+        lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
+        lines.extend(
+            line
+            for line in (captured.out + captured.err).splitlines()
+            if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
 
 
 def test_fastapi_cli_mixed_jobs(
