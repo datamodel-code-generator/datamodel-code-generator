@@ -794,6 +794,49 @@
       "pydantic_v2.dataclass"
     ]
   },
+  "binary-text": {
+    "input": "binary-text.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ]
+  },
+  "binary-allowed": {
+    "input": "binary-allowed.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "binary-mapped": {
+    "input": "binary-mapped.yaml",
+    "model": {
+      "type_mappings": [
+        "password=binary"
+      ]
+    }
+  },
   "cookie-names": {
     "input": "cookie-names.yaml"
   },

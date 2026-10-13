@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from pydantic import (
+    Base64Str,
     BaseModel,
     Field,
     RootModel,
@@ -72,7 +73,7 @@ FieldValuesIdGetHeaderXTraceParameter = TypeAliasType("FieldValuesIdGetHeaderXTr
 FieldValuesIdGetHeaderXTagParameter = TypeAliasType("FieldValuesIdGetHeaderXTagParameter", StrictStr)
 
 
-FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobParameter", bytes)
+FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobParameter", Base64Str)
 
 
 FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVisitsParameter", StrictInt)

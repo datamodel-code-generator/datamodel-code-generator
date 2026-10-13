@@ -88,7 +88,7 @@ paths:
         - {name: code, in: query, schema: {$ref: "#/components/schemas/Code"}}
         - {name: codes, in: query, schema: {type: array, items: {$ref: "#/components/schemas/Code"}}}
         - {name: step, in: query, schema: {type: number, multipleOf: 0.5}}
-        - {name: raw, in: query, schema: {type: string, format: binary, minLength: 0}}
+        - {name: raw, in: query, schema: {type: string, format: byte, minLength: 0}}
         - {name: day, in: query, schema: {type: string, x-python-type: "datetime.date"}}
         - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Query"}}
         - {name: pair, in: query, explode: false, schema: {$ref: "#/components/schemas/Pair"}}

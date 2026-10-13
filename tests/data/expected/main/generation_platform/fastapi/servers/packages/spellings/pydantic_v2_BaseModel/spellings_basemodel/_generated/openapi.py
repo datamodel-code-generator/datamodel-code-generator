@@ -282,7 +282,7 @@ _TEXT = (
     '      "in": "query",\n'
     '      "schema": {\n'
     '       "type": "string",\n'
-    '       "format": "binary",\n'
+    '       "format": "byte",\n'
     '       "minLength": 0\n'
     '      }\n'
     '     },\n'

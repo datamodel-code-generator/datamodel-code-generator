@@ -28,6 +28,7 @@ from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_s
 from datamodel_code_generator._openapi_wire_plan import (
     NO_SCALAR_KIND,
     STYLED,
+    body_kind,
     content_types,
     form_extras,
     form_members,
@@ -1173,8 +1174,8 @@ class Planner:  # noqa: PLR0904
     def media(self, declaration: WireDeclaration) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, type use, and whether it keeps extras."""
         media_type = normalize_media_type(declaration.name or "")
-        kind = media_kind(media_type)
         use = self.use(declaration.schemas)
+        kind = body_kind(media_type, use)
         return MediaSpec(
             media_type=media_type,
             kind=kind,

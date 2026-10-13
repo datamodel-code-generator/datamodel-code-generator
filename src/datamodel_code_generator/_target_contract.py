@@ -491,7 +491,9 @@ class TypeUseBinding:
     schema of a multipart body says of its parts, `encoding` how a parameter, header or form schema is written as
     text, and `keywords` the title, description, deprecation, examples and default a parameter's schema declares.
     `argument` spells the type a parameter's argument takes: its type with each alias and root model by the type it
-    stands for.
+    stands for. `binary` is where the first string the models type as raw bytes sits that the use carries as text:
+    in a JSON, text or URL-encoded media, an item schema, a parameter or header, or a multipart part that holds no
+    files. `octets` says a text media's schema is one such string, which the media carries as the raw body.
     """
 
     id: TypeUseId
@@ -505,6 +507,8 @@ class TypeUseBinding:
     encoding: EncodingFacts | None = None
     keywords: tuple[tuple[str, FrozenLiteral], ...] = ()
     argument: ModelHint | None = None
+    binary: SourceLocation | None = None
+    octets: bool = False
 
 
 @dataclass(frozen=True, slots=True)

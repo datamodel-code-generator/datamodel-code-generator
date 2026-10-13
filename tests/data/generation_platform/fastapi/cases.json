@@ -209,6 +209,29 @@
   "codec-errors": {
     "input": "codec-errors.yaml"
   },
+  "binary-text": {
+    "input": "binary-text.yaml",
+    "config": {
+      "server_body_mode": "request"
+    }
+  },
+  "binary-allowed": {
+    "input": "binary-allowed.yaml",
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "package_snapshots": []
+  },
+  "binary-mapped": {
+    "input": "binary-mapped.yaml",
+    "model": {
+      "type_mappings": [
+        "password=binary"
+      ]
+    }
+  },
   "cookie-names": {
     "input": "cookie-names.yaml"
   },

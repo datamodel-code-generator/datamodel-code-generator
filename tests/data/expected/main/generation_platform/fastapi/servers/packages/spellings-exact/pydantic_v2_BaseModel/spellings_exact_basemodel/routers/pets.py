@@ -11,7 +11,7 @@ from typing import Annotated, Final, List, Optional
 from annotated_types import MultipleOf
 from fastapi import APIRouter, Depends, Path, Query, params
 from fastapi.responses import Response
-from pydantic import Field, StringConstraints
+from pydantic import Base64Str, Field, StringConstraints
 from spellings_exact_basemodel_models import (
     FieldCountsGetResponse,
     FieldPetsGetResponse,
@@ -222,7 +222,7 @@ def _add_get_pet(
         code: Annotated[Optional[Annotated[str, StringConstraints(min_length=2, max_length=5)]], Query(alias='code')] = None,
         codes: Annotated[Optional[List[Annotated[str, StringConstraints(min_length=2, max_length=5)]]], Query(alias='codes')] = None,
         step: Annotated[Optional[Annotated[Decimal, MultipleOf(Decimal('0.5'))]], Query(alias='step')] = None,
-        raw: Annotated[Optional[bytes], Query(alias='raw')] = None,
+        raw: Annotated[Optional[Base64Str], Query(alias='raw')] = None,
         label: Annotated[Optional[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))]], Query(alias='label')] = None,
         parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
     ) -> object:

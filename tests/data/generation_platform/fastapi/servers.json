@@ -3732,7 +3732,7 @@
       },
       {
         "method": "GET",
-        "url": "/values/5?blob=abc&size=3"
+        "url": "/values/5?blob=YWJj&size=3"
       },
       {
         "method": "GET",
@@ -3938,7 +3938,7 @@
       },
       {
         "method": "GET",
-        "url": "/values/5?blob=abc&size=3"
+        "url": "/values/5?blob=YWJj&size=3"
       },
       {
         "method": "GET",
@@ -4142,7 +4142,7 @@
       },
       {
         "method": "GET",
-        "url": "/values/5?blob=abc&size=3"
+        "url": "/values/5?blob=YWJj&size=3"
       },
       {
         "method": "GET",
@@ -4864,7 +4864,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=eA==&day=2024-01-02&filter[term]=a"
       },
       {
         "method": "GET",
@@ -5015,7 +5015,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=eA==&day=2024-01-02&filter[term]=a"
       },
       {
         "method": "GET",

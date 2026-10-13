@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import List, Literal, Optional, Protocol, Union
 
 from fastapi.responses import Response
+from pydantic import Base64Str
 from spellings_exact_basemodel_models import Response as Response_1
 from spellings_exact_basemodel_models import Tag
 from spellings_exact_basemodel_models import (
@@ -97,7 +98,7 @@ class PetsService(Protocol):
         code: Optional[str],
         codes: Optional[List[str]],
         step: Optional[Decimal],
-        raw: Optional[bytes],
+        raw: Optional[Base64Str],
         day: Optional[date],
         filter: Optional[Query],
         pair: Optional[Pair],

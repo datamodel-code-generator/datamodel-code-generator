@@ -10,7 +10,7 @@ from typing import Annotated, Final
 import spellings_basemodel_models
 from fastapi import APIRouter, Depends, Path, Query, params
 from fastapi.responses import Response
-from pydantic import Field, StringConstraints
+from pydantic import Base64Str, Field, StringConstraints
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
@@ -215,7 +215,7 @@ def _add_get_pet(
         limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit')] = 10,
         code: Annotated[Annotated[str, StringConstraints(min_length=2, max_length=5)] | None, Query(alias='code')] = None,
         step: Annotated[Annotated[float, Field(multiple_of=0.5)] | None, Query(alias='step')] = None,
-        raw: Annotated[bytes | None, Query(alias='raw')] = None,
+        raw: Annotated[Base64Str | None, Query(alias='raw')] = None,
         label: Annotated[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))] | None, Query(alias='label')] = None,
         parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
     ) -> object:

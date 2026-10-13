@@ -47,6 +47,7 @@ from datamodel_code_generator._target_contract import (
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
         Direction,
         FieldSlot,
@@ -116,6 +117,10 @@ _ARGUMENTS: Final[dict[LeafStep, tuple[int, frozenset[tuple[str | None, str]]]]]
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
 NO_SCALAR_KIND: Final = "A parameter value needs one unambiguous scalar kind"
 STYLED: Final = ("style", "explode", "allowReserved")
+_BINARY_TEXT: Final = (
+    "carries a binary string as text; declare it with format: byte for base64 text, optionally with "
+    "--type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part"
+)
 _WRAPPERS: Final = frozenset({"alias", "root"})
 
 
@@ -164,6 +169,12 @@ class _WirePlanner:
         self.uses = {use.id: use for use in batch.type_uses}
 
 
+def body_kind(media_type: str, use: TypeUseBinding | None) -> MediaKind:
+    """Return how a body of a normalized media type is carried: a text body of one raw binary string as raw bytes."""
+    kind = media_kind(media_type)
+    return "binary" if kind == "text" and use is not None and use.octets else kind
+
+
 def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
     """Return the type uses of an operation's parameters, responses, and body, without encoding headers."""
     pending = [*operation.parameters, *operation.responses]
@@ -189,7 +200,8 @@ def plan_wire(
 
     The uses of URL-encoded bodies named in `forms` get their member plans, and each member their encoding names the
     plan of a query parameter; the form-data uses named in `styles` get the query parameter plan of each member their
-    encodings give a style.
+    encodings give a style. A requested use that carries a raw binary string as text is refused, since the model
+    backends write bytes as different text.
     """
     forms = forms or {}
     styles = styles or {}
@@ -211,6 +223,7 @@ def plan_wire(
         for use in batch.type_uses
         if use.id in styles and (style := _styles(planner, use, styles[use.id])) is not None
     )
+    planner.diagnostics.extend(_binary_text(batch, planned, requested))
     return WirePlan(
         parameters,
         tuple(planner.diagnostics),
@@ -220,6 +233,37 @@ def plan_wire(
         planned_forms,
         planned_styles,
     )
+
+
+def _binary_text(
+    batch: GeneratedTypeContractBatch, operations: Sequence[OperationContract], requested: frozenset[TypeUseId] | None
+) -> Iterator[CodecDiagnostic]:
+    """Yield a diagnostic for each requested use of the operations that carries a raw binary string as text."""
+    labels = {operation.id: f"{operation.method.upper()} {operation.path}" for operation in operations}
+    yield from (
+        CodecDiagnostic(
+            "MC_CODEC_UNSUPPORTED", source, f"{_carrier(use.id, labels[owner])} {_BINARY_TEXT}", owner, (use.id,)
+        )
+        for use in batch.type_uses
+        if (source := use.binary) is not None and use.id.projection == "value"
+        if requested is None or use.id in requested
+        if isinstance(owner := use.id.owner, OperationId) and owner in labels
+    )
+
+
+def _carrier(use: TypeUseId, label: str) -> str:
+    """Name the parameter, body, response, header or part header a use's value is, in its operation."""
+    where = "request body" if use.role.startswith("request") else f"response {use.status}"
+    match use.role:
+        case "parameter":
+            return f"The {use.location} parameter {use.name!r} of {label}"
+        case "request_body" | "response_body":
+            return f"The {use.media} {where} of {label}"
+        case "response_header":
+            return f"The {use.name} header of {where} of {label}"
+        case _:
+            pass
+    return f"The {use.name} part header of the {use.media} {where} of {label}"
 
 
 def _form(

@@ -654,6 +654,32 @@ project, a call may give the fields of an object body as keyword arguments inste
 or its fields, never both. See [Body field arguments](python-client-reference.md#body-field-arguments) for which
 bodies take fields and how they are named.
 
+A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
+`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose schema is such a string travels as its
+raw bytes, without a charset decoding or base64, as an `application/octet-stream` one does; the method takes such a body
+or part as `bytes`. Generation stops with an error when a binary string, at any depth of its schema and through
+references, `$dynamicRef` and `allOf`, would be sent as text: inside a JSON or URL-encoded body or response, a `text/*`
+body whose schema is an object or array, a multipart part that is not a file, an item of a streamed response, or a
+parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the others as
+base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names the
+operation, the media or parameter, and where the schema declares the string:
+
+```text
+Error: /components/schemas/Blob/properties/data: The application/json request body of POST /blobs carries a binary
+string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to
+keep bytes, or send it as a whole binary body or a file part
+```
+
+Declare such a value `format: byte`, which every backend sends as the same base64 text: Pydantic models hold it as a
+`Base64Str` and the other backends as the base64 `str`. With
+[`--type-mappings string+byte=binary`](cli-reference/typing-customization.md#type-mappings) every backend holds the
+decoded `bytes` instead (`Base64Bytes` in Pydantic models) and still sends base64. Build a `Base64Bytes` field in
+Python from the base64 text, such as `base64.b64encode(data)`, not from the raw bytes: Pydantic decodes raw bytes
+leniently, so `b'\xff\x00'` becomes `b''` without an error. A `--type-mappings` entry that maps a format to `binary`,
+such as `password=binary`, makes its strings binary too, and one that maps `binary` to another format makes them
+text. A string with an OpenAPI 3.1 `contentMediaType` and no `contentEncoding` is a `str` in JSON and
+is sent as it is.
+
 ### Optional arguments, `UNSET`, and `None`
 
 An optional parameter with a default its schema declares takes that default, such as `limit: int = 20`, and is

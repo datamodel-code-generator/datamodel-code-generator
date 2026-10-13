@@ -100,7 +100,7 @@ from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchema
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
-from datamodel_code_generator.types import DataType
+from datamodel_code_generator.types import DataType, Types
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 FieldKind: TypeAlias = Literal[
@@ -141,6 +141,7 @@ _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
+_TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
 _HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
     "response_header",
     "request_encoding_header",
@@ -372,7 +373,22 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._callback_origin: _Declaration | None = None
         self._walked_schemas: list[tuple[int, _Declaration, YamlValue] | None] = []
         super().__init__(source, config=config)
-        self._reader = _Reader(self._api_documents, self.schema_locations, versions=[])
+        self._reader = _Reader(
+            self._api_documents,
+            self.schema_locations,
+            versions=[],
+            binary=self._binary_formats(),
+            anchors=self._anchor_locations,
+        )
+
+    def _binary_formats(self) -> frozenset[str]:
+        """Return the string formats the models type as raw bytes, as `--type-mappings` leaves or makes them."""
+        return frozenset(
+            found
+            for found in ("binary", *(format_ for type_, format_ in self.type_mappings if type_ == "string"))
+            if self._get_type_with_mappings("string", found) == Types.binary
+            and not self._is_base64_encoded_binary_mapping("string", found)
+        )
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -395,6 +411,26 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             "so a referenced file must be inside the input directory.\n"
             f"Input directory: {base}\nResolved path: {resolved}\n"
             "Move the referenced schemas under the input directory."
+        )
+
+    def _anchor_locations(self, document: str, ref: str, *, dynamic: bool) -> tuple[str, ...]:
+        """Return where a reference by anchor name leads: the anchor it names, and every `$dynamicAnchor` of the name.
+
+        A `$dynamicRef` binds to an anchor of its dynamic scope, which may be any declaration of the name. Each
+        location names its document as the reference's own document names it.
+        """
+        aliases = self._schema_resource_document_aliases
+        physical = aliases.get(document, document)
+        base = self._schema_resource_root_bases.get(physical, physical)
+        found = [] if (lexical := self._schema_resource_locations.get(urljoin(base, ref))) is None else [lexical]
+        if dynamic:
+            name = ref.partition("#")[2]
+            found.extend(location for anchors in self._dynamic_anchors.values() if (location := anchors.get(name)))
+        documents = {location: alias for alias, location in aliases.items()}
+        return tuple(
+            dict.fromkeys(
+                f"{documents.get(path, path)}#{pointer}" for path, _, pointer in (item.partition("#") for item in found)
+            )
         )
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
@@ -686,6 +722,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.copies.clear()
         self.schema_records.clear()
         self.schema_locations.clear()
+        self._reader.binaries.clear()
         self.free_schemas.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
@@ -729,21 +766,31 @@ _Locate: TypeAlias = "Callable[[_Declaration], SourceLocation]"
 
 @dataclass(frozen=True, slots=True)
 class _PartsRecord:
-    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's."""
+    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's.
+
+    `binary` is where the first raw binary string sits inside a part that holds no files, which carries it as text.
+    """
 
     object: bool
     members: tuple[tuple[SourceLocation, PartSchema], ...]
     extra: PartSchema | Literal["closed"] | None
+    binary: SourceLocation | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class _SchemaRecord:
-    """What the walk recorded of an acquired schema that its model types do not say."""
+    """What the walk recorded of an acquired schema that its model types do not say.
+
+    `binary` is where the first raw binary string sits that the schema's values carry as text, and `octets` says the
+    schema of a text media is one raw binary string, which the media carries as the raw body.
+    """
 
     default: LiteralScalar | None
     keywords: tuple[tuple[str, FrozenLiteral], ...]
     parts: _PartsRecord | None
     encoding: EncodingFacts | None
+    binary: SourceLocation | None = None
+    octets: bool = False
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -2285,10 +2332,15 @@ class _Reader(_SchemaLocations):
         nodes: dict[_Declaration, _SchemaNode],
         *,
         versions: list[str],
+        binary: frozenset[str],
+        anchors: Callable[..., tuple[str, ...]],
     ) -> None:
         super().__init__(nodes, documents)
         self.loaded = documents
         self.versions = versions
+        self.formats = binary
+        self.anchors = anchors
+        self.binaries: dict[_Declaration, _Declaration | None] = {}
 
     @property
     def legacy(self) -> bool:
@@ -2336,15 +2388,26 @@ class _Reader(_SchemaLocations):
         parameter = role == "parameter"
         text = parameter or role in _HEADER_ROLES
         whole = self.whole(declaration)[1] if parameter else {}
+        parts = (
+            self.parts(declaration, locate)
+            if media is not None and media.strip().lower().startswith("multipart/")
+            else None
+        )
+        item = declaration.tokens[-1] == "itemSchema"
+        octets = kind == "text" and not (text or item) and self.raw_bytes(self.whole(declaration)[1])
+        if not octets and (text or item or kind in _TEXT_MEDIA):
+            binary = None if (found := self.binary(declaration)) is None else locate(found)
+        else:
+            binary = None if parts is None else parts.binary
         return _SchemaRecord(
             _default(whole.get("default")),
             _keywords(whole) if parameter else (),
-            self.parts(declaration, locate)
-            if media is not None and media.strip().lower().startswith("multipart/")
-            else None,
+            parts,
             self.encoding(declaration, locate, members=kind in _FORMS)
             if text or media is None or kind in _FORMS
             else None,
+            binary,
+            octets,
         )
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
@@ -2374,16 +2437,84 @@ class _Reader(_SchemaLocations):
         """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
         location, raw = self.whole(schema)
         declared = raw.get("additionalProperties", True)
+        additional = _child(location, "additionalProperties")
         extra: PartSchema | Literal["closed"] | None = None
         if declared is False:
             extra = "closed"
         elif isinstance(declared, dict) and declared:
-            extra = self.part(_child(location, "additionalProperties"), locate)
+            extra = self.part(additional, locate)
+        members = tuple((found, self.part(found, locate)) for found in self.members(schema).values())
+        others = ((additional, extra),) if isinstance(extra, PartSchema) else ()
+        binary = next(
+            (hit for found, part in (*members, *others) if not part.file and (hit := self.binary(found)) is not None),
+            None,
+        )
         return _PartsRecord(
             _json_types(raw) - _NULL <= _OBJECT,
-            tuple((locate(found), self.part(found, locate)) for found in self.members(schema).values()),
+            tuple((locate(found), part) for found, part in members),
             extra,
+            None if binary is None else locate(binary),
         )
+
+    def binary(self, declaration: _Declaration) -> _Declaration | None:
+        """Return where the first string the models type as raw bytes sits in a schema's values, None without one.
+
+        The walk follows references, combined branches, properties, items and other properties.
+        """
+        return self._binary(declaration, {})[0]
+
+    def _binary(self, declaration: _Declaration, walked: dict[_Declaration, int]) -> tuple[_Declaration | None, int]:
+        """Return the first raw binary string a schema reaches, and the earliest walked schema it leads back to.
+
+        `walked` holds the schemas of the walk whose answer is pending, in their walk order. A schema that finds a
+        string, or leads back to none walked before it, settles itself and every pending schema walked after it,
+        since they all reach it; each schema is walked once.
+        """
+        if declaration in self.binaries:
+            return self.binaries[declaration], len(walked)
+        if (order := walked.get(declaration)) is not None:
+            return None, order
+        order = walked[declaration] = len(walked)
+        low = order
+        raw = _mapping(self.borrow(declaration))
+        found = declaration if self.raw_bytes(raw) else None
+        for child in self._subschemas(declaration, raw):
+            if found is not None:
+                break
+            found, reached = self._binary(child, walked)
+            low = min(low, reached)
+        while (found is not None or low == order) and len(walked) > order:
+            self.binaries[walked.popitem()[0]] = found
+        return found, low
+
+    def raw_bytes(self, raw: dict[str, YamlValue]) -> bool:
+        """Return whether a schema is a string the models type as raw bytes."""
+        format_ = raw.get("format")
+        return isinstance(format_, str) and format_ in self.formats and "string" in _json_types(raw)
+
+    def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
+        """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
+        for keyword in ("$ref", "$dynamicRef"):
+            if isinstance(ref := raw.get(keyword), str):
+                yield from self._referenced(declaration, ref, dynamic=keyword == "$dynamicRef")
+        if self.legacy and "$ref" in raw:
+            return
+        for keyword in ("allOf", "anyOf", "oneOf", "prefixItems", "items"):
+            if isinstance(branches := raw.get(keyword), list):
+                yield from (_child(declaration, keyword, str(index)) for index in range(len(branches)))
+        for keyword in ("properties", "patternProperties"):
+            yield from (_child(declaration, keyword, str(name)) for name in _mapping(raw.get(keyword)))
+        for keyword in ("items", "additionalProperties"):
+            if isinstance(raw.get(keyword), dict):
+                yield _child(declaration, keyword)
+
+    def _referenced(self, declaration: _Declaration, ref: str, *, dynamic: bool) -> Iterator[_Declaration]:
+        """Yield the schema a JSON pointer reference names, or each schema an anchor reference may lead to."""
+        if (target := self.target(declaration, ref)) is not None:
+            yield target
+        else:
+            anchored = self.anchors(declaration.document, ref, dynamic=dynamic)
+            yield from filter(None, (self.target(declaration, location) for location in anchored))
 
     def encoding(self, schema: _Declaration, locate: _Locate, *, members: bool) -> EncodingFacts:
         """Return how a schema's values are written as text: as one value, as form members, and member by member.
@@ -3334,6 +3465,8 @@ class _Contracts(_SchemaUses):
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
+                binary=record.binary,
+                octets=record.octets,
             )
         return uses
 
@@ -3465,6 +3598,7 @@ class _Contracts(_SchemaUses):
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
+                binary=record.binary,
             )
             schemas = (use,)
         children = self.media(
