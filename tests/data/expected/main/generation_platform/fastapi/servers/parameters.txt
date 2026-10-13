@@ -174,7 +174,7 @@ app default
 > GET /pairs/ab/2/1/of/2
 < 422 application/json [{"type": "value_error", "loc": ["path", "part"]}]
 > GET /foods/apple/servings/2
-  get_serving(food_id='apple', serving=2, portion=None)
+  get_serving(food_id='apple', serving=2)
 < 204 - b''
 > GET /foods/apple/servings/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "serving"]}]

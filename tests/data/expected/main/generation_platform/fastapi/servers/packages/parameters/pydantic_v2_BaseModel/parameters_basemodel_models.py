@@ -158,6 +158,3 @@ FieldFoodsFoodIdServingsServingGetPathServingParameter = TypeAliasType(
     "FieldFoodsFoodIdServingsServingGetPathServingParameter",
     Annotated[int, Field(ge=1)],
 )
-
-
-FieldFoodsFoodIdServingsServingGetPathPortionParameter = TypeAliasType("FieldFoodsFoodIdServingsServingGetPathPortionParameter", str)

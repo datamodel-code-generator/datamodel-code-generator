@@ -2877,9 +2877,9 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   builtin type, alone or with null, defaults to it, such as `limit: int = 20`; any other optional parameter defaults to
   `UNSET`. A parameter with such a default is always sent, with the default when the call omits it: the client pins
   the default it was generated with, so a later change of the server's default does not apply until you regenerate,
-  and a default that breaks its own schema's constraints is sent as it is. A path parameter that names a placeholder
-  of its path is a required argument without a default, as OpenAPI requires, even when the document leaves out
-  `required` or declares it `false`.
+  and a default that breaks its own schema's constraints is sent as it is. A path parameter is a required argument
+  without a default, as OpenAPI requires, even when the document leaves out `required` or declares it `false`; a
+  document with a path parameter that names no placeholder of its path is refused.
 - **Responses.** Bodies, parts, stream events, and socket messages are converted by the model backend into the declared
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
   `DecodeError` with the reason `invalid_value`. Read-only and write-only behavior follows the generated model options.
