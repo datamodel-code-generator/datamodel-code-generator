@@ -149,3 +149,15 @@ class FieldItemsLevelGetQueryLevelsParameterEnum(IntEnum):
 
 
 FieldItemsLevelGetQueryLevelsParameter = TypeAliasType("FieldItemsLevelGetQueryLevelsParameter", list[FieldItemsLevelGetQueryLevelsParameterEnum])
+
+
+FieldFoodsFoodIdServingsServingGetPathFoodIdParameter = TypeAliasType("FieldFoodsFoodIdServingsServingGetPathFoodIdParameter", str)
+
+
+FieldFoodsFoodIdServingsServingGetPathServingParameter = TypeAliasType(
+    "FieldFoodsFoodIdServingsServingGetPathServingParameter",
+    Annotated[int, Field(ge=1)],
+)
+
+
+FieldFoodsFoodIdServingsServingGetPathPortionParameter = TypeAliasType("FieldFoodsFoodIdServingsServingGetPathPortionParameter", str)
