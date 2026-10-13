@@ -79,6 +79,13 @@ jobs:
             docs/openapi.md
             docs/presets.md
             docs/conformance.md
+            docs/fastapi-code-generator-migration.md
+            docs/fastapi-server.md
+            docs/getting-started.md
+            docs/python-client.md
+            docs/python-client-helpers.md
+            docs/python-client-reference.md
+            docs/using_as_module.md
             docs/architecture.md
             docs/performance-benchmarks.md
             docs/cli-reference/

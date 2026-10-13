@@ -24,6 +24,7 @@ tree
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 generate
   Error: could not publish batch output: No space left on device
+  LeftoverFilesWarning: server: These Python files are no longer generated and are left in place: server/routers/pets.py, server/routers/store.py. Delete the ones you no longer need.
 tree
   meta/models.json
   models.py

@@ -1,0 +1,4 @@
+page-15:3: F821 Undefined name `data`
+page-23:1: F821 Undefined name `session`
+page-23:1: compile: 'async with' outside async function
+page-23:2: F821 Undefined name `session`

@@ -392,6 +392,42 @@ def _add_get_item(
     )
 
 
+def _add_get_serving(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    get_serving_handler = checked(
+        default.get_serving,
+        'The default.get_serving method of GET /foods/{food_id}/servings/{serving}',
+    )
+
+    def get_serving(
+        *,
+        food_id: Annotated[str, Path(alias='food_id')],
+        serving: Annotated[int, Field(ge=1), Path(alias='serving')],
+    ) -> object:
+        return dispatch(
+            get_serving_handler(
+                food_id=food_id,
+                serving=serving,
+            ),
+            contract.GetServing.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/foods/{food_id}/servings/{serving}',
+        get_serving,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='getServing',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('get_serving'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('search', _add_search),
     ('get_ratios', _add_get_ratios),
@@ -405,6 +441,7 @@ TEMPLATED_ROUTES: Final = (
     ('get_pair', _add_get_pair),
     ('get_menu', _add_get_menu),
     ('get_item', _add_get_item),
+    ('get_serving', _add_get_serving),
 )
 
 

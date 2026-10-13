@@ -67,7 +67,7 @@ uses the complete module path. Requires `--all-exports-scope=recursive`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --all-exports-scope recursive --all-exports-collision-strategy minimal-prefix # (1)!
+    datamodel-codegen --input modular.yaml --all-exports-scope recursive --all-exports-collision-strategy minimal-prefix # (1)!
     ```
 
     1. :material-arrow-left: `--all-exports-collision-strategy` - the option documented here
@@ -640,7 +640,7 @@ Use 'recursive' to include all descendant exports with collision handling.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --all-exports-scope children # (1)!
+    datamodel-codegen --input modular.yaml --all-exports-scope children # (1)!
     ```
 
     1. :material-arrow-left: `--all-exports-scope` - the option documented here
@@ -1277,7 +1277,7 @@ Automatically enabled when using `--url` input.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-remote-refs # (1)!
+    datamodel-codegen --input root_id.json --allow-remote-refs # (1)!
     ```
 
     1. :material-arrow-left: `--allow-remote-refs` - the option documented here
@@ -1369,7 +1369,7 @@ and generated code stay in sync. Works with both single files and directory outp
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-timestamp --check # (1)!
+    datamodel-codegen --input person.json --disable-timestamp --check # (1)!
     ```
 
     1. :material-arrow-left: `--check` - the option documented here
@@ -1515,7 +1515,7 @@ or potential issues). Useful for clean output in CI/CD pipelines.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-warnings # (1)!
+    datamodel-codegen --input all_of_with_object.json --disable-warnings # (1)!
     ```
 
     1. :material-arrow-left: `--disable-warnings` - the option documented here
@@ -1638,7 +1638,7 @@ instead of coalescing it.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --fail-on-multi-module-stdout --disable-timestamp # (1)!
+    datamodel-codegen --input person.json --fail-on-multi-module-stdout --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--fail-on-multi-module-stdout` - the option documented here
@@ -2103,7 +2103,7 @@ testing without project configuration.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --ignore-pyproject # (1)!
+    datamodel-codegen --input ignore_pyproject_example.json --ignore-pyproject # (1)!
     ```
 
     1. :material-arrow-left: `--ignore-pyproject` - the option documented here
@@ -2331,7 +2331,7 @@ create an __init__.py that re-exports all models for convenient imports.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --module-split-mode single --all-exports-scope recursive --use-exact-imports # (1)!
+    datamodel-codegen --input input.json --module-split-mode single --all-exports-scope recursive --use-exact-imports # (1)!
     ```
 
     1. :material-arrow-left: `--module-split-mode` - the option documented here
@@ -2446,7 +2446,7 @@ Note: This option only affects modular output with tree-level model reuse.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --shared-module-name my_shared # (1)!
+    datamodel-codegen --input pet_simple.json --shared-module-name my_shared # (1)!
     ```
 
     1. :material-arrow-left: `--shared-module-name` - the option documented here
@@ -2509,7 +2509,7 @@ generation instead. Existing empty schemas remain valid references.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-refs # (1)!
+    datamodel-codegen --input empty_local_ref.json --strict-refs # (1)!
     ```
 
     1. :material-arrow-left: `--strict-refs` - the option documented here
@@ -2644,7 +2644,7 @@ Press Ctrl+C to stop watching.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --watch --check # (1)!
+    datamodel-codegen --input person.json --watch --check # (1)!
     ```
 
     1. :material-arrow-left: `--watch` - the option documented here
@@ -2730,7 +2730,7 @@ the generator waits the specified time before regenerating.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --watch --watch-delay 1.5 # (1)!
+    datamodel-codegen --input person.json --watch --watch-delay 1.5 # (1)!
     ```
 
     1. :material-arrow-left: `--watch-delay` - the option documented here
