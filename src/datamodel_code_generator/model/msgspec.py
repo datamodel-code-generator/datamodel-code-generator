@@ -981,6 +981,8 @@ class DataTypeManager(_DataTypeManager):
 
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
+    NUMBER_CONSTRAINT_TYPE_NAMES: ClassVar[frozenset[str]] = frozenset({"int", "float"})
+    CUSTOM_TYPES_ACCEPT_NUMBER_CONSTRAINTS: ClassVar[bool] = False
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)

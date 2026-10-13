@@ -1265,6 +1265,28 @@ def _create_context_data_type(  # noqa: PLR0913, PLR0917
     return context_data_type
 
 
+NON_NUMBER_TYPE_NAMES: frozenset[str] = frozenset({
+    "str",
+    "bytes",
+    "bool",
+    NONE,
+    "date",
+    "datetime",
+    "time",
+    "UUID",
+    "Path",
+    "IPv4Address",
+    "IPv6Address",
+    "IPv4Network",
+    "IPv6Network",
+    "list",
+    "dict",
+    "set",
+    "frozenset",
+    "tuple",
+})
+
+
 class DataTypeManager(ABC):
     """Abstract base class for managing type mappings in code generation.
 
@@ -1279,6 +1301,8 @@ class DataTypeManager(ABC):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     DEFAULT_VALUE_DESCRIPTORS: ClassVar[Mapping[tuple[str | None, str], DefaultValueDescriptor]] = MappingProxyType({})
+    NUMBER_CONSTRAINT_TYPE_NAMES: ClassVar[frozenset[str]] = frozenset({"int", "float", "Decimal", "timedelta"})
+    CUSTOM_TYPES_ACCEPT_NUMBER_CONSTRAINTS: ClassVar[bool] = True
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -1363,6 +1387,53 @@ class DataTypeManager(ABC):
         if (kwargs := data_type.kwargs) is not None:
             copied_data_type.kwargs = deepcopy(kwargs)
         return copied_data_type
+
+    def accepts_number_constraints(self, data_type: DataType) -> bool:
+        """Return whether every member of an emitted type takes number constraints.
+
+        A member takes them when it is a number type of this output model, or a type the user supplied
+        (``x-python-type``, ``customTypePath``) that is none of the known types without numbers.
+        """
+        if data_type.data_types:
+            return not (
+                data_type.is_list
+                or data_type.is_set
+                or data_type.is_frozen_set
+                or data_type.is_dict
+                or data_type.is_mapping
+                or data_type.is_sequence
+                or data_type.is_tuple
+            ) and all(self.accepts_number_constraints(member) for member in data_type.data_types)
+        if data_type.python_type is None:
+            return self.type_name_accepts_number_constraints(data_type.type, custom=data_type.is_custom_type)
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            PythonTypeSubscript,
+            is_union_python_type_expr,
+            python_type_expr_arguments,
+            python_type_expr_base_name,
+        )
+
+        expression = data_type.python_type.expression
+        members = (expression,)
+        if is_union_python_type_expr(expression):
+            if not self.CUSTOM_TYPES_ACCEPT_NUMBER_CONSTRAINTS:
+                return False
+            members = tuple(
+                member
+                for member in python_type_expr_arguments(expression)
+                if python_type_expr_base_name(member) != NONE
+            )
+        return bool(members) and all(
+            not isinstance(member, PythonTypeSubscript)
+            and self.type_name_accepts_number_constraints(python_type_expr_base_name(member), custom=True)
+            for member in members
+        )
+
+    def type_name_accepts_number_constraints(self, name: str | None, *, custom: bool) -> bool:
+        """Return whether a type name is a number type, or a user-supplied type that may hold numbers."""
+        return name in self.NUMBER_CONSTRAINT_TYPE_NAMES or bool(
+            custom and name and self.CUSTOM_TYPES_ACCEPT_NUMBER_CONSTRAINTS and name not in NON_NUMBER_TYPE_NAMES
+        )
 
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType:  # noqa: FBT001
         """Create a DataType from a fully qualified Python path."""

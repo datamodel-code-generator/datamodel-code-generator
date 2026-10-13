@@ -8341,6 +8341,46 @@ No errors! 🎉
 
 ---
 
+## 🔢 Which fields keep number keywords
+
+`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` are written on a field that holds a
+number, in the schema or in the generated code:
+
+- **Schema**: the schema type is `number` or `integer`, the schema has no `type`, or the type and format map to a
+  number type (`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps to one).
+- **Generated code**: the Python type written for the field is `int`, `float`, `Decimal` or `timedelta`, whatever the
+  schema type is. This covers the `duration` format, formats that `--type-mappings` maps to it, `x-python-type`,
+  `customTypePath` and `--type-overrides`. Pydantic reads a bound on a `timedelta` as a number of seconds.
+  `msgspec.Struct` takes number constraints on `int` and `float` only, so only those two types count for it.
+
+A type named by `x-python-type`, `customTypePath` or `--type-overrides` that the generator does not know, such as
+`fractions.Fraction` or a class of your own, also keeps the keywords in Pydantic models, so the bounds you wrote still
+apply to it.
+
+The keywords are dropped from every other field: `str`, `bytes`, `bool`, `None`, `date`, `datetime`, `time`, `UUID`,
+paths, IP addresses, lists, dicts and other containers, and unions with such a member (`int | None` keeps them).
+Custom templates receive the same values as the built-in ones.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {"type": "string", "x-python-type": "int", "minimum": 0},
+    "wait": {"type": "string", "format": "duration", "minimum": 0},
+    "day": {"type": "string", "format": "date", "minimum": 0}
+  }
+}
+```
+
+```python
+class Model(BaseModel):
+    count: int | None = Field(None, ge=0)
+    wait: timedelta | None = Field(None, ge=0)
+    day: date | None = None
+```
+
+---
+
 ## 📖 See Also
 
 - 🖥️ [CLI Reference: `--field-constraints`](cli-reference/field-customization.md#field-constraints) - Detailed CLI option documentation with examples

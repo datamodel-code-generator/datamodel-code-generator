@@ -4836,7 +4836,7 @@ def test_main_number_constraints_on_non_numbers(output_file: Path, expected_file
 
 
 def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
-    """Test number keywords still constrain a non-string type and format that --type-mappings maps to a number."""
+    """Test number keywords still constrain formats that --type-mappings maps to a number or a duration."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_mapped_formats.json",
         output_path=output_file,
@@ -4847,11 +4847,105 @@ def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
             "--field-constraints",
             "--type-mappings",
             "boolean+numeric=integer",
+            "string+span=duration",
             "--formatters",
             "builtin",
             "--disable-timestamp",
         ],
         force_exec_validation=True,
+    )
+
+
+_NUMBER_CONSTRAINT_TYPE_OVERRIDES = json.dumps({
+    "NumberConstraintsOnCustomTypes.amount": "decimal.Decimal",
+    "NumberConstraintsOnCustomTypes.pause": "datetime.time",
+})
+
+
+@pytest.mark.parametrize(
+    ("source", "expected_file", "extra_args", "payload_case"),
+    [
+        ("python_types", "default.py", [], "python_types"),
+        ("python_types", "field_constraints.py", ["--field-constraints"], "python_types"),
+        ("python_types", "use_annotated.py", ["--use-annotated"], "python_types"),
+        ("python_types", "type_alias.py", ["--field-constraints", "--use-type-alias"], "python_types"),
+        (
+            "python_types",
+            "pydantic_v2_dataclass.py",
+            ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"],
+            "python_types",
+        ),
+        ("python_types", "msgspec.py", ["--output-model-type", "msgspec.Struct"], "python_types"),
+        ("python_types", "dataclass.py", ["--output-model-type", "dataclasses.dataclass", "--field-constraints"], None),
+        ("python_types", "typed_dict.py", ["--output-model-type", "typing.TypedDict", "--field-constraints"], None),
+        pytest.param(
+            "python_types",
+            "custom_template.py",
+            ["--field-constraints", "--custom-template-dir", str(DATA_PATH / "templates_numeric_null")],
+            "python_types",
+            id="custom_template",
+        ),
+        ("custom_types", "field_constraints.py", ["--field-constraints"], "custom_types"),
+        ("custom_types", "msgspec.py", ["--output-model-type", "msgspec.Struct"], None),
+        (
+            "custom_types",
+            "type_overrides.py",
+            ["--field-constraints", "--type-overrides", _NUMBER_CONSTRAINT_TYPE_OVERRIDES],
+            "type_overrides",
+        ),
+        (
+            "custom_types",
+            "type_overrides_msgspec.py",
+            ["--output-model-type", "msgspec.Struct", "--type-overrides", _NUMBER_CONSTRAINT_TYPE_OVERRIDES],
+            None,
+        ),
+        (
+            "custom_types",
+            "type_overrides_typed_dict.py",
+            [
+                "--output-model-type",
+                "typing.TypedDict",
+                "--field-constraints",
+                "--type-overrides",
+                _NUMBER_CONSTRAINT_TYPE_OVERRIDES,
+            ],
+            None,
+        ),
+    ],
+)
+def test_main_number_constraints_on_emitted_types(
+    output_file: Path, source: str, expected_file: str, extra_args: list[str], payload_case: str | None
+) -> None:
+    """Test number keywords constrain string-typed fields whose emitted Python type takes them, at runtime too."""
+    name = f"number_constraints_on_{source}"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}/{expected_file}",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    if payload_case is None:
+        return
+    payloads = json.loads((DATA_PATH / "payloads/number_constraints_on_python_types.json").read_text())[payload_case]
+    with _generated_model(output_file, name, "".join(part.title() for part in name.split("_"))) as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if "msgspec.Struct" not in extra_args:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(error_type):
+                validate(json.dumps({field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "\n".join(rejected) + "\n",
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
     )
 
 

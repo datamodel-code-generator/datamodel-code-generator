@@ -170,6 +170,7 @@ _DEFERRED_INHERITED_CLASS_KEY: Final = "_deferred_inherited_class"
 _DEFERRED_INHERITED_FIELD_KEY: Final = "_deferred_inherited_field"
 _DEFERRED_INHERITED_TYPE_KEY: Final = "_deferred_inherited_type"
 _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
+_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY: Final = "_type_dependent_number_constraints"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
 _SOURCE_REFERENCE_PATH_KEY: Final = "_source_reference_path"
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
@@ -5027,10 +5028,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 model.clear_imports_cache()
 
     def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
-        """Apply override to entire field's data_type."""
+        """Apply override to entire field's data_type, with number constraints only when the new type takes them."""
         data_type = deepcopy(field.data_type)
         data_type.import_ = override_import
         data_type.alias = override_import.import_
+        if (number_constraints := field.__dict__.get(_TYPE_DEPENDENT_NUMBER_CONSTRAINTS_KEY)) is not None:
+            constraints = field.constraints
+            is_model = isinstance(constraints, ConstraintsBase)
+            values = {
+                key: value
+                for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints).items()
+                if value is not None and key not in number_constraints
+            }
+            if self.data_type_manager.type_name_accepts_number_constraints(override_import.import_, custom=True):
+                values.update(number_constraints)
+            field.constraints = type(constraints).model_validate(values) if is_model else values
         self.generation_store.replace_field_type(field, data_type)
         self.generation_store.detach_data_type_ref(field.data_type)
         self.generation_store.set_nested_data_types(field.data_type, [])
