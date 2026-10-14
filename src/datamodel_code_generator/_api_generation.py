@@ -213,6 +213,15 @@ def prepare_target(
         )
     if (needed := pydantic_target_problem(backend.value, target, sentinel=False)) is not None:
         raise _target_pydantic_error(generator, needed)
+    if backend is DataModelType.MsgspecStruct and not model_config.use_msgspec_tagged_unions:
+        raise config_error(
+            code="E_CONFIG_VALUE",
+            option_path="model_config.use_msgspec_tagged_unions",
+            message=(
+                f"The {generator.kind} target needs model_config.use_msgspec_tagged_unions for {backend.value!r} "
+                "models, so that their discriminated unions can be decoded"
+            ),
+        )
     if (problem := _root_problem(input_)) is None:
         return effective
     option_path, message = problem

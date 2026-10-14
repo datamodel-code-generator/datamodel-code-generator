@@ -109,8 +109,9 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "`--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with "
             "`--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns "
             "every generated file without an output. It needs Python 3.11 or later, both to run and as "
-            "`--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, and "
-            "`--target-pydantic-version 2.14` with `--use-missing-sentinel`."
+            "`--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, "
+            "`--target-pydantic-version 2.14` with `--use-missing-sentinel`, and `--use-msgspec-tagged-unions` for "
+            "`msgspec.Struct` models."
         ),
     ),
     "cli-option.generate-schema-validators": ExperimentalFeature(

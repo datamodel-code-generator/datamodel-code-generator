@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.api_generation.support.backends import backend_arguments
 from tests.conftest import assert_output
 from tests.main.conftest import run_main_and_assert
 
@@ -75,6 +76,7 @@ def test_client_install(
         "--formatters",
         "builtin",
         "--disable-timestamp",
+        *backend_arguments(backend),
     ]
     if protocols := case.get("config", {}).get("protocols"):
         arguments.extend(("--client-protocols", str(tmp_path / protocols)))

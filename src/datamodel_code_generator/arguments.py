@@ -523,6 +523,15 @@ model_options.add_argument(
     ),
 )
 model_options.add_argument(
+    "--use-msgspec-tagged-unions",
+    help="msgspec.Struct output only: write a discriminated union as msgspec tagged structs as a whole. Every "
+    "variant is tagged with the document's property name and its value, or none is and a warning says why. Without "
+    "it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the "
+    "other discriminators as Literal fields.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--reuse-model",
     help="Reuse models on the field when a module has the model with the same content",
     action="store_true",

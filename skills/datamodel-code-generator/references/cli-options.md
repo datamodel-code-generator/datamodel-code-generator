@@ -129,6 +129,7 @@ Generated model class and package behavior.
 - `--keyword-only`: Defined models as keyword only (for example dataclass(kw_only=True)).
 - `--frozen-dataclasses`: Generate frozen dataclasses (dataclass(frozen=True)). Only applies to dataclass output.
 - `--dataclass-arguments`: Custom dataclass arguments as a JSON dictionary, e.g. '{"frozen": true, "kw_only": true}'. Overrides --frozen-dataclasses and similar flags.
+- `--use-msgspec-tagged-unions`: msgspec.Struct output only: write a discriminated union as msgspec tagged structs as a whole. Every variant is tagged with the document's property name and its value, or none is and a warning says why. Without it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the other discriminators as Literal fields.
 - `--reuse-model`: Reuse models on the field when a module has the model with the same content
 - `--reuse-scope`: Scope for model reuse deduplication: module (per-file, default) or tree (cross-file with shared module). Only effective when --reuse-model is set. Choices: `module`, `tree`.
 - `--target-python-version`: target python version Choices: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`.
