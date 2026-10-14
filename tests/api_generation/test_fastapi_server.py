@@ -116,6 +116,7 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "streams",
         "ndjson",
         "raw",
+        "raw_strict",
         "extras",
     ],
 )

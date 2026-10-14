@@ -228,7 +228,8 @@
     "input": "binary-mapped.yaml",
     "model": {
       "type_mappings": [
-        "password=binary"
+        "password=binary",
+        "string+byte=binary"
       ]
     }
   },
