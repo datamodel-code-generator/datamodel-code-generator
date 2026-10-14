@@ -4874,6 +4874,71 @@ def test_main_generate_pydantic_v2_dataclass_required_alias_field_pydantic20(
     )
 
 
+@pytest.mark.parametrize(
+    ("target_pydantic_version", "expected_file", "required_first"),
+    [
+        pytest.param(None, "pydantic_v2_dataclass_required_assignment_order.py", False, id="target-unset"),
+        pytest.param("2", "pydantic_v2_dataclass_required_assignment_order_target_2.py", False, id="target-2"),
+        pytest.param("2.11", "pydantic_v2_dataclass_required_assignment_order.py", False, id="target-2.11"),
+        pytest.param("2.12", "pydantic_v2_dataclass_required_assignment_order.py", False, id="target-2.12"),
+        pytest.param("2.14", "pydantic_v2_dataclass_required_assignment_order_target_2_14.py", True, id="target-2.14"),
+    ],
+)
+def test_main_generate_pydantic_v2_dataclass_required_assignment_order(
+    output_file: Path, target_pydantic_version: str | None, expected_file: str, required_first: bool
+) -> None:
+    """Move required ``= Field(...)`` fields before defaults only for an explicit 2.14 target.
+
+    The other targets keep the schema order, which positional construction follows. Pydantic 2.13+ cannot build
+    ``inspect.signature`` for that order, so the signature of ``Pet`` is read only for the 2.14 output.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "pydantic_v2_dataclass_required_assignment_order.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--disable-timestamp",
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--field-constraints",
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+    )
+    for model_name, valid_json, invalid_json, error_type, keyword_only_fields, schema_order, required_first_order in (
+        (
+            "Pet",
+            '{"plain": "p", "first-name": "f", "count": 2}',
+            '{"plain": "p", "first-name": "f", "count": 0}',
+            "greater_than_equal",
+            None,
+            "Pet(plain='p', nick='x', first_name='f', opt_alias=None, count=2)",
+            "Pet(plain='p', first_name='f', count=2, nick='x', opt_alias=None)",
+        ),
+        (
+            "Child",
+            '{"kind": "child"}',
+            '{"kind": "other"}',
+            "literal_error",
+            ("kind",),
+            "Child(name=None, kind='child')",
+            "Child(kind='child', name=None)",
+        ),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="pydantic_v2_dataclass_required_assignment_order",
+            model_name=model_name,
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+            expected_keyword_only_fields=() if required_first else keyword_only_fields,
+            expected_repr=required_first_order if required_first else schema_order,
+        )
+
+
 def test_main_generate_pydantic_v2_dataclass_enum(output_file: Path) -> None:
     """Test pydantic_v2.dataclass with enum types."""
     run_generate_file_and_assert(

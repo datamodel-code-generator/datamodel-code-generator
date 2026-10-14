@@ -123,6 +123,28 @@ Pydantic 2.14 unless `--target-pydantic-version 2.14` is passed, and on Pydantic
 (`--use-missing-sentinel`), whose pattern 2.12 compiles as well. Pydantic 2.0 to 2.10 rejects any rendered `bytes`
 pattern at import. See [Regular Expression Patterns](jsonschema.md#regular-expression-patterns).
 
+| `pydantic_v2.dataclass` required fields written as `= Field(...)` | Unset, `2`, `2.11`, `2.12` | `2.14` |
+| --- | --- | --- |
+| Position when the schema lists them after a field with a default (2.13+ rejects that order in `inspect.signature`) | Schema order | Before the fields with defaults |
+
+A required `pydantic_v2.dataclass` field that needs `Field(...)`, for an alias, a description or a constraint, is
+written as an assignment, so it can follow a field with a default:
+
+```python
+@dataclass
+class Pet:
+    plain: str
+    nick: str | None = "x"
+    first_name: str = Field(..., alias="first-name")
+```
+
+This class imports, validates and constructs on every Pydantic release. On Pydantic 2.13 and later
+`inspect.signature(Pet)` raises `ValueError: non-default argument follows default argument`, which affects tools
+that read the signature. With `--target-pydantic-version 2.14` `first_name` is written before `nick`. The order is
+not changed for an unset or older target, because positional arguments follow the field order:
+`Pet("p", "a", "b")` sets `nick="a"` in schema order and `first_name="a"` with `2.14`. Keyword arguments work with
+both orders.
+
 Patterns that need Python's regex engine, such as lookaround assertions (see
 [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)), rely on `regex_engine="python-re"`, which
 Pydantic added in 2.5. With every target, a model that has such a pattern fails at import on Pydantic 2.0 to 2.4. A type

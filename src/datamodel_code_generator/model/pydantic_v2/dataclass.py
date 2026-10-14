@@ -40,7 +40,9 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
 )
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_DATACLASS_OWN_NAME_MINIMUM,
+    PYDANTIC_V2_DATACLASS_SIGNATURE_ORDER_MINIMUM,
     _includes_dict_key_reference_classes,
+    explicit_model_target_supports,
     model_target_supports,
 )
 from datamodel_code_generator.python_literal import represent_python_value
@@ -173,6 +175,14 @@ class DataClass(_DataclassReuseMixin, DataModel):
             )
 
         self._lookaround_regex_engine_checked = False
+
+    def orders_required_assignments_before_defaults(self) -> bool:
+        """Order required ``= Field(...)`` fields first only for an explicit target that needs it.
+
+        Pydantic 2.13+ rejects a required field after a default in ``inspect.signature``. An unset or older
+        target keeps the schema order, which positional construction follows on every release.
+        """
+        return explicit_model_target_supports(self, PYDANTIC_V2_DATACLASS_SIGNATURE_ORDER_MINIMUM)
 
     def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301
         """Return whether ``dataclass.jinja2`` writes an assignment for the field."""

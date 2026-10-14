@@ -5069,12 +5069,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model: DataModel,
         field_policy: _ConstructorFieldPolicy,
     ) -> Callable[[DataModelFieldBase], tuple[bool, bool]]:
-        """Return the positional order key that keeps both constructor and signature defaults last.
+        """Return the positional order key that keeps constructor defaults last.
 
         A required field rendered as ``= Field(...)`` is a dataclass default but required in the validator's
-        signature, so it must also precede fields with real defaults.
+        signature, so it also precedes fields with real defaults when the output model asks for that order.
         """
-        if not model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT:
+        if not model.orders_required_assignments_before_defaults():
             return lambda field: (field_policy.has_assignment(field), False)
         return lambda field: (field_policy.has_assignment(field), field_policy.classify_default(field)[0])
 

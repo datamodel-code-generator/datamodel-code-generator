@@ -12,7 +12,7 @@ from pydantic.dataclasses import dataclass
 class AliasGeneratorModel:
     first_name: str
     foo_bar: str = Field(..., alias='foo_bar')
+    last_name: str | None = None
     weird_url: int = Field(
         ..., serialization_alias='weird-url', validation_alias=AliasChoices('weird-url')
     )
-    last_name: str | None = None

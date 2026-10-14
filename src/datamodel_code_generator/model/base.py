@@ -1999,6 +1999,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return whether the model already makes inherited fields keyword-only."""
         return False
 
+    def orders_required_assignments_before_defaults(self) -> bool:  # noqa: PLR6301
+        """Return whether required fields written as assignments must precede the fields with defaults."""
+        return False
+
     @classmethod
     def configure_annotations(
         cls,
