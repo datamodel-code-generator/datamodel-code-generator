@@ -2099,42 +2099,94 @@ def _get_mapping_discriminator_values(
 
 
 _DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]
+_DiscriminatorUnion: TypeAlias = tuple[DataModel, list[_DiscriminatorTag], str, dict[str, str]]
 
 
-def _inherits_instance_field(model: DataModel, source_name: str, tagged_fields: set[int]) -> bool:
-    """Return whether a base class leaves the model an instance field of that name once the union is tagged."""
+def _iter_derived_fields(
+    model: DataModel, derived_models: dict[str, list[DataModel]], visited: set[str]
+) -> Iterator[DataModelFieldBase]:
+    """Yield the fields that the classes derived from the model declare."""
+    for derived_model in derived_models.get(model.path, ()):
+        if derived_model.path in visited:  # pragma: no cover
+            continue
+        visited.add(derived_model.path)
+        yield from derived_model.fields
+        yield from _iter_derived_fields(derived_model, derived_models, visited)
+
+
+def _has_related_instance_field(
+    model: DataModel, source_name: str, tagged_fields: set[int], derived_models: dict[str, list[DataModel]]
+) -> bool:
+    """Return whether a base or derived struct keeps an instance field of that name once the unions are tagged."""
     return any(
         id(field) not in tagged_fields
         and not field.extras.get("is_classvar")
         and _get_source_field_name(field) == source_name
-        for base_class in model.base_classes
-        if base_class.reference and isinstance(base_model := base_class.reference.source, DataModel)
-        for field in base_model.iter_all_fields()
+        for field in chain(
+            (field for base_model in _find_base_classes(model) for field in base_model.iter_all_fields()),
+            _iter_derived_fields(model, derived_models, set()),
+        )
     )
 
 
-def _discriminator_union_takes_tags(
-    owner: DataModel, tags: list[_DiscriminatorTag], tag_field: str, mapping: dict[str, str]
-) -> bool:
-    """Return whether every variant carries exactly this union's value, warning about the ones that cannot."""
-    tagged_fields = {id(field) for _, field, _ in tags}
-    if not (
-        untaggable := [
-            model.class_name
-            for model, field, value in tags
-            if value is None
-            or any(mapped != value for mapped in _get_mapping_discriminator_values(model, mapping))
-            or any(other is not field and other.extras.get("is_classvar") for other in model.fields)
-            or _inherits_instance_field(model, tag_field, tagged_fields)
-        ]
-    ):
-        return True
-    warn(
-        f"Discriminator {tag_field!r} of {owner.class_name} cannot be represented as msgspec tags: "
-        f"{', '.join(untaggable)} cannot take exactly one tag for it; its variants are left untagged.",
-        stacklevel=2,
-    )
-    return False
+def _tag_discriminator_unions(
+    unions: list[_DiscriminatorUnion], derived_models: dict[str, list[DataModel]], *, can_retain_cache: bool
+) -> None:
+    """Tag the unions whose variants all carry their tag, whatever the order the unions are declared in.
+
+    msgspec refuses a tag field that a base or derived struct keeps as an instance field, so unions are left out
+    until the remaining ones agree. A struct that two tag fields claim keeps the first one.
+    """
+    related: dict[int, list[str]] = {}
+    while True:
+        tagged_fields: set[int] = set()
+        untaggable: dict[int, list[str]] = {}
+        for index, (_, tags, _, mapping) in enumerate(unions):
+            if index in related:
+                continue
+            if names := [
+                model.class_name
+                for model, field, value in tags
+                if value is None
+                or any(mapped != value for mapped in _get_mapping_discriminator_values(model, mapping))
+                or any(
+                    other is not field and (other.extras.get("is_classvar") or id(other) in tagged_fields)
+                    for other in model.fields
+                )
+            ]:
+                untaggable[index] = names
+            else:
+                tagged_fields.update(id(field) for _, field, _ in tags)
+        if not (
+            found := {
+                index: names
+                for index, (_, tags, tag_field, _) in enumerate(unions)
+                if index not in related
+                and index not in untaggable
+                and (
+                    names := [
+                        model.class_name
+                        for model, _, _ in tags
+                        if _has_related_instance_field(model, tag_field, tagged_fields, derived_models)
+                    ]
+                )
+            }
+        ):
+            break
+        related.update(found)
+    for index, (owner, tags, tag_field, _) in enumerate(unions):
+        if names := untaggable.get(index):
+            reason = f"{', '.join(names)} cannot take exactly one tag for it"
+        elif names := related.get(index):
+            reason = f"a base or derived struct of {', '.join(names)} keeps {tag_field!r} as a field"
+        else:
+            _apply_discriminator_tags(tags, tag_field, can_retain_cache=can_retain_cache)
+            continue
+        warn(
+            f"Discriminator {tag_field!r} of {owner.class_name} cannot be represented as msgspec tags: "
+            f"{reason}; its variants are left untagged.",
+            stacklevel=2,
+        )
 
 
 def _apply_discriminator_tags(tags: list[_DiscriminatorTag], tag_field: str, *, can_retain_cache: bool) -> None:
@@ -2917,7 +2969,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.keep_model_order = config.keep_model_order
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
-        self.use_msgspec_mapped_discriminator_tags = config.use_msgspec_mapped_discriminator_tags
+        self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
         self.known_third_party = config.known_third_party
         self.custom_formatter = config.custom_formatters
         self.custom_formatters_kwargs = config.custom_formatters_kwargs
@@ -3699,7 +3751,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         can_retain_cache: bool,
     ) -> None:
-        mapped_tags = self.use_msgspec_mapped_discriminator_tags
+        tagged_unions = self.use_msgspec_tagged_unions
+        unions: list[_DiscriminatorUnion] = []
         for model in models:  # noqa: PLR1702
             for field in model.fields:
                 match field.extras.get("discriminator"):
@@ -3781,7 +3834,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             break
 
                         if (
-                            not mapped_tags
+                            not tagged_unions
                             and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
                             and (const_value := discriminator_field.extras.get("const")) is not None
                             and const_value == expected_value
@@ -3809,7 +3862,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
-                        if mapped_tags and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                        if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
                                 discriminator_model,
                                 discriminator_field,
@@ -3867,7 +3920,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             self.model_resolver.prepare_explicit_field_aliases(
                                 [discriminator_field], discriminator_model.reference, self.field_name_model_type
                             )
-                        if mapped_tags and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                        if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
                                 discriminator_model,
                                 discriminator_field,
@@ -3875,13 +3928,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             ))
                 if not tags:
                     continue
-                if not mapped_tags:
+                if tagged_unions:
+                    unions.append((model, tags, property_name, mapping))
+                else:
                     _apply_discriminator_tags(tags, field_name, can_retain_cache=can_retain_cache)
-                elif _discriminator_union_takes_tags(model, tags, property_name, mapping):
-                    _apply_discriminator_tags(tags, property_name, can_retain_cache=can_retain_cache)
             has_imported_literal = any(import_ == IMPORT_LITERAL for import_ in imports)
             if has_imported_literal:  # pragma: no cover
                 imports.append(IMPORT_LITERAL)
+        if not unions:
+            return
+        derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
+        for derived_model in {id(model): model for model in chain(self.results, models)}.values():
+            for base_model in _find_base_classes(derived_model):
+                derived_models[base_model.path].append(derived_model)
+        _tag_discriminator_unions(unions, derived_models, can_retain_cache=can_retain_cache)
 
     @classmethod
     def _create_set_from_list(cls, data_type: DataType) -> DataType | None:

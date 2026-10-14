@@ -351,7 +351,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types)
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
 - [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel)
-- [`--use-msgspec-mapped-discriminator-tags`](model-customization.md#use-msgspec-mapped-discriminator-tags)
+- [`--use-msgspec-tagged-unions`](model-customization.md#use-msgspec-tagged-unions)
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)
 - [`--use-object-type`](typing-customization.md#use-object-type)
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default)

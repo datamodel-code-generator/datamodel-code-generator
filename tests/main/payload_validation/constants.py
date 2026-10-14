@@ -318,7 +318,7 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },
     "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Cat": {
-        PayloadBackend.MSGSPEC: ("--use-msgspec-mapped-discriminator-tags",),
+        PayloadBackend.MSGSPEC: ("--use-msgspec-tagged-unions",),
     },
 }
 ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {

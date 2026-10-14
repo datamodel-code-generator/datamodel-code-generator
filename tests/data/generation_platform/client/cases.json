@@ -3906,7 +3906,7 @@
   "unions-mapped": {
     "input": "unions-mapped.yaml",
     "model": {
-      "use_msgspec_mapped_discriminator_tags": true
+      "use_msgspec_tagged_unions": true
     },
     "config": {}
   },

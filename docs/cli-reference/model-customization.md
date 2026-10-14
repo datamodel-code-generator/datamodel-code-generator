@@ -44,7 +44,7 @@
 | [`--use-frozen-field`](#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly p... |
 | [`--use-generic-base-class`](#use-generic-base-class) | Generate a shared base class with model configuration to avo... |
 | [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel... |
-| [`--use-msgspec-mapped-discriminator-tags`](#use-msgspec-mapped-discriminator-tags) | Tag `msgspec.Struct` variants whose discriminator value come... |
+| [`--use-msgspec-tagged-unions`](#use-msgspec-tagged-unions) | Write a msgspec.Struct discriminated union as tagged structs... |
 | [`--use-one-literal-as-default`](#use-one-literal-as-default) | Use single literal value as default when enum has only one o... |
 | [`--use-root-model-sequence-interface`](#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes im... |
 | [`--use-serialize-as-any`](#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
@@ -6393,34 +6393,36 @@ preserves the difference between an omitted field and a nullable field set to `N
 
 ---
 
-## `--use-msgspec-mapped-discriminator-tags` {#use-msgspec-mapped-discriminator-tags}
+## `--use-msgspec-tagged-unions` {#use-msgspec-tagged-unions}
 
-Tag `msgspec.Struct` variants whose discriminator value comes from the mapping.
+Write a msgspec.Struct discriminated union as tagged structs as a whole.
 
-The `--use-msgspec-mapped-discriminator-tags` flag only applies to `--output-model-type msgspec.Struct`; other
-output model types ignore it.
+The `--use-msgspec-tagged-unions` flag only applies to `--output-model-type msgspec.Struct`; other output model
+types ignore it.
 
-Without the flag a variant gets `tag_field`/`tag` only when its discriminator property is a single literal
-(such as a `const`) equal to the discriminator value, or when a second discriminated union uses the variant.
-Such a tag names the generated field, which differs from the property name when the field is renamed. Any other
-variant whose value comes from the discriminator `mapping`, an `enum` or the schema name keeps the discriminator
-as a `Literal` field: `Cat(petType='cat')` and `cat.petType` work and `Cat` decodes alone, but msgspec raises
-`TypeError` for the union `Cat | Dog`, because it only decodes unions of tagged structs.
+Without the flag the output keeps the 0.83.0 form. A variant gets `tag_field`/`tag` only when its discriminator
+property is a single literal (such as a `const`) equal to the discriminator value, or when a second discriminated
+union uses the variant, and such a tag names the generated field, which differs from the property name when the
+field is renamed. Any other variant, whose value comes from the discriminator `mapping`, an `enum` or the schema
+name, keeps the discriminator as a `Literal` field: `Cat(petType='cat')` and `cat.petType` work and `Cat` decodes
+alone, but msgspec raises `TypeError` for the union `Cat | Dog`, because it only decodes unions of tagged structs.
 
-With the flag every variant of the union is tagged with the property name of the document, so the union decodes.
-msgspec does not allow a field named like `tag_field`, so the discriminator is then neither a field nor a
-constructor argument: `Cat(petType='cat')` raises `TypeError`, `cat.petType` raises `AttributeError`, and `Cat`
-decoded alone accepts a payload without `petType`. A union is tagged as a whole: when one of its variants cannot
-take exactly one tag for it, or inherits the discriminator field from a base struct, none is tagged and a warning
-names that variant.
+With the flag a union is tagged as a whole: every variant gets the property name of the document as `tag_field`
+and its value as `tag`, so the union decodes. msgspec does not allow a field named like `tag_field`, so the
+discriminator is then neither a field nor a constructor argument: `Cat(petType='cat')` raises `TypeError`,
+`cat.petType` raises `AttributeError`, and `Cat` decoded alone accepts a payload without `petType`.
+
+When a variant cannot take exactly one tag for the union, or a base or derived struct of a variant keeps the
+property as a field, the union tags none of its variants and a warning names the reason: its variants keep
+`Literal` fields, the ones with a `const` included. A variant that another union tags keeps that tag.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input direct.json --use-msgspec-mapped-discriminator-tags --output-model-type msgspec.Struct # (1)!
+    datamodel-codegen --input direct.json --use-msgspec-tagged-unions --output-model-type msgspec.Struct # (1)!
     ```
 
-    1. :material-arrow-left: `--use-msgspec-mapped-discriminator-tags` - the option documented here
+    1. :material-arrow-left: `--use-msgspec-tagged-unions` - the option documented here
 
 ??? example "Examples"
 
