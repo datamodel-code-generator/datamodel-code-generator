@@ -11569,7 +11569,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if None in obj.enum and (obj.type == "string" or obj.nullable):
             nullable: bool = True
             enum_times = named_values = [e for e in obj.enum if e is not None]
-        elif None in obj.enum and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER:
+        elif (
+            None in obj.enum
+            and self.use_msgspec_nullable_enum_alias
+            and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
+        ):
             nullable = True
             enum_times = [e for e in obj.enum if e is not None]
         else:

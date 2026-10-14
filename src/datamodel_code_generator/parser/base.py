@@ -2970,6 +2970,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
+        self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias
         self.known_third_party = config.known_third_party
         self.custom_formatter = config.custom_formatters
         self.custom_formatters_kwargs = config.custom_formatters_kwargs

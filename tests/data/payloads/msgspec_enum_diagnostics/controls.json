@@ -142,8 +142,12 @@
   {
     "name": "nullable",
     "schema": "nullable",
-    "options": {},
-    "cli": [],
+    "options": {
+      "use_msgspec_nullable_enum_alias": true
+    },
+    "cli": [
+      "--use-msgspec-nullable-enum-alias"
+    ],
     "python": "3.10"
   },
   {

@@ -186,6 +186,7 @@ class BaseGenerateConfig(BaseModel):
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False
     use_msgspec_tagged_unions: bool = False
+    use_msgspec_nullable_enum_alias: bool = False
     set_default_enum_member: bool = False
     use_subclass_enum: bool = False
     use_specialized_enum: bool = True

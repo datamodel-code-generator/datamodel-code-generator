@@ -370,6 +370,38 @@ its own accepts a payload without `petType`. When a variant cannot take exactly 
 or derived struct of a variant keeps the property as a field, the union tags none of its variants, the ones with
 a `const` included, and a warning names the reason. A variant that another union tags keeps that tag.
 
+### Enums that list null
+
+msgspec only decodes an `Enum` whose members are all `str` or all `int` values. By default the output keeps the
+0.83.0 form of an enum that lists `null` without `type: string` or `nullable: true`, such as
+`type: [integer, "null"]` with `enum: [1, 2, null]`, which is an Enum with a `None` member:
+
+```python
+class Size(Enum):
+    int_1 = 1
+    int_2 = 2
+    NoneType_None = None
+```
+
+`Size.int_1` works, but decoding a struct with a `Size` field raises msgspec's `TypeError`, and the `IntEnum` that a
+`type: integer` enum is written as fails at import.
+[`--use-msgspec-nullable-enum-alias`](cli-reference/model-customization.md#use-msgspec-nullable-enum-alias) writes
+it as a `type: string` or `nullable` enum is written instead, an Enum without the `None` member and an alias that
+adds `None`:
+
+```python
+class SizeEnum(Enum):
+    int_1 = 1
+    int_2 = 2
+
+
+Size: TypeAlias = SizeEnum | None
+```
+
+msgspec then decodes the members and `null`, while code that used `Size.int_1` or `Size.NoneType_None` uses
+`SizeEnum.int_1` and `None`. The default of a field of such an enum is then its raw value, also with
+`--set-default-enum-member`, and an enum that lists only `null` becomes `None`.
+
 ### When to use
 
 - High-performance JSON/MessagePack serialization

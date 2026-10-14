@@ -110,7 +110,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "`--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns "
             "every generated file without an output. It needs Python 3.11 or later, both to run and as "
             "`--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, and "
-            "`--use-msgspec-tagged-unions` for `msgspec.Struct` models."
+            "`--use-msgspec-tagged-unions` and `--use-msgspec-nullable-enum-alias` for `msgspec.Struct` models."
         ),
     ),
     "cli-option.generate-schema-validators": ExperimentalFeature(

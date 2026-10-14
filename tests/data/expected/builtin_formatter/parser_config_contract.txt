@@ -116,6 +116,7 @@ reviewed-safe use_generic_base_class
 reviewed-safe use_generic_container_types
 reviewed-safe use_inline_field_description
 reviewed-safe use_missing_sentinel
+reviewed-safe use_msgspec_nullable_enum_alias
 reviewed-safe use_msgspec_tagged_unions
 reviewed-safe use_non_positive_negative_number_constrained_types
 reviewed-safe use_object_type

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payload",
+  "type": "object",
+  "properties": {
+    "untyped": {"enum": [1, null, 2]},
+    "typed": {"type": ["integer", "null"], "enum": [1, null, 2]},
+    "strings": {"enum": ["x", null, "y"]},
+    "only_null": {"enum": [null]},
+    "with_default": {"enum": [1, null, 2], "default": 2},
+    "null_default": {"enum": [1, null, 2], "default": null},
+    "named": {"enum": [1, null, 2], "x-enum-varnames": ["One", "Nothing", "Two"]},
+    "items": {"type": "array", "items": {"enum": [1, null, 2]}},
+    "by_name": {"type": "object", "additionalProperties": {"enum": [1, null, 2]}},
+    "level": {"$ref": "#/$defs/Level"},
+    "status": {"$ref": "#/$defs/Status"},
+    "nothing": {"$ref": "#/$defs/Nothing"},
+    "levels": {"type": "array", "items": {"$ref": "#/$defs/Level"}},
+    "override": {"$ref": "#/$defs/Plain", "default": 4},
+    "string_control": {"type": "string", "enum": ["a", null]}
+  },
+  "required": ["untyped", "only_null", "items", "level"],
+  "$defs": {
+    "Level": {"enum": [1, null, 2], "default": 1},
+    "Status": {"type": ["string", "null"], "enum": ["a", null, "b"], "default": "a"},
+    "Nothing": {"enum": [null]},
+    "Plain": {"type": ["integer", "null"], "enum": [3, null, 4], "description": "Plain level"}
+  }
+}

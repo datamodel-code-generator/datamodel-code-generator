@@ -719,6 +719,106 @@ def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_fi
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-msgspec-nullable-enum-alias"],
+    option_description="""Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
+
+The `--use-msgspec-nullable-enum-alias` flag only applies to `--output-model-type msgspec.Struct`; other output
+model types ignore it. Client generation (`--generate-client`) with `msgspec.Struct` models requires it.
+
+Without the flag the output keeps the 0.83.0 form of an enum that lists `null` without `type: string` or
+`nullable: true`, such as `type: [integer, "null"]` with `enum: [1, 2, null]`: an Enum class with a `None` member
+such as `NoneType_None = None`. msgspec cannot decode such an Enum, because its members must be all `str` or all
+`int` values, and the `IntEnum` written for `type: integer` cannot be imported at all.
+
+With the flag the enum is written as a `type: string` or `nullable` enum is: an Enum class with an `Enum` suffix and
+without the `None` member, and the schema name becomes a type alias of that class or `None`, so that msgspec decodes
+the members and `null`. Code that used `Size.int_1` or `Size.NoneType_None` uses `SizeEnum.int_1` and `None`
+instead. The default of a field of the enum is then its raw value, also with `--set-default-enum-member`, and an
+enum that lists only `null` becomes the alias `None`.""",
+    input_schema="openapi/msgspec_nullable_enum_31.yaml",
+    cli_args=["--use-msgspec-nullable-enum-alias", "--output-model-type", "msgspec.Struct"],
+    golden_output="openapi/msgspec_nullable_enum/openapi_31_alias.py",
+    comparison_output="openapi/msgspec_nullable_enum/openapi_31.py",
+)
+def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None:
+    """Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
+
+    The `--use-msgspec-nullable-enum-alias` flag drops the `None` member that msgspec cannot decode and writes the
+    schema name as an alias of the Enum or `None`.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "msgspec_nullable_enum_31.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / "openapi_31_alias.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-msgspec-nullable-enum-alias",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_file", "extra_args", "expected_file", "imports"),
+    [
+        pytest.param("msgspec_nullable_enum_31.yaml", [], "openapi_31.py", True, id="openapi-31"),
+        pytest.param("msgspec_nullable_enum.yaml", [], "openapi_30.py", False, id="openapi-30"),
+        pytest.param(
+            "msgspec_nullable_enum.yaml",
+            ["--use-msgspec-nullable-enum-alias"],
+            "openapi_30_alias.py",
+            True,
+            id="openapi-30-alias",
+        ),
+        pytest.param(
+            "msgspec_nullable_enum.yaml",
+            ["--set-default-enum-member"],
+            "openapi_30_set_default_enum_member.py",
+            False,
+            id="openapi-30-set-default-enum-member",
+        ),
+        pytest.param(
+            "msgspec_nullable_enum.yaml",
+            ["--set-default-enum-member", "--use-msgspec-nullable-enum-alias"],
+            "openapi_30_set_default_enum_member_alias.py",
+            True,
+            id="openapi-30-set-default-enum-member-alias",
+        ),
+    ],
+)
+def test_main_openapi_msgspec_nullable_enum(
+    input_file: str, extra_args: list[str], expected_file: str, imports: bool, output_file: Path
+) -> None:
+    """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
+
+    The 0.83.0 `IntEnum` of `type: integer` with a `None` member fails at import, so only its source is compared.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / expected_file,
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        skip_code_validation=not imports,
+        force_exec_validation=imports,
+    )
+
+
 @pytest.mark.parametrize("order", ["base_later", "base_earlier"])
 def test_main_openapi_msgspec_tagged_unions_declaration_order(order: str, output_file: Path) -> None:
     """Tag variants and their base struct alike whichever of their unions the document declares first."""

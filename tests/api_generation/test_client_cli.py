@@ -583,7 +583,10 @@ def test_client_cli_generation_json(
         ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", "--use-missing-sentinel"]),
         (
             "target-2-msgspec",
-            ["--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"],
+            [
+                *("--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct"),
+                *("--use-msgspec-tagged-unions", "--use-msgspec-nullable-enum-alias"),
+            ],
         ),
         ("target-2-dataclass", ["--target-pydantic-version", "2", "--output-model-type", "dataclasses.dataclass"]),
         ("target-2-typed-dict", ["--target-pydantic-version", "2", "--output-model-type", "typing.TypedDict"]),
@@ -675,23 +678,43 @@ def test_client_cli_dataclass_missing_sentinel(
     )
 
 
-def test_client_cli_msgspec_tagged_unions(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+_MSGSPEC_TAGGED_UNIONS = (
+    "The client target needs --use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their discriminated "
+    "unions can be decoded"
+)
+_MSGSPEC_NULLABLE_ENUM_ALIAS = (
+    "The client target needs --use-msgspec-nullable-enum-alias for 'msgspec.Struct' models, so that their enums that "
+    "list null can be decoded"
+)
+
+
+@pytest.mark.parametrize(
+    ("arguments", "missing"),
+    [
+        ([], f"{_MSGSPEC_TAGGED_UNIONS}; {_MSGSPEC_NULLABLE_ENUM_ALIAS}"),
+        (["--use-msgspec-nullable-enum-alias"], _MSGSPEC_TAGGED_UNIONS),
+        (["--use-msgspec-tagged-unions"], _MSGSPEC_NULLABLE_ENUM_ALIAS),
+    ],
+    ids=["both", "tagged-unions", "nullable-enum-alias"],
+)
+def test_client_cli_msgspec_options(
+    arguments: list[str],
+    missing: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Refuse a client of msgspec structs without --use-msgspec-tagged-unions, whose unions could not be decoded."""
+    """Refuse a client of msgspec structs without the options that let msgspec decode them, naming every one missing."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("options.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=[*OPTIONS, *CLIENT, "--output-model-type", "msgspec.Struct"],
+        extra_args=[*OPTIONS, *CLIENT, "--output-model-type", "msgspec.Struct", *arguments],
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr=(
-            "Error: The client target needs --use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their "
-            "discriminated unions can be decoded\n"
-        ),
+        expected_stderr=f"Error: {missing}\n",
         output_should_not_exist=True,
     )
 

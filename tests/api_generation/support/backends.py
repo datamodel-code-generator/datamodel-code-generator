@@ -9,7 +9,7 @@ def backend_settings(backend: str | DataModelType) -> dict[str, object]:
     """Return the model type of a backend, with the settings that a target needs for it.
 
     Pydantic dataclasses need the MISSING sentinel, imported from pydantic as a target imports it, and msgspec structs
-    need tagged unions, so that model-only runs write the same models.
+    need tagged unions and nullable enum aliases, so that model-only runs write the same models.
     """
     match model_type := DataModelType(backend):
         case DataModelType.PydanticV2Dataclass:
@@ -19,7 +19,11 @@ def backend_settings(backend: str | DataModelType) -> dict[str, object]:
                 "target_pydantic_version": TargetPydanticVersion.V2_14,
             }
         case DataModelType.MsgspecStruct:
-            return {"output_model_type": model_type, "use_msgspec_tagged_unions": True}
+            return {
+                "output_model_type": model_type,
+                "use_msgspec_tagged_unions": True,
+                "use_msgspec_nullable_enum_alias": True,
+            }
     return {"output_model_type": model_type}
 
 

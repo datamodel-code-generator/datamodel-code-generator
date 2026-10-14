@@ -1412,14 +1412,17 @@ A field the constructor is not given holds `MISSING` and is left out of a reques
 the property is nullable. A member a response leaves out decodes to `MISSING`, and a `null` that its property does not
 allow is refused with a `DecodeError` whose reason is `invalid_value`.
 
-msgspec decodes a union of structs only when every struct in it is tagged, so client generation with
-`--output-model-type msgspec.Struct` needs
-[`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions), whether or not the
-document declares a discriminated union. Without it, generation stops with `Error: The client target needs
---use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their discriminated unions can be decoded` and exit
-code 2, and the Python API raises `datamodel_code_generator.Error`. A union that the option still leaves untagged, with
-a warning that names the reason, cannot be decoded: a call that receives it fails with an `APIConnectionError` whose
-cause is msgspec's `TypeError`.
+msgspec decodes a union of structs only when every struct in it is tagged, and an Enum only when its members are
+all `str` or all `int` values, so client generation with `--output-model-type msgspec.Struct` needs
+[`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions) and
+[`--use-msgspec-nullable-enum-alias`](cli-reference/model-customization.md#use-msgspec-nullable-enum-alias), whether
+or not the document declares a discriminated union or an enum that lists `null`. Without them, generation stops with
+exit code 2 and an error that names every missing one, such as `Error: The client target needs
+--use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their discriminated unions can be decoded; The
+client target needs --use-msgspec-nullable-enum-alias for 'msgspec.Struct' models, so that their enums that list null
+can be decoded`, and the Python API raises `datamodel_code_generator.Error`. A union of structs that has no
+discriminator, or that the option still leaves untagged (with a warning that names the reason), cannot be decoded: a
+call that receives it fails with an `APIConnectionError` whose cause is msgspec's `TypeError`.
 
 ### Generator options
 

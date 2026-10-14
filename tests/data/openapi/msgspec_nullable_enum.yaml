@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info: {title: Nullable enums, version: "1"}
+paths: {}
+components:
+  schemas:
+    Level:
+      type: integer
+      enum: [1, null, 2]
+    LevelDefault:
+      type: integer
+      enum: [1, null, 2]
+      default: 2
+    Untyped:
+      enum: [1, null]
+    LevelNullable:
+      type: integer
+      nullable: true
+      enum: [1, null, 2]
+    OnlyNull:
+      enum: [null]
+    Pet:
+      type: object
+      required: [level]
+      properties:
+        level: {$ref: "#/components/schemas/Level"}
+        level_default: {$ref: "#/components/schemas/LevelDefault"}
+        untyped: {$ref: "#/components/schemas/Untyped"}
+        nullable: {$ref: "#/components/schemas/LevelNullable"}
+        only_null: {$ref: "#/components/schemas/OnlyNull"}
+        inline: {type: integer, enum: [5, null, 6], default: 5}
+        levels: {type: array, items: {$ref: "#/components/schemas/Level"}}
+        by_name: {type: object, additionalProperties: {$ref: "#/components/schemas/Level"}}

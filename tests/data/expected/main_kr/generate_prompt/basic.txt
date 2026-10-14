@@ -137,6 +137,7 @@
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
@@ -773,6 +774,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Generate a shared base class with model configuration
                         (e.g., extra='forbid') instead of repeating the
                         configuration in each model. Keeps code DRY.
+  --use-msgspec-nullable-enum-alias
+                        msgspec.Struct output only: write an enum that lists
+                        null as an Enum without the None member plus an Enum |
+                        None type alias, so that msgspec can decode it.
+                        Without it the 0.83.0 form is kept, an Enum with a
+                        None member, which msgspec cannot decode.
   --use-msgspec-tagged-unions
                         msgspec.Struct output only: write a discriminated
                         union as msgspec tagged structs as a whole. Every

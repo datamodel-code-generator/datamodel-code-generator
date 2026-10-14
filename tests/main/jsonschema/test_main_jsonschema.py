@@ -11993,6 +11993,53 @@ def test_main_msgspec_discriminator_const_enum(output_file: Path, extra_args: li
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_file"),
+    [
+        pytest.param([], "default.py", id="default"),
+        pytest.param(["--use-msgspec-nullable-enum-alias"], "alias.py", id="alias"),
+        pytest.param(["--set-default-enum-member"], "set_default_enum_member.py", id="set-default-enum-member"),
+        pytest.param(
+            ["--set-default-enum-member", "--use-msgspec-nullable-enum-alias"],
+            "set_default_enum_member_alias.py",
+            id="set-default-enum-member-alias",
+        ),
+        pytest.param(
+            ["--use-subclass-enum", "--capitalise-enum-members"], "subclass_capitalise.py", id="subclass-capitalise"
+        ),
+        pytest.param(
+            ["--use-subclass-enum", "--capitalise-enum-members", "--use-msgspec-nullable-enum-alias"],
+            "subclass_capitalise_alias.py",
+            id="subclass-capitalise-alias",
+        ),
+        pytest.param(["--enum-field-as-literal", "one"], "literal_one.py", id="literal-one"),
+        pytest.param(
+            ["--enum-field-as-literal", "one", "--use-msgspec-nullable-enum-alias"],
+            "literal_one_alias.py",
+            id="literal-one-alias",
+        ),
+    ],
+)
+def test_main_msgspec_nullable_enum(output_file: Path, extra_args: list[str], expected_file: str) -> None:
+    """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_nullable_enum.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"msgspec_nullable_enum/{expected_file}",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
 @MSGSPEC_LEGACY_BLACK_SKIP
 def test_main_msgspec_discriminator_with_meta(output_file: Path) -> None:
     """Test msgspec Struct generation with discriminator ClassVar having Meta constraints."""
