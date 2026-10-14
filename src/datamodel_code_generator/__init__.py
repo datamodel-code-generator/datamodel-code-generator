@@ -172,18 +172,19 @@ def _tuned_gc() -> Iterator[None]:
     """Raise the young-generation GC threshold while one generation run is in progress.
 
     Process-global by nature: only the outermost concurrent caller changes and restores the
-    threshold, nested or parallel calls are counted, and a host that disabled GC is left alone.
+    threshold, nested or parallel calls are counted, and a host that disabled GC is left alone, as is a runtime
+    such as PyPy whose gc module has no threshold API.
     """
     global _gc_saved_threshold  # noqa: PLW0603
 
     with _gc_tuning_lock:
         match _gc_tuning_depth[0]:
-            case 0 if gc.isenabled():
+            case 0 if gc.isenabled() and hasattr(gc, "get_threshold"):
                 _gc_saved_threshold = gc.get_threshold()
                 gc.set_threshold(_GC_YOUNG_THRESHOLD, *_gc_saved_threshold[1:])
                 _gc_tuning_depth[0] = 1
             case 0:
-                # Negative depth records scopes entered while the host disabled GC.
+                # Negative depth records scopes entered while GC is disabled or its threshold is not tunable.
                 _gc_tuning_depth[0] = -1
             case depth:
                 _gc_tuning_depth[0] = depth + (1 if depth > 0 else -1)

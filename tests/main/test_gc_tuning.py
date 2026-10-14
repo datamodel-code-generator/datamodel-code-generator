@@ -204,3 +204,22 @@ def test_tuned_gc_leaves_disabled_host_unchanged(gc_state: tuple[int, int, int])
         gc.enable()
 
     assert_output("\n".join((*observations, "")), _GC_TUNING_DATA_PATH / "disabled.txt")
+
+
+@pytest.mark.abnormal_path("CPython always provides gc.get_threshold; PyPy's gc module does not")
+def test_generate_without_gc_threshold_api(gc_state: tuple[int, int, int], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Generate on a runtime such as PyPy whose gc module has no threshold API."""
+    monkeypatch.delattr(gc, "get_threshold")
+    monkeypatch.delattr(gc, "set_threshold")
+
+    returned = generate(
+        {"title": "Model", "type": "object", "properties": {"a": {}}},
+        input_file_type=InputFileType.JsonSchema,
+        disable_timestamp=True,
+    )
+    monkeypatch.undo()
+
+    assert_output(
+        f"{returned}\nrestored_after_generation={gc.get_threshold() == gc_state}\n",
+        _GC_TUNING_DATA_PATH / "no_threshold_api.txt",
+    )
