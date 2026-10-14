@@ -2625,26 +2625,34 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             )
         discarded_parser = None
         if parser.typed_nullable_maps and parser.typed_map_values_may_move_models:
-            untyped_parse = _parse_again(
-                input_,
-                input_text,
-                input_file_type,
-                source_override,
-                config,
-                dataclass_arguments,
-                schema_versions,
-                diagnostic_source_path,
-                parser.remote_text_cache,
-                getattr(parser, "remote_object_cache", None),
-                parser.base_path,
-                skip_root_model=skip_root_model,
-                prefetched_source=prefetched_source,
-                formatter_cwd=None if use_output_cwd else output_context_path,
-                preserve_circular_root_models=parser.run_context.preserve_circular_root_models,
-                parser_settings_path=parser_settings_path,
-                capture=capture,
-                openapi_parser_factory=openapi_parser_factory,
-            )
+            try:
+                untyped_parse = _parse_again(
+                    input_,
+                    input_text,
+                    input_file_type,
+                    source_override,
+                    config,
+                    dataclass_arguments,
+                    schema_versions,
+                    diagnostic_source_path,
+                    parser.remote_text_cache,
+                    getattr(parser, "remote_object_cache", None),
+                    parser.base_path,
+                    skip_root_model=skip_root_model,
+                    prefetched_source=prefetched_source,
+                    formatter_cwd=None if use_output_cwd else output_context_path,
+                    preserve_circular_root_models=parser.run_context.preserve_circular_root_models,
+                    parser_settings_path=parser_settings_path,
+                    capture=capture,
+                    openapi_parser_factory=openapi_parser_factory,
+                )
+            except BaseException:
+                if capture is None:
+                    with contextlib.suppress(BaseException):
+                        parser.dispose()
+                else:
+                    _dispose_capture_parser(parser, capture, discard=True)
+                raise
             if _same_model_placement(parser, results, untyped_parse[0], untyped_parse[1]):
                 discarded_parser = untyped_parse[0]
             else:
