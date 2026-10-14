@@ -16,11 +16,11 @@ class ConstraintsOnTypingProtocols(BaseModel):
     )
     collection: Collection | None = Field(None, min_length=2)
     sized: Sized | None = Field(None, min_length=2)
-    container: Container | None = Field(None, max_length=2)
-    reversible: Reversible | None = Field(None, min_length=2)
+    container: Container | None = None
+    reversible: Reversible | None = None
     iterable: Iterable[int] | None = Field(None, max_length=3, min_length=2)
     generator: Generator[int, None, None] | None = Field(None, max_length=2)
     any_text: AnyStr | None = Field(None, min_length=2, pattern='^a')
-    buffer: Buffer | None = Field(None, min_length=2)
+    buffer: Buffer | None = None
     supports_bytes: SupportsBytes | None = None
     extensions_list: List[int] | None = Field(None, min_length=2)

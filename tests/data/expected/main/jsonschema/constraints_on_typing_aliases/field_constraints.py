@@ -41,6 +41,7 @@ class ConstraintsOnTypingAliases(BaseModel):
     mutable_set: MutableSet[int] | None = Field(None, max_length=2)
     optional_list: Optional[List[int]] | None = Field(None, min_length=2)
     nested_union: Optional[Union[List[int], str]] | None = Field(None, min_length=2)
+    none_union: Optional[None] | None = None
     text: Text | None = Field(None, min_length=2, pattern='^a')
     annotated_text: Annotated[str, str] | None = Field(None, min_length=2, pattern='^a')
     optional_annotated_text: Optional[Annotated[str, str]] | None = Field(
@@ -53,7 +54,7 @@ class ConstraintsOnTypingAliases(BaseModel):
     mapping: Mapping[str, int] | None = None
     collection: Collection | None = Field(None, min_length=2)
     sized: Sized | None = Field(None, min_length=2)
-    buffer: Buffer | None = Field(None, max_length=2)
+    buffer: Buffer | None = None
     supports_int: SupportsInt | None = None
     custom_path: Sequence | None = Field(None, max_length=2)
     overridden: Any | None = None

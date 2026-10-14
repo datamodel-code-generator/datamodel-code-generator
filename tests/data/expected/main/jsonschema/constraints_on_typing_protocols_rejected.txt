@@ -1,7 +1,5 @@
 collection
 sized
-container
-reversible
 iterable
 generator
 any_text

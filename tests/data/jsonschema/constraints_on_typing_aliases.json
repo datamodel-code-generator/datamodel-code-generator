@@ -76,6 +76,10 @@
       "x-python-type": "typing.Optional[typing.Union[typing.List[int], str]]",
       "minLength": 2
     },
+    "none_union": {
+      "x-python-type": "typing.Optional[None]",
+      "minLength": 2
+    },
     "text": {
       "type": "integer",
       "x-python-type": "typing.Text",

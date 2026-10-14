@@ -40,6 +40,7 @@ class ConstraintsOnTypingAliases(Struct):
     mutable_set: Annotated[MutableSet[int], Meta(max_length=2)] | UnsetType = UNSET
     optional_list: Optional[List[int]] | UnsetType = UNSET
     nested_union: Optional[Union[List[int], str]] | UnsetType = UNSET
+    none_union: Optional[None] | UnsetType = UNSET
     text: Annotated[Text, Meta(min_length=2, pattern='^a')] | UnsetType = UNSET
     annotated_text: (
         Annotated[Annotated[str, str], Meta(min_length=2, pattern='^a')] | UnsetType

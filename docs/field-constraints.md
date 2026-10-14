@@ -182,11 +182,10 @@ A `typing` alias, an abstract collection, `Annotated[T, ...]` and `Final[T]` are
 | `conbytes`, `EmailStr`, `SecretStr` | `minLength`, `maxLength` | none |
 | `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
 | `deque` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | none |
-| `collections.abc.Container`, `Sized`, `Reversible`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
+| `collections.abc.Sized`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
 | `typing.AnyStr`, `collections.abc.ByteString` | `minLength`, `maxLength`, `pattern` | none |
-| `collections.abc.Buffer` | `minLength`, `maxLength` | none |
 | a type the generator does not know or a model that the schema references | all of them | all of them |
-| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts, other `typing` and `collections.abc` names | none | none |
+| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts, other `typing` and `collections.abc` names such as `Container`, `Reversible` and `Buffer` | none | none |
 
 ```json
 {

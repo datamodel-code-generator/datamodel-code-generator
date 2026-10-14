@@ -43,6 +43,7 @@ class ConstraintsOnTypingAliases(BaseModel):
     nested_union: Annotated[Optional[Union[List[int], str]] | None, Field(min_length=2)] = (
         None
     )
+    none_union: Optional[None] | None = None
     text: Annotated[Text | None, Field(min_length=2, pattern='^a')] = None
     annotated_text: Annotated[
         Annotated[str, str] | None, Field(min_length=2, pattern='^a')
@@ -57,7 +58,7 @@ class ConstraintsOnTypingAliases(BaseModel):
     mapping: Mapping[str, int] | None = None
     collection: Annotated[Collection | None, Field(min_length=2)] = None
     sized: Annotated[Sized | None, Field(min_length=2)] = None
-    buffer: Annotated[Buffer | None, Field(max_length=2)] = None
+    buffer: Buffer | None = None
     supports_int: SupportsInt | None = None
     custom_path: Annotated[Sequence | None, Field(max_length=2)] = None
     overridden: Any | None = None

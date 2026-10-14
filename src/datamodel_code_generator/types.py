@@ -1328,11 +1328,7 @@ _STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
     "typing.AbstractSet": "frozenset",
     "collections.abc.Set": "frozenset",
     "typing.Deque": "collections.deque",
-    "typing_extensions.Buffer": "collections.abc.Buffer",
-    **{
-        f"typing.{name}": f"collections.abc.{name}"
-        for name in ("Container", "Sized", "Reversible", "Iterable", "Generator", "ByteString")
-    },
+    **{f"typing.{name}": f"collections.abc.{name}" for name in ("Sized", "Iterable", "Generator", "ByteString")},
     **{
         f"{module}.{name}": path
         for module in ("typing", "collections.abc")
@@ -1395,13 +1391,10 @@ class DataTypeManager(ABC):
         "frozenset": SEQUENCE_KEYWORDS,
         "tuple": SEQUENCE_KEYWORDS,
         "collections.deque": SEQUENCE_KEYWORDS,
-        "collections.abc.Container": SEQUENCE_KEYWORDS,
         "collections.abc.Sized": SEQUENCE_KEYWORDS,
-        "collections.abc.Reversible": SEQUENCE_KEYWORDS,
         "collections.abc.Iterable": SEQUENCE_KEYWORDS,
         "collections.abc.Generator": SEQUENCE_KEYWORDS,
         "collections.abc.ByteString": STRING_KEYWORDS,
-        "collections.abc.Buffer": LENGTH_KEYWORDS,
         "typing.AnyStr": STRING_KEYWORDS,
     })
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
@@ -1550,7 +1543,9 @@ class DataTypeManager(ABC):
         elif base is not expression and path in _QUALIFIER_PATHS:
             members = python_type_expr_arguments(expression)[:1]
         if members is not None:
-            return TYPE_DEPENDENT_KEYWORDS.intersection(*map(self._annotation_constraint_keywords, members))
+            return (
+                frozenset.intersection(*map(self._annotation_constraint_keywords, members)) if members else _NO_KEYWORDS
+            )
         if (
             path == "tuple"
             and base is not expression
