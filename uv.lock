@@ -858,7 +858,7 @@ requires-dist = [
     { name = "openapi-spec-validator", marker = "extra == 'validation'", specifier = ">=0.2.8,<0.8" },
     { name = "prance", marker = "extra == 'all'", specifier = ">=0.18.2" },
     { name = "prance", marker = "extra == 'validation'", specifier = ">=0.18.2" },
-    { name = "pydantic", marker = "python_full_version < '3.14'", specifier = ">=2,<3" },
+    { name = "pydantic", marker = "python_full_version < '3.14'", specifier = ">=2,!=2.10.0,!=2.10.1,!=2.10.2,<3" },
     { name = "pydantic", marker = "python_full_version >= '3.14'", specifier = ">=2.12,<3" },
     { name = "pysnooper", marker = "extra == 'all'", specifier = ">=0.4.1,<2" },
     { name = "pysnooper", marker = "extra == 'debug'", specifier = ">=0.4.1,<2" },
