@@ -9,7 +9,7 @@ from pydantic.dataclasses import dataclass
 
 @dataclass
 class Record:
-    opt: str | None = None
     req_id: int = Field(
         serialization_alias="req-id", validation_alias=AliasChoices("req-id")
     )
+    opt: str | None = None

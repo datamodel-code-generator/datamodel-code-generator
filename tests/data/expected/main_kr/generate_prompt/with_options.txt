@@ -764,7 +764,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Pydantic 2.14+ (imports MISSING from pydantic; bytes
                         patterns can select Python's regex engine;
                         pydantic_v2.dataclass writes required Field(...)
-                        fields before fields with defaults).
+                        fields before the fields with defaults of the same
+                        class).
   --target-python-version {3.10,3.11,3.12,3.13,3.14}
                         target python version
   --treat-dot-as-module, --no-treat-dot-as-module

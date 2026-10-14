@@ -34,6 +34,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "types",
         "methods",
         "native",
+        "required-alias-order",
         "native-settings",
         "native-readonly",
         "native-custom",

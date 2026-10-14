@@ -244,6 +244,13 @@
     ],
     "package_snapshots": []
   },
+  "required-alias-order": {
+    "input": "required-alias-order.yaml",
+    "backends": [
+      "pydantic_v2.dataclass"
+    ],
+    "package_snapshots": []
+  },
   "native-settings": {
     "input": "native-settings.yaml",
     "model": {

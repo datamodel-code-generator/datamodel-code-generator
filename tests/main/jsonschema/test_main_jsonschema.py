@@ -4874,23 +4874,70 @@ def test_main_generate_pydantic_v2_dataclass_required_alias_field_pydantic20(
     )
 
 
+_SCHEMA_ORDER = (
+    "Pet(plain='p', nick='x', first_name='f', opt_alias=None, count=2)",
+    None,
+    "Child(name=None, kind='child')",
+    ("kind",),
+)
+_REQUIRED_FIRST_ORDER = (
+    "Pet(plain='p', first_name='f', count=2, nick='x', opt_alias=None)",
+    (),
+    "Child(kind='child', name=None)",
+    (),
+)
+
+
 @pytest.mark.parametrize(
-    ("target_pydantic_version", "expected_file", "required_first"),
+    ("target_pydantic_version", "options", "expected_file", "expected_order"),
     [
-        pytest.param(None, "pydantic_v2_dataclass_required_assignment_order.py", False, id="target-unset"),
-        pytest.param("2", "pydantic_v2_dataclass_required_assignment_order_target_2.py", False, id="target-2"),
-        pytest.param("2.11", "pydantic_v2_dataclass_required_assignment_order.py", False, id="target-2.11"),
-        pytest.param("2.12", "pydantic_v2_dataclass_required_assignment_order.py", False, id="target-2.12"),
-        pytest.param("2.14", "pydantic_v2_dataclass_required_assignment_order_target_2_14.py", True, id="target-2.14"),
+        pytest.param(None, (), "pydantic_v2_dataclass_required_assignment_order.py", _SCHEMA_ORDER, id="target-unset"),
+        pytest.param(
+            "2", (), "pydantic_v2_dataclass_required_assignment_order_target_2.py", _SCHEMA_ORDER, id="target-2"
+        ),
+        pytest.param("2.11", (), "pydantic_v2_dataclass_required_assignment_order.py", _SCHEMA_ORDER, id="target-2.11"),
+        pytest.param("2.12", (), "pydantic_v2_dataclass_required_assignment_order.py", _SCHEMA_ORDER, id="target-2.12"),
+        pytest.param(
+            "2.14",
+            (),
+            "pydantic_v2_dataclass_required_assignment_order_target_2_14.py",
+            _REQUIRED_FIRST_ORDER,
+            id="target-2.14",
+        ),
+        pytest.param(
+            None,
+            ("--use-annotated",),
+            "pydantic_v2_dataclass_required_assignment_order_annotated.py",
+            _REQUIRED_FIRST_ORDER,
+            id="annotated-target-unset",
+        ),
+        pytest.param(
+            "2",
+            ("--use-annotated",),
+            "pydantic_v2_dataclass_required_assignment_order_annotated_target_2.py",
+            (
+                "Pet(plain='p', count=2, first_name='f', nick='x', opt_alias=None)",
+                (),
+                "Child(kind='child', name=None)",
+                (),
+            ),
+            id="annotated-target-2",
+        ),
     ],
 )
 def test_main_generate_pydantic_v2_dataclass_required_assignment_order(
-    output_file: Path, target_pydantic_version: str | None, expected_file: str, required_first: bool
+    output_file: Path,
+    target_pydantic_version: str | None,
+    options: tuple[str, ...],
+    expected_file: str,
+    expected_order: tuple[str, tuple[str, ...] | None, str, tuple[str, ...]],
 ) -> None:
     """Move required ``= Field(...)`` fields before defaults only for an explicit 2.14 target.
 
     The other targets keep the schema order, which positional construction follows. Pydantic 2.13+ cannot build
-    ``inspect.signature`` for that order, so the signature of ``Pet`` is read only for the 2.14 output.
+    ``inspect.signature`` for that order, so the signature of ``Pet`` is read only for the other orders. With
+    ``--use-annotated`` the required fields come first for every target: the alias that targets before 2.4 write
+    as an assignment keeps its field among them, after the fields without an assignment.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "pydantic_v2_dataclass_required_assignment_order.json",
@@ -4903,29 +4950,22 @@ def test_main_generate_pydantic_v2_dataclass_required_assignment_order(
             "--output-model-type",
             "pydantic_v2.dataclass",
             "--field-constraints",
+            *options,
             *target_pydantic_args(target_pydantic_version),
         ],
         force_exec_validation=True,
     )
-    for model_name, valid_json, invalid_json, error_type, keyword_only_fields, schema_order, required_first_order in (
+    pet_repr, pet_keyword_only_fields, child_repr, child_keyword_only_fields = expected_order
+    for model_name, valid_json, invalid_json, error_type, keyword_only_fields, expected_repr in (
         (
             "Pet",
             '{"plain": "p", "first-name": "f", "count": 2}',
             '{"plain": "p", "first-name": "f", "count": 0}',
             "greater_than_equal",
-            None,
-            "Pet(plain='p', nick='x', first_name='f', opt_alias=None, count=2)",
-            "Pet(plain='p', first_name='f', count=2, nick='x', opt_alias=None)",
+            pet_keyword_only_fields,
+            pet_repr,
         ),
-        (
-            "Child",
-            '{"kind": "child"}',
-            '{"kind": "other"}',
-            "literal_error",
-            ("kind",),
-            "Child(name=None, kind='child')",
-            "Child(kind='child', name=None)",
-        ),
+        ("Child", '{"kind": "child"}', '{"kind": "other"}', "literal_error", child_keyword_only_fields, child_repr),
     ):
         assert_generated_model_json_validation(
             output_file,
@@ -4934,8 +4974,8 @@ def test_main_generate_pydantic_v2_dataclass_required_assignment_order(
             valid_json=valid_json,
             invalid_json=invalid_json,
             expected_error_type=error_type,
-            expected_keyword_only_fields=() if required_first else keyword_only_fields,
-            expected_repr=required_first_order if required_first else schema_order,
+            expected_keyword_only_fields=keyword_only_fields,
+            expected_repr=expected_repr,
         )
 
 

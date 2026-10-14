@@ -184,6 +184,14 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """
         return explicit_model_target_supports(self, PYDANTIC_V2_DATACLASS_SIGNATURE_ORDER_MINIMUM)
 
+    def keeps_assignment_with_required_fields(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301
+        """Keep a required field that only its alias makes an assignment before the fields with defaults.
+
+        Targets before Pydantic 2.4 write a non-identifier alias of an ``Annotated`` field as an assignment,
+        which the newer targets leave in ``Annotated`` among the required fields.
+        """
+        return getattr(field, "assigned_only_for_alias", False)
+
     def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301
         """Return whether ``dataclass.jinja2`` writes an assignment for the field."""
         if field.field and not field.annotated:
@@ -324,11 +332,28 @@ class _PydanticDataclassField(DataModelFieldV2):
 
     def _requires_dataclass_field_assignment(self, plan: _PydanticFieldRenderPlan) -> bool:
         """Check assignment policy using an already computed render plan."""
+        return self._alias_requires_assignment or self._metadata_requires_assignment(plan)
+
+    @property
+    def _alias_requires_assignment(self) -> bool:
+        return self._ALIASES_REQUIRE_ASSIGNMENT and bool(self.validation_aliases or self.serialization_alias)
+
+    def _metadata_requires_assignment(self, plan: _PydanticFieldRenderPlan) -> bool:
         return bool(
-            (self._ALIASES_REQUIRE_ASSIGNMENT and (self.validation_aliases or self.serialization_alias))
-            or self._has_forced_field_assignment
+            self._has_forced_field_assignment
             or not self._DATACLASS_ASSIGNMENT_KEYS.isdisjoint(self.extras)
             or plan.default_factory
+        )
+
+    @property
+    def assigned_only_for_alias(self) -> bool:
+        """Return whether a required ``Annotated`` field is an assignment only because of its alias."""
+        return (
+            self.use_annotated
+            and self.required
+            and not self.use_default_with_required
+            and self._alias_requires_assignment
+            and not self._metadata_requires_assignment(self._get_field_render_plan())
         )
 
     @property
