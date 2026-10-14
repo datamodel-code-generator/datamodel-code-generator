@@ -8,7 +8,7 @@ from datamodel_code_generator import DataModelType, TargetPydanticVersion
 def backend_settings(backend: str | DataModelType) -> dict[str, object]:
     """Return the model type of a backend, with the MISSING sentinel that a target needs for Pydantic dataclasses.
 
-    The sentinel is imported from pydantic, as a target imports it, so that model-only runs write the same models.
+    A target needs the sentinel's target pydantic version as well, with which the models import it from pydantic.
     """
     if (model_type := DataModelType(backend)) is DataModelType.PydanticV2Dataclass:
         return {

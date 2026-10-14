@@ -11894,7 +11894,8 @@ Add the runtime dependencies of server to your project:
 Run it. The command names only the minimum version of each package, so uv adds the latest release. It grows with
 what the document uses: `python-multipart` for forms, `email-validator` for `format: email`, and `python-ulid` for
 `format: ulid`. An explicit `--target-pydantic-version` older than the `pydantic` minimum (`2`, `2.11` or `2.12`) is
-refused with `Error:` and exit code 2; leave it unset or use `2.14`.
+refused with `Error:` and exit code 2; leave it unset or use `2.14`, which `--use-missing-sentinel` requires (see
+[Requirements](#requirements)).
 
 The run wrote the models and the `server` package:
 
@@ -12602,12 +12603,17 @@ bytes, and `--check` reports a module that differs.
   files is refused.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   refused. Custom templates, base classes, and types do not add backends.
-- `pydantic_v2.dataclass` models need `--use-missing-sentinel`, since a dataclass field cannot tell an unset member
-  from one set to `None`. Without it, generation stops with `Error: The fastapi target needs --use-missing-sentinel
-  for 'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None` and exit code 2. With it,
-  an optional field without a default holds `MISSING`, imported from `pydantic` (`from pydantic import MISSING`): a
-  member a request leaves out reaches the method as `MISSING`, and a field the method leaves unset is left out of the
-  response.
+- `--use-missing-sentinel` needs `--target-pydantic-version 2.14`, with which the models import `MISSING` from
+  `pydantic` (`from pydantic import MISSING`); an unset or older target imports it from
+  `pydantic.experimental.missing_sentinel`, which pydantic 2.14 deprecates. Without it, generation stops with
+  `Error: The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the models
+  import MISSING from pydantic` and exit code 2.
+- `pydantic_v2.dataclass` models need `--use-missing-sentinel`, and with it `--target-pydantic-version 2.14`, since a
+  dataclass field cannot tell an unset member from one set to `None`. Without the sentinel, generation stops with
+  `Error: The fastapi target needs --use-missing-sentinel with --target-pydantic-version 2.14 for
+  'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None` and exit code 2. With both, an
+  optional field without a default holds `MISSING`: a member a request leaves out reaches the method as `MISSING`,
+  and a field the method leaves unset is left out of the response.
 - `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
   operations: `--openapi-scopes schemas api`. Without it, generation stops with
   `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
@@ -12971,8 +12977,7 @@ A parameter with JSON `content`, like a JSON part of a multipart form, is parsed
 a `Decimal` field gets the float's value (`0.1000000000000000000000000001` becomes `Decimal("0.1")`) and `NaN` and
 `Infinity` reach a `float` field; an object that repeats a member keeps the last value; and text that is not JSON, or
 JSON past pydantic's limits such as an integer of thousands of digits or deep nesting, answers `422` with
-`json_invalid`. With pydantic older than 2.14, an enum that has a `null` member accepts any JSON value as that member
-when it is read from JSON, in bodies, JSON parts, and parameters with JSON `content` that adapters read.
+`json_invalid`.
 
 A strict bytes type (`--strict-types bytes` with `format: byte` and `--type-mappings string+byte=binary`) cannot be a
 path, query, header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
@@ -14618,11 +14623,17 @@ models the minimum is `pydantic>=2.14.0`. An explicit `--target-pydantic-version
 or `2.12`) is refused with `Error:` and exit code 2 for those models; leave it unset or use `2.14`. The other model
 backends do not use the option.
 
+`--use-missing-sentinel` needs `--target-pydantic-version 2.14`, with which the models import `MISSING` from
+`pydantic`; an unset or older target imports it from `pydantic.experimental.missing_sentinel`, which pydantic 2.14
+deprecates. Without it, generation stops with `Error: The client target needs --target-pydantic-version 2.14 for
+--use-missing-sentinel, so that the models import MISSING from pydantic` and exit code 2.
+
 A `pydantic_v2.dataclass` field cannot tell an unset member from one set to `None`, so client generation with
-`--output-model-type pydantic_v2.dataclass` needs `--use-missing-sentinel`. Without it, generation stops with
-`Error: The client target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields cannot tell an
-unset member from None` and exit code 2. With it, an optional field without a default holds `MISSING`, which the models
-import from `pydantic`, as they do for `pydantic_v2.BaseModel` when the option is set:
+`--output-model-type pydantic_v2.dataclass` needs `--use-missing-sentinel`, and with it
+`--target-pydantic-version 2.14`. Without the sentinel, generation stops with `Error: The client target needs
+--use-missing-sentinel with --target-pydantic-version 2.14 for 'pydantic_v2.dataclass' models, whose fields cannot
+tell an unset member from None` and exit code 2. With both, an optional field without a default holds `MISSING`, as it
+does for `pydantic_v2.BaseModel` when the options are set:
 
 ```python
 from client import Client
@@ -18243,7 +18254,8 @@ The command also needs:
 
 - **Python 3.11 or later**, both to run `datamodel-codegen` and as the target of the generated code. The
   [preset](presets.md) in the command targets 3.12.
-- **A Pydantic v2 backend**: `pydantic_v2.BaseModel`, or `pydantic_v2.dataclass` with `--use-missing-sentinel`.
+- **A Pydantic v2 backend**: `pydantic_v2.BaseModel`, or `pydantic_v2.dataclass` with `--use-missing-sentinel` and
+  `--target-pydantic-version 2.14`.
 - **The `api` scope**: `--openapi-scopes schemas api`, so that the models cover the parameters, bodies, and responses
   of the operations.
 
@@ -18262,7 +18274,7 @@ The command also needs:
 | `--model-template-dir` | `--custom-template-dir`, templates in its `pydantic_v2/` directory | The model templates are datamodel-code-generator's own. |
 | `-c`, `--custom-visitor` | none | `--extra-template-data` passes static values to templates. |
 | `--specify-tags` | none | Include the router of one group in your own app, or filter paths with `--openapi-include-paths`. |
-| `-d`, `--output-model-type` | `--output-model-type` | Only `pydantic_v2.BaseModel` and `pydantic_v2.dataclass`, which needs `--use-missing-sentinel`. |
+| `-d`, `--output-model-type` | `--output-model-type` | Only `pydantic_v2.BaseModel` and `pydantic_v2.dataclass`, which needs `--use-missing-sentinel` and `--target-pydantic-version 2.14`. |
 | `-p`, `--python-version` (default 3.10) | `--target-python-version`, or a preset that sets it | 3.11 or later. |
 | `--include-request-argument` | `--server-include-request` | For the raw body, use `--server-body-mode request`, or `--server-body-modes` per operation. |
 | `-e`, `--encoding`, `--enum-field-as-literal`, `--strict-nullable`, `--use-annotated`, `--reuse-model`, `--enable-faux-immutability`, `--disable-timestamp`, `--allow-remote-refs`, `--allow-private-network` | the same options | Every model option of dcg applies to the server's models. |
@@ -55563,7 +55575,7 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 
 HTTPX2 client generation from the CLI is experimental; its options and generated package may change.
 
-`--generate-client httpx2` generates the models at `--output` and a client package at `--client-output`; `--client-package` and `--client-model-package` name their import paths, and the other `--client-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check`, `--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with `--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`, and `--use-missing-sentinel` for `pydantic_v2.dataclass` models.
+`--generate-client httpx2` generates the models at `--output` and a client package at `--client-output`; `--client-package` and `--client-model-package` name their import paths, and the other `--client-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check`, `--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with `--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, and `--target-pydantic-version 2.14` with `--use-missing-sentinel`.
 
 ### `cli-option.generate-schema-validators`
 
@@ -55583,7 +55595,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options and generated package may change.
 
-`--generate-server fastapi` generates the models at `--output` and a server package at `--server-output`; `--server-package` and `--server-model-package` name their import paths, and the other `--server-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check` compares without writing, `--diff-against` compares the files two inputs render, `--watch` regenerates after input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and generation prints a `uv add` command to stderr. `generate()` takes them as `generate_server` and the `server_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`, and `--use-missing-sentinel` for `pydantic_v2.dataclass` models.
+`--generate-server fastapi` generates the models at `--output` and a server package at `--server-output`; `--server-package` and `--server-model-package` name their import paths, and the other `--server-*` options configure the package. Like model options, they can be set in `[tool.datamodel-codegen]` of `pyproject.toml`, in its profiles, and in its jobs. `--check` compares without writing, `--diff-against` compares the files two inputs render, `--watch` regenerates after input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and generation prints a `uv add` command to stderr. `generate()` takes them as `generate_server` and the `server_*` options, and returns every generated file without an output. It needs Python 3.11 or later, both to run and as `--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, and `--target-pydantic-version 2.14` with `--use-missing-sentinel`.
 
 ### `cli-option.install-skill`
 
@@ -55613,7 +55625,7 @@ The only currently implemented backend is 'pydantic-v2', which preserves the exi
 
 Pydantic MISSING sentinel output is experimental because it depends on pydantic.experimental.missing_sentinel, or on pydantic.MISSING for a 2.14 target.
 
-The option requires Pydantic v2 BaseModel or dataclass output and a target Pydantic version that supports the MISSING sentinel. Server and client generation require it for Pydantic v2 dataclass output, and import MISSING from pydantic when the target Pydantic version is unset.
+The option requires Pydantic v2 BaseModel or dataclass output and a target Pydantic version that supports the MISSING sentinel. Server and client generation require it for Pydantic v2 dataclass output, and `--target-pydantic-version 2.14` with it.
 
 ### `cli-option.use-type-alias`
 

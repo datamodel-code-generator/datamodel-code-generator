@@ -33,6 +33,7 @@ OPTIONS = [
 ]
 PACKAGES = ["--client-package", "client", "--client-model-package", "models"]
 CLIENT = ["--generate-client", "httpx2", "--client-output", "client", *PACKAGES]
+MISSING = ["--use-missing-sentinel", "--target-pydantic-version", "2.14"]
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *CLIENT]
 DOC_INPUT = "generation_platform/client/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/client/cli/options"
@@ -579,8 +580,7 @@ def test_client_cli_generation_json(
     [
         ("target-2.14-missing", ["--target-pydantic-version", "2.14", "--use-missing-sentinel"]),
         ("target-2.14", ["--target-pydantic-version", "2.14"]),
-        ("unset-target-missing", ["--use-missing-sentinel"]),
-        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", "--use-missing-sentinel"]),
+        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", *MISSING]),
         ("target-2-msgspec", ["--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct"]),
         ("target-2-dataclass", ["--target-pydantic-version", "2", "--output-model-type", "dataclasses.dataclass"]),
         ("target-2-typed-dict", ["--target-pydantic-version", "2", "--output-model-type", "typing.TypedDict"]),
@@ -618,16 +618,39 @@ def test_client_cli_pydantic_dependency(
     )
 
 
+@pytest.mark.parametrize("client", [[], CLIENT], ids=["models", "client"])
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [
+        ([], "cli/missing-sentinel-models.py"),
+        (["--output-model-type", "pydantic_v2.dataclass"], "cli/dataclass-missing-sentinel-models.py"),
+    ],
+    ids=["missing-sentinel", "dataclass-missing-sentinel"],
+)
+def test_client_cli_missing_sentinel_models_as_given(
+    client: list[str], options: list[str], expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models a model-only run writes when they use MISSING, which a client needs a 2.14 target for."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *MISSING, *options, *client],
+        copy_files=_inputs(tmp_path),
+        assert_func=assert_file_content,
+        expected_file=expected,
+    )
+
+
 @pytest.mark.parametrize(
     "arguments",
     [
         ["--target-pydantic-version", "2"],
         ["--target-pydantic-version", "2.11", "--check"],
         ["--target-pydantic-version", "2.12", "--output-format", "json"],
-        ["--target-pydantic-version", "2.12", "--use-missing-sentinel"],
-        ["--target-pydantic-version", "2", "--output-model-type", "pydantic_v2.dataclass"],
     ],
-    ids=["2", "2.11-check", "2.12-json", "2.12-missing", "2-dataclass"],
+    ids=["2", "2.11-check", "2.12-json"],
 )
 def test_client_cli_target_pydantic(
     arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
@@ -650,11 +673,52 @@ def test_client_cli_target_pydantic(
     )
 
 
-@pytest.mark.parametrize("arguments", [[], ["--target-pydantic-version", "2.14"]], ids=["unset", "2.14"])
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        [],
+        ["--target-pydantic-version", "2.12"],
+        ["--output-model-type", "pydantic_v2.dataclass"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--check"],
+    ],
+    ids=["unset", "2.12", "dataclass", "dataclass-check"],
+)
+def test_client_cli_missing_sentinel_target(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client whose models use MISSING without the target pydantic version that imports it from pydantic.
+
+    The models stay those of a model-only run, which imports MISSING from pydantic for that target only.
+    """
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, "--use-missing-sentinel", *arguments],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: The client target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the "
+            "models import MISSING from pydantic\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [[], ["--target-pydantic-version", "2.14"], ["--target-pydantic-version", "2"]],
+    ids=["unset", "2.14", "2"],
+)
 def test_client_cli_dataclass_missing_sentinel(
     arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Refuse a client of Pydantic dataclasses without --use-missing-sentinel, which tells unset members from None."""
+    """Refuse a client of Pydantic dataclasses without --use-missing-sentinel, which tells unset members from None.
+
+    The message names the target pydantic version that the sentinel needs as well.
+    """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("options.yaml"),
@@ -665,8 +729,8 @@ def test_client_cli_dataclass_missing_sentinel(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=(
-            "Error: The client target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields "
-            "cannot tell an unset member from None\n"
+            "Error: The client target needs --use-missing-sentinel with --target-pydantic-version 2.14 for "
+            "'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None\n"
         ),
         output_should_not_exist=True,
     )

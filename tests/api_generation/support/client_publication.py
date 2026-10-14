@@ -39,7 +39,7 @@ def capability_arguments(profile: str, root: Path) -> list[str]:
         *("--client-model-package", f"{PACKAGE}_models"),
     ]
     if backend_settings(backend).get("use_missing_sentinel"):
-        arguments.append("--use-missing-sentinel")
+        arguments.extend(("--use-missing-sentinel", "--target-pydantic-version", "2.14"))
     if paths := case.get("model", {}).get("openapi_include_paths"):
         arguments.extend(("--openapi-include-paths", *paths))
     if "protocols" in config:
