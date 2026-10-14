@@ -77,8 +77,7 @@ def _implied_option(name: str, value: object) -> tuple[str, Any]:
             return key, [item.value for item in cast("list[Any]", value)]
         case bool():
             return key, value
-        case _:
-            return key, cast("Any", value).value
+    return key, cast("Any", value).value
 
 
 def _print_notice(notice: str | None) -> None:
