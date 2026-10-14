@@ -523,6 +523,14 @@ model_options.add_argument(
     ),
 )
 model_options.add_argument(
+    "--use-msgspec-mapped-discriminator-tags",
+    help="msgspec.Struct output only: tag the variants of a discriminated union with tag_field/tag also when the "
+    "value comes from the discriminator mapping, an enum or the schema name, so that msgspec can decode the union. "
+    "The discriminator is then no longer a field or a constructor argument.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--reuse-model",
     help="Reuse models on the field when a module has the model with the same content",
     action="store_true",

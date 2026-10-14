@@ -11963,9 +11963,33 @@ def test_main_msgspec_discriminator_mapping_tags(output_file: Path) -> None:
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
+            "--use-msgspec-mapped-discriminator-tags",
             "--target-python-version",
             "3.10",
             "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args", [[], ["--use-msgspec-mapped-discriminator-tags"]], ids=["default", "mapped-tags"]
+)
+def test_main_msgspec_discriminator_const_enum(output_file: Path, extra_args: list[str]) -> None:
+    """Tag msgspec variants whose discriminator is a const beside an enum, with and without mapped tags."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_const_enum_msgspec.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="discriminator_const_enum_msgspec.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            *extra_args,
         ],
         force_exec_validation=True,
     )

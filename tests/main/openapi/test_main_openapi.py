@@ -646,6 +646,79 @@ def test_main_openapi_discriminator_enum_single_value_msgspec(output_file: Path)
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-msgspec-mapped-discriminator-tags"],
+    option_description="""Tag `msgspec.Struct` variants whose discriminator value comes from the mapping.
+
+The `--use-msgspec-mapped-discriminator-tags` flag only applies to `--output-model-type msgspec.Struct`; other
+output model types ignore it.
+
+Without the flag a variant gets `tag_field`/`tag` only when its discriminator property is a single literal
+(such as a `const`) equal to the discriminator value, or when a second discriminated union uses the variant.
+Such a tag names the generated field, which differs from the property name when the field is renamed. Any other
+variant whose value comes from the discriminator `mapping`, an `enum` or the schema name keeps the discriminator
+as a `Literal` field: `Cat(petType='cat')` and `cat.petType` work and `Cat` decodes alone, but msgspec raises
+`TypeError` for the union `Cat | Dog`, because it only decodes unions of tagged structs.
+
+With the flag every variant of the union is tagged with the property name of the document, so the union decodes.
+msgspec does not allow a field named like `tag_field`, so the discriminator is then neither a field nor a
+constructor argument: `Cat(petType='cat')` raises `TypeError`, `cat.petType` raises `AttributeError`, and `Cat`
+decoded alone accepts a payload without `petType`. A union is tagged as a whole: when one of its variants cannot
+take exactly one tag for it, or inherits the discriminator field from a base struct, none is tagged and a warning
+names that variant.""",
+    input_schema="openapi/discriminator_field_aliases/direct.json",
+    cli_args=["--use-msgspec-mapped-discriminator-tags", "--output-model-type", "msgspec.Struct"],
+    golden_output="openapi/discriminator/msgspec_mapped_tags.py",
+    comparison_output="openapi/discriminator/msgspec_mapped_fields.py",
+)
+def test_main_openapi_use_msgspec_mapped_discriminator_tags(output_file: Path) -> None:
+    """Tag `msgspec.Struct` variants whose discriminator value comes from the mapping.
+
+    The `--use-msgspec-mapped-discriminator-tags` flag replaces the `Literal` discriminator field of every variant
+    of a discriminated union with `tag_field`/`tag`, so that msgspec can decode the union.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_field_aliases" / "direct.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_mapped_tags.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-msgspec-mapped-discriminator-tags",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_file", "expected_file"),
+    [
+        pytest.param("discriminator_field_aliases/direct.json", "msgspec_mapped_fields.py", id="fields"),
+        pytest.param("discriminator_mapping_msgspec_tags.yaml", "mapping_msgspec_default.py", id="shared-variants"),
+        pytest.param(
+            "discriminator_mapping_msgspec_untagged.yaml", "mapping_msgspec_untagged_default.py", id="const-variants"
+        ),
+    ],
+)
+def test_main_openapi_discriminator_mapping_msgspec_default(
+    input_file: str, expected_file: str, output_file: Path
+) -> None:
+    """Keep the released msgspec discriminator output without --use-msgspec-mapped-discriminator-tags."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / expected_file,
+        extra_args=["--output-model-type", "msgspec.Struct", "--disable-timestamp"],
+    )
+
+
 def test_main_openapi_discriminator_mapping_msgspec_tags(output_file: Path) -> None:
     """Tag msgspec variants whose discriminator value comes from the mapping or the schema name."""
     run_main_and_assert(
@@ -659,6 +732,7 @@ def test_main_openapi_discriminator_mapping_msgspec_tags(output_file: Path) -> N
             "3.10",
             "--output-model-type",
             "msgspec.Struct",
+            "--use-msgspec-mapped-discriminator-tags",
             "--disable-timestamp",
         ],
         force_exec_validation=True,
@@ -679,8 +753,47 @@ def test_main_openapi_discriminator_mapping_msgspec_untagged(output_file: Path) 
             "Discriminator 'kind' of Kinded cannot be represented as msgspec tags: Cat, Dog cannot take exactly one",
         ],
         output_model_type=DataModelType.MsgspecStruct,
+        use_msgspec_mapped_discriminator_tags=True,
         disable_timestamp=True,
     )
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_main_openapi_discriminator_inherited_msgspec_untagged(output_file: Path, entrypoint: str) -> None:
+    """Leave a msgspec union untagged when its variants inherit the discriminator field from a base struct."""
+    expected = EXPECTED_OPENAPI_PATH / "discriminator" / "inherited_msgspec_untagged.py"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_allof.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=expected,
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-msgspec-mapped-discriminator-tags",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--disable-warnings",
+            ],
+            force_exec_validation=True,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_allof.yaml",
+            output_path=output_file,
+            input_file_type=InputFileType.OpenAPI,
+            assert_func=assert_file_content,
+            expected_file=expected,
+            expected_warnings=[
+                "Discriminator 'petType' of PetContainer cannot be represented as msgspec tags: Cat, Dog, Lizard cannot"
+            ],
+            output_model_type=DataModelType.MsgspecStruct,
+            use_msgspec_mapped_discriminator_tags=True,
+            disable_timestamp=True,
+        )
 
 
 def test_main_openapi_discriminator_with_properties(output_file: Path) -> None:
@@ -6471,17 +6584,25 @@ def test_main_openapi_discriminator(input_: str, output: str, output_file: Path)
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_file"),
+    ("output_model_type", "expected_file", "extra_args"),
     [
         pytest.param(
             DataModelType.DataclassesDataclass.value,
             "discriminator/dataclass_constructor_order.py",
+            [],
             id="dataclass",
         ),
         pytest.param(
             DataModelType.MsgspecStruct.value,
             "discriminator/msgspec_constructor_order.py",
+            [],
             id="msgspec",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct.value,
+            "discriminator/msgspec_constructor_order_mapped_tags.py",
+            ["--use-msgspec-mapped-discriminator-tags"],
+            id="msgspec-mapped-tags",
         ),
     ],
 )
@@ -6489,6 +6610,7 @@ def test_main_openapi_discriminator_constructor_order(
     output_file: Path,
     output_model_type: str,
     expected_file: str,
+    extra_args: list[str],
 ) -> None:
     """Place injected required discriminator fields before optional constructor fields."""
     run_main_and_assert(
@@ -6503,6 +6625,7 @@ def test_main_openapi_discriminator_constructor_order(
             "--disable-timestamp",
             "--formatters",
             "builtin",
+            *extra_args,
         ],
         force_exec_validation=True,
     )
@@ -10551,11 +10674,16 @@ def test_discriminator_different_field_aliases(
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
-def test_discriminator_field_aliases_msgspec(output_file: Path, entrypoint: str) -> None:
+@pytest.mark.parametrize(
+    ("mapped_tags", "expected_name"), [(False, "msgspec.py"), (True, "msgspec_mapped_tags.py")], ids=["fields", "tags"]
+)
+def test_discriminator_field_aliases_msgspec(
+    output_file: Path, entrypoint: str, mapped_tags: bool, expected_name: str
+) -> None:
     """Keep msgspec's existing wire-field handling independent of Pydantic tag names."""
     fixture_dir = OPEN_API_DATA_PATH / "discriminator_field_aliases"
     aliases_path = fixture_dir / "different_aliases.json"
-    expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / "msgspec.py"
+    expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / expected_name
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=fixture_dir / "direct.json",
@@ -10563,7 +10691,14 @@ def test_discriminator_field_aliases_msgspec(output_file: Path, entrypoint: str)
             input_file_type="openapi",
             assert_func=assert_file_content,
             expected_file=expected,
-            extra_args=["--aliases", str(aliases_path), "--disable-timestamp", "--output-model-type", "msgspec.Struct"],
+            extra_args=[
+                "--aliases",
+                str(aliases_path),
+                "--disable-timestamp",
+                "--output-model-type",
+                "msgspec.Struct",
+                *(["--use-msgspec-mapped-discriminator-tags"] if mapped_tags else []),
+            ],
             force_exec_validation=True,
         )
     else:
@@ -10576,6 +10711,7 @@ def test_discriminator_field_aliases_msgspec(output_file: Path, entrypoint: str)
             aliases=json.loads(aliases_path.read_text()),
             disable_timestamp=True,
             output_model_type=DataModelType.MsgspecStruct,
+            use_msgspec_mapped_discriminator_tags=mapped_tags,
         )
 
 

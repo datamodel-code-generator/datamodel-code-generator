@@ -6562,6 +6562,31 @@ class Pet(Struct):
     tag: str | UnsetType = UNSET
 ```
 
+### Discriminated unions
+
+msgspec only decodes a union of structs when every struct is tagged, and a tagged struct cannot also have a field
+named like its `tag_field`. A variant whose discriminator property is a `const` is written as a tagged struct. A
+variant whose discriminator value comes from the discriminator `mapping`, an `enum` or the schema name keeps the
+discriminator as a field by default:
+
+```python
+class Cat(Struct):
+    petType: Literal["cat"]
+    meow: str | UnsetType = UNSET
+```
+
+`Cat(petType='cat')`, `cat.petType` and decoding `Cat` on its own work, but decoding the union `Cat | Dog` raises
+msgspec's `TypeError`. [`--use-msgspec-mapped-discriminator-tags`](cli-reference/model-customization.md#use-msgspec-mapped-discriminator-tags)
+tags these variants instead:
+
+```python
+class Cat(Struct, tag_field="petType", tag="cat"):
+    meow: str | UnsetType = UNSET
+```
+
+The union then decodes, while `petType` is no longer a constructor argument or an attribute, and `Cat` decoded on
+its own accepts a payload without `petType`.
+
 ### When to use
 
 - High-performance JSON/MessagePack serialization
@@ -18491,7 +18516,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 34 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 29 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 44 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 45 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -18831,6 +18856,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types)
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
 - [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel)
+- [`--use-msgspec-mapped-discriminator-tags`](model-customization.md#use-msgspec-mapped-discriminator-tags)
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)
 - [`--use-object-type`](typing-customization.md#use-object-type)
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default)
@@ -20057,6 +20083,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-custom
 | [`--use-frozen-field`](#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly p... |
 | [`--use-generic-base-class`](#use-generic-base-class) | Generate a shared base class with model configuration to avo... |
 | [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel... |
+| [`--use-msgspec-mapped-discriminator-tags`](#use-msgspec-mapped-discriminator-tags) | Tag `msgspec.Struct` variants whose discriminator value come... |
 | [`--use-one-literal-as-default`](#use-one-literal-as-default) | Use single literal value as default when enum has only one o... |
 | [`--use-root-model-sequence-interface`](#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes im... |
 | [`--use-serialize-as-any`](#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
@@ -26402,6 +26429,201 @@ preserves the difference between an omitted field and a nullable field set to `N
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-msgspec-mapped-discriminator-tags` {#use-msgspec-mapped-discriminator-tags}
+
+Tag `msgspec.Struct` variants whose discriminator value comes from the mapping.
+
+The `--use-msgspec-mapped-discriminator-tags` flag only applies to `--output-model-type msgspec.Struct`; other
+output model types ignore it.
+
+Without the flag a variant gets `tag_field`/`tag` only when its discriminator property is a single literal
+(such as a `const`) equal to the discriminator value, or when a second discriminated union uses the variant.
+Such a tag names the generated field, which differs from the property name when the field is renamed. Any other
+variant whose value comes from the discriminator `mapping`, an `enum` or the schema name keeps the discriminator
+as a `Literal` field: `Cat(petType='cat')` and `cat.petType` work and `Cat` decodes alone, but msgspec raises
+`TypeError` for the union `Cat | Dog`, because it only decodes unions of tagged structs.
+
+With the flag every variant of the union is tagged with the property name of the document, so the union decodes.
+msgspec does not allow a field named like `tag_field`, so the discriminator is then neither a field nor a
+constructor argument: `Cat(petType='cat')` raises `TypeError`, `cat.petType` raises `AttributeError`, and `Cat`
+decoded alone accepts a payload without `petType`. A union is tagged as a whole: when one of its variants cannot
+take exactly one tag for it, or inherits the discriminator field from a base struct, none is tagged and a warning
+names that variant.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input direct.json --use-msgspec-mapped-discriminator-tags --output-model-type msgspec.Struct # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-msgspec-mapped-discriminator-tags` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "Discriminator field aliases",
+        "version": "1"
+      },
+      "paths": {},
+      "components": {
+        "schemas": {
+          "Cat": {
+            "type": "object",
+            "properties": {
+              "petType": {
+                "type": "string",
+                "enum": [
+                  "cat"
+                ]
+              },
+              "meow": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "petType"
+            ]
+          },
+          "Dog": {
+            "type": "object",
+            "properties": {
+              "petType": {
+                "type": "string",
+                "enum": [
+                  "dog"
+                ]
+              },
+              "bark": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "petType"
+            ]
+          },
+          "Pet": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Cat"
+              },
+              {
+                "$ref": "#/components/schemas/Dog"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "petType",
+              "mapping": {
+                "cat": "#/components/schemas/Cat",
+                "dog": "#/components/schemas/Dog"
+              }
+            }
+          },
+          "Unrelated": {
+            "type": "object",
+            "properties": {
+              "petType": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  direct.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import TypeAlias
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class PetType(Enum):
+            cat = 'cat'
+
+
+        class Cat(Struct, tag_field='petType', tag='cat'):
+            meow: str | UnsetType = UNSET
+
+
+        class PetType1(Enum):
+            dog = 'dog'
+
+
+        class Dog(Struct, tag_field='petType', tag='dog'):
+            bark: str | UnsetType = UNSET
+
+
+        Pet: TypeAlias = Cat | Dog
+
+
+        class Unrelated(Struct):
+            petType: str | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  direct.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal, TypeAlias
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class PetType(Enum):
+            cat = 'cat'
+
+
+        class Cat(Struct):
+            petType: Literal['cat']
+            meow: str | UnsetType = UNSET
+
+
+        class PetType1(Enum):
+            dog = 'dog'
+
+
+        class Dog(Struct):
+            petType: Literal['dog']
+            bark: str | UnsetType = UNSET
+
+
+        Pet: TypeAlias = Cat | Dog
+
+
+        class Unrelated(Struct):
+            petType: str | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -54071,6 +54293,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-frozen-field`](model-customization.md#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly properties. |
 | [`--use-generic-base-class`](model-customization.md#use-generic-base-class) | Generate a shared base class with model configuration to avoid repetition (DRY). |
 | [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields... |
+| [`--use-msgspec-mapped-discriminator-tags`](model-customization.md#use-msgspec-mapped-discriminator-tags) | Tag `msgspec.Struct` variants whose discriminator value comes from the mapping. |
 | [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default) | Use single literal value as default when enum has only one option. |
 | [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes implement collections.... |
 | [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
@@ -54401,6 +54624,7 @@ All options sorted alphabetically:
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types) - Use generic container types (Sequence, Mapping) for type hin...
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description) - Add field descriptions as inline comments.
 - [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) - Use Pydantic's MISSING sentinel for unset optional BaseModel...
+- [`--use-msgspec-mapped-discriminator-tags`](model-customization.md#use-msgspec-mapped-discriminator-tags) - Tag `msgspec.Struct` variants whose discriminator value come...
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types) - Use NonPositive/NonNegative types for number constraints.
 - [`--use-object-type`](typing-customization.md#use-object-type) - Use object instead of Any for unspecified object and array v...
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default) - Use single literal value as default when enum has only one o...
@@ -56268,16 +56492,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 176 | Shared generation options. |
-| `GenerateConfig` | 191 | Public `generate()` configuration. |
-| `ParserConfig` | 142 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 144 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 150 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 151 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 145 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 145 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 144 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 145 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 177 | Shared generation options. |
+| `GenerateConfig` | 192 | Public `generate()` configuration. |
+| `ParserConfig` | 143 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 145 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 151 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 152 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 146 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 146 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 145 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 146 | GraphQL-specific parser options. |
 
 ### Formatter Names
 

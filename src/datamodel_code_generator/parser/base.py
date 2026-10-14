@@ -2034,6 +2034,11 @@ def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> D
     return None
 
 
+def _get_source_field_name(field: DataModelFieldBase) -> str | None:
+    """Return the name the document gives the field."""
+    return field.original_name if field.original_name is not None else field.alias or field.name
+
+
 def _find_discriminator_value(
     fields: Iterable[DataModelFieldBase],
     field_name: str,
@@ -2042,8 +2047,7 @@ def _find_discriminator_value(
 ) -> DiscriminatorValue | None:
     for field in fields:
         if field_name_mode == "original":
-            source_name = field.original_name if field.original_name is not None else field.alias or field.name
-            matches = source_name == field_name
+            matches = _get_source_field_name(field) == field_name
         else:
             matches = field.name == field_name or (field_name_mode == "either" and field.original_name == field_name)
         if matches and (value := _get_discriminator_field_value(field)) is not None:
@@ -2097,28 +2101,44 @@ def _get_mapping_discriminator_values(
 _DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]
 
 
-def _apply_discriminator_tags(
-    owner: DataModel,
-    tags: list[_DiscriminatorTag],
-    tag_field: str,
-    mapping: dict[str, str],
-    *,
-    can_retain_cache: bool,
-) -> None:
-    """Tag every variant of a union, or none when one of them cannot carry exactly this union's value."""
-    if untaggable := [
-        model.class_name
-        for model, field, value in tags
-        if value is None
-        or any(mapped != value for mapped in _get_mapping_discriminator_values(model, mapping))
-        or any(other is not field and other.extras.get("is_classvar") for other in model.fields)
-    ]:
-        warn(
-            f"Discriminator {tag_field!r} of {owner.class_name} cannot be represented as msgspec tags: "
-            f"{', '.join(untaggable)} cannot take exactly one tag for it; its variants are left untagged.",
-            stacklevel=2,
-        )
-        return
+def _inherits_instance_field(model: DataModel, source_name: str, tagged_fields: set[int]) -> bool:
+    """Return whether a base class leaves the model an instance field of that name once the union is tagged."""
+    return any(
+        id(field) not in tagged_fields
+        and not field.extras.get("is_classvar")
+        and _get_source_field_name(field) == source_name
+        for base_class in model.base_classes
+        if base_class.reference and isinstance(base_model := base_class.reference.source, DataModel)
+        for field in base_model.iter_all_fields()
+    )
+
+
+def _discriminator_union_takes_tags(
+    owner: DataModel, tags: list[_DiscriminatorTag], tag_field: str, mapping: dict[str, str]
+) -> bool:
+    """Return whether every variant carries exactly this union's value, warning about the ones that cannot."""
+    tagged_fields = {id(field) for _, field, _ in tags}
+    if not (
+        untaggable := [
+            model.class_name
+            for model, field, value in tags
+            if value is None
+            or any(mapped != value for mapped in _get_mapping_discriminator_values(model, mapping))
+            or any(other is not field and other.extras.get("is_classvar") for other in model.fields)
+            or _inherits_instance_field(model, tag_field, tagged_fields)
+        ]
+    ):
+        return True
+    warn(
+        f"Discriminator {tag_field!r} of {owner.class_name} cannot be represented as msgspec tags: "
+        f"{', '.join(untaggable)} cannot take exactly one tag for it; its variants are left untagged.",
+        stacklevel=2,
+    )
+    return False
+
+
+def _apply_discriminator_tags(tags: list[_DiscriminatorTag], tag_field: str, *, can_retain_cache: bool) -> None:
+    """Tag the variants and take their discriminators out of the instance fields."""
     for model, field, value in tags:
         model.apply_discriminator_tag(field, tag_field, value)
         _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
@@ -2897,6 +2917,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.keep_model_order = config.keep_model_order
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
+        self.use_msgspec_mapped_discriminator_tags = config.use_msgspec_mapped_discriminator_tags
         self.known_third_party = config.known_third_party
         self.custom_formatter = config.custom_formatters
         self.custom_formatters_kwargs = config.custom_formatters_kwargs
@@ -3678,6 +3699,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         can_retain_cache: bool,
     ) -> None:
+        mapped_tags = self.use_msgspec_mapped_discriminator_tags
         for model in models:  # noqa: PLR1702
             for field in model.fields:
                 match field.extras.get("discriminator"):
@@ -3758,6 +3780,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             # Found the discriminator field, no need to keep looking
                             break
 
+                        if (
+                            not mapped_tags
+                            and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+                            and (const_value := discriminator_field.extras.get("const")) is not None
+                            and const_value == expected_value
+                        ):
+                            has_one_literal = True
+                            tags.append((discriminator_model, discriminator_field, const_value))
+                            break
+
                         enum_source = discriminator_field.data_type.find_source(Enum)
                         if self.use_enum_values_in_discriminator:
                             enum_source = enum_source or _get_enum_from_base(
@@ -3777,7 +3809,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
-                        if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                        if mapped_tags and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
                                 discriminator_model,
                                 discriminator_field,
@@ -3835,14 +3867,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             self.model_resolver.prepare_explicit_field_aliases(
                                 [discriminator_field], discriminator_model.reference, self.field_name_model_type
                             )
-                        if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                        if mapped_tags and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
                                 discriminator_model,
                                 discriminator_field,
                                 _get_mapped_discriminator_tag(discriminator_values, base_enum_source),
                             ))
-                if tags:
-                    _apply_discriminator_tags(model, tags, property_name, mapping, can_retain_cache=can_retain_cache)
+                if not tags:
+                    continue
+                if not mapped_tags:
+                    _apply_discriminator_tags(tags, field_name, can_retain_cache=can_retain_cache)
+                elif _discriminator_union_takes_tags(model, tags, property_name, mapping):
+                    _apply_discriminator_tags(tags, property_name, can_retain_cache=can_retain_cache)
             has_imported_literal = any(import_ == IMPORT_LITERAL for import_ in imports)
             if has_imported_literal:  # pragma: no cover
                 imports.append(IMPORT_LITERAL)

@@ -340,6 +340,31 @@ class Pet(Struct):
     tag: str | UnsetType = UNSET
 ```
 
+### Discriminated unions
+
+msgspec only decodes a union of structs when every struct is tagged, and a tagged struct cannot also have a field
+named like its `tag_field`. A variant whose discriminator property is a `const` is written as a tagged struct. A
+variant whose discriminator value comes from the discriminator `mapping`, an `enum` or the schema name keeps the
+discriminator as a field by default:
+
+```python
+class Cat(Struct):
+    petType: Literal["cat"]
+    meow: str | UnsetType = UNSET
+```
+
+`Cat(petType='cat')`, `cat.petType` and decoding `Cat` on its own work, but decoding the union `Cat | Dog` raises
+msgspec's `TypeError`. [`--use-msgspec-mapped-discriminator-tags`](cli-reference/model-customization.md#use-msgspec-mapped-discriminator-tags)
+tags these variants instead:
+
+```python
+class Cat(Struct, tag_field="petType", tag="cat"):
+    meow: str | UnsetType = UNSET
+```
+
+The union then decodes, while `petType` is no longer a constructor argument or an attribute, and `Cat` decoded on
+its own accepts a payload without `petType`.
+
 ### When to use
 
 - High-performance JSON/MessagePack serialization

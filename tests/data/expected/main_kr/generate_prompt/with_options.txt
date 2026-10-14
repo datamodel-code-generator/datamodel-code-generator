@@ -143,6 +143,7 @@ What other options should I use?
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-mapped-discriminator-tags`: Tag `msgspec.Struct` variants whose discriminator value comes from ...
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
@@ -778,6 +779,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Generate a shared base class with model configuration
                         (e.g., extra='forbid') instead of repeating the
                         configuration in each model. Keeps code DRY.
+  --use-msgspec-mapped-discriminator-tags
+                        msgspec.Struct output only: tag the variants of a
+                        discriminated union with tag_field/tag also when the
+                        value comes from the discriminator mapping, an enum or
+                        the schema name, so that msgspec can decode the union.
+                        The discriminator is then no longer a field or a
+                        constructor argument.
   --use-pendulum        use pendulum instead of datetime
   --use-root-model-sequence-interface
                         Make non-null sequence-like Pydantic v2 RootModel
