@@ -1417,9 +1417,9 @@ msgspec decodes a union of structs only when every struct in it is tagged, so cl
 [`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions), whether or not the
 document declares a discriminated union. Without it, generation stops with `Error: The client target needs
 --use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their discriminated unions can be decoded` and exit
-code 2, and the Python API raises `datamodel_code_generator.Error`. A union that the option still leaves untagged, with
-a warning that names the reason, cannot be decoded: a call that receives it fails with an `APIConnectionError` whose
-cause is msgspec's `TypeError`.
+code 2, and the Python API raises `datamodel_code_generator.Error`. A union of structs that has no discriminator, or
+that the option still leaves untagged (with a warning that names the reason), cannot be decoded: a call that receives
+it fails with an `APIConnectionError` whose cause is msgspec's `TypeError`.
 
 ### Generator options
 
