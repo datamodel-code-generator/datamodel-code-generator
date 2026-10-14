@@ -32,7 +32,19 @@
       1,
       2
     ],
+    "set_field": [
+      1,
+      2
+    ],
+    "mutable_set": [
+      1,
+      2
+    ],
     "optional_list": [
+      1,
+      2
+    ],
+    "nested_union": [
       1,
       2
     ],
@@ -84,7 +96,18 @@
     "pair": [
       1
     ],
+    "set_field": [
+      1
+    ],
+    "mutable_set": [
+      1,
+      2,
+      3
+    ],
     "optional_list": [
+      1
+    ],
+    "nested_union": [
       1
     ],
     "text": "b",

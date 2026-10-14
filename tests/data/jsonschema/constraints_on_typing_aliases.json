@@ -48,9 +48,33 @@
       "x-python-type": "typing.Tuple[int, ...]",
       "minItems": 2
     },
+    "triple": {
+      "type": "integer",
+      "x-python-type": "typing.Tuple[int, int, int]",
+      "minItems": 2
+    },
+    "deque_field": {
+      "type": "integer",
+      "x-python-type": "typing.Deque[int]",
+      "minItems": 2
+    },
+    "set_field": {
+      "type": "integer",
+      "x-python-type": "typing.Set[int]",
+      "minItems": 2
+    },
+    "mutable_set": {
+      "type": "integer",
+      "x-python-type": "typing.MutableSet[int]",
+      "maxItems": 2
+    },
     "optional_list": {
       "x-python-type": "typing.Optional[typing.List[int]]",
       "minItems": 2
+    },
+    "nested_union": {
+      "x-python-type": "typing.Optional[typing.Union[typing.List[int], str]]",
+      "minLength": 2
     },
     "text": {
       "type": "integer",

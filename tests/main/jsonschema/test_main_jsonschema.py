@@ -17,7 +17,7 @@ import tempfile
 import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable as ABCCallable
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from contextlib import ExitStack, nullcontext, suppress
 from dataclasses import Field as DataclassField
 from decimal import Decimal
@@ -5338,6 +5338,59 @@ def test_main_constraints_on_typing_aliases(output_file: Path, expected_file: st
     assert_output(
         "\n".join(rejected) + "\n",
         EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
+    )
+
+
+def test_main_constraints_on_typing_protocols(output_file: Path) -> None:
+    """Test protocols and abstract types take the keywords Pydantic enforces on them, iterables while iterating."""
+    name = "constraints_on_typing_protocols"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}.py",
+        extra_args=[
+            "--field-constraints",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.11",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "ConstraintsOnTypingProtocols") as model:
+        rejected = []
+        for field_name, value in {"": None, **payloads["invalid"]}.items():
+            with suppress(ValidationError):
+                instance = model.model_validate(payloads["valid"] | ({field_name: value} if field_name else {}))
+                for item in vars(instance).values():
+                    if isinstance(item, Iterator):
+                        list(item)
+                continue
+            rejected.append(field_name or "valid payload")
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / f"{name}_rejected.txt")
+
+
+def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
+    """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "constraints_on_typing_lookalikes.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="constraints_on_typing_lookalikes.py",
+        extra_args=[
+            "--field-constraints",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.11",
+        ],
+        skip_code_validation=True,
     )
 
 

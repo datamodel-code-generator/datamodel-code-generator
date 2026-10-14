@@ -4,19 +4,19 @@
 from __future__ import annotations
 
 from collections.abc import Collection, MutableSequence, Set
+from typing import Set as Set_1
+from typing import Sized, SupportsInt, Text, Tuple, Union
 from typing import (
     Annotated,
     Any,
+    Deque,
     Final,
     FrozenSet,
     List,
     Mapping,
+    MutableSet,
     Optional,
     Sequence,
-    Sized,
-    SupportsInt,
-    Text,
-    Tuple,
 )
 
 from pydantic import ConfigDict, Field
@@ -34,7 +34,12 @@ class ConstraintsOnTypingAliases:
     frozen: FrozenSet[int] | None = Field(None, min_length=2)
     abstract_set: Set[int] | None = Field(None, max_length=2)
     pair: Tuple[int, ...] | None = Field(None, min_length=2)
+    triple: Tuple[int, int, int] | None = Field(None, min_length=2)
+    deque_field: Deque[int] | None = Field(None, min_length=2)
+    set_field: Set_1[int] | None = Field(None, min_length=2)
+    mutable_set: MutableSet[int] | None = Field(None, max_length=2)
     optional_list: Optional[List[int]] | None = Field(None, min_length=2)
+    nested_union: Optional[Union[List[int], str]] | None = Field(None, min_length=2)
     text: Text | None = Field(None, min_length=2, pattern='^a')
     annotated_text: Annotated[str, str] | None = Field(None, min_length=2, pattern='^a')
     optional_annotated_text: Optional[Annotated[str, str]] | None = Field(
@@ -47,7 +52,7 @@ class ConstraintsOnTypingAliases:
     mapping: Mapping[str, int] | None = None
     collection: Collection | None = Field(None, min_length=2)
     sized: Sized | None = Field(None, min_length=2)
-    buffer: Buffer | None = Field(None, max_length=2, pattern='^a')
+    buffer: Buffer | None = Field(None, max_length=2)
     supports_int: SupportsInt | None = None
     custom_path: Sequence | None = Field(None, max_length=2)
     overridden: Any | None = None

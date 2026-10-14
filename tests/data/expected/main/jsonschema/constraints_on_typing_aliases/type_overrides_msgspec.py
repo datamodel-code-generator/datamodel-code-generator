@@ -4,18 +4,18 @@
 from __future__ import annotations
 
 from collections.abc import Collection, MutableSequence, Set
+from typing import Set as Set_1
+from typing import Sized, SupportsInt, Text, Tuple, Union
 from typing import (
     Annotated,
+    Deque,
     Final,
     FrozenSet,
     List,
     Mapping,
+    MutableSet,
     Optional,
     Sequence,
-    Sized,
-    SupportsInt,
-    Text,
-    Tuple,
 )
 
 from msgspec import UNSET, Meta, Struct, UnsetType
@@ -33,7 +33,12 @@ class ConstraintsOnTypingAliases(Struct):
     frozen: Annotated[FrozenSet[int], Meta(min_length=2)] | UnsetType = UNSET
     abstract_set: Annotated[Set[int], Meta(max_length=2)] | UnsetType = UNSET
     pair: Annotated[Tuple[int, ...], Meta(min_length=2)] | UnsetType = UNSET
+    triple: Tuple[int, int, int] | UnsetType = UNSET
+    deque_field: Deque[int] | UnsetType = UNSET
+    set_field: Annotated[Set_1[int], Meta(min_length=2)] | UnsetType = UNSET
+    mutable_set: Annotated[MutableSet[int], Meta(max_length=2)] | UnsetType = UNSET
     optional_list: Optional[List[int]] | UnsetType = UNSET
+    nested_union: Optional[Union[List[int], str]] | UnsetType = UNSET
     text: Annotated[Text, Meta(min_length=2, pattern='^a')] | UnsetType = UNSET
     annotated_text: (
         Annotated[Annotated[str, str], Meta(min_length=2, pattern='^a')] | UnsetType
