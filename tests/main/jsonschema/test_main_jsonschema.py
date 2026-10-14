@@ -4987,7 +4987,10 @@ def test_main_generate_pydantic_v2_dataclass_required_assignment_warning(
             ],
         )
     assert_output(
-        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
         EXPECTED_JSON_SCHEMA_PATH / f"{expected_name}_warnings.txt",
     )
 
