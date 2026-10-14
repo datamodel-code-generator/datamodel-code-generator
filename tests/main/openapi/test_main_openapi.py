@@ -819,6 +819,27 @@ def test_main_openapi_msgspec_nullable_enum(
     )
 
 
+@pytest.mark.parametrize("extra_args", [[], ["--use-msgspec-nullable-enum-alias"]], ids=["default", "alias"])
+def test_main_openapi_nullable_enum_alias_ignored_by_pydantic(extra_args: list[str], output_file: Path) -> None:
+    """Write the same Pydantic models for an enum that lists null with and without --use-msgspec-nullable-enum-alias."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "msgspec_nullable_enum_31.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / "openapi_31_pydantic_v2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("order", ["base_later", "base_earlier"])
 def test_main_openapi_msgspec_tagged_unions_declaration_order(order: str, output_file: Path) -> None:
     """Tag variants and their base struct alike whichever of their unions the document declares first."""
