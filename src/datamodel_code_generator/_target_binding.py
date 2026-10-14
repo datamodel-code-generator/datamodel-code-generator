@@ -377,17 +377,21 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self._api_documents,
             self.schema_locations,
             versions=[],
-            binary=self._binary_formats(),
+            binary=self._binary_formats(encoded=False),
+            encoded=self._binary_formats(encoded=True),
             anchors=self._anchor_locations,
         )
 
-    def _binary_formats(self) -> frozenset[str]:
-        """Return the string formats the models type as raw bytes, as `--type-mappings` leaves or makes them."""
+    def _binary_formats(self, *, encoded: bool) -> frozenset[str]:
+        """Return the string formats the models type as bytes, as `--type-mappings` leaves or makes them.
+
+        They are the formats of raw bytes, or those of bytes the models write as base64 text.
+        """
         return frozenset(
             found
             for found in ("binary", *(format_ for type_, format_ in self.type_mappings if type_ == "string"))
             if self._get_type_with_mappings("string", found) == Types.binary
-            and not self._is_base64_encoded_binary_mapping("string", found)
+            and self._is_base64_encoded_binary_mapping("string", found) is encoded
         )
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
@@ -723,6 +727,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.schema_records.clear()
         self.schema_locations.clear()
         self._reader.binaries.clear()
+        self._reader.encodings.clear()
         self.free_schemas.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
@@ -782,7 +787,9 @@ class _SchemaRecord:
     """What the walk recorded of an acquired schema that its model types do not say.
 
     `binary` is where the first raw binary string sits that the schema's values carry as text, and `octets` says the
-    schema of a text media is one raw binary string, which the media carries as the raw body.
+    schema of a text media is one raw binary string, which the media carries as the raw body. `wrapped` says a text
+    media's schema is not such a string but reaches one, and no bytes the models write as base64 text, which is the
+    raw body when the models type the whole schema as such strings alone.
     """
 
     default: LiteralScalar | None
@@ -791,6 +798,7 @@ class _SchemaRecord:
     encoding: EncodingFacts | None
     binary: SourceLocation | None = None
     octets: bool = False
+    wrapped: bool = False
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -2326,21 +2334,24 @@ class _Reader(_SchemaLocations):
     it visits declares its members; the binder locates members through those records alone.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         documents: dict[str, dict[str, YamlValue]],
         nodes: dict[_Declaration, _SchemaNode],
         *,
         versions: list[str],
         binary: frozenset[str],
+        encoded: frozenset[str],
         anchors: Callable[..., tuple[str, ...]],
     ) -> None:
         super().__init__(nodes, documents)
         self.loaded = documents
         self.versions = versions
         self.formats = binary
+        self.encoded = encoded
         self.anchors = anchors
         self.binaries: dict[_Declaration, _Declaration | None] = {}
+        self.encodings: dict[_Declaration, _Declaration | None] = {}
 
     @property
     def legacy(self) -> bool:
@@ -2394,7 +2405,8 @@ class _Reader(_SchemaLocations):
             else None
         )
         item = declaration.tokens[-1] == "itemSchema"
-        octets = kind == "text" and not (text or item) and self.raw_bytes(self.whole(declaration)[1])
+        body = kind == "text" and not (text or item)
+        octets = body and self.raw_bytes(self.whole(declaration)[1], self.formats)
         if not octets and (text or item or kind in _TEXT_MEDIA):
             binary = None if (found := self.binary(declaration)) is None else locate(found)
         else:
@@ -2408,6 +2420,7 @@ class _Reader(_SchemaLocations):
             else None,
             binary,
             octets,
+            body and binary is not None and not self.base64(declaration),
         )
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
@@ -2461,36 +2474,47 @@ class _Reader(_SchemaLocations):
 
         The walk follows references, combined branches, properties, items and other properties.
         """
-        return self._binary(declaration, {})[0]
+        return self._reach(declaration, {}, self.formats, self.binaries)[0]
 
-    def _binary(self, declaration: _Declaration, walked: dict[_Declaration, int]) -> tuple[_Declaration | None, int]:
-        """Return the first raw binary string a schema reaches, and the earliest walked schema it leads back to.
+    def base64(self, declaration: _Declaration) -> bool:
+        """Return whether a schema's values hold a string the models type as bytes yet write as base64 text."""
+        return bool(self.encoded) and self._reach(declaration, {}, self.encoded, self.encodings)[0] is not None
+
+    def _reach(
+        self,
+        declaration: _Declaration,
+        walked: dict[_Declaration, int],
+        formats: frozenset[str],
+        known: dict[_Declaration, _Declaration | None],
+    ) -> tuple[_Declaration | None, int]:
+        """Return the first string of the formats a schema reaches, and the earliest walked schema it leads back to.
 
         `walked` holds the schemas of the walk whose answer is pending, in their walk order. A schema that finds a
         string, or leads back to none walked before it, settles itself and every pending schema walked after it,
-        since they all reach it; each schema is walked once.
+        since they all reach it; each schema is walked once, and `known` holds the settled answers.
         """
-        if declaration in self.binaries:
-            return self.binaries[declaration], len(walked)
+        if declaration in known:
+            return known[declaration], len(walked)
         if (order := walked.get(declaration)) is not None:
             return None, order
         order = walked[declaration] = len(walked)
         low = order
         raw = _mapping(self.borrow(declaration))
-        found = declaration if self.raw_bytes(raw) else None
+        found = declaration if self.raw_bytes(raw, formats) else None
         for child in self._subschemas(declaration, raw):
             if found is not None:
                 break
-            found, reached = self._binary(child, walked)
+            found, reached = self._reach(child, walked, formats, known)
             low = min(low, reached)
         while (found is not None or low == order) and len(walked) > order:
-            self.binaries[walked.popitem()[0]] = found
+            known[walked.popitem()[0]] = found
         return found, low
 
-    def raw_bytes(self, raw: dict[str, YamlValue]) -> bool:
-        """Return whether a schema is a string the models type as raw bytes."""
+    @staticmethod
+    def raw_bytes(raw: dict[str, YamlValue], formats: frozenset[str]) -> bool:
+        """Return whether a schema is a string of one of the formats, as those the models type as raw bytes."""
         format_ = raw.get("format")
-        return isinstance(format_, str) and format_ in self.formats and "string" in _json_types(raw)
+        return isinstance(format_, str) and format_ in formats and "string" in _json_types(raw)
 
     def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
         """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
@@ -3453,22 +3477,43 @@ class _Contracts(_SchemaUses):
         """Record what the walk recorded of the media's own schema keyword on its uses.
 
         A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
-        text encoding of its schema.
+        text encoding of its schema. A text media whose schema reaches a raw binary string carries it as the raw
+        body, not as text, when the models type the whole schema as that string.
         """
         multipart = media.strip().lower().startswith("multipart/")
         record = self.record(schema)
         for use in uses:
             binding = self.uses[use]
+            octets = record.octets or (record.wrapped and self.octets(schema, use.direction))
             self.uses[use] = replace(
                 binding,
                 parts=self.parts(schema, binding.members) if multipart else None,
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
-                binary=record.binary,
-                octets=record.octets,
+                binary=None if octets else record.binary,
+                octets=octets,
             )
         return uses
+
+    @cached_property
+    def binary_type(self) -> TypeView | None:
+        """Return the type the models give a raw binary string."""
+        binary = self.parser.data_type_manager.get_data_type(Types.binary)
+        return self.binder.projector("neutral", inline=True).project(binary).value
+
+    def octets(self, schema: _Declaration, direction: Direction) -> bool:
+        """Return whether the models type a schema's whole value as raw binary strings alone, constrained or null too.
+
+        Each alias and root model is read as the type it stands for, as the schema's wrappers leave it; a backend that
+        keeps the constraints of a string in its type holds two such strings where another holds one.
+        """
+        value = self.projection(schema, "value", direction, inline=True).value
+        found = [member for member in (() if value is None else _members(value)) if not isinstance(member, NoneType)]
+        return bool(found) and all(
+            member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
+            for member in found
+        )
 
     def media(  # noqa: PLR0913
         self,

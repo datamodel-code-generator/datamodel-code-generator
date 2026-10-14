@@ -205,6 +205,37 @@ paths:
       responses:
         '204':
           description: Stored.
+  /mixed:
+    post:
+      operationId: sendMixed
+      parameters:
+        - name: mark
+          in: query
+          content:
+            text/plain:
+              schema:
+                allOf:
+                  - {type: string, format: binary}
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              anyOf:
+                - {type: string, format: binary}
+                - {$ref: '#/components/schemas/Named'}
+      responses:
+        '200':
+          description: The stored lines.
+          content:
+            text/csv:
+              schema:
+                type: array
+                items: {type: string, format: binary}
+            text/event-stream:
+              itemSchema:
+                allOf:
+                  - {type: string, format: binary}
 components:
   schemas:
     Chunk:

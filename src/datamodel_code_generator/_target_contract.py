@@ -493,7 +493,8 @@ class TypeUseBinding:
     `argument` spells the type a parameter's argument takes: its type with each alias and root model by the type it
     stands for. `binary` is where the first string the models type as raw bytes sits that the use carries as text:
     in a JSON, text or URL-encoded media, an item schema, a parameter or header, or a multipart part that holds no
-    files. `octets` says a text media's schema is one such string, which the media carries as the raw body.
+    files. `octets` says a text media's schema is one such string, or reaches such strings, and no bytes written as
+    base64, that the models type its whole value as, which the media carries as the raw body.
     """
 
     id: TypeUseId

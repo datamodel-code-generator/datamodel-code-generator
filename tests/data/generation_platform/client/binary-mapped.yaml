@@ -16,6 +16,20 @@ paths:
       responses:
         '204':
           description: Stored.
+  /digests:
+    post:
+      operationId: storeDigest
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              anyOf:
+                - {type: string, format: byte}
+                - {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
 components:
   schemas:
     Record:
