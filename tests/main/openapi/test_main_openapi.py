@@ -3333,7 +3333,7 @@ def test_main_openapi_ref_nullable_strict_nullable(output_file: Path) -> None:
 def test_main_openapi_msgspec_ref_nullable_strict_nullable(
     output_file: Path, expected_file: str, extra_args: list[str]
 ) -> None:
-    """Write None once for optional references to nullable object and allOf models."""
+    """Write None once for references to nullable models and for described nullable inline objects."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "ref_nullable.yaml",
         output_path=output_file,

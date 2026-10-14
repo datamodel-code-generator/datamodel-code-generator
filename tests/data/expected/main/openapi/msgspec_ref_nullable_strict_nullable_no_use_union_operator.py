@@ -16,6 +16,19 @@ class NonNullableChild(Struct):
     name: Union[str, UnsetType] = UNSET
 
 
+class OptionalDescribedInline(Struct):
+    size: Union[int, UnsetType] = UNSET
+
+
+class RequiredDescribedInline(Struct):
+    size: Union[int, UnsetType] = UNSET
+
+
+class OptionalTitledInlineAllOf(Struct):
+    first: Union[str, UnsetType] = UNSET
+    second: Union[str, UnsetType] = UNSET
+
+
 class NullableWrapper(NonNullableChild):
     pass
 
@@ -32,6 +45,8 @@ class NullableMerged(Struct):
 class Parent(Struct):
     nullableChild: Optional[NullableChild]
     nonNullableChild: NonNullableChild
+    requiredDescribedNullableChild: Union[Annotated[NullableChild, Meta(description='A required nullable child with a description.')], None]
+    requiredDescribedInline: Union[Annotated[RequiredDescribedInline, Meta(description='A required nullable inline object with a description.')], None]
     optionalNullableChild: Union[NullableChild, None, UnsetType] = UNSET
     optionalNullableWrapper: Union[NullableWrapper, None, UnsetType] = UNSET
     optionalNullableExtended: Union[NullableExtended, None, UnsetType] = UNSET
@@ -41,5 +56,12 @@ class Parent(Struct):
         None,
         UnsetType,
     ] = UNSET
+    optionalDescribedInline: Union[
+        Annotated[OptionalDescribedInline, Meta(description='An optional nullable inline object with a description.')],
+        None,
+    ] = None
+    optionalTitledInlineAllOf: Union[
+        Annotated[OptionalTitledInlineAllOf, Meta(title='Titled')], None
+    ] = None
     nullableChildren: Union[list[Optional[NullableChild]], UnsetType] = UNSET
     nullableChildMap: Union[dict[str, Optional[NullableChild]], UnsetType] = UNSET

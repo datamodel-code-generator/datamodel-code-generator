@@ -21,6 +21,8 @@ components:
       required:
         - nullableChild
         - nonNullableChild
+        - requiredDescribedNullableChild
+        - requiredDescribedInline
       properties:
         nullableChild:
           $ref: "#/components/schemas/NullableChild"
@@ -38,6 +40,36 @@ components:
           description: A nullable child with a description.
           allOf:
             - $ref: "#/components/schemas/NullableChild"
+        requiredDescribedNullableChild:
+          description: A required nullable child with a description.
+          allOf:
+            - $ref: "#/components/schemas/NullableChild"
+        optionalDescribedInline:
+          description: An optional nullable inline object with a description.
+          type: object
+          nullable: true
+          properties:
+            size:
+              type: integer
+        requiredDescribedInline:
+          description: A required nullable inline object with a description.
+          type: object
+          nullable: true
+          properties:
+            size:
+              type: integer
+        optionalTitledInlineAllOf:
+          title: Titled
+          nullable: true
+          allOf:
+            - type: object
+              properties:
+                first:
+                  type: string
+            - type: object
+              properties:
+                second:
+                  type: string
         nullableChildren:
           type: array
           items:

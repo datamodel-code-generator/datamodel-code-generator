@@ -87,6 +87,7 @@ _RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY = "_runtime_expression_imports"
 _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
 _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
+_REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 
 
@@ -616,6 +617,9 @@ class DataType(_BaseModel):
                 object.__setattr__(new_obj, field_name, copied_value)
         new_obj._set_runtime_expression_imports(self.runtime_expression_imports)
         new_obj._set_forward_reference(self._is_forward_reference)
+        for key in (_REFERENCE_NULL_DATA_TYPE_KEY, _NULL_STRIPPED_DATA_TYPE_KEY):
+            if key in self.__dict__:
+                new_obj.__dict__[key] = True
         if (enum_member_literal_reference := self._enum_member_literal_reference) is not None:
             new_obj._set_enum_member_literal_reference(enum_member_literal_reference)
 
@@ -1045,13 +1049,19 @@ class DataType(_BaseModel):
         source = self.reference.source
         if getattr(source, "is_alias", False):
             return
-        if getattr(source, "nullable", False) and not self.__dict__.get(_NULL_STRIPPED_DATA_TYPE_KEY):
-            self.is_optional = True
+        if self.is_optional or not getattr(source, "nullable", False) or _NULL_STRIPPED_DATA_TYPE_KEY in self.__dict__:
+            return
+        self.is_optional = True
+        self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
 
-    def _strip_null(self) -> None:
-        """Drop the None the type carries, which its nullable model reference then no longer adds back."""
+    def _strip_null(self, *, own: bool) -> None:
+        """Drop the None of the type, for good when it is the type's own rather than its nullable model's.
+
+        A None that only the referenced model admits comes back with the next type hint.
+        """
+        if own or (self.is_optional and _REFERENCE_NULL_DATA_TYPE_KEY not in self.__dict__):
+            self.__dict__[_NULL_STRIPPED_DATA_TYPE_KEY] = True
         self.is_optional = False
-        self.__dict__[_NULL_STRIPPED_DATA_TYPE_KEY] = True
 
     def _wrap_dict_type_hint(
         self,

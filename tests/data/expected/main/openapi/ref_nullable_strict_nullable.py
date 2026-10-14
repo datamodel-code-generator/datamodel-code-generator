@@ -15,6 +15,19 @@ class NonNullableChild(BaseModel):
     name: str | None = None
 
 
+class OptionalDescribedInline(BaseModel):
+    size: int | None = None
+
+
+class RequiredDescribedInline(BaseModel):
+    size: int | None = None
+
+
+class OptionalTitledInlineAllOf(BaseModel):
+    first: str | None = None
+    second: str | None = None
+
+
 class NullableWrapper(NonNullableChild):
     pass
 
@@ -37,6 +50,18 @@ class Parent(BaseModel):
     optionalNullableMerged: NullableMerged | None = None
     describedNullableChild: NullableChild | None = Field(
         None, description='A nullable child with a description.'
+    )
+    requiredDescribedNullableChild: NullableChild | None = Field(
+        ..., description='A required nullable child with a description.'
+    )
+    optionalDescribedInline: OptionalDescribedInline | None = Field(
+        None, description='An optional nullable inline object with a description.'
+    )
+    requiredDescribedInline: RequiredDescribedInline | None = Field(
+        ..., description='A required nullable inline object with a description.'
+    )
+    optionalTitledInlineAllOf: OptionalTitledInlineAllOf | None = Field(
+        None, title='Titled'
     )
     nullableChildren: list[NullableChild | None] | None = None
     nullableChildMap: dict[str, NullableChild | None] | None = None

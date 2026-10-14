@@ -16,6 +16,19 @@ class NonNullableChild(Struct):
     name: str | UnsetType = UNSET
 
 
+class OptionalDescribedInline(Struct):
+    size: int | UnsetType = UNSET
+
+
+class RequiredDescribedInline(Struct):
+    size: int | UnsetType = UNSET
+
+
+class OptionalTitledInlineAllOf(Struct):
+    first: str | UnsetType = UNSET
+    second: str | UnsetType = UNSET
+
+
 class NullableWrapper(NonNullableChild):
     pass
 
@@ -32,6 +45,8 @@ class NullableMerged(Struct):
 class Parent(Struct):
     nullableChild: NullableChild | None
     nonNullableChild: NonNullableChild
+    requiredDescribedNullableChild: Annotated[NullableChild, Meta(description='A required nullable child with a description.')] | None
+    requiredDescribedInline: Annotated[RequiredDescribedInline, Meta(description='A required nullable inline object with a description.')] | None
     optionalNullableChild: NullableChild | None | UnsetType = UNSET
     optionalNullableWrapper: NullableWrapper | None | UnsetType = UNSET
     optionalNullableExtended: NullableExtended | None | UnsetType = UNSET
@@ -44,5 +59,15 @@ class Parent(Struct):
         | None
         | UnsetType
     ) = UNSET
+    optionalDescribedInline: (
+        Annotated[
+            OptionalDescribedInline,
+            Meta(description='An optional nullable inline object with a description.'),
+        ]
+        | None
+    ) = None
+    optionalTitledInlineAllOf: (
+        Annotated[OptionalTitledInlineAllOf, Meta(title='Titled')] | None
+    ) = None
     nullableChildren: list[NullableChild | None] | UnsetType = UNSET
     nullableChildMap: dict[str, NullableChild | None] | UnsetType = UNSET
