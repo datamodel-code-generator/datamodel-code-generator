@@ -55476,9 +55476,10 @@ change generated output.
 | `additionalProperties` | Both: schema interpretation plus emitted typed extras, recursive references and runtime validators affect consumer behavior. | Preserve schema/alias/recursive extra-property tests and verify generated validation, rather than treating all failures as DCG-runtime-only. |
 | Payload and generated-code execution | Both are currently exercised together in pinned environments: generated code is imported and validated using the same environment's Pydantic. | Split producer and consumer environments where necessary to retain old consumer coverage after raising DCG's own minimum. |
 
-Current dedicated environments include `pydantic200` (2.0.0), `pydantic20` (2.0.3), `pydantic25` (2.5.3), and
-`pydantic213` (2.13.4). Separate payload environments include `py311-payload-runtime-min` (Pydantic 2.0.3 and msgspec
-0.18), `py314-payload-runtime-min` (Pydantic 2.12 and msgspec 0.20), and their latest counterparts. The payload and
+Current dedicated environments include `pydantic200` (2.0.0), `pydantic20` (2.0.3), `pydantic25` (2.5.3),
+`pydantic212` (2.12.5), and `pydantic213` (2.13.4). Separate payload environments include
+`py311-payload-runtime-min` (Pydantic 2.0.3 and msgspec 0.18), `py314-payload-runtime-min` (Pydantic 2.12 and
+msgspec 0.20), and their latest counterparts. The payload and
 execution suites contain runtime-specific exclusions and boundary expectations; they cannot be dropped just
 because the generator's own floor increases. These environments and compatibility implementations are retained.
 
