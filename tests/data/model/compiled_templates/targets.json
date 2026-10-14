@@ -2230,6 +2230,18 @@
         }
       }
     ],
+    "authorize.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "package": "app.server",
+          "entrypoint": "app.server.main",
+          "requirement_sets": "RequirementSets",
+          "credentials": "Credentials",
+          "imports": "from app.server import Credentials, RequirementSets"
+        }
+      }
+    ],
     "contract.jinja2": [
       {
         "name": "populated",
@@ -2357,6 +2369,141 @@
         }
       }
     ],
+    "implementation.jinja2": [
+      {
+        "name": "asynchronous",
+        "context": {
+          "protocol": "PetsService",
+          "services": "app.server.services",
+          "entrypoint": "app.server.main",
+          "name": "Pets",
+          "base": "PetsService",
+          "methods": "the pets operations",
+          "protocol_methods": [
+            {
+              "name": "list_pets",
+              "asynchronous": true,
+              "parameters": [
+                {
+                  "name": "limit",
+                  "annotation": "int | None",
+                  "default": ""
+                }
+              ],
+              "returns": "models.Pets | HTTPResult[models.Pets | models.FieldPetsGetResponse] | Response",
+              "docstring": "\"\"\"\n        Handle GET /pets.\n        \"\"\""
+            },
+            {
+              "name": "create_pets",
+              "asynchronous": true,
+              "parameters": [],
+              "returns": "None | HTTPResult[models.FieldPetsPostResponse] | Response",
+              "docstring": "\"\"\"\n        Handle POST /pets.\n        \"\"\""
+            },
+            {
+              "name": "show_pet_by_id",
+              "asynchronous": true,
+              "parameters": [
+                {
+                  "name": "petId",
+                  "annotation": "str",
+                  "default": ""
+                }
+              ],
+              "returns": "models.Pets | HTTPResult[models.Pets | models.Error] | Response",
+              "docstring": "\"\"\"\n        Handle GET /pets/{petId}.\n        \"\"\""
+            }
+          ],
+          "imports": "from app import models\nfrom app.server import HTTPResult\nfrom app.server.services import PetsService\nfrom fastapi.responses import Response"
+        }
+      },
+      {
+        "name": "secured",
+        "context": {
+          "protocol": "DefaultService",
+          "services": "app.server.services",
+          "entrypoint": "app.server.main",
+          "name": "Default",
+          "base": "DefaultService[object]",
+          "methods": "the default operations",
+          "protocol_methods": [
+            {
+              "name": "get_keys",
+              "asynchronous": false,
+              "parameters": [
+                {
+                  "name": "principal",
+                  "annotation": "object",
+                  "default": ""
+                }
+              ],
+              "returns": "None | HTTPResult[None] | Response",
+              "docstring": "\"\"\"\n        Handle GET /keys.\n        \"\"\""
+            }
+          ],
+          "imports": "from app.server import HTTPResult\nfrom app.server.services import DefaultService\nfrom fastapi.responses import Response"
+        }
+      }
+    ],
+    "main.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "app": "app.server.main:app",
+          "services": "app.services",
+          "implementations": [
+            {
+              "module": "app.services.authorize",
+              "name": "authorize",
+              "alias": "DefaultImplementation",
+              "keyword": "authorize"
+            },
+            {
+              "module": "app.services.default",
+              "name": "Default",
+              "alias": "Default",
+              "keyword": "default"
+            }
+          ],
+          "table": [
+            {
+              "keyword": "'app.services.default'",
+              "value": "'Default'"
+            },
+            {
+              "keyword": "'app.services.authorize'",
+              "value": "'authorize'"
+            }
+          ],
+          "missing": "missing_implementation",
+          "create_app": "create_app",
+          "arguments": [
+            {
+              "keyword": "default",
+              "value": "DefaultImplementation()"
+            },
+            {
+              "keyword": "authorize",
+              "value": "authorize"
+            }
+          ],
+          "imports": "from ._runtime.server.application import missing_implementation\nfrom .application import create_app"
+        }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "app": "app.server.main:app",
+          "services": "app.services",
+          "implementations": [],
+          "table": [],
+          "missing": "missing_implementation",
+          "create_app": "create_app",
+          "arguments": [],
+          "imports": "from .application import create_app"
+        }
+      }
+    ],
     "openapi.jinja2": [
       {
         "name": "module",
@@ -2414,7 +2561,29 @@
           ],
           "arguments": "pets=PetService(), authorize=authorize",
           "forms": true,
-          "raw_request": true
+          "raw_request": true,
+          "app": "server.main:app",
+          "services_package": "services",
+          "owned": [
+            {
+              "module": "app.services.default",
+              "name": "Default",
+              "alias": "Default",
+              "keyword": "default",
+              "base": "DefaultService[object]",
+              "file": "../services/default.py",
+              "stub": "\u001fimplementation:services/default.py\u001f"
+            },
+            {
+              "module": "app.services.authorize",
+              "name": "authorize",
+              "alias": "authorize",
+              "keyword": "authorize",
+              "base": "",
+              "file": "../services/authorize.py",
+              "stub": "\u001fimplementation:services/authorize.py\u001f"
+            }
+          ]
         }
       },
       {
@@ -2430,7 +2599,10 @@
           "services": [],
           "arguments": "",
           "forms": false,
-          "raw_request": false
+          "raw_request": false,
+          "app": "server.main:app",
+          "services_package": "services",
+          "owned": []
         }
       }
     ],
@@ -2457,6 +2629,7 @@
                 "function": "checked",
                 "method": "get_pet",
                 "label": "'The pets.get_pet method of GET /pets/{petId} 日本'",
+                "keywords": "('petId',)",
                 "asynchronous": true
               },
               "principal": {
@@ -2540,6 +2713,7 @@
                 "function": "checked",
                 "method": "list_pets",
                 "label": "'The pets.list_pets method of GET /pets'",
+                "keywords": "('limit', 'offset')",
                 "asynchronous": false
               },
               "principal": null,
@@ -2632,6 +2806,7 @@
                 "function": "checked",
                 "method": "get_pet",
                 "label": "'The pets.get_pet method of GET /pets/{petId} 日本'",
+                "keywords": "('petId',)",
                 "asynchronous": false
               },
               "principal": null,
@@ -2696,6 +2871,7 @@
                 "function": "checked",
                 "method": "list_pets",
                 "label": "'The pets.list_pets method of GET /pets'",
+                "keywords": "('limit', 'offset')",
                 "asynchronous": true
               },
               "principal": null,
