@@ -5375,5 +5375,14 @@
         "_sync.py"
       ]
     ]
+  },
+  "stream-no-content": {
+    "input": "stream-no-content.yaml",
+    "references": [
+      "protocols/stream-no-content.json"
+    ],
+    "config": {
+      "protocols": "protocols/stream-no-content.json"
+    }
   }
 }

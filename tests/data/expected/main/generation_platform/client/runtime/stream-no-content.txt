@@ -1,0 +1,71 @@
+# stream-no-content pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  sync 204 events.plain = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  sync 204 events.done = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  sync 204 events.sentinel = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  sync 204 events.tracked = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/undeclared
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  sync 204 events.undeclared ! APIStatusError: Error code: 204 [operation_id='undeclaredEvents', status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  sync 204 records.all = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  sync 204 records.done = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  sync 200 still needs metadata ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Stream-Id', occurrence='single')] missing
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream; charset=utf-8, last-event-id: 1] b''
+  sync resumed 204 = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream; charset=utf-8, last-event-id: 1] b''
+  sync reconnected 204 = (1, 204, {'reconnects': 1})
+  pending replies 0
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async 204 events.plain = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async 204 events.done = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async 204 events.sentinel = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async 204 events.tracked = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/undeclared
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async 204 events.undeclared ! APIStatusError: Error code: 204 [operation_id='undeclaredEvents', status_code=204, body=b'', body_bytes=b'', truncated=False] unexpected_status
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  async 204 records.all = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  async 204 records.done = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async 200 still needs metadata ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Stream-Id', occurrence='single')] missing
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream; charset=utf-8, last-event-id: 1] b''
+  async resumed 204 = (0, 204, {'reconnects': 0})
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream; charset=utf-8, last-event-id: 1] b''
+  async reconnected 204 = (1, 204, {'reconnects': 1})
+  pending replies 0

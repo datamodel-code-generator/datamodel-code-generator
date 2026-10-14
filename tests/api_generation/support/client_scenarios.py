@@ -84,6 +84,7 @@ from tests.api_generation.scenarios.client_retry_policy import retry_policy
 from tests.api_generation.scenarios.client_signatures import keywords, signatures
 from tests.api_generation.scenarios.client_sockets import sockets
 from tests.api_generation.scenarios.client_stream_lifetimes import stream_lifetimes
+from tests.api_generation.scenarios.client_stream_no_content import stream_no_content
 from tests.api_generation.scenarios.client_stream_resume import stream_resume
 from tests.api_generation.scenarios.client_streams import (
     ndjson,
@@ -933,6 +934,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
+    "stream-no-content": ("stream-no-content", BACKENDS, stream_no_content),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),

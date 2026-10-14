@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import partial
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias, cast
 
 from typing_extensions import TypeIs, TypeVar
@@ -658,7 +659,7 @@ class ResponseDecoder(Generic[T_co]):
 
     def streamed(self, info: ResponseInfo) -> None:
         """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type."""
-        if self._branch(info, b"").media_type is None:
+        if self._branch(info, b"").media_type is None and info.status_code != HTTPStatus.NO_CONTENT:
             raise response_failure(info, "unexpected_media_type", media_type=info.content_type)
 
     def decode(

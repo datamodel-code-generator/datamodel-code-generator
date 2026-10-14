@@ -16216,8 +16216,9 @@ the asyncio `data()` is not awaited. Representations name no data, event ID, or 
 
 The response's status and `Content-Type` are checked before `open` returns: an error status raises the `APIStatusError`
 subclass of its status, an undeclared status `APIStatusError` with the reason `unexpected_status`, and a body of another
-media type, or none, `DecodeError` with the reason `unexpected_media_type`. Its acquisition retries like any call. A
-stream then reads only the bytes its next event needs and owns the response until it ends, fails, or closes: close it
+media type, or none, `DecodeError` with the reason `unexpected_media_type`. A declared bodyless `204` instead ends the
+stream without events, whatever its completion rule. Its acquisition retries like any call. A stream then reads only
+the bytes its next event needs and owns the response until it ends, fails, or closes: close it
 with `with`, `async with`, `close()`, or `aclose()`, since leaving a loop early releases nothing. One consumer reads a
 stream at a time: a step, or a close, while another step runs raises `ConfigurationError` with the reason
 `invalid_state`, and so does every step after a failure or `close()`; after its end every step stops. Streams own their
@@ -16430,7 +16431,8 @@ size, remote, idle, or deadline failure, the declared end, a reopen answered wit
 Events the server sends again after a reopen are delivered again, numbered on: nothing removes duplicates. Every open
 and reopen is its own request of the HTTP client, which its `event_hooks` see. Neither the headers and query of the
 client, a view, or the call may name a header or query parameter a resuming helper's reopen writes, nor the call fix
-an idempotency key.
+an idempotency key. A declared bodyless `204` on open, resume, or reconnection ends the stream without another
+reconnection and requires no resume headers.
 
 ### Stream generation checks
 
@@ -16519,6 +16521,9 @@ last one raise `StreamInterruptedError` with the reason `eof`. With `allow_eof`,
 the last record, a sentinel included; a body that ends with a line end ends the same way under both.
 
 A line split over many reads is joined once its line end arrives, so it costs time linear in its length.
+
+A declared bodyless `204` ends an NDJSON stream without records, including on resume or reconnection, and requires
+no resume headers.
 
 ### NDJSON generation checks
 

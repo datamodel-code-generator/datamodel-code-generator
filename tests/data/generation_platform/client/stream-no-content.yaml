@@ -1,0 +1,125 @@
+openapi: 3.1.0
+info:
+  title: Terminal streams
+  version: '1.0'
+servers:
+- url: https://api.example.com
+paths:
+  /events:
+    get:
+      operationId: streamEvents
+      tags:
+      - events
+      parameters:
+      - name: topic
+        in: query
+        schema:
+          type: string
+      - name: Last-Event-ID
+        in: header
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The events of a topic.
+          headers:
+            X-Stream-Id:
+              schema:
+                type: string
+            X-Resume-Token:
+              schema:
+                type: string
+            X-Stream-Expires:
+              schema:
+                type: string
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '204':
+          description: No events remain.
+  /streams/{streamId}:
+    get:
+      operationId: reopenStream
+      tags:
+      - streams
+      parameters:
+      - name: streamId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: Last-Event-ID
+        in: header
+        schema:
+          type: string
+      - name: token
+        in: query
+        schema:
+          type: string
+      - name: mode
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The events of a stream after a cursor.
+          headers:
+            X-Resume-Token:
+              schema:
+                type: string
+          content:
+            text/event-stream; charset=utf-8:
+              schema:
+                type: string
+        '204':
+          description: No events remain.
+  /undeclared:
+    get:
+      operationId: undeclaredEvents
+      tags:
+      - events
+      responses:
+        '200':
+          description: Events.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /records:
+    get:
+      operationId: streamRecords
+      tags:
+      - records
+      responses:
+        '200':
+          description: Records.
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        '204':
+          description: No records remain.
+components:
+  schemas:
+    Message:
+      type: object
+      required:
+      - text
+      properties:
+        text:
+          type: string
+    Created:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+    StreamError:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string

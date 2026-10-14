@@ -17,6 +17,7 @@ from contextlib import aclosing
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from functools import partial
+from http import HTTPStatus
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, cast, final
 
@@ -493,6 +494,8 @@ def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo, clock:
 def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, clock: Clock, info: ResponseInfo) -> _Position:
     """Return where a stream starts after its open response: the bindings' values and the server's expiry it gives."""
     kept = given if resume.own else None
+    if info.status_code == HTTPStatus.NO_CONTENT:
+        return _Position(given=kept)
     return _Position(
         given=kept,
         bound=_bound(plan, resume, plan.operation, info, kept),
@@ -808,7 +811,8 @@ class _Events(Generic[T]):
     def _reopened(self, info: ResponseInfo) -> None:
         """Take a reopen's response: the reopen operation's identity and the bindings' values it gives."""
         resume = cast("StreamResumePlan", self._resume)
-        self._bound = _bound(self._plan, resume, resume.operation, info, self._given, self._bound)
+        if info.status_code != HTTPStatus.NO_CONTENT:
+            self._bound = _bound(self._plan, resume, resume.operation, info, self._given, self._bound)
         self._operation, self._operation_id = resume.operation, resume.call.operation_id
 
     def _switched(self, info: ResponseInfo) -> None:
@@ -858,7 +862,7 @@ class _Events(Generic[T]):
 
     def _ended(self) -> _End:
         """Return the end of a response that ended the stream as declared, raising the failure of one that did not."""
-        if self._plan.completion != "eof":
+        if self._info.status_code != HTTPStatus.NO_CONTENT and self._plan.completion != "eof":
             raise self._stamped(StreamInterruptedError(reason="eof", sequence=self._delivered))
         return _ENDED
 
@@ -1347,6 +1351,8 @@ async def _aaccepted(response: AsyncRawResponse, take: Callable[[ResponseInfo], 
 
 def _resumed(plan: EventPlan[T], resume: StreamResumePlan, position: _Position, info: ResponseInfo) -> _Position:
     """Return where a resumed stream starts after its reopen response: the bindings' values it gives."""
+    if info.status_code == HTTPStatus.NO_CONTENT:
+        return position
     return replace(position, bound=_bound(plan, resume, resume.operation, info, position.given, position.bound))
 
 

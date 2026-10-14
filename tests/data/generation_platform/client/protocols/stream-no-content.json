@@ -1,0 +1,153 @@
+{
+  "events.plain": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {
+      "pointer": "/components/schemas/Message"
+    },
+    "completion": {
+      "kind": "eof"
+    }
+  },
+  "events.tracked": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {
+      "discriminator": {
+        "from": "event_type"
+      },
+      "mapping": {
+        "created": {
+          "pointer": "/components/schemas/Created"
+        }
+      }
+    },
+    "unknown": "raw",
+    "error_events": {
+      "error": {
+        "pointer": "/components/schemas/StreamError"
+      }
+    },
+    "completion": {
+      "kind": "event_type",
+      "value": "done"
+    },
+    "resume": {
+      "enabled": true,
+      "cursor": "event_id",
+      "write": {
+        "in": "header",
+        "name": "Last-Event-ID"
+      },
+      "reopen_operation": "/paths/~1streams~1{streamId}/get",
+      "delivery": "at_least_once",
+      "bindings": [
+        {
+          "target": {
+            "in": "path",
+            "name": "streamId"
+          },
+          "value": {
+            "source": "initial",
+            "selector": {
+              "from": "header",
+              "name": "X-Stream-Id"
+            }
+          }
+        },
+        {
+          "target": {
+            "in": "query",
+            "name": "token"
+          },
+          "value": {
+            "source": "previous",
+            "selector": {
+              "from": "header",
+              "name": "X-Resume-Token"
+            }
+          }
+        },
+        {
+          "target": {
+            "in": "query",
+            "name": "mode"
+          },
+          "value": {
+            "literal": "resume"
+          }
+        }
+      ],
+      "reconnect_on": [
+        "transport_interruption",
+        "incomplete_eof"
+      ],
+      "expires_at": {
+        "from": "header",
+        "name": "X-Stream-Expires"
+      }
+    }
+  },
+  "events.done": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {
+      "pointer": "/components/schemas/Message"
+    },
+    "completion": {
+      "kind": "event_type",
+      "value": "done"
+    }
+  },
+  "events.sentinel": {
+    "kind": "sse",
+    "operation": "/paths/~1events/get",
+    "media": "text/event-stream",
+    "event_schema": {
+      "pointer": "/components/schemas/Message"
+    },
+    "completion": {
+      "kind": "sentinel",
+      "value": "[DONE]"
+    }
+  },
+  "events.undeclared": {
+    "kind": "sse",
+    "operation": "/paths/~1undeclared/get",
+    "media": "text/event-stream",
+    "event_schema": {
+      "pointer": "/components/schemas/Message"
+    },
+    "completion": {
+      "kind": "eof"
+    }
+  },
+  "records.all": {
+    "kind": "ndjson",
+    "operation": "/paths/~1records/get",
+    "media": "application/x-ndjson",
+    "event_schema": {
+      "pointer": "/components/schemas/Message"
+    },
+    "completion": {
+      "kind": "eof"
+    },
+    "final_line": "require_newline"
+  },
+  "records.done": {
+    "kind": "ndjson",
+    "operation": "/paths/~1records/get",
+    "media": "application/x-ndjson",
+    "event_schema": {
+      "pointer": "/components/schemas/Message"
+    },
+    "completion": {
+      "kind": "sentinel",
+      "value": "[DONE]"
+    },
+    "final_line": "require_newline"
+  }
+}

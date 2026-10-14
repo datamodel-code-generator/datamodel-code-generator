@@ -153,8 +153,9 @@ text
   < closed
   declared error status ! NotFoundError: Error code: 404 - {"detail": "missing"} [operation_id='streamEvents', status_code=404, body=Problem(detail='missing'), body_bytes=b'{"detail": "missing"}', truncated=False]
   > GET https://api.example.com/events accept=text/event-stream
+  no content
   < closed
-  no content ! DecodeError: DecodeError(status_code=204, operation_id='streamEvents', reason='unexpected_media_type') [operation_id='streamEvents', body_bytes=b'', truncated=False] unexpected_media_type
+    end
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   undeclared success status ! APIStatusError: Error code: 201 [operation_id='streamEvents', status_code=201, body=b'', body_bytes=b'', truncated=False] unexpected_status

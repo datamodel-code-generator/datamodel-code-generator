@@ -406,7 +406,7 @@ def _limits(harness: _Harness, api: Any, feed: _Feed) -> None:
 
 
 def _opens(harness: _Harness, api: Any, feed: _Feed) -> None:
-    """Return a stream only for a declared success of the event stream media, retrying its acquisition."""
+    """Return a declared event stream or bodyless terminal response, retrying its acquisition."""
     lines, helper, options = harness.lines, api.protocols.events.messages, harness.options
     feed.replies.extend((
         harness.reply((b'{"detail": "missing"}',), status=404, media="application/json"),
@@ -417,7 +417,11 @@ def _opens(harness: _Harness, api: Any, feed: _Feed) -> None:
         harness.reply((b'data: {"text": "retried"}\n\n',)),
     ))
     for label in ("declared error status", "no content", "undeclared success status", "no media type"):
-        record(lines, label, helper.open)
+        if label == "no content":
+            with helper.open() as stream:
+                _drained(lines, label, stream)
+        else:
+            record(lines, label, helper.open)
     retry = options.RequestOptions(retry=options.RetryOptions(initial_delay=0, jitter="none"))
     stream = helper.open(topic=harness.topic("news"), options=retry)
     lines.append(f"  retried {stream.response.status_code} attempts={stream.response.attempt_count}")
