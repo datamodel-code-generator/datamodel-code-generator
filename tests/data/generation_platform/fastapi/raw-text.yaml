@@ -28,6 +28,64 @@ paths:
           content:
             text/plain:
               schema: {$ref: '#/components/schemas/Note'}
+  /drafts:
+    post:
+      operationId: uploadDraft
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              allOf:
+                - {type: string, format: binary}
+      responses:
+        '200':
+          description: The stored draft.
+          content:
+            text/plain:
+              schema:
+                anyOf:
+                  - {type: string, format: binary}
+  /letters:
+    post:
+      operationId: uploadLetter
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {$ref: '#/components/schemas/Letter'}
+      responses:
+        '200':
+          description: The stored letter.
+          content:
+            text/csv:
+              schema:
+                oneOf:
+                  - {$ref: '#/components/schemas/Note'}
+  /memos:
+    post:
+      operationId: uploadMemo
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              allOf:
+                - {type: string, format: binary}
+                - {maxLength: 16}
+      responses:
+        '200':
+          description: The stored memo, or nothing.
+          content:
+            text/plain:
+              schema:
+                anyOf:
+                  - {type: string, format: binary}
+                  - {type: 'null'}
 components:
   schemas:
     Note: {type: string, format: binary}
+    Letter:
+      description: A note behind a wrapper.
+      allOf:
+        - {$ref: '#/components/schemas/Note'}

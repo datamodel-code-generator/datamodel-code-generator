@@ -782,7 +782,9 @@ class _SchemaRecord:
     """What the walk recorded of an acquired schema that its model types do not say.
 
     `binary` is where the first raw binary string sits that the schema's values carry as text, and `octets` says the
-    schema of a text media is one raw binary string, which the media carries as the raw body.
+    schema of a text media is one raw binary string, which the media carries as the raw body. `wrapped` says a text
+    media's schema is not such a string but reaches one, which is the raw body when the models type the whole schema
+    as that string.
     """
 
     default: LiteralScalar | None
@@ -791,6 +793,7 @@ class _SchemaRecord:
     encoding: EncodingFacts | None
     binary: SourceLocation | None = None
     octets: bool = False
+    wrapped: bool = False
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -2394,7 +2397,8 @@ class _Reader(_SchemaLocations):
             else None
         )
         item = declaration.tokens[-1] == "itemSchema"
-        octets = kind == "text" and not (text or item) and self.raw_bytes(self.whole(declaration)[1])
+        body = kind == "text" and not (text or item)
+        octets = body and self.raw_bytes(self.whole(declaration)[1])
         if not octets and (text or item or kind in _TEXT_MEDIA):
             binary = None if (found := self.binary(declaration)) is None else locate(found)
         else:
@@ -2408,6 +2412,7 @@ class _Reader(_SchemaLocations):
             else None,
             binary,
             octets,
+            body and binary is not None,
         )
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
@@ -3453,22 +3458,42 @@ class _Contracts(_SchemaUses):
         """Record what the walk recorded of the media's own schema keyword on its uses.
 
         A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
-        text encoding of its schema.
+        text encoding of its schema. A text media whose schema reaches a raw binary string carries it as the raw
+        body, not as text, when the models type the whole schema as that string.
         """
         multipart = media.strip().lower().startswith("multipart/")
         record = self.record(schema)
         for use in uses:
             binding = self.uses[use]
+            octets = record.octets or (record.wrapped and self.octets(schema, use.direction))
             self.uses[use] = replace(
                 binding,
                 parts=self.parts(schema, binding.members) if multipart else None,
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
-                binary=record.binary,
-                octets=record.octets,
+                binary=None if octets else record.binary,
+                octets=octets,
             )
         return uses
+
+    @cached_property
+    def binary_type(self) -> TypeView | None:
+        """Return the type the models give a raw binary string."""
+        binary = self.parser.data_type_manager.get_data_type(Types.binary)
+        return self.binder.projector("neutral", inline=True).project(binary).value
+
+    def octets(self, schema: _Declaration, direction: Direction) -> bool:
+        """Return whether the models type a schema's whole value as one raw binary string, constrained or null or not.
+
+        Each alias and root model is read as the type it stands for, as the schema's wrappers leave it.
+        """
+        value = self.projection(schema, "value", direction, inline=True, nullable=True).value
+        found = [member for member in (() if value is None else _members(value)) if not isinstance(member, NoneType)]
+        if len(found) != 1:
+            return False
+        member = found[0]
+        return member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
 
     def media(  # noqa: PLR0913
         self,
