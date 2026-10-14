@@ -155,16 +155,18 @@ def prepare_target(
 ) -> GenerateConfig:
     """Validate target settings in the contract order and return the effective model settings.
 
-    The model settings stay as given, so a target writes the models a model-only run writes, except that the MISSING
-    sentinel of an unset target pydantic version comes from pydantic, as the target's pydantic floor allows; a
-    setting the target needs but the settings lack is an `Error` that names the missing option.
+    The model settings stay as given, so a target writes the models a model-only run writes; a setting the target
+    needs but the settings lack is an `Error` that names the missing option.
     """
     from datamodel_code_generator import (  # noqa: PLC0415
         Error,
         _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
     )
-    from datamodel_code_generator._target_render import pydantic_target_problem  # noqa: PLC0415
-    from datamodel_code_generator.enums import DataModelType, TargetPydanticVersion  # noqa: PLC0415
+    from datamodel_code_generator._target_render import (  # noqa: PLC0415
+        PYDANTIC_TARGET_MINIMUM,
+        pydantic_target_problem,
+    )
+    from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
     if sys.version_info < _PYTHON_MINIMUM:
         raise config_error(
@@ -178,9 +180,11 @@ def prepare_target(
             option_path="model_config.output",
             message=f"The {generator.kind} target needs model_config.output",
         )
-    sentinel = model_config.use_missing_sentinel
-    if sentinel and model_config.target_pydantic_version is None:
-        model_config = model_config.model_copy(update={"target_pydantic_version": TargetPydanticVersion.V2_14})
+    target = model_config.target_pydantic_version
+    if (sentinel := model_config.use_missing_sentinel) and (
+        needed := pydantic_target_problem(model_config.output_model_type.value, target, sentinel=True)
+    ) is not None:
+        raise _target_pydantic_error(generator, needed)
     effective = _prepare_generate_facade_config(model_config)
     if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
         raise Error(requirement)
@@ -197,21 +201,18 @@ def prepare_target(
             option_path="model_config.target_python_version",
             message=f"The {generator.kind} target needs a target Python version of {_PYTHON_MINIMUM_TEXT} or later",
         )
-    if (needed := pydantic_target_problem(backend.value, model_config.target_pydantic_version)) is not None:
-        raise config_error(
-            code="E_CONFIG_VALUE",
-            option_path="model_config.target_pydantic_version",
-            message=f"The {generator.kind} target {needed}",
-        )
     if backend is DataModelType.PydanticV2Dataclass and not sentinel:
         raise config_error(
             code="E_CONFIG_VALUE",
             option_path="model_config.use_missing_sentinel",
             message=(
-                f"The {generator.kind} target needs model_config.use_missing_sentinel for {backend.value!r} models, "
-                "whose fields cannot tell an unset member from None"
+                f"The {generator.kind} target needs model_config.use_missing_sentinel with --target-pydantic-version "
+                f"{PYDANTIC_TARGET_MINIMUM} for {backend.value!r} models, whose fields cannot tell an unset member "
+                "from None"
             ),
         )
+    if (needed := pydantic_target_problem(backend.value, target, sentinel=False)) is not None:
+        raise _target_pydantic_error(generator, needed)
     if backend is DataModelType.MsgspecStruct and not model_config.use_msgspec_tagged_unions:
         raise config_error(
             code="E_CONFIG_VALUE",
@@ -227,6 +228,15 @@ def prepare_target(
     raise APIGenerationError((
         Diagnostic(code="E_INPUT_ROOT", severity="error", stage="input", message=message, option_path=option_path),
     ))
+
+
+def _target_pydantic_error(generator: TargetGenerator, needed: str) -> APIGenerationError:
+    """Refuse the target pydantic version a target cannot use, before the models are generated with it."""
+    return config_error(
+        code="E_CONFIG_VALUE",
+        option_path="model_config.target_pydantic_version",
+        message=f"The {generator.kind} target {needed}",
+    )
 
 
 def model_requirement(scopes: Iterable[OpenAPIScope] | None, selector: str) -> str | None:

@@ -255,6 +255,7 @@
         ]
       },
       "use_missing_sentinel": true,
+      "target_pydantic_version": "2.14",
       "field_include_all_keys": true
     },
     "package_snapshots": []

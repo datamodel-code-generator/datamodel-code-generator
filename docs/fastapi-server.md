@@ -204,7 +204,8 @@ Add the runtime dependencies of server to your project:
 Run it. The command names only the minimum version of each package, so uv adds the latest release. It grows with
 what the document uses: `python-multipart` for forms, `email-validator` for `format: email`, and `python-ulid` for
 `format: ulid`. An explicit `--target-pydantic-version` older than the `pydantic` minimum (`2`, `2.11` or `2.12`) is
-refused with `Error:` and exit code 2; leave it unset or use `2.14`.
+refused with `Error:` and exit code 2; leave it unset or use `2.14`, which `--use-missing-sentinel` requires (see
+[Requirements](#requirements)).
 
 The run wrote the models and the `server` package:
 
@@ -914,12 +915,18 @@ bytes, and `--check` reports a module that differs.
   files is refused.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   refused. Custom templates, base classes, and types do not add backends.
-- `pydantic_v2.dataclass` models need `--use-missing-sentinel`, since a dataclass field cannot tell an unset member
-  from one set to `None`. Without it, generation stops with `Error: The fastapi target needs --use-missing-sentinel
-  for 'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None` and exit code 2. With it,
-  an optional field without a default holds `MISSING`, imported from `pydantic` (`from pydantic import MISSING`): a
-  member a request leaves out reaches the method as `MISSING`, and a field the method leaves unset is left out of the
-  response.
+- `--use-missing-sentinel` needs `--target-pydantic-version 2.14`, with which the models import `MISSING` from
+  `pydantic` (`from pydantic import MISSING`). Model generation alone imports it from
+  `pydantic.experimental.missing_sentinel`, which pydantic 2.14 deprecates, when the target is unset or `2.12`, and
+  refuses the option for `2` and `2.11`. With the target unset, `2`, `2.11`, or `2.12`, server generation stops with
+  `Error: The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the models
+  import MISSING from pydantic` and exit code 2.
+- `pydantic_v2.dataclass` models need `--use-missing-sentinel`, and with it `--target-pydantic-version 2.14`, since a
+  dataclass field cannot tell an unset member from one set to `None`. Without the sentinel, generation stops with
+  `Error: The fastapi target needs --use-missing-sentinel with --target-pydantic-version 2.14 for
+  'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None` and exit code 2. With both, an
+  optional field without a default holds `MISSING`: a member a request leaves out reaches the method as `MISSING`,
+  and a field the method leaves unset is left out of the response.
 - `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
   operations: `--openapi-scopes schemas api`. Without it, generation stops with
   `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
@@ -1283,8 +1290,7 @@ A parameter with JSON `content`, like a JSON part of a multipart form, is parsed
 a `Decimal` field gets the float's value (`0.1000000000000000000000000001` becomes `Decimal("0.1")`) and `NaN` and
 `Infinity` reach a `float` field; an object that repeats a member keeps the last value; and text that is not JSON, or
 JSON past pydantic's limits such as an integer of thousands of digits or deep nesting, answers `422` with
-`json_invalid`. With pydantic older than 2.14, an enum that has a `null` member accepts any JSON value as that member
-when it is read from JSON, in bodies, JSON parts, and parameters with JSON `content` that adapters read.
+`json_invalid`.
 
 A strict bytes type (`--strict-types bytes` with `format: byte` and `--type-mappings string+byte=binary`) cannot be a
 path, query, header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.

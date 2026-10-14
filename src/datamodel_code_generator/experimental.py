@@ -109,8 +109,9 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "`--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as with "
             "`--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options, and returns "
             "every generated file without an output. It needs Python 3.11 or later, both to run and as "
-            "`--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, and "
-            "`--use-msgspec-tagged-unions` for `msgspec.Struct` models."
+            "`--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` models, "
+            "`--target-pydantic-version 2.14` with `--use-missing-sentinel`, and `--use-msgspec-tagged-unions` for "
+            "`msgspec.Struct` models."
         ),
     ),
     "cli-option.generate-schema-validators": ExperimentalFeature(
@@ -147,8 +148,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "input changes, `--output-format json` uses the model generation, check, and input-diff payloads, and "
             "generation prints a `uv add` command to stderr. `generate()` takes them as `generate_server` and the "
             "`server_*` options, and returns every generated file without an output. It needs Python 3.11 or later, "
-            "both to run and as `--target-python-version`, and `--use-missing-sentinel` for `pydantic_v2.dataclass` "
-            "models."
+            "both to run and as `--target-python-version`, `--use-missing-sentinel` for `pydantic_v2.dataclass` "
+            "models, and `--target-pydantic-version 2.14` with `--use-missing-sentinel`."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(
@@ -191,7 +192,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         note=(
             "The option requires Pydantic v2 BaseModel or dataclass output and a target Pydantic version that "
             "supports the MISSING sentinel. Server and client generation require it for Pydantic v2 dataclass output, "
-            "and import MISSING from pydantic when the target Pydantic version is unset."
+            "and `--target-pydantic-version 2.14` with it."
         ),
     ),
     "cli-option.use-type-alias": ExperimentalFeature(

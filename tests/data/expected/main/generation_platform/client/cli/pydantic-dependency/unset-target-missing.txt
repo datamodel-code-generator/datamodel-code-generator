@@ -1,4 +1,0 @@
-Add the runtime dependencies of client to your project:
-  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.14.0"
-from pydantic import MISSING, BaseModel
-- `pydantic>=2.14.0`

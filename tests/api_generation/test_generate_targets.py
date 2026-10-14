@@ -215,8 +215,29 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         (
             {**CLIENT, "output_model_type": "pydantic_v2.dataclass"},
             (
-                "The client target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields "
-                "cannot tell an unset member from None"
+                "The client target needs --use-missing-sentinel with --target-pydantic-version 2.14 for "
+                "'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None"
+            ),
+        ),
+        (
+            {**SERVER, "use_missing_sentinel": True},
+            (
+                "The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the "
+                "models import MISSING from pydantic"
+            ),
+        ),
+        (
+            {**SERVER, "use_missing_sentinel": True, "target_pydantic_version": "2.11"},
+            (
+                "The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the "
+                "models import MISSING from pydantic"
+            ),
+        ),
+        (
+            {**CLIENT, "use_missing_sentinel": True, "output_model_type": "pydantic_v2.dataclass"},
+            (
+                "The client target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the "
+                "models import MISSING from pydantic"
             ),
         ),
         (
@@ -258,6 +279,9 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         "target-pydantic",
         "client-target-pydantic",
         "client-dataclass-sentinel",
+        "sentinel-target",
+        "sentinel-target-2.11",
+        "client-dataclass-sentinel-target",
         "client-msgspec-tagged-unions",
         "json-value",
         "package",

@@ -8,8 +8,8 @@ from datamodel_code_generator import DataModelType, TargetPydanticVersion
 def backend_settings(backend: str | DataModelType) -> dict[str, object]:
     """Return the model type of a backend, with the settings that a target needs for it.
 
-    Pydantic dataclasses need the MISSING sentinel, imported from pydantic as a target imports it, and msgspec structs
-    need tagged unions, so that model-only runs write the same models.
+    Pydantic dataclasses need the MISSING sentinel with the target pydantic version that imports it from pydantic, as
+    a target imports it, and msgspec structs need tagged unions, so that model-only runs write the same models.
     """
     match model_type := DataModelType(backend):
         case DataModelType.PydanticV2Dataclass:
@@ -24,5 +24,12 @@ def backend_settings(backend: str | DataModelType) -> dict[str, object]:
 
 
 def backend_arguments(backend: str | DataModelType) -> list[str]:
-    """Return the command-line flags of the switched-on settings that a target needs for a backend."""
-    return [f"--{name.replace('_', '-')}" for name, value in backend_settings(backend).items() if value is True]
+    """Return the command-line flags of the settings that a target needs for a backend."""
+    arguments: list[str] = []
+    for name, value in backend_settings(backend).items():
+        match value:
+            case True:
+                arguments.append(f"--{name.replace('_', '-')}")
+            case TargetPydanticVersion():
+                arguments.extend((f"--{name.replace('_', '-')}", value.value))
+    return arguments

@@ -78,7 +78,16 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"check": {"exit": "ERROR", "model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
-      {"check": {"exit": "DIFF", "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}}}
+      {
+        "check": {
+          "exit": "DIFF",
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
+        }
+      }
     ]
   },
   "empty": {
@@ -407,7 +416,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-dict.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -415,7 +428,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-dict.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -439,7 +456,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-list.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -447,7 +468,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-list.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -471,7 +496,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-mutual.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -479,7 +508,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-mutual.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null}
@@ -514,7 +547,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-reference.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -522,7 +559,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-reference.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": true}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null}

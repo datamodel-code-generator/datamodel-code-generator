@@ -1,3 +1,0 @@
-Add the runtime dependencies of server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16" "python-multipart>=0.0.32" "email-validator>=2.3" "python-ulid>=3.2.1"
-from pydantic import MISSING, BaseModel, EmailStr, RootModel, constr

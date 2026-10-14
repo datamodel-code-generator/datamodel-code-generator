@@ -151,7 +151,7 @@ Generated model class and package behavior.
 - `--strip-default-none`: Strip default None on fields
 - `--use-default`: Use default value even if a field is required
 - `--use-default-kwarg`: Use `default=` instead of a positional argument for Fields that have default values.
-- `--use-missing-sentinel`: Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), or pydantic.MISSING with --target-pydantic-version 2.14 or later, or for --generate-server and --generate-client. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.
+- `--use-missing-sentinel`: Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and --generate-client require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.
 - `--union-mode`: Union mode for only pydantic v2 field Choices: `smart`, `left_to_right`.
 - `--use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).
 - `--no-use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).
