@@ -523,6 +523,15 @@ model_options.add_argument(
     ),
 )
 model_options.add_argument(
+    "--use-msgspec-tagged-unions",
+    help="msgspec.Struct output only: write a discriminated union as msgspec tagged structs as a whole. Every "
+    "variant is tagged with the document's property name and its value, or none is and a warning says why. Without "
+    "it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the "
+    "other discriminators as Literal fields.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--reuse-model",
     help="Reuse models on the field when a module has the model with the same content",
     action="store_true",
@@ -1030,8 +1039,9 @@ field_options.add_argument(
 field_options.add_argument(
     "--use-missing-sentinel",
     help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), "
-    "or pydantic.MISSING with --target-pydantic-version 2.14 or later, or for --generate-server and --generate-client. "
-    "Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.",
+    "or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and --generate-client "
+    "require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client "
+    "generation requires it.",
     action="store_true",
     default=None,
 )

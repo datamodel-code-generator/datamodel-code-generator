@@ -1391,11 +1391,18 @@ models the minimum is `pydantic>=2.14.0`. An explicit `--target-pydantic-version
 or `2.12`) is refused with `Error:` and exit code 2 for those models; leave it unset or use `2.14`. The other model
 backends do not use the option.
 
+`--use-missing-sentinel` needs `--target-pydantic-version 2.14`, with which the models import `MISSING` from
+`pydantic`. Model generation alone imports it from `pydantic.experimental.missing_sentinel`, which pydantic 2.14
+deprecates, when the target is unset or `2.12`, and refuses the option for `2` and `2.11`. With the target unset,
+`2`, `2.11`, or `2.12`, client generation stops with `Error: The client target needs --target-pydantic-version 2.14
+for --use-missing-sentinel, so that the models import MISSING from pydantic` and exit code 2.
+
 A `pydantic_v2.dataclass` field cannot tell an unset member from one set to `None`, so client generation with
-`--output-model-type pydantic_v2.dataclass` needs `--use-missing-sentinel`. Without it, generation stops with
-`Error: The client target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields cannot tell an
-unset member from None` and exit code 2. With it, an optional field without a default holds `MISSING`, which the models
-import from `pydantic`, as they do for `pydantic_v2.BaseModel` when the option is set:
+`--output-model-type pydantic_v2.dataclass` needs `--use-missing-sentinel`, and with it
+`--target-pydantic-version 2.14`. Without the sentinel, generation stops with `Error: The client target needs
+--use-missing-sentinel with --target-pydantic-version 2.14 for 'pydantic_v2.dataclass' models, whose fields cannot
+tell an unset member from None` and exit code 2. With both, an optional field without a default holds `MISSING`, as it
+does for `pydantic_v2.BaseModel` when the options are set:
 
 ```python
 from client import Client
@@ -1411,6 +1418,15 @@ with Client() as client:
 A field the constructor is not given holds `MISSING` and is left out of a request; give `None` to send `null` where
 the property is nullable. A member a response leaves out decodes to `MISSING`, and a `null` that its property does not
 allow is refused with a `DecodeError` whose reason is `invalid_value`.
+
+msgspec decodes a union of structs only when every struct in it is tagged, so client generation with
+`--output-model-type msgspec.Struct` needs
+[`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions), whether or not the
+document declares a discriminated union. Without it, generation stops with `Error: The client target needs
+--use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their discriminated unions can be decoded` and exit
+code 2, and the Python API raises `datamodel_code_generator.Error`. A union of structs that has no discriminator, or
+that the option still leaves untagged (with a warning that names the reason), cannot be decoded: a call that receives
+it fails with an `APIConnectionError` whose cause is msgspec's `TypeError`.
 
 ### Generator options
 

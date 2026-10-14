@@ -646,6 +646,164 @@ def test_main_openapi_discriminator_enum_single_value_msgspec(output_file: Path)
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-msgspec-tagged-unions"],
+    option_description="""Write a msgspec.Struct discriminated union as tagged structs as a whole.
+
+The `--use-msgspec-tagged-unions` flag only applies to `--output-model-type msgspec.Struct`; other output model
+types ignore it. Client generation (`--generate-client`) with `msgspec.Struct` models requires it.
+
+Without the flag the output keeps the 0.83.0 form. A variant gets `tag_field`/`tag` only when its discriminator
+property is a single literal (such as a `const`) equal to the discriminator value, or when a second discriminated
+union uses the variant, and such a tag names the generated field, which differs from the property name when the
+field is renamed. Any other variant, whose value comes from the discriminator `mapping`, an `enum` or the schema
+name, keeps the discriminator as a `Literal` field: `Cat(petType='cat')` and `cat.petType` work and `Cat` decodes
+alone, but msgspec raises `TypeError` for the union `Cat | Dog`, because it only decodes unions of tagged structs.
+
+With the flag a union is tagged as a whole: every variant gets the property name of the document as `tag_field`
+and its value as `tag`, so the union decodes. msgspec does not allow a field named like `tag_field`, so the
+discriminator is then neither a field nor a constructor argument: `Cat(petType='cat')` raises `TypeError`,
+`cat.petType` raises `AttributeError`, and `Cat` decoded alone accepts a payload without `petType`.
+
+When a variant cannot take exactly one tag for the union, or a base or derived struct of a variant keeps the
+property as a field, the union tags none of its variants and a warning names the reason: its variants keep
+`Literal` fields, the ones with a `const` included. A variant that another union tags keeps that tag.""",
+    input_schema="openapi/discriminator_field_aliases/direct.json",
+    cli_args=["--use-msgspec-tagged-unions", "--output-model-type", "msgspec.Struct"],
+    golden_output="openapi/discriminator/msgspec_tagged_unions.py",
+    comparison_output="openapi/discriminator/msgspec_tagged_unions_default.py",
+)
+def test_main_openapi_use_msgspec_tagged_unions(output_file: Path) -> None:
+    """Write a msgspec.Struct discriminated union as tagged structs as a whole.
+
+    The `--use-msgspec-tagged-unions` flag tags every variant of a discriminated union with the property name
+    and value of the document instead of keeping `Literal` discriminator fields, so that msgspec can decode it.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_field_aliases" / "direct.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_unions.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-msgspec-tagged-unions",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_file", "expected_file"),
+    [
+        pytest.param("discriminator_field_aliases/direct.json", "msgspec_tagged_unions_default.py", id="fields"),
+        pytest.param(
+            "discriminator_mapping_msgspec_untagged.yaml", "mapping_msgspec_untagged_default.py", id="shared-variants"
+        ),
+    ],
+)
+def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_file: str, output_file: Path) -> None:
+    """Keep the released msgspec discriminator output without --use-msgspec-tagged-unions."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / expected_file,
+        extra_args=["--output-model-type", "msgspec.Struct", "--target-python-version", "3.10", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("order", ["base_later", "base_earlier"])
+def test_main_openapi_msgspec_tagged_unions_declaration_order(order: str, output_file: Path) -> None:
+    """Tag variants and their base struct alike whichever of their unions the document declares first."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"discriminator_msgspec_tagged_unions_{order}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / f"msgspec_tagged_unions_{order}.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-msgspec-tagged-unions",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_msgspec_tagged_unions_modules(output_dir: Path) -> None:
+    """Tag variants whose base struct a union of an already generated module tagged."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_unions_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_unions_modules",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-msgspec-tagged-unions",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_main_openapi_msgspec_tagged_unions_inherited(output_file: Path, entrypoint: str) -> None:
+    """Leave a union untagged when a base or derived struct, however distant or renamed, keeps its property."""
+    expected = EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_unions_inherited.py"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_unions_inherited.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=expected,
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-msgspec-tagged-unions",
+                "--snake-case-field",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--disable-warnings",
+            ],
+            force_exec_validation=True,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_unions_inherited.yaml",
+            output_path=output_file,
+            input_file_type=InputFileType.OpenAPI,
+            assert_func=assert_file_content,
+            expected_file=expected,
+            expected_warnings=[
+                "'petType' of Owner cannot be represented as msgspec tags: a base or derived struct of Cat keeps",
+                "'species' of Zoo cannot be represented as msgspec tags: a base or derived struct of Horse, Zebra",
+                "'vehicle-type' of Garage cannot be represented as msgspec tags: a base or derived struct of Car, Bike",
+                "'kind' of Tank cannot be represented as msgspec tags: a base or derived struct of Fish keeps",
+                "'toolType' of Shed cannot be represented as msgspec tags: a base or derived struct of Hammer, Saw",
+                "'toolType' of Workshop cannot be represented as msgspec tags: a base or derived struct of Tool keeps",
+            ],
+            output_model_type=DataModelType.MsgspecStruct,
+            use_msgspec_tagged_unions=True,
+            snake_case_field=True,
+            disable_timestamp=True,
+        )
+
+
 def test_main_openapi_discriminator_mapping_msgspec_tags(output_file: Path) -> None:
     """Tag msgspec variants whose discriminator value comes from the mapping or the schema name."""
     run_main_and_assert(
@@ -659,6 +817,7 @@ def test_main_openapi_discriminator_mapping_msgspec_tags(output_file: Path) -> N
             "3.10",
             "--output-model-type",
             "msgspec.Struct",
+            "--use-msgspec-tagged-unions",
             "--disable-timestamp",
         ],
         force_exec_validation=True,
@@ -679,8 +838,47 @@ def test_main_openapi_discriminator_mapping_msgspec_untagged(output_file: Path) 
             "Discriminator 'kind' of Kinded cannot be represented as msgspec tags: Cat, Dog cannot take exactly one",
         ],
         output_model_type=DataModelType.MsgspecStruct,
+        use_msgspec_tagged_unions=True,
         disable_timestamp=True,
     )
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_main_openapi_discriminator_inherited_msgspec_untagged(output_file: Path, entrypoint: str) -> None:
+    """Leave a msgspec union untagged when its variants inherit the discriminator field from a base struct."""
+    expected = EXPECTED_OPENAPI_PATH / "discriminator" / "inherited_msgspec_untagged.py"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_allof.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=expected,
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-msgspec-tagged-unions",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--disable-warnings",
+            ],
+            force_exec_validation=True,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_allof.yaml",
+            output_path=output_file,
+            input_file_type=InputFileType.OpenAPI,
+            assert_func=assert_file_content,
+            expected_file=expected,
+            expected_warnings=[
+                "'petType' of PetContainer cannot be represented as msgspec tags: a base or derived struct of Cat, Dog,"
+            ],
+            output_model_type=DataModelType.MsgspecStruct,
+            use_msgspec_tagged_unions=True,
+            disable_timestamp=True,
+        )
 
 
 def test_main_openapi_discriminator_with_properties(output_file: Path) -> None:
@@ -3316,6 +3514,40 @@ def test_main_openapi_ref_nullable_strict_nullable(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="ref_nullable_strict_nullable.py",
         extra_args=["--strict-nullable", "--use-union-operator"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        pytest.param("msgspec_ref_nullable_strict_nullable.py", [], id="union-operator"),
+        pytest.param(
+            "msgspec_ref_nullable_strict_nullable_no_use_union_operator.py",
+            ["--no-use-union-operator", "--target-python-version", "3.10"],
+            id="no-use-union-operator",
+        ),
+    ],
+)
+def test_main_openapi_msgspec_ref_nullable_strict_nullable(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Write None once for references to nullable models and for described nullable inline objects."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_nullable.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.MsgspecStruct.value,
+            "--strict-nullable",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
     )
 
 
@@ -6471,17 +6703,25 @@ def test_main_openapi_discriminator(input_: str, output: str, output_file: Path)
 
 
 @pytest.mark.parametrize(
-    ("output_model_type", "expected_file"),
+    ("output_model_type", "expected_file", "extra_args"),
     [
         pytest.param(
             DataModelType.DataclassesDataclass.value,
             "discriminator/dataclass_constructor_order.py",
+            [],
             id="dataclass",
         ),
         pytest.param(
             DataModelType.MsgspecStruct.value,
             "discriminator/msgspec_constructor_order.py",
+            [],
             id="msgspec",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct.value,
+            "discriminator/msgspec_constructor_order_tagged_unions.py",
+            ["--use-msgspec-tagged-unions"],
+            id="msgspec-tagged-unions",
         ),
     ],
 )
@@ -6489,6 +6729,7 @@ def test_main_openapi_discriminator_constructor_order(
     output_file: Path,
     output_model_type: str,
     expected_file: str,
+    extra_args: list[str],
 ) -> None:
     """Place injected required discriminator fields before optional constructor fields."""
     run_main_and_assert(
@@ -6503,6 +6744,7 @@ def test_main_openapi_discriminator_constructor_order(
             "--disable-timestamp",
             "--formatters",
             "builtin",
+            *extra_args,
         ],
         force_exec_validation=True,
     )
@@ -10551,11 +10793,18 @@ def test_discriminator_different_field_aliases(
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
-def test_discriminator_field_aliases_msgspec(output_file: Path, entrypoint: str) -> None:
+@pytest.mark.parametrize(
+    ("tagged_unions", "expected_name"),
+    [(False, "msgspec.py"), (True, "msgspec_tagged_unions.py")],
+    ids=["fields", "tagged-unions"],
+)
+def test_discriminator_field_aliases_msgspec(
+    output_file: Path, entrypoint: str, tagged_unions: bool, expected_name: str
+) -> None:
     """Keep msgspec's existing wire-field handling independent of Pydantic tag names."""
     fixture_dir = OPEN_API_DATA_PATH / "discriminator_field_aliases"
     aliases_path = fixture_dir / "different_aliases.json"
-    expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / "msgspec.py"
+    expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / expected_name
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=fixture_dir / "direct.json",
@@ -10563,7 +10812,14 @@ def test_discriminator_field_aliases_msgspec(output_file: Path, entrypoint: str)
             input_file_type="openapi",
             assert_func=assert_file_content,
             expected_file=expected,
-            extra_args=["--aliases", str(aliases_path), "--disable-timestamp", "--output-model-type", "msgspec.Struct"],
+            extra_args=[
+                "--aliases",
+                str(aliases_path),
+                "--disable-timestamp",
+                "--output-model-type",
+                "msgspec.Struct",
+                *(["--use-msgspec-tagged-unions"] if tagged_unions else []),
+            ],
             force_exec_validation=True,
         )
     else:
@@ -10576,6 +10832,7 @@ def test_discriminator_field_aliases_msgspec(output_file: Path, entrypoint: str)
             aliases=json.loads(aliases_path.read_text()),
             disable_timestamp=True,
             output_model_type=DataModelType.MsgspecStruct,
+            use_msgspec_tagged_unions=tagged_unions,
         )
 
 

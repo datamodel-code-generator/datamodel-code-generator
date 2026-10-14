@@ -2498,6 +2498,20 @@ def test_msgspec_simple_unset_fast_path_does_not_mutate_nullable_reference(
     assert child.is_optional is False
 
 
+def test_data_type_deepcopy_keeps_the_source_of_a_nullable_reference_none() -> None:
+    """Deep copies keep a dropped None dropped and a model's None coming back; no generation copies such a type."""
+    reference = Reference(path="#/NullableModel", name="NullableModel")
+    reference.source = ReferenceSource(nullable=True)
+    data_type = DataType(reference=reference)
+    assert data_type.type_hint == "Optional[NullableModel]"
+    own, from_model = deepcopy(data_type), deepcopy(data_type)
+    own._strip_null(own=True)
+    from_model._strip_null(own=False)
+
+    assert deepcopy(own).type_hint == "NullableModel"
+    assert deepcopy(from_model).type_hint == "Optional[NullableModel]"
+
+
 def test_msgspec_simple_unset_fast_path_falls_back_for_nested_optional_union() -> None:
     """A nested unordered None union does not mutate the caller-owned graph."""
     child = DataType(data_types=[DataType(type="str"), DataType(type=NONE)])

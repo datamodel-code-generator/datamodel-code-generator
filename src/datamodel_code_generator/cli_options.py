@@ -364,6 +364,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     "--strip-default-none": CLIOptionMeta(name="--strip-default-none", category=OptionCategory.MODEL),
     "--dataclass-arguments": CLIOptionMeta(name="--dataclass-arguments", category=OptionCategory.MODEL),
+    "--use-msgspec-tagged-unions": CLIOptionMeta(name="--use-msgspec-tagged-unions", category=OptionCategory.MODEL),
     "--use-frozen-field": CLIOptionMeta(
         name="--use-frozen-field",
         category=OptionCategory.MODEL,

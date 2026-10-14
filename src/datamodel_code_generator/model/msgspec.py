@@ -516,8 +516,12 @@ class DataModelField(DataModelFieldBase):
         return copied
 
     def _copy_data_type_without_top_level_none(self, data_type: DataType) -> DataType:
+        """Copy a data type without its top-level None, for a hint that writes None itself.
+
+        The None is the type's own when only the nullable keyword of the field declares it.
+        """
         data_type = self._copy_data_type(data_type)
-        data_type.is_optional = False
+        data_type._strip_null(own=self.nullable is True and not self.type_has_null)  # noqa: SLF001
         if data_type.is_union:
             data_type.data_types = [child for child in data_type.data_types if not self._data_type_renders_none(child)]
         return data_type
@@ -1004,9 +1008,9 @@ class DataTypeManager(_DataTypeManager):
         "set": SEQUENCE_KEYWORDS,
         "frozenset": SEQUENCE_KEYWORDS,
         "tuple": SEQUENCE_KEYWORDS,
-        "collections.deque": SEQUENCE_KEYWORDS,
     })
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = False
+    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = False
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)

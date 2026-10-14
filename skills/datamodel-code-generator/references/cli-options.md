@@ -129,6 +129,7 @@ Generated model class and package behavior.
 - `--keyword-only`: Defined models as keyword only (for example dataclass(kw_only=True)).
 - `--frozen-dataclasses`: Generate frozen dataclasses (dataclass(frozen=True)). Only applies to dataclass output.
 - `--dataclass-arguments`: Custom dataclass arguments as a JSON dictionary, e.g. '{"frozen": true, "kw_only": true}'. Overrides --frozen-dataclasses and similar flags.
+- `--use-msgspec-tagged-unions`: msgspec.Struct output only: write a discriminated union as msgspec tagged structs as a whole. Every variant is tagged with the document's property name and its value, or none is and a warning says why. Without it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the other discriminators as Literal fields.
 - `--reuse-model`: Reuse models on the field when a module has the model with the same content
 - `--reuse-scope`: Scope for model reuse deduplication: module (per-file, default) or tree (cross-file with shared module). Only effective when --reuse-model is set. Choices: `module`, `tree`.
 - `--target-python-version`: target python version Choices: `3.10`, `3.11`, `3.12`, `3.13`, `3.14`.
@@ -150,7 +151,7 @@ Generated model class and package behavior.
 - `--strip-default-none`: Strip default None on fields
 - `--use-default`: Use default value even if a field is required
 - `--use-default-kwarg`: Use `default=` instead of a positional argument for Fields that have default values.
-- `--use-missing-sentinel`: Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), or pydantic.MISSING with --target-pydantic-version 2.14 or later, or for --generate-server and --generate-client. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.
+- `--use-missing-sentinel`: Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and --generate-client require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.
 - `--union-mode`: Union mode for only pydantic v2 field Choices: `smart`, `left_to_right`.
 - `--use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).
 - `--no-use-frozen-field`: Use Field(frozen=True) for readOnly fields (Pydantic v2).

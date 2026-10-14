@@ -1,0 +1,127 @@
+{
+  "valid": {
+    "value": [
+      1,
+      2
+    ],
+    "final_list": [
+      1,
+      2
+    ],
+    "bare_list": [
+      1,
+      2
+    ],
+    "sequence": [
+      1,
+      2
+    ],
+    "mutable_sequence": [
+      1,
+      2
+    ],
+    "frozen": [
+      1,
+      2
+    ],
+    "abstract_set": [
+      1,
+      2
+    ],
+    "pair": [
+      1,
+      2
+    ],
+    "set_field": [
+      1,
+      2
+    ],
+    "mutable_set": [
+      1,
+      2
+    ],
+    "optional_list": [
+      1,
+      2
+    ],
+    "nested_union": [
+      1,
+      2
+    ],
+    "text": "ab",
+    "annotated_text": "ab",
+    "optional_annotated_text": "ab",
+    "annotated_optional_text": "ab",
+    "annotated_count": 1,
+    "mapping": {
+      "b": 1
+    },
+    "custom_path": [
+      1,
+      2
+    ],
+    "overridden": [
+      1,
+      2
+    ]
+  },
+  "invalid": {
+    "value": [
+      1
+    ],
+    "final_list": [
+      1
+    ],
+    "bare_list": [
+      1,
+      2,
+      3
+    ],
+    "sequence": [
+      1
+    ],
+    "mutable_sequence": [
+      1,
+      2,
+      3
+    ],
+    "frozen": [
+      1
+    ],
+    "abstract_set": [
+      1,
+      2,
+      3
+    ],
+    "pair": [
+      1
+    ],
+    "set_field": [
+      1
+    ],
+    "mutable_set": [
+      1,
+      2,
+      3
+    ],
+    "optional_list": [
+      1
+    ],
+    "nested_union": [
+      1
+    ],
+    "text": "b",
+    "annotated_text": "b",
+    "optional_annotated_text": "abc",
+    "annotated_optional_text": "abc",
+    "annotated_count": -1,
+    "custom_path": [
+      1,
+      2,
+      3
+    ],
+    "overridden": [
+      1
+    ]
+  }
+}
