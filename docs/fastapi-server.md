@@ -783,19 +783,21 @@ Add the runtime dependencies of server to your project:
 <!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.howto.notice -->
 
 A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
-`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose schema is such a string travels as its
-raw bytes, without a charset decoding or base64, as an `application/octet-stream` one does. Generation stops with an
-error that names the operation, the media or parameter, and where the schema declares the string, when a binary string,
-at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be read or sent as text: inside a
-JSON or URL-encoded body or response, a `text/*` body whose schema is an object or array, a multipart part that is not a
-file, an item of a streamed response, or a parameter or header. Pydantic writes `bytes` in JSON as raw UTF-8 text, which
-other clients, such as a generated one with dataclass, TypedDict or msgspec models, write as base64, and it cannot write
-bytes that are not UTF-8. Declare such a value `format: byte`, which every backend sends as the same base64 text and
-Pydantic models hold as a `Base64Str`, or add [`--type-mappings
-string+byte=binary`](cli-reference/typing-customization.md#type-mappings) to hold the decoded bytes as a `Base64Bytes`,
-which also accepts bytes that are not UTF-8. Build a `Base64Bytes` field in Python from the base64 text, such as
-`base64.b64encode(data)`, not from the raw bytes: Pydantic decodes raw bytes leniently, so `b'\xff\x00'` becomes `b''`
-without an error.
+`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model type is one binary string travels
+as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one does. Its schema is such a
+string, or reaches one through a `$ref` or a single `allOf`, `anyOf` or `oneOf` branch, also beside a `null`, a length
+limit or other binary strings. Generation stops with an error that names the operation, the media or parameter, and
+where the schema declares the string, when a binary string, at any depth of its schema and through references,
+`$dynamicRef` and `allOf`, would be read or sent as text: inside a JSON or URL-encoded body or response, a `text/*` body
+whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary string, a multipart
+part that is not a file, an item of a streamed response, or a parameter or header. Pydantic writes `bytes` in JSON as
+raw UTF-8 text, which other clients, such as a generated one with dataclass, TypedDict or msgspec models, write as
+base64, and it cannot write bytes that are not UTF-8. Declare such a value `format: byte`, which every backend sends as
+the same base64 text and Pydantic models hold as a `Base64Str`, or add
+[`--type-mappings string+byte=binary`](cli-reference/typing-customization.md#type-mappings) to hold the decoded bytes as
+a `Base64Bytes`, which also accepts bytes that are not UTF-8. Build a `Base64Bytes` field in Python from the base64
+text, such as `base64.b64encode(data)`, not from the raw bytes: Pydantic decodes raw bytes leniently, so `b'\xff\x00'`
+becomes `b''` without an error.
 
 To stream a large upload or read the body yourself, generate the operation with
 [`--server-body-modes`](cli-reference/target-generation-options.md#server-body-modes) set to `request`, or
