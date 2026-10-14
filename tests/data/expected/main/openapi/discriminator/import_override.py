@@ -20,8 +20,8 @@ class Type(Enum):
 
 @dataclass
 class ObjectBase:
-    type: Literal['type1'] = Field(..., description='Object type')
     name: str | None = Field(None, description='Name of the object')
+    type: Literal['type1'] = Field(..., description='Object type')
 
 
 @dataclass
@@ -32,7 +32,7 @@ class CreateObjectRequest(ObjectBase):
 
 @dataclass
 class UpdateObjectRequest(ObjectBase):
-    type: Literal['type3']
+    type: Literal['type3'] = Field(..., kw_only=True)
 
 
 Demo = TypeAliasType(

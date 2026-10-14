@@ -120,10 +120,21 @@ def model_dependencies(imported: frozenset[str]) -> tuple[str, ...]:
     )
 
 
-def pydantic_target_problem(backend: str, target: TargetPydanticVersion | None) -> str | None:
-    """Say what a package that requires pydantic needs of an explicit target older than the floor, or None."""
-    if backend not in PYDANTIC_BACKENDS or target_supports(target, PYDANTIC_TARGET_MINIMUM):
+def pydantic_target_problem(backend: str, target: TargetPydanticVersion | None, *, sentinel: bool) -> str | None:
+    """Say what a package that requires pydantic needs of its target pydantic version, or None.
+
+    An explicit target older than the floor is refused, and so is an unset one whose models use the MISSING sentinel:
+    the models stay as a model-only run writes them, which imports MISSING from pydantic for a target of the floor.
+    """
+    if backend not in PYDANTIC_BACKENDS or (
+        target_supports(target, PYDANTIC_TARGET_MINIMUM) and not (sentinel and target is None)
+    ):
         return None
+    if sentinel:
+        return (
+            f"needs model_config.target_pydantic_version {PYDANTIC_TARGET_MINIMUM} for --use-missing-sentinel, "
+            "so that the models import MISSING from pydantic"
+        )
     allowed = " or ".join(
         repr(item.value) for item in TargetPydanticVersion if target_supports(item, PYDANTIC_TARGET_MINIMUM)
     )

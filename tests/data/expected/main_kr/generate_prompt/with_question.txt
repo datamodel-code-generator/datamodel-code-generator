@@ -603,10 +603,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use pydantic.experimental.missing_sentinel.MISSING for
                         optional fields without defaults (Pydantic v2.12+), or
                         pydantic.MISSING with --target-pydantic-version 2.14
-                        or later, or for --generate-server and --generate-
-                        client. Supports pydantic_v2.BaseModel and
-                        pydantic_v2.dataclass, whose server and client
-                        generation requires it.
+                        or later, which --generate-server and --generate-
+                        client require with this option. Supports
+                        pydantic_v2.BaseModel and pydantic_v2.dataclass, whose
+                        server and client generation requires it.
   --use-serialization-alias
                         Use serialization_alias instead of alias for field
                         aliasing (Pydantic v2 only). This allows setting
@@ -762,7 +762,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Pydantic 2.11+ (uses validate_by_name). '2.12':
                         Pydantic 2.12+ (supports MISSING sentinel). '2.14':
                         Pydantic 2.14+ (imports MISSING from pydantic; bytes
-                        patterns can select Python's regex engine).
+                        patterns can select Python's regex engine;
+                        pydantic_v2.dataclass writes required Field(...)
+                        fields before the fields with defaults of the same
+                        class).
   --target-python-version {3.10,3.11,3.12,3.13,3.14}
                         target python version
   --treat-dot-as-module, --no-treat-dot-as-module

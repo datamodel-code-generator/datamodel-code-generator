@@ -1,0 +1,61 @@
+{
+  "valid": {
+    "collection": [
+      1,
+      2
+    ],
+    "sized": [
+      1,
+      2
+    ],
+    "container": [
+      1,
+      2
+    ],
+    "reversible": [
+      1,
+      2
+    ],
+    "iterable": [
+      1,
+      2
+    ],
+    "generator": [
+      1,
+      2
+    ],
+    "any_text": "ab",
+    "extensions_list": [
+      1,
+      2
+    ]
+  },
+  "invalid": {
+    "collection": [
+      1
+    ],
+    "sized": [
+      1
+    ],
+    "container": [
+      1,
+      2,
+      3
+    ],
+    "reversible": [
+      1
+    ],
+    "iterable": [
+      1
+    ],
+    "generator": [
+      1,
+      2,
+      3
+    ],
+    "any_text": "b",
+    "extensions_list": [
+      1
+    ]
+  }
+}

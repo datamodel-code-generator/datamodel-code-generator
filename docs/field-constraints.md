@@ -129,9 +129,13 @@ be one of them at runtime, for example a `NewType` of `int`.
 Pydantic 2.11 cannot build a `time` field that has a number bound; use Pydantic 2.12 or later for such schemas.
 
 A known type is a Python builtin, a standard-library type, or a type the generator itself imports; its row above
-decides. A union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the keywords
-in Pydantic models and `int | str` does not; `msgspec` writes no number constraint on an `x-python-type` union.
-Custom templates receive the same values as the built-in ones.
+decides. A `typing` alias or an abstract collection is read as the class it stands for (`typing.List`,
+`collections.abc.Sequence` and `collections.abc.Collection` as `list`), and `Annotated[T, ...]` or `Final[T]` as `T`;
+a `typing_extensions` name that `typing` also exports is read as the `typing` name. Any other `typing` or
+`collections.abc` name, such as `typing.SupportsInt` or `collections.abc.Callable`, is a known type that takes no
+number keyword. A union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the
+keywords in Pydantic models and `int | str` does not; `msgspec` writes no type-dependent keyword (number, string or
+array) on an `x-python-type` union. Custom templates receive the same values as the built-in ones.
 
 A named schema whose `allOf` merges into one scalar type, such as
 `{"allOf": [{"type": "string", "format": "duration"}, {"minimum": 0}]}`, is a root model of that type and follows the
@@ -168,14 +172,20 @@ without `type` is written as `Any`, which takes none of them, so `{"minLength": 
 "pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
 `maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
 
+A `typing` alias, an abstract collection, `Annotated[T, ...]` and `Final[T]` are read as for number keywords, so
+`typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of `list`.
+
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|
 | `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
 | `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
 | `conbytes`, `EmailStr`, `SecretStr` | `minLength`, `maxLength` | none |
-| `list`, `set`, `frozenset`, `tuple`, `deque` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength` |
+| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
+| `deque` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | none |
+| `collections.abc.Sized`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
+| `typing.AnyStr`, `collections.abc.ByteString` | `minLength`, `maxLength`, `pattern` | none |
 | a type the generator does not know or a model that the schema references | all of them | all of them |
-| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts | none | none |
+| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts, other `typing` and `collections.abc` names such as `Container`, `Reversible` and `Buffer` | none | none |
 
 ```json
 {

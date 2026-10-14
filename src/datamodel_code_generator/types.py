@@ -168,6 +168,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from types import ModuleType
 
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.enums import StrictTypes
 
@@ -1316,6 +1317,42 @@ ARRAY_KEYWORDS: frozenset[str] = frozenset({"minItems", "maxItems", "uniqueItems
 SEQUENCE_KEYWORDS: frozenset[str] = ARRAY_KEYWORDS | LENGTH_KEYWORDS
 TYPE_DEPENDENT_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
 _NO_KEYWORDS: frozenset[str] = frozenset()
+_UNION_PATHS: frozenset[str] = frozenset({"typing.Union", "typing.Optional", UNION, OPTIONAL})
+_QUALIFIER_PATHS: frozenset[str] = frozenset({"typing.Annotated", "typing.Final", IMPORT_ANNOTATED.import_, "Final"})
+_STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
+    "typing.Text": "str",
+    "typing.List": "list",
+    "typing.Tuple": "tuple",
+    "typing.Set": "set",
+    "typing.FrozenSet": "frozenset",
+    "typing.AbstractSet": "frozenset",
+    "collections.abc.Set": "frozenset",
+    "typing.Deque": "collections.deque",
+    **{f"typing.{name}": f"collections.abc.{name}" for name in ("Sized", "Iterable", "Generator", "ByteString")},
+    **{
+        f"{module}.{name}": path
+        for module in ("typing", "collections.abc")
+        for name, path in (
+            ("Sequence", "list"),
+            ("MutableSequence", "list"),
+            ("Collection", "list"),
+            ("MutableSet", "set"),
+        )
+    },
+})
+
+
+def _standard_type_path(path: str) -> str:
+    """Return the path that classifies a type: unprefixed builtins, typing_extensions as typing, resolved aliases."""
+    path = path.removeprefix("builtins.")
+    if path.startswith("typing_extensions."):
+        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
+            is_known_python_type_path,
+        )
+
+        if is_known_python_type_path(typing_path := f"typing.{path.removeprefix('typing_extensions.')}"):
+            path = typing_path
+    return _STANDARD_CLASS_PATHS.get(path, path)
 
 
 @cache
@@ -1354,9 +1391,15 @@ class DataTypeManager(ABC):
         "frozenset": SEQUENCE_KEYWORDS,
         "tuple": SEQUENCE_KEYWORDS,
         "collections.deque": SEQUENCE_KEYWORDS,
+        "collections.abc.Sized": SEQUENCE_KEYWORDS,
+        "collections.abc.Iterable": SEQUENCE_KEYWORDS,
+        "collections.abc.Generator": SEQUENCE_KEYWORDS,
+        "collections.abc.ByteString": STRING_KEYWORDS,
+        "typing.AnyStr": STRING_KEYWORDS,
     })
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
+    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = True
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -1468,18 +1511,28 @@ class DataTypeManager(ABC):
             return self.type_constraint_keywords(
                 f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or ""
             )
+        return self._annotation_constraint_keywords(data_type.python_type.expression)
+
+    def _annotation_constraint_keywords(self, expression: PythonTypeExpr) -> frozenset[str]:
+        """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies."""
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeBoundName,
+            PythonTypeEllipsis,
             PythonTypeSubscript,
-            is_union_python_type_expr,
+            PythonTypeUnion,
             iter_python_type_expr_qualified_names,
             python_type_expr_arguments,
             python_type_expr_base_name,
         )
 
-        expression = data_type.python_type.expression
-        members = (expression,)
-        if is_union_python_type_expr(expression):
+        base = expression.base if isinstance(expression, PythonTypeSubscript) else expression
+        path = _standard_type_path(
+            f"{base.import_from}.{base.import_name}"
+            if isinstance(base, PythonTypeBoundName) and base.import_from
+            else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base)
+        )
+        members = None
+        if isinstance(expression, PythonTypeUnion) or (base is not expression and path in _UNION_PATHS):
             if not self.ANNOTATION_UNIONS_TAKE_CONSTRAINTS:
                 return _NO_KEYWORDS
             members = tuple(
@@ -1487,24 +1540,30 @@ class DataTypeManager(ABC):
                 for member in python_type_expr_arguments(expression)
                 if python_type_expr_base_name(member) != NONE
             )
-        keywords = TYPE_DEPENDENT_KEYWORDS
-        for member in members:
-            base = member.base if isinstance(member, PythonTypeSubscript) else member
-            keywords &= self.type_constraint_keywords(
-                f"{base.import_from}.{base.import_name}"
-                if isinstance(base, PythonTypeBoundName) and base.import_from
-                else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base)
+        elif base is not expression and path in _QUALIFIER_PATHS:
+            members = python_type_expr_arguments(expression)[:1]
+        if members is not None:
+            return (
+                frozenset.intersection(*map(self._annotation_constraint_keywords, members)) if members else _NO_KEYWORDS
             )
-        return keywords
+        if (
+            path == "tuple"
+            and base is not expression
+            and not self.FIXED_TUPLES_TAKE_LENGTH
+            and not any(isinstance(argument, PythonTypeEllipsis) for argument in python_type_expr_arguments(expression))
+        ):
+            return _NO_KEYWORDS
+        return self.type_constraint_keywords(path)
 
     def type_constraint_keywords(self, path: str) -> frozenset[str]:
         """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
 
         The table lists the keywords that the output model enforces on a type across its supported versions.
+        A typing alias or an abstract collection takes what the builtin or standard-library class it stands for takes.
         A known type is a Python builtin, a standard-library type of the import registry or a type that the
         generator itself imports; a type the generator cannot classify keeps the keywords the schema declares.
         """
-        path = path.removeprefix("builtins.")
+        path = _standard_type_path(path)
         if (keywords := self.CONSTRAINT_KEYWORDS.get(path)) is not None:
             return keywords
         if not path or any(path in _import_paths(module) for module in self.KNOWN_TYPE_IMPORTS):

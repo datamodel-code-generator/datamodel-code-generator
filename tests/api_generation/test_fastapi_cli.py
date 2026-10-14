@@ -51,6 +51,11 @@ MODEL_OPTIONS = [*PYTHON, *SCOPES, *BACKEND, *FORMATTERS]
 OPTIONS = [*MODEL_OPTIONS, "--disable-timestamp"]
 PACKAGES = ["--server-package", "server", "--server-model-package", "models"]
 SERVER = ["--generate-server", "fastapi", "--server-output", "server", *PACKAGES]
+MISSING = ["--use-missing-sentinel", "--target-pydantic-version", "2.14"]
+SENTINEL_TARGET = (
+    "Error: The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the models "
+    "import MISSING from pydantic\n"
+)
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *SERVER]
 DOC_INPUT = "generation_platform/fastapi/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/fastapi/cli/options"
@@ -1094,10 +1099,8 @@ def test_fastapi_cli_target_python(
         ["--target-pydantic-version", "2"],
         ["--target-pydantic-version", "2.11", "--check"],
         ["--target-pydantic-version", "2.12", "--output-format", "json"],
-        ["--target-pydantic-version", "2.12", "--use-missing-sentinel"],
-        ["--target-pydantic-version", "2", "--output-model-type", "pydantic_v2.dataclass"],
     ],
-    ids=["2", "2.11-check", "2.12-json", "2.12-missing", "2-dataclass"],
+    ids=["2", "2.11-check", "2.12-json"],
 )
 def test_fastapi_cli_target_pydantic(
     arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
@@ -1120,11 +1123,53 @@ def test_fastapi_cli_target_pydantic(
     )
 
 
-@pytest.mark.parametrize("arguments", [[], ["--target-pydantic-version", "2.14"]], ids=["unset", "2.14"])
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        [],
+        ["--target-pydantic-version", "2"],
+        ["--target-pydantic-version", "2.11"],
+        ["--target-pydantic-version", "2.12"],
+        ["--output-model-type", "pydantic_v2.dataclass"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--check"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--target-pydantic-version", "2.11"],
+    ],
+    ids=["unset", "2", "2.11", "2.12", "dataclass", "dataclass-check", "dataclass-2.11"],
+)
+def test_fastapi_cli_missing_sentinel_target(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a server whose models use MISSING without the target pydantic version that imports it from pydantic.
+
+    The models stay those of a model-only run, which imports MISSING from pydantic for that target only. A target
+    older than the sentinel's own minimum gets the same message, so that one change fixes the run.
+    """
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--use-missing-sentinel", *arguments),
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=SENTINEL_TARGET,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [[], ["--target-pydantic-version", "2.14"], ["--target-pydantic-version", "2"]],
+    ids=["unset", "2.14", "2"],
+)
 def test_fastapi_cli_dataclass_missing_sentinel(
     arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Refuse a server of Pydantic dataclasses without --use-missing-sentinel, which tells unset members from None."""
+    """Refuse a server of Pydantic dataclasses without --use-missing-sentinel, which tells unset members from None.
+
+    The message names the target pydantic version that the sentinel needs as well.
+    """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -1135,8 +1180,8 @@ def test_fastapi_cli_dataclass_missing_sentinel(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=(
-            "Error: The fastapi target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields "
-            "cannot tell an unset member from None\n"
+            "Error: The fastapi target needs --use-missing-sentinel with --target-pydantic-version 2.14 for "
+            "'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None\n"
         ),
         output_should_not_exist=True,
     )
@@ -1305,8 +1350,7 @@ def test_fastapi_cli_model_and_form_dependencies(
     [
         ("target-2.14-missing", ["--target-pydantic-version", "2.14", "--use-missing-sentinel"]),
         ("target-2.14", ["--target-pydantic-version", "2.14"]),
-        ("unset-target-missing", ["--use-missing-sentinel"]),
-        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", "--use-missing-sentinel"]),
+        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", *MISSING]),
     ],
 )
 def test_fastapi_cli_pydantic_dependency(
@@ -1333,6 +1377,32 @@ def test_fastapi_cli_pydantic_dependency(
     ]
     assert_output(
         "".join((capsys.readouterr().err, *imports)), EXPECTED / "cli" / "pydantic-dependency" / f"{name}.txt"
+    )
+
+
+@pytest.mark.parametrize("server", [[], SERVER], ids=["models", "server"])
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [
+        ([], "cli/missing-sentinel-models.py"),
+        (["--output-model-type", "pydantic_v2.dataclass"], "cli/dataclass-missing-sentinel-models.py"),
+    ],
+    ids=["missing-sentinel", "dataclass-missing-sentinel"],
+)
+def test_fastapi_cli_missing_sentinel_models_as_given(
+    server: list[str], options: list[str], expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models a model-only run writes when they use MISSING, which a server needs a 2.14 target for."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("contacts.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *MISSING, *options, *server],
+        copy_files=[(SOURCE / "install" / "contacts.yaml", tmp_path / "contacts.yaml")],
+        assert_func=assert_file_content,
+        expected_file=expected,
+        skip_code_validation=True,
     )
 
 

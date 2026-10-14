@@ -571,7 +571,8 @@ model_options.add_argument(
     "'2': Pydantic 2.0+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
-    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine).",
+    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine; "
+    "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class).",
     choices=[v.value for v in TargetPydanticVersion],
     default=None,
 )
@@ -1046,8 +1047,9 @@ field_options.add_argument(
 field_options.add_argument(
     "--use-missing-sentinel",
     help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), "
-    "or pydantic.MISSING with --target-pydantic-version 2.14 or later, or for --generate-server and --generate-client. "
-    "Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.",
+    "or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and --generate-client "
+    "require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client "
+    "generation requires it.",
     action="store_true",
     default=None,
 )

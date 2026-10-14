@@ -1008,9 +1008,9 @@ class DataTypeManager(_DataTypeManager):
         "set": SEQUENCE_KEYWORDS,
         "frozenset": SEQUENCE_KEYWORDS,
         "tuple": SEQUENCE_KEYWORDS,
-        "collections.deque": SEQUENCE_KEYWORDS,
     })
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = False
+    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = False
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)

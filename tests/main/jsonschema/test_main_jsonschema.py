@@ -17,7 +17,7 @@ import tempfile
 import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable as ABCCallable
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from contextlib import ExitStack, nullcontext, suppress
 from dataclasses import Field as DataclassField
 from decimal import Decimal
@@ -4874,6 +4874,111 @@ def test_main_generate_pydantic_v2_dataclass_required_alias_field_pydantic20(
     )
 
 
+_SCHEMA_ORDER = (
+    "Pet(plain='p', nick='x', first_name='f', opt_alias=None, count=2)",
+    None,
+    "Child(name=None, kind='child')",
+    ("kind",),
+)
+_REQUIRED_FIRST_ORDER = (
+    "Pet(plain='p', first_name='f', count=2, nick='x', opt_alias=None)",
+    (),
+    "Child(kind='child', name=None)",
+    (),
+)
+
+
+@pytest.mark.parametrize(
+    ("target_pydantic_version", "options", "expected_file", "expected_order"),
+    [
+        pytest.param(None, (), "pydantic_v2_dataclass_required_assignment_order.py", _SCHEMA_ORDER, id="target-unset"),
+        pytest.param(
+            "2", (), "pydantic_v2_dataclass_required_assignment_order_target_2.py", _SCHEMA_ORDER, id="target-2"
+        ),
+        pytest.param("2.11", (), "pydantic_v2_dataclass_required_assignment_order.py", _SCHEMA_ORDER, id="target-2.11"),
+        pytest.param("2.12", (), "pydantic_v2_dataclass_required_assignment_order.py", _SCHEMA_ORDER, id="target-2.12"),
+        pytest.param(
+            "2.14",
+            (),
+            "pydantic_v2_dataclass_required_assignment_order_target_2_14.py",
+            _REQUIRED_FIRST_ORDER,
+            id="target-2.14",
+        ),
+        pytest.param(
+            None,
+            ("--use-annotated",),
+            "pydantic_v2_dataclass_required_assignment_order_annotated.py",
+            _REQUIRED_FIRST_ORDER,
+            id="annotated-target-unset",
+        ),
+        pytest.param(
+            "2",
+            ("--use-annotated",),
+            "pydantic_v2_dataclass_required_assignment_order_annotated_target_2.py",
+            (
+                "Pet(plain='p', count=2, first_name='f', nick='x', opt_alias=None)",
+                (),
+                "Child(kind='child', name=None)",
+                (),
+            ),
+            id="annotated-target-2",
+        ),
+    ],
+)
+def test_main_generate_pydantic_v2_dataclass_required_assignment_order(
+    output_file: Path,
+    target_pydantic_version: str | None,
+    options: tuple[str, ...],
+    expected_file: str,
+    expected_order: tuple[str, tuple[str, ...] | None, str, tuple[str, ...]],
+) -> None:
+    """Move required ``= Field(...)`` fields before defaults only for an explicit 2.14 target.
+
+    The other targets keep the schema order, which positional construction follows. Pydantic 2.13+ cannot build
+    ``inspect.signature`` for that order, so the signature of ``Pet`` is read only for the other orders. With
+    ``--use-annotated`` the required fields come first for every target: the alias that targets before 2.4 write
+    as an assignment keeps its field among them, after the fields without an assignment.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "pydantic_v2_dataclass_required_assignment_order.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--disable-timestamp",
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--field-constraints",
+            *options,
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+    )
+    pet_repr, pet_keyword_only_fields, child_repr, child_keyword_only_fields = expected_order
+    for model_name, valid_json, invalid_json, error_type, keyword_only_fields, expected_repr in (
+        (
+            "Pet",
+            '{"plain": "p", "first-name": "f", "count": 2}',
+            '{"plain": "p", "first-name": "f", "count": 0}',
+            "greater_than_equal",
+            pet_keyword_only_fields,
+            pet_repr,
+        ),
+        ("Child", '{"kind": "child"}', '{"kind": "other"}', "literal_error", child_keyword_only_fields, child_repr),
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="pydantic_v2_dataclass_required_assignment_order",
+            model_name=model_name,
+            valid_json=valid_json,
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+            expected_keyword_only_fields=keyword_only_fields,
+            expected_repr=expected_repr,
+        )
+
+
 def test_main_generate_pydantic_v2_dataclass_enum(output_file: Path) -> None:
     """Test pydantic_v2.dataclass with enum types."""
     run_generate_file_and_assert(
@@ -5289,6 +5394,108 @@ def test_main_string_and_array_constraints_on_other_types(
         expected_file=f"{source}_constraints_on_other_types/{expected_file}",
         extra_args=extra_args,
         force_exec_validation=True,
+    )
+
+
+_TYPING_ALIAS_TYPE_OVERRIDES = json.dumps({"ConstraintsOnTypingAliases.overridden": "typing.List"})
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+        ("type_overrides.py", ["--field-constraints", "--type-overrides", _TYPING_ALIAS_TYPE_OVERRIDES]),
+        (
+            "type_overrides_msgspec.py",
+            ["--output-model-type", "msgspec.Struct", "--type-overrides", _TYPING_ALIAS_TYPE_OVERRIDES],
+        ),
+    ],
+)
+def test_main_constraints_on_typing_aliases(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test a typing alias, an abstract collection and Annotated take the keywords of their type, at runtime too."""
+    name = "constraints_on_typing_aliases"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}/{expected_file}",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "ConstraintsOnTypingAliases") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if "msgspec.Struct" not in extra_args:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(error_type):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "\n".join(rejected) + "\n",
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
+    )
+
+
+def test_main_constraints_on_typing_protocols(output_file: Path) -> None:
+    """Test protocols and abstract types take the keywords Pydantic enforces on them, iterables while iterating."""
+    name = "constraints_on_typing_protocols"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}.py",
+        extra_args=[
+            "--field-constraints",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.11",
+        ],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "ConstraintsOnTypingProtocols") as model:
+        rejected = []
+        for field_name, value in {"": None, **payloads["invalid"]}.items():
+            with suppress(ValidationError):
+                instance = model.model_validate(payloads["valid"] | ({field_name: value} if field_name else {}))
+                for item in vars(instance).values():
+                    if isinstance(item, Iterator):
+                        list(item)
+                continue
+            rejected.append(field_name or "valid payload")
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / f"{name}_rejected.txt")
+
+
+def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
+    """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "constraints_on_typing_lookalikes.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="constraints_on_typing_lookalikes.py",
+        extra_args=[
+            "--field-constraints",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.11",
+        ],
+        skip_code_validation=True,
     )
 
 

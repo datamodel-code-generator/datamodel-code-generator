@@ -38,10 +38,10 @@ OptionsArray = TypeAliasType("OptionsArray", Annotated[list[str], Field(min_leng
 class PatternPropertiesArrayTypeUnion:
     direct: str | DirectArray
     nullablePattern: dict[constr(pattern=r'.*'), list[str] | None]
-    options: list[dict[constr(pattern=r'.*'), str | OptionsArray]] = Field(
-        ..., min_length=1
-    )
     textOrList: TextOrListString | list[str] | None = None
     formattedOrList: date | FormattedOrListArray | None = None
     enumValue: list[str] | EnumValue | None = None
+    options: list[dict[constr(pattern=r'.*'), str | OptionsArray]] = Field(
+        ..., min_length=1
+    )
     unconstrainedPattern: dict[constr(pattern=r'.*'), str | list[str]] | None = None
