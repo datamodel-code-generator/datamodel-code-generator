@@ -11565,10 +11565,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         enum_fields: list[DataModelFieldBase] = []
 
-        if None in obj.enum and (
-            obj.type == "string" or obj.nullable or not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
-        ):
+        named_values = obj.enum
+        if None in obj.enum and (obj.type == "string" or obj.nullable):
             nullable: bool = True
+            enum_times = named_values = [e for e in obj.enum if e is not None]
+        elif None in obj.enum and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER:
+            nullable = True
             enum_times = [e for e in obj.enum if e is not None]
         else:
             enum_times = obj.enum
@@ -11579,12 +11581,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         enum_names = obj.x_enum_varnames or obj.x_enum_names
         enum_descriptions = obj.x_enum_descriptions
 
-        for i, enum_part in enumerate(obj.enum):
+        for i, enum_part in enumerate(named_values):
             match enum_part:
                 case str():
                     default = EnumMemberValue(enum_part)
-                case None if nullable:
-                    continue
                 case None:
                     default = NULL_ENUM_MEMBER_VALUE
                 case _:
@@ -11606,6 +11606,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 cast("str", field_name), excludes=exclude_field_names, model_type=ModelType.ENUM
             )
             exclude_field_names.add(field_name)
+            if enum_part is None and nullable:
+                continue
             field_extras: dict[str, Any] = {}
             if enum_descriptions and i < len(enum_descriptions) and enum_descriptions[i]:
                 field_extras["description"] = enum_descriptions[i]
