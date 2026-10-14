@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Variants whose base struct an earlier union tags
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      required:
+      - petType
+      properties:
+        petType:
+          type: string
+        id:
+          type: integer
+    Bird:
+      type: object
+      required:
+      - petType
+      properties:
+        petType:
+          type: string
+    Cat:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - type: object
+        properties:
+          name:
+            type: string
+    Dog:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - type: object
+        properties:
+          bark:
+            type: boolean
+    Shelter:
+      type: object
+      properties:
+        animal:
+          oneOf:
+          - $ref: '#/components/schemas/Pet'
+          - $ref: '#/components/schemas/Bird'
+          discriminator:
+            propertyName: petType
+            mapping:
+              pet: '#/components/schemas/Pet'
+              bird: '#/components/schemas/Bird'
+    Owner:
+      type: object
+      properties:
+        pet:
+          oneOf:
+          - $ref: '#/components/schemas/Cat'
+          - $ref: '#/components/schemas/Dog'
+          discriminator:
+            propertyName: petType
+            mapping:
+              cat: '#/components/schemas/Cat'
+              dog: '#/components/schemas/Dog'

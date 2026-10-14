@@ -212,6 +212,15 @@ def prepare_target(
                 "whose fields cannot tell an unset member from None"
             ),
         )
+    if backend is DataModelType.MsgspecStruct and not model_config.use_msgspec_tagged_unions:
+        raise config_error(
+            code="E_CONFIG_VALUE",
+            option_path="model_config.use_msgspec_tagged_unions",
+            message=(
+                f"The {generator.kind} target needs model_config.use_msgspec_tagged_unions for {backend.value!r} "
+                "models, so that their discriminated unions can be decoded"
+            ),
+        )
     if (problem := _root_problem(input_)) is None:
         return effective
     option_path, message = problem

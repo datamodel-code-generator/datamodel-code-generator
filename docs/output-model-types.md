@@ -340,6 +340,36 @@ class Pet(Struct):
     tag: str | UnsetType = UNSET
 ```
 
+### Discriminated unions
+
+msgspec only decodes a union of structs when every struct is tagged, and a tagged struct cannot also have a field
+named like its `tag_field`. By default the output keeps the 0.83.0 form, in which a variant whose discriminator
+value comes from the discriminator `mapping`, an `enum` or the schema name keeps the discriminator as a field:
+
+```python
+class Cat(Struct):
+    petType: Literal["cat"]
+    meow: str | UnsetType = UNSET
+```
+
+`Cat(petType='cat')`, `cat.petType` and decoding `Cat` on its own work, but decoding the union `Cat | Dog` raises
+msgspec's `TypeError`. That form only tags a variant whose discriminator property is a single literal such as a
+`const`, or one that a second discriminated union uses, and its `tag_field` is the generated field name, which
+differs from the property name when the field is renamed.
+
+[`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions) writes a union as
+tagged structs as a whole instead, with the property name of the document as `tag_field`:
+
+```python
+class Cat(Struct, tag_field="petType", tag="cat"):
+    meow: str | UnsetType = UNSET
+```
+
+The union then decodes, while `petType` is no longer a constructor argument or an attribute, and `Cat` decoded on
+its own accepts a payload without `petType`. When a variant cannot take exactly one tag for the union, or a base
+or derived struct of a variant keeps the property as a field, the union tags none of its variants, the ones with
+a `const` included, and a warning names the reason. A variant that another union tags keeps that tag.
+
 ### When to use
 
 - High-performance JSON/MessagePack serialization

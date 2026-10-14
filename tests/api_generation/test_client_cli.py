@@ -581,7 +581,10 @@ def test_client_cli_generation_json(
         ("target-2.14", ["--target-pydantic-version", "2.14"]),
         ("unset-target-missing", ["--use-missing-sentinel"]),
         ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", "--use-missing-sentinel"]),
-        ("target-2-msgspec", ["--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct"]),
+        (
+            "target-2-msgspec",
+            ["--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"],
+        ),
         ("target-2-dataclass", ["--target-pydantic-version", "2", "--output-model-type", "dataclasses.dataclass"]),
         ("target-2-typed-dict", ["--target-pydantic-version", "2", "--output-model-type", "typing.TypedDict"]),
     ],
@@ -667,6 +670,27 @@ def test_client_cli_dataclass_missing_sentinel(
         expected_stderr=(
             "Error: The client target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields "
             "cannot tell an unset member from None\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+def test_client_cli_msgspec_tagged_unions(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client of msgspec structs without --use-msgspec-tagged-unions, whose unions could not be decoded."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, "--output-model-type", "msgspec.Struct"],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: The client target needs --use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their "
+            "discriminated unions can be decoded\n"
         ),
         output_should_not_exist=True,
     )

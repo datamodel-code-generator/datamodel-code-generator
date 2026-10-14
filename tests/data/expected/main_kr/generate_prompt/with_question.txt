@@ -141,6 +141,7 @@ How do I convert enums to Literal types?
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
@@ -776,6 +777,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Generate a shared base class with model configuration
                         (e.g., extra='forbid') instead of repeating the
                         configuration in each model. Keeps code DRY.
+  --use-msgspec-tagged-unions
+                        msgspec.Struct output only: write a discriminated
+                        union as msgspec tagged structs as a whole. Every
+                        variant is tagged with the document's property name
+                        and its value, or none is and a warning says why.
+                        Without it the 0.83.0 form is kept, which tags only a
+                        variant whose discriminator is a single literal and
+                        keeps the other discriminators as Literal fields.
   --use-pendulum        use pendulum instead of datetime
   --use-root-model-sequence-interface
                         Make non-null sequence-like Pydantic v2 RootModel

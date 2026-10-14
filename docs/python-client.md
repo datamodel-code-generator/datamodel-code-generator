@@ -1412,6 +1412,15 @@ A field the constructor is not given holds `MISSING` and is left out of a reques
 the property is nullable. A member a response leaves out decodes to `MISSING`, and a `null` that its property does not
 allow is refused with a `DecodeError` whose reason is `invalid_value`.
 
+msgspec decodes a union of structs only when every struct in it is tagged, so client generation with
+`--output-model-type msgspec.Struct` needs
+[`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions), whether or not the
+document declares a discriminated union. Without it, generation stops with `Error: The client target needs
+--use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their discriminated unions can be decoded` and exit
+code 2, and the Python API raises `datamodel_code_generator.Error`. A union that the option still leaves untagged, with
+a warning that names the reason, cannot be decoded: a call that receives it fails with an `APIConnectionError` whose
+cause is msgspec's `TypeError`.
+
 ### Generator options
 
 Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pyproject.toml`, and an option of
