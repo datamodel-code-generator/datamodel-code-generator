@@ -28,6 +28,13 @@
     "untyped": {
       "enum": [1, null, 2],
       "x-enum-varnames": ["ONE", "TWO"]
+    },
+    "repeated_names": {
+      "enum": [null, 1, 2],
+      "x-enum-varnames": ["A", "A", "A"]
+    },
+    "objects": {
+      "enum": [null, {"foo": 1}, {"bar": 2}]
     }
   }
 }

@@ -67,9 +67,27 @@ class UntypedEnum(Enum):
 Untyped: TypeAlias = UntypedEnum | None
 
 
+class RepeatedNamesEnum(Enum):
+    A_1 = 1
+    A_2 = 2
+
+
+RepeatedNames: TypeAlias = RepeatedNamesEnum | None
+
+
+class ObjectsEnum(Enum):
+    value_1 = {'foo': 1}
+    value_2 = {'bar': 2}
+
+
+Objects: TypeAlias = ObjectsEnum | None
+
+
 class EnumNamesBesideNull(Struct):
     member_names: MemberNames | UnsetType = UNSET
     item_names: ItemNames | UnsetType = UNSET
     inner_null: InnerNull | None | UnsetType = UNSET
     null_member: NullMember | None | UnsetType = UNSET
     untyped: Untyped | UnsetType = UNSET
+    repeated_names: RepeatedNames | UnsetType = UNSET
+    objects: Objects | UnsetType = UNSET

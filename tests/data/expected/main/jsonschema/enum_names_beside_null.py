@@ -65,9 +65,23 @@ class Untyped(Enum):
     int_2 = 2
 
 
+class RepeatedNames(Enum):
+    A = None
+    A_1 = 1
+    A_2 = 2
+
+
+class Objects(Enum):
+    NoneType_None = None
+    value_1 = {'foo': 1}
+    value_2 = {'bar': 2}
+
+
 class EnumNamesBesideNull(BaseModel):
     member_names: MemberNames | None = None
     item_names: ItemNames | None = None
     inner_null: InnerNull | None = None
     null_member: NullMember | None = None
     untyped: Untyped | None = None
+    repeated_names: RepeatedNames | None = None
+    objects: Objects | None = None
