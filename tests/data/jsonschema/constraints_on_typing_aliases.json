@@ -3,12 +3,18 @@
   "title": "ConstraintsOnTypingAliases",
   "type": "object",
   "required": [
-    "value"
+    "value",
+    "final_list"
   ],
   "properties": {
     "value": {
       "type": "integer",
       "x-python-type": "typing.List[int]",
+      "minItems": 2
+    },
+    "final_list": {
+      "type": "integer",
+      "x-python-type": "typing.Final[typing.List[int]]",
       "minItems": 2
     },
     "bare_list": {
@@ -81,6 +87,23 @@
       "type": "integer",
       "x-python-type": "collections.abc.Collection",
       "minItems": 2
+    },
+    "sized": {
+      "type": "integer",
+      "x-python-type": "typing.Sized",
+      "minLength": 2,
+      "pattern": "^a"
+    },
+    "buffer": {
+      "type": "integer",
+      "x-python-type": "collections.abc.Buffer",
+      "maxLength": 2,
+      "pattern": "^a"
+    },
+    "supports_int": {
+      "type": "string",
+      "x-python-type": "typing.SupportsInt",
+      "minimum": 0
     },
     "custom_path": {
       "customTypePath": "typing.Sequence",

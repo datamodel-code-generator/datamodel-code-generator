@@ -7,22 +7,27 @@ from collections.abc import Collection, MutableSequence, Set
 from typing import (
     Annotated,
     Any,
+    Final,
     FrozenSet,
     List,
     Mapping,
     Optional,
     Sequence,
+    Sized,
+    SupportsInt,
     Text,
     Tuple,
 )
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
+from typing_extensions import Buffer
 
 
 @dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class ConstraintsOnTypingAliases:
     value: List[int] = Field(..., min_length=2)
+    final_list: Final[List[int]] = Field(..., min_length=2)
     bare_list: List[int] | None = Field(None, max_length=2)
     sequence: Sequence[int] | None = Field(None, min_length=2)
     mutable_sequence: MutableSequence[int] | None = Field(None, max_length=2)
@@ -41,5 +46,8 @@ class ConstraintsOnTypingAliases:
     annotated_count: Annotated[int, str] | None = Field(None, ge=0)
     mapping: Mapping[str, int] | None = None
     collection: Collection | None = Field(None, min_length=2)
+    sized: Sized | None = Field(None, min_length=2)
+    buffer: Buffer | None = Field(None, max_length=2, pattern='^a')
+    supports_int: SupportsInt | None = None
     custom_path: Sequence | None = Field(None, max_length=2)
     overridden: Any | None = None

@@ -421,8 +421,6 @@ _TARGET_STABLE_PYTHON_TYPE_INTRODUCED_IN: dict[tuple[str, str], tuple[int, int]]
     ("typing", "override"): (3, 12),
 }
 
-_ABSTRACT_PYTHON_TYPE_MODULES = frozenset({"typing", "collections.abc"})
-
 _PYTHON_TYPE_BACKPORTS: dict[str, tuple[tuple[int, int], str]] = {
     "Buffer": ((3, 12), "typing_extensions"),
     "LiteralString": ((3, 11), "typing_extensions"),
@@ -493,17 +491,15 @@ def get_qualified_python_type_import_path(qualified_name: str, target_version: t
 
 
 @lru_cache(maxsize=256)
-def is_python_class_path(path: str) -> bool:
-    """Return whether a bare builtin name or a dotted path names a class this registry lists for any target.
-
-    A typing or collections.abc name is an alias, a protocol or a special form and names no class.
-    """
+def is_known_python_type_path(path: str) -> bool:
+    """Return whether a bare builtin name or a dotted path names a type this registry lists for any target."""
     module, separator, type_name = path.rpartition(".")
     if not separator or module == "builtins":
         return type_name in _PYTHON_BUILTIN_TYPE_NAMES
-    return module not in _ABSTRACT_PYTHON_TYPE_MODULES and (
+    return (
         any(module == known_module and type_name in names for known_module, names in _TARGET_STABLE_PYTHON_TYPE_MODULES)
         or _PYTHON_TYPE_IMPORT_PATHS.get(type_name) == path
+        or ((backport := _PYTHON_TYPE_BACKPORTS.get(type_name)) is not None and backport[1] == module)
     )
 
 
@@ -511,6 +507,6 @@ __all__ = [
     "PythonTypeUnavailableError",
     "get_python_type_import_path",
     "get_qualified_python_type_import_path",
+    "is_known_python_type_path",
     "is_python_builtin_type_name",
-    "is_python_class_path",
 ]

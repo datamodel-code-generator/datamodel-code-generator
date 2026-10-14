@@ -7,20 +7,25 @@ from collections.abc import Collection, MutableSequence, Set
 from typing import (
     Annotated,
     Any,
+    Final,
     FrozenSet,
     List,
     Mapping,
     Optional,
     Sequence,
+    Sized,
+    SupportsInt,
     Text,
     Tuple,
 )
 
 from msgspec import UNSET, Meta, Struct, UnsetType
+from typing_extensions import Buffer
 
 
 class ConstraintsOnTypingAliases(Struct):
     value: Annotated[List[int], Meta(min_length=2)]
+    final_list: Annotated[Final[List[int]], Meta(min_length=2)]
     bare_list: Annotated[List[int], Meta(max_length=2)] | UnsetType = UNSET
     sequence: Annotated[Sequence[int], Meta(min_length=2)] | UnsetType = UNSET
     mutable_sequence: (
@@ -39,5 +44,8 @@ class ConstraintsOnTypingAliases(Struct):
     annotated_count: Annotated[Annotated[int, str], Meta(ge=0)] | UnsetType = UNSET
     mapping: Mapping[str, int] | UnsetType = UNSET
     collection: Annotated[Collection, Meta(min_length=2)] | UnsetType = UNSET
+    sized: Sized | UnsetType = UNSET
+    buffer: Buffer | UnsetType = UNSET
+    supports_int: SupportsInt | UnsetType = UNSET
     custom_path: Annotated[Sequence, Meta(max_length=2)] | UnsetType = UNSET
     overridden: Any | UnsetType = UNSET

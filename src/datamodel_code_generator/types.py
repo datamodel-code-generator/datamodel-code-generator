@@ -1301,6 +1301,9 @@ ARRAY_KEYWORDS: frozenset[str] = frozenset({"minItems", "maxItems", "uniqueItems
 SEQUENCE_KEYWORDS: frozenset[str] = ARRAY_KEYWORDS | LENGTH_KEYWORDS
 TYPE_DEPENDENT_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
 _NO_KEYWORDS: frozenset[str] = frozenset()
+_SIZED_KEYWORDS: frozenset[str] = LENGTH_KEYWORDS | {"minItems", "maxItems"}
+_SIZED_TEXT_KEYWORDS: frozenset[str] = _SIZED_KEYWORDS | {"pattern"}
+_QUALIFIER_NAMES: frozenset[str] = frozenset({IMPORT_ANNOTATED.import_, "Final"})
 _STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
     "typing.Text": "str",
     "typing.Type": "type",
@@ -1318,12 +1321,18 @@ _STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
     "typing.ChainMap": "collections.ChainMap",
     "typing.Pattern": "re.Pattern",
     "typing.Match": "re.Match",
+    "typing.Container": "collections.abc.Container",
+    "typing.Sized": "collections.abc.Sized",
+    "typing.Reversible": "collections.abc.Reversible",
+    "typing.ByteString": "collections.abc.ByteString",
+    "typing_extensions.Buffer": "collections.abc.Buffer",
     **{
         f"{module}.{name}": path
         for module in ("typing", "collections.abc")
         for name, path in (
             ("Sequence", "list"),
             ("MutableSequence", "list"),
+            ("Collection", "list"),
             ("MutableSet", "set"),
             ("Mapping", "dict"),
             ("MutableMapping", "dict"),
@@ -1368,6 +1377,13 @@ class DataTypeManager(ABC):
         "frozenset": SEQUENCE_KEYWORDS,
         "tuple": SEQUENCE_KEYWORDS,
         "collections.deque": SEQUENCE_KEYWORDS,
+        "collections.abc.Container": _SIZED_KEYWORDS,
+        "collections.abc.Sized": _SIZED_KEYWORDS,
+        "collections.abc.Reversible": _SIZED_KEYWORDS,
+        "collections.abc.ByteString": _SIZED_TEXT_KEYWORDS,
+        "collections.abc.Buffer": _SIZED_TEXT_KEYWORDS,
+        "typing.AnyStr": _SIZED_TEXT_KEYWORDS,
+        "typing.SupportsBytes": _SIZED_TEXT_KEYWORDS,
     })
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
@@ -1485,7 +1501,7 @@ class DataTypeManager(ABC):
         return self._annotation_constraint_keywords(data_type.python_type.expression)
 
     def _annotation_constraint_keywords(self, expression: PythonTypeExpr) -> frozenset[str]:
-        """Return the keywords every member of a union takes, or those of the type that Annotated qualifies."""
+        """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies."""
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeBoundName,
             PythonTypeSubscript,
@@ -1504,9 +1520,7 @@ class DataTypeManager(ABC):
                 for member in python_type_expr_arguments(expression)
                 if python_type_expr_base_name(member) != NONE
             )
-        elif isinstance(expression, PythonTypeSubscript) and (
-            python_type_expr_base_name(expression) == IMPORT_ANNOTATED.import_
-        ):
+        elif isinstance(expression, PythonTypeSubscript) and python_type_expr_base_name(expression) in _QUALIFIER_NAMES:
             members = expression.arguments[:1]
         if members is not None:
             return TYPE_DEPENDENT_KEYWORDS.intersection(*map(self._annotation_constraint_keywords, members))
@@ -1522,9 +1536,8 @@ class DataTypeManager(ABC):
 
         The table lists the keywords that the output model enforces on a type across its supported versions.
         A typing alias or an abstract collection takes what the builtin or standard-library class it stands for takes.
-        A known type is a Python builtin, a standard-library class of the import registry or a type that the
-        generator itself imports; a type the generator cannot classify, such as a protocol, keeps the keywords the
-        schema declares.
+        A known type is a Python builtin, a standard-library type of the import registry or a type that the
+        generator itself imports; a type the generator cannot classify keeps the keywords the schema declares.
         """
         path = path.removeprefix("builtins.")
         path = _STANDARD_CLASS_PATHS.get(path, path)
@@ -1533,10 +1546,10 @@ class DataTypeManager(ABC):
         if not path or any(path in _import_paths(module) for module in self.KNOWN_TYPE_IMPORTS):
             return _NO_KEYWORDS
         from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
-            is_python_class_path,
+            is_known_python_type_path,
         )
 
-        return _NO_KEYWORDS if is_python_class_path(path) else TYPE_DEPENDENT_KEYWORDS
+        return _NO_KEYWORDS if is_known_python_type_path(path) else TYPE_DEPENDENT_KEYWORDS
 
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType:  # noqa: FBT001
         """Create a DataType from a fully qualified Python path."""

@@ -4,6 +4,10 @@
       1,
       2
     ],
+    "final_list": [
+      1,
+      2
+    ],
     "bare_list": [
       1,
       2
@@ -51,6 +55,9 @@
   },
   "invalid": {
     "value": [
+      1
+    ],
+    "final_list": [
       1
     ],
     "bare_list": [
