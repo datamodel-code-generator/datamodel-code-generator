@@ -166,6 +166,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from types import ModuleType
 
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.enums import StrictTypes
 
@@ -1300,6 +1301,35 @@ ARRAY_KEYWORDS: frozenset[str] = frozenset({"minItems", "maxItems", "uniqueItems
 SEQUENCE_KEYWORDS: frozenset[str] = ARRAY_KEYWORDS | LENGTH_KEYWORDS
 TYPE_DEPENDENT_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
 _NO_KEYWORDS: frozenset[str] = frozenset()
+_STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
+    "typing.Text": "str",
+    "typing.Type": "type",
+    "typing.List": "list",
+    "typing.Tuple": "tuple",
+    "typing.Set": "set",
+    "typing.FrozenSet": "frozenset",
+    "typing.AbstractSet": "frozenset",
+    "collections.abc.Set": "frozenset",
+    "typing.Dict": "dict",
+    "typing.Deque": "collections.deque",
+    "typing.DefaultDict": "collections.defaultdict",
+    "typing.OrderedDict": "collections.OrderedDict",
+    "typing.Counter": "collections.Counter",
+    "typing.ChainMap": "collections.ChainMap",
+    "typing.Pattern": "re.Pattern",
+    "typing.Match": "re.Match",
+    **{
+        f"{module}.{name}": path
+        for module in ("typing", "collections.abc")
+        for name, path in (
+            ("Sequence", "list"),
+            ("MutableSequence", "list"),
+            ("MutableSet", "set"),
+            ("Mapping", "dict"),
+            ("MutableMapping", "dict"),
+        )
+    },
+})
 
 
 @cache
@@ -1452,6 +1482,10 @@ class DataTypeManager(ABC):
             return self.type_constraint_keywords(
                 f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or ""
             )
+        return self._annotation_constraint_keywords(data_type.python_type.expression)
+
+    def _annotation_constraint_keywords(self, expression: PythonTypeExpr) -> frozenset[str]:
+        """Return the keywords every member of a union takes, or those of the type that Annotated qualifies."""
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeBoundName,
             PythonTypeSubscript,
@@ -1461,8 +1495,7 @@ class DataTypeManager(ABC):
             python_type_expr_base_name,
         )
 
-        expression = data_type.python_type.expression
-        members = (expression,)
+        members = None
         if is_union_python_type_expr(expression):
             if not self.ANNOTATION_UNIONS_TAKE_CONSTRAINTS:
                 return _NO_KEYWORDS
@@ -1471,33 +1504,39 @@ class DataTypeManager(ABC):
                 for member in python_type_expr_arguments(expression)
                 if python_type_expr_base_name(member) != NONE
             )
-        keywords = TYPE_DEPENDENT_KEYWORDS
-        for member in members:
-            base = member.base if isinstance(member, PythonTypeSubscript) else member
-            keywords &= self.type_constraint_keywords(
-                f"{base.import_from}.{base.import_name}"
-                if isinstance(base, PythonTypeBoundName) and base.import_from
-                else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base)
-            )
-        return keywords
+        elif isinstance(expression, PythonTypeSubscript) and (
+            python_type_expr_base_name(expression) == IMPORT_ANNOTATED.import_
+        ):
+            members = expression.arguments[:1]
+        if members is not None:
+            return TYPE_DEPENDENT_KEYWORDS.intersection(*map(self._annotation_constraint_keywords, members))
+        base = expression.base if isinstance(expression, PythonTypeSubscript) else expression
+        return self.type_constraint_keywords(
+            f"{base.import_from}.{base.import_name}"
+            if isinstance(base, PythonTypeBoundName) and base.import_from
+            else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base)
+        )
 
     def type_constraint_keywords(self, path: str) -> frozenset[str]:
         """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
 
         The table lists the keywords that the output model enforces on a type across its supported versions.
-        A known type is a Python builtin, a standard-library type of the import registry or a type that the
-        generator itself imports; a type the generator cannot classify keeps the keywords the schema declares.
+        A typing alias or an abstract collection takes what the builtin or standard-library class it stands for takes.
+        A known type is a Python builtin, a standard-library class of the import registry or a type that the
+        generator itself imports; a type the generator cannot classify, such as a protocol, keeps the keywords the
+        schema declares.
         """
         path = path.removeprefix("builtins.")
+        path = _STANDARD_CLASS_PATHS.get(path, path)
         if (keywords := self.CONSTRAINT_KEYWORDS.get(path)) is not None:
             return keywords
         if not path or any(path in _import_paths(module) for module in self.KNOWN_TYPE_IMPORTS):
             return _NO_KEYWORDS
         from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
-            is_known_python_type_path,
+            is_python_class_path,
         )
 
-        return _NO_KEYWORDS if is_known_python_type_path(path) else TYPE_DEPENDENT_KEYWORDS
+        return _NO_KEYWORDS if is_python_class_path(path) else TYPE_DEPENDENT_KEYWORDS
 
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType:  # noqa: FBT001
         """Create a DataType from a fully qualified Python path."""

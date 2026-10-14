@@ -1,0 +1,12 @@
+value
+bare_list
+sequence
+mutable_sequence
+frozen
+abstract_set
+pair
+text
+annotated_text
+annotated_count
+custom_path
+overridden

@@ -5292,6 +5292,55 @@ def test_main_string_and_array_constraints_on_other_types(
     )
 
 
+_TYPING_ALIAS_TYPE_OVERRIDES = json.dumps({"ConstraintsOnTypingAliases.overridden": "typing.List"})
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+        ("type_overrides.py", ["--field-constraints", "--type-overrides", _TYPING_ALIAS_TYPE_OVERRIDES]),
+        (
+            "type_overrides_msgspec.py",
+            ["--output-model-type", "msgspec.Struct", "--type-overrides", _TYPING_ALIAS_TYPE_OVERRIDES],
+        ),
+    ],
+)
+def test_main_constraints_on_typing_aliases(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test a typing alias, an abstract collection and Annotated take the keywords of their type, at runtime too."""
+    name = "constraints_on_typing_aliases"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}/{expected_file}",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "ConstraintsOnTypingAliases") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if "msgspec.Struct" not in extra_args:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(error_type):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "\n".join(rejected) + "\n",
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
+    )
+
+
 def test_main_number_constraints_on_mapped_formats(output_file: Path) -> None:
     """Test number keywords still constrain formats that --type-mappings maps to a number or a duration."""
     run_main_and_assert(
