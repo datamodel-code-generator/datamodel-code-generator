@@ -3727,6 +3727,35 @@ def test_main_openapi_nullable_map_value_reuse_model(
     )
 
 
+@pytest.mark.parametrize(
+    ("reuse_args", "expected_name"),
+    [
+        pytest.param(["--reuse-model"], "reuse_model", id="reuse-model"),
+        pytest.param(["--reuse-model", "--collapse-reuse-models"], "collapse_reuse_models", id="collapse-reuse-models"),
+    ],
+)
+def test_main_openapi_nullable_map_value_reuse_across_modules(
+    output_dir: Path, reuse_args: list[str], expected_name: str
+) -> None:
+    """Keep a map value that a module written earlier names, which a collapsed root model's field does."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_map_value_reuse_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=EXPECTED_OPENAPI_PATH / "nullable_map_value_reuse_modules" / expected_name,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--collapse-root-models",
+            *reuse_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_nullable_map_value_import_cycle(output_dir: Path) -> None:
     """Keep each model in the module it had before typed values when a typed value would join an import cycle."""
     run_main_and_assert(

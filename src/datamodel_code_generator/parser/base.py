@@ -4092,6 +4092,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 cached_model, model = model, cached_model
                 canonical_models[id(first_model)] = cached_model
             cached_model_reference = cached_model.reference
+            if (
+                id(model.reference) in typed_map_values
+                and not self.collapse_reuse_models
+                and self.generation_store.has_users_in_other_modules(model)
+            ):
+                # A module written earlier names the value, as a field of a collapsed root model does, so it stays.
+                continue
             if isinstance(model, Enum) or self.collapse_reuse_models or id(model.reference) in typed_map_values:
                 self.generation_store.redirect_model_reference_users(model, models, cached_model_reference)
                 duplicates.append(model)

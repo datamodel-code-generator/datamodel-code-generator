@@ -1143,6 +1143,15 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate_owner_caches_many(cache_owners)
         self._invalidate_after_mutation()
 
+    def has_users_in_other_modules(self, model: DataModel) -> bool:
+        """Return whether a model of another module uses ``model``, by a name that module already wrote."""
+        module = model.module_name
+        return any(
+            hasattr(child, "replace_reference")
+            and getattr(self._cache_owners_for_data_type(child)[1], "module_name", module) != module
+            for child in model.reference.children
+        )
+
     def redirect_model_reference_users(
         self,
         model: DataModel,
