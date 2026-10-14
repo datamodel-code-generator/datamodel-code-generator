@@ -1084,6 +1084,7 @@ class Core(Generic[AdapterT, HandleT]):
                 and (name := _dot_parameter(operation.path, path)) is not None
             ):
                 raise request_decode_error(operation, ("path", name), ParameterEncodingError(_DOT_CAUSE))
+            route = quote(route, safe="/%:@!$&'()*+,;=")
             query = self._call_query(request.query, options)
             url = f"{base}{route}{'?' if query else ''}{query}"
         headers = [*self._shared.fixed]

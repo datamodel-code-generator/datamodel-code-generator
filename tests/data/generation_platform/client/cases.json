@@ -5375,5 +5375,8 @@
         "_sync.py"
       ]
     ]
+  },
+  "literal-paths": {
+    "input": "literal-paths.yaml"
   }
 }

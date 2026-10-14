@@ -32,6 +32,7 @@ from tests.api_generation.scenarios.client_deadline_streams import deadline_stre
 from tests.api_generation.scenarios.client_fields import fields, optional_models
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
 from tests.api_generation.scenarios.client_hooks import hooks
+from tests.api_generation.scenarios.client_literal_paths import literal_paths
 from tests.api_generation.scenarios.client_missing_sentinel import missing_members
 from tests.api_generation.scenarios.client_mock_transport import mock_transport
 from tests.api_generation.scenarios.client_multipart import kinded_parts, multipart, split_parts
@@ -851,6 +852,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "modelless-bodies": ("modelless-bodies", BACKENDS, modelless_bodies),
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
+    "literal-paths": ("literal-paths", BACKENDS, literal_paths),
     "route-text": ("route-text", ("pydantic_v2.BaseModel",), route_text),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), type_checking_pets),

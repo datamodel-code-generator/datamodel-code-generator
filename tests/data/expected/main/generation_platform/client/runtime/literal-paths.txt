@@ -1,0 +1,25 @@
+# literal-paths pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct
+  > GET https://api.example.com/notes/a%5Cb%7Cc%5Ed%5Be%5D/%22%3C%3E%60%20caf%C3%A9
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw target b'/notes/a%5Cb%7Cc%5Ed%5Be%5D/%22%3C%3E%60%20caf%C3%A9'
+  sync get_literal = None
+  > GET https://api.example.com/notes/azAZ09-._~!$&'()*+,;=:@%2f%5C
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw target b"/notes/azAZ09-._~!$&'()*+,;=:@%2f%5C"
+  sync get_legal = None
+  > GET https://api.example.com/notes/a%5Cc%5Cd%20%2F%252f?q=a%20b
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw target b'/notes/a%5Cc%5Cd%20%2F%252f?q=a%20b'
+  sync get_parameter = None
+  > GET https://api.example.com/notes/a%5Cb%7Cc%5Ed%5Be%5D/%22%3C%3E%60%20caf%C3%A9
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw target b'/notes/a%5Cb%7Cc%5Ed%5Be%5D/%22%3C%3E%60%20caf%C3%A9'
+  async get_literal = None
+  > GET https://api.example.com/notes/azAZ09-._~!$&'()*+,;=:@%2f%5C
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw target b"/notes/azAZ09-._~!$&'()*+,;=:@%2f%5C"
+  async get_legal = None
+  > GET https://api.example.com/notes/a%5Cc%5Cd%20%2F%252f?q=a%20b
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw target b'/notes/a%5Cc%5Cd%20%2F%252f?q=a%20b'
+  async get_parameter = None

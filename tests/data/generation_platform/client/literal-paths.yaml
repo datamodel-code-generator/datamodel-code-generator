@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info:
+  title: Literal paths
+  version: '1.0'
+servers:
+- url: https://api.example.com
+paths:
+  /notes/a\b|c^d[e]/"<>` café:
+    get:
+      operationId: getLiteral
+      tags:
+      - notes
+      parameters: []
+      responses:
+        '204':
+          description: No content.
+  /notes/azAZ09-._~!$&'()*+,;=:@%2f%5C:
+    get:
+      operationId: getLegal
+      tags:
+      - notes
+      parameters: []
+      responses:
+        '204':
+          description: No content.
+  /notes/a\{note}:
+    get:
+      operationId: getParameter
+      tags:
+      - notes
+      parameters:
+      - name: note
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: q
+        in: query
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No content.
