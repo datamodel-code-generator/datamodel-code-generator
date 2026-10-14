@@ -10,3 +10,23 @@ upload_note
   upload_note(body=b'note \xff\x00 caf\xc3\xa9')
   < 200 text/plain; charset=utf-8
   = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain; charset=utf-8
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv; charset=utf-8
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain; charset=utf-8
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain; charset=utf-8
+  = b'page \xff\x00'

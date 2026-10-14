@@ -831,9 +831,14 @@
   },
   "binary-mapped": {
     "input": "binary-mapped.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
     "model": {
       "type_mappings": [
-        "password=binary"
+        "password=binary",
+        "string+byte=binary"
       ]
     }
   },
