@@ -220,6 +220,13 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
             ),
         ),
         (
+            {**CLIENT, "output_model_type": "msgspec.Struct"},
+            (
+                "The client target needs --use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their "
+                "discriminated unions can be decoded"
+            ),
+        ),
+        (
             {**SERVER, "server_primary_responses": {"/paths/~1pets/post": {"status_code": 700}}},
             (
                 "Invalid --server-primary-responses: /paths/~1pets/post.status_code: "
@@ -251,6 +258,7 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         "target-pydantic",
         "client-target-pydantic",
         "client-dataclass-sentinel",
+        "client-msgspec-tagged-unions",
         "json-value",
         "package",
         "keyed",

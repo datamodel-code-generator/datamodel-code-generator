@@ -651,7 +651,7 @@ def test_main_openapi_discriminator_enum_single_value_msgspec(output_file: Path)
     option_description="""Write a msgspec.Struct discriminated union as tagged structs as a whole.
 
 The `--use-msgspec-tagged-unions` flag only applies to `--output-model-type msgspec.Struct`; other output model
-types ignore it.
+types ignore it. Client generation (`--generate-client`) with `msgspec.Struct` models requires it.
 
 Without the flag the output keeps the 0.83.0 form. A variant gets `tag_field`/`tag` only when its discriminator
 property is a single literal (such as a `const`) equal to the discriminator value, or when a second discriminated

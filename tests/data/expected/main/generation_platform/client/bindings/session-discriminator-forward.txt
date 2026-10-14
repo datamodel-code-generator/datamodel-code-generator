@@ -72,6 +72,7 @@ render typing.TypedDict values
   models/request_version_enum.py
   model_bindings.py typing_TypedDict/members
 render msgspec.Struct members
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
   models/__init__.py
   models/grandchild.py
   models/request.py
@@ -81,6 +82,7 @@ render msgspec.Struct members
   models/request_version_enum.py
   model_bindings.py msgspec_Struct/members
 render msgspec.Struct values
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
   models/__init__.py
   models/grandchild.py
   models/request.py
