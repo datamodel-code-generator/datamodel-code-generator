@@ -406,7 +406,7 @@ Generated clients send and read model values through their model backend, with n
 | Backend | Sends | Receives |
 |---|---|---|
 | Pydantic v2 `BaseModel` | `model_dump_json(by_alias=True, exclude_unset=True)`; other types through a cached `TypeAdapter` | `TypeAdapter(T).validate_json` |
-| Pydantic v2 dataclass | `TypeAdapter(T).dump_json(by_alias=True)` | `TypeAdapter(T).validate_json` |
+| Pydantic v2 dataclass | `TypeAdapter(T).dump_json(by_alias=True)`, which leaves out the fields that hold `MISSING` | `TypeAdapter(T).validate_json` |
 | `msgspec.Struct` | `msgspec.json.encode` | `msgspec.json.Decoder(T).decode` |
 | dataclasses, `TypedDict` | `json.dumps` of the renamed fields | `json.loads`, then the renamed fields |
 
@@ -422,7 +422,8 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   constructor already checked it, and what the serializer cannot represent fails with a request `DecodeError` with the
   reason `unencodable` before anything is sent; its `location` names the argument, never the value. An empty array or
   object in a style-encoded parameter or a form member is left out as an omitted value is: it writes no query pair,
-  header, cookie, or part. A path segment cannot be left out, so an empty array or object in a path parameter fails
+  header, cookie, or part. A style or a form cannot write null, so a `None` member of an object parameter or of a
+  URL-encoded or multipart form, and a `FieldPart` whose value is `None`, are left out the same way. A path segment cannot be left out, so an empty array or object in a path parameter fails
   with a request `DecodeError` before anything is sent.
 - **Parameter arguments.** A parameter whose model type is a type alias or a root model takes the type it stands for,
   such as `limit: int` or `tags: list[str]`, never the alias or the root model. An alias's argument is sent as given,
@@ -987,9 +988,9 @@ unpacked call with, and its `call` of the client core: the `operation`, the `par
 do the `plans` of `helper_plans.jinja2` and the `plan` of `webhook.jinja2`. `helper_plans.jinja2` also receives the
 typed `accessors` the plans read items and results with: each has a `name`, the `data` type it reads, the type it
 `returns`, its `docstring`, the `checks` that end its read early (the `value` local, the `read` it keeps, whether it
-ends at `none`, and the `unset` type it ends at, when there is one), and its `result`. `helpers.jinja2` receives the
-helper `namespaces`, each with its `name`, `docstring`, the `core` it takes, the core it `wrap`s that in at the root,
-and its `children`, and the `helpers`, each with its `name`, `docstring`, `methods`, and the `handle` class a polling
+ends at `none`, the `unset` type it ends at, when there is one, and the `missing` sentinel it ends at, when there is
+one), and its `result`. `helpers.jinja2` receives the helper `namespaces`, each with its `name`, `docstring`, the
+`core` it takes, the core it `wrap`s that in at the root, and its `children`, and the `helpers`, each with its `name`, `docstring`, `methods`, and the `handle` class a polling
 helper with remote cancellation returns. A helper method, like a function of `webhook.jinja2`, has its `name`, whether
 it is a `coroutine`, its `positional` parameters and the `keywords` after `*`, what it `returns`, its `docstring`
 (empty for a webhook function, whose builtin template writes its own), and the runtime `function` it returns the call

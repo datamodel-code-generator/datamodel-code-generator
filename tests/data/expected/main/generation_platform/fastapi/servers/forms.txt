@@ -122,13 +122,13 @@ serve pydantic_v2.dataclass
 service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, search, upload, upload_many
 service DefaultService without its methods: TypeError
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a', count=1, tags=None))
+  post_form(FieldFormsPostRequest(name='a', count=1, tags=MISSING))
 < 204 - b''
 > POST /forms
   post_form(FieldFormsPostRequest(name='a', count=2, tags=['x', 'y']))
 < 204 - b''
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a b c', count=3, tags=None))
+  post_form(FieldFormsPostRequest(name='a b c', count=3, tags=MISSING))
 < 204 - b''
 > POST /forms
   post_form(FieldFormsPostRequest(name='b', count=1, tags=['x', 'x']))
@@ -152,13 +152,13 @@ service DefaultService without its methods: TypeError
   upload(FieldUploadsPostRequest(file=b'file body', note='n'))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'data', note=None))
+  upload(FieldUploadsPostRequest(file=b'data', note=MISSING))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'second', note=None))
+  upload(FieldUploadsPostRequest(file=b'second', note=MISSING))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'no name', note=None))
+  upload(FieldUploadsPostRequest(file=b'no name', note=MISSING))
 < 204 - b''
 > POST /uploads
   upload(FieldUploadsPostRequest(file=b'body', note='note body'))
@@ -173,21 +173,21 @@ service DefaultService without its methods: TypeError
   upload_many(FieldBatchesPostRequest(files=[b'one', b'two'], label='l'))
 < 204 - b''
 > POST /batches
-  upload_many(FieldBatchesPostRequest(files=[b'one'], label=None))
+  upload_many(FieldBatchesPostRequest(files=[b'one'], label=MISSING))
 < 204 - b''
 > POST /batches
 < 422 application/json [{"type": "missing", "loc": ["body", "files"]}]
 > POST /searches
-  search(FieldSearchesPostRequest(filter={'color': 'blue', 'minAge': 3}, filters=[{'color': 'a', 'minAge': None}, {'color': None, 'minAge': 2}], tags=['a', 'b c'], file=b'data'))
+  search(FieldSearchesPostRequest(filter={'color': 'blue', 'minAge': 3}, filters=[{'color': 'a', 'minAge': MISSING}, {'color': MISSING, 'minAge': 2}], tags=['a', 'b c'], file=b'data'))
 < 204 - b''
 > POST /searches
-  search(FieldSearchesPostRequest(filter={'color': 'plain', 'minAge': None}, filters=None, tags=None, file=None))
+  search(FieldSearchesPostRequest(filter={'color': 'plain', 'minAge': MISSING}, filters=MISSING, tags=MISSING, file=MISSING))
 < 204 - b''
 > POST /searches
-  search(FieldSearchesPostRequest(filter={'color': 'file', 'minAge': None}, filters=None, tags=None, file=None))
+  search(FieldSearchesPostRequest(filter={'color': 'file', 'minAge': MISSING}, filters=MISSING, tags=MISSING, file=MISSING))
 < 204 - b''
 > POST /searches
-  search(FieldSearchesPostRequest(filter={'color': 'kept', 'minAge': None}, filters=None, tags=None, file=None))
+  search(FieldSearchesPostRequest(filter={'color': 'kept', 'minAge': MISSING}, filters=MISSING, tags=MISSING, file=MISSING))
 < 204 - b''
 > POST /searches
 < 422 application/json [{"type": "json_invalid", "loc": ["body", "filter"]}]
@@ -198,10 +198,10 @@ service DefaultService without its methods: TypeError
 > POST /searches
 < 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]
 > POST /extras
-  post_extras(FieldExtrasPostRequest(name='n', first=Filter(color='blue', minAge=3), second=Filter(color='plain', minAge=None), third=Filter(color='file', minAge=None)))
+  post_extras(FieldExtrasPostRequest(name='n', first=Filter(color='blue', minAge=3), second=Filter(color='plain', minAge=MISSING), third=Filter(color='file', minAge=MISSING)))
 < 204 - b''
 > POST /extras
-  post_extras(FieldExtrasPostRequest(name='{', first=Filter(color='last', minAge=None)))
+  post_extras(FieldExtrasPostRequest(name='{', first=Filter(color='last', minAge=MISSING)))
 < 204 - b''
 > POST /extras
 < 422 application/json [{"type": "json_invalid", "loc": ["body", "first"]}, {"type": "greater_than_equal", "loc": ["body", "second", "minAge"]}, {"type": "json_invalid", "loc": ["body", "third"]}, {"type": "dataclass_type", "loc": ["body", "fourth"]}]
@@ -209,7 +209,7 @@ service DefaultService without its methods: TypeError
   post_extras(FieldExtrasPostRequest(name='n'))
 < 204 - b''
 > POST /extra-lists
-  post_extra_lists(FieldExtraListsPostRequest(name='n', first=[Filter(color='a', minAge=None), Filter(color=None, minAge=2)], second=[Filter(color=None, minAge=None)]))
+  post_extra_lists(FieldExtraListsPostRequest(name='n', first=[Filter(color='a', minAge=MISSING), Filter(color=MISSING, minAge=2)], second=[Filter(color=MISSING, minAge=MISSING)]))
 < 204 - b''
 > POST /extra-lists
 < 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", 1, "minAge"]}, {"type": "json_invalid", "loc": ["body", "first", 2]}, {"type": "dataclass_type", "loc": ["body", "second", 0]}]
@@ -220,12 +220,12 @@ service DefaultService without its methods: TypeError
   post_extra_scores(FieldExtraScoresPostRequest(name='4', first=[1, 'two'], second=['3.5']))
 < 204 - b''
 > POST /extra-bases
-  post_extra_bases(FieldExtraBasesPostRequest(base='b', name='n', first=Filter(color='blue', minAge=None)))
+  post_extra_bases(FieldExtraBasesPostRequest(base='b', name='n', first=Filter(color='blue', minAge=MISSING)))
 < 204 - b''
 > POST /extra-bases
 < 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", "minAge"]}, {"type": "json_invalid", "loc": ["body", "second"]}]
 > POST /extra-patterns
-  post_extra_patterns(FieldExtraPatternsPostRequest(name='n', first=Filter(color='blue', minAge=None)))
+  post_extra_patterns(FieldExtraPatternsPostRequest(name='n', first=Filter(color='blue', minAge=MISSING)))
 < 204 - b''
 > POST /extra-patterns
 < 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", "minAge"]}]

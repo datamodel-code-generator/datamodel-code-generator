@@ -10,6 +10,7 @@ from dataclasses import is_dataclass
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator import DataModelType
+from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.cross_targets import service
 
 if TYPE_CHECKING:
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
 DOCUMENT = "fastapi/server-extras.yaml"
 CLIENT = {"default_base_url": "https://extras.example.com"}
-MODEL = {"output_model_type": DataModelType.PydanticV2Dataclass}
+MODEL = backend_settings(DataModelType.PydanticV2Dataclass)
 
 
 def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[str, object]:

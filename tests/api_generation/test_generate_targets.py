@@ -201,15 +201,22 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         (
             {**SERVER, "target_pydantic_version": "2.12"},
             (
-                "--target-pydantic-version: The fastapi target needs a target pydantic version of 2.13 or later; "
+                "--target-pydantic-version: The fastapi target needs a target pydantic version of 2.14 or later; "
                 "leave it unset or use '2.14'"
             ),
         ),
         (
             {**CLIENT, "target_pydantic_version": TargetPydanticVersion.V2},
             (
-                "--target-pydantic-version: The client target needs a target pydantic version of 2.13 or later; "
+                "--target-pydantic-version: The client target needs a target pydantic version of 2.14 or later; "
                 "leave it unset or use '2.14'"
+            ),
+        ),
+        (
+            {**CLIENT, "output_model_type": "pydantic_v2.dataclass"},
+            (
+                "The client target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields "
+                "cannot tell an unset member from None"
             ),
         ),
         (
@@ -243,6 +250,7 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         "target-python",
         "target-pydantic",
         "client-target-pydantic",
+        "client-dataclass-sentinel",
         "json-value",
         "package",
         "keyed",

@@ -673,13 +673,15 @@ class Function:
 class Check:
     """A step of a typed accessor that ends its read: the local keeping the value, its read, and what ends it.
 
-    `none` ends the read at None, and `unset`, msgspec's UnsetType when it is not empty, at an unset value.
+    `none` ends the read at None, `unset`, msgspec's UnsetType when it is not empty, at an unset value, and `missing`,
+    Pydantic's MISSING when it is not empty, at a field that holds it.
     """
 
     value: str
     read: str
     none: bool
     unset: str
+    missing: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -2245,10 +2247,11 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     expression = f"{expression}.get({step.name!r})"
                 case _:
                     expression = f"{expression}.{step.name}"
-            if (step.none and position < last) or step.unset:
+            if (step.none and position < last) or step.unset or step.missing:
                 value = f"value_{position}"
                 unset = module.name("msgspec", "UnsetType") if step.unset else ""
-                checks.append(Check(value, expression, step.none, unset))
+                missing = module.name("pydantic", "MISSING") if step.missing else ""
+                checks.append(Check(value, expression, step.none, unset, missing))
                 expression = value
         return Accessor(name, data, returns, f"Return {what}.", tuple(checks), expression)
 

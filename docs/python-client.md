@@ -190,7 +190,7 @@ Generation ends by printing the command that adds the package's runtime dependen
 
 ```text
 Add the runtime dependencies of client to your project:
-  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.13.5"
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.14.0"
 ```
 
 <!-- fmt: on -->
@@ -693,7 +693,9 @@ annotations: mypy 2.4 or later (mypy 2.3 reports `valid-type`), or Pyright and t
 checked with in strict mode.
 
 A parameter style has no spelling of null, so `None` for an optional nullable query, header, or cookie parameter is
-sent as `UNSET` is: the parameter is left out, which a server reads as absent. A parameter declared with `content`
+sent as `UNSET` is: the parameter is left out, which a server reads as absent. Forms cannot write null either, so a
+`None` member of an object parameter, of a URL-encoded or multipart form body, and a `FieldPart` whose value is `None`
+are left out too. A parameter declared with `content`
 sends JSON `null`. A required parameter, including a path parameter, and an array item refuse `None` with a
 `DecodeError` whose reason is `unencodable`. [Model codecs](python-client-reference.md#model-codecs) has the full
 conversion rules.
@@ -1382,10 +1384,31 @@ select the TC rules, to introspect the annotations at run time. Custom
 templates and custom formatters must keep the class and field names of the models: the client binds each operation
 to the names in the generated model graph and does not read the rendered model source.
 
-The generated package needs `httpx2>=2.13.0` and the other requirements of the printed `uv add` command. With Pydantic models the minimum is `pydantic>=2.13.5`, and `pydantic>=2.14` when
-`--target-pydantic-version 2.14` with `--use-missing-sentinel` makes the models import `MISSING` from `pydantic`.
-An explicit `--target-pydantic-version` older than that minimum (`2`, `2.11` or `2.12`) is refused with `Error:` and
-exit code 2 for those models; leave it unset or use `2.14`. The other model backends do not use the option.
+The generated package needs `httpx2>=2.13.0` and the other requirements of the printed `uv add` command. With Pydantic
+models the minimum is `pydantic>=2.14.0`. An explicit `--target-pydantic-version` older than that minimum (`2`, `2.11`
+or `2.12`) is refused with `Error:` and exit code 2 for those models; leave it unset or use `2.14`. The other model
+backends do not use the option.
+
+A `pydantic_v2.dataclass` field cannot tell an unset member from one set to `None`, so client generation with
+`--output-model-type pydantic_v2.dataclass` needs `--use-missing-sentinel`. Without it, generation stops with
+`Error: The client target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields cannot tell an
+unset member from None` and exit code 2. With it, an optional field without a default holds `MISSING`, which the models
+import from `pydantic`, as they do for `pydantic_v2.BaseModel` when the option is set:
+
+```python
+from client import Client
+from models import NewPet
+from pydantic import MISSING
+
+with Client() as client:
+    client.pets.create_pet(body=NewPet(name="Mimi"))  # tag holds MISSING, so the request leaves it out
+    if client.pets.get_pet(pet_id=1).tag is MISSING:
+        print("the response left tag out")
+```
+
+A field the constructor is not given holds `MISSING` and is left out of a request; give `None` to send `null` where
+the property is nullable. A member a response leaves out decodes to `MISSING`, and a `null` that its property does not
+allow is refused with a `DecodeError` whose reason is `invalid_value`.
 
 ### Generator options
 

@@ -76,7 +76,7 @@ The command also needs:
 
 - **Python 3.11 or later**, both to run `datamodel-codegen` and as the target of the generated code. The
   [preset](presets.md) in the command targets 3.12.
-- **A Pydantic v2 backend**: `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`.
+- **A Pydantic v2 backend**: `pydantic_v2.BaseModel`, or `pydantic_v2.dataclass` with `--use-missing-sentinel`.
 - **The `api` scope**: `--openapi-scopes schemas api`, so that the models cover the parameters, bodies, and responses
   of the operations.
 
@@ -95,7 +95,7 @@ The command also needs:
 | `--model-template-dir` | `--custom-template-dir`, templates in its `pydantic_v2/` directory | The model templates are datamodel-code-generator's own. |
 | `-c`, `--custom-visitor` | none | `--extra-template-data` passes static values to templates. |
 | `--specify-tags` | none | Include the router of one group in your own app, or filter paths with `--openapi-include-paths`. |
-| `-d`, `--output-model-type` | `--output-model-type` | Only `pydantic_v2.BaseModel` and `pydantic_v2.dataclass`. |
+| `-d`, `--output-model-type` | `--output-model-type` | Only `pydantic_v2.BaseModel` and `pydantic_v2.dataclass`, which needs `--use-missing-sentinel`. |
 | `-p`, `--python-version` (default 3.10) | `--target-python-version`, or a preset that sets it | 3.11 or later. |
 | `--include-request-argument` | `--server-include-request` | For the raw body, use `--server-body-mode request`, or `--server-body-modes` per operation. |
 | `-e`, `--encoding`, `--enum-field-as-literal`, `--strict-nullable`, `--use-annotated`, `--reuse-model`, `--enable-faux-immutability`, `--disable-timestamp`, `--allow-remote-refs`, `--allow-private-network` | the same options | Every model option of dcg applies to the server's models. |

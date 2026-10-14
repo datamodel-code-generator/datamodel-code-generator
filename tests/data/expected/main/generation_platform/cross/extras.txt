@@ -12,9 +12,9 @@ echo_stats empty
   = {}
 echo_bag
   > POST /bags [application/json]
-  echo_bag(body=Bag(stats=Stats(), counts={'x': 2}, named=Named(name='n'), namedCounts=NamedCounts(name='c'), items=[Named(name='i'), Named(name=None)]))
+  echo_bag(body=Bag(stats=Stats(), counts={'x': 2}, named=Named(name='n'), namedCounts=NamedCounts(name='c'), items=[Named(name='i'), Named(name=MISSING)]))
   < 201 application/json
-  = {'stats': {'a': 1, 'nested': {'b': [1, None]}}, 'counts': {'x': 2}, 'named': {'name': 'n', 'extra': True}, 'namedCounts': {'name': 'c', 'y': 3}, 'items': [{'name': 'i', 'z': 'w'}, {'name': None}]}
+  = {'stats': {'a': 1, 'nested': {'b': [1, None]}}, 'counts': {'x': 2}, 'named': {'name': 'n', 'extra': True}, 'namedCounts': {'name': 'c', 'y': 3}, 'items': [{'name': 'i', 'z': 'w'}, {'name': MISSING}]}
 echo_labels
   > POST /labels [application/x-www-form-urlencoded]
   echo_labels(body=Labels(name='n'))
@@ -24,4 +24,4 @@ get_tree
   > GET /trees
   get_tree()
   < 200 application/json
-  = {'name': 'root', 'children': [{'name': 'leaf', 'children': None}]}
+  = {'name': 'root', 'children': [{'name': 'leaf', 'children': MISSING}]}

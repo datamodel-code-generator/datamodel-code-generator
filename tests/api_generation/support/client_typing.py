@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from datamodel_code_generator import DataModelType, GenerateConfig, LeftoverFilesWarning, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
+from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.client_generation import SOURCE, client_options, copy_references
 from tests.api_generation.support.client_publication import PACKAGE
 from tests.api_generation.support.strict_typing import checked, marked_lines, negative
@@ -49,8 +50,7 @@ def client_typing_report(
             input_file_type="openapi",
             target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            output_model_type=backend,
-            **{"formatters": [Formatter.BUILTIN], **model},
+            **{**backend_settings(backend), "formatters": [Formatter.BUILTIN], **model},
             **client_options(case.get("config", {}), root, "pets"),
         ),
     )

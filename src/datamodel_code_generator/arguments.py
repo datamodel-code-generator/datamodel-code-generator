@@ -1029,7 +1029,8 @@ field_options.add_argument(
 field_options.add_argument(
     "--use-missing-sentinel",
     help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), "
-    "or pydantic.MISSING with --target-pydantic-version 2.14 or later.",
+    "or pydantic.MISSING with --target-pydantic-version 2.14 or later, or for --generate-server and --generate-client. "
+    "Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client generation requires it.",
     action="store_true",
     default=None,
 )

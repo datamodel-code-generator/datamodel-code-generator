@@ -34,6 +34,7 @@ from pydantic import BaseModel
 from datamodel_code_generator import DataModelType, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
+from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.client_runtime import agreeing_backends, describe
 from tests.api_generation.support.generated_packages import generated_root, import_generated
 
@@ -206,7 +207,7 @@ def _generate(scenario: ModuleType, root: Path, package: str) -> str:
             source,
             **{
                 **model,
-                "output_model_type": backend or model["output_model_type"],
+                **(backend_settings(backend) if backend else {}),
                 "output": root / f"{package}{suffix}_models.py",
             },
             generate_client="httpx2",

@@ -140,7 +140,7 @@ How do I convert enums to Literal types?
 - `--use-default-kwarg`: Use default= keyword argument instead of positional argument for fields with defaults.
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
-- `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for optional fields without defaults.
+- `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
@@ -601,7 +601,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use pydantic.experimental.missing_sentinel.MISSING for
                         optional fields without defaults (Pydantic v2.12+), or
                         pydantic.MISSING with --target-pydantic-version 2.14
-                        or later.
+                        or later, or for --generate-server and --generate-
+                        client. Supports pydantic_v2.BaseModel and
+                        pydantic_v2.dataclass, whose server and client
+                        generation requires it.
   --use-serialization-alias
                         Use serialization_alias instead of alias for field
                         aliasing (Pydantic v2 only). This allows setting

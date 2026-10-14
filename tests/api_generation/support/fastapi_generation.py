@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from datamodel_code_generator import DataModelType, Error, _runtime, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
+from tests.api_generation.support.backends import backend_settings
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
@@ -63,7 +64,7 @@ def _render(
         "input_file_type": "openapi",
         "target_python_version": "3.11",
         "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
-        "output_model_type": DataModelType(backend),
+        **backend_settings(backend),
         "disable_timestamp": True,
         "formatters": [Formatter.BUILTIN],
         **case.get("model", {}),

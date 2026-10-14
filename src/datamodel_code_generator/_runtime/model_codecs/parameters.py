@@ -106,10 +106,7 @@ def _entries(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
         case "array", tuple() | list():
             return [(None, lexical(item, plan.kind)) for item in value]
         case "object", Mapping():
-            entries: list[_Entry] = []
-            for key, item in value.items():
-                entries.append((key, lexical(item, "string")))
-            return entries
+            return [(key, lexical(item, "string")) for key, item in value.items() if item is not None]
         case _:
             pass
     msg = "The value does not have the parameter's declared shape"
@@ -265,7 +262,8 @@ def querystring(plan: ParameterPlan, value: object) -> str:
 def _style_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
     """Return a style's pairs of a value; an empty array or object writes none, as an omitted value does.
 
-    A path segment cannot be omitted, so a path parameter refuses an empty array or object.
+    A style cannot write null, so an object member of None is left out as an unset one is. A path segment cannot be
+    omitted, so a path parameter refuses an empty array or object.
     """
     if not (entries := _entries(plan, value)):
         if plan.location == "path":

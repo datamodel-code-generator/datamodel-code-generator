@@ -243,10 +243,10 @@ def encode_form(
     additional: FieldPlan | None,
     styled: Mapping[str, Callable[[JSONValue], Iterable[str]]] | None = None,
 ) -> bytes:
-    """Serialize a flat object as ordered URL-encoded pairs, repeating array members.
+    """Serialize a flat object as ordered URL-encoded pairs, repeating array members and leaving out None ones.
 
-    A member in `styled` writes its own pairs, as its encoding's query parameter style or content does, and no two
-    members may then write the same name.
+    A form cannot write null, so a None member is left out as an unset one is. A member in `styled` writes its own
+    pairs, as its encoding's query parameter style or content does, and no two members may then write the same name.
     """
     if not isinstance(value, Mapping):
         msg = "A URL-encoded form value must be an object"
@@ -255,6 +255,8 @@ def encode_form(
     pairs: list[str] = []
     owners: dict[str, str] = {}
     for name, item in cast("Mapping[str, JSONValue]", value).items():
+        if item is None:
+            continue
         if styled and (style := styled.get(name)) is not None:
             written = list(style(item))
             keys = [percent_decode(pair.partition("=")[0].encode("ascii"), plus=True) for pair in written]

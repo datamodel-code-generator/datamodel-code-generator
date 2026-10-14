@@ -32,12 +32,13 @@ model-only pydantic_v2.dataclass
   | 
   | from __future__ import annotations
   | 
+  | from pydantic import MISSING
   | from pydantic.dataclasses import dataclass
   | 
   | 
   | @dataclass
   | class Item:
-  |     id: int | None = None
+  |     id: int | MISSING = MISSING
 render dataclasses.dataclass
   accepted
   files []

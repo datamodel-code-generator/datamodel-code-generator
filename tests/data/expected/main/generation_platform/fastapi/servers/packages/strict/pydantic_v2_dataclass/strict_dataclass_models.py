@@ -5,7 +5,15 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Base64Str, Field, StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic import (
+    MISSING,
+    Base64Str,
+    Field,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    StrictStr,
+)
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -15,10 +23,10 @@ Size = TypeAliasType("Size", Annotated[int, Field(ge=1, strict=True)])
 @dataclass
 class Form:
     count: StrictInt
-    score: StrictFloat | None = None
-    flag: StrictBool | None = None
-    name: StrictStr | None = None
-    counts: list[StrictInt] | None = None
+    score: StrictFloat | MISSING = MISSING
+    flag: StrictBool | MISSING = MISSING
+    name: StrictStr | MISSING = MISSING
+    counts: list[StrictInt] | MISSING = MISSING
 
 
 FieldValuesIdGetPathIdParameter = TypeAliasType("FieldValuesIdGetPathIdParameter", StrictInt)
@@ -75,7 +83,7 @@ FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVis
 class FieldUploadsPostRequest:
     file: bytes
     count: StrictInt
-    score: StrictFloat | None = None
-    flag: StrictBool | None = None
-    note: StrictStr | None = None
-    counts: list[StrictInt] | None = None
+    score: StrictFloat | MISSING = MISSING
+    flag: StrictBool | MISSING = MISSING
+    note: StrictStr | MISSING = MISSING
+    counts: list[StrictInt] | MISSING = MISSING

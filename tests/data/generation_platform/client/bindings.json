@@ -117,7 +117,8 @@
     ],
     "backend_model": {
       "pydantic_v2.BaseModel": {
-        "use_missing_sentinel": true
+        "use_missing_sentinel": true,
+        "target_pydantic_version": "2.14"
       }
     },
     "variants": {

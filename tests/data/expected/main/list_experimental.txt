@@ -35,7 +35,7 @@ cli-option.generate-client:
   `--diff-against`, `--watch`, `--output-format json`, and the `uv add` notice on stderr work as
   with `--generate-server`. `generate()` takes them as `generate_client` and the `client_*` options,
   and returns every generated file without an output. It needs Python 3.11 or later, both to run and
-  as `--target-python-version`.
+  as `--target-python-version`, and `--use-missing-sentinel` for `pydantic_v2.dataclass` models.
 cli-option.generate-schema-validators:
   The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules
   such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else
@@ -49,7 +49,8 @@ cli-option.generate-server:
   regenerates after input changes, `--output-format json` uses the model generation, check, and
   input-diff payloads, and generation prints a `uv add` command to stderr. `generate()` takes them
   as `generate_server` and the `server_*` options, and returns every generated file without an
-  output. It needs Python 3.11 or later, both to run and as `--target-python-version`.
+  output. It needs Python 3.11 or later, both to run and as `--target-python-version`, and
+  `--use-missing-sentinel` for `pydantic_v2.dataclass` models.
 cli-option.install-skill:
   Use --install-skill with codex or claude-code. --skill-scope selects a project or user
   installation, and --overwrite-skill safely replaces an existing regular skill directory.
@@ -57,8 +58,9 @@ cli-option.schema-validator-type:
   The only currently implemented backend is 'pydantic-v2', which preserves the existing generated
   Pydantic v2 validator behavior.
 cli-option.use-missing-sentinel:
-  The option requires Pydantic v2 BaseModel output and a target Pydantic version that supports the
-  MISSING sentinel.
+  The option requires Pydantic v2 BaseModel or dataclass output and a target Pydantic version that
+  supports the MISSING sentinel. Server and client generation require it for Pydantic v2 dataclass
+  output, and import MISSING from pydantic when the target Pydantic version is unset.
 cli-option.use-type-alias:
   The option replaces root model classes with type aliases where possible. Pydantic v2 output may
   use TypeAliasType or Python 3.12 type statements depending on the target Python version.

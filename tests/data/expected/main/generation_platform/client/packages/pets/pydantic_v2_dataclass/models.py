@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import ConfigDict
+from pydantic import MISSING, ConfigDict
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -12,19 +12,19 @@ from typing_extensions import TypeAliasType
 class Pet:
     id: int
     name: str
-    tag: str | None = None
+    tag: str | None | MISSING = MISSING
 
 
 @dataclass
 class NewPet:
     name: str
-    tag: str | None = None
+    tag: str | MISSING = MISSING
 
 
 @dataclass
 class Error:
     code: int
-    message: str | None = None
+    message: str | MISSING = MISSING
 
 
 FieldPetsGetQueryLimitParameter = TypeAliasType("FieldPetsGetQueryLimitParameter", int)
@@ -75,8 +75,8 @@ FieldPetsPetIdFilesPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesPo
 @dataclass(config=ConfigDict(extra='forbid'))
 class FieldPetsPetIdFilesPostRequest:
     file: bytes
-    note: str | None = None
-    labels: list[str] | None = None
+    note: str | MISSING = MISSING
+    labels: list[str] | MISSING = MISSING
 
 
 FieldPetsPetIdFilesGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesGetPathPetIdParameter", int)
@@ -85,5 +85,5 @@ FieldPetsPetIdFilesGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesGet
 @dataclass(config=ConfigDict(extra='forbid'))
 class FieldPetsPetIdFilesGetResponse:
     file: bytes
-    note: str | None = None
-    labels: list[str] | None = None
+    note: str | MISSING = MISSING
+    labels: list[str] | MISSING = MISSING

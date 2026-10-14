@@ -223,22 +223,22 @@ unknown
   native parts {'count': '5', 'score': '1.5', 'active': 'true'} = Numbers(count=5, score=1.5, active=True)
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'count': '05'} = Numbers(count=5, score=None, active=None)
+  native form {'count': '05'} = Numbers(count=5, score=MISSING, active=MISSING)
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'count': '05'} = Numbers(count=5, score=None, active=None)
+  native parts {'count': '05'} = Numbers(count=5, score=MISSING, active=MISSING)
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'score': '1_000'} = Numbers(count=None, score=1000.0, active=None)
+  native form {'score': '1_000'} = Numbers(count=MISSING, score=1000.0, active=MISSING)
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'score': '1_000'} = Numbers(count=None, score=1000.0, active=None)
+  native parts {'score': '1_000'} = Numbers(count=MISSING, score=1000.0, active=MISSING)
   > GET https://api.example.com/form
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
-  native form {'active': 'True'} = Numbers(count=None, score=None, active=True)
+  native form {'active': 'True'} = Numbers(count=MISSING, score=MISSING, active=True)
   > GET https://api.example.com/parts
     [host: api.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
-  native parts {'active': 'True'} = Numbers(count=None, score=None, active=True)
+  native parts {'active': 'True'} = Numbers(count=MISSING, score=MISSING, active=True)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async native X-Count = 1

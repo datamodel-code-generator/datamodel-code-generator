@@ -1113,8 +1113,30 @@ def test_fastapi_cli_target_pydantic(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=(
-            "Error: --target-pydantic-version: The fastapi target needs a target pydantic version of 2.13 or later; "
+            "Error: --target-pydantic-version: The fastapi target needs a target pydantic version of 2.14 or later; "
             "leave it unset or use '2.14'\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("arguments", [[], ["--target-pydantic-version", "2.14"]], ids=["unset", "2.14"])
+def test_fastapi_cli_dataclass_missing_sentinel(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a server of Pydantic dataclasses without --use-missing-sentinel, which tells unset members from None."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--output-model-type", "pydantic_v2.dataclass", *arguments),
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: The fastapi target needs --use-missing-sentinel for 'pydantic_v2.dataclass' models, whose fields "
+            "cannot tell an unset member from None\n"
         ),
         output_should_not_exist=True,
     )
@@ -1284,6 +1306,7 @@ def test_fastapi_cli_model_and_form_dependencies(
         ("target-2.14-missing", ["--target-pydantic-version", "2.14", "--use-missing-sentinel"]),
         ("target-2.14", ["--target-pydantic-version", "2.14"]),
         ("unset-target-missing", ["--use-missing-sentinel"]),
+        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", "--use-missing-sentinel"]),
     ],
 )
 def test_fastapi_cli_pydantic_dependency(

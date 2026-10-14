@@ -181,7 +181,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-generic-base-class": "Generate a shared base class with model configuration to avoid repetition (DRY).",
     "--use-generic-container-types": "Use generic container types (Sequence, Mapping) for type hinting.",
     "--use-inline-field-description": "Add field descriptions as inline comments.",
-    "--use-missing-sentinel": "Use Pydantic's MISSING sentinel for optional fields without defaults.",
+    "--use-missing-sentinel": "Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.",
     "--use-non-positive-negative-number-constrained-types": "Use NonPositive/NonNegative types for number constraints.",
     "--use-object-type": "Use object instead of Any for unspecified object and array values.",
     "--use-one-literal-as-default": "Use single literal value as default when enum has only one option.",

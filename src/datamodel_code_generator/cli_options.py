@@ -355,8 +355,10 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         requires=(
             CLIOptionRelation(
                 option="--output-model-type",
-                value=DataModelType.PydanticV2BaseModel.value,
-                message=("`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`."),
+                message=(
+                    "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+                    "or `pydantic_v2.dataclass`."
+                ),
             ),
         ),
     ),

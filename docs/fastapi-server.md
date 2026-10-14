@@ -195,16 +195,15 @@ Generation ends by printing the command that adds the package's runtime dependen
 
 ```text
 Add the runtime dependencies of server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.tutorial.notice -->
 
 Run it. The command names only the minimum version of each package, so uv adds the latest release. It grows with
-what the document uses: `python-multipart` for forms, `email-validator` for `format: email`, `python-ulid` for
-`format: ulid`, and `pydantic>=2.14` when `--target-pydantic-version 2.14` with `--use-missing-sentinel` makes the
-models import `MISSING`. An explicit `--target-pydantic-version` older than the minimum (`2`, `2.11` or `2.12`) is
+what the document uses: `python-multipart` for forms, `email-validator` for `format: email`, and `python-ulid` for
+`format: ulid`. An explicit `--target-pydantic-version` older than the `pydantic` minimum (`2`, `2.11` or `2.12`) is
 refused with `Error:` and exit code 2; leave it unset or use `2.14`.
 
 The run wrote the models and the `server` package:
@@ -777,7 +776,7 @@ FastAPI reads forms with `python-multipart`, which the dependency notice adds fo
 
 ```text
 Add the runtime dependencies of server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16" "python-multipart>=0.0.32"
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16" "python-multipart>=0.0.32"
 ```
 
 <!-- fmt: on -->
@@ -913,6 +912,12 @@ bytes, and `--check` reports a module that differs.
   files is refused.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   refused. Custom templates, base classes, and types do not add backends.
+- `pydantic_v2.dataclass` models need `--use-missing-sentinel`, since a dataclass field cannot tell an unset member
+  from one set to `None`. Without it, generation stops with `Error: The fastapi target needs --use-missing-sentinel
+  for 'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None` and exit code 2. With it,
+  an optional field without a default holds `MISSING`, imported from `pydantic` (`from pydantic import MISSING`): a
+  member a request leaves out reaches the method as `MISSING`, and a field the method leaves unset is left out of the
+  response.
 - `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
   operations: `--openapi-scopes schemas api`. Without it, generation stops with
   `Error: --generate-server requires --openapi-scopes to include api` and exit code 2, and the Python API raises
@@ -1300,8 +1305,8 @@ An `HTTPResult(status_code, body, headers)` sends another status or extra header
 serializes its body with the model and default media type of the response that declares the status: exactly, by its
 range such as `2XX`, or as `default`. A status that no response declares is sent unchecked, its body encoded as JSON
 without validation, and without a body as an empty response. A Starlette `Response` is sent as it is, for anything
-else, such as another media type or repeated headers. A `pydantic_v2.dataclass` cannot tell an omitted field from
-one set to `None`, so its responses send optional fields as `null`.
+else, such as another media type or repeated headers. A response leaves out the fields its model leaves unset, so a
+`pydantic_v2.dataclass` sends `null` only for a field set to `None`, and a field holding `MISSING` not at all.
 
 A declared response whose default media type is JSON and whose model type accepts `null`, as for the request bodies
 above, sends `None` as the JSON body `null` with that media type: a bare `None` for the primary response, and an

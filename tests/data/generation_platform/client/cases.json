@@ -4751,6 +4751,9 @@
       "body_arguments": "both"
     }
   },
+  "missing-sentinel": {
+    "input": "missing-sentinel.yaml"
+  },
   "nullable-enums": {
     "input": "nullable-enums.yaml"
   },

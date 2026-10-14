@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import MISSING, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -22,7 +22,7 @@ class Problem:
 
 @dataclass
 class Loose:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass

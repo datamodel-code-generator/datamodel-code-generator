@@ -326,6 +326,16 @@ def test_client_typing_sockets(backend: DataModelType, tmp_path: Path) -> None:
     )
 
 
+def test_client_typing_missing(tmp_path: Path) -> None:
+    """Check a package of Pydantic dataclasses whose unset optional members hold MISSING, and the misuses of them."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2Dataclass, "missing-sentinel", ("missing",)),
+        EXPECTED / "pydantic_v2-dataclass-missing.txt",
+    )
+
+
 @pytest.mark.parametrize("backend", [DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass])
 def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
     """Check a package whose responses are unions of models, with each union's codec typed for its members.

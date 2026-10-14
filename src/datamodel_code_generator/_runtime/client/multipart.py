@@ -61,7 +61,8 @@ _FORM_DATA: Final = "multipart/form-data"
 class FieldPart(Generic[PartT_co]):
     """A form-data part that is not a file: a named value, sent with the media type and headers it names.
 
-    A string is sent as it is, another scalar as JSON text, and an object or array as JSON; UNSET leaves it out.
+    A string is sent as it is, another scalar as JSON text, and an object or array as JSON; UNSET or None leaves it
+    out, as a form cannot write null.
     """
 
     __slots__ = ("_content_type", "_headers", "_name", "_value")
@@ -302,6 +303,8 @@ def encode_multipart(
 ) -> tuple[bytes | FormParts, str | None]:
     """Encode an object as ordered form-data parts, repeating a part for each array member; an empty one writes none.
 
+    A form cannot write null, so a None member is left out as an unset one is.
+
     The body is sent in the media type `sent` names. A member with an encoding's media type in the form is written in
     it. A member the form encodes writes a part for each name and value its query style gives, without
     percent-encoding, and no two members may then write parts of the same name. A member the form plans, or else any
@@ -317,6 +320,8 @@ def encode_multipart(
     entries: list[Entry] = []
     owners: dict[str, str] = {}
     for name, item in value.items():
+        if item is None:
+            continue
         if (style := styled.get(name)) is not None:
             pairs = part_pairs(style, item)
             if any(owners.setdefault(key, name) != name for key, _ in pairs):
@@ -341,12 +346,12 @@ def _errors(plan: PartPlan) -> tuple[type[Exception], ...]:
 
 
 def _field(part: FieldPart[object], plan: PartPlan) -> list[Entry]:
-    """Return a field part's entries, one for each item of a repeated member and none for UNSET.
+    """Return a field part's entries, one for each item of a repeated member and none for UNSET or None.
 
     A styled member writes a part for each name and value its style gives, without percent-encoding, in the charset of
     the media type its part names, UTF-8 without one.
     """
-    if (value := part.value) is UNSET:
+    if (value := part.value) is UNSET or value is None:
         return []
     try:
         wire = cast("JSONValue", value if (codec := plan.codec) is None else codec.dump(value))

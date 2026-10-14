@@ -131,8 +131,7 @@ service DefaultService without its methods: TypeError
 > POST /texts
 < 415 application/json {"detail":"Unsupported media type"}
 > POST /lists
-  post_list(body=None)
-< 204 - b''
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
 > POST /lists
   post_list(body=[1, 2])
 < 204 - b''

@@ -32,6 +32,7 @@ from tests.api_generation.scenarios.client_deadline_streams import deadline_stre
 from tests.api_generation.scenarios.client_fields import fields, optional_models
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
 from tests.api_generation.scenarios.client_hooks import hooks
+from tests.api_generation.scenarios.client_missing_sentinel import missing_members
 from tests.api_generation.scenarios.client_mock_transport import mock_transport
 from tests.api_generation.scenarios.client_multipart import kinded_parts, multipart, split_parts
 from tests.api_generation.scenarios.client_naming import (
@@ -891,6 +892,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "missing-sentinel": ("missing-sentinel", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), missing_members),
     "nullable-enums": ("nullable-enums", ("dataclasses.dataclass", "msgspec.Struct"), nullable_enums),
     "nullable-parameters": ("nullable-parameters", ("pydantic_v2.BaseModel",), nullable_parameters),
     "nullable-bodies": ("nullable-parameters", BACKENDS, nullable_bodies),

@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import MISSING, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -62,22 +62,22 @@ class FieldNotesPostRequest:
 @dataclass
 class FieldFormsPostRequest:
     name: str
-    tags: list[str] | None = None
-    count: int | None = None
+    tags: list[str] | MISSING = MISSING
+    count: int | MISSING = MISSING
 
 
 @dataclass
 class Meta:
-    size: int | None = None
+    size: int | MISSING = MISSING
 
 
 @dataclass
 class FieldUploadsPostRequest:
     file: bytes
-    note: str | None = None
-    meta: Meta | None = None
+    note: str | MISSING = MISSING
+    meta: Meta | MISSING = MISSING
 
 
 @dataclass
 class FieldExtendedPostRequest(Item):
-    note: str | None = None
+    note: str | MISSING = MISSING

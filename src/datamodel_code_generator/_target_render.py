@@ -24,7 +24,7 @@ MODEL_DEPENDENCIES: Final = (
     ("ulid", "python-ulid>=3.2.1"),
     ("pendulum", "pendulum>=3.2"),
 )
-PYDANTIC_FLOOR: Final = "2.13.5"
+PYDANTIC_FLOOR: Final = "2.14.0"
 PYDANTIC_TARGET_MINIMUM: Final = PYDANTIC_FLOOR.rpartition(".")[0]
 PYDANTIC_BACKENDS: Final = frozenset({"pydantic_v2.BaseModel", "pydantic_v2.dataclass"})
 PYDANTIC_IMPORT_MINIMUMS: Final = (("pydantic.MISSING", PYDANTIC_V2_MISSING_MINIMUM),)
