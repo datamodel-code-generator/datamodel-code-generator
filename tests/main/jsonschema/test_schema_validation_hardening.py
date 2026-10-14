@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
 from tests.main.jsonschema.conftest import assert_file_content
 
@@ -75,6 +77,33 @@ def test_main_jsonschema_enum_names_allow_null_entries(output_file: Path) -> Non
         assert_func=assert_file_content,
         expected_file="enum_names_null.py",
         extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "expected_file"),
+    [
+        ("pydantic_v2.BaseModel", "enum_names_beside_null.py"),
+        ("msgspec.Struct", "enum_names_beside_null_msgspec.py"),
+    ],
+)
+def test_main_jsonschema_enum_names_beside_null(output_model_type: str, expected_file: str, output_file: Path) -> None:
+    """Give members beside a null value the x-enum-varnames, x-enumNames and x-enum-descriptions entries of 0.83.0."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_names_beside_null.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            output_model_type,
+            "--use-field-description",
+        ],
         force_exec_validation=True,
     )
 

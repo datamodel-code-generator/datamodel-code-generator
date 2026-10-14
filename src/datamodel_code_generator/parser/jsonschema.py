@@ -1466,6 +1466,11 @@ def _unanchored_resource_ref(raw: dict[str, Any], parts: Sequence[str]) -> str |
     return None
 
 
+def _texts_of_non_null_values(texts: list[str | None], enum: list[Any]) -> list[str | None]:
+    """Return enum names or descriptions without the entries at the positions of null values."""
+    return [text for text, value in zip(texts, enum, strict=False) if value is not None]
+
+
 class _DynamicSpecialization(NamedTuple):
     """A referenced schema to parse again with the $dynamicAnchor bindings of its dynamic scope."""
 
@@ -11565,26 +11570,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         enum_fields: list[DataModelFieldBase] = []
 
-        if None in obj.enum and (
-            obj.type == "string" or obj.nullable or not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
-        ):
+        enum_names = obj.x_enum_varnames or obj.x_enum_names
+        enum_descriptions = obj.x_enum_descriptions
+
+        if None in obj.enum and (obj.type == "string" or obj.nullable):
             nullable: bool = True
             enum_times = [e for e in obj.enum if e is not None]
+        elif None in obj.enum and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER:
+            nullable = True
+            enum_times = [e for e in obj.enum if e is not None]
+            enum_names = _texts_of_non_null_values(enum_names, obj.enum)
+            enum_descriptions = _texts_of_non_null_values(enum_descriptions, obj.enum)
         else:
             enum_times = obj.enum
             nullable = False
 
         exclude_field_names: set[str] = set()
 
-        enum_names = obj.x_enum_varnames or obj.x_enum_names
-        enum_descriptions = obj.x_enum_descriptions
-
-        for i, enum_part in enumerate(obj.enum):
+        for i, enum_part in enumerate(enum_times):
             match enum_part:
                 case str():
                     default = EnumMemberValue(enum_part)
-                case None if nullable:
-                    continue
                 case None:
                     default = NULL_ENUM_MEMBER_VALUE
                 case _:
