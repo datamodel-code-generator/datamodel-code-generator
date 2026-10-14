@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class NullableChild(BaseModel):
@@ -15,6 +15,28 @@ class NonNullableChild(BaseModel):
     name: str | None = None
 
 
+class NullableWrapper(NonNullableChild):
+    pass
+
+
+class NullableExtended(NonNullableChild):
+    note: str | None = None
+
+
+class NullableMerged(BaseModel):
+    first: str | None = None
+    second: int | None = None
+
+
 class Parent(BaseModel):
     nullableChild: NullableChild | None
     nonNullableChild: NonNullableChild
+    optionalNullableChild: NullableChild | None = None
+    optionalNullableWrapper: NullableWrapper | None = None
+    optionalNullableExtended: NullableExtended | None = None
+    optionalNullableMerged: NullableMerged | None = None
+    describedNullableChild: NullableChild | None = Field(
+        None, description='A nullable child with a description.'
+    )
+    nullableChildren: list[NullableChild | None] | None = None
+    nullableChildMap: dict[str, NullableChild | None] | None = None

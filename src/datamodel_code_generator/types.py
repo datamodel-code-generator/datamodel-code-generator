@@ -87,6 +87,7 @@ _RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY = "_runtime_expression_imports"
 _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
 _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
+_NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 
 
 class DefaultValueRecipe(Enum):
@@ -1044,8 +1045,13 @@ class DataType(_BaseModel):
         source = self.reference.source
         if getattr(source, "is_alias", False):
             return
-        if getattr(source, "nullable", False):
+        if getattr(source, "nullable", False) and not self.__dict__.get(_NULL_STRIPPED_DATA_TYPE_KEY):
             self.is_optional = True
+
+    def _strip_null(self) -> None:
+        """Drop the None the type carries, which its nullable model reference then no longer adds back."""
+        self.is_optional = False
+        self.__dict__[_NULL_STRIPPED_DATA_TYPE_KEY] = True
 
     def _wrap_dict_type_hint(
         self,

@@ -516,8 +516,10 @@ class DataModelField(DataModelFieldBase):
         return copied
 
     def _copy_data_type_without_top_level_none(self, data_type: DataType) -> DataType:
+        """Copy a data type without the top-level None it carries, for a hint that writes None itself."""
         data_type = self._copy_data_type(data_type)
-        data_type.is_optional = False
+        if data_type.is_optional:
+            data_type._strip_null()  # noqa: SLF001
         if data_type.is_union:
             data_type.data_types = [child for child in data_type.data_types if not self._data_type_renders_none(child)]
         return data_type

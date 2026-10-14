@@ -3319,6 +3319,40 @@ def test_main_openapi_ref_nullable_strict_nullable(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        pytest.param("msgspec_ref_nullable_strict_nullable.py", [], id="union-operator"),
+        pytest.param(
+            "msgspec_ref_nullable_strict_nullable_no_use_union_operator.py",
+            ["--no-use-union-operator", "--target-python-version", "3.10"],
+            id="no-use-union-operator",
+        ),
+    ],
+)
+def test_main_openapi_msgspec_ref_nullable_strict_nullable(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Write None once for optional references to nullable object and allOf models."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_nullable.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.MsgspecStruct.value,
+            "--strict-nullable",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.parametrize(
     ("output_model", "expected_output"),
