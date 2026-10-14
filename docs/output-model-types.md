@@ -138,12 +138,18 @@ class Pet:
     first_name: str = Field(..., alias="first-name")
 ```
 
-This class imports, validates and constructs on Pydantic 2.4 and later; earlier releases reject the non-identifier
-alias. On Pydantic 2.13 and later `inspect.signature(Pet)` raises
-`ValueError: non-default argument follows default argument`, which affects tools that read the signature. With
-`--target-pydantic-version 2.14` `first_name` is written before `nick`. The order is not changed for an unset or older
-target, because positional arguments follow the field order: `Pet("p", "a", "b")` sets `nick="a"` in schema order and
-`first_name="a"` with `2.14`. Keyword arguments work with both orders.
+With the target unset or older than `2.14`, such a class keeps the order of datamodel-code-generator 0.83.0. It
+validates and constructs on Pydantic 2.4 and later, the first release that accepts the non-identifier alias, but on
+Pydantic 2.13 and later its signature cannot be read: `inspect.signature(Pet)` raises
+`ValueError: non-default argument follows default argument`, which affects tools that read the signature. On Python
+3.10 with Pydantic 2.13 and later, a dataclass that inherits from such a class fails at import with the same error,
+because Python 3.10 reads the signature while it creates the subclass. Pass `--target-pydantic-version 2.14` in either
+case: `first_name` is then written before `nick`. The generator warns about each class that keeps such an order, in its
+own fields or through its bases.
+
+The order is not changed for an unset or older target, because positional arguments follow the field order:
+`Pet("p", "a", "b")` sets `nick="a"` in schema order and `first_name="a"` with `2.14`. Keyword arguments work with both
+orders.
 
 With `--use-annotated` a required field keeps its metadata in `Annotated` and comes before the fields with defaults on
 every target. A non-identifier alias of such a field is written as an assignment with `2` (see the 2.4 row above); the

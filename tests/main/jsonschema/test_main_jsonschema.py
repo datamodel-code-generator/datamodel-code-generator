@@ -4874,18 +4874,8 @@ def test_main_generate_pydantic_v2_dataclass_required_alias_field_pydantic20(
     )
 
 
-_SCHEMA_ORDER = (
-    "Pet(plain='p', nick='x', first_name='f', opt_alias=None, count=2)",
-    None,
-    "Child(name=None, kind='child')",
-    ("kind",),
-)
-_REQUIRED_FIRST_ORDER = (
-    "Pet(plain='p', first_name='f', count=2, nick='x', opt_alias=None)",
-    (),
-    "Child(kind='child', name=None)",
-    (),
-)
+_SCHEMA_ORDER = ("Pet(plain='p', nick='x', first_name='f', opt_alias=None, count=2)", None)
+_REQUIRED_FIRST_ORDER = ("Pet(plain='p', first_name='f', count=2, nick='x', opt_alias=None)", ())
 
 
 @pytest.mark.parametrize(
@@ -4915,12 +4905,7 @@ _REQUIRED_FIRST_ORDER = (
             "2",
             ("--use-annotated",),
             "pydantic_v2_dataclass_required_assignment_order_annotated_target_2.py",
-            (
-                "Pet(plain='p', count=2, first_name='f', nick='x', opt_alias=None)",
-                (),
-                "Child(kind='child', name=None)",
-                (),
-            ),
+            ("Pet(plain='p', count=2, first_name='f', nick='x', opt_alias=None)", ()),
             id="annotated-target-2",
         ),
     ],
@@ -4930,7 +4915,7 @@ def test_main_generate_pydantic_v2_dataclass_required_assignment_order(
     target_pydantic_version: str | None,
     options: tuple[str, ...],
     expected_file: str,
-    expected_order: tuple[str, tuple[str, ...] | None, str, tuple[str, ...]],
+    expected_order: tuple[str, tuple[str, ...] | None],
 ) -> None:
     """Move required ``= Field(...)`` fields before defaults only for an explicit 2.14 target.
 
@@ -4955,28 +4940,56 @@ def test_main_generate_pydantic_v2_dataclass_required_assignment_order(
         ],
         force_exec_validation=True,
     )
-    pet_repr, pet_keyword_only_fields, child_repr, child_keyword_only_fields = expected_order
-    for model_name, valid_json, invalid_json, error_type, keyword_only_fields, expected_repr in (
-        (
-            "Pet",
-            '{"plain": "p", "first-name": "f", "count": 2}',
-            '{"plain": "p", "first-name": "f", "count": 0}',
-            "greater_than_equal",
-            pet_keyword_only_fields,
-            pet_repr,
-        ),
-        ("Child", '{"kind": "child"}', '{"kind": "other"}', "literal_error", child_keyword_only_fields, child_repr),
-    ):
-        assert_generated_model_json_validation(
-            output_file,
-            module_name="pydantic_v2_dataclass_required_assignment_order",
-            model_name=model_name,
-            valid_json=valid_json,
-            invalid_json=invalid_json,
-            expected_error_type=error_type,
-            expected_keyword_only_fields=keyword_only_fields,
-            expected_repr=expected_repr,
+    expected_repr, keyword_only_fields = expected_order
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="pydantic_v2_dataclass_required_assignment_order",
+        model_name="Pet",
+        valid_json='{"plain": "p", "first-name": "f", "count": 2}',
+        invalid_json='{"plain": "p", "first-name": "f", "count": 0}',
+        expected_error_type="greater_than_equal",
+        expected_keyword_only_fields=keyword_only_fields,
+        expected_repr=expected_repr,
+    )
+
+
+@pytest.mark.parametrize(
+    ("target_pydantic_version", "expected_name"),
+    [
+        pytest.param(None, "pydantic_v2_dataclass_required_assignment_inherited", id="target-unset"),
+        pytest.param("2.14", "pydantic_v2_dataclass_required_assignment_inherited_target_2_14", id="target-2.14"),
+    ],
+)
+def test_main_generate_pydantic_v2_dataclass_required_assignment_warning(
+    output_file: Path, target_pydantic_version: str | None, expected_name: str
+) -> None:
+    """Warn for each dataclass whose signature lists a required field after a default when the order is kept.
+
+    Pydantic 2.13+ cannot read the signature of such a class, and Python 3.10 reads it while creating a subclass,
+    so the output targets Python 3.11, whose import the harness skips on Python 3.10. The 2.14 target writes the
+    required fields first and warns about nothing.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "pydantic_v2_dataclass_required_assignment_inherited.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{expected_name}.py",
+            extra_args=[
+                "--disable-timestamp",
+                "--output-model-type",
+                "pydantic_v2.dataclass",
+                "--target-python-version",
+                "3.11",
+                *target_pydantic_args(target_pydantic_version),
+            ],
         )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_JSON_SCHEMA_PATH / f"{expected_name}_warnings.txt",
+    )
 
 
 def test_main_generate_pydantic_v2_dataclass_enum(output_file: Path) -> None:

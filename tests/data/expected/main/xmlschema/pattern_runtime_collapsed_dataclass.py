@@ -24,8 +24,8 @@ Token = TypeAliasType(
 @dataclass(config=ConfigDict(regex_engine="python-re"))
 class Parent:
     uri: AnyUrl
-    compile: str | None = 'shadow'
     word: str = Field(..., pattern=compile_aliased('(?=\\A)(?:\\w+|Q)\\Z'))
+    compile: str | None = 'shadow'
     mirror: str | None = Field(None, pattern=compile_aliased('(?=\\A)(?:\\w+|Q)\\Z'))
 
 

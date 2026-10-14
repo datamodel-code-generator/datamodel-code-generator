@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "child": {"$ref": "#/definitions/Child"},
+    "extended": {"$ref": "#/definitions/Extended"}
+  },
+  "definitions": {
+    "Base": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "name": {"type": "string", "description": "Name of the object"},
+        "kind": {"type": "string", "description": "Kind of the object"}
+      }
+    },
+    "Child": {
+      "allOf": [
+        {"$ref": "#/definitions/Base"},
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {"kind": {"type": "string", "const": "child"}}
+        }
+      ]
+    },
+    "Extended": {
+      "allOf": [
+        {"$ref": "#/definitions/Base"},
+        {
+          "type": "object",
+          "required": ["extra"],
+          "properties": {"extra": {"type": "integer"}}
+        }
+      ]
+    }
+  }
+}
