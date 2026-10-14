@@ -71,14 +71,14 @@ def run_target(  # noqa: PLR0913, PLR0917
 
 def _implied_option(name: str, value: object) -> tuple[str, Any]:
     """Return the key of an implied setting and its JSON value, as `pyproject.toml` spells them."""
+    key = name.replace("_", "-")
     match value:
         case list():
-            data: Any = [item.value for item in cast("list[Any]", value)]
+            return key, [item.value for item in cast("list[Any]", value)]
         case bool():
-            data = value
+            return key, value
         case _:
-            data = cast("Any", value).value
-    return name.replace("_", "-"), data
+            return key, cast("Any", value).value
 
 
 def _print_notice(notice: str | None) -> None:
