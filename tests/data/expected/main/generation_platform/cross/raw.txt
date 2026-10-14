@@ -25,3 +25,8 @@ upload_memo
   upload_memo(body=b'memo \xff\x00')
   < 200 text/plain; charset=utf-8
   = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain; charset=utf-8
+  = b'page \xff\x00'

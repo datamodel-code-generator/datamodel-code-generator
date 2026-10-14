@@ -82,6 +82,28 @@ paths:
                 anyOf:
                   - {type: string, format: binary}
                   - {type: 'null'}
+  /pages:
+    post:
+      operationId: uploadPage
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              anyOf:
+                - {type: string, format: binary}
+                - {type: string, format: binary, maxLength: 3}
+      responses:
+        '200':
+          description: The stored page, short or not.
+          content:
+            text/plain:
+              schema:
+                anyOf:
+                  - {$ref: '#/components/schemas/Note'}
+                  - allOf:
+                      - {type: string, format: binary}
+                      - {maxLength: 3}
 components:
   schemas:
     Note: {type: string, format: binary}
