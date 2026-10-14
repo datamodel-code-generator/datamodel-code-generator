@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import AliasChoices, Field
 from pydantic.dataclasses import dataclass
@@ -22,14 +22,3 @@ class Pet:
         serialization_alias='opt-alias',
         validation_alias=AliasChoices('opt-alias'),
     )
-
-
-@dataclass
-class Base:
-    kind: Annotated[str, Field(description='Kind of the object')]
-    name: Annotated[str | None, Field(description='Name of the object')] = None
-
-
-@dataclass
-class Child(Base):
-    kind: Annotated[Literal['child'], Field(description='Kind of the object')]

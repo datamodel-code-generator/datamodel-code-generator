@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 
@@ -16,14 +14,3 @@ class Pet:
     first_name: str = Field(..., alias='first-name')
     opt_alias: str | None = Field(None, alias='opt-alias')
     count: int = Field(..., ge=1)
-
-
-@dataclass
-class Base:
-    name: str | None = Field(None, description='Name of the object')
-    kind: str = Field(..., description='Kind of the object')
-
-
-@dataclass
-class Child(Base):
-    kind: Literal['child'] = Field(..., description='Kind of the object', kw_only=True)

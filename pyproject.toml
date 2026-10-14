@@ -291,6 +291,7 @@ ini_options.filterwarnings = [
   "ignore:^.*Dataclass .* has a field ordering conflict due to inheritance.*:UserWarning",
   "ignore:^.*Default formatters will change to builtin.*:FutureWarning",
   "ignore:^.*Field name `name` is duplicated on Pet.*",
+  "ignore:^.* has a required field after a field with a default.*:UserWarning",
   "ignore:^.*format of 'unknown-type' not understood for 'string' - using default.*",
   "ignore:^.*is empty or not a dict. Skipping this file.*:UserWarning",
   """\

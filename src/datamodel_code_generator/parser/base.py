@@ -5179,6 +5179,57 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             assigned and not model.keeps_assignment_with_required_fields(field),
         )
 
+    @classmethod
+    def __warn_required_assignments_after_defaults(cls, models: list[DataModel]) -> None:
+        """Warn once per model whose signature lists a required ``= Field(...)`` field after a default.
+
+        Such a field, its own or inherited, is a dataclass default, so the class is created, but its validator
+        signature cannot be read on Pydantic 2.13+, which Python 3.10 does while creating a subclass.
+        """
+        for model in models:
+            if (
+                model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
+                and not model.orders_required_assignments_before_defaults()
+                and cls.__has_required_assignment_after_default(model)
+            ):
+                warn(
+                    f"{model.class_name} has a required field after a field with a default, in its own fields or "
+                    "those of its bases: Pydantic 2.13 and later cannot read its signature, and on Python 3.10 its "
+                    "subclasses fail at import. Pass --target-pydantic-version 2.14 to write required fields first.",
+                    stacklevel=2,
+                )
+
+    @classmethod
+    def __has_required_assignment_after_default(cls, model: DataModel) -> bool:
+        """Return whether a positional field without a signature default follows one with a default."""
+        field_policy = cls._get_constructor_field_policy(model)
+        fields: dict[str, tuple[DataModelFieldBase, DataModel]] = {}
+        for declaring_model in (
+            *reversed(
+                linearize_data_models([
+                    base.reference.source
+                    for base in model.base_classes
+                    if base.reference and isinstance(base.reference.source, DataModel)
+                ])
+            ),
+            model,
+        ):
+            fields.update((field.name, (field, declaring_model)) for field in declaring_model.fields if field.name)
+        seen_default = False
+        for field, declaring_model in fields.values():
+            kw_only = field.constructor_keyword_only
+            if (
+                not field_policy.participates(field)
+                or kw_only is True
+                or (kw_only is None and declaring_model.has_keyword_only_definition())
+            ):
+                continue
+            has_default = field_policy.classify_default(field)[0]
+            if seen_default and not has_default:
+                return True
+            seen_default = seen_default or has_default
+        return False
+
     def __has_local_constructor_ordering_conflict(  # noqa: PLR6301
         self,
         model: DataModel,
@@ -6869,6 +6920,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.__set_validate_default_on_fields(live_models, can_retain_cache=can_retain_cache)
         if self.use_annotated and use_deferred_annotations:
             self.__assign_forward_reference_fields(models, can_retain_cache=can_retain_cache)
+        self.__warn_required_assignments_after_defaults(live_models)
         if not can_retain_cache:
             _clear_model_imports_cache(models)
 

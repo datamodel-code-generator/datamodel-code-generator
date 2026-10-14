@@ -9,25 +9,5 @@
     "first-name": {"type": "string"},
     "opt-alias": {"type": "string"},
     "count": {"type": "integer", "minimum": 1}
-  },
-  "definitions": {
-    "Base": {
-      "type": "object",
-      "required": ["kind"],
-      "properties": {
-        "name": {"type": "string", "description": "Name of the object"},
-        "kind": {"type": "string", "description": "Kind of the object"}
-      }
-    },
-    "Child": {
-      "allOf": [
-        {"$ref": "#/definitions/Base"},
-        {
-          "type": "object",
-          "required": ["kind"],
-          "properties": {"kind": {"type": "string", "const": "child"}}
-        }
-      ]
-    }
   }
 }

@@ -1076,7 +1076,11 @@ def test_xmlschema_pattern_alternatives(
         ),
         ("constrained", "pydantic_v2.dataclass", []),
         ("collapsed", "pydantic_v2.BaseModel", ["--field-constraints", "--collapse-root-models"]),
-        ("collapsed_dataclass", "pydantic_v2.dataclass", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapsed_dataclass",
+            "pydantic_v2.dataclass",
+            ["--field-constraints", "--collapse-root-models", "--target-pydantic-version", "2.14"],
+        ),
         (
             "custom_alias",
             "pydantic_v2.BaseModel",
