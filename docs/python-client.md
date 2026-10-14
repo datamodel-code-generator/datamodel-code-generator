@@ -655,13 +655,15 @@ or its fields, never both. See [Body field arguments](python-client-reference.md
 bodies take fields and how they are named.
 
 A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
-`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose schema is such a string travels as its
-raw bytes, without a charset decoding or base64, as an `application/octet-stream` one does; the method takes such a body
-or part as `bytes`. Generation stops with an error when a binary string, at any depth of its schema and through
-references, `$dynamicRef` and `allOf`, would be sent as text: inside a JSON or URL-encoded body or response, a `text/*`
-body whose schema is an object or array, a multipart part that is not a file, an item of a streamed response, or a
-parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the others as
-base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names the
+`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model type is one binary string travels
+as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one does; the method takes such
+a body or part as `bytes`. Its schema is such a string, or reaches one through a `$ref` or a single `allOf`, `anyOf` or
+`oneOf` branch, also beside a `null`, a length limit or other binary strings. Generation stops with an error when a
+binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
+inside a JSON or URL-encoded body or response, a `text/*` body whose schema is an object, an array, or an `anyOf` or
+`oneOf` with a branch that is not a binary string, a multipart part that is not a file, an item of a streamed response,
+or a parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
+others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names the
 operation, the media or parameter, and where the schema declares the string:
 
 ```text

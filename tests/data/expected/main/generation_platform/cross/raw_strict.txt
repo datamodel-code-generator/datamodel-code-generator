@@ -1,0 +1,32 @@
+models shared True
+# raw_strict in-process sync, in-process async, in-process pydantic_v2_dataclass sync, in-process pydantic_v2_dataclass async, in-process dataclasses_dataclass sync, in-process dataclasses_dataclass async, in-process typing_TypedDict sync, in-process typing_TypedDict async, in-process msgspec_Struct sync, in-process msgspec_Struct async
+download_report
+  > GET /reports
+  download_report()
+  < 200 text/csv; charset=utf-8
+  = b'id,name\n1,caf\xc3\xa9\n2,\xff\x00\n'
+upload_note
+  > POST /notes [text/plain]
+  upload_note(body=b'note \xff\x00 caf\xc3\xa9')
+  < 200 text/plain; charset=utf-8
+  = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain; charset=utf-8
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv; charset=utf-8
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain; charset=utf-8
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain; charset=utf-8
+  = b'page \xff\x00'
