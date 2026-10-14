@@ -1392,9 +1392,10 @@ or `2.12`) is refused with `Error:` and exit code 2 for those models; leave it u
 backends do not use the option.
 
 `--use-missing-sentinel` needs `--target-pydantic-version 2.14`, with which the models import `MISSING` from
-`pydantic`; an unset or older target imports it from `pydantic.experimental.missing_sentinel`, which pydantic 2.14
-deprecates. Without it, generation stops with `Error: The client target needs --target-pydantic-version 2.14 for
---use-missing-sentinel, so that the models import MISSING from pydantic` and exit code 2.
+`pydantic`. Model generation alone imports it from `pydantic.experimental.missing_sentinel`, which pydantic 2.14
+deprecates, when the target is unset or `2.12`, and refuses the option for `2` and `2.11`. With the target unset,
+`2`, `2.11`, or `2.12`, client generation stops with `Error: The client target needs --target-pydantic-version 2.14
+for --use-missing-sentinel, so that the models import MISSING from pydantic` and exit code 2.
 
 A `pydantic_v2.dataclass` field cannot tell an unset member from one set to `None`, so client generation with
 `--output-model-type pydantic_v2.dataclass` needs `--use-missing-sentinel`, and with it

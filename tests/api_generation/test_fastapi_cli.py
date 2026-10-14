@@ -52,6 +52,10 @@ OPTIONS = [*MODEL_OPTIONS, "--disable-timestamp"]
 PACKAGES = ["--server-package", "server", "--server-model-package", "models"]
 SERVER = ["--generate-server", "fastapi", "--server-output", "server", *PACKAGES]
 MISSING = ["--use-missing-sentinel", "--target-pydantic-version", "2.14"]
+SENTINEL_TARGET = (
+    "Error: The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the models "
+    "import MISSING from pydantic\n"
+)
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *SERVER]
 DOC_INPUT = "generation_platform/fastapi/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/fastapi/cli/options"
@@ -1123,18 +1127,22 @@ def test_fastapi_cli_target_pydantic(
     "arguments",
     [
         [],
+        ["--target-pydantic-version", "2"],
+        ["--target-pydantic-version", "2.11"],
         ["--target-pydantic-version", "2.12"],
         ["--output-model-type", "pydantic_v2.dataclass"],
         ["--output-model-type", "pydantic_v2.dataclass", "--check"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--target-pydantic-version", "2.11"],
     ],
-    ids=["unset", "2.12", "dataclass", "dataclass-check"],
+    ids=["unset", "2", "2.11", "2.12", "dataclass", "dataclass-check", "dataclass-2.11"],
 )
 def test_fastapi_cli_missing_sentinel_target(
     arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Refuse a server whose models use MISSING without the target pydantic version that imports it from pydantic.
 
-    The models stay those of a model-only run, which imports MISSING from pydantic for that target only.
+    The models stay those of a model-only run, which imports MISSING from pydantic for that target only. A target
+    older than the sentinel's own minimum gets the same message, so that one change fixes the run.
     """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
@@ -1145,10 +1153,7 @@ def test_fastapi_cli_missing_sentinel_target(
         copy_files=_inputs(tmp_path),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr=(
-            "Error: The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the "
-            "models import MISSING from pydantic\n"
-        ),
+        expected_stderr=SENTINEL_TARGET,
         output_should_not_exist=True,
     )
 

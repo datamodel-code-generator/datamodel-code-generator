@@ -916,8 +916,9 @@ bytes, and `--check` reports a module that differs.
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   refused. Custom templates, base classes, and types do not add backends.
 - `--use-missing-sentinel` needs `--target-pydantic-version 2.14`, with which the models import `MISSING` from
-  `pydantic` (`from pydantic import MISSING`); an unset or older target imports it from
-  `pydantic.experimental.missing_sentinel`, which pydantic 2.14 deprecates. Without it, generation stops with
+  `pydantic` (`from pydantic import MISSING`). Model generation alone imports it from
+  `pydantic.experimental.missing_sentinel`, which pydantic 2.14 deprecates, when the target is unset or `2.12`, and
+  refuses the option for `2` and `2.11`. With the target unset, `2`, `2.11`, or `2.12`, server generation stops with
   `Error: The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the models
   import MISSING from pydantic` and exit code 2.
 - `pydantic_v2.dataclass` models need `--use-missing-sentinel`, and with it `--target-pydantic-version 2.14`, since a
