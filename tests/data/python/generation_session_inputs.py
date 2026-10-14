@@ -240,6 +240,9 @@ def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, sourc
             case "repair_parse" if attempt == 2:
                 message = "repair parse failed"
                 raise RuntimeError(message)
+            case "untyped_parse" if attempt == 2:
+                message = "untyped parse failed"
+                raise RuntimeError(message)
         return ordinary_parse(self, *args, **kwargs)
 
     def failed_dispose(self: OpenAPIParser) -> None:
