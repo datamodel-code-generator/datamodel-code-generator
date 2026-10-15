@@ -48,4 +48,5 @@ class Measurement(Struct):
     point: Point | UnsetType = UNSET
     label: Count | UnsetType = UNSET
     status: Status | UnsetType = UNSET
-    pair: Pair | UnsetType = UNSET
+    pair: Annotated[list[str], Meta(max_length=2, min_length=1)] | UnsetType = UNSET
+    single: Annotated[list[str], Meta(max_length=1, min_length=1)] | UnsetType = UNSET

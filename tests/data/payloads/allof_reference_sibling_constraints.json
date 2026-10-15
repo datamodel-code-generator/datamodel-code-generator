@@ -18,6 +18,9 @@
     "label": 123,
     "pair": [
       "a"
+    ],
+    "single": [
+      "a"
     ]
   },
   "invalid": {
@@ -31,6 +34,10 @@
     "limits": {
       "a": 11
     },
-    "pair": []
+    "pair": [],
+    "single": [
+      "a",
+      "b"
+    ]
   }
 }
