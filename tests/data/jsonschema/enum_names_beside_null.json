@@ -35,6 +35,22 @@
     },
     "objects": {
       "enum": [null, {"foo": 1}, {"bar": 2}]
+    },
+    "null_last": {
+      "type": "string",
+      "enum": ["x", "y", null],
+      "x-enumNames": ["FIRST", "SECOND", "NIL"]
+    },
+    "described_beside_null": {
+      "type": "string",
+      "enum": ["x", null, "y"],
+      "x-enum-descriptions": ["The first", "Nothing", "The second"]
+    },
+    "nullable_numbers": {
+      "type": "integer",
+      "nullable": true,
+      "enum": [null, 1, 2],
+      "x-enumNames": ["NIL", "ONE", "TWO"]
     }
   }
 }

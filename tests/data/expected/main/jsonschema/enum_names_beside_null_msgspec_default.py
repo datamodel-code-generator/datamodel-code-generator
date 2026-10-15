@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import TypeAlias
 
 from msgspec import UNSET, Struct, UnsetType
@@ -76,6 +76,36 @@ class Objects(Enum):
     value_2 = {'bar': 2}
 
 
+class NullLastEnum(Enum):
+    FIRST = 'x'
+    SECOND = 'y'
+
+
+NullLast: TypeAlias = NullLastEnum | None
+
+
+class DescribedBesideNullEnum(Enum):
+    x = 'x'
+    """
+    The first
+    """
+    y = 'y'
+    """
+    Nothing
+    """
+
+
+DescribedBesideNull: TypeAlias = DescribedBesideNullEnum | None
+
+
+class NullableNumbersEnum(IntEnum):
+    NIL = 1
+    ONE = 2
+
+
+NullableNumbers: TypeAlias = NullableNumbersEnum | None
+
+
 class EnumNamesBesideNull(Struct):
     member_names: MemberNames | UnsetType = UNSET
     item_names: ItemNames | UnsetType = UNSET
@@ -84,3 +114,6 @@ class EnumNamesBesideNull(Struct):
     untyped: Untyped | UnsetType = UNSET
     repeated_names: RepeatedNames | UnsetType = UNSET
     objects: Objects | UnsetType = UNSET
+    null_last: NullLast | UnsetType = UNSET
+    described_beside_null: DescribedBesideNull | UnsetType = UNSET
+    nullable_numbers: NullableNumbers | UnsetType = UNSET

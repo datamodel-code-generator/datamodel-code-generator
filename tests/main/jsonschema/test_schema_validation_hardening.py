@@ -95,7 +95,10 @@ def test_main_jsonschema_enum_names_allow_null_entries(output_file: Path) -> Non
 def test_main_jsonschema_enum_names_beside_null(
     output_model_type: str, extra_args: list[str], expected_file: str, output_file: Path
 ) -> None:
-    """Give members beside a null value the x-enum-varnames, x-enumNames and x-enum-descriptions entries of 0.83.0."""
+    """Give members beside a null value the x-enum-varnames, x-enumNames and x-enum-descriptions entries of 0.83.0.
+
+    A list that gives null an entry shifts the entries of the values after null, which is reported.
+    """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_and_assert(
