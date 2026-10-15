@@ -1,0 +1,8 @@
+{
+  "zoo.RobotDog": [{"kind": "any kind", "barks": true, "model": "rx"}, {"barks": true}],
+  "app.ToyRobot": [{"kind": "toy", "model": "tx"}, {"kind": "dog"}],
+  "app.Kitten": [{"kind": "tabby"}, {"kind": "longer than ten"}],
+  "app.Parrot": [{"kind": "macaw", "wings": 2}, {"kind": "robin"}],
+  "zoo.Pets": [{"kind": "dog", "barks": true}, {"kind": "cat"}],
+  "app.Shelter": [{"resident": {"kind": "tabby"}}]
+}
