@@ -1,4 +1,4 @@
-FROM python:3.14.7-slim-bookworm AS builder
+FROM python:3.14.8-slim-bookworm AS builder
 
 ARG VERSION
 
@@ -13,7 +13,7 @@ RUN test -n "${VERSION}" \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --refresh-package=datamodel-code-generator "datamodel-code-generator[http]==${VERSION}"
 
-FROM python:3.14.7-slim-bookworm
+FROM python:3.14.8-slim-bookworm
 
 ARG VERSION
 
