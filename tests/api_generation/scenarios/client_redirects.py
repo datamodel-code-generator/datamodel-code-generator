@@ -124,6 +124,7 @@ def _statuses(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
         exchange.respond(*(_response(302, (("Location", f"/hop{index}"),)) for index in range(3)), _response(200))
         record(lines, "past the native limit", lambda: outcome(api.retry.with_response.get_safe))
         lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
 
 
 def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -178,6 +179,7 @@ def _methods(package: ModuleType, options: ModuleType, lines: list[str]) -> None
                 lambda body=body: outcome(lambda: api.retry.with_response.post_idempotent(body=body)),
             )
             lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
 
 
 def _restored(package: ModuleType, options: ModuleType, lines: list[str]) -> None:

@@ -121,6 +121,7 @@ def _redirects(package: ModuleType, lines: list[str]) -> None:
                 lambda api=api, method=method: _returned(getattr(api.auth.with_raw_response, method)()),
             )
         lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
     exchange = Exchange(lines)
     exchange.respond(_redirect(302, f"{_OTHER}/bearer"), _REJECTED)
     with exchange.client(follow_redirects=True) as http, package.Client(http_client=http, bearer="token-secret") as api:
@@ -136,6 +137,7 @@ async def _aredirects(package: ModuleType, lines: list[str]) -> None:
             response = await getattr(api.auth.with_raw_response, method)()
             lines.append(f"  async {label} = {_returned(response)}")
         lines.append(f"    unused={len(exchange.responders)}")
+        exchange.responders.clear()
 
 
 def _chunks() -> Iterator[bytes]:
