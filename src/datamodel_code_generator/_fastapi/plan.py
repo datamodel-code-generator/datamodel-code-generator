@@ -34,7 +34,12 @@ from datamodel_code_generator._openapi_wire_plan import (
     form_members,
     parameter_plans,
 )
-from datamodel_code_generator._python_type_annotation import PythonTypeBoundName, PythonTypeName, PythonTypeUnion
+from datamodel_code_generator._python_type_annotation import (
+    PythonTypeBoundName,
+    PythonTypeName,
+    PythonTypeSubscript,
+    PythonTypeUnion,
+)
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BoundType,
@@ -115,12 +120,11 @@ _MODEL_IMPORTS: Final = frozenset({"BaseModel", "RootModel"})
 _STRICT_TYPES: Final = frozenset({"StrictBool", "StrictFloat", "StrictInt"})
 _STRICT_CONSTRUCTORS: Final = frozenset({"confloat", "conint"})
 _STRICT_BYTES: Final = ("pydantic", "StrictBytes")
-_ANY: Final = ("typing", "Any")
-_NULL_NAMES: Final = frozenset({
-    PythonTypeName("None"),
-    PythonTypeName("object"),
-    PythonTypeBoundName("Any", *_ANY),
-})
+_TYPING: Final = ("typing", "typing_extensions")
+_ANY: Final = frozenset((module, "Any") for module in _TYPING)
+_LITERAL: Final = frozenset((module, "Literal") for module in _TYPING)
+_NONE: Final = PythonTypeName("None")
+_NULL_NAMES: Final = frozenset({_NONE, PythonTypeName("object")})
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
 _NULL: Final = LiteralScalar("none", None)
@@ -1137,14 +1141,14 @@ class Planner:  # noqa: PLR0904
 
         Any value does without a type or as Any; so does None, an enum with a null value, a union with such a member,
         a root model or alias whose annotation accepts None or whose type does, and an annotation the document
-        writes as None, a union with None, Any, or object.
+        writes as None, a union with None, Any under any alias, object, or a `Literal` with None.
         """
         null = False
         match value:
             case None | NoneType():
                 null = True
             case ImportedType():
-                null = (value.import_.from_, value.import_.import_) == _ANY
+                null = (value.import_.from_, value.import_.import_) in _ANY
             case BoundType():
                 null = _written_null(value.binding.expression)
             case UnionType():
@@ -1585,10 +1589,24 @@ def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], .
 
 
 def _written_null(expression: PythonTypeExpr) -> bool:
-    """Return whether an annotation written in the document accepts None: None, Any, object, or a union of one."""
-    if isinstance(expression, PythonTypeUnion):
-        return any(map(_written_null, expression.items))
-    return expression in _NULL_NAMES
+    """Return whether an annotation written in the document accepts None, by the imports its names come from.
+
+    None, object, Any under any alias, a union with such a member, and a `Literal` with a None value do.
+    """
+    null = expression in _NULL_NAMES
+    match expression:
+        case PythonTypeUnion():
+            null = any(map(_written_null, expression.items))
+        case PythonTypeBoundName():
+            null = (expression.import_from, expression.import_name) in _ANY
+        case PythonTypeSubscript() if (
+            isinstance(base := expression.base, PythonTypeBoundName)
+            and (base.import_from, base.import_name) in _LITERAL
+        ):
+            null = _NONE in expression.arguments
+        case _:
+            pass
+    return null
 
 
 def _strict(value: TypeView) -> bool:

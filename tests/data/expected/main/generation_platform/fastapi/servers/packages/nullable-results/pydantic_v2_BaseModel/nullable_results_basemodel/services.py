@@ -157,3 +157,23 @@ class DefaultService(Protocol):
         """
         Handle GET /errors.
         """
+
+    @abstractmethod
+    def get_ok(
+        self,
+        *,
+        case: str,
+    ) -> nullable_results_basemodel_models.Ok | None | HTTPResult[nullable_results_basemodel_models.Ok] | Response:
+        """
+        Handle GET /oks.
+        """
+
+    @abstractmethod
+    def get_any_alias(
+        self,
+        *,
+        case: str,
+    ) -> nullable_results_basemodel_models.AnyAlias | None | HTTPResult[nullable_results_basemodel_models.AnyAlias] | Response:
+        """
+        Handle GET /any-aliases.
+        """

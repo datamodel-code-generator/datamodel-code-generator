@@ -1,6 +1,6 @@
 # nullable
 serve pydantic_v2.BaseModel
-service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_pet, post_text, post_value, upload
+service DefaultService: post_any_alias, post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_ok, post_pet, post_text, post_value, upload
 service DefaultService without its methods: TypeError
 > POST /texts
   post_text(body=TextsPostRequest(root=None))
@@ -168,8 +168,20 @@ service DefaultService without its methods: TypeError
 > POST /multi-optional
   post_multi_optional(body=MultiOptionalPostRequest(root='null'), media_type='text/plain')
 < 204 - b''
+> POST /oks
+  post_ok(body=Ok(root=None))
+< 204 - b''
+> POST /oks
+  post_ok(body=Ok(root='ok'))
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=AnyAlias(root=None))
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=AnyAlias(root=1))
+< 204 - b''
 serve pydantic_v2.dataclass
-service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_pet, post_text, post_value, upload
+service DefaultService: post_any_alias, post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_ok, post_pet, post_text, post_value, upload
 service DefaultService without its methods: TypeError
 > POST /texts
   post_text(body=None)
@@ -336,4 +348,16 @@ service DefaultService without its methods: TypeError
 < 204 - b''
 > POST /multi-optional
   post_multi_optional(body='null', media_type='text/plain')
+< 204 - b''
+> POST /oks
+  post_ok(body=None)
+< 204 - b''
+> POST /oks
+  post_ok(body='ok')
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=None)
+< 204 - b''
+> POST /any-aliases
+  post_any_alias(body=1)
 < 204 - b''

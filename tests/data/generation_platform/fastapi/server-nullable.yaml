@@ -193,9 +193,31 @@ paths:
             schema: {type: string}
       responses:
         "204": {description: Done.}
+  /oks:
+    post:
+      operationId: postOk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Ok"}
+      responses:
+        "204": {description: Done.}
+  /any-aliases:
+    post:
+      operationId: postAnyAlias
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AnyAlias"}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Item: {type: object, required: [name], properties: {name: {type: string}}}
     Pet: {type: [object, "null"], required: [name], properties: {name: {type: string}}}
     Name: {type: [string, "null"]}
     Color: {enum: [red, blue, null]}
+    Ok: {type: string, x-python-type: "typing.Literal['ok', None]"}
+    AnyAlias: {type: string, x-python-type: "typing_extensions.Any"}

@@ -1,6 +1,6 @@
 # nullable-results-alias
 serve pydantic_v2.BaseModel
-service DefaultService: get_accepted, get_anything, get_default, get_error, get_list, get_name, get_note, get_pet, get_range, get_text, get_thing, get_value, head_text, post_memo
+service DefaultService: get_accepted, get_any_alias, get_anything, get_default, get_error, get_list, get_name, get_note, get_ok, get_pet, get_range, get_text, get_thing, get_value, head_text, post_memo
 service DefaultService without its methods: TypeError
 > GET /texts?case=none
   get_text(none)
@@ -136,3 +136,15 @@ service DefaultService without its methods: TypeError
 > GET /errors?case=client-error
   get_error(client-error)
 < 404 text/plain; charset=utf-8 missing
+> GET /oks?case=none
+  get_ok(none)
+< 200 application/json null
+> GET /oks?case=undeclared
+  get_ok(undeclared)
+< 404 application/json null
+> GET /any-aliases?case=none
+  get_any_alias(none)
+< 200 application/json null
+> GET /any-aliases?case=numbers
+  get_any_alias(numbers)
+< 200 application/json [1,2]

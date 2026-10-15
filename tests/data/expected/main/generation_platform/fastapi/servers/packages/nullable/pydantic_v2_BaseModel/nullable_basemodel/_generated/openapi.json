@@ -460,6 +460,46 @@
      }
     }
    }
+  },
+  "/oks": {
+   "post": {
+    "operationId": "postOk",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Ok"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     }
+    }
+   }
+  },
+  "/any-aliases": {
+   "post": {
+    "operationId": "postAnyAlias",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnyAlias"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     }
+    }
+   }
   }
  },
  "components": {
@@ -501,6 +541,14 @@
      "blue",
      null
     ]
+   },
+   "Ok": {
+    "type": "string",
+    "x-python-type": "typing.Literal['ok', None]"
+   },
+   "AnyAlias": {
+    "type": "string",
+    "x-python-type": "typing_extensions.Any"
    }
   }
  }

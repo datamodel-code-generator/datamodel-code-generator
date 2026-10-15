@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
+from typing_extensions import Any as Any_1
 from typing_extensions import TypeAliasType
 
 
@@ -28,6 +29,12 @@ class Color(Enum):
     red = 'red'
     blue = 'blue'
     NoneType_None = None
+
+
+Ok = TypeAliasType("Ok", Literal['ok', None])
+
+
+AnyAlias = TypeAliasType("AnyAlias", Any_1)
 
 
 TextsGetQueryCaseParameter = TypeAliasType("TextsGetQueryCaseParameter", str)
@@ -109,3 +116,9 @@ ErrorsGetQueryCaseParameter = TypeAliasType("ErrorsGetQueryCaseParameter", str)
 
 
 ErrorsGetResponse = TypeAliasType("ErrorsGetResponse", str)
+
+
+OksGetQueryCaseParameter = TypeAliasType("OksGetQueryCaseParameter", str)
+
+
+AnyAliasesGetQueryCaseParameter = TypeAliasType("AnyAliasesGetQueryCaseParameter", str)

@@ -125,4 +125,10 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_error(self, *, case: str) -> object:
             return respond("get_error", case)
 
+        def get_ok(self, *, case: str) -> object:
+            return respond("get_ok", case)
+
+        def get_any_alias(self, *, case: str) -> object:
+            return respond("get_any_alias", case)
+
     return {"default": {"default": Default()}}

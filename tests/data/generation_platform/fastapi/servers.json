@@ -1774,6 +1774,22 @@
       {
         "method": "GET",
         "url": "/errors?case=client-error"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=undeclared"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=numbers"
       }
     ],
     "package_snapshots": [
@@ -2135,6 +2151,22 @@
       {
         "method": "GET",
         "url": "/errors?case=client-error"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=undeclared"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=numbers"
       }
     ],
     "package_snapshots": []
@@ -5684,6 +5716,32 @@
         "headers": {
           "Content-Type": "text/plain"
         }
+      },
+      {
+        "method": "POST",
+        "url": "/oks",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/oks",
+        "json": "ok"
+      },
+      {
+        "method": "POST",
+        "url": "/any-aliases",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/any-aliases",
+        "json": 1
       }
     ],
     "package_snapshots": [

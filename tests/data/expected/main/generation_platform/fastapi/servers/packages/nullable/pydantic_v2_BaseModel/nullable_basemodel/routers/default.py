@@ -650,6 +650,76 @@ def _add_post_multi_optional(
     )
 
 
+def _add_post_ok(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_ok_handler = checked(
+        default.post_ok,
+        'The default.post_ok method of POST /oks',
+        ('body',),
+    )
+
+    def post_ok(
+        *,
+        body: Annotated[nullable_basemodel_models.Ok, Depends(contract.PostOk.BODY)],
+    ) -> object:
+        return dispatch(
+            post_ok_handler(
+                body=body,
+            ),
+            contract.PostOk.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/oks',
+        post_ok,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postOk',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_ok'),
+    )
+
+
+def _add_post_any_alias(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_any_alias_handler = checked(
+        default.post_any_alias,
+        'The default.post_any_alias method of POST /any-aliases',
+        ('body',),
+    )
+
+    def post_any_alias(
+        *,
+        body: Annotated[nullable_basemodel_models.AnyAlias, Depends(contract.PostAnyAlias.BODY)],
+    ) -> object:
+        return dispatch(
+            post_any_alias_handler(
+                body=body,
+            ),
+            contract.PostAnyAlias.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/any-aliases',
+        post_any_alias,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postAnyAlias',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_any_alias'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('post_text', _add_post_text),
     ('post_list', _add_post_list),
@@ -669,6 +739,8 @@ LITERAL_ROUTES: Final = (
     ('post_extended', _add_post_extended),
     ('post_multi', _add_post_multi),
     ('post_multi_optional', _add_post_multi_optional),
+    ('post_ok', _add_post_ok),
+    ('post_any_alias', _add_post_any_alias),
 )
 TEMPLATED_ROUTES: Final = ()
 
