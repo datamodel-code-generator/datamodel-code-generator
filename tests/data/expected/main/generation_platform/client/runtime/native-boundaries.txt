@@ -57,7 +57,7 @@ unknown
   native X-Ratio 0.5 = <ValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValidationError['enum']
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = ValuesGetResponse204XScoreHeader(root=2.2)
@@ -66,16 +66,16 @@ unknown
   native X-Score 1e999 = ValuesGetResponse204XScoreHeader(root=inf)
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError['float_parsing']
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError['int_parsing', 'int_parsing']
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag yes = ValuesGetResponse204XFlagHeader(root=True)
@@ -181,7 +181,7 @@ unknown
   native X-Ratio 0.5 = <ValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValidationError['enum']
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -190,16 +190,16 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError['float_parsing']
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError['int_parsing']
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError['int_parsing', 'int_parsing']
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag yes = True
@@ -298,7 +298,7 @@ unknown
   native X-Ratio 0.5 = <ValuesGetResponse204XRatioHeader.number_0_5: 0.5>
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValueError("Invalid number literal: '２.２'")
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -307,16 +307,16 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValueError("Invalid number literal: '１２.３'")
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '١٢'")
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '１２'")
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValueError("Invalid integer literal: '١'")
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValueError("Invalid boolean literal: 'yes'")
@@ -415,7 +415,7 @@ unknown
   native X-Ratio 0.5 = 0.5
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=ValueError("Invalid number literal: '２.２'")
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -424,16 +424,16 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValueError("Invalid number literal: '１２.３'")
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '١٢'")
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValueError("Invalid integer literal: '１２'")
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValueError("Invalid integer literal: '١'")
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValueError("Invalid boolean literal: 'yes'")
@@ -532,7 +532,7 @@ unknown
   native X-Ratio 0.5 ! TypeError None cause=None
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Ratio ２.２ ! TypeError None cause=None
+  native X-Ratio ２.２ ! DecodeError invalid_header header.X-Ratio cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Score 2.2 = 2.2
@@ -541,16 +541,16 @@ unknown
   native X-Score 1e999 = inf
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=ValidationError
+  native X-Score １２.３ ! DecodeError invalid_header header.X-Score cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=ValidationError
+  native X-Count ١٢ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=ValidationError
+  native X-Count １２ ! DecodeError invalid_header header.X-Count cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=ValidationError
+  native X-Counts ١,２ ! DecodeError invalid_header header.X-Counts cause=MalformedError
   > GET https://api.example.com/values
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   native X-Flag yes ! DecodeError invalid_header header.X-Flag cause=ValidationError

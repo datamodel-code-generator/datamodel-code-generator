@@ -12,7 +12,7 @@ from urllib.parse import unquote_to_bytes
 
 from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.params import Depends
 from fastapi.routing import APIRoute
 from starlette.concurrency import run_in_threadpool
@@ -71,6 +71,11 @@ class RawPathRouter(APIRouter):
         return path, match, child_scope
 
 
+def malformed_request() -> HTTPException:
+    """Return the error for request data that no declared parameter or media form can represent."""
+    return HTTPException(status_code=400, detail="Invalid request")
+
+
 class ParameterReader:
     """A dependency that reads parameters FastAPI cannot: its route reports the records it rejects with FastAPI's."""
 
@@ -103,17 +108,23 @@ def reject(scope: MutableMapping[str, Any], records: list[dict[str, object]]) ->
 class RawPathRoute(APIRoute):
     """An APIRoute of a RawPathRouter: it puts the slashes back in the path and its values before the endpoint runs.
 
-    A route with a ParameterReader dependency reports the records the reader leaves with FastAPI's own.
+    A route with a ParameterReader dependency reports the records the reader leaves with FastAPI's own, and one with
+    header parameters that FastAPI reads answers 400 for a request whose value of one of them is not ASCII, as a
+    reader answers for the headers it reads.
     """
 
     def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
-        """Return FastAPI's handler, which raises the records a ParameterReader left with FastAPI's when it has any."""
+        """Return FastAPI's handler, which checks the text of its headers and raises a reader's records with its own."""
         handler = super().get_route_handler()
         endpoint = self.dependant  # codespell:ignore dependant
-        if not any(isinstance(dependency.call, ParameterReader) for dependency in endpoint.dependencies):
+        headers = frozenset(field.alias.lower().encode("latin-1", "replace") for field in endpoint.header_params)
+        readers = any(isinstance(dependency.call, ParameterReader) for dependency in endpoint.dependencies)
+        if not headers and not readers:
             return handler
 
         async def reported(request: Request) -> Response:
+            if headers and not all(value.isascii() for name, value in request.scope["headers"] if name in headers):
+                raise malformed_request()
             try:
                 return await handler(request)
             except RequestValidationError as error:

@@ -656,6 +656,10 @@ A status the operation does not declare is sent unchecked: the body is encoded a
 `HTTPResult(404)` without a body sends an empty `404`. A success status that declares content always sends content, so
 `HTTPResult(200)` without a body sends `None` through that response's model; see [Responses](#responses).
 
+Header names must be tokens and header values ASCII header text, as RFC 9110 writes them: tab, space, and visible
+ASCII, without whitespace at either end, as the generated client sends them. A result with another header, such as
+`headers={"X-Out": "café"}`, answers `500` with a `ResponseValidationError` that names the header.
+
 A Starlette `Response` is sent as it is, for anything else, such as another media type or repeated headers. See
 [Responses](#responses) for `null` bodies and empty responses.
 
@@ -1403,6 +1407,12 @@ spellings than FastAPI does for a parameter it reads itself: integers and number
 `--strict-types int float bool` therefore narrows what those parameters accept. A repeated single value is taken as
 FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
 
+Header values are ASCII, as RFC 9110 writes header text and as the generated client sends them. A request that sends a
+header parameter of the operation with a byte outside ASCII, in any of its occurrences, answers `400 {"detail":
+"Invalid request"}`, whether FastAPI or an adapter reads it: FastAPI alone would read it as Latin-1. A header with JSON
+`content` is ASCII JSON text too, whose escapes such as `\u00e9` stand for other characters. The check covers the
+operation's header parameters, not the headers of its security schemes or of your own dependencies.
+
 A parameter with JSON `content`, like a JSON part of a multipart form, is parsed by its model's
 `TypeAdapter.validate_json`, as a JSON body is, so pydantic's JSON rules apply: a number is read as a float first, so
 a `Decimal` field gets the float's value (`0.1000000000000000000000000001` becomes `Decimal("0.1")`) and `NaN` and
@@ -1439,7 +1449,9 @@ serializes its body with the model and default media type of the response that d
 range such as `2XX`, or as `default`. A status that no response declares is sent unchecked, its body encoded as JSON
 without validation, and without a body as an empty response. A Starlette `Response` is sent as it is, for anything
 else, such as another media type or repeated headers. A response leaves out the fields its model leaves unset, so a
-`pydantic_v2.dataclass` sends `null` only for a field set to `None`, and a field holding `MISSING` not at all.
+`pydantic_v2.dataclass` sends `null` only for a field set to `None`, and a field holding `MISSING` not at all. The
+headers of an `HTTPResult` must be ASCII header text under token names, else the result fails as one its response
+model rejects; a Starlette `Response` sends its headers unchecked.
 
 A success (`2XX`) response that declares content always sends content. `None`, as a bare value or as an `HTTPResult`
 without a body, goes through the response's model like any other value, as FastAPI's `response_model` takes it: a
@@ -1568,7 +1580,8 @@ exception handler receives them, so FastAPI's default handler and a handler of y
   validation_error_handler)`, imported from the generated package.
 - Other errors are FastAPI's: `404` and `405` bodies, and an opaque `500` for an exception in a service method or a
   result that fails its response model. That error goes to the server log with the values it rejected. Inputs that
-  adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`.
+  adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`, and
+  so does a header parameter whose value is not ASCII.
 - FastAPI's own document (`source_openapi=False`) describes validation errors with FastAPI's `ValidationError`
   schema, in which `loc`, `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies
   conform to it; the source document describes the responses the source declares.
