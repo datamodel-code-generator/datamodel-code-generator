@@ -261,6 +261,20 @@ paths:
       responses:
         '204':
           description: Stored.
+  /counts:
+    post:
+      operationId: sendCount
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              anyOf:
+                - {type: string, format: binary}
+                - {type: integer}
+      responses:
+        '204':
+          description: Stored.
 components:
   schemas:
     Chunk:

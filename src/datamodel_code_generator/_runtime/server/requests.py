@@ -9,8 +9,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Final, Literal, TypeAlias, cas
 from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
-from pydantic.dataclasses import is_pydantic_dataclass
+from pydantic import Field, TypeAdapter, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 from typing_extensions import TypeVar
@@ -40,6 +39,8 @@ from .errors import invalid, media_invalid, missing, model_records, unsupported_
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+
+    from pydantic.fields import FieldInfo
 
     from ..model_codecs.media import JSONValue
     from ..model_codecs.parameters import ParameterPlan
@@ -205,10 +206,10 @@ def field_adapter(model: type[object], name: str) -> TypeAdapter[object]:
 
     The field's constraints and its discriminator apply, so a tagged union rejects a value by its tag.
     """
-    owner = model if is_pydantic_dataclass(model) else cast("type[BaseModel]", model)
-    found = owner.__pydantic_fields__[name]
-    annotated = cast("Any", Annotated)[(found.annotation, *found.metadata, Field(discriminator=found.discriminator))]
-    return TypeAdapter[object](annotated)
+    owner: Any = model
+    found: FieldInfo = owner.__pydantic_fields__[name]
+    annotated: Any = Annotated
+    return TypeAdapter[object](annotated[(found.annotation, *found.metadata, Field(discriminator=found.discriminator))])
 
 
 @dataclass(frozen=True, slots=True)

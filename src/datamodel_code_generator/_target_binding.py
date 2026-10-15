@@ -916,10 +916,19 @@ def _json_types(schema: dict[str, YamlValue]) -> frozenset[str]:
     return frozenset()
 
 
+def _valued_types(schema: dict[str, YamlValue]) -> frozenset[str]:
+    """Return the JSON types of a schema's enum members and const value."""
+    values = schema.get("enum")
+    members = [*(values if isinstance(values, list) else ()), *((schema["const"],) if "const" in schema else ())]
+    return frozenset(map(_json_type, members))
+
+
 def _spelled(schema: dict[str, YamlValue], formats: frozenset[str]) -> bool:
-    """Return whether a schema is written as a string of one of the formats."""
+    """Return whether a schema is written as a string of one of the formats, its values telling the type it omits."""
     format_ = schema.get("format")
-    return isinstance(format_, str) and format_ in formats and "string" in _json_types(schema)
+    return (
+        isinstance(format_, str) and format_ in formats and "string" in (_json_types(schema) or _valued_types(schema))
+    )
 
 
 def _json_type(value: object) -> str:
@@ -3563,7 +3572,7 @@ class _Contracts(_SchemaUses):
                 binding = replace(binding, members=self.members_at(held, record.form, use.direction))
             raw, constrained = self.raw(schema, use.direction) if record.string and not record.base64 else ((), False)
             octets = kind in _RAW_MEDIA and bool(raw) and all(raw)
-            partly = not octets and any(raw) and (kind != "binary" or record.spelled)
+            partly = not octets and any(raw)
             self.uses[use] = replace(
                 binding,
                 parts=self.parts(schema, binding.members) if multipart else None,

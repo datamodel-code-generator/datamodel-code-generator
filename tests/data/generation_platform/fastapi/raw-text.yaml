@@ -138,6 +138,20 @@ paths:
           content:
             application/octet-stream:
               schema: {$ref: '#/components/schemas/Mark'}
+  /tags:
+    post:
+      operationId: uploadTag
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {$ref: '#/components/schemas/Tag'}
+      responses:
+        '200':
+          description: The stored tag.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Tag'}
   /stamps:
     get:
       operationId: downloadStamp
@@ -173,6 +187,7 @@ components:
   schemas:
     Stamp: {type: string, format: binary, maxLength: 4}
     Mark: {type: string, format: binary, enum: [draft, final]}
+    Tag: {format: binary, enum: [draft, final]}
     Note: {type: string, format: binary}
     Letter:
       description: A note behind a wrapper.
