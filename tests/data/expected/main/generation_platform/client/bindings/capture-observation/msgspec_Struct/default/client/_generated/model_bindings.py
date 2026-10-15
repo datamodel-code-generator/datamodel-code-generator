@@ -29,8 +29,8 @@ codec_4: Final[MsgspecCodec[models.ItemRequest]] = MsgspecCodec(models.ItemReque
 codec_5: Final[MsgspecCodec[models.ItemResponse]] = MsgspecCodec(models.ItemResponse)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_6: Final[MsgspecCodec[str]] = MsgspecCodec(str)
+codec_6: Final[MsgspecCodec[models.Value]] = MsgspecCodec(models.Value)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_7: Final[MsgspecCodec[str]] = MsgspecCodec(str)
+codec_7: Final[MsgspecCodec[models.Value]] = MsgspecCodec(models.Value)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""

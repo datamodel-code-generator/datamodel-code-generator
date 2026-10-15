@@ -2,7 +2,7 @@
   "calls": {
     "_cache_ref_data_type_facts": 3,
     "_copy_data_model_field": 12,
-    "_copy_data_type": 52,
+    "_copy_data_type": 77,
     "_copy_resolved_inherited_field": 1,
     "_generate_module_output": 1,
     "_get_ref_raw_schema": 5,
@@ -19,7 +19,7 @@
   "result": null,
   "retained_parsers": 0,
   "artifacts": {
-    "models.py": "1dc6ce39e19e797a3fe884d0cfc58fd0bcdb32379c0bab7910ab3aca910b1815"
+    "models.py": "18a23d35c5d86eb75259fd3c211f60d1ef1d28eb5a8a987a6e2324065594e561"
   },
   "target_imports": []
 }

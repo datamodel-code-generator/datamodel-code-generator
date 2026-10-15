@@ -1275,11 +1275,10 @@ def test_xsd_property_reuse(name: str, entrypoint: str, output_file: Path) -> No
 def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, output_file: Path) -> None:
     """Keep field order and usable generated types across all supported backends."""
     source = XML_SCHEMA_DATA_PATH / "field_name_collisions/ordinary.xsd"
-    suffix = "_cli" if entrypoint == "cli" and backend == DataModelType.MsgspecStruct else ""
     expected = (
         "field_name_collisions/ordinary.py"
         if backend == DataModelType.PydanticV2BaseModel
-        else f"field_name_collisions/ordinary_{backend.name}{suffix}.py"
+        else f"field_name_collisions/ordinary_{backend.name}.py"
     )
     if entrypoint == "cli":
         run_main_and_assert(

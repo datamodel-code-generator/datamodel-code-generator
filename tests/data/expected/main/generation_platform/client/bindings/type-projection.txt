@@ -140,5 +140,5 @@ change msgspec.Struct default parenthesized-callee
   +    items: Union[(List)[int], UnsetType] = UNSET
 change msgspec.Struct default nested-optional-member
   @@ -29 +29 @@
-  -    position: Union[List[Union[str, int]], UnsetType] = UNSET
-  +    position: Union[List[Optional[str]], UnsetType] = UNSET
+  -    position: Union[Annotated[List[Union[str, int]], Meta(max_length=2)], UnsetType] = UNSET
+  +    position: Union[Annotated[List[Optional[str]], Meta(max_length=2)], UnsetType] = UNSET

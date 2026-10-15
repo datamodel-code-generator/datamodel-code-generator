@@ -530,14 +530,22 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool 
 
 
 def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
-    """Run one set of wire cases through the codecs generated for every backend, grouping backends that agree."""
+    """Run one set of wire cases through the codecs generated for every backend, grouping backends that agree.
+
+    The generator's warnings of each backend come first.
+    """
     source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     outcomes: dict[str, dict[str, str]] = {case["name"]: {} for case in _native_cases(fixture)}
+    lines: list[str] = []
     for backend in fixture["backends"]:
         package = f"{fixture['package']}_{backend.replace('.', '_').lower()}"
         directory = root / package
-        if diagnostics := generate_package(source, {**fixture, "package": package}, directory, backend, {}):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", UserWarning)
+            diagnostics = generate_package(source, {**fixture, "package": package}, directory, backend, {})
+        lines.extend(f"{backend} {line}" for line in generator_warnings(caught))
+        if diagnostics:
             for results in outcomes.values():
                 results[backend] = " ".join(diagnostics)
             continue
@@ -550,7 +558,6 @@ def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
                 continue
             for case in _native_cases(generated.load(cases)):
                 outcomes[case["name"]][backend] = runner.run(case).replace(f"{package}_models", "models")
-    lines = []
     for name, results in outcomes.items():
         groups: dict[str, list[str]] = {}
         for backend, outcome in results.items():

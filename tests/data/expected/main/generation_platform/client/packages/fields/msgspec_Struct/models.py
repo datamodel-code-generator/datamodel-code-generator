@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class Kind(StrEnum):
@@ -85,7 +85,7 @@ PetsPetIdRecordsPutPathPetIdParameter: TypeAlias = int
 
 
 class NewPet(Struct):
-    name: str
+    name: Annotated[str, Meta(max_length=8)]
     kind: Kind
     tag: str | None | UnsetType = UNSET
     birthDate: str | UnsetType = UNSET

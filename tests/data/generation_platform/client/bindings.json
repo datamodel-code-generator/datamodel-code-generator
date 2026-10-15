@@ -559,8 +559,8 @@
       {
         "render": "msgspec.Struct default",
         "id": "nested-optional-member",
-        "old": "position: Union[List[Union[str, int]], UnsetType]",
-        "new": "position: Union[List[Optional[str]], UnsetType]"
+        "old": "position: Union[Annotated[List[Union[str, int]], Meta(max_length=2)], UnsetType]",
+        "new": "position: Union[Annotated[List[Optional[str]], Meta(max_length=2)], UnsetType]"
       }
     ]
   },

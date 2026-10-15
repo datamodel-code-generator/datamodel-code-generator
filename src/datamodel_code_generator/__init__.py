@@ -1809,12 +1809,18 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
     """Apply existing facade warnings, presets, sentinels, and metadata checks in order."""
     from pydantic import VERSION as PYDANTIC_VERSION  # ruff: ignore[import-outside-top-level]
 
+    from datamodel_code_generator.base_config import implied_model_settings  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.deprecations import warn_legacy_dependency  # ruff: ignore[import-outside-top-level]
 
     warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
     warn_legacy_dependency("dependency.python-310-runtime", ".".join(map(str, sys.version_info[:3])), (3, 11, 0))
+    given = set(config.model_fields_set)
     config = _apply_generate_config_preset(config)
     config = _apply_missing_sentinel_config(config)
+    if implied := {
+        name: value for name, value in implied_model_settings(config, given).items() if getattr(config, name) != value
+    }:
+        config = config.model_copy(update=implied)
 
     if (metadata_path := config.emit_model_metadata) is not None:
         _ensure_file_output_path(metadata_path, _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR)
