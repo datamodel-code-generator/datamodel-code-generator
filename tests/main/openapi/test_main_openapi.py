@@ -885,6 +885,7 @@ def test_main_openapi_discriminator_variant_tag_warnings(
             "collapse_msgspec_tagged_unions",
             ["--collapse-reuse-models", "--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"],
         ),
+        ("discriminator_collapsed_union_tags", "collapse_pydantic_v2.BaseModel", ["--collapse-reuse-models"]),
         ("discriminator_shared_variant_tags", "reuse_pydantic_v2.BaseModel", []),
         (
             "discriminator_shared_variant_tags",
@@ -899,7 +900,9 @@ def test_main_openapi_discriminator_reuse_variant_mapping(
     """Give a variant that reuse replaced the tag that a discriminator mapping gives its schema, at runtime too.
 
     Reuse keeps apart discriminated unions whose discriminators name another property or map other tags, so each
-    keeps its own discriminator; a variant they map to different tags keeps one union's tags, with a warning.
+    keeps its own discriminator; a variant they map to different tags keeps one union's tags, with a warning. So does
+    a variant that unions without a mapping tag by schema name when collapsed reuse merges it and the union of a
+    collapsed duplicate names it.
     """
     import msgspec
 
