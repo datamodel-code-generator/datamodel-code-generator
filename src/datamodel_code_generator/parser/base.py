@@ -3314,7 +3314,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.allow_responses_without_content = config.allow_responses_without_content
         self.collapse_root_models = config.collapse_root_models
         self.collapse_root_models_name_strategy = config.collapse_root_models_name_strategy
-        self._inlined_root_reference_paths: set[str] = set()
         self.collapse_reuse_models = config.collapse_reuse_models
         self.skip_root_model = config.skip_root_model
         self.use_root_model_sequence_interface = config.use_root_model_sequence_interface
@@ -4808,30 +4807,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             isinstance(constraints := root_type_field.constraints, ConstraintsBase)
             and constraints.has_constraints
             and (root_type_field.data_type.is_dict or root_type_field.data_type.is_mapping)
-        )
-
-    def __remove_inlined_root_models(
-        self,
-        unused_models: list[DataModel],
-        model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
-    ) -> None:
-        """Remove the root models whose references fields inlined, where collapsing would have removed them.
-
-        Such a field writes the referenced value with constraints of its own, so collapsing finds no reference to the
-        model, which is removed once nothing else references it, as collapsing the reference would have removed it.
-        """
-        index = self.generation_store.index
-        circular_root_model_paths = getattr(self, "_circular_root_model_paths", ())
-        unused_model_ids = {id(model) for model in unused_models}
-        references = [self.model_resolver.references[path] for path in sorted(self._inlined_root_reference_paths)]
-        unused_models.extend(
-            model
-            for reference in references
-            if (model := cast("DataModel", reference.source)) in model_to_module_models
-            and id(model) not in unused_model_ids
-            and self._is_root_model(model)
-            and not self._keeps_root_model_named(model, circular_root_model_paths)
-            and not index.has_data_type_references(reference)
         )
 
     def __collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
@@ -8605,8 +8580,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             module_to_import[module_] = ctx.imports
             contexts.append(ctx)
-        if self._inlined_root_reference_paths:
-            self.__remove_inlined_root_models(unused_models, model_to_module_models)
 
         if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
             all_models = [model for ctx in contexts for model in ctx.models]
