@@ -43,6 +43,9 @@ def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[
         def search(self, *, body: object) -> None:
             calls.append(f"search({_describe(body)})")
 
+        def post_pets(self, *, body: object) -> None:
+            calls.append(f"post_pets({_describe(body)})")
+
         def post_extras(self, *, body: object) -> None:
             calls.append(f"post_extras({_describe(body)})")
 

@@ -5,11 +5,12 @@ from __future__ import annotations
 import re
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal, TypeAlias, cast
 from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic.dataclasses import is_pydantic_dataclass
 from starlette.datastructures import UploadFile
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 from typing_extensions import TypeVar
@@ -190,6 +191,17 @@ def accepted(parameters: T) -> T:
 
 def _validated(adapter: TypeAdapter[object] | None, value: object) -> object:
     return value if adapter is None else adapter.validate_python(value)
+
+
+def field_adapter(model: type[object], name: str) -> TypeAdapter[object]:
+    """Return the adapter of a field of a Pydantic model or dataclass, which validates a value as the field does.
+
+    The field's constraints and its discriminator apply, so a tagged union rejects a value by its tag.
+    """
+    owner = model if is_pydantic_dataclass(model) else cast("type[BaseModel]", model)
+    found = owner.__pydantic_fields__[name]
+    annotated = cast("Any", Annotated)[(found.annotation, *found.metadata, Field(discriminator=found.discriminator))]
+    return TypeAdapter[object](annotated)
 
 
 @dataclass(frozen=True, slots=True)

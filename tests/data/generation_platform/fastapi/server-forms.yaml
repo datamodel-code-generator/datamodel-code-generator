@@ -78,6 +78,27 @@ paths:
               tags: {contentType: application/json}
       responses:
         "204": {description: Done.}
+  /pets:
+    post:
+      operationId: postPets
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [pet]
+              properties:
+                pet:
+                  oneOf: [{$ref: "#/components/schemas/Cat"}, {$ref: "#/components/schemas/Dog"}]
+                  discriminator: {propertyName: kind}
+                pets:
+                  type: array
+                  items:
+                    oneOf: [{$ref: "#/components/schemas/Cat"}, {$ref: "#/components/schemas/Dog"}]
+                    discriminator: {propertyName: kind}
+      responses:
+        "204": {description: Done.}
   /extras:
     post:
       operationId: postExtras
@@ -180,3 +201,15 @@ components:
       properties:
         color: {type: string}
         minAge: {type: integer, minimum: 0}
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: cat}
+        meows: {type: integer}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: dog}
+        barks: {type: integer}

@@ -3,14 +3,24 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Literal
 
-from pydantic import BaseModel, ConfigDict, RootModel, conint
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
 
 
 class Filter(BaseModel):
     color: str | None = None
     minAge: conint(ge=0) | None = None
+
+
+class Cat(BaseModel):
+    kind: Literal['cat']
+    meows: int | None = None
+
+
+class Dog(BaseModel):
+    kind: Literal['dog']
+    barks: int | None = None
 
 
 class FormsPostRequest(BaseModel):
@@ -38,6 +48,15 @@ class SearchesPostRequest(BaseModel):
     filters: list[Filter] | None = None
     tags: list[str] | None = None
     file: bytes | None = None
+
+
+class Pets(RootModel[Cat | Dog]):
+    root: Cat | Dog = Field(..., discriminator='kind')
+
+
+class PetsPostRequest(BaseModel):
+    pet: Cat | Dog = Field(..., discriminator='kind')
+    pets: list[Pets] | None = None
 
 
 class ExtrasPostRequest(BaseModel):
