@@ -1,0 +1,21 @@
+{
+  "valid": {
+    "code": "ABCD",
+    "name": "abc",
+    "count": 10,
+    "tags": [
+      "a",
+      "b"
+    ]
+  },
+  "invalid": {
+    "code": "ABCDE",
+    "name": "abcd",
+    "count": 11,
+    "tags": [
+      "a",
+      "b",
+      "c"
+    ]
+  }
+}

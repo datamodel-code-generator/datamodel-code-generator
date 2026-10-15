@@ -23031,13 +23031,69 @@ def test_main_msgspec_annotated_optional_imports(output_file: Path) -> None:
 
 
 def test_main_msgspec_array_length_constraints_without_annotated() -> None:
-    """Test msgspec generate API without use_annotated keeps imports minimal."""
+    """Test msgspec generate API with use_annotated disabled keeps imports minimal."""
     run_generate_and_assert(
         input_=JSON_SCHEMA_DATA_PATH / "msgspec_array_length_constraints.json",
         expected_file=EXPECTED_JSON_SCHEMA_PATH / "msgspec_array_length_constraints_without_annotated.py",
         input_file_type=InputFileType.JsonSchema,
         output_model_type=DataModelType.MsgspecStruct,
+        use_annotated=False,
     )
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+@pytest.mark.parametrize(
+    ("expected_file", "cli_args", "options"),
+    [
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"], {"output_model_type": DataModelType.MsgspecStruct}),
+        ("use_annotated.py", ["--use-annotated"], {"use_annotated": True}),
+    ],
+)
+def test_main_entry_point_constraints(
+    output_file: Path, entrypoint: str, expected_file: str, cli_args: list[str], options: dict[str, Any]
+) -> None:
+    """Test the command line and generate() keep the same constraints for the same options, at runtime too."""
+    name = "entry_point_constraints"
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                *cli_args,
+                *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            force_exec_validation=True,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type=InputFileType.JsonSchema,
+            formatters=[Formatter.BUILTIN],
+            disable_timestamp=True,
+            target_python_version=PythonVersion.PY_311,
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            **options,
+        )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "Record") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if "use_annotated" in options:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(error_type):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
 
 
 def test_main_msgspec_integer_fractional_constraints(output_file: Path) -> None:

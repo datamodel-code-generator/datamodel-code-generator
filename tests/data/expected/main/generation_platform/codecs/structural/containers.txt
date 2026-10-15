@@ -1,3 +1,4 @@
+msgspec.Struct warning UserWarning: msgspec.Meta does not take max_length, min_length on tuple[Cat, Cat]; Pairs is generated without these constraints.
 numbers-text [pydantic_v2.BaseModel]: native Bag(numbers=['abc'], tables=None, pets=None, kennels=None, pairs=None, maybe=None, words=None) set=['numbers'] json={"numbers":["abc"]}
 numbers-text [pydantic_v2.dataclass]: native Bag(numbers=['abc'], tables=MISSING, pets=MISSING, kennels=MISSING, pairs=MISSING, maybe=MISSING, words=MISSING) json={"numbers":["abc"]}
 numbers-text [dataclasses.dataclass]: Error: /paths/~1bags/post/requestBody: The union members are both JSON arrays, which the dataclasses.dataclass converter cannot tell apart; /paths/~1bags/post/requestBody: The union members are both JSON objects, which the dataclasses.dataclass converter cannot tell apart

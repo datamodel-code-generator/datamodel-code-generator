@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
-from msgspec import Struct
+from typing import Annotated
+
+from msgspec import Meta, Struct
 
 
 class Root(Struct):
-    item: int
+    item: Annotated[int, Meta(ge=-2147483648, le=2147483647)]
     code: str

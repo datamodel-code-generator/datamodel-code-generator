@@ -115,6 +115,22 @@ def _target_options_error(config: Any, *, output: bool = True) -> str | None:
     return None
 
 
+def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str, bool]:
+    """Return the constraint settings a config leaves unset, with the values its other settings imply.
+
+    A setting is unset unless `explicit` names it. msgspec models use `Annotated` constraints, `use_annotated` writes
+    the constraints as field constraints, and an unset `field_constraints` follows `use_annotated`, so the command
+    line and `generate()` keep the same constraints.
+    """
+    use_annotated = config.use_annotated
+    implied: dict[str, bool] = {}
+    if "use_annotated" not in explicit and DataModelType(config.output_model_type) is DataModelType.MsgspecStruct:
+        implied["use_annotated"] = use_annotated = True
+    if use_annotated or "field_constraints" not in explicit:
+        implied["field_constraints"] = use_annotated
+    return implied
+
+
 def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str, Any]:
     """Return the model settings a server or client target needs that a config leaves unset, with the values it implies.
 

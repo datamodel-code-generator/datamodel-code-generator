@@ -269,9 +269,7 @@ name
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create streamed = b'{"id":1,"name":"Mimi"}'
-  > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 36] b'{"name":"far too long","kind":"cat"}'
-  create a name too long = Pet(id=1, name='Mimi', tag=UNSET)
+  create a name too long ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False, cause=ValidationError('Expected `str` of length <= 8 - at `$.name`')] unencodable
   create a numeric name ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False, cause=ValidationError('Expected `str`, got `int` - at `$.name`')] unencodable
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
