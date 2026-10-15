@@ -11,8 +11,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -105,8 +105,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -150,8 +150,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -229,8 +229,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -916,6 +916,10 @@
   "reference-errors": {
     "input": "pets.yaml",
     "config": {
+      "resource_names": [
+        {"tag": "pets", "namespace": "animals"},
+        {"tag": "nope", "namespace": "other"}
+      ],
       "operations": [
         {
           "ref": "/paths/~1missing/get"
@@ -4952,8 +4956,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -5014,8 +5018,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -5078,8 +5082,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [

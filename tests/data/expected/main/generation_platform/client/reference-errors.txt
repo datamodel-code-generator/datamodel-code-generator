@@ -1,3 +1,3 @@
 # reference-errors
 render pydantic_v2.BaseModel
-  Error: --client-operations['/paths/~1missing/get'].ref: The operation setting '/paths/~1missing/get' selects no root path operation; --client-operations['#/paths/~1pets/get'].ref: Two settings name '/paths/~1pets/get'
+  Error: --client-operations['/paths/~1missing/get'].ref: The operation setting '/paths/~1missing/get' selects no root path operation; --client-operations['#/paths/~1pets/get'].ref: Two settings name '/paths/~1pets/get'; --client-resource-names['nope']: The tag 'nope' is the first tag of no operation

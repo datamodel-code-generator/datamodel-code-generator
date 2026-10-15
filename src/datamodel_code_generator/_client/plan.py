@@ -398,6 +398,16 @@ class Planner:
         self.problems: list[Diagnostic] = []
         self.security = SecurityPlanner(request.batch, self.problems)
         self.settings = self.resolved()
+        tags = {found[0] for operation in request.operations if (found := _tags(operation))}
+        self.problems.extend(
+            _problem(
+                "E_CONFIG_VALUE",
+                f"The tag {item.tag!r} is the first tag of no operation",
+                option_path=f"resource_names[{index}]",
+            )
+            for index, item in enumerate(config.resource_names)
+            if item.tag not in tags
+        )
         self.raise_problems()
         self.namespaces = self.tag_namespaces()
 
