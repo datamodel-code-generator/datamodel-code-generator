@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import MISSING, ConfigDict, conint
+from typing import Annotated, Literal
+
+from pydantic import MISSING, ConfigDict, Field, conint
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -17,6 +19,18 @@ class Others:
 class Filter:
     color: str | MISSING = MISSING
     minAge: conint(ge=0) | MISSING = MISSING
+
+
+@dataclass
+class Cat:
+    kind: Literal['cat']
+    meows: int | MISSING = MISSING
+
+
+@dataclass
+class Dog:
+    kind: Literal['dog']
+    barks: int | MISSING = MISSING
 
 
 @dataclass
@@ -47,6 +61,15 @@ class SearchesPostRequest:
     filters: list[Filter] | MISSING = MISSING
     tags: list[str] | MISSING = MISSING
     file: bytes | MISSING = MISSING
+
+
+Pets = TypeAliasType("Pets", Annotated[Cat | Dog, Field(..., discriminator='kind')])
+
+
+@dataclass
+class PetsPostRequest:
+    pet: Cat | Dog = Field(..., discriminator='kind')
+    pets: list[Pets] | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))

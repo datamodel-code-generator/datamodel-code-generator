@@ -304,8 +304,8 @@ def _styles(
 class FormMember:
     """One member of a form as it is written: its type, its kind of text, each value's type, and whether it repeats.
 
-    `source` is where its schema, or its items' schema when it repeats, declares the values. The member that stands
-    for the form's other properties has no name.
+    `source` is where its schema, or its items' schema when it repeats, declares the values, and `field` the model
+    field a declared property is. The member that stands for the form's other properties has no name and no field.
     """
 
     name: str
@@ -314,6 +314,7 @@ class FormMember:
     leaf: TypeView
     repeated: bool
     source: SourceLocation
+    field: FieldUseBinding | None = None
 
 
 def form_members(kinds: LexicalKinds, use: TypeUseBinding) -> Iterator[FormMember]:
@@ -326,7 +327,7 @@ def form_members(kinds: LexicalKinds, use: TypeUseBinding) -> Iterator[FormMembe
     }
     for name, schema, member in property_members(use):
         if (facts := member.model_facts) is not None:
-            yield FormMember(name, facts.type, *kinds.member(facts.type), recorded.get(name, schema))
+            yield FormMember(name, facts.type, *kinds.member(facts.type), recorded.get(name, schema), member)
 
 
 def form_extras(kinds: LexicalKinds, use: TypeUseBinding) -> FormMember | None:

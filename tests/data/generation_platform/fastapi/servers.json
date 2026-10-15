@@ -3282,6 +3282,60 @@
       },
       {
         "method": "POST",
+        "url": "/pets",
+        "files": [
+          [
+            "pet",
+            null,
+            "{\"kind\": \"cat\", \"meows\": 2}",
+            "application/json"
+          ],
+          [
+            "pets",
+            null,
+            "{\"kind\": \"dog\"}",
+            "application/json"
+          ],
+          [
+            "pets",
+            null,
+            "{\"kind\": \"cat\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "files": [
+          [
+            "pet",
+            null,
+            "{\"kind\": \"cow\"}",
+            "application/json"
+          ],
+          [
+            "pets",
+            null,
+            "{\"kind\": \"cow\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "files": [
+          [
+            "pet",
+            null,
+            "{\"kind\": \"dog\", \"barks\": \"many\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
         "url": "/extras",
         "files": [
           [

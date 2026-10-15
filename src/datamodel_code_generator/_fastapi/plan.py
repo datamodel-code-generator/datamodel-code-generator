@@ -262,12 +262,14 @@ class ParameterSpec:
 class JsonPartSpec:
     """One multipart member whose parts carry JSON: its wire name, the type of its value or items, and its repeats.
 
-    The one that reads a form's other properties has no name.
+    A single-valued property names its model and its field there, which read its part as the model reads the field,
+    by the field's own discriminator and constraints too. The one that reads a form's other properties has no name.
     """
 
     name: str
     type: TypeView
     repeated: bool = False
+    field: tuple[GeneratedSymbolType, str] | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1249,7 +1251,13 @@ class Planner:  # noqa: PLR0904
         if styled:
             self.unsupported(operation, (media,), f"the {member.name} encoding of ")
         elif media.kind == "multipart":
-            return JsonPartSpec(member.name, member.leaf, repeated=member.repeated)
+            binding = member.field
+            field = (
+                None
+                if member.repeated or binding is None or binding.slot is None
+                else (GeneratedSymbolType(binding.consumer), binding.slot.name)
+            )
+            return JsonPartSpec(member.name, member.leaf, repeated=member.repeated, field=field)
         else:
             self.problems.append(_problem("MC_PARAMETER_ENCODING", NO_SCALAR_KIND, member.source))
         return None

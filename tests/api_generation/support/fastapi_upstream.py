@@ -46,6 +46,9 @@ class _Uploads:
     def search(self, **_: object) -> None:
         return None
 
+    def post_pets(self, **_: object) -> None:
+        return None
+
     def post_extras(self, **_: object) -> None:
         return None
 

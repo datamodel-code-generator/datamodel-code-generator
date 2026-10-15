@@ -1,6 +1,6 @@
 # forms
 serve pydantic_v2.BaseModel
-service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, search, upload, upload_many
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, search, upload, upload_many
 service DefaultService without its methods: TypeError
 > POST /forms
   post_form(FormsPostRequest(name='a', count=1, tags=None))
@@ -79,6 +79,13 @@ service DefaultService without its methods: TypeError
 < 422 application/json [{"type": "model_type", "loc": ["body", "filter"]}]
 > POST /searches
 < 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]
+> POST /pets
+  post_pets(PetsPostRequest(pet={'kind': 'cat', 'meows': 2}, pets=[{'kind': 'dog', 'barks': None}, {'kind': 'cat', 'meows': None}]))
+< 204 - b''
+> POST /pets
+< 422 application/json [{"type": "union_tag_invalid", "loc": ["body", "pet"]}, {"type": "union_tag_invalid", "loc": ["body", "pets", 0]}]
+> POST /pets
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "pet", "dog", "barks"]}]
 > POST /extras
   post_extras(ExtrasPostRequest(name='n', first={'color': 'blue', 'minAge': 3}, second={'color': 'plain', 'minAge': None}, third={'color': 'file', 'minAge': None}))
 < 204 - b''
@@ -119,7 +126,7 @@ service DefaultService without its methods: TypeError
 > POST /extra-profiles
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "first"]}]
 serve pydantic_v2.dataclass
-service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, search, upload, upload_many
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, search, upload, upload_many
 service DefaultService without its methods: TypeError
 > POST /forms
   post_form(FormsPostRequest(name='a', count=1, tags=MISSING))
@@ -197,6 +204,13 @@ service DefaultService without its methods: TypeError
 < 422 application/json [{"type": "dataclass_type", "loc": ["body", "filter"]}]
 > POST /searches
 < 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]
+> POST /pets
+  post_pets(PetsPostRequest(pet={'kind': 'cat', 'meows': 2}, pets=[{'kind': 'dog', 'barks': MISSING}, {'kind': 'cat', 'meows': MISSING}]))
+< 204 - b''
+> POST /pets
+< 422 application/json [{"type": "union_tag_invalid", "loc": ["body", "pet"]}, {"type": "union_tag_invalid", "loc": ["body", "pets", 0]}]
+> POST /pets
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "pet", "dog", "barks"]}]
 > POST /extras
   post_extras(ExtrasPostRequest(name='n', first=Filter(color='blue', minAge=3), second=Filter(color='plain', minAge=MISSING), third=Filter(color='file', minAge=MISSING)))
 < 204 - b''
