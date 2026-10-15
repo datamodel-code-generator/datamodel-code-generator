@@ -81,6 +81,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "child-collision",
         "media-errors",
         "form-name-errors",
+        "form-name-kept",
         "media-item-parts",
         "parameter-content-defaults-30",
         "parameter-content-defaults-31",

@@ -1439,9 +1439,9 @@ delimited value that holds its style's delimiter (`,`, a space, or `|`) before i
 result; an operation with such a member is an adapter's, not FastAPI's form model. An encoding that the client has no
 form for, such as `deepObject` for an array or `contentType: application/xml` in a URL-encoded body, stops generation
 with the message the client stops with. So does a form whose exploded object that allows other properties shares the
-form with another such member, a `deepObject` member, or other properties the form's schema allows itself with
-`additionalProperties` as `true` or a schema, since both would take the same names, as an operation's query parameters
-are refused.
+form with another such member, a `deepObject` member, or other properties of its own that its schema allows with
+`additionalProperties` as `true` or a schema, or that its Pydantic model keeps by its configuration, such as
+`--extra-fields allow`, since both would take the same names, as an operation's query parameters are refused.
 
 The adapters read no part headers, no multipart `encoding` that names another media type, such as one in another
 charset or `application/xml` for a member without files, and no style for a member holding files, which the client

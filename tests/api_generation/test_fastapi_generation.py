@@ -48,6 +48,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "group-errors",
         "repeat-32",
         "media-errors",
+        "media-kept",
         "parameter-errors",
         "selector-errors",
         "primary-errors",

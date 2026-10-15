@@ -157,10 +157,13 @@ def _written_null(expression: PythonTypeExpr) -> bool:
     return null
 
 
+def keeps_extras(declared: FinalModelSymbol) -> bool:
+    """Return whether a Pydantic model's or dataclass's own configuration allows extra members, which it then keeps."""
+    return (facts := declared.facts) is not None and any(
+        setting.name == "extra" and setting.value == _ALLOW for setting in facts.configuration
+    )
+
+
 def _allows_extras(declared: FinalModelSymbol) -> bool:
     """Return whether a Pydantic dataclass's own configuration allows extra members."""
-    return (
-        (facts := declared.facts) is not None
-        and facts.backend == "pydantic_dataclass"
-        and any(setting.name == "extra" and setting.value == _ALLOW for setting in facts.configuration)
-    )
+    return (facts := declared.facts) is not None and facts.backend == "pydantic_dataclass" and keeps_extras(declared)
