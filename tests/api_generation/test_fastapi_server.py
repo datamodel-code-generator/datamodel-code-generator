@@ -85,6 +85,7 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "nullable-results-alias",
         "security",
         "security-templates",
+        "unaccepted",
         "customized",
         "locals",
         "naming",

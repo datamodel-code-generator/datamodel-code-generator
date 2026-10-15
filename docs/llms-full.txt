@@ -13541,7 +13541,8 @@ the startup check, which an override without them leaves out, its `principal` de
 the endpoint's `parameters` (`name`, `annotation`, `default`) and, for an operation with adapter parameters, the
 `accepted` call that the endpoint passes its `record` of them through before it calls the method, the service method
 `call` with its `arguments`, and its `registration`, whose `keywords` hold the optional `add_api_route` arguments. An
-override that leaves the `accepted` call out answers `500` instead of `422` when only adapter parameters are rejected. A builtin template writes each
+override that leaves the `accepted` call out still answers `422` when only adapter parameters are rejected, as long as
+it reads a value of the record before it calls the method, as the builtin template's arguments do. A builtin template writes each
 parameter, argument, and route entry on its own line, and leaves the type annotations and plan values on one line for
 the formatter.
 
