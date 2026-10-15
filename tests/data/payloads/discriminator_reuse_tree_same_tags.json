@@ -1,0 +1,26 @@
+{
+  "a.Owner": [
+    {
+      "pet": {
+        "kind": "cat"
+      }
+    },
+    {
+      "pet": {
+        "kind": "kitty"
+      }
+    }
+  ],
+  "shared.Owner": [
+    {
+      "pet": {
+        "kind": "dog"
+      }
+    },
+    {
+      "pet": {
+        "kind": "puppy"
+      }
+    }
+  ]
+}

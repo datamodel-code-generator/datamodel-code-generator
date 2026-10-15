@@ -1,0 +1,34 @@
+{
+  "Pet": [
+    {
+      "kind": "cat"
+    },
+    {
+      "kind": "dog"
+    }
+  ],
+  "Owner": [
+    {
+      "pet": {
+        "kind": "cat"
+      }
+    },
+    {
+      "pet": {
+        "kind": "kitty"
+      }
+    }
+  ],
+  "Pet2": [
+    {
+      "kind": "dog"
+    }
+  ],
+  "Owner2": [
+    {
+      "pet": {
+        "kind": "dog"
+      }
+    }
+  ]
+}
