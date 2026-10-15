@@ -13260,8 +13260,8 @@ part of more than 1 MiB (`max_part_size`) answers `400` with `Part exceeded maxi
 than 1000 fields or 1000 files. FastAPI's own `Form()` parameters have the same limits. Neither FastAPI nor Starlette
 has an application setting for them; only `await request.form(max_part_size=..., max_fields=..., max_files=...)` takes
 them, which a method of `--server-body-mode request` can call. A part with a filename is a file to Starlette, which
-does not limit its size. Starlette decodes a field part as UTF-8, or as the charset of the request's Content-Type, and
-as Latin-1 when that fails, so a field part that is not valid UTF-8 is accepted and read as Latin-1 text.
+does not limit its size. Starlette decodes a field part with the charset of the request's Content-Type, UTF-8 when it
+names none, and as Latin-1 only when that decoding fails, so such a part is accepted and read as Latin-1 text.
 
 A schema can type the properties it does not declare, with `additionalProperties: {...}`. Their parts come under any
 name no declared member has and are read by the same rule, by the type the model keeps their values as, in a field of
