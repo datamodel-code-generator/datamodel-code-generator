@@ -1422,6 +1422,11 @@ selects a route you add to the generated router yourself, such as a mount or a S
     A path parameter value can therefore contain `/` and `..`: `..%2F..%2Fetc` arrives as `../../etc`. Validate such
     a value, for instance with a `pattern` in the schema, before using it as a file system path or in another URL.
 
+A path's literal text is routed by its decoded value, as Starlette matches the decoded path: the document path
+`/files/a%20b` registers the route `/files/a b`, which the request `/files/a%20b` of the generated client matches,
+while the served document keeps the path as written. Literal text that encodes `/`, `{`, or `}` (`%2F`, `%7B`, or
+`%7D`) stops generation with an error, since no route matches it.
+
 A cookie parameter with a single value is a FastAPI `Cookie`, whatever its style, so the method receives the value
 as the request sent it: nothing is percent-decoded (`a%20b` stays `a%20b`), a value in double quotes loses the
 quotes, a `;` ends the value, and the last of several cookies of one name is taken. The generated client sends such

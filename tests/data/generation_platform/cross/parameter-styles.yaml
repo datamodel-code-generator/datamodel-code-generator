@@ -63,6 +63,13 @@ paths:
         - {name: X-Named, in: header, content: {application/json: {schema: {$ref: "#/components/schemas/Named"}}}}
       responses:
         "204": {description: Done.}
+  /literal/a%20b%C3%A9/{id}:
+    get:
+      operationId: getLiteral
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
   /labelled-text:
     post:
       operationId: postLabelledText
