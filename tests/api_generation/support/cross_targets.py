@@ -18,6 +18,7 @@ import re
 import shutil
 import socket
 import threading
+import warnings
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from datetime import date
@@ -35,6 +36,7 @@ from datamodel_code_generator import DataModelType, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.backends import backend_settings
+from tests.api_generation.support.client_generation import generator_warnings
 from tests.api_generation.support.client_runtime import agreeing_backends, describe
 from tests.api_generation.support.generated_packages import generated_root, import_generated
 
@@ -176,7 +178,10 @@ def _nothing(**_: object) -> None:
 
 
 def _generate(scenario: ModuleType, root: Path, package: str) -> str:
-    """Generate the server, then the client, into one root with the same model options; report the shared models."""
+    """Generate the server, then each client, into one root with the same model options.
+
+    Report whether the clients share the server's models, and the generator's warnings for each client.
+    """
     source = shutil.copy2(SOURCE / scenario.DOCUMENT, root / Path(scenario.DOCUMENT).name)
     models = root / f"{package}_models.py"
     model = {
@@ -202,21 +207,25 @@ def _generate(scenario: ModuleType, root: Path, package: str) -> str:
         f"client_{key}": json.loads((SOURCE / value).read_text(encoding="utf-8")) if key == "protocols" else value
         for key, value in getattr(scenario, "CLIENT", {}).items()
     }
+    warned: list[str] = []
     for suffix, backend in _clients(scenario):
-        generate(
-            source,
-            **{
-                **model,
-                **(backend_settings(backend) if backend else {}),
-                "output": root / f"{package}{suffix}_models.py",
-            },
-            generate_client="httpx2",
-            client_output=root / f"{package}_client{suffix}",
-            client_package=f"{package}_client{suffix}",
-            client_model_package=f"{package}{suffix}_models",
-            **client,
-        )
-    return f"models shared {models.read_bytes() == served}\n"
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", UserWarning)
+            generate(
+                source,
+                **{
+                    **model,
+                    **(backend_settings(backend) if backend else {}),
+                    "output": root / f"{package}{suffix}_models.py",
+                },
+                generate_client="httpx2",
+                client_output=root / f"{package}_client{suffix}",
+                client_package=f"{package}_client{suffix}",
+                client_model_package=f"{package}{suffix}_models",
+                **client,
+            )
+        warned.extend(f"client{suffix.replace('_', ' ', 1)} {line}\n" for line in generator_warnings(caught))
+    return f"models shared {models.read_bytes() == served}\n" + "".join(warned)
 
 
 def _clients(scenario: ModuleType) -> list[tuple[str, DataModelType | None]]:

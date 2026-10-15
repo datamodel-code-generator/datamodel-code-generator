@@ -1,4 +1,5 @@
 models shared True
+client msgspec_Struct warning UserWarning: msgspec checks all bytes members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; PagesPostRequest is generated without this constraint.
 # raw in-process sync, in-process async
 download_report
   > GET /reports
@@ -362,7 +363,10 @@ upload_memo
   < 200 text/plain
   = b'memo \xff\x00'
 upload_page
-  ! DecodeError: DecodeError(operation_id='uploadPage', reason='unencodable', location='body') [operation_id='uploadPage', location=('body',), body_bytes=b'', truncated=False, cause=ValidationError('Expected `bytes` of length <= 3')] unencodable
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain
+  = b'page \xff\x00'
 upload_sketch
   > POST /sketches [text/plain]
   upload_sketch(body=b'sketch \xff\x00')

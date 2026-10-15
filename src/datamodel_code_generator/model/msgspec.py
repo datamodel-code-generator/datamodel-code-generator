@@ -76,6 +76,7 @@ _META_SCHEMA_KEYWORDS: Mapping[str, str] = MappingProxyType({
     "pattern": "pattern",
 })
 _LENGTH_META_KEYWORDS: frozenset[str] = frozenset({"min_length", "max_length"})
+_UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
 
 
 def _is_exact_float_divisor(value: Any) -> bool:
@@ -99,7 +100,7 @@ class _MsgspecFieldRenderPlan(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator.reference import Reference
@@ -908,22 +909,107 @@ class DataModelField(DataModelFieldBase):
         )
         return untaken, inexact
 
+    @staticmethod
+    def _union_member_kind(data_type: DataType) -> tuple[str, DataType, frozenset[str]] | None:
+        """Return the type msgspec decodes a union member as, its type without aliases, and its Meta constraints.
+
+        A member is an alias chain ending in a scalar or a Literal of one type; other members return None.
+        """
+        keywords: set[str] = set()
+        seen: set[int] = set()
+        while (reference := data_type.reference) is not None:
+            source = reference.source
+            if (
+                data_type.is_optional
+                or not isinstance(source, TypeAliasBase)
+                or len(source.fields) != 1
+                or id(source) in seen
+            ):
+                return None
+            alias_field = source.fields[0]
+            if not isinstance(alias_field, DataModelField) or alias_field._field_has_top_level_none():  # noqa: SLF001
+                return None
+            seen.add(id(source))
+            if alias_field.use_annotated:
+                meta = alias_field._get_meta_data()[0]  # noqa: SLF001
+                keywords.update(k for k, v in meta.items() if v is not None and k in _META_SCHEMA_KEYWORDS)
+            data_type = alias_field.data_type
+        if (
+            data_type.data_types
+            or data_type.is_optional
+            or data_type.enum_member_literals
+            or DataModelField._data_type_has_container(data_type)
+        ):
+            return None
+        if data_type.literals:
+            kinds = {type(literal).__name__ for literal in data_type.literals}
+            return (kinds.pop(), data_type, frozenset(keywords)) if len(kinds) == 1 else None
+        return (data_type.type, data_type, frozenset(keywords)) if data_type.type else None
+
+    def _union_members(self, data_type: DataType) -> Iterator[tuple[DataType, int, DataType]]:
+        """Yield each member of a union with its owner and index, spreading member unions that render as one."""
+        for index, member in enumerate(data_type.data_types):
+            if member.type is None and member.reference is None and self._data_type_is_plain_union(member):
+                yield from self._union_members(member)
+            else:
+                yield data_type, index, member
+
+    def unconstrain_union_members(self) -> None:
+        """Write the members of a union that msgspec decodes as one type without their Meta constraints.
+
+        msgspec checks every member of a type in a union against the constraints of all of them, so a constraint
+        of one member would reject values another member accepts; the union accepts the values of every member.
+        """
+        kinds: set[str] = set()
+        keywords: set[str] = set()
+        for data_type in tuple(self.data_type.all_data_types):
+            if data_type.is_tuple or len(data_type.data_types) < 2:  # noqa: PLR2004
+                continue
+            members: dict[str, list[tuple[DataType, int, DataType, frozenset[str]]]] = {}
+            for owner, index, member in self._union_members(data_type):
+                if (kind := self._union_member_kind(member)) is not None:
+                    members.setdefault(kind[0], []).append((owner, index, kind[1], kind[2]))
+            for kind, same_kind in members.items():
+                if len(same_kind) < 2:  # noqa: PLR2004
+                    continue
+                for owner, index, base, constraints in same_kind:
+                    if not constraints:
+                        continue
+                    kinds.add(kind)
+                    keywords.update(constraints)
+                    owner.data_types[index].unregister_reference()
+                    owner.data_types[index] = self._copy_data_type(base)
+                    owner.data_types[index].parent = owner
+        if kinds:
+            self.__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY] = (frozenset(kinds), frozenset(keywords))
+            self.invalidate_semantic_caches()
+
     @property
     def dropped_constraints_warning(self) -> str | None:
         """Return a warning naming the constraints left out because msgspec.Meta does not take or check them exactly."""
-        if not self.use_annotated:
-            return None
-        declared = self._get_declared_meta_data()
-        untaken, inexact = self._dropped_meta_keywords(declared)
-        reasons = (
-            [f"msgspec.Meta does not take {', '.join(sorted(untaken))} on {self._annotated_base_data_type().type_hint}"]
-            if untaken
-            else []
-        )
-        if inexact:
+        untaken: frozenset[str] = frozenset()
+        inexact = False
+        reasons: list[str] = []
+        if self.use_annotated:
+            declared = self._get_declared_meta_data()
+            untaken, inexact = self._dropped_meta_keywords(declared)
+            if untaken:
+                reasons.append(
+                    f"msgspec.Meta does not take {', '.join(sorted(untaken))} on "
+                    f"{self._annotated_base_data_type().type_hint}"
+                )
+            if inexact:
+                reasons.append(
+                    "msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of "
+                    f"{represent_python_value(declared['multiple_of'])} that floats only approximate"
+                )
+        union_keywords: frozenset[str] = frozenset()
+        if (unconstrained := self.__dict__.get(_UNCONSTRAINED_UNION_MEMBERS_KEY)) is not None:
+            kinds, union_keywords = unconstrained
             reasons.append(
-                "msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of "
-                f"{represent_python_value(declared['multiple_of'])} that floats only approximate"
+                f"msgspec checks all {', '.join(sorted(kinds))} members of a union against the constraints of each "
+                f"of them, so {', '.join(sorted(union_keywords))} of one member would reject values another "
+                "member accepts"
             )
         if not reasons:
             return None
@@ -931,7 +1017,7 @@ class DataModelField(DataModelFieldBase):
         owner = f"{owner}.{self.name}" if self.name else owner
         return (
             f"{'; '.join(reasons)}; {owner} is generated without "
-            f"{'this constraint' if len(untaken) + inexact == 1 else 'these constraints'}."
+            f"{'this constraint' if len(untaken | union_keywords) + inexact == 1 else 'these constraints'}."
         )
 
     def _get_meta_string(self) -> str | None:

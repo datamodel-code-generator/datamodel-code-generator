@@ -1,0 +1,20 @@
+{
+  "valid": {
+    "page": "cGFnZSB4eA==",
+    "name": "Pagination",
+    "count": 10,
+    "label": "chapter",
+    "tags": ["ab", "longer"],
+    "code": 404,
+    "short": "abc"
+  },
+  "invalid": {
+    "page": 3,
+    "name": 3,
+    "count": "10",
+    "label": "four",
+    "tags": [3],
+    "code": "abcd",
+    "short": "abcd"
+  }
+}

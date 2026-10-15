@@ -23419,6 +23419,49 @@ def test_main_msgspec_float_multiple_of(output_file: Path, entrypoint: str) -> N
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
 
 
+@pytest.mark.parametrize("stem", ["msgspec", "no_use_annotated"])
+def test_main_msgspec_union_member_constraints(output_file: Path, stem: str) -> None:
+    """Test msgspec writes union members of one type without Meta, warns per field, and decodes every member's values.
+
+    msgspec checks all members of a type in a union against the constraints of each of them, so a constrained
+    member of `bytes | Annotated[bytes, Meta(max_length=3)]` would reject the long bytes the other member accepts.
+    Without `Annotated`, no member has Meta, so the union keeps its members.
+    """
+    name = "msgspec_union_member_constraints"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{stem}.py",
+            extra_args=[
+                *("--output-model-type", "msgspec.Struct", "--formatters", "builtin"),
+                *("--disable-timestamp", "--target-python-version", "3.11"),
+                *(["--no-use-annotated"] if stem == "no_use_annotated" else []),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "union" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "Upload") as model:
+        decoded = msgspec.json.decode(json.dumps(payloads["valid"]), type=model)
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(msgspec.ValidationError):
+                msgspec.json.decode(json.dumps(payloads["valid"] | {field_name: value}), type=model)
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "".join(f"{line}\n" for line in (repr(decoded), "rejected:", *rejected)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_decoded.txt",
+    )
+
+
 def test_main_jsonschema_uuid_format_versions(output_file: Path) -> None:
     """Test uuid format versions map to importable pydantic types."""
     run_main_and_assert(

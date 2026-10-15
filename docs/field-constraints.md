@@ -118,6 +118,11 @@ leaves out, such as `minimum` on the `Decimal` of format `decimal`, is named wit
 msgspec checks `multipleOf` on a `float` by its floating-point remainder, so `msgspec.Struct` writes it on a `float`
 only for a divisor a float represents exactly, such as `2`, `0.5` or `1.5`; a divisor such as `0.01`, whose multiples
 msgspec would reject, is left out with the same warning.
+msgspec checks all members of a union that it decodes as one Python type against the constraints of each of them, so
+in `anyOf: [{type: string, format: binary}, {type: string, format: binary, maxLength: 3}]` the `maxLength` of one
+branch would reject the bytes the other branch accepts. `msgspec.Struct` writes such members without `Meta(...)`, so
+the field takes the values of every branch (`bytes` here), and names the keywords it leaves out in the same warning;
+members of different types, such as `str` and `int`, keep their constraints.
 
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|

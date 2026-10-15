@@ -4,8 +4,9 @@ A `text/*` body whose schema is a binary string travels as the raw body, like `a
 writes and reads its bytes as they are, bytes that are not UTF-8 included, and every client returns and sends them
 the same way. So does a body whose schema reaches the string through wrappers the models type as the string itself: a
 reference, one `allOf`, `anyOf` or `oneOf` branch, a constraint, or a null beside it; and one of several such strings,
-which the backends that keep a constraint in the type hold as a union and the others as one `bytes`, or a schema
-whose branches merge into one, which the models type as `bytes` as well. An `application/octet-stream` body written as
+which the Pydantic backends hold as a union and the others as one `bytes`, msgspec with a warning because it would
+check every member against the constraint of one, or a schema whose branches merge into one, which the models type
+as `bytes` as well. An `application/octet-stream` body written as
 an enum of binary strings, with or without its string type, which the models type as an enum, travels as the enum's
 text instead, which the server reads by the model and refuses when it names no member. Bytes the models constrain,
 such as to four bytes, are checked by the model wherever they travel: the server refuses a longer request and will
