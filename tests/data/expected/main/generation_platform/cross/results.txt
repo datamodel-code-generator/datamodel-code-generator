@@ -25,6 +25,21 @@ get_result accepted
   get_result(case='accepted')
   < 202 application/json
   = Response({'queued': True}, 202, 'application/json')
+get_result 200 without a body
+  > GET /results?case=missing-body
+  get_result(case='missing-body')
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='getResult', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False, cause=DecodeError()]
+get_result 2XX without a body
+  > GET /results?case=accepted-none
+  get_result(case='accepted-none')
+  < 202 application/json
+  = Response(None, 202, 'application/json')
+get_result 4XX without a body
+  > GET /results?case=not-found
+  get_result(case='not-found')
+  < 404 -
+  ! NotFoundError: Error code: 404 [operation_id='getResult', status_code=404, body=b'', body_bytes=b'', truncated=False, cause=DecodeError()]
 get_result csv
   > GET /results?case=csv
   get_result(case='csv')

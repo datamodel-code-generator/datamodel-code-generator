@@ -27,10 +27,10 @@ service DefaultService without its methods: TypeError
 < location: /things/1
 > GET /texts?case=null-202
   get_text(null-202)
-< 202 - b''
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Thing']
 > GET /texts?case=null-203
   get_text(null-203)
-< 203 - b''
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
 > GET /texts?case=null-206
   get_text(null-206)
 < 206 application/json null
@@ -87,25 +87,25 @@ service DefaultService without its methods: TypeError
 < 200 application/json [1,2]
 > GET /pets?case=none
   get_pet(none)
-< 200 - b''
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Pet']
 > GET /pets?case=missing-body
   get_pet(missing-body)
-< 200 - b''
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Pet']
 > GET /things?case=none
   get_thing(none)
 < ResponseValidationError: ['Input should be a valid dictionary or object to extract fields from']
 > GET /things?case=missing-body
   get_thing(missing-body)
-< 200 - b''
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Thing']
 > GET /things?case=bare
   get_thing(bare)
 < 200 application/json {"id":1}
 > GET /notes?case=none
   get_note(none)
-< 200 - b''
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
 > GET /notes?case=missing-body
   get_note(missing-body)
-< 200 - b''
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
 > GET /notes?case=word
   get_note(word)
 < 200 text/plain; charset=utf-8 abc
@@ -137,10 +137,10 @@ service DefaultService without its methods: TypeError
 < location: /things/1
 > GET /texts?case=null-202
   get_text(null-202)
-< 202 - b''
+< ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
 > GET /texts?case=null-203
   get_text(null-203)
-< 203 - b''
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
 > GET /texts?case=null-206
   get_text(null-206)
 < 206 application/json null
@@ -197,25 +197,25 @@ service DefaultService without its methods: TypeError
 < 200 application/json [1,2]
 > GET /pets?case=none
   get_pet(none)
-< 200 - b''
+< ResponseValidationError: ['Input should be a dictionary or an instance of Pet']
 > GET /pets?case=missing-body
   get_pet(missing-body)
-< 200 - b''
+< ResponseValidationError: ['Input should be a dictionary or an instance of Pet']
 > GET /things?case=none
   get_thing(none)
 < ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
 > GET /things?case=missing-body
   get_thing(missing-body)
-< 200 - b''
+< ResponseValidationError: ['Input should be a dictionary or an instance of Thing']
 > GET /things?case=bare
   get_thing(bare)
 < 200 application/json {"id":1}
 > GET /notes?case=none
   get_note(none)
-< 200 - b''
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
 > GET /notes?case=missing-body
   get_note(missing-body)
-< 200 - b''
+< ResponseValidationError: ['A text/plain body must be a string or bytes']
 > GET /notes?case=word
   get_note(word)
 < 200 text/plain; charset=utf-8 abc

@@ -18,13 +18,17 @@ BodyT_co = TypeVar("BodyT_co", covariant=True)
 
 _EMPTY_STATUSES: Final = frozenset({204, 205, 304})
 _MIN_CONTENT_STATUS: Final = 200
+_MIN_REDIRECT_STATUS: Final = 300
+_JSON: Final = "application/json"
 
 
 @dataclass(frozen=True, slots=True)
 class HTTPResult(Generic[BodyT_co]):
     """Send one declared response: its status, an optional body of the declared type, and extra headers.
 
-    Without a body, a response whose JSON accepts null sends `null`, and any other response sends none.
+    Without a body, a success response that declares content sends None through its model, as a bare value is sent:
+    `null` where the model accepts null, a validation error where it does not. A response whose JSON accepts null
+    sends `null` on any status, and any other response sends no body.
     """
 
     status_code: int
@@ -36,12 +40,13 @@ class HTTPResult(Generic[BodyT_co]):
 class Declared:
     """One declared response: its default media type with that type's kind and charset, and the model its body takes.
 
+    A response that declares no content has no media type; a body sent under it anyway is JSON.
     `null` says the body is JSON of a type that accepts null, so the response sends None as `null` instead of no body.
     `dump` writes a JSON body by the model's adapter, for a model whose adapter's own dump leaves out what it holds.
     The model's adapter is built when the response first sends a body; a concurrent first send builds an equal one.
     """
 
-    media_type: str = "application/json"
+    media_type: str | None = None
     kind: Literal["json", "text", "form", "multipart", "binary"] = "json"
     charset: str = "utf-8"
     model: object = None
@@ -56,6 +61,10 @@ class Declared:
             object.__setattr__(self, "_adapter", built)  # noqa: PLC2801 - Keep the adapter on the frozen value.
             return built
         return adapter
+
+    def sends_none(self, status: int) -> bool:
+        """Return whether the response sends None as a body: JSON that accepts null, or content of a success status."""
+        return self.null or (self.media_type is not None and status < _MIN_REDIRECT_STATUS)
 
 
 _UNDECLARED: Final = Declared()
@@ -108,11 +117,16 @@ def _respond(
     Starlette labels every `text/*` body without a charset UTF-8, which only text the response encodes itself is.
     """
     declared = chosen or plan.find(status) or _UNDECLARED
-    if (body is None and not declared.null) or plan.head or status < _MIN_CONTENT_STATUS or status in _EMPTY_STATUSES:
+    if (
+        (body is None and not declared.sends_none(status))
+        or plan.head
+        or status < _MIN_CONTENT_STATUS
+        or status in _EMPTY_STATUSES
+    ):
         if inspect.isawaitable(body):
             raise _unawaited(body)
         return Response(status_code=status, headers=headers)
-    media_type = declared.media_type
+    media_type = declared.media_type or _JSON
     if isinstance(content := _content(declared, body), str):
         return Response(_encoded(declared, content), status_code=status, media_type=media_type, headers=headers)
     if declared.kind == "json" or not media_type.startswith("text/"):
