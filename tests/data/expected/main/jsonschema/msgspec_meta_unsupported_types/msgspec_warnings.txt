@@ -1,0 +1,8 @@
+msgspec.Meta does not take ge on Decimal; Price is generated without this constraint.
+msgspec.Meta does not take max_length, min_length on tuple[str, int]; Pair1 is generated without these constraints.
+msgspec.Meta does not take ge, multiple_of on Decimal; MsgspecMetaUnsupportedTypes.amount is generated without these constraints.
+msgspec.Meta does not take ge on str; MsgspecMetaUnsupportedTypes.clock is generated without this constraint.
+msgspec.Meta does not take ge on str; MsgspecMetaUnsupportedTypes.label is generated without this constraint.
+msgspec.Meta does not take pattern on bytes; MsgspecMetaUnsupportedTypes.blob is generated without this constraint.
+msgspec.Meta does not take min_length on Literal['ab']; MsgspecMetaUnsupportedTypes.kind is generated without this constraint.
+msgspec.Meta does not take ge on Literal[3]; MsgspecMetaUnsupportedTypes.version is generated without this constraint.

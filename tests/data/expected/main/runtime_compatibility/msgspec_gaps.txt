@@ -1,14 +1,4 @@
 {
-  "jsonschema/allof_outer_constraints/integer_date_time_bounds.json": {
-    "acceptance": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
-    "rejection": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
-    "error": "TypeError"
-  },
-  "jsonschema/allof_outer_constraints/number_date_time_bounds.json": {
-    "acceptance": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
-    "rejection": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
-    "error": "TypeError"
-  },
   "jsonschema/compound_property_names/enum_oneof.json": {
     "acceptance": "msgspec conversion rejects unions containing multiple string-like key types",
     "rejection": "msgspec conversion rejects unions containing multiple string-like key types",

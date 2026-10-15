@@ -5025,6 +5025,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 variant, property_name, values, union_name, {}
             )
 
+    def __warn_about_dropped_constraints(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR6301
+        """Warn once per field whose constraints the output model leaves out on its type."""
+        for ctx in contexts:
+            for model in ctx.models:
+                for field in model.fields:
+                    if (message := field.dropped_constraints_warning) is not None:
+                        warn(message, stacklevel=2)
+
     def __warn_about_variant_discriminator_tags(self) -> None:
         """Warn once per variant whose generated tag differs from a tag a union maps it to."""
         for recorded in self._variant_discriminator_tags.values():
@@ -8049,6 +8057,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if self.typed_nullable_maps or self.run_context.untyped_nullable_maps:
             self.__record_model_placement(contexts, bool(internal_modules))
         self._check_model_inheritance(contexts)
+        self.__warn_about_dropped_constraints(contexts)
         self.__warn_about_decimal_defaults()
         self.__warn_about_variant_discriminator_tags()
         self.__warn_about_msgspec_decoding(contexts)

@@ -59,6 +59,17 @@ UNSET = _UNSET()
 
 
 _ANNOTATED_CONSTRAINTS_CONTEXT: object = object()
+_META_SCHEMA_KEYWORDS: Mapping[str, str] = MappingProxyType({
+    "gt": "exclusiveMinimum",
+    "ge": "minimum",
+    "lt": "exclusiveMaximum",
+    "le": "maximum",
+    "multiple_of": "multipleOf",
+    "min_length": "minLength",
+    "max_length": "maxLength",
+    "pattern": "pattern",
+})
+_LENGTH_META_KEYWORDS: frozenset[str] = frozenset({"min_length", "max_length"})
 
 
 class _MsgspecFieldRenderPlan(NamedTuple):
@@ -843,8 +854,53 @@ class DataModelField(DataModelFieldBase):
         """Return whether to fall back to nullable type instead of UnsetType."""
         return not self._not_required
 
+    def _meta_keywords(self, data_type: DataType) -> frozenset[str]:
+        """Return the constraint keywords msgspec.Meta takes on a type.
+
+        Numbers take bounds, sized types take lengths and str takes a pattern, as the msgspec type table lists;
+        a mapping takes lengths, a fixed tuple and a union take none, and an unclassified type keeps them all.
+        """
+        if data_type.is_dict or data_type.is_mapping:
+            return _LENGTH_META_KEYWORDS
+        if data_type.is_tuple or self._data_type_is_plain_union(data_type):
+            return frozenset()
+        if len(data_type.data_types) == 1 and not (
+            data_type.type or data_type.reference or data_type.python_type or self._data_type_has_container(data_type)
+        ):
+            return self._meta_keywords(data_type.data_types[0])
+        keywords = DataTypeManager.constraint_keywords(data_type)
+        return frozenset(meta for meta, schema in _META_SCHEMA_KEYWORDS.items() if schema in keywords)
+
+    def _get_meta_data(self) -> tuple[dict[str, Any], frozenset[str]]:
+        """Return the Meta(...) keyword data that msgspec takes on the type, and the constraints it does not take."""
+        data = self._get_declared_meta_data()
+        if not (constrained := {k for k, v in data.items() if v is not None and k in _META_SCHEMA_KEYWORDS}):
+            return data, frozenset()
+        if dropped := frozenset(constrained - self._meta_keywords(self._annotated_base_data_type())):
+            data = {k: v for k, v in data.items() if k not in dropped}
+        return data, dropped
+
+    @property
+    def dropped_constraints_warning(self) -> str | None:
+        """Return a warning naming the constraints left out because msgspec.Meta does not take them on the type."""
+        if not self.use_annotated or not (dropped := self._get_meta_data()[1]):
+            return None
+        owner = getattr(self.parent, "class_name", "")
+        owner = f"{owner}.{self.name}" if self.name else owner
+        return (
+            f"msgspec.Meta does not take {', '.join(sorted(dropped))} on "
+            f"{self._annotated_base_data_type().type_hint}; {owner} is generated without "
+            f"{'this constraint' if len(dropped) == 1 else 'these constraints'}."
+        )
+
     def _get_meta_string(self) -> str | None:
         """Compute Meta(...) string if there are any meta constraints."""
+        data = self._get_meta_data()[0]
+        meta_arguments = sorted(f"{k}={represent_python_value(v)}" for k, v in data.items() if v is not None)
+        return f"Meta({', '.join(meta_arguments)})" if meta_arguments else None
+
+    def _get_declared_meta_data(self) -> dict[str, Any]:
+        """Return the Meta(...) keyword data of the field's metadata and constraints."""
         data: dict[str, Any] = {k: v for k, v in self.extras.items() if k in self._META_FIELD_KEYS}
         if self.constraints is not None and self._can_apply_constraints:
             dumped = self.constraints.model_dump()
@@ -872,9 +928,7 @@ class DataModelField(DataModelFieldBase):
             data["min_length"] = min_items
         if (max_items := data.pop("max_items", None)) is not None:
             data["max_length"] = max_items
-
-        meta_arguments = sorted(f"{k}={represent_python_value(v)}" for k, v in data.items() if v is not None)
-        return f"Meta({', '.join(meta_arguments)})" if meta_arguments else None
+        return data
 
     @property
     def annotated(self) -> str | None:  # noqa: PLR0911

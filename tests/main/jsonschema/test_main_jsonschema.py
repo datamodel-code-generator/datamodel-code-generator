@@ -5754,15 +5754,20 @@ def test_main_number_constraints_on_emitted_types(
 def test_main_number_constraints_on_numeric_string_formats(
     output_file: Path, expected_file: str, extra_args: list[str]
 ) -> None:
-    """Test number keywords still constrain string formats that map to numeric types."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_numeric_string_formats.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"number_constraints_on_numeric_string_formats/{expected_file}",
-        extra_args=extra_args,
-    )
+    """Test number keywords still constrain string formats that map to numeric types msgspec.Meta takes."""
+    with (
+        pytest.warns(UserWarning, match=r"msgspec\.Meta does not take")
+        if "msgspec.Struct" in extra_args
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "number_constraints_on_numeric_string_formats.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"number_constraints_on_numeric_string_formats/{expected_file}",
+            extra_args=extra_args,
+        )
 
 
 def test_main_selective_constraint_kwargs_pydantic_v2(output_file: Path) -> None:
@@ -13244,25 +13249,33 @@ def test_main_jsonschema_type_alias_recursive_container(
     options: tuple[str, ...],
     expected_file: str,
 ) -> None:
-    """Quote the containers of a TypeAliasType value that recurse into its own alias cycle."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / f"type_alias_recursive_{input_file}.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--use-type-alias",
-            *options,
-            "--target-python-version",
-            target_python_version,
-            "--output-model-type",
-            output_model_type,
-            "--enum-field-as-literal",
-            "all",
-        ],
-        force_exec_validation=True,
-    )
+    """Quote the containers of a TypeAliasType value that recurse into its own alias cycle.
+
+    msgspec.Meta takes no length on the fixed-length tuple of Pair, so msgspec output leaves it out with a warning.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"msgspec\.Meta does not take max_length, min_length on tuple")
+        if output_model_type == "msgspec.Struct" and input_file == "container"
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"type_alias_recursive_{input_file}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[
+                "--use-type-alias",
+                *options,
+                "--target-python-version",
+                target_python_version,
+                "--output-model-type",
+                output_model_type,
+                "--enum-field-as-literal",
+                "all",
+            ],
+            force_exec_validation=True,
+        )
 
 
 @pytest.mark.cli_doc(
@@ -22855,16 +22868,67 @@ def test_main_dataclass_nested_mapping_defaults_require_constructor_arguments(ou
 
 
 def test_main_msgspec_decimal_constraints(output_file: Path) -> None:
-    """Test msgspec keeps fractional decimal constraints and integer-valued bounds."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_decimal_constraints.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=["--output-model-type", "msgspec.Struct", "--use-annotated"],
-        assert_func=assert_file_content,
-        expected_file="msgspec_decimal_constraints.py",
-        importable_module_name="generated_msgspec_decimal_constraints",
+    """Test msgspec leaves decimal constraints out of Meta, which msgspec does not take on Decimal."""
+    with pytest.warns(UserWarning, match=r"msgspec\.Meta does not take ge, le, multiple_of on Decimal; Model\.p "):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_decimal_constraints.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct", "--use-annotated"],
+            assert_func=assert_file_content,
+            expected_file="msgspec_decimal_constraints.py",
+            importable_module_name="generated_msgspec_decimal_constraints",
+        )
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("msgspec.py", []),
+        (
+            "type_overrides.py",
+            ["--type-overrides", json.dumps({"MsgspecMetaUnsupportedTypes.count": "decimal.Decimal"})],
+        ),
+    ],
+)
+def test_main_msgspec_meta_unsupported_types(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test msgspec.Meta leaves out the constraints msgspec rejects on a type, warns per field, and still decodes."""
+    name = "msgspec_meta_unsupported_types"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--target-python-version",
+                "3.11",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
+    stem = expected_file.removesuffix(".py")
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "msgspec.Meta" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
     )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "MsgspecMetaUnsupportedTypes") as model:
+        msgspec.json.decode(json.dumps(payloads["valid"]), type=model)
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(msgspec.ValidationError):
+                msgspec.json.decode(json.dumps(payloads["valid"] | {field_name: value}), type=model)
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_rejected.txt")
 
 
 def test_main_jsonschema_uuid_format_versions(output_file: Path) -> None:
