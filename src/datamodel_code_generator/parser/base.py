@@ -2098,16 +2098,30 @@ def _get_discriminator_values(
     if require_literal:
         return []
 
-    return _get_union_discriminator_values(discriminator_model, mapping)
+    return _get_union_discriminator_values(discriminator_model, field_name, mapping, field_name_mode=field_name_mode)
 
 
 def _get_union_discriminator_values(
-    discriminator_model: DataModel, mapping: dict[str, str]
+    discriminator_model: DataModel,
+    field_name: str,
+    mapping: dict[str, str],
+    *,
+    field_name_mode: Literal["original", "resolved", "either"],
 ) -> list[DiscriminatorValue]:
-    """Return the tags a union selects a variant by: its mapping values, else the schema name."""
-    return _get_mapping_discriminator_values(discriminator_model, mapping) or [
-        _source_path(discriminator_model.path).split("/")[-1]
-    ]
+    """Return the tags a union selects a variant by: mapping values, a reuse model's inherited tag, else its name."""
+    if mapped := _get_mapping_discriminator_values(discriminator_model, mapping):
+        return mapped
+    if (
+        discriminator_model.path.endswith("/reuse")
+        and (
+            value := _find_discriminator_value(
+                discriminator_model.iter_all_fields(), field_name, field_name_mode=field_name_mode
+            )
+        )
+        is not None
+    ):
+        return [value]
+    return [_source_path(discriminator_model.path).split("/")[-1]]
 
 
 def _get_mapping_discriminator_values(
@@ -2317,23 +2331,38 @@ def _iter_discriminator_data_types(
                         active_union_models.remove(source_id)
 
 
-def _msgspec_untagged_structs(models: Iterable[object]) -> list[DataModel]:
-    """Return the distinct Struct types among the members of a union if msgspec refuses them as not all tagged."""
-    structs = {
-        id(model): model
-        for model in models
-        if isinstance(model, DataModel) and model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
-    }
-    return (
-        [*structs.values()]
-        if len(structs) > 1 and not all(struct.has_discriminator_tag for struct in structs.values())
-        else []
+_MsgspecRefusal: TypeAlias = tuple[tuple[DataModel, ...], str | None]
+_NO_MSGSPEC_REFUSAL: _MsgspecRefusal = ((), None)
+
+
+def _msgspec_refused_structs(models: Iterable[object]) -> _MsgspecRefusal:
+    """Return the distinct Struct types of a union msgspec refuses, and how their tags clash if all are tagged.
+
+    msgspec decodes a union of Struct types only if all are tagged, by one tag field, with distinct tags of one type.
+    """
+    structs = (
+        *{
+            id(model): model
+            for model in models
+            if isinstance(model, DataModel) and model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+        }.values(),
     )
+    if len(structs) < 2:  # noqa: PLR2004
+        return _NO_MSGSPEC_REFUSAL
+    if len(tags := [tag for struct in structs if (tag := struct.discriminator_tag) is not None]) < len(structs):
+        return structs, None
+    if len(tag_fields := [*dict.fromkeys(tag_field for tag_field, _ in tags)]) > 1:
+        return structs, f"are tagged by different fields {_format_tags(tag_fields)}"
+    if len({type(tag) for _, tag in tags}) > 1:
+        return structs, "mix int and str tags"
+    if shared := [tag for tag, count in Counter(tag for _, tag in tags).items() if count > 1]:
+        return structs, f"share the tag {_format_tags(shared)}"
+    return _NO_MSGSPEC_REFUSAL
 
 
-def _msgspec_untagged_union_structs(data_types: Iterable[DataType]) -> list[DataModel]:
-    """Return the untagged Struct types of a union, through the aliases it names."""
-    return _msgspec_untagged_structs(
+def _msgspec_refused_member_structs(data_types: Iterable[DataType]) -> _MsgspecRefusal:
+    """Return the refused Struct types of a union, through the aliases it names."""
+    return _msgspec_refused_structs(
         member.reference.source for member, _, _ in _iter_discriminator_data_types(data_types) if member.reference
     )
 
@@ -2352,28 +2381,32 @@ def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
             yield source.fields[0].data_type
 
 
-def _msgspec_refused_union_structs(data_type: DataType) -> list[DataModel]:
+def _msgspec_refused_union_structs(data_type: DataType) -> _MsgspecRefusal:
     """Return the Struct types of a union msgspec refuses, unless an alias it names is refused on its own."""
     if (
         not data_type.is_union
         or _is_discriminator_container(data_type)
-        or not (structs := _msgspec_untagged_union_structs(data_type.data_types))
-        or any(_msgspec_untagged_union_structs((root,)) for root in _iter_union_alias_roots(data_type))
+        or not (refusal := _msgspec_refused_member_structs(data_type.data_types))[0]
+        or any(_msgspec_refused_member_structs((root,))[0] for root in _iter_union_alias_roots(data_type))
     ):
-        return []
-    return structs
+        return _NO_MSGSPEC_REFUSAL
+    return refusal
 
 
-def _msgspec_union_message(name: str, structs: list[DataModel], *, discriminated: bool) -> str:
+def _msgspec_union_message(name: str, refusal: _MsgspecRefusal, *, discriminated: bool) -> str:
     """Describe a union of Struct types that msgspec refuses to decode."""
+    structs, clash = refusal
     names = ", ".join(struct.class_name for struct in structs)
+    union = f"the discriminated union {name}" if discriminated else f"the union {name}"
+    if clash is not None:
+        return f"msgspec cannot decode {union}: its Struct types {names} {clash}."
     if discriminated:
         return (
-            f"msgspec cannot decode the discriminated union {name}: its Struct types {names} are not all tagged. "
+            f"msgspec cannot decode {union}: its Struct types {names} are not all tagged. "
             "Pass --use-msgspec-tagged-unions to tag them."
         )
     return (
-        f"msgspec cannot decode the union {name}: its Struct types {names} are not all tagged, and only the "
+        f"msgspec cannot decode {union}: its Struct types {names} are not all tagged, and only the "
         "variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
     )
 
@@ -5035,7 +5068,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 recorded.others.setdefault(recorded.owner, recorded.kept)
                 recorded.kept, recorded.owner = values, union_name
                 recorded.others = {union: tags for union, tags in recorded.others.items() if set(tags) != kept}
-            elif set(tags := _get_union_discriminator_values(variant, mapping)) != kept:
+            elif (
+                set(
+                    tags := _get_union_discriminator_values(
+                        variant, field_name, mapping, field_name_mode=field_name_mode
+                    )
+                )
+                != kept
+            ):
                 recorded.others.setdefault(union_name, tags)
             return
         if _find_discriminator_value(variant.fields, field_name, field_name_mode=field_name_mode) is None:
@@ -5072,18 +5112,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     warn(message, stacklevel=2)
                 continue
             if isinstance(model, _DataTypeUnionBase):
-                if structs := _msgspec_untagged_structs(named.get(field.name) for field in model.fields):
-                    warn(_msgspec_union_message(model.class_name, structs, discriminated=False), stacklevel=2)
+                if (refusal := _msgspec_refused_structs(named.get(field.name) for field in model.fields))[0]:
+                    warn(_msgspec_union_message(model.class_name, refusal, discriminated=False), stacklevel=2)
                 continue
             for field in model.fields:
-                discriminated = bool(field.extras.get("discriminator"))
-                if field.is_class_var or (discriminated and self.use_msgspec_tagged_unions):
+                if field.is_class_var:
                     continue
-                if structs := next(
-                    filter(None, map(_msgspec_refused_union_structs, reversed([*field.data_type.all_data_types]))), []
-                ):
+                discriminated = bool(field.extras.get("discriminator"))
+                refusal = next(
+                    filter(
+                        operator.itemgetter(0),
+                        map(_msgspec_refused_union_structs, reversed([*field.data_type.all_data_types])),
+                    ),
+                    _NO_MSGSPEC_REFUSAL,
+                )
+                if refusal[0] and (refusal[1] is not None or not (discriminated and self.use_msgspec_tagged_unions)):
                     name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
-                    warn(_msgspec_union_message(name, structs, discriminated=discriminated), stacklevel=2)
+                    warn(_msgspec_union_message(name, refusal, discriminated=discriminated), stacklevel=2)
 
     def _apply_inherited_field_default(
         self,
