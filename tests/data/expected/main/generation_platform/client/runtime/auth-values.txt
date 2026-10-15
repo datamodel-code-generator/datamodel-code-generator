@@ -113,6 +113,11 @@ refusals
   header line break ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]
   cookie separator ! ConfigurationError reason=invalid_value field_path=('cookie_key',) cause=NoneType leaked=[]
   non-ascii header ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]
+  header surrounding space ! ConfigurationError reason=invalid_value field_path=('header_key',) cause=NoneType leaked=[]
+  bearer without a token ! ConfigurationError reason=invalid_value field_path=('bearer',) cause=NoneType leaked=[]
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: key-secret	v2] b''
+  header inner tab = sent
 async
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token-secret-1] b''

@@ -168,9 +168,14 @@ def _refusals(package: ModuleType, exchange: Exchange, lines: list[str]) -> None
             ("header line break", {"header_key": "key-secret\r\nX-Injected: 1"}, "api_key_header"),
             ("cookie separator", {"cookie_key": "cookie-secret; admin=1"}, "api_key_cookie"),
             ("non-ascii header", {"header_key": "key-secreté"}, "api_key_header"),
+            ("header surrounding space", {"header_key": "key-secret "}, "api_key_header"),
+            ("bearer without a token", {"bearer": ""}, "bearer"),
         ):
             with package.Client(http_client=http, **credentials) as api:
                 _failure(lines, label, getattr(api.auth, call))
+        with package.Client(http_client=http, header_key="key-secret\tv2") as api:
+            exchange.respond(_OK)
+            _failure(lines, "header inner tab", api.auth.api_key_header)
 
 
 async def _async_values(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
