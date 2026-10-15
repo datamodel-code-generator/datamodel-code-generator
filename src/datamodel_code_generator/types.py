@@ -89,6 +89,7 @@ _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
 _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
 _REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
+_LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
 
 
 class DefaultValueRecipe(Enum):
@@ -769,7 +770,8 @@ class DataType(_BaseModel):
         use_standard_collections = self.use_standard_collections
         yield (self.is_optional and not self.use_union_operator, IMPORT_OPTIONAL)
         yield (len(self.data_types) > 1 and not self.use_union_operator, IMPORT_UNION)
-        yield ((bool(self.literals) or bool(self.enum_member_literals)) and not self.alias, IMPORT_LITERAL)
+        has_literal = (bool(self.literals) or bool(self.enum_member_literals)) and not self.alias
+        yield (has_literal, self._literal_import if has_literal else IMPORT_LITERAL)
         yield (bool(self.discriminator), IMPORT_ANNOTATED)
         yield (self.is_frozen_set and not use_standard_collections, IMPORT_FROZEN_SET)
         yield (self.is_mapping and use_standard_collections, IMPORT_ABC_MAPPING)
@@ -803,6 +805,21 @@ class DataType(_BaseModel):
             self.__dict__[_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY] = imports
             return
         self.__dict__.pop(_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY, None)
+
+    @property
+    def _literal_import(self) -> Import:
+        """Return the import that ``Literal`` is written through."""
+        return self.__dict__.get(_LITERAL_IMPORT_DATA_TYPE_KEY, IMPORT_LITERAL)
+
+    @property
+    def _literal_name(self) -> str:
+        """Return the name that ``Literal`` is written as."""
+        import_ = self.__dict__.get(_LITERAL_IMPORT_DATA_TYPE_KEY)
+        return LITERAL if import_ is None else import_.binding_name
+
+    def _set_literal_import(self, import_: Import) -> None:
+        """Write ``Literal`` through an import bound under another name, as when a model of the module holds it."""
+        self.__dict__[_LITERAL_IMPORT_DATA_TYPE_KEY] = import_
 
     @property
     def _is_quoted_reference(self) -> bool:
@@ -943,9 +960,9 @@ class DataType(_BaseModel):
             type_ = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
         elif self.enum_member_literals:
             parts = [f"{enum_class}.{member}" for enum_class, member in self.enum_member_literals]
-            type_ = f"{LITERAL}[{', '.join(parts)}]"
+            type_ = f"{self._literal_name}[{', '.join(parts)}]"
         elif self.literals:
-            type_ = f"{LITERAL}[{', '.join(repr(literal) for literal in self.literals)}]"
+            type_ = f"{self._literal_name}[{', '.join(repr(literal) for literal in self.literals)}]"
         elif self.reference:
             type_ = self.reference.short_name
             type_ = self._get_wrapped_reference_type_hint(type_)

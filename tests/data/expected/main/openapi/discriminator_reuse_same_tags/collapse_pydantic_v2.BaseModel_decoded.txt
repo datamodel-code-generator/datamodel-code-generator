@@ -1,0 +1,6 @@
+Pet {"kind": "cat"}: Cat
+Pet {"kind": "dog"}: Dog
+Owner {"pet": {"kind": "cat"}}: Owner
+Owner {"pet": {"kind": "kitty"}}: rejected
+Pet2: not generated
+Owner2: not generated

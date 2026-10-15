@@ -1,0 +1,26 @@
+{
+  "a.Owner": [
+    {
+      "pet": {
+        "kind": "cat"
+      }
+    },
+    {
+      "pet": {
+        "kind": "kitty"
+      }
+    }
+  ],
+  "b.Owner": [
+    {
+      "pet": {
+        "kind": "kitty"
+      }
+    },
+    {
+      "pet": {
+        "kind": "cat"
+      }
+    }
+  ]
+}

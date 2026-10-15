@@ -2,12 +2,42 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "ContainsTrueDefaultMinContains",
   "type": "object",
+  "$defs": {
+    "Pair": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": true
+    },
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3
+    }
+  },
   "properties": {
     "values": {
       "type": "array",
       "items": {
         "type": "string"
       },
+      "contains": true
+    },
+    "ref_pair": {
+      "$ref": "#/$defs/Pair",
+      "type": "array",
+      "contains": {
+        "const": "a"
+      },
+      "minContains": 0,
+      "maxItems": 2
+    },
+    "ref_tags": {
+      "$ref": "#/$defs/Tags",
+      "type": "array",
       "contains": true
     }
   },

@@ -372,6 +372,24 @@
       {"check": {"exit": "DIFF", "model": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
     ]
   },
+  "encoding-errors": {
+    "input": {"path": "encoding.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"write": ["models.py", "# Kept.\n"]},
+      {"write": ["models.json", "{}\n"]},
+      {"generate": {"exit": "ERROR", "model": {"encoding": "latin-1"}}},
+      {"check": {"exit": "ERROR", "model": {"encoding": "latin-1"}}},
+      {"generate": {"exit": "ERROR", "model": {"encoding": "latin-1", "emit_model_metadata": "models.json"}}},
+      {"generate": {"exit": "ERROR", "model": {"encoding": "nosuch"}}},
+      {"generate": {"exit": "ERROR", "input": {"text": "encoding.yaml"}, "model": {"encoding": "nosuch"}}},
+      {"generate": {"exit": "ERROR", "model": {"encoding": "hex"}}},
+      {"tree": null},
+      {"leftovers": null},
+      {"show": "models.py"},
+      {"show": "models.json"}
+    ]
+  },
   "python-floor": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},

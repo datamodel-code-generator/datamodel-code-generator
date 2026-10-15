@@ -1,0 +1,26 @@
+{
+  "Cage": [
+    {
+      "pet": {
+        "kind": "Cat"
+      }
+    },
+    {
+      "pet": {
+        "kind": "Kitten"
+      }
+    },
+    {
+      "pet": {
+        "kind": "Dog"
+      }
+    }
+  ],
+  "Basket": [
+    {
+      "pet": {
+        "kind": "Kitten"
+      }
+    }
+  ]
+}
