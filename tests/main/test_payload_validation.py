@@ -22,7 +22,12 @@ from pydantic import ValidationError
 
 from datamodel_code_generator.format import PythonVersion
 from tests.conftest import assert_inputs_not_mutated, assert_output
-from tests.main.conftest import DATA_PATH, EXPECTED_MAIN_PATH, JSON_SCHEMA_DATA_PATH
+from tests.main.conftest import (
+    DATA_PATH,
+    EXPECTED_MAIN_PATH,
+    EXPERIMENTAL_MISSING_IMPORT_WARNING,
+    JSON_SCHEMA_DATA_PATH,
+)
 from tests.main.payload_validation.codegen import PayloadAdapterError, generate_payload_runtime
 from tests.main.payload_validation.schema import _schema_exclusion_reason
 
@@ -903,6 +908,7 @@ def test_payload_backend_all_case_mode_widens_runtime_validating_backends() -> N
 
 
 @pytest.mark.parametrize("case", PYDANTIC_V2_ACCEPTANCE_CASES)
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_generated_pydantic_v2_model_accepts_schema_derived_payloads(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
@@ -941,6 +947,7 @@ def test_generated_pydantic_v2_model_accepts_schema_derived_payloads(
 
 
 @pytest.mark.parametrize("case", PYDANTIC_V2_ROUND_TRIP_CASES)
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
@@ -979,6 +986,7 @@ def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
 
 
 @pytest.mark.parametrize("case", PYDANTIC_V2_REJECTION_CASES)
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 @settings(
     database=None,
     deadline=None,

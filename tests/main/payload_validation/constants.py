@@ -329,16 +329,6 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     "jsonschema/msgspec_boolean_enum_literal.json": {
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },
-    "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Cat": {
-        PayloadBackend.MSGSPEC: ("--use-msgspec-tagged-unions",),
-    },
-    **{
-        case_id: {PayloadBackend.MSGSPEC: ("--use-msgspec-nullable-enum-alias",)}
-        for case_id in (
-            "jsonschema/msgspec_enum_diagnostics/nullable.json",
-            "jsonschema/nullable_enum_literal_typed_dict.json",
-        )
-    },
 }
 ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(
@@ -591,4 +581,6 @@ PAYLOAD_TARGET_PYDANTIC_VERSION = max(
     (target.value for target in TargetPydanticVersion if installed_pydantic_runs_target(target.value)),
     key=lambda value: tuple(map(int, value.split("."))),
 )
-"""The newest target the installed Pydantic can run, so payload models execute on every pinned runtime."""
+"""The newest target the installed Pydantic can run, passed only when it cannot run the output of an unset target."""
+PAYLOAD_RUNS_UNSET_TARGET_PYDANTIC_VERSION = installed_pydantic_runs_target(None)
+"""Whether the installed Pydantic runs the output of an unset target, so payload models keep the default output."""
