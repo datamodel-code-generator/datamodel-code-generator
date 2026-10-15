@@ -55,6 +55,10 @@ paths:
           content:
             text/event-stream:
               schema: {type: string}
+        '204':
+          description: The topic has no events.
+        '202':
+          description: The topic's events are not ready yet.
         '404':
           description: The topic does not exist.
           content:
@@ -87,6 +91,8 @@ paths:
           content:
             text/event-stream; charset=utf-8:
               schema: {type: string}
+        '204':
+          description: The stream has no more events.
         '404':
           description: The stream expired.
   /rooms/{room}{shard}:

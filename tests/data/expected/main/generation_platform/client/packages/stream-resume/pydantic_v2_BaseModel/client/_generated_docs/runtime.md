@@ -93,7 +93,8 @@ cleanup failures are notes of the primary failure, and native cancellation propa
 ## SSE or NDJSON streams
 
 An SSE or NDJSON helper's `open` is one session holding one logical call. The call's total timeout bounds only
-acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+acquiring the response, which must be a declared success of the helper's media type, or a 204 its
+operation declares without a body, which ends the stream with no events. Native read timeouts bound
 idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
 `stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
 imported from `client.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and

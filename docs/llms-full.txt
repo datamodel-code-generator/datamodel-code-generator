@@ -16282,7 +16282,10 @@ the asyncio `data()` is not awaited. Representations name no data, event ID, or 
 
 The response's status and `Content-Type` are checked before `open` returns: an error status raises the `APIStatusError`
 subclass of its status, an undeclared status `APIStatusError` with the reason `unexpected_status`, and a body of another
-media type, or none, `DecodeError` with the reason `unexpected_media_type`. Its acquisition retries like any call. A
+media type, or none, `DecodeError` with the reason `unexpected_media_type`. A `204` the operation declares without a
+body, by its own status, its range, or `default`, returns a stream that ends with no events whatever its completion, as
+an `EventSource` stops on a `204`; a reopen or `resume` answered so ends the stream too, reading no binding value or
+expiry from it, and an undeclared `204` still fails. Its acquisition retries like any call. A
 stream then reads only the bytes its next event needs and owns the response until it ends, fails, or closes: close it
 with `with`, `async with`, `close()`, or `aclose()`, since leaving a loop early releases nothing. One consumer reads a
 stream at a time: a step, or a close, while another step runs raises `ConfigurationError` with the reason

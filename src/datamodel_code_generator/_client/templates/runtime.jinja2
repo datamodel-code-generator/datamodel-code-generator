@@ -319,7 +319,8 @@ writes.
 ## {{ streams.label }} streams
 
 An {{ streams.label }} helper's `open` is one session holding one logical call. The call's total timeout bounds only
-acquiring the response, which must be a declared success of the helper's media type. Native read timeouts bound
+acquiring the response, which must be a declared success of the helper's media type{% if streams.no_content %}, or a 204 its
+operation declares without a body, which ends the stream with no events{% endif %}. Native read timeouts bound
 idle I/O; an optional session total timeout is checked before the next step. Each limit comes from the call's
 `stream_options`, then the client's `helper_defaults` for the helper, then the default below. The stream types are
 imported from `{{ package }}.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and

@@ -406,18 +406,29 @@ def _limits(harness: _Harness, api: Any, feed: _Feed) -> None:
 
 
 def _opens(harness: _Harness, api: Any, feed: _Feed) -> None:
-    """Return a stream only for a declared success of the event stream media, retrying its acquisition."""
+    """Return a stream only for a declared success of the event stream media, retrying its acquisition.
+
+    A declared 204 returns a stream that ends with no events, whatever the helper's completion; an undeclared one fails.
+    """
     lines, helper, options = harness.lines, api.protocols.events.messages, harness.options
     feed.replies.extend((
         harness.reply((b'{"detail": "missing"}',), status=404, media="application/json"),
-        harness.reply((), status=204, media=None),
         harness.reply((b"data: {}\n\n",), status=201),
         harness.reply((b"data: {}\n\n",), media=None),
+        *(harness.reply((), status=204, media=None) for _ in range(4)),
         harness.reply((b"busy",), status=503, media="text/plain"),
         harness.reply((b'data: {"text": "retried"}\n\n',)),
     ))
-    for label in ("declared error status", "no content", "undeclared success status", "no media type"):
+    for label in ("declared error status", "undeclared success status", "no media type"):
         record(lines, label, helper.open)
+    protocols = api.protocols
+    for label, events in (
+        ("no content", protocols.events.messages),
+        ("no content before the terminal event", protocols.events.typed),
+        ("no content before the sentinel", protocols.events.tagged),
+    ):
+        _drained(lines, label, events.open())
+    record(lines, "undeclared no content", lambda: protocols.feed.all.open(body=harness.models.FeedQuery()))
     retry = options.RequestOptions(retry=options.RetryOptions(initial_delay=0, jitter="none"))
     stream = helper.open(topic=harness.topic("news"), options=retry)
     lines.append(f"  retried {stream.response.status_code} attempts={stream.response.attempt_count}")

@@ -546,11 +546,15 @@ class RuntimePagination:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeStreams:
-    """The stream helpers a runtime reference describes: their label, and whether NDJSON or resumable ones exist."""
+    """The stream helpers a runtime reference describes: their label, and whether NDJSON or resumable ones exist.
+
+    `no_content` tells whether an operation a helper opens or reopens declares a 204 without a body.
+    """
 
     label: str
     ndjson: bool
     resumed: bool
+    no_content: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -827,6 +831,16 @@ def _sent_path(path: str) -> str:
     return "".join(
         piece if index % 2 else quote(piece, safe=_PATH_SAFE) for index, piece in enumerate(_PATH_KEPT.split(path))
     )
+
+
+def _no_content(operation: OperationSpec) -> bool:
+    """Return whether a 204 selects a response of an operation without a body, which ends a stream with no events.
+
+    A 204 selects its own declaration, else its range's, else the default one, as a call's response does.
+    """
+    responses = {item.status: item for item in operation.responses if item.success}
+    selected = next((responses[key] for key in ("204", "2XX", "default") if key in responses), None)
+    return selected is not None and (selected.bodyless or not selected.media)
 
 
 def _operation_summary(spec: OperationSpec) -> dict[str, object]:
@@ -3335,6 +3349,12 @@ class ClientRenderer:
                 self.stream_label,
                 any(spec.helper.kind == "ndjson" for spec in self.streams),
                 any(spec.reopen is not None for spec in self.streams),
+                any(
+                    _no_content(operation)
+                    for spec in self.streams
+                    for operation in (spec.operation, spec.reopen)
+                    if operation is not None
+                ),
             )
             if self.streams
             else None,

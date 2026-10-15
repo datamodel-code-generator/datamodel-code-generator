@@ -32,6 +32,7 @@ from ..client.errors import (
     is_transport,
 )
 from ..client.native import _AsyncHeld, _Held  # pyright: ignore[reportPrivateUsage]
+from ..client.operations import NO_CONTENT
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held, native_request
 from ..client.timing import SYSTEM_CLOCK
@@ -857,8 +858,11 @@ class _Events(Generic[T]):
         return self._stamped(ProtocolDataError(reason="too_large", cause=error))
 
     def _ended(self) -> _End:
-        """Return the end of a response that ended the stream as declared, raising the failure of one that did not."""
-        if self._plan.completion != "eof":
+        """Return the end of a response that ended the stream as declared, raising the failure of one that did not.
+
+        A declared 204 ends its stream with no events, whatever the helper's completion.
+        """
+        if self._plan.completion != "eof" and self._info.status_code != NO_CONTENT:
             raise self._stamped(StreamInterruptedError(reason="eof", sequence=self._delivered))
         return _ENDED
 
@@ -1068,7 +1072,7 @@ class EventStream(_Events[T]):
                 raise
             refused = self._unencodable(error, reconnect.failure)
         else:
-            _accepted(response, self._reopened)
+            _accepted(response, self._reopened, None)
             self._held(response)
             self._switched(response.info)
             return
@@ -1215,7 +1219,7 @@ class AsyncEventStream(_Events[T]):
                 raise
             refused = self._unencodable(error, reconnect.failure)
         else:
-            await _aaccepted(response, self._reopened)
+            await _aaccepted(response, self._reopened, None)
             self._held(response)
             self._switched(response.info)
             return
@@ -1327,8 +1331,13 @@ async def _asent(  # noqa: PLR0913, PLR0917
     )
 
 
-def _accepted(response: RawResponse, take: Callable[[ResponseInfo], V]) -> V:
-    """Return what a stream's response gives before its events, ending the response as failed when that fails."""
+def _accepted(response: RawResponse, take: Callable[[ResponseInfo], V], empty: V) -> V:
+    """Return what a stream's response gives before its events, ending the response as failed when that fails.
+
+    A declared 204 gives `empty`: its stream ends with no events, so nothing is read for a later reopen.
+    """
+    if response.info.status_code == NO_CONTENT:
+        return empty
     try:
         return take(response.info)
     except BaseException as error:
@@ -1336,8 +1345,10 @@ def _accepted(response: RawResponse, take: Callable[[ResponseInfo], V]) -> V:
         raise
 
 
-async def _aaccepted(response: AsyncRawResponse, take: Callable[[ResponseInfo], V]) -> V:
+async def _aaccepted(response: AsyncRawResponse, take: Callable[[ResponseInfo], V], empty: V) -> V:
     """Return what an asyncio stream's response gives before its events, as `_accepted` does."""
+    if response.info.status_code == NO_CONTENT:
+        return empty
     try:
         return take(response.info)
     except BaseException as error:
@@ -1414,7 +1425,7 @@ def open_events(  # noqa: PLR0913
     position = (
         _START
         if (resume := plan.resume) is None
-        else _accepted(response, partial(_opened, plan, resume, given, limits.clock))
+        else _accepted(response, partial(_opened, plan, resume, given, limits.clock), _START)
     )
     return EventStream(core, plan, limits, session, response, position=position)
 
@@ -1437,7 +1448,7 @@ async def aopen_events(  # noqa: PLR0913
     position = (
         _START
         if (resume := plan.resume) is None
-        else await _aaccepted(response, partial(_opened, plan, resume, given, limits.clock))
+        else await _aaccepted(response, partial(_opened, plan, resume, given, limits.clock), _START)
     )
     return AsyncEventStream(core, plan, limits, session, response, position=position)
 
@@ -1464,7 +1475,7 @@ def resume_events(  # noqa: PLR0913
     request = _reopen_request(core, plan, resume, position)
     session = _session(limits)
     response = _sent(core, resume.reopened, request, limits, session, resume.media)
-    position = _accepted(response, partial(_resumed, plan, resume, position))
+    position = _accepted(response, partial(_resumed, plan, resume, position), position)
     return EventStream(core, plan, limits, session, response, position=position, reopened=True)
 
 
@@ -1485,5 +1496,5 @@ async def aresume_events(  # noqa: PLR0913
     request = _reopen_request(core, plan, resume, position)
     session = _session(limits)
     response = await _asent(core, resume.reopened, request, limits, session, resume.media)
-    position = await _aaccepted(response, partial(_resumed, plan, resume, position))
+    position = await _aaccepted(response, partial(_resumed, plan, resume, position), position)
     return AsyncEventStream(core, plan, limits, session, response, position=position, reopened=True)

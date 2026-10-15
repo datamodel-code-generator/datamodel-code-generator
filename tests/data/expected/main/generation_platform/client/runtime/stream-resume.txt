@@ -236,6 +236,25 @@ another reopen operation
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
     ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Resume-Token', occurrence='single')] missing
+  > GET https://api.example.com/events last-event-id=None
+  open answered no content
+  < closed
+    end
+  > GET https://api.example.com/events last-event-id=None
+  < closed
+  open answered a declared success without a body ! DecodeError: DecodeError(status_code=202, operation_id='streamEvents', reason='unexpected_media_type') [operation_id='streamEvents', body_bytes=b'', truncated=False] unexpected_media_type
+  > GET https://api.example.com/events last-event-id=None
+  reopen answered no content
+    1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
+  < closed
+    end
+    progress {'reconnects': 1}
+  > GET https://api.example.com/streams/s1?token=t3&mode=resume last-event-id='2'
+  resume answered no content
+  < closed
+    end
 bound path values
   > GET https://api.example.com/rooms/r0 last-event-id=None
   reopened with the shard
@@ -428,6 +447,17 @@ asyncio
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
   async resume without the token ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Resume-Token', occurrence='single')] missing
+  > GET https://api.example.com/events last-event-id=None
+  async open answered no content
+  < closed
+    end
+  > GET https://api.example.com/events last-event-id=None
+  async reopen answered no content
+    1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
+  < closed
+    end
 stepped client clock
   > GET https://api.example.com/events last-event-id=None
   1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'

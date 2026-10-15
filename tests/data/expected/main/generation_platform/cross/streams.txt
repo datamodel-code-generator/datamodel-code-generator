@@ -29,7 +29,12 @@ events.messages no events
   > GET /events?topic=none
   stream_events(topic='none', Last_Event_ID=None)
   < 204 -
-  ! DecodeError: DecodeError(status_code=204, operation_id='streamEvents', reason='unexpected_media_type') [operation_id='streamEvents', body_bytes=b'', truncated=False] unexpected_media_type
+  = []
+events.tagged no events
+  > GET /events?topic=none
+  stream_events(topic='none', Last_Event_ID=None)
+  < 204 -
+  = []
 feed.all
   > POST /feed [application/json]
   stream_feed(body=FeedQuery(topic='news'))

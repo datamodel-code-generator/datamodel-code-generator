@@ -56,7 +56,8 @@ FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
 ReadKind: TypeAlias = Literal["json", "text", "form"]
 
-BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
+NO_CONTENT: Final = 204
+BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, 304})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
@@ -657,8 +658,11 @@ class ResponseDecoder(Generic[T_co]):
         return _MIN_SUCCESS <= status <= _MAX_SUCCESS or status in self._successes
 
     def streamed(self, info: ResponseInfo) -> None:
-        """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type."""
-        if self._branch(info, b"").media_type is None:
+        """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type.
+
+        A 204 the operation declares without a body is a stream with no events.
+        """
+        if self._branch(info, b"").media_type is None and info.status_code != NO_CONTENT:
             raise response_failure(info, "unexpected_media_type", media_type=info.content_type)
 
     def decode(
