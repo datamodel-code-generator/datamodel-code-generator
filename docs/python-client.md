@@ -814,6 +814,10 @@ async iterators. Leave a streaming response's `with` block to release it, also w
 and its views also have `request_raw(method, url, ...)`, which sends a request outside the operations and returns a
 `RawResponse`.
 
+The text of `ResponseInfo.headers` is what HTTPX2 decodes, with one codec for the whole header set of the response:
+ASCII, else UTF-8 when every header is UTF-8, else Latin-1. A declared response header that a typed call reads is ASCII
+header text, whatever the codec chose; see [model codecs](python-client-reference.md#model-codecs).
+
 ## Configure the client
 
 ### Client settings

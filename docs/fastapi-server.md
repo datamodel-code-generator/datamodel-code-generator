@@ -1378,6 +1378,14 @@ its records at `["body", name]`, or at `["body", name, index]` for a member that
 is validated. A member without a type takes any value, so it keeps a part that is not JSON as it arrives instead: text
 for a field, bytes for a file.
 
+Starlette limits what it reads from a multipart form, and the generated client sends a JSON part as a field: a field
+part of more than 1 MiB (`max_part_size`) answers `400` with `Part exceeded maximum size of 1024KB.`, and so do more
+than 1000 fields or 1000 files. FastAPI's own `Form()` parameters have the same limits. Neither FastAPI nor Starlette
+has an application setting for them; only `await request.form(max_part_size=..., max_fields=..., max_files=...)` takes
+them, which a method of `--server-body-mode request` can call. A part with a filename is a file to Starlette, which
+does not limit its size. Starlette decodes a field part as UTF-8, or as the charset of the request's Content-Type, and
+as Latin-1 when that fails, so a field part that is not valid UTF-8 is accepted and read as Latin-1 text.
+
 A schema can type the properties it does not declare, with `additionalProperties: {...}`. Their parts come under any
 name no declared member has and are read by the same rule, by the type the model keeps their values as, in a field of
 its own or one it inherits from a schema combined with `allOf`: text of that type's kind, a list with one part for

@@ -849,6 +849,10 @@ array included; an array whose items have no type has one such part for each ite
 `encoding` declares takes precedence. A multipart response is read by the same rule, and a part that names a JSON
 media type is read as JSON; a part of a member without a type that names none is read as text.
 
+The client sends a JSON part as a field, without a filename, and Starlette, which the generated server and FastAPI
+use, answers `400` for a field part of more than 1 MiB. Send such a value as a `FilePart` with a filename, which
+Starlette does not limit by size, or read the form in your own server code with a larger `max_part_size`.
+
 The properties a schema types without declaring them, with `additionalProperties: {...}`, follow the same rule under
 whatever names a body gives them, by the type of their values: an object is one `application/json` part, an array of
 objects one for each item, and a union of an array and another type one part. The type is the one the model keeps
@@ -891,9 +895,11 @@ Calls are sent through the native client with `send(request, stream=True)`: its 
 setting, framing, and content decoding are effective. `follow_redirects` of the client, a view, or a call's
 `RequestOptions` is the native boolean for that call; unset, an SDK-created client follows no redirect and an injected
 one keeps its own. HTTPX2 follows redirects itself, with its method rewriting, its `max_redirects` limit
-(`TooManyRedirects` raises `APIConnectionError`), and its header rules: it drops `Cookie` on every redirect and
-`Authorization` across origins. Every hop consumes the same call deadline, and a failure after a redirect was answered
-is never sent again.
+(`TooManyRedirects` raises `APIConnectionError`), and its header rules: on every redirect it replaces the `Cookie`
+header of the request, a cookie parameter included, with the cookies of the client's cookie jar that match the hop, such
+as one a `Set-Cookie` response header set earlier, and it drops `Authorization` across origins. The request of the
+first hop carries no jar cookie, because the SDK builds it itself. Every hop consumes the same call deadline, and a
+failure after a redirect was answered is never sent again.
 
 In a package that declares security schemes, a request carrying a credential at a scheme's position other than
 `Authorization` (an API key in a header, query field, or cookie, however the request came to carry it) is never
