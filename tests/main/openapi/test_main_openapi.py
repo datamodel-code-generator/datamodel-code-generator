@@ -886,6 +886,7 @@ def test_main_openapi_discriminator_variant_tag_warnings(
             ["--collapse-reuse-models", "--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"],
         ),
         ("discriminator_collapsed_union_tags", "collapse_pydantic_v2.BaseModel", ["--collapse-reuse-models"]),
+        ("discriminator_reuse_same_tags", "collapse_pydantic_v2.BaseModel", ["--collapse-reuse-models"]),
         ("discriminator_shared_variant_tags", "reuse_pydantic_v2.BaseModel", []),
         (
             "discriminator_shared_variant_tags",
@@ -902,7 +903,7 @@ def test_main_openapi_discriminator_reuse_variant_mapping(
     Reuse keeps apart discriminated unions whose discriminators name another property or map other tags, so each
     keeps its own discriminator; a variant they map to different tags keeps one union's tags, with a warning. So does
     a variant that unions without a mapping tag by schema name when collapsed reuse merges it and the union of a
-    collapsed duplicate names it.
+    collapsed duplicate names it. Unions that map the same tags to variants that collapse still collapse.
     """
     import msgspec
 
@@ -952,13 +953,13 @@ def test_main_openapi_discriminator_reuse_variant_mapping(
     assert_output("".join(decoded), EXPECTED_OPENAPI_PATH / name / f"{expected_name}_decoded.txt")
 
 
-def test_main_openapi_discriminator_reuse_tree_mappings(output_dir: Path) -> None:
-    """Keep apart wrappers in other modules whose unions map their variants to other tags, at runtime too.
+@pytest.mark.parametrize("name", ["discriminator_reuse_tree_mappings", "discriminator_reuse_tree_same_tags"])
+def test_main_openapi_discriminator_reuse_tree_mappings(output_dir: Path, name: str) -> None:
+    """Share wrappers of other modules only when their unions give their variants the same tags, at runtime too.
 
-    The wrappers render alike and reference unions that render alike, so tree-scope reuse compares the
-    discriminators of the unions they reference as well.
+    The wrappers render alike and reference unions that render alike, so tree-scope reuse compares the tags the
+    discriminators of the unions they reference give each variant as well, whatever schemas their mappings name.
     """
-    name = "discriminator_reuse_tree_mappings"
     expected = EXPECTED_OPENAPI_PATH / name
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
@@ -989,6 +990,41 @@ def test_main_openapi_discriminator_reuse_tree_mappings(output_dir: Path) -> Non
                     result = "rejected"
                 decoded.append(f"{path} {json.dumps(payload)}: {result}\n")
     assert_output("".join(decoded), expected.with_name(f"{name}_decoded.txt"))
+
+
+def test_main_openapi_discriminator_same_name_documents(output_file: Path) -> None:
+    """Merge a model with the model of the same name in another document whatever tags their unions map.
+
+    Only reuse tells discriminated unions apart by their tags, so the holder that another document names merges
+    into the holder of the same name, as released, and decodes the tags that holder maps.
+    """
+    name = "discriminator_same_name_documents"
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / name / "main.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / f"{name}.py",
+            extra_args=["--disable-timestamp", "--formatters", "builtin", "--target-python-version", "3.10"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_OPENAPI_PATH / f"{name}_warnings.txt",
+    )
+    decoded = []
+    for model_name, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+        with _generated_model(output_file, name, model_name) as model:
+            validate = _model_json_validator(model)
+            for payload in payloads:
+                try:
+                    result = repr(validate(json.dumps(payload)))
+                except pydantic.ValidationError:
+                    result = "rejected"
+                decoded.append(f"{model_name} {json.dumps(payload)}: {result}\n")
+    assert_output("".join(decoded), EXPECTED_OPENAPI_PATH / f"{name}_decoded.txt")
 
 
 def test_main_openapi_msgspec_union_tag_clashes(output_file: Path) -> None:
