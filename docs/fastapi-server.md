@@ -848,7 +848,10 @@ A `format: binary` string is raw bytes, which only a whole body, such as `applic
 binary string travels as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one
 does. The model type decides: the schema is such a string, or reaches one through a `$ref`, a single `allOf`, `anyOf` or
 `oneOf` branch, or `allOf` branches that merge into one, such as `allOf: [{type: string}, {format: binary}]`, also
-beside a `null`, a length limit or other binary strings. An `enum` or a `const` of binary strings is text in the models,
+beside a `null`, a length limit or other binary strings. The method takes and returns such a body as `bytes`, which its
+model validates when it constrains them, such as `maxLength: 16` as `conbytes(max_length=16)`: a request body the model
+refuses answers `422`, and a response body it refuses is not sent, as for any other body. Bytes the model leaves
+unconstrained pass as they are, without a model call. An `enum` or a `const` of binary strings is text in the models,
 so a body of one, also an `application/octet-stream` one, is read and sent as text by its model, such as an `Enum`.
 Generation stops with an error that names the operation, the media or parameter, and where the schema declares the
 string, when a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be

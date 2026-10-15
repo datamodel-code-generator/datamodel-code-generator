@@ -2061,11 +2061,11 @@ class _Registry(_Typing):
             form.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.members)))
             if media.extra is not None:
                 form.append(("additional=", self.sent_plan(module, media.extra)))
-        elif kind != "binary" and media.use is not None and media.use.id in self.accessors:
-            entries.append(("codec=", self.codec(module, media.use)))
+        elif (use := media.use) is not None and use.id in self.accessors and (kind != "binary" or use.checked):
+            entries.append(("codec=", self.codec(module, use)))
             if kind == "multipart":
                 form.extend((("members=", "True"), *self.multipart_members(module, media)))
-            else:
+            elif kind != "binary":
                 entries.extend(self.form(module, media))
         if kind == "multipart":
             entries.append(("form=", _call(module.local("_runtime.client.multipart", "MultipartForm"), form)))
@@ -2135,7 +2135,10 @@ class _Registry(_Typing):
         for media in response.media:
             media_type = repr(media.media_type)
             if media.kind == "binary":
-                branches.append(f"{module.local(_RUNTIME, 'binary_branch')}({status}, {media_type})")
+                checked = () if (use := media.use) is None or not use.checked else (("", self.codec(module, use)),)
+                branches.append(
+                    _call(module.local(_RUNTIME, "binary_branch"), (("", status), ("", media_type), *checked))
+                )
             elif media.members is not None:
                 branches.append(self.parts_branch(module, status, media))
             elif media.use is None or media.use.id not in self.accessors:

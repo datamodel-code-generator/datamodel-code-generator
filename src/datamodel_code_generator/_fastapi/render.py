@@ -1254,8 +1254,8 @@ def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
             entries.append(f"kind={media.kind!r}")
         if (encoding := charset(media.media_type)) != "utf-8":
             entries.append(f"charset={encoding!r}")
-        if media.kind != "binary" and media.use is not None and media.use.type is not None:
-            entries.append(f"model={module.annotation(media.use.type)}")
+        if (value := _checked(media)) is not None:
+            entries.append(f"model={module.annotation(value)}")
         if media.extras:
             entries.append(f"dump={module.local(_EXTRAS_MODULE, 'extras_json')}")
         if null:
@@ -1298,6 +1298,13 @@ def _native(module: Module, name: str, field: NativeField) -> Parameter:
         default = _default_value(module, field.default) or ""
     declaration = f"{module.name('fastapi', field.api)}({', '.join(keywords)})"
     return Parameter(name, f"{module.name('typing', 'Annotated')}[{', '.join((*parts, declaration))}]", default)
+
+
+def _checked(media: MediaSpec) -> TypeView | None:
+    """Return the model type that validates a media's body: any but raw bytes the models leave unconstrained."""
+    if (use := media.use) is None or (media.kind == "binary" and not use.checked):
+        return None
+    return use.type
 
 
 def _payload(media: MediaSpec) -> TypeView | None:
@@ -1402,8 +1409,8 @@ def _body_media(module: Module, body: BodySpec) -> str:
     media: list[str] = []
     for item in body.media:
         entries = [f"media_type={item.media_type!r}", f"kind={_request_kind(item)!r}"]
-        if item.kind != "binary" and item.use is not None and item.use.type is not None:
-            entries.append(f"adapter={_adapter(module, item.use.type)}")
+        if (value := _checked(item)) is not None:
+            entries.append(f"adapter={_adapter(module, value)}")
         if fields := item.fields:
             entries.append(f"fields={_tuple([field_plan(module.local, plan) for plan in fields])}")
         if parts := item.json_parts:

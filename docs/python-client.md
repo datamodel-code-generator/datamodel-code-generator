@@ -682,8 +682,13 @@ A `format: binary` string is raw bytes, which only a whole body, such as `applic
 binary string travels as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one
 does; the method takes such a body or part as `bytes`. The model type decides: the schema is such a string, or reaches
 one through a `$ref`, a single `allOf`, `anyOf` or `oneOf` branch, or `allOf` branches that merge into one, such as
-`allOf: [{type: string}, {format: binary}]`, also beside a `null`, a length limit or other binary strings. An `enum` or
-a `const` of binary strings is text in the models, so the method takes a body of one, also an
+`allOf: [{type: string}, {format: binary}]`, also beside a `null`, a length limit or other binary strings. When the models
+constrain those bytes, such as `maxLength: 16` as Pydantic's `conbytes(max_length=16)`, the client checks them by the
+model: a `bytes` body the model refuses raises a `DecodeError` with the reason `unencodable` before anything is sent,
+and a response body it refuses one with the reason `invalid_value`; a file, a path or an iterable is sent as it streams,
+for the server to check. Models that keep no such constraint, such as dataclasses and TypedDicts, check nothing, and
+unconstrained bytes pass without a model call. An `enum` or a `const` of binary strings is text in the models, so the
+method takes a body of one, also an
 `application/octet-stream` one, as its model, such as an `Enum`, and sends its text. Generation stops with an error when
 a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
 inside a JSON or URL-encoded body or response, also one whose model types its whole value as bytes, a `text/*` body

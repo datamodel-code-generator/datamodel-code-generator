@@ -83,7 +83,7 @@ from datamodel_code_generator._target_naming import TargetNames, path_placeholde
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
-from datamodel_code_generator.model.base import UNDEFINED, DataModel, DataModelFieldBase
+from datamodel_code_generator.model.base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
@@ -232,6 +232,7 @@ _CONTAINERS: Final = {
 }
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
 _WRAPPED: Final = frozenset({"alias", "root"})
+_UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
 _ALONE: Final[dict[str, object]] = {
     **dict.fromkeys(_CONTAINERS.values(), False),
     "is_optional": False,
@@ -1223,6 +1224,10 @@ class _Binder:
 
     def root(self, model: DataModel) -> DataType | None:
         """Return the type an alias or root model stands for: its field's, or that of the model its reuse inherits."""
+        return None if (field := self.root_field(model)) is None else field.data_type
+
+    def root_field(self, model: DataModel) -> DataModelFieldBase | None:
+        """Return the field of an alias or root model, or that of the model its reuse inherits."""
         while (
             not model.fields
             and len(model.base_classes) == 1
@@ -1230,7 +1235,16 @@ class _Binder:
             and (final := self.final(base)) is not None
         ):
             model = _source(final)
-        return model.fields[0].data_type if len(model.fields) == 1 else None
+        return model.fields[0] if len(model.fields) == 1 else None
+
+    def constrains(self, model: DataModel) -> bool:
+        """Return whether an alias or root model's field constrains its value, as the models that validate one do."""
+        return (
+            self.policies[id(model)].backend not in _UNCHECKED
+            and (field := self.root_field(model)) is not None
+            and isinstance(constraints := field.constraints, ConstraintsBase)
+            and constraints.has_constraints
+        )
 
     def projector(self, direction: Direction, *, inline: bool = False) -> _Projector:
         if (projector := self.projectors.get((direction, inline))) is None:
@@ -1449,7 +1463,8 @@ class _Hints:
 class _Projector:
     """Project final DataTypes of one direction into type views, each spelled as the model spells it.
 
-    An inlining projector reads each alias and root model as the type it stands for, as an argument takes it.
+    An inlining projector reads each alias and root model as the type it stands for, as an argument takes it, and
+    `constrained` says whether one of those models it read since it was last cleared constrains that type in its field.
     """
 
     def __init__(self, binder: _Binder, direction: Direction, *, inline: bool = False) -> None:
@@ -1459,6 +1474,7 @@ class _Projector:
         self.inline = inline
         self.inlined: set[SymbolId] = set()
         self.projected: dict[int, tuple[DataType, TypeView]] = {}
+        self.constrained = False
 
     def project(self, data_type: DataType) -> TypeProjection:
         try:
@@ -1537,6 +1553,7 @@ class _Projector:
             and (root := binder.root(model)) is not None
         ):
             self.inlined.add(symbol)
+            self.constrained = self.constrained or binder.constrains(model)
             try:
                 return self._project(root)
             finally:
@@ -3532,9 +3549,10 @@ class _Contracts(_SchemaUses):
 
         A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
         text encoding of its schema. A body's models decide how it travels: a text or binary media carries it as the
-        raw body when they type its whole value as raw binary strings alone, none written as base64. A binary media
-        whose schema is written as one binary string they type otherwise carries text read by the model, and any
-        other body whose whole value they type as raw bytes in part carries them as text, which is refused.
+        raw body when they type its whole value as raw binary strings alone, none written as base64, checked by the
+        model when they constrain those strings. A binary media whose schema is written as one binary string they type
+        otherwise carries text read by the model, and any other body whose whole value they type as raw bytes in part
+        carries them as text, which is refused.
         """
         multipart = media.strip().lower().startswith("multipart/")
         record = self.record(schema)
@@ -3543,7 +3561,7 @@ class _Contracts(_SchemaUses):
             binding = self.uses[use]
             if record.form is not None and (held := self.held(binding.type)) is not None:
                 binding = replace(binding, members=self.members_at(held, record.form, use.direction))
-            raw = self.raw(schema, use.direction) if record.string and not record.base64 else ()
+            raw, constrained = self.raw(schema, use.direction) if record.string and not record.base64 else ((), False)
             octets = kind in _RAW_MEDIA and bool(raw) and all(raw)
             partly = not octets and any(raw) and (kind != "binary" or record.spelled)
             self.uses[use] = replace(
@@ -3554,6 +3572,7 @@ class _Contracts(_SchemaUses):
                 encoding=record.encoding,
                 binary=None if octets else record.binary or (use.schema_site if partly else None),
                 octets=octets,
+                checked=octets and constrained,
                 text=kind == "binary" and record.spelled and not (octets or partly),
             )
         return uses
@@ -3564,19 +3583,21 @@ class _Contracts(_SchemaUses):
         binary = self.parser.data_type_manager.get_data_type(Types.binary)
         return self.binder.projector("neutral", inline=True).project(binary).value
 
-    def raw(self, schema: _Declaration, direction: Direction) -> tuple[bool, ...]:
+    def raw(self, schema: _Declaration, direction: Direction) -> tuple[tuple[bool, ...], bool]:
         """Return whether each type the models type a schema's whole value as, null aside, is a raw binary string.
 
         Each alias and root model is read as the type it stands for, as the schema's wrappers leave it, and a string
         may be constrained; a backend that keeps the constraints of a string in its type holds two such strings where
-        another holds one.
+        another holds one. Also return whether the models constrain the value, in a type or in a wrapper's field.
         """
+        projector = self.binder.projector(direction, inline=True)
+        projector.constrained = False
         value = self.projection(schema, "value", direction, inline=True).value
+        members = [member for member in (() if value is None else _members(value)) if not isinstance(member, NoneType)]
         return tuple(
             member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
-            for member in (() if value is None else _members(value))
-            if not isinstance(member, NoneType)
-        )
+            for member in members
+        ), projector.constrained or any(isinstance(member, ConstructorType) for member in members)
 
     def media(  # noqa: PLR0913
         self,

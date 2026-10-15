@@ -20,11 +20,17 @@ codec_1: Final[PydanticDataclassCodec[models.Mark]] = PydanticDataclassCodec(mod
 codec_2: Final[PydanticDataclassCodec[models.Mark]] = PydanticDataclassCodec(models.Mark)
 """Codec of /paths/~1marks/post response_body (response 200 application/octet-stream)."""
 
-codec_3: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
-"""Codec of /paths/~1records/post request_body (request application/json)."""
+codec_3: Final[PydanticDataclassCodec[models.StampsPostRequest]] = PydanticDataclassCodec(models.StampsPostRequest)
+"""Codec of /paths/~1stamps/post request_body (request application/octet-stream)."""
 
-codec_4: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
-"""Codec of /paths/~1records/post response_body (response 200 application/json)."""
+codec_4: Final[PydanticDataclassCodec[models.StampsPostResponse]] = PydanticDataclassCodec(models.StampsPostResponse)
+"""Codec of /paths/~1stamps/post response_body (response 200 application/octet-stream)."""
 
 codec_5: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
+"""Codec of /paths/~1records/post request_body (request application/json)."""
+
+codec_6: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
+"""Codec of /paths/~1records/post response_body (response 200 application/json)."""
+
+codec_7: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
 """Codec of /paths/~1uploads/post request_body (request record multipart/form-data)."""

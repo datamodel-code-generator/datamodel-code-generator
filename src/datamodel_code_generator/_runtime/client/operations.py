@@ -228,7 +228,8 @@ class FieldArguments:
 class BodyMedia:
     """One declared request media type and how an argument becomes its bytes.
 
-    A form-data body is written by the package's form encoder, from a call's parts or an object's members.
+    A form-data body is written by the package's form encoder, from a call's parts or an object's members. A binary
+    body has a codec only when its models constrain its bytes.
     """
 
     media_type: str
@@ -242,7 +243,8 @@ class BodyMedia:
     def encode(self, value: object, sent: str) -> object:
         """Encode one body argument for the media type sent, or raise the codec or media failure.
 
-        Text takes the charset the sent media type names; a binary body is sent as it is given.
+        Text takes the charset the sent media type names; a binary body is sent as it is given, its bytes checked by
+        its model first when the models constrain them, while a file, a path or an iterable is sent as it streams.
         """
         match self.kind:
             case "json":
@@ -257,6 +259,8 @@ class BodyMedia:
                 return encode_form(self.dump(value), self.fields, self.additional, styled)
             case "form":
                 return _form_data(value)
+            case "binary" if self.codec is not None and isinstance(value, bytes):
+                self.codec.convert(value)
             case _:
                 pass
         return value
@@ -508,6 +512,23 @@ class _Model(Generic[T_co]):
         return value, _json(body, info) if self.read is None else None
 
 
+class _Checked:
+    """Return a body as it came once its model codec accepts its bytes."""
+
+    __slots__ = ("codec",)
+
+    def __init__(self, codec: InboundModelCodec[object]) -> None:
+        self.codec = codec
+
+    def __call__(self, body: bytes, _: ResponseInfo) -> bytes:
+        codec = self.codec
+        try:
+            codec.text(body)
+        except codec.errors as error:
+            raise BodyValueError(error) from None
+        return body
+
+
 def _form_object(fields: tuple[FieldPlan, ...], additional: FieldPlan | None, body: bytes, _: ResponseInfo) -> object:
     return _parsed(partial(decode_form, fields=fields, additional=additional), body)
 
@@ -549,9 +570,9 @@ def form_branch(status: str, media_type: str) -> Branch[FormData]:
     return Branch(status, media_type, _pairs)
 
 
-def binary_branch(status: str, media_type: str) -> Branch[bytes]:
-    """Return a branch whose value is the body itself."""
-    return Branch(status, media_type, _bytes)
+def binary_branch(status: str, media_type: str, codec: InboundModelCodec[object] | None = None) -> Branch[bytes]:
+    """Return a branch whose value is the body itself, checked by its model codec when the models constrain it."""
+    return Branch(status, media_type, _bytes if codec is None else _Checked(codec))
 
 
 def empty_branch(status: str) -> Branch[None]:

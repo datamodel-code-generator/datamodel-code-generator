@@ -22,6 +22,7 @@ from ...types.default import (
     StoreFileResponse,
     StoreMarkResponse,
     StoreRecordResponse,
+    StoreStampResponse,
     UploadResponse,
 )
 
@@ -107,6 +108,26 @@ class DefaultResource:
             response_media_type=response_media_type,
         ).data
 
+    def store_stamp(
+        self,
+        *,
+        body: SyncBinaryBody,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> StoreStampResponse:
+        """
+        Call POST /stamps.
+        """
+        return self._core.execute(
+            _operations.OPERATION_3,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        ).data
+
     def store_record(
         self,
         *,
@@ -119,7 +140,7 @@ class DefaultResource:
         Call POST /records.
         """
         return self._core.execute(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
@@ -194,6 +215,26 @@ class DefaultWithResponse:
             response_media_type=response_media_type,
         )
 
+    def store_stamp(
+        self,
+        *,
+        body: SyncBinaryBody,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreStampResponse]:
+        """
+        Call POST /stamps.
+        """
+        return self._core.execute(
+            _operations.OPERATION_3,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def store_record(
         self,
         *,
@@ -206,7 +247,7 @@ class DefaultWithResponse:
         Call POST /records.
         """
         return self._core.execute(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
@@ -281,6 +322,26 @@ class DefaultWithRawResponse:
             response_media_type=response_media_type,
         )
 
+    def store_stamp(
+        self,
+        *,
+        body: SyncBinaryBody,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """
+        Call POST /stamps.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_3,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def store_record(
         self,
         *,
@@ -293,7 +354,7 @@ class DefaultWithRawResponse:
         Call POST /records.
         """
         return self._core.execute_raw(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
@@ -368,6 +429,26 @@ class DefaultWithStreamingResponse:
             response_media_type=response_media_type,
         )
 
+    def store_stamp(
+        self,
+        *,
+        body: SyncBinaryBody,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """
+        Call POST /stamps.
+        """
+        return self._core.stream(
+            _operations.OPERATION_3,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def store_record(
         self,
         *,
@@ -380,7 +461,7 @@ class DefaultWithStreamingResponse:
         Call POST /records.
         """
         return self._core.stream(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,

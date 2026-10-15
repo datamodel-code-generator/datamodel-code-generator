@@ -1391,23 +1391,20 @@ def part_uses(plan: ClientPlan) -> Iterator[TypeUseBinding]:
         yield from (part.use for item in media for part in member_parts(item) if part.use is not None)
 
 
+def _coded(media: MediaSpec) -> bool:
+    """Return whether a body's codec reads or writes it: any but raw bytes the models leave unconstrained, or parts."""
+    return media.members is None and (media.kind != "binary" or (media.use is not None and media.use.checked))
+
+
 def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
     """Yield every type use whose codec the client binds: parameters, bodies or their parts, responses, and headers."""
     for spec in plan.operations:
         yield from (parameter.use.id for parameter in spec.parameters if parameter.use is not None)
         if spec.body is not None:
-            yield from (
-                media.use.id
-                for media in spec.body.media
-                if media.use is not None and media.kind != "binary" and media.members is None
-            )
+            yield from (media.use.id for media in spec.body.media if media.use is not None and _coded(media))
         for response in spec.responses:
             if not response.bodyless:
-                yield from (
-                    media.use.id
-                    for media in response.media
-                    if media.use is not None and media.kind != "binary" and media.members is None
-                )
+                yield from (media.use.id for media in response.media if media.use is not None and _coded(media))
             yield from (header.use.id for header in response.headers if header.use is not None)
     yield from (use.id for use in part_uses(plan))
 
