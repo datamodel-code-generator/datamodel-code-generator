@@ -51,6 +51,7 @@ from tests.api_generation.scenarios.client_pagination import pagination, paginat
 from tests.api_generation.scenarios.client_pagination_count_values import (
     pagination_count_defaults,
     pagination_count_values,
+    pagination_exact_totals,
 )
 from tests.api_generation.scenarios.client_pagination_counts import pagination_counts
 from tests.api_generation.scenarios.client_pagination_links import pagination_links
@@ -925,6 +926,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
     "pagination-count-values": ("pagination-counts", ALL_BUT_MSGSPEC, pagination_count_values),
     "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
+    "pagination-exact-totals": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_exact_totals),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", BACKENDS, pagination_resume),

@@ -13,7 +13,9 @@
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1' = [1] continuation=None status=200 attempts=1
@@ -49,7 +51,7 @@
   total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset 40.0 = [41,42] continuation=42 status=200 attempts=1
@@ -89,7 +91,9 @@
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1' = [1] continuation=None status=200 attempts=1
@@ -125,7 +129,7 @@
   async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
@@ -166,7 +170,9 @@
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1' = [1] continuation=None status=200 attempts=1
@@ -202,7 +208,7 @@
   total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset 40.0 = [41,42] continuation=42 status=200 attempts=1
@@ -242,7 +248,9 @@
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1' = [1] continuation=None status=200 attempts=1
@@ -278,7 +286,7 @@
   async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
@@ -319,7 +327,9 @@
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1' = [1] continuation=None status=200 attempts=1
@@ -355,7 +365,7 @@
   total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset 40.0 = [41,42] continuation=42 status=200 attempts=1
@@ -395,7 +405,9 @@
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1' = [1] continuation=None status=200 attempts=1
@@ -431,7 +443,7 @@
   async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
@@ -472,7 +484,9 @@
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1' = [1] continuation=None status=200 attempts=1
@@ -508,7 +522,7 @@
   total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   offset 40.0 = [41,42] continuation=42 status=200 attempts=1
@@ -548,7 +562,9 @@
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1' = [1] continuation=None status=200 attempts=1
@@ -584,7 +600,7 @@
   async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
