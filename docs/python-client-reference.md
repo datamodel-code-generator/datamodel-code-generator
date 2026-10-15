@@ -10,8 +10,7 @@ declared, how values are converted, and the full rules of timeouts, retries, req
 and errors. The guide covers the common cases with tested examples; come here for the precise rules of one setting.
 The [protocol helpers](python-client-helpers.md) have a page of their own. The examples use the layout of the guide's
 quick start: the generated package `app.client` and its models `app.models`, inside the application package `app`. The
-`pyproject.toml` example of [body field arguments](#body-field-arguments), rendered from a tested project, writes them
-as `client` and `models` in the project root. The text calls the generated package `client`, as in `client.errors`.
+text calls the generated package `client`, as in `client.errors`.
 
 ## Signature style
 
@@ -235,7 +234,7 @@ In `pyproject.toml`, the same settings are:
 [tool.datamodel-codegen]
 input = "fields.yaml"
 input-file-type = "openapi"
-output = "models.py"
+output = "app/models.py"
 output-model-type = "pydantic_v2.BaseModel"
 openapi-scopes = ["schemas", "api"]
 target-python-version = "3.11"
@@ -243,9 +242,9 @@ formatters = ["builtin"]
 disable-timestamp = true
 openapi-include-paths = ["/pets*", "/owners"]
 generate-client = "httpx2"
-client-output = "client"
-client-package = "client"
-client-model-package = "models"
+client-output = "app/client"
+client-package = "app.client"
+client-model-package = "app.models"
 client-body-arguments = "both"
 
 [tool.datamodel-codegen.client-operations."/paths/~1pets/post".body_field_names]

@@ -1,0 +1,14 @@
+[tool.datamodel-codegen]
+input = "options.yaml"
+input-file-type = "openapi"
+output = "app/models.py"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+generate-client = "httpx2"
+client-output = "app/client"
+client-package = "app.client"
+client-model-package = "app.models"
+client-protocols = "protocols.json"

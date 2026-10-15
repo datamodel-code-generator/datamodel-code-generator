@@ -18,8 +18,7 @@ the helpers share come last. Read [Python Client Generation](python-client.md) f
 client and its settings.
 
 The examples use the layout of the guide's quick start: the generated package `app.client` and its models
-`app.models`, inside the application package `app`. The `pyproject.toml` example, rendered from a tested project,
-writes them as `client` and `models` in the project root. The text calls the generated package `client`, as in
+`app.models`, inside the application package `app`. The text calls the generated package `client`, as in
 `client.protocols`.
 
 Terms used throughout:
@@ -58,16 +57,16 @@ upload helper declaring `abort` or `create.session_url` fails too.
 [tool.datamodel-codegen]
 input = "options.yaml"
 input-file-type = "openapi"
-output = "models.py"
+output = "app/models.py"
 output-model-type = "pydantic_v2.BaseModel"
 openapi-scopes = ["schemas", "api"]
 target-python-version = "3.11"
 formatters = ["builtin"]
 disable-timestamp = true
 generate-client = "httpx2"
-client-output = "client"
-client-package = "client"
-client-model-package = "models"
+client-output = "app/client"
+client-package = "app.client"
+client-model-package = "app.models"
 client-protocols = "protocols.json"
 ```
 
