@@ -173,6 +173,10 @@ def _verbatim(text: str) -> str:
 
 
 def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = False) -> list[_Entry]:
+    """Return a query style's pairs, percent-encoded unless `raw` asks for the text form-data parts carry.
+
+    Raw text cannot escape a delimiter, so a value or member name that holds the one its style joins with is refused.
+    """
     encode = _verbatim if raw else _percent(plan, _QUERY_KEPT)
     encoded = entries if raw else _encoded(entries, encode)
     name = encode(plan.name)
@@ -190,8 +194,12 @@ def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = Fal
             return [(name, _joined(encoded, separator=separator, pair=separator))]
         case "deepObject", _, _:
             return [(encode(f"{plan.name}[{key}]"), text) for (key, _), (_, text) in zip(entries, encoded, strict=True)]
+        case _ if raw and any("," in part for entry in entries for part in entry if part is not None):
+            msg = "A comma-delimited form-data value cannot contain a comma"
+            raise ParameterEncodingError(msg)
         case _:
-            return [(name, _joined(encoded))]
+            pass
+    return [(name, _joined(encoded))]
 
 
 def header_text(text: str) -> bool:

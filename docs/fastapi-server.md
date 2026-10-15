@@ -1421,24 +1421,29 @@ other properties by the rules above, and the model that holds it receives the ob
 is a union of several schemas declares no members its parts could be read by: generation stops with
 `needs body_mode='request'`, as the generated client stops with `needs an object schema to be sent as parts`.
 
-An adapter reads a URL-encoded member whose `encoding` names a `style`, `explode`, `allowReserved`, or `contentType` as
-the generated client writes it: as the query parameter that encoding describes, the way a query reads one. An object
-with `style: form` and `explode: true`, the default of an encoding that names only `explode`, comes as the pairs of its
-own members, which it takes back: the names its schema declares and, when it allows other properties, any name that
-no other member of the form has. A `deepObject` comes as `name[key]` pairs, and `form` without explode,
-`spaceDelimited`, and `pipeDelimited` as one delimited pair. A `contentType` without a style sends the member as one
-pair of text, or of JSON that is parsed as a JSON part is, with records at `["body", name]`. The other pairs are read
-as in a form without such members, and the model validates the result; an operation with such a member is an
-adapter's, not FastAPI's form model. An encoding that the client has no form for, such as `deepObject` for an array or
-`contentType: application/xml`, stops generation with the message the client stops with. So does a form whose
-exploded object that allows other properties shares the form with another such member or a `deepObject` member, since
-both would take the same names, as an operation's query parameters are refused.
+An adapter reads a form member whose `encoding` names a `style`, `explode`, or `allowReserved` as the generated
+client writes it: as the query parameter that encoding describes, the way a query reads one. OpenAPI 3.0 applies these
+fields to a URL-encoded body alone and ignores them for `multipart/form-data`, whose member is then read as one without
+them, in its `contentType`; OpenAPI 3.1 and 3.2 apply them to both. An object with `style: form` and `explode: true`,
+the default of an encoding that names only `explode`, comes as the pairs or parts of its own members, which it takes
+back: the names its schema declares and, when it allows other properties, any name that no other member of the form
+has. A `deepObject` comes as `name[key]` pairs or parts, and `form` without explode, `spaceDelimited`, and
+`pipeDelimited` as one delimited pair or part. A URL-encoded pair is percent-encoded; a part carries the style's text
+without percent-encoding, as OpenAPI 3.2 requires, so `allowReserved` changes no part, and the client refuses a
+delimited value that holds its style's delimiter (`,`, a space, or `|`) before it sends it. A URL-encoded member's
+`contentType` without a style sends it as one pair of text, or of JSON that is parsed as a JSON part is, with records at
+`["body", name]`. The other pairs and parts are read as in a form without such members, and the model validates the
+result; an operation with such a member is an adapter's, not FastAPI's form model. An encoding that the client has no
+form for, such as `deepObject` for an array or `contentType: application/xml` in a URL-encoded body, stops generation
+with the message the client stops with. So does a form whose exploded object that allows other properties shares the
+form with another such member or a `deepObject` member, since both would take the same names, as an operation's query
+parameters are refused.
 
 The adapters read no part headers, no multipart `encoding` that names another media type, such as one in another
-charset or `application/xml` for a member without files, and no multipart style other than the default `form` with
-`explode: true`, nor any style for a multipart member without one scalar kind, which the client spreads over several
-parts: generation stops with an error that names the encoding. A style leaves a multipart member's `contentType`
-unused, as it does for the client. `--server-body-mode request` passes any such body to the method unread.
+charset or `application/xml` for a member without files, and no style for a member holding files, which the client
+refuses too: generation stops with an error that names the encoding. A style leaves a multipart member's
+`contentType` unused, as it does for the client. `--server-body-mode request` passes any such body to the method
+unread.
 
 The router splits a request path at the slashes the request sends, so a percent-encoded slash (`%2F`) stays inside
 its path parameter, whose value receives `/`, of whatever style; FastAPI alone routes by the decoded path, where

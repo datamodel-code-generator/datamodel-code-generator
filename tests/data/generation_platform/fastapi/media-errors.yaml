@@ -438,6 +438,21 @@ paths:
               note: {contentType: "text/plain; charset=iso-8859-1"}
       responses:
         "204": {description: Done.}
+  /styled-file:
+    post:
+      operationId: postStyledFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+            encoding:
+              file: {style: form, explode: false}
+      responses:
+        "204": {description: Done.}
   /absorbing-form:
     post:
       operationId: postAbsorbingForm

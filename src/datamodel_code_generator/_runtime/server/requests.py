@@ -26,7 +26,14 @@ from ..model_codecs.media import (
     plain,
     typed,
 )
-from ..model_codecs.parameter_reads import RawParameter, RawParameters, decode_parameter, raw_parameter, split_query
+from ..model_codecs.parameter_reads import (
+    ParameterFragment,
+    RawParameter,
+    RawParameters,
+    decode_parameter,
+    raw_parameter,
+    split_query,
+)
 from ..model_codecs.unset import UNSET
 from .application import ParameterReader, Rejected, malformed_request, reject
 from .errors import invalid, media_invalid, missing, model_records, unsupported_media
@@ -331,7 +338,9 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
         case "form":
             return _validated(adapter, _checked(media, plain(decode_form(body, media.fields, media.other))))
         case "multipart":
-            return _validated(adapter, _checked(media, plain(await _parts(request, media.members, media.additional))))
+            return _validated(
+                adapter, _checked(media, plain(await _parts(request, media.members, media.additional, media.encoded)))
+            )
         case "binary" if adapter is not None:
             adapter.validate_python(body)
         case _:
@@ -391,19 +400,31 @@ def _claims(plan: ParameterPlan, name: str) -> bool:
 
 
 async def _parts(
-    request: Request, members: Mapping[str, FieldPlan | JsonPart], additional: FieldPlan | JsonPart
+    request: Request,
+    members: Mapping[str, FieldPlan | JsonPart],
+    additional: FieldPlan | JsonPart,
+    encoded: tuple[ParameterPlan, ...] = (),
 ) -> dict[str, object]:
     """Return the parts of a multipart body by name: uploads read to bytes, text in its field's kind, JSON validated.
 
     A part no member names is read as `additional` says. A repeated member holds a list, and a single-valued one its
-    last part. The request is refused with the records of every JSON part its member's adapter rejects.
+    last part. The request is refused with the records of every JSON part its member's adapter rejects. A styled
+    member takes the parts its style names, which carry its text without percent-encoding: each is percent-encoded
+    but for its style's delimiters, as a query writes it, and read by its plan as a query parameter is.
     """
     parts: dict[str, object] = {}
     records: list[Record] = []
+    styled: list[ParameterFragment] = []
     async with request.form() as form:
         for name in dict.fromkeys(form.keys()):
             member = members.get(name, additional)
             received = form.getlist(name)
+            if encoded and any(_claims(plan, name) for plan in encoded):
+                styled.extend([
+                    ParameterFragment(quote(name, safe="").encode(), quote(await _text(value), safe=",|").encode())
+                    for value in received
+                ])
+                continue
             if isinstance(member, JsonPart):
                 values = await _json(name, member, received if member.repeated else received[-1:], records)
             else:
@@ -412,9 +433,17 @@ async def _parts(
                     for value in received
                 ]
             parts[name] = values if member.repeated else values[-1]
+    view = RawParameter(location="query", fragments=tuple(styled))
+    for plan in encoded:
+        if (value := decode_parameter(plan, view)) is not UNSET:
+            parts[plan.name] = value
     if records:
         raise RequestValidationError(records)
     return parts
+
+
+async def _text(value: UploadFile | str) -> str:
+    return decode_text(await value.read()) if isinstance(value, UploadFile) else value
 
 
 async def _json(name: str, member: JsonPart, received: list[UploadFile | str], records: list[Record]) -> list[object]:
