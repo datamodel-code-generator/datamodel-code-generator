@@ -55,6 +55,9 @@ def {{ route.adder }}(
 
     {% if route.endpoint.asynchronous %}async {% endif %}def {{ route.endpoint.name }}() -> object:
 {%- endif %}
+{%- if route.endpoint.accepted %}
+        {{ route.endpoint.record }} = {{ route.endpoint.accepted }}({{ route.endpoint.record }})
+{%- endif %}
         return {{ route.call.dispatch }}(
 {%- if route.call.arguments %}
             {% if route.endpoint.asynchronous %}await {% endif %}{{ route.handler }}(

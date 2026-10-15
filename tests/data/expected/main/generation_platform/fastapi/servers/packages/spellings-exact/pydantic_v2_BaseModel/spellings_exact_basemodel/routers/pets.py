@@ -17,6 +17,7 @@ from spellings_exact_basemodel_models import CountsGetResponse, Pet, PetsGetResp
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked
+from .._runtime.server.requests import accepted
 from .._runtime.server.responses import dispatch
 from ..services import PetsService
 
@@ -147,6 +148,7 @@ def _add_literal(
         *,
         parameters: Annotated[contract.LiteralModel1.Parameters, Depends(contract.LiteralModel1.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             literal_handler(
                 modes=parameters.modes,
@@ -185,6 +187,7 @@ def _add_literal_model(
         *,
         parameters: Annotated[contract.LiteralModel.Parameters, Depends(contract.LiteralModel.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             literal_model_handler(
                 modes=parameters.modes,
@@ -228,6 +231,7 @@ def _add_get_pet(
         label: Annotated[Optional[Annotated[str, StringConstraints(pattern=compile('^(?!x)'))]], Query(alias='label')] = None,
         parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             get_pet_handler(
                 petId=petId,

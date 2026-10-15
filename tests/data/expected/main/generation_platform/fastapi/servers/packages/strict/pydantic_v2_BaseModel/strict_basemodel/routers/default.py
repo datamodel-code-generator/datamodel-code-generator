@@ -14,6 +14,7 @@ from pydantic import Base64Str, StrictStr, StringConstraints
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked
+from .._runtime.server.requests import accepted
 from .._runtime.server.responses import dispatch
 from ..services import DefaultService
 
@@ -38,6 +39,7 @@ def _add_get_values(
         blob: Annotated[Base64Str | None, Query(alias='blob')] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             get_values_handler(
                 id=parameters.id,

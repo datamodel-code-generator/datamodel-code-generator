@@ -388,11 +388,17 @@ class Principal:
 
 @dataclass(frozen=True, slots=True)
 class Endpoint:
-    """The endpoint function FastAPI calls for one operation."""
+    """The endpoint function FastAPI calls for one operation.
+
+    `accepted` names the call that returns the adapter parameter record, the parameter `record`, or raises the records
+    of its rejected values; it is empty for an operation without adapter parameters.
+    """
 
     name: str
     asynchronous: bool
     parameters: tuple[Parameter, ...]
+    record: str
+    accepted: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -944,9 +950,11 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             for argument in spec.arguments
             if argument.kind not in {"media_type", "adapter"}
         ]
+        accepted = ""
         if any(argument.kind == "adapter" for argument in spec.arguments):
             annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
             parameters.append(Parameter(record, f"{annotated}[{plan}.Parameters, {depends}({plan}.PARAMETERS)]"))
+            accepted = module.local("_runtime.server.requests", "accepted")
         call = Call(
             module.local("_runtime.server.responses", "dispatch"),
             tuple(Keyword(argument.name, _value(spec, argument, record)) for argument in spec.arguments),
@@ -962,7 +970,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             handler=handler,
             lookup=lookup,
             principal=None if not principal else self.principal(module, spec, names),
-            endpoint=Endpoint(spec.python_name, asynchronous, tuple(parameters)),
+            endpoint=Endpoint(spec.python_name, asynchronous, tuple(parameters), record, accepted),
             call=call,
             registration=_registration(module, spec),
         )

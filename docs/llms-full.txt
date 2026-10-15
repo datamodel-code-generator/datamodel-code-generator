@@ -13400,7 +13400,10 @@ records without their `input` and `ctx`, and without pydantic's `url`, which Fas
 response carries each record's `type`, `loc`, and `msg`, so it does not return the rejected value as such. `loc`
 and `msg` are still pydantic's and can hold text the client chose: a key of a mapping or an unexpected field in
 `loc`, a discriminator tag in `msg`, and whatever a validator of your own puts in its error message. Parameters and
-bodies that adapters read answer with the same three keys.
+bodies that adapters read answer with the same three keys, and in the same response: when parameters that FastAPI
+reads and parameters that an adapter reads both fail, the `422` carries the records of all of them, ordered as FastAPI
+orders its own, by location (path, query, header, cookie, then the body), FastAPI's records of a location before the
+adapter's.
 
 `loc` names what the request carries, not the method argument it becomes: a parameter by its location and its name
 in the source document, such as `["path", "item-id"]`, `["query", "page[size]"]`, or `["header", "X-Trace-Id"]`,
@@ -13509,8 +13512,10 @@ module's import block:
 `router.jinja2` receives one `route` for each operation, with its local names (`adder`, `router`, `wiring`,
 `service`, `handler`), its `lookup` of the service method, whose `keywords` name the arguments the route passes for
 the startup check, which an override without them leaves out, its `principal` dependency or none, its `endpoint` with
-the endpoint's `parameters` (`name`, `annotation`, `default`), the service method `call` with its `arguments`, and
-its `registration`, whose `keywords` hold the optional `add_api_route` arguments. A builtin template writes each
+the endpoint's `parameters` (`name`, `annotation`, `default`) and, for an operation with adapter parameters, the
+`accepted` call that the endpoint passes its `record` of them through before it calls the method, the service method
+`call` with its `arguments`, and its `registration`, whose `keywords` hold the optional `add_api_route` arguments. An
+override that leaves the `accepted` call out answers `500` instead of `422` when only adapter parameters are rejected. A builtin template writes each
 parameter, argument, and route entry on its own line, and leaves the type annotations and plan values on one line for
 the formatter.
 

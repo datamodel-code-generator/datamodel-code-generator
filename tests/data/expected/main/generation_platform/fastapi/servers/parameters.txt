@@ -27,7 +27,7 @@ app default
 > GET /search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi
 < 422 application/json [{"type": "missing", "loc": ["query", "filter", "id"]}]
 > GET /search?code=ab&ids=1,x&blob=%7B%22b%22%3A1%7D
-< 422 application/json [{"type": "int_parsing", "loc": ["query", "ids", 1]}, {"type": "extra_forbidden", "loc": ["query", "blob", "b"]}]
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["query", "code"]}, {"type": "int_parsing", "loc": ["query", "ids", 1]}, {"type": "extra_forbidden", "loc": ["query", "blob", "b"]}]
 > GET /search?blob=%7B
 < 422 application/json [{"type": "json_invalid", "loc": ["query", "blob"]}]
 > GET /search?blob=%7B%22a%22%3A1%2C%22a%22%3A2%7D
@@ -170,7 +170,7 @@ app default
 > GET /pairs/AB/x/3/of/3
 < 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "pair.id"]}, {"type": "int_parsing", "loc": ["path", "class"]}, {"type": "int_parsing", "loc": ["header", "X_Rank"]}]
 > GET /pairs/AB/x/y/of/y
-< 422 application/json [{"type": "int_parsing", "loc": ["path", "part"]}]
+< 422 application/json [{"type": "string_pattern_mismatch", "loc": ["path", "pair.id"]}, {"type": "int_parsing", "loc": ["path", "class"]}, {"type": "int_parsing", "loc": ["path", "part"]}]
 > GET /pairs/ab/2/1/of/2
 < 422 application/json [{"type": "value_error", "loc": ["path", "part"]}]
 > GET /foods/apple/servings/2

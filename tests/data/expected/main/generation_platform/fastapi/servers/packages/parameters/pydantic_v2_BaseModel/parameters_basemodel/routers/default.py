@@ -14,6 +14,7 @@ from pydantic import Field, StringConstraints
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked, wire_named
+from .._runtime.server.requests import accepted
 from .._runtime.server.responses import dispatch
 from ..services import DefaultService
 
@@ -35,6 +36,7 @@ def _add_search(
         code: Annotated[str, StringConstraints(pattern=r'^[A-Z]+$'), Query(alias='code')] = 'AB',
         parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             search_handler(
                 session=session,
@@ -156,6 +158,7 @@ def _add_get_codes(
         *,
         parameters: Annotated[contract.GetCodes.Parameters, Depends(contract.GetCodes.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             get_codes_handler(
                 X_Codes=parameters.X_Codes,
@@ -191,6 +194,7 @@ def _add_repeat(
         *,
         parameters: Annotated[contract.Repeat.Parameters, Depends(contract.Repeat.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             repeat_handler(
                 id=parameters.id,
@@ -301,6 +305,7 @@ def _add_get_pair(
         X_Rank: Annotated[Annotated[int, Field(ge=1)] | None, Header(alias='X_Rank', convert_underscores=False)] = None,
         parameters: Annotated[contract.GetPair.Parameters, Depends(contract.GetPair.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             get_pair_handler(
                 pair=pair,
@@ -376,6 +381,7 @@ def _add_get_item(
         kind: Annotated[parameters_basemodel_models.ItemsLevelGetQueryKindParameter | None, Query(alias='kind')] = None,
         parameters: Annotated[contract.GetItem.Parameters, Depends(contract.GetItem.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             get_item_handler(
                 level=parameters.level,
