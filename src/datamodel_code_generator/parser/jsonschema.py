@@ -197,35 +197,6 @@ _ARRAY_CONSTRAINT_KEYS = frozenset({"maxItems", "minItems", "uniqueItems"})
 _NO_CONSTRAINT_KEYWORDS: frozenset[str] = frozenset()
 _DECLARED_STRING_CONSTRAINT_KEYWORDS: frozenset[str] = STRING_KEYWORDS | {"minItems", "maxItems"}
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
-_ALL_OF_REFERENCE_TARGET_EXCLUDED_FIELDS = frozenset({"ref", "enum", "allOf", "anyOf", "oneOf", "custom_type_path"})
-_ALL_OF_REFERENCE_TARGET_EXCLUDED_EXTRAS = frozenset({"const", "x-python-import", "x-python-type"})
-_ALL_OF_REFERENCE_VALUE_EXCLUDED_FIELDS = frozenset({
-    "ref",
-    "enum",
-    "items",
-    "additionalItems",
-    "prefixItems",
-    "properties",
-    "patternProperties",
-    "additionalProperties",
-    "propertyNames",
-    "unevaluatedItems",
-    "unevaluatedProperties",
-    "minProperties",
-    "maxProperties",
-    "required",
-    "anyOf",
-    "oneOf",
-    "discriminator",
-    "custom_type_path",
-    "custom_base_path",
-    "id",
-    "anchor",
-    "recursiveRef",
-    "recursiveAnchor",
-    "dynamicRef",
-    "dynamicAnchor",
-})
 _INHERITED_NESTED_SCHEMA_FIELDS = (
     "items",
     "additionalItems",
@@ -1299,13 +1270,6 @@ class JsonSchemaObject(BaseModel):
             if schema_affecting_extras:
                 return False
         return True
-
-
-_ALL_OF_REFERENCE_DESCRIPTIVE_FIELDS = frozenset({
-    *JsonSchemaObject.__metadata_only_fields__ - {"default", "readOnly", "writeOnly"},
-    "anchor",
-    "extras",
-})
 
 
 @lru_cache
@@ -7624,60 +7588,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged.setdefault("type", "object")
         return self.SCHEMA_OBJECT_TYPE.model_validate(merged)
 
-    @property
-    def _keeps_reference_constraints_on_alias(self) -> bool:
-        """Return whether a constrained alias of a referenced type writes the constraints on the reference."""
-        return self.field_constraints and self.data_model_root_type.IS_ALIAS
-
-    def _merge_all_of_reference_constraints(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-        """Merge an allOf of one $ref to a value schema with the sibling constraints its type holds.
-
-        The siblings constrain the referenced value like siblings of a $ref, so the value is written like a $ref with
-        sibling keywords, which keeps the constraints where the referenced type cannot hold them. Both constrain the
-        value, so their bounds intersect under every allOf merge mode. The reference is still registered, so model
-        names stay as they were. Outputs that never enforce constraints keep the reference. The contains keywords of
-        the referenced value become the item bounds they imply, as they do on the referenced type, so they intersect
-        with the siblings, also with contains keywords among them.
-        """
-        if (
-            len(obj.allOf) != 1
-            or not obj.has_constraint
-            or obj.model_fields_set & _ALL_OF_REFERENCE_VALUE_EXCLUDED_FIELDS
-            or "const" in obj.extras
-            or not self._output_model_context.supports_internal_annotated_constraints
-        ):
-            return None
-        item = obj.allOf[0]
-        if not isinstance(item, JsonSchemaObject) or not item.ref or item.has_ref_with_schema_keywords:
-            return None
-        target = self._merge_ref_with_schema(item)
-        if (
-            target.model_fields_set & _ALL_OF_REFERENCE_TARGET_EXCLUDED_FIELDS
-            or _ALL_OF_REFERENCE_TARGET_EXCLUDED_EXTRAS & target.extras.keys()
-            or self._resolve_external_ref_mapping(item.ref) is not None
-        ):
-            return None
-        if (
-            any(
-                (value := getattr(obj, key)) is not None and value != getattr(target, key) for key in ("type", "format")
-            )
-            or self._schema_requires_model_type(target)
-            or not obj.model_fields_set & self._declared_constraint_keywords(target)
-        ):
-            return None
-        self.model_resolver.add_ref(self._normalize_external_ref(item.ref))
-        merged = target.model_dump(exclude=_ALL_OF_REFERENCE_DESCRIPTIVE_FIELDS, exclude_unset=True, by_alias=True)
-        merged.update(
-            obj.model_dump(
-                exclude={"allOf", *JsonSchemaObject.__constraint_fields__}, exclude_unset=True, by_alias=True
-            )
-        )
-        contains_bounds = self._get_contains_bounds(target)
-        self._merge_schema_constraints(
-            merged, [obj] if contains_bounds is None else [obj, contains_bounds], intersect=True
-        )
-        return self.SCHEMA_OBJECT_TYPE.model_validate(merged)
-
     def _merge_value_schemas(self, schemas: list[JsonSchemaObject]) -> JsonSchemaObject | None:
         """Merge schemas that constrain one value, unless their types, formats or literals disagree."""
         types = [schema.type for schema in schemas if schema.type]
@@ -10056,8 +9966,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
             if field.has_ref_with_schema_keywords and not field.is_ref_with_nullable_only:
                 field = self._merge_ref_with_schema(field)  # noqa: PLW2901
-            elif merged_field := self._merge_all_of_reference_constraints(field):
-                field = merged_field  # noqa: PLW2901
 
             field_type = self.parse_item(modular_name, field, [*path, field_name])
 
@@ -10909,10 +10817,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     return self._parse_schema_item_shape(
                         name, merged_item, path, singular_name=singular_name, parent=parent
                     )
-            item = merged_item
-        elif (parent is None or not self._keeps_reference_constraints_on_alias) and (
-            merged_item := self._merge_all_of_reference_constraints(item)
-        ):
             item = merged_item
         return self._parse_schema_item_shape(name, item, path, singular_name=singular_name, parent=parent)
 
@@ -12892,7 +12796,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with self._dynamic_scope_context(path, {}):
             self._parse_schema_obj(name, obj, path)
 
-    def _parse_schema_obj(  # noqa: PLR0912, PLR0915
+    def _parse_schema_obj(  # noqa: PLR0912
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -12915,10 +12819,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.parse_root_type(name, obj, path)
                 self.parse_ref(obj, path)
                 return
-        elif not self._keeps_reference_constraints_on_alias and (
-            merged := self._merge_all_of_reference_constraints(obj)
-        ):
-            obj = merged
 
         if obj.is_array:
             self.parse_array(name, obj, path)

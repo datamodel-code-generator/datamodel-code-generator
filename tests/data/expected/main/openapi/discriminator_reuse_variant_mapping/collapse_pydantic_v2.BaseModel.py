@@ -27,11 +27,19 @@ class Feline(RootModel[Cat | Dog]):
     root: Cat | Dog = Field(..., discriminator='kind')
 
 
+class Pet(RootModel[Cat | Dog]):
+    root: Cat | Dog = Field(..., discriminator='kind')
+
+
 class Aquarium(RootModel[Fish | Dog]):
     root: Fish | Dog = Field(..., discriminator='kind')
 
 
 class Cage(BaseModel):
+    pet: Cat | Dog | None = Field(None, discriminator='kind')
+
+
+class Basket(BaseModel):
     pet: Cat | Dog | None = Field(None, discriminator='kind')
 
 

@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: A holder and the holder of the same name in another document that maps other tags
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    Holder:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Dog"
+    Wrapper:
+      type: object
+      properties:
+        ours:
+          $ref: "#/components/schemas/Holder"
+        theirs:
+          $ref: "other.yaml#/components/schemas/Holder"

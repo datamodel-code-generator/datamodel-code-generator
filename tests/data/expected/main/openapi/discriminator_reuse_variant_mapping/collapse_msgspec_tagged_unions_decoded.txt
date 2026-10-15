@@ -1,10 +1,15 @@
 Feline {"kind": "cat", "name": "Tom"}: Cat
 Feline {"kind": "kitty"}: rejected
 Feline {"kind": "dog"}: Dog
-Pet: not generated
+Pet {"kind": "kitty", "name": "Tom"}: rejected
+Pet {"kind": "cat"}: Cat
+Pet {"kind": "reuse"}: rejected
+Pet {"kind": "dog"}: Dog
 Aquarium {"kind": "goldie", "fins": 2}: rejected
 Aquarium {"kind": "reuse"}: rejected
 Aquarium {"kind": "dog"}: Dog
-Basket: not generated
+Basket {"pet": {"kind": "kitty"}}: rejected
+Basket {"pet": {"kind": "cat"}}: Basket
+Basket {"pet": {"kind": "dog"}}: Basket
 Aviary {"kind": "bird", "wings": 2}: Bird
 Aviary {"kind": "dog"}: Dog

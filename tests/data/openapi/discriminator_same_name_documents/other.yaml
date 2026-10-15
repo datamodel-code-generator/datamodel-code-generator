@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: The holder of the same name that maps other tags
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    Holder:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: kind
+            mapping:
+              kitty: "#/components/schemas/Cat"
+              puppy: "#/components/schemas/Dog"

@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Collapsed wrappers whose unions tag collapsed variants by their schema names
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+    Kitten:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        barks:
+          type: boolean
+    Cage:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: kind
+    Basket:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Kitten"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: kind

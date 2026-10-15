@@ -1,7 +1,6 @@
 # format-errors
 check
-  Traceback (most recent call last):
-  UnicodeEncodeError: 'latin-1' codec can't encode character '/u6f22' in position 7: ordinal not in range(256)
+  Error: Unable to encode output using encoding 'latin-1': 'latin-1' codec can't encode character '/u6f22' in position 7: ordinal not in range(256)
 check
   MISSING: models.py (file does not exist but should be generated)
   MISSING: server/__init__.py (should be generated)
