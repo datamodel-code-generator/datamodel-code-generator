@@ -309,7 +309,10 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
 
 
 def _chunk_sizes(harness: _Uploads, lines: list[str]) -> None:
-    """Use the default chunk size without client defaults, and keep a checkpoint's chunk under a larger chunk size."""
+    """Use the default chunk size without client defaults, and keep a checkpoint's chunk under a larger chunk size.
+
+    A checkpoint whose chunk exceeds the size the client's helper defaults set is refused at that default.
+    """
     lines.append("chunk sizes without client defaults")
     exchange, server = Exchange(lines), _Server()
     settings = harness.client_options(helper_defaults={})
@@ -328,7 +331,17 @@ def _chunk_sizes(harness: _Uploads, lines: list[str]) -> None:
         resumed = helper.resume(harness.source(), state)
         lines.append(f"  chunk resumed under the default={resumed.checkpoint()['chunk']}")
         step(lines, "advance the checkpoint's chunk", resumed.advance)
+        exchange.respond(server)
+        larger = helper.start(harness.source(), Tus_Resumable=harness.tus)
+        state = larger.checkpoint()
+        larger.close()
         _drained(exchange, lines)
+    with exchange.client() as native, harness.package.Client(http_client=native, **harness.client_options()) as api:
+        step(
+            lines,
+            "resume under a smaller client default",
+            lambda: api.protocols.files.upload.resume(harness.source(), state),
+        )
 
 
 def _file_terminal(

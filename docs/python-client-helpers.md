@@ -1053,8 +1053,10 @@ auth, as pagination checkpoints do. Errors carry no checkpoint; call the handle'
 `resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then the
 checkpoint: a value that is not JSON or does not fit the helper raises `ConfigurationError(field_path=("state",))`, and
 one past the server's expiry the reason `expired`. A checkpoint keeps its chunk size, which must not exceed the call's
-`UploadOptions.chunk_bytes`, since an append holds one chunk in memory; it raises `ConfigurationError` with the option's
-`field_path`. Then the saved values each call writes: a value that makes a path segment `.` or `..` raises
+`UploadOptions.chunk_bytes`, since an append holds one chunk in memory; it raises `ConfigurationError` whose
+`field_path` names where that size came from: `("helper_defaults", "files.upload", "chunk_bytes")` for a helper
+named `files.upload` when the client's `helper_defaults` set it and the call's `upload_options` did not, else
+`("upload_options", "chunk_bytes")`, which also covers the 8 MiB default. Then the saved values each call writes: a value that makes a path segment `.` or `..` raises
 `ProtocolDataError`, as if a server gave it; any other saved value is encoded when its request is built. Then the
 source: a one-shot input raises `ConfigurationError` with the reason `wrong_capability`, and a size other than the
 checkpoint's the reason `source_changed`; the source is not read. A completion of unknown outcome raises
