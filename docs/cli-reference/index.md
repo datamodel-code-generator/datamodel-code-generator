@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 35 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 29 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 30 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 46 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
@@ -369,6 +369,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types)
 - [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name)
 - [`--use-subclass-enum`](model-customization.md#use-subclass-enum)
+- [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)
 - [`--use-title-as-name`](field-customization.md#use-title-as-name)
 - [`--use-total-false-for-typed-dict`](typing-customization.md#use-total-false-for-typed-dict)
 - [`--use-tuple-for-fixed-items`](typing-customization.md#use-tuple-for-fixed-items)

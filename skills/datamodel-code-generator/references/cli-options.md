@@ -76,7 +76,8 @@ Field naming, aliases, defaults, and constraints.
 - `--extra-fields`: Set the generated models to allow, forbid, or ignore extra fields. Choices: `allow`, `ignore`, `forbid`.
 - `--use-schema-description`: Use schema description to populate class docstring
 - `--use-title-as-name`: use titles as class names of models
-- `--infer-union-variant-names`: Infer inline oneOf/anyOf branch model names from literal discriminator-style fields
+- `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (Pet + type: "cat" -> PetCat) instead of Pet1, Pet2
+- `--use-tag-as-union-variant-name`: Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, plus single-branch unions (type: "exec" -> LocalShellActionExec) and single-key branches ({"granular": ...} -> AskForApprovalGranular)
 - `--field-constraints`: Use field constraints and not con* annotations
 - `--set-default-enum-member` (deprecated): Deprecated: --set-default-enum-member is deprecated. Use --deserialize-default-values enum instead.
 - `--use-enum-values-in-discriminator`: Use enum member literals in discriminator fields instead of string literals

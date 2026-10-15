@@ -620,7 +620,16 @@ model_options.add_argument(
 )
 model_options.add_argument(
     "--infer-union-variant-names",
-    help="Infer inline oneOf/anyOf branch model names from literal discriminator-style fields",
+    help='Name inline oneOf/anyOf branch models after the value of their tag field (Pet + type: "cat" -> PetCat) '
+    "instead of Pet1, Pet2",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
+    "--use-tag-as-union-variant-name",
+    help="Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, plus "
+    'single-branch unions (type: "exec" -> LocalShellActionExec) and single-key branches '
+    '({"granular": ...} -> AskForApprovalGranular)',
     action="store_true",
     default=None,
 )

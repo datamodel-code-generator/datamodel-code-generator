@@ -132,6 +132,7 @@ reviewed-safe use_specialized_enum
 reviewed-safe use_standard_collections
 reviewed-safe use_standard_primitive_types
 reviewed-safe use_subclass_enum
+reviewed-safe use_tag_as_union_variant_name
 reviewed-safe use_title_as_name
 reviewed-safe use_total_false_for_typed_dict
 reviewed-safe use_tuple_for_fixed_items

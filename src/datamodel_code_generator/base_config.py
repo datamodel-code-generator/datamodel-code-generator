@@ -257,6 +257,7 @@ class BaseGenerateConfig(BaseModel):
     wrap_string_literal: bool | None = None
     use_title_as_name: bool = False
     infer_union_variant_names: bool = False
+    use_tag_as_union_variant_name: bool = False
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False
     use_tuple_for_fixed_items: bool = False

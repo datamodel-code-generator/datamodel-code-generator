@@ -1,0 +1,276 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TagVariantNameFallbacks",
+  "type": "object",
+  "properties": {
+    "msg": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["jsonrpc", "method", "params"],
+          "properties": {
+            "jsonrpc": {"const": "2.0"},
+            "method": {"const": "initialize"},
+            "params": {"type": "object"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["method"],
+          "properties": {
+            "method": {"const": "ping"}
+          }
+        }
+      ]
+    },
+    "ev": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "type"],
+          "properties": {
+            "kind": {"const": "k1"},
+            "type": {"const": "a"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "type"],
+          "properties": {
+            "kind": {"const": "k2"},
+            "type": {"const": "b"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"const": "c"}
+          }
+        }
+      ]
+    },
+    "unit_mixed": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "type", "x"],
+          "properties": {
+            "kind": {"const": "k1"},
+            "type": {"const": "a"},
+            "x": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"const": "c"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["granular"],
+          "properties": {
+            "granular": {
+              "type": "object",
+              "properties": {
+                "sandbox": {"type": "boolean"}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "parent_literal": {
+      "type": "object",
+      "properties": {
+        "kind": {"const": "x"},
+        "a": {"type": "string"}
+      },
+      "oneOf": [
+        {"required": ["a"]}
+      ]
+    },
+    "parent_literal_key_branch": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"const": "image"}
+      },
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["url"],
+          "properties": {
+            "url": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "literal_and_colliding_keys": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "v"],
+          "properties": {
+            "type": {"const": "exec"},
+            "v": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["data"],
+          "properties": {
+            "data": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["data"],
+          "properties": {
+            "data": {"type": "integer"}
+          }
+        }
+      ]
+    },
+    "nullable_key_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": {"type": "string"}
+          }
+        },
+        {"type": "null"}
+      ]
+    },
+    "mixed": {
+      "properties": {
+        "type": {"type": "string"}
+      },
+      "required": ["type"],
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "x"],
+          "properties": {
+            "type": {"const": "a"},
+            "x": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "y"],
+          "properties": {
+            "type": {"const": "b"},
+            "y": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["granular"],
+          "properties": {
+            "granular": {"type": "object"}
+          }
+        }
+      ]
+    },
+    "openapi_like": {
+      "type": "object",
+      "discriminator": {"propertyName": "kind"},
+      "required": ["kind"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["exec", "read"]}
+      },
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "command"],
+          "properties": {
+            "kind": {"enum": ["exec"]},
+            "command": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "nullable_type_list_key_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": {"type": "string"}
+          }
+        },
+        {"type": ["null"]}
+      ]
+    },
+    "nullable_const_key_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": {"type": "string"}
+          }
+        },
+        {"const": null}
+      ]
+    },
+    "nullable_enum_key_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": {"type": "string"}
+          }
+        },
+        {"enum": [null]}
+      ]
+    },
+    "nested": {
+      "oneOf": [
+        {"type": "string", "enum": ["none"]},
+        {
+          "type": "object",
+          "required": ["wrap"],
+          "properties": {
+            "wrap": {"type": "string"}
+          },
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "p"],
+              "properties": {
+                "type": {"const": "a"},
+                "p": {"type": "string"}
+              }
+            },
+            {
+              "type": "object",
+              "required": ["type", "q"],
+              "properties": {
+                "type": {"const": "b"},
+                "q": {"type": "string"}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "single_key_branch": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["granular"],
+          "properties": {
+            "granular": {"type": "boolean"}
+          }
+        }
+      ]
+    }
+  }
+}

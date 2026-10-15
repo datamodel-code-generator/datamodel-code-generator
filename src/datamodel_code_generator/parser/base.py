@@ -3199,7 +3199,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.current_source_path: Path | None = None
         self._run_context: ParserRunContext | None = None
         self.use_title_as_name: bool = config.use_title_as_name
-        self.infer_union_variant_names: bool = config.infer_union_variant_names
+        self.use_tag_as_union_variant_name: bool = config.use_tag_as_union_variant_name
+        self.infer_union_variant_names: bool = config.infer_union_variant_names or self.use_tag_as_union_variant_name
         self.use_operation_id_as_name: bool = config.use_operation_id_as_name
         self.use_unique_items_as_set: bool = config.use_unique_items_as_set
         self.use_tuple_for_fixed_items: bool = config.use_tuple_for_fixed_items
