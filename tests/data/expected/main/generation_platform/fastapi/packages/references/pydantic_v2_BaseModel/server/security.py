@@ -3,15 +3,17 @@
 
 """Security dependencies of this package, one for each scheme; override one with app.dependency_overrides."""
 
-from fastapi.security import APIKeyHeader, APIKeyQuery, HTTPBearer
+from fastapi.security import APIKeyQuery
 
-bearer_alias = HTTPBearer(
+from ._runtime.server.security import ASCIIAPIKeyHeader, ASCIIHTTPBearer
+
+bearer_alias = ASCIIHTTPBearer(
     scheme_name='bearer_alias',
     auto_error=False,
 )
 
 
-library_key = APIKeyHeader(
+library_key = ASCIIAPIKeyHeader(
     name='X-Library-Key',
     scheme_name='library_key',
     auto_error=False,

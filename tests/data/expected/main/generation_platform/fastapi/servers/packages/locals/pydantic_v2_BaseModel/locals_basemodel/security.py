@@ -3,9 +3,9 @@
 
 """Security dependencies of this package, one for each scheme; override one with app.dependency_overrides."""
 
-from fastapi.security import APIKeyHeader
+from ._runtime.server.security import ASCIIAPIKeyHeader
 
-api_key = APIKeyHeader(
+api_key = ASCIIAPIKeyHeader(
     name='X-API-Key',
     scheme_name='api_key',
     auto_error=False,
