@@ -7,6 +7,7 @@ import importlib.util
 import inspect
 import json
 import platform
+import re
 import shutil
 import sys
 import tokenize
@@ -4165,6 +4166,39 @@ class Model(BaseModel):
     s: str
 """,
     )
+
+
+@pytest.mark.abnormal_path("whether the installed black formats a target Python version depends on the CI lane's black")
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_black_without_target_support_names_black_requirement(
+    output_file: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, entrypoint: str
+) -> None:
+    """Test the CLI and generate() name the black requirement when the installed black cannot format the target."""
+    monkeypatch.setattr("datamodel_code_generator.format._get_black_python_version_map", dict)
+    message = (
+        "Installed black doesn't support Python version 3.15.\n"
+        "You have to install a newer black.\n"
+        f"Installed black version: {black.__version__}"
+    )
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "simple_string.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            expected_exit=Exit.ERROR,
+            output_should_not_exist=True,
+            capsys=capsys,
+            expected_stderr=f"{message}\n",
+            extra_args=["--formatters", "black", "--target-python-version", "3.15"],
+        )
+        return
+    with pytest.raises(Error, match=f"^{re.escape(message)}$"):
+        generate(
+            JSON_SCHEMA_DATA_PATH / "simple_string.json",
+            input_file_type=InputFileType.JsonSchema,
+            output=output_file,
+            target_python_version=PythonVersion.PY_315,
+        )
 
 
 def test_ruff_batch_formatting_directory(output_dir: Path) -> None:

@@ -563,7 +563,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/test_build_preset_docs_script.py::datamodel_code_generator._format_types",
         "private-import:tests/test_deprecations.py::datamodel_code_generator.deprecations._dependency_version_is_legacy",
         "private-import:tests/test_enums.py::datamodel_code_generator.enums._is_pydantic_version_at_least",
-        "private-import:tests/test_format.py::datamodel_code_generator.__main__._get_black",
         "private-import:tests/test_format.py::datamodel_code_generator._builtin_formatter",
         "private-import:tests/test_format.py::datamodel_code_generator._format_types",
         "private-import:tests/test_format.py::datamodel_code_generator.format._BUILTIN_FORMATTER_REEXPORTS",

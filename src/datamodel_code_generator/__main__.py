@@ -278,10 +278,10 @@ def _command_header(args: Sequence[str]) -> str:
 signal.signal(signal.SIGINT, sig_int_handler)
 
 
-def _get_black() -> Any:
-    from datamodel_code_generator.format import _get_black as get_black  # noqa: PLC0415
+def _unsupported_black_message(python_version: PythonVersion) -> str:
+    from datamodel_code_generator.format import unsupported_black_message  # noqa: PLC0415
 
-    return get_black()
+    return unsupported_black_message(python_version)
 
 
 def is_supported_in_black(python_version: PythonVersion) -> bool:
@@ -1753,13 +1753,8 @@ def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None)
 def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_config: Mapping[str, Any]) -> Exit | None:
     """Apply the checks, warnings and debug settings every generation run shares; return the exit code of a refusal."""
     uses_black_formatter = config.formatters is None or Formatter.BLACK in config.formatters
-    if uses_black_formatter and not is_supported_in_black(config.target_python_version):  # pragma: no cover
-        print(  # noqa: T201
-            f"Installed black doesn't support Python version {config.target_python_version.value}.\n"
-            f"You have to install a newer black.\n"
-            f"Installed black version: {_get_black().__version__}",
-            file=sys.stderr,
-        )
+    if uses_black_formatter and not is_supported_in_black(config.target_python_version):
+        print(_unsupported_black_message(config.target_python_version), file=sys.stderr)  # noqa: T201
         return Exit.ERROR
 
     if config.debug:  # pragma: no cover

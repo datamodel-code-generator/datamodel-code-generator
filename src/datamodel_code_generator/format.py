@@ -487,6 +487,15 @@ def is_supported_in_black(python_version: PythonVersion) -> bool:  # pragma: no 
     return python_version in _get_black_python_version_map()
 
 
+def unsupported_black_message(python_version: PythonVersion) -> str:
+    """Return the message asking for a newer black when the installed one cannot format the target Python version."""
+    return (
+        f"Installed black doesn't support Python version {python_version.value}.\n"
+        "You have to install a newer black.\n"
+        f"Installed black version: {_get_black().__version__}"
+    )
+
+
 def black_find_project_root(sources: Sequence[Path]) -> Path:
     """Find the project root directory for black configuration."""
     from black import find_project_root as _find_project_root  # noqa: PLC0415
@@ -613,6 +622,10 @@ class CodeFormatter:
         )
 
         if use_black:
+            if (black_target_version := _get_black_python_version_map().get(python_version)) is None:
+                from datamodel_code_generator import Error  # noqa: PLC0415
+
+                raise Error(unsupported_black_message(python_version))
             root = black_find_project_root((settings_path,))
             path = root / "pyproject.toml"
             if path.is_file():
@@ -650,7 +663,7 @@ class CodeFormatter:
                     black_kwargs["enabled_features"] = {black_mode.Preview.string_processing}
 
             self.black_mode = black.FileMode(
-                target_versions={_get_black_python_version_map()[python_version]},
+                target_versions={black_target_version},
                 line_length=config.get("line-length", black.DEFAULT_LINE_LENGTH),
                 string_normalization=not skip_string_normalization or not config.get("skip-string-normalization", True),
                 **black_kwargs,

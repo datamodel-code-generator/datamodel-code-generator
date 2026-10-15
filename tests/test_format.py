@@ -197,13 +197,6 @@ def test_format_type_reexports_keep_public_identity() -> None:
     assert pickle.loads(pickle.dumps(format_types.PythonVersion.PY_310)) is format_types.PythonVersion.PY_310
 
 
-def test_main_get_black_wrapper_returns_black_module() -> None:
-    """Test the CLI wrapper keeps Black imports lazy while returning the installed module."""
-    import datamodel_code_generator.__main__ as main_module
-
-    assert main_module._get_black() is black
-
-
 def test_apply_builtin_formatter_keeps_concrete_public_python_version_type() -> None:
     """Test the public formatter wrapper keeps the concrete PythonVersion annotation."""
     assert format_module.apply_builtin_formatter.__annotations__["python_version"] == "PythonVersion | None"
