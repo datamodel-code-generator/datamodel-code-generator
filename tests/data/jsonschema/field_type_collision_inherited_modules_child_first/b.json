@@ -1,0 +1,1 @@
+{"title":"Base","type":"object","properties":{"Bar":{"$ref":"#/definitions/Bar"}},"definitions":{"Bar":{"type":"object","properties":{"x":{"type":"integer"}}}}}

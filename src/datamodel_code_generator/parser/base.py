@@ -1772,6 +1772,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
                 or inherited_field.name not in reserved_names
             ):
                 copied_field.name = inherited_field.name
+                copied_field.alias = inherited_field.alias if field.alias is None else field.alias
             else:
                 copied_field.name = field.name
         case _:
