@@ -3299,8 +3299,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not skip_constraints and self.is_constraints_field(field):
             constraints = self._get_constraint_values(field, field_type)
         consumed = self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS
-        if constraints is not None and field_type.type in consumed:
-            for key in consumed[field_type.type]:
+        constraint_type = field_type
+        if self._has_shared_numeric_union_constraints(field) and len(field_type.data_types) == 1:
+            constraint_type = field_type.data_types[0]
+        if constraints is not None and constraint_type.type in consumed:
+            for key in consumed[constraint_type.type]:
                 constraints.pop(key, None)
         if constraints is not None and self.field_constraints and field.format == "hostname":
             constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX

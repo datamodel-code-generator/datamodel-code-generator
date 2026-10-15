@@ -3785,6 +3785,26 @@ def test_use_non_positive_negative_number_constrained_types_with_use_annotated(o
     )
 
 
+@pytest.mark.parametrize("constraint_option", [None, "--use-annotated", "--field-constraints"])
+@freeze_time("2019-07-26")
+def test_use_non_positive_negative_nullable_number_constrained_types(
+    output_file: Path, constraint_option: str | None
+) -> None:
+    """Nullable numeric types retain only the bounds not enforced by their named types."""
+    extra_args = ["--use-non-positive-negative-number-constrained-types"]
+    if constraint_option is not None:
+        extra_args.append(constraint_option)
+    variant = constraint_option.removeprefix("--") if constraint_option else "default"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_non_positive_negative_nullable.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_MAIN_KR_PATH / "use_non_positive_negative_nullable" / f"{variant}.py",
+        extra_args=extra_args,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--include-path-parameters"],
     option_description="""Include OpenAPI path parameters in generated parameter models.

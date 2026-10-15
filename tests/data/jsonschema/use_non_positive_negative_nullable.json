@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NullableNumberConstraints",
+  "type": "object",
+  "properties": {
+    "non_negative_int": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "NonNegativeInt: minimum=0 only"
+    },
+    "non_positive_int": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 0,
+      "description": "NonPositiveInt: maximum=0 only"
+    },
+    "non_negative_float": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "NonNegativeFloat: minimum=0 only"
+    },
+    "non_positive_float": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "maximum": 0,
+      "description": "NonPositiveFloat: maximum=0 only"
+    },
+    "positive_int": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "PositiveInt: exclusiveMinimum=0"
+    },
+    "negative_int": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "exclusiveMaximum": 0,
+      "description": "NegativeInt: exclusiveMaximum=0"
+    },
+    "positive_float": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMinimum": 0,
+      "description": "PositiveFloat: exclusiveMinimum=0"
+    },
+    "negative_float": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "exclusiveMaximum": 0,
+      "description": "NegativeFloat: exclusiveMaximum=0"
+    },
+    "bounded_non_negative_int": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100,
+      "description": "NonNegativeInt with additional upper bound"
+    },
+    "bounded_non_positive_int": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "maximum": 0,
+      "minimum": -100,
+      "description": "NonPositiveInt with additional lower bound"
+    },
+    "bounded_non_negative_float": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1.0,
+      "description": "NonNegativeFloat with additional upper bound"
+    },
+    "bounded_non_positive_float": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "maximum": 0,
+      "minimum": -1.0,
+      "description": "NonPositiveFloat with additional lower bound"
+    },
+    "plain_constrained_int": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 5,
+      "maximum": 100,
+      "description": "No zero bound: should remain conint/Field"
+    },
+    "mixed_numeric": {
+      "type": [
+        "integer",
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 10
+    },
+    "number_list": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "minItems": 1
+    }
+  }
+}
