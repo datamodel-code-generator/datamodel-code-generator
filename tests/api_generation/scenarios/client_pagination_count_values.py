@@ -62,9 +62,7 @@ def pagination_count_values(package: ModuleType, lines: list[str]) -> None:
             record(lines, f"ordinary total {token!r}", api.users.list_users)
             fetched(lines, f"offset total {token!r}", api.protocols.users.items.page)
         start = harness.argument("listUsers", "query", "offset", 9007199254740991)
-        exchange.respond(
-            _total_response(b"9007199254740993.0", "total"), _total_response(b"9007199254740993.0", "total")
-        )
+        exchange.respond(_total_response(b"9007199254740993.0", "total"))
         drained(lines, "exact large total boundary", api.protocols.users.items.iterate(offset=start))
         for token in _TOTALS:
             exchange.respond(_total_response(token, "count"))
@@ -88,9 +86,7 @@ async def _async_values(harness: Harness, lines: list[str]) -> None:
             await arecord(lines, f"async ordinary total {token!r}", api.users.list_users)
             await afetched(lines, f"async offset total {token!r}", api.protocols.users.items.page)
         start = harness.argument("listUsers", "query", "offset", 9007199254740991)
-        exchange.respond(
-            _total_response(b"9007199254740993.0", "total"), _total_response(b"9007199254740993.0", "total")
-        )
+        exchange.respond(_total_response(b"9007199254740993.0", "total"))
         await adrained(lines, "async exact large total boundary", api.protocols.users.items.iterate(offset=start))
         for token in _TOTALS:
             exchange.respond(_total_response(token, "count"))

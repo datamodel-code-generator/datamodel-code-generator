@@ -321,6 +321,7 @@ def _vendor_headers(package: ModuleType, options: ModuleType, lines: list[str]) 
                 lambda view=view: view.retry.get_vendor(options=options.RequestOptions(retry=options.RetryOptions())),
             )
         lines.append(f"  vendor {label} arrivals={2 - len(exchange.responders)}")
+        exchange.responders.clear()
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
         for name in ("retry_after_ms_header", "should_retry_header"):

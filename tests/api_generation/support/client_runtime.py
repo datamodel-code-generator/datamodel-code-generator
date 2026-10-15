@@ -46,6 +46,7 @@ _ERROR_FIELDS: Final = (
     "sequence",
     "cause",
 )
+_OPENED: Final[list[Exchange]] = []
 
 
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
@@ -78,6 +79,7 @@ class Exchange:
         self.server: FixtureServer | None = None
         self.transports = 0
         self.gzipped: bytes | None = None
+        _OPENED.append(self)
 
     def respond(self, *responders: Callable[[httpx2.Request], httpx2.Response]) -> None:
         """Queue the responders of the next requests."""
@@ -316,6 +318,13 @@ def abroken(request: httpx2.Request) -> httpx2.Response:
     return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_AsyncBrokenStream())
 
 
+def unused_responders() -> list[str]:
+    """Report the responders the exchanges opened since the last report left queued, and forget those exchanges."""
+    left = sum(len(exchange.responders) for exchange in _OPENED)
+    _OPENED.clear()
+    return [f"  unused responders: {left}"] if left else []
+
+
 def import_generated_client(package: str) -> ModuleType:
     """Import a client's copied runtime when requested, otherwise use the covered source runtime."""
     return import_generated(package, copied=os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1")
@@ -362,6 +371,7 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     try:
         scenario(import_generated_client(package), lines)
     finally:
+        lines.extend(unused_responders())
         stop_servers()
         sys.path.remove(str(root))
         forget_generated(package)

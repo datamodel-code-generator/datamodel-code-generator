@@ -18,6 +18,7 @@ from tests.api_generation.support.client_runtime import (
     raw_response,
     record,
     run,
+    unused_responders,
 )
 from tests.api_generation.support.fixture_server import stop_servers
 from tests.api_generation.support.generated_packages import forget_generated
@@ -49,6 +50,7 @@ def reserved_version_report(case: str, version: str, backends: Sequence[str], ro
         try:
             reserved_paths(import_generated_client(package), lines)
         finally:
+            lines.extend(unused_responders())
             stop_servers()
             sys.path.remove(str(destination))
             forget_generated(package)
