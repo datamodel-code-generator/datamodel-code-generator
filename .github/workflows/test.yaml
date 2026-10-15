@@ -373,6 +373,10 @@ jobs:
             name: Client deadlines Python 3.15
             os: ubuntu-24.04
             coverage: false
+          - tox_env: fastapi-py315-nocov-e2e
+            name: FastAPI server e2e Python 3.15
+            os: ubuntu-24.04
+            coverage: false
           - tox_env: client-httpx2-min-nocov-e2e
             name: Client HTTPX2 minimum HTTP/1.1 and HTTP/2
             os: macos-latest
