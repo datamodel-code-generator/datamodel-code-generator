@@ -8,3 +8,4 @@ msgspec checks all str members of a union against the constraints of each of the
 msgspec decodes every integer as the int member of a union that has a float member too, so le of the int member would reject integers the float member accepts; Upload.amount is generated without this constraint.
 msgspec decodes every integer as the int member of a union that has a float member too, so le of the int member would reject integers the float member accepts; Upload.ratio is generated without this constraint.
 msgspec decodes every integer as the int member of a union that has a float member too, so multiple_of of the int member would reject integers the float member accepts; Upload.half is generated without this constraint.
+msgspec decodes every integer as the int member of a union that has a float member too, so ge of the int member would reject integers the float member accepts; Upload.floor is generated without this constraint.

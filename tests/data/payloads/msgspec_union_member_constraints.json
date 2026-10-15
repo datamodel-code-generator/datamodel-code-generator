@@ -15,6 +15,7 @@
     "step": 6,
     "half": 3,
     "gap": 2,
+    "floor": 3,
     "initials": "abc",
     "pair": "abc"
   },
