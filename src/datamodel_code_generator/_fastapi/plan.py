@@ -269,12 +269,14 @@ class JsonPartSpec:
 
     A single-valued property names its model and its field there, which read its part as the model reads the field,
     by the field's own discriminator and constraints too. The one that reads a form's other properties has no name.
+    An untyped one keeps a part that is not JSON as it comes.
     """
 
     name: str
     type: TypeView
     repeated: bool = False
     field: tuple[GeneratedSymbolType, str] | None = None
+    untyped: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1222,7 +1224,8 @@ class Planner:  # noqa: PLR0904
         """Return a form with how its members are read: each property of its model, then any other property.
 
         A member whose type, or whose items' type, has a lexical kind is text of that kind. Any other, such as an
-        object, is JSON in a multipart body, as is a member whose encoding names JSON; a URL-encoded body carries
+        object, is JSON in a multipart body, as is a member whose encoding names JSON and one that takes any value,
+        which keeps a part that is not JSON as it comes since it takes that too; a URL-encoded body carries
         text alone, so generation stops for such a member, as it does for a parameter and for the client. An
         encoding's style spreads such a member over parts or pairs that only the request body mode reads. The other
         properties a schema types are read by the same rule, under whatever names they come, and need no plan when
@@ -1237,11 +1240,17 @@ class Planner:  # noqa: PLR0904
             for child in media.declaration.children
             if child.kind == "encoding" and any(fact(child, key) is not None for key in STYLED)
         }
+        multipart = media.kind == "multipart"
         read = [
             (
                 member,
                 self.form_plan(
-                    operation, media, member, json=member.name in json_members, styled=member.name in styled
+                    operation,
+                    media,
+                    member,
+                    json=member.name in json_members,
+                    styled=member.name in styled,
+                    untyped=multipart and member.name not in styled and self.wire.kinds.untyped(member.leaf),
                 ),
             )
             for member in form_members(self.wire.kinds, media.use)
@@ -1277,7 +1286,7 @@ class Planner:  # noqa: PLR0904
             self.by_name(base) for base in declared.bases
         )
 
-    def form_plan(
+    def form_plan(  # noqa: PLR0913
         self,
         operation: OperationContract,
         media: MediaSpec,
@@ -1285,9 +1294,10 @@ class Planner:  # noqa: PLR0904
         *,
         json: bool = False,
         styled: bool = False,
+        untyped: bool = False,
     ) -> FieldPlan | JsonPartSpec | None:
         """Return how one member of a form is read, reporting one that the adapters do not read."""
-        if member.kind is not None and not json:
+        if member.kind is not None and not json and not untyped:
             return FieldPlan(member.name, member.kind, repeated=member.repeated)
         if styled:
             self.unsupported(operation, (media,), f"the {member.name} encoding of ")
@@ -1298,7 +1308,7 @@ class Planner:  # noqa: PLR0904
                 if member.repeated or binding is None or binding.slot is None
                 else (GeneratedSymbolType(binding.consumer), binding.slot.name)
             )
-            return JsonPartSpec(member.name, member.leaf, repeated=member.repeated, field=field)
+            return JsonPartSpec(member.name, member.leaf, repeated=member.repeated, field=field, untyped=untyped)
         else:
             self.problems.append(_problem("MC_PARAMETER_ENCODING", NO_SCALAR_KIND, member.source))
         return None

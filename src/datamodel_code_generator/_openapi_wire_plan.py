@@ -122,6 +122,7 @@ _BINARY_TEXT: Final = (
     "--type-mappings string+byte=binary to keep bytes, or send it as a whole binary body or a file part"
 )
 _WRAPPERS: Final = frozenset({"alias", "root"})
+_ANY: Final = frozenset({("typing", "Any"), ("typing_extensions", "Any")})
 
 
 @dataclass(frozen=True, slots=True)
@@ -845,10 +846,15 @@ class LexicalKinds:
             value = self._argument(value, *_ARGUMENTS[step])
         return value
 
-    def _argument(
-        self, value: TypeView | None, count: int, containers: frozenset[tuple[str | None, str]]
-    ) -> TypeView | None:
-        """Return the last argument of a container type, through aliases, root models and a union with None alone."""
+    def untyped(self, value: TypeView) -> bool:
+        """Return whether a type takes any value, as the type of an untyped schema does.
+
+        A form-data part carries such a value as JSON, as it does one without one kind, while its kind is a string's.
+        """
+        return (found := self._unwrapped(value)) is not None and _type_name(found) in _ANY
+
+    def _unwrapped(self, value: TypeView | None) -> TypeView | None:
+        """Return the type a type stands for, through aliases, root models and a union with None alone."""
         seen: set[int] = set()
         while True:
             if isinstance(value, UnionType) and len(present := _present(value)) == 1:
@@ -861,13 +867,18 @@ class LexicalKinds:
                 seen.add(value.symbol)
                 value = self._roots.get(value.symbol)
             else:
-                return (
-                    value.arguments[-1]
-                    if isinstance(value, GenericType)
-                    and len(value.arguments) == count
-                    and _type_name(value.base) in containers
-                    else None
-                )
+                return value
+
+    def _argument(
+        self, value: TypeView | None, count: int, containers: frozenset[tuple[str | None, str]]
+    ) -> TypeView | None:
+        """Return the last argument of a container type, through aliases, root models and a union with None alone."""
+        value = self._unwrapped(value)
+        return (
+            value.arguments[-1]
+            if isinstance(value, GenericType) and len(value.arguments) == count and _type_name(value.base) in containers
+            else None
+        )
 
     def _leaves(self, value: TypeView | None, seen: frozenset[int]) -> Iterator[LexicalKind | None]:
         match value:

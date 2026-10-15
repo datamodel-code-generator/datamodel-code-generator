@@ -1355,12 +1355,15 @@ A multipart part is text when the type of its member, or of the member's items w
 scalar kind, with one part for each item of an array. A part of any other member is JSON, as the generated client
 sends it: an object, a mapping, each item of an array of objects, a union of a string and an object, an enum of mixed
 kinds, or a union of an array and another type, whose array is one part. So is a part of a member whose `encoding`
-names one JSON media type and no style, such as `contentType: application/json`, a scalar included. A JSON part is
-parsed by `TypeAdapter.validate_json` whatever media type the part names and whether it arrives as a field or as a
-file: of the member's model field, so the field's own constraints and `discriminator` apply and a tag no member of the
-union has answers one `union_tag_invalid` record, or, for a member that repeats, of its items' type. A part that is not
-JSON, or that the type rejects, answers `422` with its records at `["body", name]`, or at `["body", name, index]` for a
-member that repeats, before the rest of the body is validated.
+names one JSON media type and no style, such as `contentType: application/json`, a scalar included, and of a member
+without a type, whose schema is `{}`, or of each item of an array whose items have none. A JSON part is parsed by
+`TypeAdapter.validate_json` whatever media type the part names and whether it arrives as a field or as a file, since
+the server cannot see the media type of a part that is not a file: of the member's model field, so the field's own
+constraints and `discriminator` apply and a tag no member of the union has answers one `union_tag_invalid` record, or,
+for a member that repeats, of its items' type. A part that is not JSON, or that the type rejects, answers `422` with
+its records at `["body", name]`, or at `["body", name, index]` for a member that repeats, before the rest of the body
+is validated. A member without a type takes any value, so it keeps a part that is not JSON as it arrives instead: text
+for a field, bytes for a file.
 
 A schema can type the properties it does not declare, with `additionalProperties: {...}`. Their parts come under any
 name no declared member has and are read by the same rule, by the type the model keeps their values as, in a field of

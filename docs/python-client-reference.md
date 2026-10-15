@@ -838,9 +838,10 @@ member repeats, one part for each item, when its type is an array. A value whose
 string as it is, a number or a boolean as JSON writes it. A value whose type has none is one `application/json` part:
 an object, a mapping, a union of a string and an object, an enum of mixed kinds, or a union of an array and another
 type such as `string | string[]`, whose array is then one part rather than one for each item. A member without a
-type is written by its value: a string as it is, an object or an array as JSON. A media type that the member's
+type, whose schema is `{}`, takes any value, and that value is one `application/json` part as well, a string or an
+array included; an array whose items have no type has one such part for each item. A media type that the member's
 `encoding` declares takes precedence. A multipart response is read by the same rule, and a part that names a JSON
-media type is read as JSON.
+media type is read as JSON; a part of a member without a type that names none is read as text.
 
 The properties a schema types without declaring them, with `additionalProperties: {...}`, follow the same rule under
 whatever names a body gives them, by the type of their values: an object is one `application/json` part, an array of

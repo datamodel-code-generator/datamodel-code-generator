@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict
+from typing import Any, Dict
 
 from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
 
@@ -69,6 +69,11 @@ class Choices(BaseModel):
     level: Level | None = None
     words: list[str] | str | None = None
     lists: list[int] | list[str] | None = None
+
+
+class Anythings(BaseModel):
+    anything: Any | None = None
+    many: list[Any] | None = None
 
 
 class ProfilesPostRequest(BaseModel):
@@ -227,3 +232,17 @@ class LabelsPostRequest(RootModel[constr(max_length=5) | None]):
 
 class RawPostRequest(BaseModel):
     pass
+
+
+class AnythingExtrasPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    anything: Any | None = None
+
+
+class AnythingFilesPostRequest(Anythings):
+    file: bytes | None = None

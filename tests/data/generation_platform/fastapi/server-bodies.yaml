@@ -326,6 +326,43 @@ paths:
             schema: {type: object}
       responses:
         "204": {description: Done.}
+  /anythings:
+    post:
+      operationId: postAnything
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Anythings"}
+      responses:
+        "204": {description: Done.}
+  /anything-extras:
+    post:
+      operationId: postAnythingExtras
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                anything: {}
+              additionalProperties: {$ref: "#/components/schemas/Filter"}
+      responses:
+        "204": {description: Done.}
+  /anything-files:
+    post:
+      operationId: postAnythingFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Anythings"}
+                - {type: object, properties: {file: {type: string, format: binary}}}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Item:
@@ -370,3 +407,8 @@ components:
         level: {enum: [1, a, true]}
         words: {anyOf: [{type: array, items: {type: string}}, {type: string}]}
         lists: {anyOf: [{type: array, items: {type: integer}}, {type: array, items: {type: string}}]}
+    Anythings:
+      type: object
+      properties:
+        anything: {}
+        many: {type: array, items: {}}
