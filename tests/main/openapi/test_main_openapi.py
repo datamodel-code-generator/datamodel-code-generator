@@ -726,7 +726,10 @@ def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_fi
             force_exec_validation=True,
         )
     assert_output(
-        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
         EXPECTED_OPENAPI_PATH / "discriminator" / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
