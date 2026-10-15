@@ -74,6 +74,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "naming-snake",
         "naming-default",
         "naming-default-moved",
+        "naming-device-moved",
         "name-errors",
         "method-collisions",
         "method-collisions-suffix",
