@@ -13282,7 +13282,9 @@ no other member of the form has. A `deepObject` comes as `name[key]` pairs, and 
 pair of text, or of JSON that is parsed as a JSON part is, with records at `["body", name]`. The other pairs are read
 as in a form without such members, and the model validates the result; an operation with such a member is an
 adapter's, not FastAPI's form model. An encoding that the client has no form for, such as `deepObject` for an array or
-`contentType: application/xml`, stops generation with the message the client stops with.
+`contentType: application/xml`, stops generation with the message the client stops with. So does a form whose
+exploded object that allows other properties shares the form with another such member or a `deepObject` member, since
+both would take the same names, as an operation's query parameters are refused.
 
 The adapters read no part headers, no multipart `encoding` that names another media type, such as one in another
 charset or `application/xml` for a member without files, and no multipart style other than the default `form` with
@@ -18443,7 +18445,9 @@ failure while a file or iterable is read during sending raises `APIConnectionErr
 A `MultipartBody` is sent through HTTPX2's `files=` encoding, its parts in their order: each `FieldPart` and
 `FilePart` keeps its name, filename, media type and extra headers, and parts may repeat a name. A field's value goes
 through its member's model codec, a repeated member sends a part for each item, a styled member the parts its style
-gives, and a media type the member's encoding declares must cover the one a part names. The SDK does not check parts
+gives, and a media type the member's encoding declares must cover the one a part names. Generation stops for a form
+whose exploded object that allows other properties shares the form with another such member or a `deepObject` member,
+which would write the same names, as it does for query parameters. The SDK does not check parts
 against the schema. A part header HTTPX2 refuses, and a part that is not a `FieldPart` or a `FilePart` with a string
 name, raises a request `DecodeError` with the reason `unencodable` before sending. A body whose parts are all bytes is
 encoded once, with `Content-Length`; a body without parts is sent as its closing boundary alone, with the

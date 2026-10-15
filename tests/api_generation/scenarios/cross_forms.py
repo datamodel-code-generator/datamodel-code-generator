@@ -92,7 +92,7 @@ def calls(kit: Kit) -> Calls:
         ),
         ("post_texts non-ASCII code", lambda: api.post_texts(body=models.TextsPostRequest(code="ä"))),
         ("post_images", lambda: api.post_images(body=images)),
-        ("/styles unknown member of an exploded object", lambda: _raw(kit, "/styles", "name=n&x=1&z=2")),
+        ("/styles unknown member of a closed exploded object", lambda: _raw(kit, "/styles", "name=n&x=1&z=2")),
         ("/styles exploded member of another kind", lambda: _raw(kit, "/styles", "name=n&x=one")),
         ("/styles JSON content that is not JSON", lambda: _raw(kit, "/styles", "name=n&meta=%7B&note=%7B")),
         ("/styles unpaired object member", lambda: _raw(kit, "/styles", "name=n&corner=x,1,y")),

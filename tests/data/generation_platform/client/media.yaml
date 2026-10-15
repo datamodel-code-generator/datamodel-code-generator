@@ -342,7 +342,7 @@ paths:
                   additionalProperties: {type: string}
             encoding:
               extra: {style: form, explode: true}
-              filter: {style: deepObject, explode: true}
+              filter: {style: form, explode: false}
               tags: {style: pipeDelimited, explode: false}
               ids: {style: form, explode: false}
               meta: {contentType: application/json}
@@ -464,7 +464,7 @@ paths:
               tags: {style: pipeDelimited}
               words: {style: spaceDelimited}
               sizes: {style: form, explode: false}
-              filter: {style: deepObject, explode: true}
+              filter: {style: form, explode: false}
               point: {explode: true}
               label: {allowReserved: true, contentType: application/json}
       responses:

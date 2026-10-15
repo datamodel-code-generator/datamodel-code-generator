@@ -1430,7 +1430,9 @@ no other member of the form has. A `deepObject` comes as `name[key]` pairs, and 
 pair of text, or of JSON that is parsed as a JSON part is, with records at `["body", name]`. The other pairs are read
 as in a form without such members, and the model validates the result; an operation with such a member is an
 adapter's, not FastAPI's form model. An encoding that the client has no form for, such as `deepObject` for an array or
-`contentType: application/xml`, stops generation with the message the client stops with.
+`contentType: application/xml`, stops generation with the message the client stops with. So does a form whose
+exploded object that allows other properties shares the form with another such member or a `deepObject` member, since
+both would take the same names, as an operation's query parameters are refused.
 
 The adapters read no part headers, no multipart `encoding` that names another media type, such as one in another
 charset or `application/xml` for a member without files, and no multipart style other than the default `form` with
