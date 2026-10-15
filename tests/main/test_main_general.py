@@ -2911,6 +2911,131 @@ def test_type_overrides_model_level_dict_key(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.10", "type_overrides_target_310.py", id="python-3.10"),
+        pytest.param("3.12", "type_overrides_target_312.py", id="python-3.12"),
+    ],
+)
+def test_type_overrides_for_target(output_file: Path, target_python_version: str, expected_file: str) -> None:
+    """Import a typing name newer than the target from its backport, leaving overrides no model uses unchecked."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "typing.TypedDict",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--type-overrides",
+            json.dumps({
+                "Model.c": "typing.LiteralString",
+                "D": "collections.abc.Buffer",
+                "Missing": "pathlib.types.PathInfo",
+                "Model.missing": "enum.StrEnum",
+            }),
+        ],
+        force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+    )
+
+
+def test_type_overrides_replace_custom_type_path_unavailable_for_target(output_file: Path) -> None:
+    """Leave a customTypePath the target lacks unchecked when overrides replace every type that would import it."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "custom_type_path_overridden.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="type_overrides_custom_type_path_overridden.py",
+        extra_args=[
+            "--output-model-type",
+            "typing.TypedDict",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--type-overrides",
+            json.dumps({"Model.kind": "mylib.Kind", "A": "mylib.A"}),
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "target_python_version", "type_overrides", "expected_error"),
+    [
+        pytest.param(
+            "type_overrides_target.json",
+            "3.10",
+            {"Model.c": "enum.StrEnum"},
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="scoped",
+        ),
+        pytest.param(
+            "type_overrides_target.json",
+            "3.13",
+            {"D": "pathlib.types.PathInfo"},
+            "pathlib.types.PathInfo is unavailable for target Python 3.13",
+            id="model-level",
+        ),
+        pytest.param(
+            "type_overrides_target.json",
+            "3.14",
+            {"Model.c": "builtins.frozendict"},
+            "builtins.frozendict is unavailable for target Python 3.14",
+            id="builtin",
+        ),
+        pytest.param(
+            "type_overrides_target.json",
+            "3.15",
+            {"Model.c": "pathlib.DirEntryInfo"},
+            "pathlib.DirEntryInfo is unavailable for target Python 3.15",
+            id="removed",
+        ),
+        pytest.param(
+            "custom_type_path_overridden.json",
+            "3.10",
+            {"Model.kind": "mylib.Kind"},
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="custom-type-path-left",
+        ),
+    ],
+)
+def test_type_overrides_reject_types_unavailable_for_target(
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+    fixture_name: str,
+    target_python_version: str,
+    type_overrides: dict[str, str],
+    expected_error: str,
+) -> None:
+    """Reject output that imports a standard-library type introduced after or removed by the target."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+        capsys=capsys,
+        expected_stderr_contains=expected_error,
+        extra_args=[
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--type-overrides",
+            json.dumps(type_overrides),
+        ],
+    )
+
+
 def test_skip_root_model(tmp_path: Path) -> None:
     """Test --skip-root-model flag functionality using generate()."""
     output_file = tmp_path / "output.py"

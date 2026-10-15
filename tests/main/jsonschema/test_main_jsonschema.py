@@ -19697,6 +19697,77 @@ def test_x_python_type_rejects_symbol_unavailable_for_target(
     )
 
 
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.10", "schema_import_paths_target_310.py", id="python-3.10"),
+        pytest.param("3.12", "schema_import_paths_target_312.py", id="python-3.12"),
+    ],
+)
+def test_schema_import_paths_for_target(output_file: Path, target_python_version: str, expected_file: str) -> None:
+    """Import a customTypePath or x-python-import typing name newer than the target from its backport."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_import_paths_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.TypingTypedDict.value,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+    )
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "target_python_version", "expected_error"),
+    [
+        pytest.param(
+            "custom_type_path_unavailable.json",
+            "3.10",
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="custom-type-path",
+        ),
+        pytest.param(
+            "custom_type_path_unavailable_many.json",
+            "3.10",
+            "enum.ReprEnum is unavailable for target Python 3.10",
+            id="custom-type-path-first-in-schema-order",
+        ),
+        pytest.param(
+            "x_python_import_unavailable.json",
+            "3.13",
+            "pathlib.types.PathInfo is unavailable for target Python 3.13",
+            id="x-python-import",
+        ),
+    ],
+)
+def test_schema_import_paths_reject_types_unavailable_for_target(
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+    fixture_name: str,
+    target_python_version: str,
+    expected_error: str,
+) -> None:
+    """Reject a customTypePath or x-python-import naming a standard-library type the target lacks."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+        capsys=capsys,
+        expected_stderr_contains=expected_error,
+        extra_args=["--target-python-version", target_python_version, "--formatters", "builtin"],
+    )
+
+
 def test_x_python_type_builtin_and_enum_helpers_for_target_311(output_file: Path) -> None:
     """Keep bare builtins distinct from target-gated enum helper classes."""
     run_main_and_assert(

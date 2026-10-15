@@ -1,0 +1,19 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "customTypePath": "enum.StrEnum"
+    },
+    "a": {
+      "$ref": "#/$defs/A"
+    }
+  },
+  "$defs": {
+    "A": {
+      "type": "string",
+      "customTypePath": "enum.StrEnum"
+    }
+  }
+}

@@ -3322,8 +3322,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._import_overrides: dict[str, str] | None = config.import_overrides or None
         self.type_mappings: dict[tuple[str, str], str] = Parser._parse_type_mappings(config.type_mappings)
         self.type_overrides: dict[str, str] = config.type_overrides or {}
+        self._unavailable_imports: dict[tuple[str | None, str], str] = {}
         self._type_override_imports: dict[str, Import] = {
-            key: Import.from_full_path(value) for key, value in self.type_overrides.items()
+            key: Import.from_full_path(self._get_emitted_python_type_path(value))
+            for key, value in self.type_overrides.items()
         }
         self._model_type_override_imports: dict[str, Import] = {
             key: import_ for key, import_ in self._type_override_imports.items() if "." not in key
@@ -3339,6 +3341,43 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _data_model_field_common_kwargs(self) -> dict[str, Any]:
         return self._data_model_field_common_kwargs_cache
+
+    def _get_target_python_type_path(self, path: str) -> str:
+        """Return a user-named type path for the target, naming a newer typing name by its backport.
+
+        A standard-library type that the target lacks is an error, as for ``x-python-type``.
+        """
+        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
+            PythonTypeUnavailableError,
+            get_qualified_python_type_import_path,
+        )
+
+        try:
+            return get_qualified_python_type_import_path(path, self.target_python_version.version_key)
+        except PythonTypeUnavailableError as exc:
+            raise Error(str(exc)) from exc
+
+    def _get_emitted_python_type_path(self, path: str) -> str:
+        """Return a user-named type path for the target, rejecting a type the target lacks only once output imports it.
+
+        A type that an override replaces or that no model uses emits no import, so it is left alone.
+        """
+        try:
+            return self._get_target_python_type_path(path)
+        except Error as exc:
+            import_ = Import.from_full_path(path)
+            self._unavailable_imports[import_.from_, import_.import_] = str(exc)
+            return path
+
+    def _reject_unavailable_imports(self, contexts: Sequence[ModuleContext]) -> None:
+        """Reject output that imports a type the target lacks, after overrides, unused models and import remapping.
+
+        The first such type in schema order is reported, so the message does not depend on set iteration order.
+        """
+        all_imports = (self.imports, *(ctx.imports for ctx in contexts))
+        for (from_, name), message in self._unavailable_imports.items():
+            if any(name in imports.get(from_, ()) for imports in all_imports):
+                raise Error(message)
 
     def _split_field_alias(  # noqa: PLR6301
         self,
@@ -7936,14 +7975,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             # import set stay invariant. Keep snapshots synchronized defensively.
             self._sync_schema_runtime_validation_module_imports(contexts, model_imports)
 
-        match self._import_overrides:
-            case None:
-                return
-            case overrides:
-                _remap_imports(self.imports, overrides)
-                for ctx in contexts:
-                    _remap_imports(ctx.imports, overrides)
-        return
+        if (overrides := self._import_overrides) is not None:
+            _remap_imports(self.imports, overrides)
+            for ctx in contexts:
+                _remap_imports(ctx.imports, overrides)
+        if self._unavailable_imports:
+            self._reject_unavailable_imports(contexts)
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""

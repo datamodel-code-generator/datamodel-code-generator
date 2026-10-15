@@ -19,6 +19,10 @@ class PythonTypeUnavailableError(ValueError):
         self.target_version = target_version
         super().__init__(type_name, target_version)
 
+    def __str__(self) -> str:
+        """Name the type and the target that lacks it."""
+        return f"{self.type_name} is unavailable for target Python {'.'.join(map(str, self.target_version))}"
+
 
 _PYTHON_TYPE_IMPORT_PATHS: dict[str, str] = {
     # collections.abc
