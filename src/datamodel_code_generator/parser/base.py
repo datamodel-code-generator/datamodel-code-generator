@@ -2098,6 +2098,13 @@ def _get_discriminator_values(
     if require_literal:
         return []
 
+    return _get_union_discriminator_values(discriminator_model, mapping)
+
+
+def _get_union_discriminator_values(
+    discriminator_model: DataModel, mapping: dict[str, str]
+) -> list[DiscriminatorValue]:
+    """Return the tags a union selects a variant by: its mapping values, else the schema name."""
     return _get_mapping_discriminator_values(discriminator_model, mapping) or [
         _source_path(discriminator_model.path).split("/")[-1]
     ]
@@ -4879,13 +4886,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         values: list[DiscriminatorValue],
         field_name_mode: Literal["original", "resolved", "either"],
     ) -> None:
-        """Remember the tags unions map a variant to, unless the variant declares its own tag."""
+        """Remember the tags unions map a variant to, unless the variant declares its own tag.
+
+        The values of a later union come from the tag an earlier union wrote, so the tags it maps the variant to are
+        derived again from its mapping or the schema name.
+        """
         if (recorded := self._variant_discriminator_tags.get(key := (id(variant), property_name))) is not None:
-            if set(values) != set(recorded.kept):
+            if (kept := set(values)) != set(recorded.kept):
                 recorded.others.setdefault(recorded.owner, recorded.kept)
                 recorded.kept, recorded.owner = values, union_name
-            elif (mapped := _get_mapping_discriminator_values(variant, mapping)) and set(mapped) != set(values):
-                recorded.others.setdefault(union_name, mapped)
+                recorded.others = {union: tags for union, tags in recorded.others.items() if set(tags) != kept}
+            elif set(tags := _get_union_discriminator_values(variant, mapping)) != kept:
+                recorded.others.setdefault(union_name, tags)
             return
         if _find_discriminator_value(variant.fields, field_name, field_name_mode=field_name_mode) is None:
             self._variant_discriminator_tags[key] = _VariantDiscriminatorTags(

@@ -1,0 +1,3 @@
+CatRequest is a variant of discriminated unions that map 'petType' to different tags: it keeps 'cat' from PetRequest, so these unions cannot decode it: OwnerRequest.inline ('Cat').
+Dog is a variant of discriminated unions that map 'petType' to different tags: it keeps 'dog' from PetRequest, so these unions cannot decode it: OwnerRequest.inline ('Dog'), OwnerResponse.inline ('Dog').
+CatResponse is a variant of discriminated unions that map 'petType' to different tags: it keeps 'cat' from PetResponse, so these unions cannot decode it: OwnerResponse.inline ('Cat').

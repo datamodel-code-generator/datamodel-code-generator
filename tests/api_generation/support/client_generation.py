@@ -15,7 +15,6 @@ from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-import datamodel_code_generator
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, chdir, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
@@ -33,7 +32,7 @@ Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
 FORMATTER_FAILURE = "Ruff command failed"
-GENERATOR = Path(datamodel_code_generator.__file__).parent
+GENERATOR = Path(str(files("datamodel_code_generator")))
 
 
 def generator_warnings(caught: list[warnings.WarningMessage]) -> list[str]:

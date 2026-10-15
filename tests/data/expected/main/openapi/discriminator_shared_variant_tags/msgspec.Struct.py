@@ -48,3 +48,34 @@ Figure: TypeAlias = Circle | Square
 
 
 Drawing: TypeAlias = Circle | Square
+
+
+class Eel(Struct, tag_field='kind', tag='swim'):
+    pass
+
+
+class Shell(Struct, tag_field='kind', tag='shell'):
+    pass
+
+
+Ocean: TypeAlias = Eel | Shell
+
+
+Lake: TypeAlias = Eel | Shell
+
+
+class Ring(Struct):
+    shape: Literal['ring', 'hoop']
+
+
+class Star(Struct, tag_field='shape', tag='star'):
+    pass
+
+
+Badge: TypeAlias = Ring | Star
+
+
+Emblem: TypeAlias = Ring | Star
+
+
+Seal: TypeAlias = Ring | Star

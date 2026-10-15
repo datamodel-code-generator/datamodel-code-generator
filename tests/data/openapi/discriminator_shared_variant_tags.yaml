@@ -95,3 +95,72 @@ components:
         mapping:
           disc: "#/components/schemas/Circle"
           square: "#/components/schemas/Square"
+    Eel:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Shell:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: shell
+    Ocean:
+      oneOf:
+        - $ref: "#/components/schemas/Eel"
+        - $ref: "#/components/schemas/Shell"
+      discriminator:
+        propertyName: kind
+        mapping:
+          swim: "#/components/schemas/Eel"
+          shell: "#/components/schemas/Shell"
+    Lake:
+      oneOf:
+        - $ref: "#/components/schemas/Eel"
+        - $ref: "#/components/schemas/Shell"
+      discriminator:
+        propertyName: kind
+    Ring:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Star:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Badge:
+      oneOf:
+        - $ref: "#/components/schemas/Ring"
+        - $ref: "#/components/schemas/Star"
+      discriminator:
+        propertyName: shape
+        mapping:
+          ring: "#/components/schemas/Ring"
+          hoop: "#/components/schemas/Ring"
+          star: "#/components/schemas/Star"
+    Emblem:
+      oneOf:
+        - $ref: "#/components/schemas/Ring"
+        - $ref: "#/components/schemas/Star"
+      discriminator:
+        propertyName: shape
+        mapping:
+          band: "#/components/schemas/Ring"
+          loop: "#/components/schemas/Ring"
+          star: "#/components/schemas/Star"
+    Seal:
+      oneOf:
+        - $ref: "#/components/schemas/Ring"
+        - $ref: "#/components/schemas/Star"
+      discriminator:
+        propertyName: shape
+        mapping:
+          ring: "#/components/schemas/Ring"
+          hoop: "#/components/schemas/Ring"
+          star: "#/components/schemas/Star"

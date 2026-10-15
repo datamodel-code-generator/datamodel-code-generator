@@ -55,3 +55,39 @@ class Figure(RootModel[Circle | Square]):
 
 class Drawing(RootModel[Circle | Square]):
     root: Circle | Square = Field(..., discriminator='shape')
+
+
+class Eel(BaseModel):
+    kind: Literal['swim']
+
+
+class Shell(BaseModel):
+    kind: Literal['shell']
+
+
+class Ocean(RootModel[Eel | Shell]):
+    root: Eel | Shell = Field(..., discriminator='kind')
+
+
+class Lake(RootModel[Eel | Shell]):
+    root: Eel | Shell = Field(..., discriminator='kind')
+
+
+class Ring(BaseModel):
+    shape: Literal['ring', 'hoop']
+
+
+class Star(BaseModel):
+    shape: Literal['star']
+
+
+class Badge(RootModel[Ring | Star]):
+    root: Ring | Star = Field(..., discriminator='shape')
+
+
+class Emblem(RootModel[Ring | Star]):
+    root: Ring | Star = Field(..., discriminator='shape')
+
+
+class Seal(RootModel[Ring | Star]):
+    root: Ring | Star = Field(..., discriminator='shape')
