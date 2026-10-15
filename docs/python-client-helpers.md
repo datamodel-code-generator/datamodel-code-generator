@@ -17,8 +17,10 @@ This page covers the helper file first, then each helper kind: [pagination](#pag
 the helpers share come last. Read [Python Client Generation](python-client.md) first: helpers build on the generated
 client and its settings.
 
-The examples name the generated package `client` and its models `models`, in the project root; in the guide's quick
-start they are `app.client` and `app.models`, inside the application package `app`.
+The examples use the layout of the guide's quick start: the generated package `app.client` and its models
+`app.models`, inside the application package `app`. The `pyproject.toml` example, rendered from a tested project,
+writes them as `client` and `models` in the project root. The text calls the generated package `client`, as in
+`client.protocols`.
 
 Terms used throughout:
 
@@ -279,11 +281,11 @@ generate(
     openapi_scopes=["schemas", "api"],
     output_model_type="pydantic_v2.BaseModel",
     target_python_version="3.11",
-    output=Path("models.py"),
+    output=Path("app/models.py"),
     generate_client="httpx2",
-    client_output=Path("client"),
-    client_package="client",
-    client_model_package="models",
+    client_output=Path("app/client"),
+    client_package="app.client",
+    client_model_package="app.models",
     client_protocols={
         "users.all": {
             "kind": "pagination",
@@ -306,8 +308,8 @@ the root's. A root takes `helper_defaults` when the package declares a helper, `
 helper, and `allowed_origins` when it declares a pagination helper that follows a server's next URL or `Link` header.
 
 ```python
-from client import Client
-from client.protocols import PaginationOptions
+from app.client import Client
+from app.client.protocols import PaginationOptions
 
 client = Client(helper_defaults={"users.all": PaginationOptions(max_pages=10, total_timeout=300)})
 ```
@@ -357,7 +359,7 @@ body as keywords, never field arguments, then `pagination_options` and `options`
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.pagination.helper -->
 
 ```python
-from client import Client
+from app.client import Client
 
 with Client() as client:
     helper = client.protocols.users.all
@@ -540,9 +542,9 @@ that value with the operation's arguments and any request body again, as `iterat
 session of its own that sends nothing until it is iterated; it is not awaited, even on `AsyncClient`.
 
 ```python
-from client import Client
-from client.errors import SessionLimitError
-from client.protocols import PaginationOptions
+from app.client import Client
+from app.client.errors import SessionLimitError
+from app.client.protocols import PaginationOptions
 
 with Client() as client:
     helper = client.protocols.users.all
@@ -652,8 +654,8 @@ and `options`, sends the create request, and returns a handle of the long-runnin
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.helper -->
 
 ```python
-from client import Client
-from models import JobRequest
+from app.client import Client
+from app.models import JobRequest
 
 
 def run(job: JobRequest) -> None:
@@ -757,9 +759,9 @@ server's delay, so a caller resuming after a `SessionLimitError` with the reason
 import json
 import time
 
-from client import Client
-from client.errors import SessionLimitError
-from models import JobRequest
+from app.client import Client
+from app.client.errors import SessionLimitError
+from app.models import JobRequest
 
 
 def run(job: JobRequest) -> None:
@@ -969,7 +971,7 @@ keywords, never field arguments, without the parameter the helper writes the con
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.uploads.helper -->
 
 ```python
-from client import Client
+from app.client import Client
 
 with Client() as client, open("video.mp4", "rb") as video:
     upload = client.protocols.files.upload
@@ -1136,7 +1138,7 @@ one `await` an `AsyncEventStream[T]`, once the response is a declared success of
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.helper -->
 
 ```python
-from client import Client
+from app.client import Client
 
 with Client() as client, client.protocols.events.typed.open() as stream:
     for event in stream:
@@ -1313,7 +1315,7 @@ one is awaited once and returns the stream:
 import json
 from pathlib import Path
 
-from client import Client
+from app.client import Client
 
 saved = Path("events.checkpoint")
 with Client() as client, client.protocols.events.live.open() as stream:
@@ -1420,7 +1422,7 @@ method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so every
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.helper -->
 
 ```python
-from client import Client
+from app.client import Client
 
 with Client() as client, client.protocols.records.all.open() as stream:
     for record in stream.data():
@@ -1504,8 +1506,8 @@ with` sends the handshake and enters an `AsyncWebSocketSession[S, R]`, which lea
 ```python
 import asyncio
 
-from client import AsyncClient, Client
-from models import ClientMessage
+from app.client import AsyncClient, Client
+from app.models import ClientMessage
 
 with Client() as client, client.protocols.rooms.chat.connect(room="lobby") as session:
     session.send(ClientMessage(text="hi"))
@@ -1810,7 +1812,7 @@ package or the module. It verifies one received delivery, with a builtin `standa
 JSON event; a helper whose signature is [`none`](#unsigned-webhooks) only decodes. It creates no client, server, or
 route. The key types of builtin signatures are in `client.webhooks.keys`, which exists only when a helper has a builtin
 signature and whose name a helper cannot take, and a package exists only when at least one webhook helper is enabled.
-With the package `client` and the `standard.message` helper below:
+With the package `app.client` and the `standard.message` helper below:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.usage -->
 <!-- fmt: off -->
@@ -2141,7 +2143,7 @@ from its representation.
 from datetime import datetime
 from typing import Protocol, TypeVar
 
-from client.protocols import KeySet, ResolvedWebhookOptions, VerifiedSignature
+from app.client.protocols import KeySet, ResolvedWebhookOptions, VerifiedSignature
 
 K = TypeVar("K")
 

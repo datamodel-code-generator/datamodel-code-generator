@@ -8,9 +8,10 @@
 This page is the reference behind [Python Client Generation](python-client.md): how the generated methods are
 declared, how values are converted, and the full rules of timeouts, retries, request bodies, redirects, templates,
 and errors. The guide covers the common cases with tested examples; come here for the precise rules of one setting.
-The [protocol helpers](python-client-helpers.md) have a page of their own. In the examples, the generated package is
-`client` and its models are `models`, in the project root; in the guide's quick start they are `app.client` and
-`app.models`, inside the application package `app`.
+The [protocol helpers](python-client-helpers.md) have a page of their own. The examples use the layout of the guide's
+quick start: the generated package `app.client` and its models `app.models`, inside the application package `app`. The
+`pyproject.toml` example of [body field arguments](#body-field-arguments), rendered from a tested project, writes them
+as `client` and `models` in the project root. The text calls the generated package `client`, as in `client.errors`.
 
 ## Signature style
 
@@ -178,8 +179,8 @@ Both styles accept the same direct calls, and forwarding a mapping whose type de
 ```python
 from typing_extensions import NotRequired, TypedDict
 
-from client import Client
-from client.options import RequestOptions
+from app.client import Client
+from app.client.options import RequestOptions
 
 
 class GetArguments(TypedDict):
@@ -217,8 +218,8 @@ take them next to the body argument, on every view of the method.
 With `"both"`, a JSON body whose model is `NewPet` takes either call:
 
 ```python
-from client import Client
-from models import NewPet
+from app.client import Client
+from app.models import NewPet
 
 with Client() as client:
     client.pets.create_pet(body=NewPet(name="Mimi", tag="cat"), media_type="application/json")
@@ -461,21 +462,21 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   server can send it. A declared media type whose text is not ASCII header text, such as `text/plain; label="café"`,
   stops generation too, since its Content-Type could not be sent; a call's `media_type` of such text raises
   `ConfigurationError` with the reason `invalid_value` and the `field_path` `("headers", "Content-Type")`.
-- **Header values.** A header carries header text only: HTAB, SP, and visible ASCII, without whitespace at either
-  end, the text every HTTP client and server reads alike. RFC 9110 leaves any other byte opaque, and servers read it
-  as Latin-1 or as UTF-8. A header parameter of any style, or of text content, whose value, array item, or object
-  member is any other text, such as `café` or one with a control character, fails with a request `DecodeError` of the
-  reason `unencodable`, with a `ParameterEncodingError` cause, before anything is sent, instead of arriving as other
-  text. A header parameter of JSON content is written with its non-ASCII text and DEL escaped, so it carries any text;
-  declare the header that way, or apply an encoding the API defines yourself, such as percent-encoding, Base64, or
-  RFC 8187, and decode it in the service. The headers of `default_headers` and `extra_headers` and an
-  `idempotency_key` follow the same rule; see [timeouts and cancellation](#timeouts-and-cancellation). A value a
-  server gave that a protocol helper writes to a header parameter, such as an event ID, a cursor, or a binding's
-  value, follows it too. A declared response header is read by the same rule: a value with a byte outside ASCII
-  fails its `decode_..._header` accessor with a response `DecodeError` of the reason `invalid_header`, with a
-  `MalformedError` cause, so its text does not depend on how HTTPX2 decodes the response's headers, as a whole set:
-  ASCII, else UTF-8 when every header of the response is UTF-8, else Latin-1. `ResponseInfo.headers` keeps the text
-  HTTPX2 decodes. The generated server sends ASCII header text only.
+- **Header values.** A header carries header text only: HTAB, SP, and visible ASCII, without whitespace at either end,
+  the text every HTTP client and server reads alike. RFC 9110 leaves any other byte opaque, and servers read it as
+  Latin-1 or as UTF-8; the generated FastAPI server answers `400` for it in a header parameter of the operation. A
+  header parameter of any style, or of text content, whose value, array item, or object member is any other text, such
+  as `café` or one with a control character, fails with a request `DecodeError` of the reason `unencodable`, with a
+  `ParameterEncodingError` cause, before anything is sent, instead of arriving as other text. A header parameter of JSON
+  content is written with its non-ASCII text and DEL escaped, so it carries any text; declare the header that way, or
+  apply an encoding the API defines yourself, such as percent-encoding, Base64, or RFC 8187, and decode it in the
+  service. The headers of `default_headers` and `extra_headers` and an `idempotency_key` follow the same rule; see
+  [timeouts and cancellation](#timeouts-and-cancellation). A value a server gave that a protocol helper writes to a
+  header parameter, such as an event ID, a cursor, or a binding's value, follows it too. A declared response header is
+  read by the same rule: a value with a byte outside ASCII fails its `decode_..._header` accessor with a response
+  `DecodeError` of the reason `invalid_header`, with a `MalformedError` cause, so its text does not depend on how HTTPX2
+  decodes the response's headers, as a whole set: ASCII, else UTF-8 when every header of the response is UTF-8, else
+  Latin-1. `ResponseInfo.headers` keeps the text HTTPX2 decodes. The generated server sends ASCII header text only.
 - **Cookies.** A cookie parameter with a single value is sent as it is, without percent-encoding, which is how HTTP
   clients send cookies and how the generated server reads them. A cookie cannot carry `;`, `,`, `"`, `\`,
   whitespace, control characters, or non-ASCII text (RFC 6265), so such a value fails with a request `DecodeError`
@@ -513,8 +514,8 @@ Native phase timeouts bound each I/O wait; they do not limit the total duration 
 ```python
 import httpx2
 
-from client import Client
-from client.options import RequestOptions
+from app.client import Client
+from app.client.options import RequestOptions
 
 
 def read_with_budget(client: Client, url: str) -> bytes:
@@ -543,8 +544,8 @@ from typing import BinaryIO
 
 import httpx2
 
-from client import Client
-from client.options import RequestOptions
+from app.client import Client
+from app.client.options import RequestOptions
 
 
 def download(client: Client, url: str, destination: BinaryIO) -> None:
@@ -582,8 +583,8 @@ use the duration the monotonic source measured. A test that records the waits an
 source by each one runs every wait at once and can check its length:
 
 ```python
-from client import Client
-from client.options import Clock
+from app.client import Client
+from app.client.options import Clock
 
 
 class FakeTime:
@@ -616,7 +617,7 @@ with the HTTP client's pool limits or an application semaphore.
 ```python
 import httpx2
 
-from client import Client
+from app.client import Client
 
 
 def log_request(request: httpx2.Request) -> None:
@@ -674,11 +675,11 @@ impossible date, such as one with a leap second, is ignored. The two-digit year 
 is at most 50 years after receipt, as RFC 9110 reads it; a year below 100 in another form is read as 1969 to 2068.
 Without a valid hint, bounded exponential backoff applies. Retry waits consume the same logical budget as sending and
 decoding. `RetryOptions(respect_retry_after=False)` is an explicit application policy override, disclosed in every
-generated README, `client/README.md`; it is never silently embedded in generated defaults.
+generated README, `app/client/README.md`; it is never silently embedded in generated defaults.
 
 ```python
-from client import Client
-from client.options import RequestOptions, RetryOptions
+from app.client import Client
+from app.client.options import RequestOptions, RetryOptions
 
 
 def fetch_with_retries(client: Client, url: str) -> bytes:
@@ -749,8 +750,8 @@ whitespace at either end: for any other value, such as `clé`, a line break, a s
 `field_path` `("idempotency_key",)`.
 
 ```python
-from client import Client
-from client.options import RequestOptions
+from app.client import Client
+from app.client.options import RequestOptions
 
 
 def keyed_options(value: str) -> RequestOptions:
@@ -829,21 +830,20 @@ failure while a file or iterable is read during sending raises `APIConnectionErr
 
 ### Multipart bodies
 
-A `MultipartBody` is sent through HTTPX2's `files=` encoding, its parts in their order: each `FieldPart` and
+A `MultipartBody` with parts is sent through HTTPX2's `files=` encoding, its parts in their order: each `FieldPart` and
 `FilePart` keeps its name, filename, media type and extra headers, and parts may repeat a name. A field's value goes
 through its member's model codec, a repeated member sends a part for each item, a styled member the parts its style
-gives, and a media type the member's encoding declares must cover the one a part names. A member's `style`,
-`explode`, and `allowReserved` apply in OpenAPI 3.1 and 3.2 documents, whose parts carry the style's text without
-percent-encoding, so a delimited value that holds its style's delimiter (`,`, a space, or `|`) raises a request
-`DecodeError` with the reason `unencodable` before sending; OpenAPI 3.0 ignores them for `multipart/form-data`, and the
-member is written as one without them, in its `contentType`. Generation stops for a form whose exploded object that
-allows other properties shares the form with another such member or a `deepObject` member, which would write the same
-names, as it does for query parameters. The SDK does not check parts
-against the schema. A part header HTTPX2 refuses, and a part that is not a `FieldPart` or a `FilePart` with a string
-name, raises a request `DecodeError` with the reason `unencodable` before sending. A body whose parts are all bytes is
-encoded once, with `Content-Length`; a body without parts is sent as its closing boundary alone, with the
-`multipart/form-data` Content-Type that names the boundary, which a server reads as a form without members. Each body
-gets a boundary of its own.
+gives, and a media type the member's encoding declares must cover the one a part names. A member's `style`, `explode`,
+and `allowReserved` apply in OpenAPI 3.1 and 3.2 documents, whose parts carry the style's text without percent-encoding,
+so a delimited value that holds its style's delimiter (`,`, a space, or `|`) raises a request `DecodeError` with the
+reason `unencodable` before sending; OpenAPI 3.0 ignores them for `multipart/form-data`, and the member is written as
+one without them, in its `contentType`. Generation stops for a form whose exploded object that allows other properties
+shares the form with another such member or a `deepObject` member, which would write the same names, as it does for
+query parameters. The SDK does not check parts against the schema. A part header HTTPX2 refuses, and a part that is not
+a `FieldPart` or a `FilePart` with a string name, raises a request `DecodeError` with the reason `unencodable` before
+sending. A body whose parts are all bytes is encoded once, with `Content-Length`; a body without parts, which HTTPX2
+would not send, is written by the SDK as its closing boundary alone, with the `multipart/form-data` Content-Type that
+names the boundary, which a server reads as a form without members. Each body gets a boundary of its own.
 
 The type of a member decides its parts, in a `MultipartBody` and in a form-data body sent as its model alike. A
 member repeats, one part for each item, when its type is an array. A value whose type has one scalar kind is text: a
@@ -861,23 +861,25 @@ Starlette does not limit by size, or read the form in your own server code with 
 
 The properties a schema types without declaring them, with `additionalProperties: {...}`, follow the same rule under
 whatever names a body gives them, by the type of their values: an object is one `application/json` part, an array of
-objects one for each item, and a union of an array and another type one part. The type is the one the model keeps
-them as, in a field of its own or one it inherits from a schema combined with `allOf`, and for a model without such a
-field, the type of their schema, the form's own or that of a schema it combines with `allOf`, also when
-`--reuse-model` makes the form's model inherit an equal one whose schema types them otherwise. Other properties the
-schema allows without a type, with `additionalProperties: {}`, `true`, or no `additionalProperties`, are each one
-`application/json` part, as a member without a type is, a string or an array included. A multipart response reads
-typed ones by their type too. A URL-encoded form writes them as text of that type's kind, one pair for each item of an
-array, and generation stops with `A parameter value needs one unambiguous scalar kind` at the `additionalProperties`
-that types them when the type has none. The generated FastAPI server reads the members of form bodies, these other
-properties included, by this rule too, and stops for a member or other properties without one scalar kind with the
+objects one for each item, and a union of an array and another type one part. The type is the one the model keeps them
+as, in a field of its own or one it inherits from a schema combined with `allOf`, and for a model without such a field,
+the type of their schema, the form's own or that of a schema it combines with `allOf`, also when `--reuse-model` makes
+the form's model inherit an equal one whose schema types them otherwise. Other properties the schema allows without a
+type, with `additionalProperties: {}`, `true`, or no `additionalProperties`, are each one `application/json` part, as a
+member without a type is, a string or an array included. A multipart response reads typed ones by their type too. A
+URL-encoded form writes them as text of that type's kind, one pair for each item of an array, and generation stops with
+`A parameter value needs one unambiguous scalar kind` at the `additionalProperties` that types them when the type has
+none. A URL-encoded form writes a declared member by the same rule, and stops with that message for a member without one
+scalar kind, unless the member's `encoding` gives it a style or a `contentType` (see [URL-encoded members with an
+encoding](#url-encoded-members-with-an-encoding)). The generated FastAPI server reads the members of form bodies, these
+other properties included, by this rule too, and stops for a member or other properties without one scalar kind with the
 same message at the same place. Both also refuse a URL-encoded body whose schema has `patternProperties`
 (`Pattern properties have no builtin parameter encoding`) or is not an object, such as an array, a string, or
-`properties` without `type: object` (`A URL-encoded value must be an object`); the server reads such a body only in
-the request body mode. A form body whose schema is a union of one schema and `null` alone is written as the form of
-that schema, by its members and other properties; a multipart body whose schema is a union of several schemas has no
-members to write parts by, and generation stops with `needs an object schema to be sent as parts`, as the server's
-generation stops for it.
+`properties` without `type: object` (`A URL-encoded value must be an object`); the server reads such a body only in the
+request body mode. A form body whose schema is a union of one schema and `null` alone is written as the form of that
+schema, by its members and other properties; a multipart body whose schema is a union of several schemas has no members
+to write parts by, and generation stops with `needs an object schema to be sent as parts`, as the server's generation
+stops for it.
 
 A multipart response is read only when the operation declares one, with the standard library's MIME parser: a part's
 bytes are kept as they arrived unless it names a transfer encoding, and a broken body, or a part that is itself a
@@ -886,14 +888,28 @@ multipart body or a message, raises `DecodeError` with the reason `invalid_frami
 ```python
 from pathlib import Path
 
-from client import Client
-from client.options import RequestOptions
+from app.client import Client
+from app.client.options import RequestOptions
 
 
 def upload_file(client: Client, url: str, path: Path) -> bytes:
     response = client.request_raw("PUT", url, body=path, options=RequestOptions(max_retries=2))
     return response.read()
 ```
+
+### URL-encoded members with an encoding
+
+An `application/x-www-form-urlencoded` request body's `encoding` can give a member a `style`, `explode`, or
+`allowReserved`, in every OpenAPI version, and the member is then written as the query parameter that encoding
+describes, as percent-encoded pairs: an object with `style: form`, the style of an encoding that names none, and
+`explode: true`, its default, as the pairs of its own members, a `deepObject` as `name[key]` pairs, and `form` without
+explode, `spaceDelimited`, and `pipeDelimited` as one delimited pair. These fields take precedence over a `contentType`.
+A `contentType` alone writes the member as one pair of that text, or of JSON for a JSON media type; any other media
+type, such as `application/xml`, stops generation with `The member content has no builtin encoding`. A style the
+member's type has no form for, such as `deepObject` for an array, stops generation too, as it does for a query
+parameter. Generation also stops for a form whose exploded object that allows other properties shares the form with
+another such member or a `deepObject` member, which would write the same names. The other members are written as in a
+form without such members. The generated FastAPI server reads these members as the client writes them.
 
 ## Redirects and transport construction
 
@@ -916,7 +932,7 @@ injected client, which HTTPX2 runs on every request it sends:
 ```python
 import httpx2
 
-from client import Client
+from app.client import Client
 
 
 class ApiKey(httpx2.Auth):
@@ -952,7 +968,7 @@ from ssl import create_default_context
 
 import httpx2
 
-from client import Client
+from app.client import Client
 
 
 def configured_client(ca_file: str) -> tuple[Client, httpx2.Client]:

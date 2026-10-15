@@ -323,7 +323,8 @@ arrives as `pet_id`, since the preset turns on snake-case field names.
 A method returns one of three things:
 
 - the model of its *primary response*, the response a bare return value takes: `200` when the operation declares
-  it, or else its lowest success status, such as `201` for `create_pet`, or else its `2XX` or `default` response;
+  it, or else its lowest success status, such as `201` for `create_pet`, or else its `2XX` or `default` response
+  (see [Responses](#responses) for the full rule);
 - an `HTTPResult` for another status or extra headers, such as the `404` that `get_pet` declares;
 - a Starlette `Response`, sent as it is.
 
@@ -1365,21 +1366,22 @@ one, answers `422` with a `missing` record at `["body"]`. The JSON is read as UT
 that starts with one, or is UTF-16, answers `422` with `json_invalid`, where FastAPI's own reading accepts both.
 
 A multipart part is text when the type of its member, or of the member's items when that type is an array, has one
-scalar kind, with one part for each item of an array. A part of any other member is JSON, as the generated client
-sends it: an object, a mapping, each item of an array of objects, a union of a string and an object, an enum of mixed
-kinds, or a union of an array and another type, whose array is one part. So is a part of a member whose `encoding`
-names one JSON media type and no style, such as `contentType: application/json`, a scalar included, and of a member
-without a type, whose schema is `{}`, or of each item of an array whose items have none. A JSON part is parsed by
-`TypeAdapter.validate_json` whatever media type the part names and whether it arrives as a field or as a file, since
-the server cannot see the media type of a part that is not a file: of the member's model field, so the field's own
-constraints and `discriminator` apply and a tag no member of the union has answers one `union_tag_invalid` record, or,
-for a member that repeats, of its items' type. A part that is not JSON, or that the type rejects, answers `422` with
-its records at `["body", name]`, or at `["body", name, index]` for a member that repeats, before the rest of the body
-is validated. A member without a type takes any value, so it keeps a part that is not JSON as it arrives instead: text
-for a field, bytes for a file. An `encoding` can also name one text media type in UTF-8 or US-ASCII, or in no
-charset, for a member of one scalar kind, such as `contentType: text/plain; charset=utf-8`, and any media types for a
-member holding files, such as `image/png`: the parts are read as they are without one, since Starlette reads every
-field part as UTF-8 text and keeps the bytes of a file, whatever media type the part names.
+scalar kind, with one part for each item of an array. A part of any other member is JSON, as the generated client sends
+it: an object, a mapping, each item of an array of objects, a union of a string and an object, an enum of mixed kinds,
+or a union of an array and another type, whose array is one part. So is a part of a member whose `encoding` names one
+JSON media type, such as `contentType: application/json`, and no style that applies (OpenAPI 3.0 ignores a multipart
+style), a scalar included, and of a member without a type, whose schema is `{}`, or of each item of an array whose items
+have none. A JSON part is parsed by `TypeAdapter.validate_json` whatever media type the part names and whether it
+arrives as a field or as a file, since the server cannot see the media type of a part that is not a file: of the
+member's model field, so the field's own constraints and `discriminator` apply and a tag no member of the union has
+answers one `union_tag_invalid` record, or, for a member that repeats, of its items' type. A part that is not JSON, or
+that the type rejects, answers `422` with its records at `["body", name]`, or at `["body", name, index]` for a member
+that repeats, before the rest of the body is validated. A member without a type takes any value, so it keeps a part that
+is not JSON as it arrives instead: text for a field, bytes for a file. An `encoding` can also name one text media type
+in UTF-8 or US-ASCII, or in no charset, for a member of one scalar kind, such as
+`contentType: text/plain; charset=utf-8`, and any media types for a member holding files, such as `image/png`: the parts
+are read as they are without one, since Starlette reads every field part as UTF-8 text and keeps the bytes of a file,
+whatever media type the part names.
 
 Starlette limits what it reads from a multipart form, and the generated client sends a JSON part as a field: a field
 part of more than 1 MiB (`max_part_size`) answers `400` with `Part exceeded maximum size of 1024KB.`, and so do more
@@ -1442,9 +1444,9 @@ parameters are refused.
 
 The adapters read no part headers, no multipart `encoding` that names another media type, such as one in another
 charset or `application/xml` for a member without files, and no style for a member holding files, which the client
-refuses too: generation stops with an error that names the encoding. A style leaves a multipart member's
-`contentType` unused, as it does for the client. `--server-body-mode request` passes any such body to the method
-unread.
+refuses too: generation stops with an error that names the encoding. In OpenAPI 3.1 and 3.2 a style leaves a
+multipart member's `contentType` unused, as it does for the client. `--server-body-mode request` passes any such body
+to the method unread.
 
 The router splits a request path at the slashes the request sends, so a percent-encoded slash (`%2F`) stays inside
 its path parameter, whose value receives `/`, of whatever style; FastAPI alone routes by the decoded path, where
@@ -1482,7 +1484,7 @@ operation's header parameters, not the headers of your own dependencies; a secur
 ASCII presents no credential instead, as [Security](#security) describes.
 
 Cookie values are ASCII too, the cookie octets of RFC 6265, which is how the generated client sends them. A request
-that sends a cookie the operation reads with a byte outside ASCII in its name or value answers the same `400`, whether
+that sends a cookie the operation reads with a byte outside ASCII in its value answers the same `400`, whether
 FastAPI or an adapter reads it; other cookies of the request are not read, so they may hold anything. An array or
 object cookie keeps the `form` style's percent-encoding of UTF-8 text.
 
@@ -1665,7 +1667,7 @@ exception handler receives them, so FastAPI's default handler and a handler of y
 - Other errors are FastAPI's: `404` and `405` bodies, and an opaque `500` for an exception in a service method or a
   result that fails its response model. That error goes to the server log with the values it rejected. Inputs that
   adapters read also answer `400 {"detail": "Invalid request"}` and `415 {"detail": "Unsupported media type"}`, and
-  so does a header parameter whose value is not ASCII.
+  so does a header parameter, or a cookie the operation reads, whose value is not ASCII.
 - FastAPI's own document (`source_openapi=False`) describes validation errors with FastAPI's `ValidationError`
   schema, in which `loc`, `msg`, and `type` are required and `input` and `ctx` are optional, so these bodies
   conform to it; the source document describes the responses the source declares.

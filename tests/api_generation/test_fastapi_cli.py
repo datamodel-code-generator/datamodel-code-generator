@@ -2544,9 +2544,12 @@ The JSON object, inline or in a file, maps operation references to `typed` or `r
                 options=["--server-primary-responses"],
                 option_description=f"""Choose the response a bare return value of an operation takes (experimental).
 
-The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
-response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
-primary response from the declared success responses. {DOCUMENT_BASE}""",
+The JSON object, inline or in a file, maps operation references to an object with a `status_code` and, when the
+response has several media types, its `media_type`. The `status_code` takes the response that declares that status
+exactly, by its range such as `2XX`, or as `default`. Without an entry, the primary response is `200` when the
+operation declares it, or else its lowest success status, or else its `2XX` or else its `default` response, sent as
+`200`, or else its lowest status; an operation that declares only other ranges, such as `4XX`, has none.
+{DOCUMENT_BASE}""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--server-primary-responses", '{"/paths/~1pets/post": {"status_code": 201}}'],
                 golden_output=f"{DOC_OUTPUT}/primary-responses/pets.py",
