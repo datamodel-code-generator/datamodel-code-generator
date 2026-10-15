@@ -33,7 +33,10 @@ OperationDependencies = TypedDict(
         'get_default': Sequence[params.Depends],
         'get_error': Sequence[params.Depends],
         'get_ok': Sequence[params.Depends],
+        'post_ok': Sequence[params.Depends],
         'get_any_alias': Sequence[params.Depends],
+        'post_any_alias': Sequence[params.Depends],
+        'post_count': Sequence[params.Depends],
     },
     total=False,
 )
@@ -168,9 +171,34 @@ class GetOk:
     )
 
 
+class PostOk:
+    """Plans of the post_ok operation."""
+
+    RESPONSES: Final = OperationResponses(
+        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.Ok, null=True)},
+    )
+
+
 class GetAnyAlias:
     """Plans of the get_any_alias operation."""
 
     RESPONSES: Final = OperationResponses(
         responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.AnyAlias, null=True)},
+    )
+
+
+class PostAnyAlias:
+    """Plans of the post_any_alias operation."""
+
+    RESPONSES: Final = OperationResponses(
+        responses={'200': Declared(media_type='application/json', model=nullable_results_basemodel_models.AnyAlias, null=True)},
+    )
+
+
+class PostCount:
+    """Plans of the post_count operation."""
+
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
     )

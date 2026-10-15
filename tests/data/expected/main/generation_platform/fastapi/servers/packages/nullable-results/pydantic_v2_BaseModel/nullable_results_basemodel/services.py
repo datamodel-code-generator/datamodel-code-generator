@@ -169,6 +169,17 @@ class DefaultService(Protocol):
         """
 
     @abstractmethod
+    def post_ok(
+        self,
+        *,
+        case: str,
+        body: nullable_results_basemodel_models.Ok | None,
+    ) -> nullable_results_basemodel_models.Ok | None | HTTPResult[nullable_results_basemodel_models.Ok] | Response:
+        """
+        Handle POST /oks.
+        """
+
+    @abstractmethod
     def get_any_alias(
         self,
         *,
@@ -176,4 +187,26 @@ class DefaultService(Protocol):
     ) -> nullable_results_basemodel_models.AnyAlias | None | HTTPResult[nullable_results_basemodel_models.AnyAlias] | Response:
         """
         Handle GET /any-aliases.
+        """
+
+    @abstractmethod
+    def post_any_alias(
+        self,
+        *,
+        case: str,
+        body: nullable_results_basemodel_models.AnyAlias | None,
+    ) -> nullable_results_basemodel_models.AnyAlias | None | HTTPResult[nullable_results_basemodel_models.AnyAlias] | Response:
+        """
+        Handle POST /any-aliases.
+        """
+
+    @abstractmethod
+    def post_count(
+        self,
+        *,
+        case: str,
+        body: nullable_results_basemodel_models.Count | None,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /counts.
         """

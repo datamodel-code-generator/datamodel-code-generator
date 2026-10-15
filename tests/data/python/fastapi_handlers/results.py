@@ -131,4 +131,16 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_any_alias(self, *, case: str) -> object:
             return respond("get_any_alias", case)
 
+        def post_ok(self, *, case: str, body: object) -> object:
+            del body
+            return respond("post_ok", case)
+
+        def post_any_alias(self, *, case: str, body: object) -> object:
+            del body
+            return respond("post_any_alias", case)
+
+        def post_count(self, *, case: str, body: object) -> object:
+            del body
+            return respond("post_count", case)
+
     return {"default": {"default": Default()}}

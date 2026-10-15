@@ -34,6 +34,9 @@ Ok = TypeAliasType("Ok", Literal['ok', None])
 AnyAlias = TypeAliasType("AnyAlias", Any_1)
 
 
+Count = TypeAliasType("Count", Literal[1, 3])
+
+
 TextsGetQueryCaseParameter = TypeAliasType("TextsGetQueryCaseParameter", str)
 
 
@@ -117,3 +120,6 @@ OksGetQueryCaseParameter = TypeAliasType("OksGetQueryCaseParameter", str)
 
 
 AnyAliasesGetQueryCaseParameter = TypeAliasType("AnyAliasesGetQueryCaseParameter", str)
+
+
+CountsPostQueryCaseParameter = TypeAliasType("CountsPostQueryCaseParameter", str)

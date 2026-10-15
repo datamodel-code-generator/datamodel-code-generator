@@ -24,7 +24,7 @@ from datamodel_code_generator._fastapi.routes import (
     placeholders,
     route_path,
 )
-from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols
+from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols, takes_null
 from datamodel_code_generator._openapi_wire_plan import (
     NO_SCALAR_KIND,
     STYLED,
@@ -35,15 +35,8 @@ from datamodel_code_generator._openapi_wire_plan import (
     form_members,
     parameter_plans,
 )
-from datamodel_code_generator._python_type_annotation import (
-    PythonTypeBoundName,
-    PythonTypeName,
-    PythonTypeSubscript,
-    PythonTypeUnion,
-)
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
-    BoundType,
     BuiltinType,
     ConstructorType,
     GeneratedSymbolType,
@@ -70,7 +63,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._openapi_wire_plan import FormMember, WirePlan
-    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
@@ -122,11 +114,6 @@ _MODEL_IMPORTS: Final = frozenset({"BaseModel", "RootModel"})
 _STRICT_TYPES: Final = frozenset({"StrictBool", "StrictFloat", "StrictInt"})
 _STRICT_CONSTRUCTORS: Final = frozenset({"confloat", "conint"})
 _STRICT_BYTES: Final = ("pydantic", "StrictBytes")
-_TYPING: Final = ("typing", "typing_extensions")
-_ANY: Final = frozenset((module, "Any") for module in _TYPING)
-_LITERAL: Final = frozenset((module, "Literal") for module in _TYPING)
-_NONE: Final = PythonTypeName("None")
-_NULL_NAMES: Final = frozenset({_NONE, PythonTypeName("object")})
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
 _NULL: Final = LiteralScalar("none", None)
@@ -1160,33 +1147,9 @@ class Planner:  # noqa: PLR0904
                 pass
         return spec
 
-    def takes_null(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> bool:
-        """Return whether a type validates JSON null, as the generated models annotate it.
-
-        Any value does without a type or as Any; so does None, an enum with a null value, a union with such a member,
-        a root model or alias whose annotation accepts None or whose type does, and an annotation the document
-        writes as None, a union with None, Any under any alias, object, or a `Literal` with None.
-        """
-        null = False
-        match value:
-            case None | NoneType():
-                null = True
-            case ImportedType():
-                null = (value.import_.from_, value.import_.import_) in _ANY
-            case BoundType():
-                null = _written_null(value.binding.expression)
-            case UnionType():
-                null = any(self.takes_null(member, seen) for member in value.members)
-            case GeneratedSymbolType() if self.symbols[value.symbol].kind == "enum":
-                null = "null" in self.symbols[value.symbol].value_types
-            case GeneratedSymbolType() if (
-                value.symbol not in seen and self.symbols[value.symbol].kind in _WRAPPERS and value.symbol in self.facts
-            ):
-                facts = self.facts[value.symbol]
-                null = facts.annotation_null or self.takes_null(facts.type, seen | {value.symbol})
-            case _:
-                pass
-        return null
+    def takes_null(self, value: TypeView | None) -> bool:
+        """Return whether a type validates JSON null, as the generated models annotate it."""
+        return takes_null(value, self.symbols, self.members)
 
     def unsupported(self, operation: OperationContract, media: Iterable[MediaSpec], encoding: str = "") -> None:
         """Report request media that only the request body mode reads."""
@@ -1674,27 +1637,6 @@ def _constrained(value: TypeView, constraints: tuple[tuple[str, TypeArgument], .
     constructor, strict = found
     keywords = constraints if strict is None else (*constraints, _STRICT_KEYWORD)
     return ConstructorType(ImportedType(Import(import_=constructor, from_="pydantic")), keywords, base=strict or scalar)
-
-
-def _written_null(expression: PythonTypeExpr) -> bool:
-    """Return whether an annotation written in the document accepts None, by the imports its names come from.
-
-    None, object, Any under any alias, a union with such a member, and a `Literal` with a None value do.
-    """
-    null = expression in _NULL_NAMES
-    match expression:
-        case PythonTypeUnion():
-            null = any(map(_written_null, expression.items))
-        case PythonTypeBoundName():
-            null = (expression.import_from, expression.import_name) in _ANY
-        case PythonTypeSubscript() if (
-            isinstance(base := expression.base, PythonTypeBoundName)
-            and (base.import_from, base.import_name) in _LITERAL
-        ):
-            null = _NONE in expression.arguments
-        case _:
-            pass
-    return null
 
 
 def _strict(value: TypeView) -> bool:

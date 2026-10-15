@@ -154,3 +154,23 @@ get_any_alias None
   get_any_alias(case='none')
   < 200 application/json
   = None
+post_ok None
+  > POST /oks?case=none [application/json]
+  post_ok(case='none', body=None)
+  < 200 application/json
+  = None
+post_any_alias None
+  > POST /any-aliases?case=none [application/json]
+  post_any_alias(case='none', body=None)
+  < 200 application/json
+  = None
+post_count None
+  > POST /counts?case=none
+  post_count(case='none', body=None)
+  < 204 -
+  = None
+post_count value
+  > POST /counts?case=none [application/json]
+  post_count(case='none', body=3)
+  < 204 -
+  = None
