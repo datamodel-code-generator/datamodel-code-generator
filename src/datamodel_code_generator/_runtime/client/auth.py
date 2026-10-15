@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast, get_args
 
 import httpx2
 
+from ..model_codecs.parameters import header_text
 from .errors import ConfigurationError, SDKError
 from .security import Credentials
 from .urls import request_origin
@@ -59,7 +60,6 @@ _UNAUTHORIZED: Final = 401
 _CHALLENGE_ITEMS: Final = re.compile(r'(?:[^,"]|"(?:[^"\\]|\\.)*(?:"|$))+')
 _CHALLENGE: Final = re.compile(r"([!#$%&'*+.^_`|~0-9A-Za-z-]+)(?![ \t]*=)(?:[ \t]+(.*))?", re.DOTALL)
 _INVALID_TOKEN: Final = re.compile(r'error[ \t]*=[ \t]*(?:invalid_token|"invalid_token")', re.IGNORECASE)
-_HEADER_UNSAFE: Final = re.compile(r"[\x00-\x1f\x7f]")
 _COOKIE_UNSAFE: Final = re.compile(r'[\x00-\x20\x7f";,\\]')
 
 
@@ -167,17 +167,21 @@ def _text(scheme: SecurityScheme, value: object) -> str:
 
 
 def _place(request: httpx2.Request, scheme: SecurityScheme, text: str) -> None:
-    """Put a credential at its scheme's position, replacing any value already there."""
+    """Put a credential at its scheme's position, replacing any value already there.
+
+    A header credential must be header text, visible ASCII with inner spaces and tabs, as every header the client sends;
+    a cookie credential must be a cookie value.
+    """
     name = scheme.wire_name
     match scheme.location:
         case "query":
             request.url = request.url.copy_set_param(name, text)
             return
         case "cookie":
-            unsafe = _COOKIE_UNSAFE.search(text) is not None
+            unsafe = _COOKIE_UNSAFE.search(text) is not None or not text.isascii()
         case _:
-            unsafe = _HEADER_UNSAFE.search(text) is not None
-    if unsafe or not text.isascii():
+            unsafe = not header_text(text)
+    if unsafe:
         raise ConfigurationError(field_path=(scheme.name,), reason="invalid_value")
     if scheme.location == "header":
         request.headers[name] = text

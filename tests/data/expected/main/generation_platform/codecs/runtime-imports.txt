@@ -1,7 +1,7 @@
 __init__.py: -
 client/__init__.py: -
 client/arguments.py: __future__, collections.abc, typing
-client/auth.py: .client, .errors, .security, .urls, __future__, base64, collections.abc, httpx2, re, typing
+client/auth.py: ..model_codecs.parameters, .client, .errors, .security, .urls, __future__, base64, collections.abc, httpx2, re, typing
 client/bodies.py: .content, .errors, .logical, __future__, collections.abc, inspect, io, os, pathlib, typing, typing_extensions
 client/body_sources.py: .bodies, .content, .errors, .logical, __future__, collections.abc, typing
 client/client.py: ..model_codecs.errors, ..model_codecs.parameters, ..model_codecs.unset, .content, .errors, .logical, .media, .native, .operations, .options, .paths, .positions, .raw, .responses, .retry, .timing, .urls, __future__, collections.abc, contextlib, dataclasses, functools, httpx2, re, typing, typing_extensions, urllib.parse, uuid
