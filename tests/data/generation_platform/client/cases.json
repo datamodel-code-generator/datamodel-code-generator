@@ -784,6 +784,9 @@
   "media-errors": {
     "input": "media-errors.yaml"
   },
+  "form-name-errors": {
+    "input": "form-name-errors.yaml"
+  },
   "server-errors": {
     "input": "server-errors.yaml"
   },

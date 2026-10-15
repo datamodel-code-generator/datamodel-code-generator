@@ -49,7 +49,7 @@ post_images
   post_images(body=ImagesPostRequest(image=b'\x89PNG\r\n', thumbnails=[b'\x00one', b'\xfftwo'], caption='*café*'))
   < 204 -
   = None
-/styles unknown member of an exploded object
+/styles unknown member of a closed exploded object
   > POST /styles [application/x-www-form-urlencoded]
   post_styles(body=StylesPostRequest(name='n', point=Point(x=1, y=None), corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
   < 204 -
@@ -68,7 +68,7 @@ post_images
   = (400, None)
 /styles percent-encoded deepObject member
   > POST /styles [application/x-www-form-urlencoded]
-  post_styles(body=StylesPostRequest(name='n', point=Point(x=None, y=None), corner=None, deep=Named(name='a'), spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  post_styles(body=StylesPostRequest(name='n', point=None, corner=None, deep=Named(name='a'), spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
   < 204 -
   = (204, None)
 /styles piped item of another kind

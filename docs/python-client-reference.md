@@ -832,7 +832,9 @@ failure while a file or iterable is read during sending raises `APIConnectionErr
 A `MultipartBody` is sent through HTTPX2's `files=` encoding, its parts in their order: each `FieldPart` and
 `FilePart` keeps its name, filename, media type and extra headers, and parts may repeat a name. A field's value goes
 through its member's model codec, a repeated member sends a part for each item, a styled member the parts its style
-gives, and a media type the member's encoding declares must cover the one a part names. The SDK does not check parts
+gives, and a media type the member's encoding declares must cover the one a part names. Generation stops for a form
+whose exploded object that allows other properties shares the form with another such member or a `deepObject` member,
+which would write the same names, as it does for query parameters. The SDK does not check parts
 against the schema. A part header HTTPX2 refuses, and a part that is not a `FieldPart` or a `FilePart` with a string
 name, raises a request `DecodeError` with the reason `unencodable` before sending. A body whose parts are all bytes is
 encoded once, with `Content-Length`; a body without parts is sent as its closing boundary alone, with the

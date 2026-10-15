@@ -112,6 +112,7 @@ components:
   schemas:
     Point:
       type: object
+      additionalProperties: false
       properties:
         x: {type: integer}
         y: {type: integer}
