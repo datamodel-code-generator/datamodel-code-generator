@@ -10,6 +10,12 @@ from msgspec import Struct
 Short: TypeAlias = str
 
 
+NullableShort: TypeAlias = str | None
+
+
+Pair: TypeAlias = str | int | list[int]
+
+
 class Upload(Struct):
     page: bytes
     name: str | Short
@@ -18,3 +24,13 @@ class Upload(Struct):
     tags: list[str]
     code: str | int
     short: Short
+    nickname: str | NullableShort
+    alias: str | Pair
+    amount: int | float
+    ratio: int | float
+    level: int | float
+    step: int | float
+    half: int | float
+    gap: int | float
+    initials: NullableShort
+    pair: Pair

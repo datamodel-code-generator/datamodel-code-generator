@@ -6,7 +6,17 @@
     "label": "chapter",
     "tags": ["ab", "longer"],
     "code": 404,
-    "short": "abc"
+    "short": "abc",
+    "nickname": "Pagination",
+    "alias": "Pagination",
+    "amount": 6,
+    "ratio": 6,
+    "level": 2,
+    "step": 6,
+    "half": 3,
+    "gap": 2,
+    "initials": "abc",
+    "pair": "abc"
   },
   "invalid": {
     "page": 3,
@@ -15,6 +25,16 @@
     "label": "four",
     "tags": [3],
     "code": "abcd",
-    "short": "abcd"
+    "short": "abcd",
+    "nickname": 3,
+    "alias": 1.5,
+    "amount": 4.5,
+    "ratio": "6",
+    "level": 1,
+    "step": 3,
+    "half": 0.25,
+    "gap": 4,
+    "initials": "abcd",
+    "pair": "abcd"
   }
 }

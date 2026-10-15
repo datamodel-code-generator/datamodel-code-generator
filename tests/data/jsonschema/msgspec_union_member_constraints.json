@@ -6,6 +6,17 @@
     "Short": {
       "type": "string",
       "maxLength": 3
+    },
+    "NullableShort": {
+      "type": ["string", "null"],
+      "maxLength": 3
+    },
+    "Pair": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "integer"},
+        {"type": "array", "items": {"type": "integer"}}
+      ]
     }
   },
   "properties": {
@@ -51,7 +62,64 @@
     },
     "short": {
       "$ref": "#/definitions/Short"
+    },
+    "nickname": {
+      "anyOf": [
+        {"type": "string"},
+        {"$ref": "#/definitions/NullableShort"}
+      ]
+    },
+    "alias": {
+      "anyOf": [
+        {"type": "string"},
+        {"$ref": "#/definitions/Pair"}
+      ]
+    },
+    "amount": {
+      "anyOf": [
+        {"type": "integer", "maximum": 3},
+        {"type": "number", "minimum": 5}
+      ]
+    },
+    "ratio": {
+      "anyOf": [
+        {"type": "integer", "maximum": 3},
+        {"type": "number"}
+      ]
+    },
+    "level": {
+      "anyOf": [
+        {"type": "integer", "exclusiveMinimum": 1},
+        {"type": "number", "minimum": 1.5, "exclusiveMaximum": 10}
+      ]
+    },
+    "step": {
+      "anyOf": [
+        {"type": "integer", "multipleOf": 2},
+        {"type": "number", "multipleOf": 4}
+      ]
+    },
+    "half": {
+      "anyOf": [
+        {"type": "integer", "multipleOf": 2},
+        {"type": "number", "multipleOf": 0.5}
+      ]
+    },
+    "gap": {
+      "anyOf": [
+        {"type": "integer", "maximum": 3},
+        {"type": "number", "minimum": 5.5, "maximum": 5.9}
+      ]
+    },
+    "initials": {
+      "$ref": "#/definitions/NullableShort"
+    },
+    "pair": {
+      "$ref": "#/definitions/Pair"
     }
   },
-  "required": ["page", "name", "count", "label", "tags", "code", "short"]
+  "required": [
+    "page", "name", "count", "label", "tags", "code", "short",
+    "nickname", "alias", "amount", "ratio", "level", "step", "half", "gap", "initials", "pair"
+  ]
 }
