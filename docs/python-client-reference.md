@@ -424,8 +424,9 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   reason `unencodable` before anything is sent; its `location` names the argument, never the value. An empty array or
   object in a style-encoded parameter or a form member is left out as an omitted value is: it writes no query pair,
   header, cookie, or part. A style or a form cannot write null, so a `None` member of an object parameter or of a
-  URL-encoded or multipart form, and a `FieldPart` whose value is `None`, are left out the same way. A path segment cannot be left out, so an empty array or object in a path parameter fails
-  with a request `DecodeError` before anything is sent.
+  URL-encoded or multipart form, and a `FieldPart` whose value is `None`, are left out the same way. A multipart form
+  that is left with no part is still sent, as its closing boundary alone. A path segment cannot be left out, so an
+  empty array or object in a path parameter fails with a request `DecodeError` before anything is sent.
 - **Parameter arguments.** A parameter whose model type is a type alias or a root model takes the type it stands for,
   such as `limit: int` or `tags: list[str]`, never the alias or the root model. An alias's argument is sent as given,
   without validation. With Pydantic models, an argument whose parameter is a root model is built into it before it is
@@ -828,8 +829,9 @@ through its member's model codec, a repeated member sends a part for each item, 
 gives, and a media type the member's encoding declares must cover the one a part names. The SDK does not check parts
 against the schema. A part header HTTPX2 refuses, and a part that is not a `FieldPart` or a `FilePart` with a string
 name, raises a request `DecodeError` with the reason `unencodable` before sending. A body whose parts are all bytes is
-encoded once, with `Content-Length`; a body without parts is sent empty, without a Content-Type. HTTPX2 chooses the
-boundary.
+encoded once, with `Content-Length`; a body without parts is sent as its closing boundary alone, with the
+`multipart/form-data` Content-Type that names the boundary, which a server reads as a form without members. Each body
+gets a boundary of its own.
 
 The type of a member decides its parts, in a `MultipartBody` and in a form-data body sent as its model alike. A
 member repeats, one part for each item, when its type is an array. A value whose type has one scalar kind is text: a
