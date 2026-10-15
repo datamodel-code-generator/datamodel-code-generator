@@ -37,3 +37,51 @@ paths:
               deep: {style: deepObject, explode: true}
       responses:
         "204": {description: Done.}
+  /absorbing-extras:
+    post:
+      operationId: postAbsorbingExtras
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+              additionalProperties: {type: integer}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-allowed:
+    post:
+      operationId: postAbsorbingAllowed
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+              additionalProperties: true
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-extra-parts:
+    post:
+      operationId: postAbsorbingExtraParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+              additionalProperties: {type: integer}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}

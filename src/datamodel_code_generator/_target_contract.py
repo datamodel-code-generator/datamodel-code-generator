@@ -473,7 +473,8 @@ class EncodingFacts:
     `types` are the JSON types it declares, None when it declares none; `value` is its shape as one parameter value,
     `form` as URL-encoded members, and `members` each property's shape as one parameter value, by the location of the
     property's schema. `extras` is where a form's object schema types the values of its other properties: in a schema
-    of its own, or in one of a schema it references or combines with allOf.
+    of its own, or in one of a schema it references or combines with allOf. `declared` says that schema allows them
+    as `true` or a schema, where one that leaves them unsaid allows them by default.
     """
 
     types: frozenset[str] | None
@@ -481,6 +482,7 @@ class EncodingFacts:
     form: TextShape
     members: tuple[tuple[SourceLocation, TextShape], ...] = ()
     extras: KindSite | None = None
+    declared: bool = False
 
 
 @dataclass(frozen=True, slots=True)
