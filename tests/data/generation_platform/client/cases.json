@@ -919,7 +919,8 @@
   },
   "naming-device-moved": {
     "input": "naming-device.yaml",
-    "config": {"operations": [{"ref": "/paths/~1consoles/get", "resource": "other"}]}
+    "config": {"operations": [{"ref": "/paths/~1consoles/get", "resource": "other"}]},
+    "modules": [["client", "_operations.py"]]
   },
   "method-collisions": {
     "input": "method-collisions.yaml",
