@@ -145,7 +145,8 @@
       "extra_fields": "allow",
       "openapi_include_paths": [
         "/absorbing-kept",
-        "/absorbing-kept-parts"
+        "/absorbing-kept-parts",
+        "/absorbing-kept-wrapped"
       ]
     }
   },
