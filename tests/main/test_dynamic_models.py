@@ -195,7 +195,7 @@ def test_imported_model_classes_are_not_returned() -> None:
 
 
 @pytest.mark.parametrize("cache_size", [0, 128])
-@pytest.mark.parametrize("module_name", [None, "dynamic_root_aliases"])
+@pytest.mark.parametrize("module_name", [None, "dynamic_root_aliases", "tests.data.dynamic_models"])
 @pytest.mark.parametrize("module_split_mode", [None, ModuleSplitMode.Single])
 @pytest.mark.parametrize("use_aliases", [False, True], ids=["classes", "aliases"])
 def test_generated_root_model_aliases(
@@ -227,6 +227,7 @@ def test_generated_root_model_aliases(
         assert_generated_modules_output(generated, expected / "modules")
 
     original_module = ImportedIntegerRoot.__module__
+    registered_module = sys.modules.get(module_name or "")
     with assert_inputs_not_mutated({"schema": schema, "config": config}):
         models = generate_dynamic_models(schema, config=config, cache_size=cache_size, module_name=module_name)
         repeated = generate_dynamic_models(schema, config=config, cache_size=cache_size, module_name=module_name)
@@ -264,6 +265,7 @@ def test_generated_root_model_aliases(
         if module_split_mode is None or module_name
         else models["PlainObject"].__module__.startswith("_dcg_dynamic_"),
         "imported_target_error": str(error.value),
+        "registered_module_restored": sys.modules.get(module_name or "") is registered_module,
     }
     assert_output(
         f"{json.dumps(actual, indent=2)}\n",
