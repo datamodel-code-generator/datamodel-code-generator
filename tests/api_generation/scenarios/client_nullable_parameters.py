@@ -3,7 +3,7 @@
 An optional style parameter is left out, and a required one is refused. An inline object schema that admits null sends
 and decodes None as its body and its result, its properties declared directly or through allOf, and still checks an
 object against its schema. A form or multipart body has no null to send, so such a schema's declared properties still
-travel as its fields and parts.
+travel as its fields and parts. None for an optional body whose model rejects null is left out, as UNSET is.
 """
 
 from __future__ import annotations
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _BOUNDARY: Final = re.compile(r"\b[0-9a-f]{32}\b")
+_JSON: Final = "application/json"
+_NOTE: Final = "application/vnd.note+json"
 
 
 def nullable_parameters(package: ModuleType, lines: list[str]) -> None:
@@ -86,6 +88,7 @@ def nullable_bodies(package: ModuleType, lines: list[str]) -> None:
             lines, "decode an allOf object without its required member", lambda: api.default.post_extended(body=None)
         )
         _forms(package, api, exchange, lines)
+        _optional(api, exchange, lines)
     run(lambda: _async_nullable_bodies(package, lines))
     lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
 
@@ -104,11 +107,35 @@ def _forms(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
     record(lines, "send declared parts", lambda: api.default.upload(body=upload))
 
 
+def _optional(api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Leave out None of an optional body whose model rejects null, as UNSET is, and send null where it takes null.
+
+    A model that checks nothing, a stdlib dataclass or TypedDict, decodes null, so its None is sent as null.
+    """
+    for label, call in (
+        ("omit a null optional body", lambda: api.default.post_draft(body=None)),
+        (
+            "refuse a media type beside an omitted null body",
+            lambda: api.default.post_draft(body=None, media_type=_JSON),
+        ),
+        ("omit a null optional body of several media", lambda: api.default.post_version(body=None)),
+        ("refuse null without the media type of a media that takes it", lambda: api.default.post_variant(body=None)),
+        ("refuse a named media that rejects null", lambda: api.default.post_variant(body=None, media_type=_JSON)),
+        ("send null in a named media that takes null", lambda: api.default.post_variant(body=None, media_type=_NOTE)),
+        ("omit a null optional text body", lambda: api.default.post_text(body=None)),
+        ("send null as a body without a schema", lambda: api.default.post_value(body=None)),
+    ):
+        exchange.respond(raw_response(204))
+        record(lines, label, call)
+        exchange.responders.clear()
+
+
 async def _async_nullable_bodies(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     http = exchange.async_client()
     api: Any
     async with package.AsyncClient(http_client=http) as api:
-        exchange.respond(json_response(200, None))
+        exchange.respond(json_response(200, None), raw_response(204))
         await arecord(lines, "async send and decode null", lambda: api.default.post_note(body=None))
+        await arecord(lines, "async omit a null optional body", lambda: api.default.post_draft(body=None))
     await http.aclose()

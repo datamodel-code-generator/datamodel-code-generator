@@ -14347,6 +14347,14 @@ sends JSON `null`. A required parameter, including a path parameter, and an arra
 `DecodeError` whose reason is `unencodable`. [Model codecs](python-client-reference.md#model-codecs) has the full
 conversion rules.
 
+`None` for an optional request body whose model rejects JSON `null` is sent as `UNSET` is: the request has no body and
+no `Content-Type`, which a server reads as an absent body, and a `media_type` beside it is refused with a
+`ConfigurationError` whose reason is `without_body`. A body whose model decodes `null`, and a JSON body without a
+schema, send `null`. The media a call names decides, or the default media without one; an operation with several media
+and no default leaves `None` out when none of them takes `null`, and otherwise needs `media_type`. A text, form, or
+binary body has no `null`, so its `None` is left out. A stdlib dataclass or TypedDict model checks nothing and decodes
+`null`, so those backends send `null`.
+
 ### Responses
 
 A method returns the decoded body. Each resource also has three *response views*, the same methods returning more:
