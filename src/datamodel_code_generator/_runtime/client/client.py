@@ -1084,6 +1084,8 @@ class Core(Generic[AdapterT, HandleT]):
                 and (name := _dot_parameter(operation.path, path)) is not None
             ):
                 raise request_decode_error(operation, ("path", name), ParameterEncodingError(_DOT_CAUSE))
+            if "%" in route:
+                route = re.sub(r"%(?![0-9A-Fa-f]{2})", "%25", route)
             route = quote(route, safe="/%:@!$&'()*+,;=")
             query = self._call_query(request.query, options)
             url = f"{base}{route}{'?' if query else ''}{query}"

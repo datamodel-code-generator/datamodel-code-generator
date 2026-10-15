@@ -5,7 +5,7 @@ info:
 servers:
 - url: https://api.example.com
 paths:
-  /notes/a\b|c^d[e]/"<>` café:
+  /notes/a\b|c^d[e]/"<>` café/%zz/%2/%g0/%0g/%:
     get:
       operationId: getLiteral
       tags:
