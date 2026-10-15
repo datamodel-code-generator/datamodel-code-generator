@@ -1,0 +1,23 @@
+# encoding-errors
+write models.py
+write models.json
+generate
+  Error: Unable to encode output using encoding 'latin-1': 'latin-1' codec can't encode character '/u6f22' in position 1204: ordinal not in range(256)
+check
+  Error: Unable to encode output using encoding 'latin-1': 'latin-1' codec can't encode character '/u6f22' in position 1204: ordinal not in range(256)
+generate
+  Error: Unable to encode output using encoding 'latin-1': 'latin-1' codec can't encode character '/u6f22' in position 270: ordinal not in range(256)
+generate
+  Error: Unable to encode output using encoding 'nosuch': unknown encoding: nosuch
+generate
+  Error: Unable to encode output using encoding 'nosuch': unknown encoding: nosuch
+generate
+  Error: Unable to encode output using encoding 'hex': 'hex' is not a text encoding; use codecs.encode() to handle arbitrary codecs
+tree
+  models.json
+  models.py
+leftovers []
+show models.py
+  | # Kept.
+show models.json
+  | {}

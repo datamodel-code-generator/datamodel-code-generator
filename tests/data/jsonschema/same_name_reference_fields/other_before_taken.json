@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OtherBeforeTaken",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {"$ref": "#/$defs/leaf"}
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "type": "object",
+      "properties": {
+        "Zed": {"$ref": "#/$defs/Bar"},
+        "Bar": {"type": "integer", "default": 1},
+        "Bar_1": {"type": "string", "default": "kept"}
+      }
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "x": {"type": "integer"}
+      }
+    }
+  }
+}

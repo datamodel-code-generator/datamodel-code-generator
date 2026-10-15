@@ -1005,11 +1005,13 @@ class _Finisher:
         Imports used only for type checking move into `TYPE_CHECKING` blocks as they do in the models' modules: a target
         package is a multi-module output of the model backend, so the backend decides the default. The implementations
         are formatted the same way, without the generated header, returned second, and put where a text file holds
-        their `implementation_text`.
+        their `implementation_text`. Every text is checked against the encoding of its file before any is staged, as
+        model files are before any is written.
         """
         from datamodel_code_generator import (  # noqa: PLC0415
             _build_file_header_parts,  # pyright: ignore[reportPrivateUsage]
             _build_module_content,  # pyright: ignore[reportPrivateUsage]
+            _ensure_output_text_encodable,  # pyright: ignore[reportPrivateUsage]
             _format_file_header,  # pyright: ignore[reportPrivateUsage]
         )
         from datamodel_code_generator._target_format import TargetCodeFormatter  # noqa: PLC0415
@@ -1056,6 +1058,8 @@ class _Finisher:
                 else body
             )
         own = {file.path: formatter.format_code(file.text) for file in rendered.implementations}
+        for path, text in (*texts.items(), *own.items()):
+            _ensure_output_text_encodable(text, self.encoding(path))
         self.defer(formatter, texts, formatted, own)
         for key, value in list(texts.items()):
             if not _is_python(key):
@@ -1064,11 +1068,14 @@ class _Finisher:
                 texts[key] = value
         return self.planned(texts), self.planned(own)
 
+    def encoding(self, path: PurePosixPath) -> str:
+        """Return the encoding a file is written in: Python files in the model encoding, other text as UTF-8."""
+        return self.effective.encoding if _is_python(path) else "utf-8"
+
     def planned(self, texts: dict[PurePosixPath, str]) -> tuple[PlannedFile, ...]:
-        """Encode formatted texts as their files hold them: Python files in the model encoding, other text as UTF-8."""
-        encoding = self.effective.encoding
+        """Encode formatted texts as their files hold them."""
         return tuple(
-            PlannedFile(path=path, content=_written(_normalized(text), encoding if _is_python(path) else "utf-8"))
+            PlannedFile(path=path, content=_written(_normalized(text), self.encoding(path)))
             for path, text in texts.items()
         )
 

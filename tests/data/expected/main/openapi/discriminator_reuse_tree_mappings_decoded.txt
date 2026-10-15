@@ -1,0 +1,4 @@
+a.Owner {"pet": {"kind": "cat"}}: Owner(pet=Pet(root=Cat(kind='cat', meow=None)))
+a.Owner {"pet": {"kind": "kitty"}}: rejected
+b.Owner {"pet": {"kind": "kitty"}}: Owner(pet=Pet(root=Cat(kind='kitty', meow=None)))
+b.Owner {"pet": {"kind": "cat"}}: rejected
