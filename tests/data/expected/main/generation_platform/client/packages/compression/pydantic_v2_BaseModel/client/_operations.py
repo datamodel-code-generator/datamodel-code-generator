@@ -39,7 +39,7 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
     path='/items',
     servers=_SERVERS_0,
     responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_1),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_0),), default='application/json'),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', null=True, codec=model_bindings.codec_0),), default='application/json'),
     accepted_content_encodings=('gzip',),
 )
 

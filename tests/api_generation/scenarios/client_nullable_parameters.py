@@ -3,7 +3,8 @@
 An optional style parameter is left out, and a required one is refused. An inline object schema that admits null sends
 and decodes None as its body and its result, its properties declared directly or through allOf, and still checks an
 object against its schema. A form or multipart body has no null to send, so such a schema's declared properties still
-travel as its fields and parts. None for an optional body whose model rejects null is left out, as UNSET is.
+travel as its fields and parts. None for an optional body whose schema rejects null is left out, as UNSET is, on
+every backend.
 """
 
 from __future__ import annotations
@@ -108,10 +109,7 @@ def _forms(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
 
 
 def _optional(api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Leave out None of an optional body whose model rejects null, as UNSET is, and send null where it takes null.
-
-    A model that checks nothing, a stdlib dataclass or TypedDict, decodes null, so its None is sent as null.
-    """
+    """Leave out None of an optional body whose schema rejects null, as UNSET is, and send null where it takes null."""
     for label, call in (
         ("omit a null optional body", lambda: api.default.post_draft(body=None)),
         (
