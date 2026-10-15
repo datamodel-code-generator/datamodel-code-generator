@@ -1,0 +1,4 @@
+Cage {"pet": {"kind": "Cat"}}: Cage
+Cage {"pet": {"kind": "Kitten"}}: rejected
+Cage {"pet": {"kind": "Dog"}}: Cage
+Basket: not generated
