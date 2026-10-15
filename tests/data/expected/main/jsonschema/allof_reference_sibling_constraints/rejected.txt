@@ -4,6 +4,7 @@ tags
 score
 counts
 limits
+patterned
 pair
 single
 ref_pair

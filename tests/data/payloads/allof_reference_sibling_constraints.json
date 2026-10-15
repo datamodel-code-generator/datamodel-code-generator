@@ -12,6 +12,9 @@
     "limits": {
       "a": 10
     },
+    "patterned": {
+      "a": 10
+    },
     "point": {
       "x": 1
     },
@@ -35,6 +38,9 @@
       4
     ],
     "limits": {
+      "a": 11
+    },
+    "patterned": {
       "a": 11
     },
     "pair": [],

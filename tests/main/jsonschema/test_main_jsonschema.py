@@ -5867,7 +5867,7 @@ def test_main_string_and_array_constraints_on_other_types(
         ("field_constraints.py", ["--field-constraints"], "field_constraints_rejected.txt"),
         ("collapse_root_models.py", ["--collapse-root-models"], "rejected.txt"),
         ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass"], "rejected.txt"),
-        ("msgspec.py", ["--output-model-type", "msgspec.Struct"], "rejected.txt"),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"], "msgspec_rejected.txt"),
     ],
 )
 def test_main_allof_reference_sibling_constraints(
@@ -5878,6 +5878,7 @@ def test_main_allof_reference_sibling_constraints(
     A field referencing a root model class keeps the class as its type, so it accepts what only the siblings reject.
     So does a nested value or a definition, unless field constraints are written beside the reference, which no root
     model class accepts, so the value is written with them. Collapsed root models and aliases take the constraints.
+    msgspec maps write no constraints on patternProperties values, as they always have.
     """
     name = "allof_reference_sibling_constraints"
     run_main_and_assert(

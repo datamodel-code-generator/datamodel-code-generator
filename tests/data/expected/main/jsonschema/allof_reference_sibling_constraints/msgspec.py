@@ -45,6 +45,7 @@ class Measurement(Struct):
     score: Score | UnsetType = UNSET
     counts: list[Count1] | UnsetType = UNSET
     limits: dict[str, Limits] | UnsetType = UNSET
+    patterned: dict[str, int] | UnsetType = UNSET
     point: Point | UnsetType = UNSET
     label: Count | UnsetType = UNSET
     status: Status | UnsetType = UNSET

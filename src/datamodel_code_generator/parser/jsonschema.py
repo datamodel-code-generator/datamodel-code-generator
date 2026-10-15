@@ -10530,9 +10530,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         *,
         property_names: JsonSchemaObject | bool | None = None,
+        parent: JsonSchemaObject | None = None,
     ) -> DataType:
-        """Parse patternProperties into a dict data type with regex keys."""
+        """Parse patternProperties into a dict data type with regex keys.
+
+        Values are nested in ``parent`` under field constraints, as additionalProperties values are.
+        """
         pattern_value_pairs: list[tuple[str, DataType]] = []
+        if not (self.field_constraints and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS):
+            parent = None
         for i, (pattern, schema) in enumerate(pattern_properties.items()):
             if schema is False:
                 continue
@@ -10541,9 +10547,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 value_type = self.data_type_manager.get_data_type(Types.any)
             else:
                 value_type = self.parse_item(
-                    name,
-                    schema,
-                    get_special_path(f"patternProperties/{i}", path),
+                    name, schema, get_special_path(f"patternProperties/{i}", path), parent=parent
                 )
             pattern_value_pairs.append((pattern, value_type))
 
@@ -11050,7 +11054,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if item.patternProperties:
                 # support only single key dict.
                 return self.parse_pattern_properties(
-                    name, item.patternProperties, object_path, property_names=item.propertyNames
+                    name, item.patternProperties, object_path, property_names=item.propertyNames, parent=item
                 )
             if item.propertyNames is not None:
                 return self.parse_property_names(
@@ -11521,7 +11525,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 data_type = self.data_type_manager.get_data_type(Types.any)
         elif obj.patternProperties:
             data_type = self.parse_pattern_properties(
-                name, obj.patternProperties, path, property_names=obj.propertyNames
+                name, obj.patternProperties, path, property_names=obj.propertyNames, parent=obj
             )
         elif obj.propertyNames is not None:
             data_type = self.parse_property_names(

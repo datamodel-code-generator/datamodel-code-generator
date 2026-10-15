@@ -99,6 +99,19 @@
         "maximum": 10
       }
     },
+    "patterned": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z]+$": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Count"
+            }
+          ],
+          "maximum": 10
+        }
+      }
+    },
     "point": {
       "allOf": [
         {
