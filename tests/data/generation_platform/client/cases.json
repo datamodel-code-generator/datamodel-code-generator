@@ -920,6 +920,11 @@
     "config": {"operations": [{"ref": "/paths/~1defaults/get", "resource": "other"}]},
     "modules": [["client", "_operations.py"]]
   },
+  "naming-device-moved": {
+    "input": "naming-device.yaml",
+    "config": {"operations": [{"ref": "/paths/~1consoles/get", "resource": "other"}]},
+    "modules": [["client", "_operations.py"]]
+  },
   "method-collisions": {
     "input": "method-collisions.yaml",
     "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]

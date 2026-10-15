@@ -6,11 +6,11 @@ the same way. So does a body whose schema reaches the string through wrappers th
 reference, one `allOf`, `anyOf` or `oneOf` branch, a constraint, or a null beside it; and one of several such strings,
 which the backends that keep a constraint in the type hold as a union and the others as one `bytes`, or a schema
 whose branches merge into one, which the models type as `bytes` as well. An `application/octet-stream` body written as
-an enum of binary strings, which the models type as an enum, travels as the enum's text instead, which the server reads
-by the model and refuses when it names no member. Bytes the models constrain, such as to four bytes, are checked by the
-model wherever they travel: the server refuses a longer request and will not send a longer response, and a client
-whose models keep the constraint, the Pydantic ones here, refuses to send or to return longer bytes; the others send
-them for the server to refuse and return them.
+an enum of binary strings, with or without its string type, which the models type as an enum, travels as the enum's
+text instead, which the server reads by the model and refuses when it names no member. Bytes the models constrain,
+such as to four bytes, are checked by the model wherever they travel: the server refuses a longer request and will
+not send a longer response, and a client whose models keep the constraint, the Pydantic ones here, refuses to send or
+to return longer bytes; the others send them for the server to refuse and return them.
 """
 
 from __future__ import annotations
@@ -57,6 +57,7 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
             upload_page=lambda body: body,
             upload_sketch=lambda body: body,
             upload_mark=lambda body: body,
+            upload_tag=lambda body: body,
             upload_stamp=lambda body: body,
             download_stamp=lambda: LONG,
             download_raw_stamp=lambda: Response(LONG, media_type="application/octet-stream"),
@@ -64,9 +65,9 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
     }
 
 
-def _final(models: ModuleType) -> object:
-    """Return the final mark as the models type it: an enum member, or its text in TypedDict models' literal."""
-    mark = models.Mark
+def _final(models: ModuleType, name: str = "Mark") -> object:
+    """Return the final mark or tag as the models type it: an enum member, or its text in TypedDict models' literal."""
+    mark = getattr(models, name)
     return mark("final") if isinstance(mark, type) else "final"
 
 
@@ -96,6 +97,8 @@ def calls(kit: Kit) -> Calls:
         ("upload_sketch", lambda: api.upload_sketch(body=b"sketch \xff\x00")),
         ("upload_mark", lambda: api.upload_mark(body=_final(kit.models))),
         ("upload_mark refused", lambda: _sent(kit, "/marks", b"other")),
+        ("upload_tag", lambda: api.upload_tag(body=_final(kit.models, "Tag"))),
+        ("upload_tag refused", lambda: _sent(kit, "/tags", b"other")),
         ("upload_stamp", lambda: api.upload_stamp(body=b"\xff\x00ok")),
         ("upload_stamp too long", lambda: api.upload_stamp(body=LONG)),
         ("upload_stamp too long past the client", lambda: _sent(kit, "/stamps", LONG)),

@@ -3340,6 +3340,30 @@ def test_main_jsonschema_field_type_collision_dataclass(
         )
 
 
+def test_main_jsonschema_field_type_collision_dataclass_class_var(output_file: Path) -> None:
+    """Keep the default of a ``ClassVar`` named like a type of its class, as ``dataclasses`` takes no factory for it."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "class_var.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="field_type_collision_runtime/dataclass_class_var.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.DataclassesDataclass.value,
+            "--target-python-version",
+            "3.10",
+            "--class-name",
+            "Payload",
+            "--use-default",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("backend", "options", "expected_directory"),
     [
