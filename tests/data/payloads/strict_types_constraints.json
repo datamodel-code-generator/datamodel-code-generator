@@ -1,0 +1,22 @@
+{
+  "valid": {
+    "stamp": "abcd",
+    "seal": "ab",
+    "code": "ABC",
+    "count": 10,
+    "even": 4,
+    "ratio": 0.5,
+    "step": 1.5,
+    "flag": true
+  },
+  "invalid": {
+    "stamp": "abcde",
+    "seal": "a",
+    "code": "ABCD",
+    "count": 11,
+    "even": 3,
+    "ratio": 1,
+    "step": 0.3,
+    "flag": "true"
+  }
+}
