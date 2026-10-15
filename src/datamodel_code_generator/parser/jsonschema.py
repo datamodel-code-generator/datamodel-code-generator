@@ -588,6 +588,37 @@ def _get_tagged_union_value(literal: JsonSchemaLiteral) -> TaggedUnionValue | No
     return None  # pragma: no cover
 
 
+def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_values: list[Any]) -> str | None:
+    """Describe the 0.83.0 shift of enum names or descriptions that give null an entry beside the named values.
+
+    The entries are matched to the values without null, so a list with one entry per enum value, null included,
+    gives each value after null the entry of the value before it.
+    """
+    if len(named_values) == len(obj.enum):
+        return None
+    names_key = "x-enum-varnames" if obj.x_enum_varnames else "x-enumNames"
+    positions = [position for position, value in enumerate(obj.enum) if value is not None]
+    shifts = [
+        (key, noun, kind, value, entries[index], entries[position])
+        for key, noun, kind, entries in (
+            (names_key, "names", "named", obj.x_enum_varnames or obj.x_enum_names),
+            ("x-enum-descriptions", "descriptions", "described", obj.x_enum_descriptions),
+        )
+        if len(entries) == len(obj.enum)
+        for index, (position, value) in enumerate(zip(positions, named_values, strict=True))
+        if index != position
+    ]
+    if not shifts:
+        return None
+    lists = {key: noun for key, noun, *_ in shifts}
+    _, _, kind, value, taken, own = shifts[0]
+    return (
+        f"{class_name} keeps the shifted member {' and '.join(lists.values())} of 0.83.0: {' and '.join(lists)} "
+        f"{'give' if len(lists) > 1 else 'gives'} null an entry, but the entries are matched to the values without "
+        f"null, so {value!r} is {kind} {taken!r} instead of {own!r}. Leave the entry of null out of the list."
+    )
+
+
 def __getattr__(name: str) -> Any:
     """Return compatibility model classes without importing them on parser load."""
     match name:
@@ -11749,6 +11780,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             loaded=True,
             model_type="enum",
         )
+        if message := _shifted_enum_entries_message(enum_reference.name, obj, named_values):
+            warn(message, stacklevel=2)
 
         self._register_root_model(
             reference=reference,
