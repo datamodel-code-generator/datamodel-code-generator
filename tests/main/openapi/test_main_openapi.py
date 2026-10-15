@@ -739,6 +739,8 @@ def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_fi
     [
         ("discriminator_shared_variant_tags", "pydantic_v2.BaseModel", []),
         ("discriminator_shared_variant_tags", "msgspec.Struct", []),
+        ("discriminator_reuse_variant_tags", "pydantic_v2.BaseModel", ["--reuse-model"]),
+        ("discriminator_reuse_variant_tags", "msgspec.Struct", ["--reuse-model"]),
         (
             "discriminator_read_write_variant_tags",
             "pydantic_v2.BaseModel",
