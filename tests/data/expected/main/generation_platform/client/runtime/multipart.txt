@@ -19,7 +19,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 244] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>--\r\n'
   sized parts = None
   > POST https://media.example.com/api/attachments
-    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 38] b'--<boundary>--\r\n'
   no parts = None
   > POST https://media.example.com/api/attachments
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
@@ -131,7 +131,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 833] b'--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na&b|c\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\n\r\nx y\r\n--<boundary>\r\nContent-Disposition: form-data; name="sizes"\r\n\r\n1,2\r\n--<boundary>\r\nContent-Disposition: form-data; name="filter[name]"\r\n\r\nn m\r\n--<boundary>\r\nContent-Disposition: form-data; name="filter[min]"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="x"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="z"\r\n\r\n3\r\n--<boundary>\r\nContent-Disposition: form-data; name="label"\r\n\r\nl/1\r\n--<boundary>\r\nContent-Disposition: form-data; name="y"\r\n\r\n4\r\n--<boundary>--\r\n'
   stickers = None
   > POST https://media.example.com/api/stickers
-    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 38] b'--<boundary>--\r\n'
   stickers of no tags and no filter = None
   stickers of a point whose extra is named as another member ! DecodeError: DecodeError(operation_id='submitStickers', reason='unencodable', location='body') [operation_id='submitStickers', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('Two form-data members write parts of the same name')] unencodable
   stickers of another member named as a point's extra ! DecodeError: DecodeError(operation_id='submitStickers', reason='unencodable', location='body') [operation_id='submitStickers', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('Two form-data members write parts of the same name')] unencodable
@@ -355,7 +355,7 @@ codes.0
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 244] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>--\r\n'
   sized parts = None
   > POST https://media.example.com/api/attachments
-    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 38] b'--<boundary>--\r\n'
   no parts = None
   > POST https://media.example.com/api/attachments
     [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
@@ -467,7 +467,7 @@ codes.0
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 833] b'--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na&b|c\r\n--<boundary>\r\nContent-Disposition: form-data; name="words"\r\n\r\nx y\r\n--<boundary>\r\nContent-Disposition: form-data; name="sizes"\r\n\r\n1,2\r\n--<boundary>\r\nContent-Disposition: form-data; name="filter[name]"\r\n\r\nn m\r\n--<boundary>\r\nContent-Disposition: form-data; name="filter[min]"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="x"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="z"\r\n\r\n3\r\n--<boundary>\r\nContent-Disposition: form-data; name="label"\r\n\r\nl/1\r\n--<boundary>\r\nContent-Disposition: form-data; name="y"\r\n\r\n4\r\n--<boundary>--\r\n'
   stickers = None
   > POST https://media.example.com/api/stickers
-    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 38] b'--<boundary>--\r\n'
   stickers of no tags and no filter = None
   stickers of a point whose extra is named as another member ! DecodeError: DecodeError(operation_id='submitStickers', reason='unencodable', location='body') [operation_id='submitStickers', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('Two form-data members write parts of the same name')] unencodable
   stickers of another member named as a point's extra ! DecodeError: DecodeError(operation_id='submitStickers', reason='unencodable', location='body') [operation_id='submitStickers', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('Two form-data members write parts of the same name')] unencodable

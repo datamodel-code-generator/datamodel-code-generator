@@ -272,19 +272,21 @@ def native_files(entries: Iterable[Entry], contents: Iterable[object] | None = N
     ]
 
 
-def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | FormParts, str | None]:
+def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | FormParts, str]:
     """Return a body's bytes, or else its streamed parts, and its media type with a new boundary.
 
     The media type is the one the call sends, multipart/form-data without one, its other parameters kept. A body
-    without parts has no media type, as HTTPX2 sends none. A part header naming Content-Disposition is refused, as
-    HTTPX2 writes it itself, and HTTPX2 checks every part's name and headers before any file input is opened.
+    without parts is its close delimiter alone, which HTTPX2 would not send. A part header naming Content-Disposition
+    is refused, as HTTPX2 writes it itself, and HTTPX2 checks every part's name and headers before any file input is
+    opened.
     """
     if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
         raise _malformed(None, ValueError(_DISPOSITION))
+    boundary = urandom(16).hex()
+    sent = f"{media_type or _FORM_DATA}; boundary={boundary}"
+    if not entries:
+        return f"--{boundary}--\r\n".encode(), sent
     try:
-        if not entries:
-            return b"", None
-        sent = f"{media_type or _FORM_DATA}; boundary={urandom(16).hex()}"
         if all(type(content) is bytes for _, _, content, _, _ in entries):
             return httpx2.Request("POST", "/", headers={"Content-Type": sent}, files=native_files(entries)).read(), sent
         httpx2.Request("POST", "/", files=native_files(entries, (b"" for _ in entries)))
@@ -298,9 +300,7 @@ def _shaped(plan: PartPlan | None) -> Literal["application/json"] | None:
     return _JSON if plan is not None and plan.kind == "json" else None
 
 
-def encode_multipart(
-    value: JSONValue, form: MultipartForm, sent: str | None = None
-) -> tuple[bytes | FormParts, str | None]:
+def encode_multipart(value: JSONValue, form: MultipartForm, sent: str | None = None) -> tuple[bytes | FormParts, str]:
     """Encode an object as ordered form-data parts, repeating a part for each array member; an empty one writes none.
 
     A form cannot write null, so a None member is left out as an unset one is.
@@ -411,7 +411,7 @@ def encode_parts(
     plans: tuple[PartPlan, ...] | None = None,
     additional: PartPlan | None = None,
     sent: str | None = None,
-) -> tuple[bytes | FormParts, str | None]:
+) -> tuple[bytes | FormParts, str]:
     """Encode the parts a call gives in their order, each by the plan of its member when the schema has them.
 
     A file part without a media type is sent as application/octet-stream, and the body in the media type `sent` names.
@@ -516,7 +516,7 @@ class MultipartForm:
     content_types: tuple[tuple[str, str], ...] = ()
     encoded: tuple[ParameterPlan, ...] = ()
 
-    def encode(self, value: object, sent: str) -> tuple[bytes | FormParts, str | None]:
+    def encode(self, value: object, sent: str) -> tuple[bytes | FormParts, str]:
         """Return the body and its media type, which keeps the sent type's parameters beside its boundary."""
         if not self.members:
             return encode_parts(value, self.parts, self.additional, sent)

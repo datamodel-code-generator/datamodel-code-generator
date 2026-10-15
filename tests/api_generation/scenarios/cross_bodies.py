@@ -150,6 +150,7 @@ def calls(kit: Kit) -> Calls:
                 ))
             ),
         ),
+        ("post_extra_files without parts", lambda: api.post_extra_files(body=multipart(()))),
         (
             "post_extra_files refused",
             lambda: api.post_extra_files(body=multipart((bodies.FieldPart("first", [blue, negative]),))),
@@ -168,6 +169,7 @@ def calls(kit: Kit) -> Calls:
         ),
         ("post_closed_form", lambda: api.post_closed_form(body=models.ClosedFormsPostRequest(name="n"))),
         ("post_closed_parts", lambda: api.post_closed_parts(body=models.ClosedPartsPostRequest(name="n"))),
+        ("post_closed_parts without members", lambda: api.post_closed_parts(body=models.ClosedPartsPostRequest())),
         *(
             (
                 f"{path} with another member",

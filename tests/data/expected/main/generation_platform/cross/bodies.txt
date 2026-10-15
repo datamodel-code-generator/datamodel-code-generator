@@ -146,6 +146,11 @@ post_extra_files
   post_extra_files(body=ExtraFilesPostRequest(file=b'\x00', name='n', first=[Filter(color='blue', minAge=None), Filter(color=None, minAge=3)], second=[Filter(color=None, minAge=3)]))
   < 204 -
   = None
+post_extra_files without parts
+  > POST /extra-files [multipart/form-data; boundary=<boundary>]
+  post_extra_files(body=ExtraFilesPostRequest(file=None, name=None))
+  < 204 -
+  = None
 post_extra_files refused
   > POST /extra-files [multipart/form-data; boundary=<boundary>]
   < 422 application/json
@@ -172,6 +177,11 @@ post_closed_form
 post_closed_parts
   > POST /closed-parts [multipart/form-data; boundary=<boundary>]
   post_closed_parts(body=ClosedPartsPostRequest(name='n'))
+  < 204 -
+  = None
+post_closed_parts without members
+  > POST /closed-parts [multipart/form-data; boundary=<boundary>]
+  post_closed_parts(body=ClosedPartsPostRequest(name=None))
   < 204 -
   = None
 /closed-forms with another member
