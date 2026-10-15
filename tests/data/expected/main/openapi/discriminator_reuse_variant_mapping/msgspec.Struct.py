@@ -8,13 +8,12 @@ from typing import Literal, TypeAlias
 from msgspec import UNSET, Struct, UnsetType
 
 
-class Cat(Struct):
-    kind: Literal['cat']
+class Cat(Struct, tag_field='kind', tag='cat'):
     name: str | UnsetType = UNSET
 
 
-class Kitten(Cat):
-    kind: Literal['kitty']
+class Kitten(Cat, tag_field='kind', tag='kitty'):
+    pass
 
 
 class Fish(Struct):
@@ -37,3 +36,27 @@ Pet: TypeAlias = Kitten | Dog
 
 
 Aquarium: TypeAlias = Goldfish | Dog
+
+
+class Hound(Dog, tag_field='kind', tag='dog'):
+    pass
+
+
+class Basket(Struct):
+    pet: Kitten | Hound | UnsetType = UNSET
+
+
+class Bird(Struct):
+    kind: Literal['bird']
+    wings: int | UnsetType = UNSET
+
+
+class Parrot(Bird):
+    kind: Literal['bird']
+
+
+Aviary: TypeAlias = Parrot | Dog
+
+
+class Cage(Struct):
+    pet: Cat | Hound | UnsetType = UNSET

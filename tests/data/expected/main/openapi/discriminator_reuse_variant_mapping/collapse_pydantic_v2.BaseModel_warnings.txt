@@ -1,0 +1,2 @@
+Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'cat' from Feline, so these unions cannot decode it: Pet ('kitty'), Basket.pet ('kitty').
+Fish is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Fish' from Aquarium, so these unions cannot decode it: Aquarium ('goldie').

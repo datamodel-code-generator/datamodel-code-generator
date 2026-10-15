@@ -36,3 +36,27 @@ Pet: TypeAlias = Kitten | Dog
 
 
 Aquarium: TypeAlias = Goldfish | Dog
+
+
+class Hound(Dog, tag_field='kind', tag='dog'):
+    pass
+
+
+class Basket(Struct):
+    pet: Kitten | Hound | UnsetType = UNSET
+
+
+class Bird(Struct):
+    kind: Literal['bird']
+    wings: int | UnsetType = UNSET
+
+
+class Parrot(Bird):
+    kind: Literal['bird']
+
+
+Aviary: TypeAlias = Parrot | Dog
+
+
+class Cage(Struct):
+    pet: Cat | Hound | UnsetType = UNSET

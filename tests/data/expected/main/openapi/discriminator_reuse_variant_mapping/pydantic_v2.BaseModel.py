@@ -41,3 +41,28 @@ class Pet(RootModel[Kitten | Dog]):
 
 class Aquarium(RootModel[Goldfish | Dog]):
     root: Goldfish | Dog = Field(..., discriminator='kind')
+
+
+class Hound(Dog):
+    kind: Literal['dog']
+
+
+class Basket(BaseModel):
+    pet: Kitten | Hound | None = Field(None, discriminator='kind')
+
+
+class Bird(BaseModel):
+    kind: Literal['bird']
+    wings: int | None = None
+
+
+class Parrot(Bird):
+    kind: Literal['bird']
+
+
+class Aviary(RootModel[Parrot | Dog]):
+    root: Parrot | Dog = Field(..., discriminator='kind')
+
+
+class Cage(BaseModel):
+    pet: Cat | Hound | None = Field(None, discriminator='kind')
