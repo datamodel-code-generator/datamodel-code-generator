@@ -110,6 +110,7 @@ paths:
               type: object
               properties:
                 name: {type: string}
+                maxAge: {type: integer}
               additionalProperties: {$ref: "#/components/schemas/Filter"}
       responses:
         "204": {description: Done.}

@@ -75,6 +75,7 @@ class PetsPostRequest:
 @dataclass(config=ConfigDict(extra='allow'))
 class ExtrasPostRequest:
     name: str | MISSING = MISSING
+    maxAge: int | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))

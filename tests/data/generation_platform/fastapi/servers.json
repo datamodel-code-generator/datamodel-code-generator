@@ -3605,6 +3605,77 @@
     ],
     "package_snapshots": []
   },
+  "forms-by-name": {
+    "input": "server-forms.yaml",
+    "services": "forms",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "maxAge",
+            null,
+            "3",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "max_age",
+            null,
+            "3",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "max_age",
+            null,
+            "two",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-scores",
+        "content": "maxAge=1&max_age=2",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      }
+    ],
+    "model": {
+      "snake_case_field": true,
+      "allow_population_by_field_name": true
+    },
+    "package_snapshots": []
+  },
   "responses": {
     "input": "server-responses.yaml",
     "services": "responses",

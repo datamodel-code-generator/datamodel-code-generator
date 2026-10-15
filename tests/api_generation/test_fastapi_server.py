@@ -99,6 +99,7 @@ assert_docs_file = create_assert_file_content(EXPECTED_DOCS_PROJECTS)
         "variants-modular",
         "variants-reuse",
         "forms",
+        "forms-by-name",
         "responses",
         "nested-models",
         "stale",

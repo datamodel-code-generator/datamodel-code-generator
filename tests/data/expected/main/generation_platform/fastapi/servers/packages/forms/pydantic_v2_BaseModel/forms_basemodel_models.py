@@ -67,6 +67,7 @@ class ExtrasPostRequest(BaseModel):
         '__pydantic_extra__': Dict[str, Filter],
     }
     name: str | None = None
+    maxAge: int | None = None
 
 
 class ExtraListsPostRequest(BaseModel):

@@ -2,8 +2,8 @@ models shared True
 # reused_forms in-process sync, in-process async
 post_extras
   > POST /extras [multipart/form-data; boundary=<boundary>]
-  post_extras(body=ExtrasPostRequest(name='n'))
-  post_extras members(name='n', first=Filter(color='blue', minAge=MISSING))
+  post_extras(body=ExtrasPostRequest(name='n', maxAge=MISSING))
+  post_extras members(name='n', maxAge=MISSING, first=Filter(color='blue', minAge=MISSING))
   < 204 -
   = None
 post_extra_lists
