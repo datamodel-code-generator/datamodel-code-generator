@@ -3724,13 +3724,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         This is controlled by use_closed_typed_dict option. When disabled,
         the additionalProperties constraint is not converted to PEP 728 syntax.
+        An inline allOf member with additionalProperties: false closes the combined model.
         """
-        if isinstance(obj.additionalProperties, bool):
+        additional_properties = obj.additionalProperties
+        if (
+            obj.allOf
+            and additional_properties is not False
+            and any(
+                source.additionalProperties is False
+                for source in self._iter_schema_validation_sources(obj, include_references=False)
+            )
+        ):
+            additional_properties = False
+        if isinstance(additional_properties, bool):
             if not self.use_closed_typed_dict:
                 return
             self._output_model_context.store_additional_properties_value(
                 self.extra_template_data[path],
-                value=obj.additionalProperties,
+                value=additional_properties,
                 target_python_version=self.target_python_version,
             )
         elif isinstance(obj.additionalProperties, JsonSchemaObject):
@@ -7393,6 +7404,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         for resolved_item in resolved_items:
             merged_schema = merge_schema(merged_schema, resolved_item.model_dump(exclude_unset=True, by_alias=True))
+        if obj.additionalProperties is False or any(
+            source.additionalProperties is False
+            for resolved_item in resolved_items
+            for source in self._iter_schema_validation_sources(resolved_item, include_references=False)
+        ):
+            merged_schema["additionalProperties"] = False
 
         if "required" in merged_schema and isinstance(merged_schema["required"], list):
             merged_schema["required"] = list(dict.fromkeys(merged_schema["required"]))
