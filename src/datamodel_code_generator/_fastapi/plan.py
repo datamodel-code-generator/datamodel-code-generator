@@ -727,13 +727,21 @@ class Planner:  # noqa: PLR0904
         )
 
     def check_routes(self, specs: tuple[OperationSpec, ...]) -> None:
-        """Reject two operations FastAPI cannot tell apart: the same method and path shape."""
-        seen: set[tuple[str, str]] = set()
+        """Reject two operations FastAPI cannot tell apart: the same method and routed path shape.
+
+        Literal text is compared decoded, as the routes match it, so `/a b` and `/a%20b` are one route.
+        """
+        seen: dict[tuple[str, str], RoutePath] = {}
         for spec in specs:
-            if (key := (spec.contract.method, spec.route.shape())) in seen:
-                message = f"{_label(spec.contract)} differs from another route only by placeholder names"
-                self.problems.append(_problem("F_ROUTE_INVALID", message, spec.contract.id.use_site))
-            seen.add(key)
+            if (other := seen.setdefault((spec.contract.method, spec.route.shape()), spec.route)) is spec.route:
+                continue
+            reason = (
+                "placeholder names"
+                if other.written() == spec.route.written()
+                else "how its path text is percent-encoded"
+            )
+            message = f"{_label(spec.contract)} differs from another route only by {reason}"
+            self.problems.append(_problem("F_ROUTE_INVALID", message, spec.contract.id.use_site))
 
     def operation(self, operation: OperationContract, name: str, pascal: str) -> OperationSpec:
         """Plan one operation's parameters, body, responses, arguments, and route path."""
