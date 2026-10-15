@@ -57,3 +57,4 @@ class Measurement(BaseModel):
     status: Status | None = None
     pair: list[str] | None = Field(None, max_length=2, min_length=1)
     single: list[str] | None = Field(None, max_length=1, min_length=1)
+    ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)
