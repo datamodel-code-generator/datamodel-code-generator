@@ -112,6 +112,10 @@ written as `Any`, which takes no number keyword. Pydantic models and dataclasses
 arguments, so this case needs `--field-constraints` or `--use-annotated` (root models and type aliases follow the same
 options); without them such a field has no bound. `msgspec.Struct` writes them as `Meta(...)`.
 
+In both cases `msgspec.Struct` writes a keyword only when msgspec accepts it on the Python type, as the msgspec column
+of the tables below lists, because msgspec cannot decode a model whose `Meta(...)` holds any other. A keyword it
+leaves out, such as `minimum` on the `Decimal` of format `decimal`, is named with its field in a warning.
+
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|
 | `int`, `float` | all five keywords | all five keywords |
@@ -173,7 +177,9 @@ They follow the same two cases as number keywords: a schema type `string` takes 
 `array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
 without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
 "pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
-`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
+`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds. As for number
+keywords, `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept on the Python type, such
+as `pattern` on `bytes` or `minLength` on the `Literal` of a `const`.
 
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of

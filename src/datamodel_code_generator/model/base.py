@@ -613,6 +613,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Process const fields in subclasses."""
 
     @property
+    def dropped_constraints_warning(self) -> str | None:
+        """Return a warning naming the constraints the output model leaves out on this field's type, if any."""
+        return None
+
+    @property
     def requires_immediate_forward_reference_resolution(self) -> bool:
         """Return whether this field's annotation is evaluated in the class body."""
         return bool(getattr(self, "is_pydantic_extra_field", False))

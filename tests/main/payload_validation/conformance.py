@@ -360,7 +360,8 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         "msgspec conversion cannot evaluate generated enum field/type name collisions"
     ),
     "jsonschema/strict_types_matrix.json": (
-        "msgspec conversion rejects numeric constraint metadata attached to Decimal types"
+        "msgspec generation warns that it leaves Decimal bounds out of Meta; "
+        "test_main_msgspec_meta_unsupported_types decodes such models"
     ),
     "jsonschema/anyof_const_with_constraints.json": (
         "msgspec conversion rejects constrained scalar unions that differ from JSON Schema branch semantics"
@@ -391,11 +392,13 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/reduce_duplicate_field_types.json": (
         "msgspec conversion requires tagged Struct unions for combined object schemas"
     ),
-    "jsonschema/ref_merge_additional_properties.json": (
-        "msgspec conversion rejects length metadata attached to generated Literal types"
-    ),
-    "jsonschema/ref_merge_field_metadata.json": (
-        "msgspec conversion rejects length metadata attached to generated Literal types"
+    **dict.fromkeys(
+        (
+            "jsonschema/ref_merge_additional_properties.json",
+            "jsonschema/ref_merge_field_metadata.json",
+        ),
+        "msgspec generation warns that it leaves Literal lengths out of Meta; "
+        "test_main_msgspec_meta_unsupported_types decodes such models",
     ),
     "jsonschema/reuse_model_collapse_root_models_constraints.json": (
         "msgspec conversion requires tagged Struct unions for combined object schemas"

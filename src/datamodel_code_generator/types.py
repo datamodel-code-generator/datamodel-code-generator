@@ -1507,20 +1507,22 @@ class DataTypeManager(ABC):
             return SEQUENCE_KEYWORDS
         return TYPE_DEPENDENT_KEYWORDS if data_type.reference else None
 
-    def constraint_keywords(self, data_type: DataType) -> frozenset[str]:
+    @classmethod
+    def constraint_keywords(cls, data_type: DataType) -> frozenset[str]:
         """Return the type-dependent keywords that every member of an emitted type takes in this output model."""
-        if (keywords := self._shape_constraint_keywords(data_type)) is not None:
+        if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
             return keywords
         if data_type.data_types:
-            return frozenset.intersection(*map(self.constraint_keywords, data_type.data_types))
+            return frozenset.intersection(*map(cls.constraint_keywords, data_type.data_types))
         if data_type.python_type is None:
             import_ = data_type.import_
-            return self.type_constraint_keywords(
+            return cls.type_constraint_keywords(
                 f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or ""
             )
-        return self._annotation_constraint_keywords(data_type.python_type.expression)
+        return cls._annotation_constraint_keywords(data_type.python_type.expression)
 
-    def _annotation_constraint_keywords(self, expression: PythonTypeExpr) -> frozenset[str]:
+    @classmethod
+    def _annotation_constraint_keywords(cls, expression: PythonTypeExpr) -> frozenset[str]:
         """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies.
 
         A ``Literal`` takes the keywords every value other than ``None`` takes as an instance of its type, where a
@@ -1544,7 +1546,7 @@ class DataTypeManager(ABC):
         )
         members = None
         if isinstance(expression, PythonTypeUnion) or (base is not expression and path in _UNION_PATHS):
-            if not self.ANNOTATION_UNIONS_TAKE_CONSTRAINTS:
+            if not cls.ANNOTATION_UNIONS_TAKE_CONSTRAINTS:
                 return _NO_KEYWORDS
             members = tuple(
                 member
@@ -1555,25 +1557,23 @@ class DataTypeManager(ABC):
             members = python_type_expr_arguments(expression)[:1]
         if members is not None:
             return (
-                frozenset.intersection(*map(self._annotation_constraint_keywords, members)) if members else _NO_KEYWORDS
+                frozenset.intersection(*map(cls._annotation_constraint_keywords, members)) if members else _NO_KEYWORDS
             )
         if path == "typing.Literal" and base is not expression:
-            if not self.LITERALS_TAKE_CONSTRAINTS:
+            if not cls.LITERALS_TAKE_CONSTRAINTS:
                 return _NO_KEYWORDS
-            value_paths = set(self._literal_value_paths(expression))
+            value_paths = set(cls._literal_value_paths(expression))
             return (
-                frozenset.intersection(*map(self.type_constraint_keywords, value_paths))
-                if value_paths
-                else _NO_KEYWORDS
+                frozenset.intersection(*map(cls.type_constraint_keywords, value_paths)) if value_paths else _NO_KEYWORDS
             )
         if (
             path == "tuple"
             and base is not expression
-            and not self.FIXED_TUPLES_TAKE_LENGTH
+            and not cls.FIXED_TUPLES_TAKE_LENGTH
             and not any(isinstance(argument, PythonTypeEllipsis) for argument in python_type_expr_arguments(expression))
         ):
             return _NO_KEYWORDS
-        return self.type_constraint_keywords(path)
+        return cls.type_constraint_keywords(path)
 
     @staticmethod
     def _literal_value_paths(expression: PythonTypeExpr) -> Iterator[str]:
@@ -1595,7 +1595,8 @@ class DataTypeManager(ABC):
                     else ""
                 )
 
-    def type_constraint_keywords(self, path: str) -> frozenset[str]:
+    @classmethod
+    def type_constraint_keywords(cls, path: str) -> frozenset[str]:
         """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
 
         The table lists the keywords that the output model enforces on a type across its supported versions.
@@ -1604,9 +1605,9 @@ class DataTypeManager(ABC):
         generator itself imports; a type the generator cannot classify keeps the keywords the schema declares.
         """
         path = _standard_type_path(path)
-        if (keywords := self.CONSTRAINT_KEYWORDS.get(path)) is not None:
+        if (keywords := cls.CONSTRAINT_KEYWORDS.get(path)) is not None:
             return keywords
-        if not path or any(path in _import_paths(module) for module in self.KNOWN_TYPE_IMPORTS):
+        if not path or any(path in _import_paths(module) for module in cls.KNOWN_TYPE_IMPORTS):
             return _NO_KEYWORDS
         from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
             is_known_python_type_path,

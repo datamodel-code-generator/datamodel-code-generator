@@ -1,12 +1,4 @@
 {
-  "jsonschema/allof_outer_constraints/integer_date_time_bounds.json": {
-    "valid": 0,
-    "error": "Can only set `ge` on a numeric type"
-  },
-  "jsonschema/allof_outer_constraints/number_date_time_bounds.json": {
-    "valid": 0,
-    "error": "Can only set `ge` on a numeric type"
-  },
   "jsonschema/compound_property_names/enum_oneof.json": {
     "valid": {},
     "error": "Type unions may not contain more than one str enum type"

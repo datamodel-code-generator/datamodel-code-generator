@@ -11,9 +11,7 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class NumberConstraintsOnNumericStringFormats(Struct):
-    decimal_minimum: Annotated[Decimal, Meta(ge=5)] | UnsetType = UNSET
+    decimal_minimum: Decimal | UnsetType = UNSET
     integer_maximum: Annotated[int, Meta(le=10)] | UnsetType = UNSET
     unixtime_exclusive_minimum: Annotated[int, Meta(gt=5)] | UnsetType = UNSET
-    nullable_decimal_multiple_of: (
-        Annotated[Decimal, Meta(multiple_of=2)] | None | UnsetType
-    ) = UNSET
+    nullable_decimal_multiple_of: Decimal | None | UnsetType = UNSET
