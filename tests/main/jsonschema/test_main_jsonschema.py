@@ -3402,16 +3402,47 @@ def test_main_jsonschema_field_type_collision_cross_module(
         assert_output(f"{parsed.Bar.x}\n", payload_path / "runtime.txt")
 
 
-def test_main_jsonschema_field_type_collision_inherited_modules(output_dir: Path) -> None:
-    """Rename an inherited field named like its type under one name in every module of its family."""
+@pytest.mark.parametrize(
+    ("input_name", "backend", "expected_name", "child_module"),
+    [
+        pytest.param(
+            "field_type_collision_inherited_modules",
+            DataModelType.PydanticV2Dataclass,
+            "field_type_collision_inherited_modules",
+            "b",
+            id="base-module-first",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules_child_first",
+            DataModelType.PydanticV2Dataclass,
+            "field_type_collision_inherited_modules_child_first/dataclass",
+            "a",
+            id="child-module-first",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules_child_first",
+            DataModelType.PydanticV2BaseModel,
+            "field_type_collision_inherited_modules_child_first/base_model",
+            "a",
+            id="child-module-first-base-model",
+        ),
+    ],
+)
+def test_main_jsonschema_field_type_collision_inherited_modules(
+    output_dir: Path, input_name: str, backend: DataModelType, expected_name: str, child_module: str
+) -> None:
+    """Rename an inherited field named like its type under one name and alias in every module of its family.
+
+    The child keeps the alias whichever of the modules comes first.
+    """
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_inherited_modules",
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
         output_path=output_dir,
         input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "field_type_collision_inherited_modules",
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
         extra_args=[
             "--output-model-type",
-            DataModelType.PydanticV2Dataclass.value,
+            backend.value,
             "--target-python-version",
             "3.11",
             "--disable-timestamp",
@@ -3420,7 +3451,7 @@ def test_main_jsonschema_field_type_collision_inherited_modules(output_dir: Path
         ],
     )
     payload_path = DATA_PATH / "payloads" / "field_type_collision_cross_module"
-    with _generated_package_module(output_dir, "b") as module:
+    with _generated_package_module(output_dir, child_module) as module:
         validator = _model_json_validator(module.Child)
         parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
         with pytest.raises(ValidationError):

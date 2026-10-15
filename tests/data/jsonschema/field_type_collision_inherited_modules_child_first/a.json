@@ -1,0 +1,1 @@
+{"title":"Child","allOf":[{"$ref":"b.json"}],"type":"object","required":["Bar"],"properties":{"Zed":{"type":"string"}}}
