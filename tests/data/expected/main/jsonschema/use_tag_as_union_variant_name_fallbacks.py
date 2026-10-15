@@ -6,7 +6,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from external.models import ExternalNull
+from pydantic import BaseModel, Field, RootModel
 
 
 class MsgInitialize(BaseModel):
@@ -118,6 +119,23 @@ class NullableEnumKeyBranch1(Enum):
     NoneType_None = None
 
 
+class NullableRefKeyBranch(BaseModel):
+    id: str
+
+
+class NullableChainRefKeyBranch(BaseModel):
+    id: str
+
+
+class NullableExternalRefKeyBranchId(BaseModel):
+    id: str
+
+
+class ParentLiteralBranchLiteralA(BaseModel):
+    kind: Literal['x']
+    type: Literal['a']
+
+
 class Nested(Enum):
     none = 'none'
 
@@ -136,6 +154,14 @@ class NestedB(BaseModel):
 
 class SingleKeyBranchGranular(BaseModel):
     granular: bool
+
+
+class Null(RootModel[None]):
+    root: None
+
+
+class NullAlias(RootModel[Null | None]):
+    root: Null | None
 
 
 class TagVariantNameFallbacks(BaseModel):
@@ -158,5 +184,11 @@ class TagVariantNameFallbacks(BaseModel):
     nullable_enum_key_branch: NullableEnumKeyBranch | NullableEnumKeyBranch1 | None = (
         None
     )
+    nullable_ref_key_branch: NullableRefKeyBranch | Null | None = None
+    nullable_chain_ref_key_branch: NullableChainRefKeyBranch | NullAlias | None = None
+    nullable_external_ref_key_branch: (
+        NullableExternalRefKeyBranchId | ExternalNull | None
+    ) = None
+    parent_literal_branch_literal: ParentLiteralBranchLiteralA | None = None
     nested: Nested | NestedA | NestedB | None = None
     single_key_branch: SingleKeyBranchGranular | None = None

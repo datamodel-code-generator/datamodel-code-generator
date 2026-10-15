@@ -231,6 +231,54 @@
         {"enum": [null]}
       ]
     },
+    "nullable_ref_key_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": {"type": "string"}
+          }
+        },
+        {"$ref": "#/definitions/Null"}
+      ]
+    },
+    "nullable_chain_ref_key_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": {"type": "string"}
+          }
+        },
+        {"$ref": "#/definitions/NullAlias"}
+      ]
+    },
+    "nullable_external_ref_key_branch": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": {"type": "string"}
+          }
+        },
+        {"$ref": "external_null.json#/definitions/ExternalNull"}
+      ]
+    },
+    "parent_literal_branch_literal": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {"kind": {"const": "x"}},
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {"type": {"const": "a"}}
+        }
+      ]
+    },
     "nested": {
       "oneOf": [
         {"type": "string", "enum": ["none"]},
@@ -272,5 +320,9 @@
         }
       ]
     }
+  },
+  "definitions": {
+    "Null": {"type": "null"},
+    "NullAlias": {"$ref": "#/definitions/Null"}
   }
 }

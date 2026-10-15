@@ -578,13 +578,6 @@ def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None
     return f"{module_name}{separator}{variant_name}" if module_name else variant_name
 
 
-def _is_null_only_schema(obj: JsonSchemaObject) -> bool:
-    """Return whether a schema admits only null through its type, const, or enum."""
-    return (
-        obj.type in ("null", ["null"]) or obj.enum == [None] or ("const" in obj.extras and obj.extras["const"] is None)
-    )
-
-
 def _get_tagged_union_value(literal: JsonSchemaLiteral) -> TaggedUnionValue | None:
     """Return a supported tagged-union value for a JSON Schema literal."""
     match literal:
@@ -4121,6 +4114,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 seen.add(field_name)
                 yield field_name
 
+    def _is_null_only_schema(self, obj: JsonSchemaObject, seen_refs: set[str] | None = None) -> bool:
+        """Return whether a schema, or the schema its `$ref` chain reaches, admits only null by type, const, or enum."""
+        if (
+            obj.type in ("null", ["null"])
+            or obj.enum == [None]
+            or ("const" in obj.extras and obj.extras["const"] is None)
+        ):
+            return True
+        if not obj.ref:
+            return False
+        seen_refs = seen_refs or set()
+        resolved_ref = self.model_resolver.resolve_ref(obj.ref)
+        if self._resolve_external_ref_mapping(obj.ref) or resolved_ref in seen_refs:
+            return False
+        seen_refs.add(resolved_ref)
+        return self._is_null_only_schema(self._load_ref_schema_object(obj.ref), seen_refs)
+
     def _is_single_literal_schema(self, obj: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
         """Return whether a property schema admits a single literal value."""
         return isinstance(obj, JsonSchemaObject) and self._get_single_literal_value(obj) is not None
@@ -4138,7 +4148,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         of one branch beside null has no key branch.
         """
         tag_keys: dict[int, str] = {}
-        if len(combined_schemas) > 1 and sum(not _is_null_only_schema(item) for item in combined_schemas) == 1:
+        non_null_branches = (item for item in combined_schemas if not self._is_null_only_schema(item))
+        if (
+            len(combined_schemas) > 1
+            and next(non_null_branches, None) is not None
+            and next(non_null_branches, None) is None
+        ):
             return tag_keys
         shared = obj.properties or {}
         open_fields = [field_name for field_name in shared if field_name not in literal_fields]

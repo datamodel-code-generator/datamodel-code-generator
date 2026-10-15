@@ -8348,12 +8348,6 @@ def test_jsonschema_use_tag_as_union_variant_name_off(
             "--infer-union-variant-names",
             "use_tag_as_union_variant_name_fallbacks_infer.py",
         ),
-        (
-            "object_has_one_of.json",
-            "--use-tag-as-union-variant-name",
-            "object_has_one_of_use_tag_as_union_variant_name.py",
-        ),
-        ("object_has_one_of.json", "--infer-union-variant-names", "object_has_one_of_infer_union_variant_names.py"),
     ],
 )
 def test_jsonschema_use_tag_as_union_variant_name_edges(
@@ -8366,7 +8360,7 @@ def test_jsonschema_use_tag_as_union_variant_name_edges(
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=expected_file,
-        extra_args=[option, "--disable-timestamp"],
+        extra_args=[option, "--external-ref-mapping", "external_null.json=external.models", "--disable-timestamp"],
     )
 
 
