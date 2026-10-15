@@ -3,7 +3,9 @@
 Each call names the media type it sends where the operation declares several, and the server reports the model or
 value its handler received with the media type it read. Members whose types have no one scalar kind travel as JSON
 parts, in a body sent whole and in one sent part by part, and so do the other properties a form's schema types,
-or a schema it combines with allOf, under whatever names a call gives them. A form that allows no other properties
+or a schema it combines with allOf, under whatever names a call gives them. So do members without a type, a string
+or an array included, which the server reads back as the client sent them, and keeps as text, or a file's bytes,
+when another sender's part is not JSON. A form that allows no other properties
 refuses a member its schema does not declare, which its model's client never writes.
 """
 
@@ -51,6 +53,11 @@ def calls(kit: Kit) -> Calls:
     )
     blue, old = models.Filter(color="blue"), models.Filter(minAge=3)
     negative = models.Filter.model_construct(minAge=-1)
+    untyped = (
+        ("values", {"anything": {"a": 1}, "many": [{"b": 2}, [3], "s"]}),
+        ("arrays", {"anything": [1, "2"], "many": [None, 1.5]}),
+        ("strings", {"anything": "1", "many": ["s", "true"]}),
+    )
     choices = (
         ("text", {"either": "plain", "level": models.Level("a"), "words": "s", "lists": ["x"]}),
         (
@@ -207,4 +214,39 @@ def calls(kit: Kit) -> Calls:
         ("post_label refused", lambda: api.post_label(body=models.LabelsPostRequest.model_construct("too long"))),
         ("post_account None", lambda: api.post_account(body=None)),
         ("post_raw", lambda: api.post_raw(body=models.RawPostRequest())),
+        *(
+            (f"post_anything {label}", lambda value=value: api.post_anything(body=models.Anythings(**value)))
+            for label, value in untyped
+        ),
+        *(
+            (
+                f"post_anything_extras {label}",
+                lambda value=value: api.post_anything_extras(
+                    body=models.AnythingExtrasPostRequest(anything=value["anything"], first=blue)
+                ),
+            )
+            for label, value in untyped
+        ),
+        *(
+            (
+                f"post_anything_files {label}",
+                lambda value=value: api.post_anything_files(
+                    body=multipart(tuple(starmap(bodies.FieldPart, value.items())))
+                ),
+            )
+            for label, value in untyped
+        ),
+        *(
+            (
+                f"/anythings {label}",
+                lambda sent=sent: kit.then(
+                    kit.http.post("https://bodies.example.com/anythings", files=sent),
+                    lambda response: response.status_code,
+                ),
+            )
+            for label, sent in (
+                ("text parts", [("anything", (None, b"plain")), ("many", (None, b"[1]")), ("many", (None, b"x y"))]),
+                ("file part", [("anything", ("a.txt", b"plain", "text/plain"))]),
+            )
+        ),
     ]

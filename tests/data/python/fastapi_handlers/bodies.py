@@ -141,6 +141,12 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_closed_parts(self, **arguments: object) -> None:
             record("post_closed_parts", arguments)
 
+        def post_anything_extras(self, **arguments: object) -> None:
+            record("post_anything_extras", arguments)
+
+        def post_anything_files(self, **arguments: object) -> None:
+            record("post_anything_files", arguments)
+
         async def post_raw(self, *, request: object) -> None:
             body = await request.body()
             calls.append(f"post_raw(request={request.method} {request.url.path}, body={body!r})")

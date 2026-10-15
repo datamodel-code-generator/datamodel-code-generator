@@ -244,3 +244,58 @@ post_raw
   post_raw(body=RawPostRequest())
   < 204 -
   = None
+post_anything values
+  > POST /anythings [multipart/form-data; boundary=<boundary>]
+  post_anything(body=Anythings(anything={'a': 1}, many=[{'b': 2}, [3], 's']))
+  < 204 -
+  = None
+post_anything arrays
+  > POST /anythings [multipart/form-data; boundary=<boundary>]
+  post_anything(body=Anythings(anything=[1, '2'], many=[None, 1.5]))
+  < 204 -
+  = None
+post_anything strings
+  > POST /anythings [multipart/form-data; boundary=<boundary>]
+  post_anything(body=Anythings(anything='1', many=['s', 'true']))
+  < 204 -
+  = None
+post_anything_extras values
+  > POST /anything-extras [multipart/form-data; boundary=<boundary>]
+  post_anything_extras(body=AnythingExtrasPostRequest(anything={'a': 1}, first=Filter(color='blue', minAge=None)))
+  < 204 -
+  = None
+post_anything_extras arrays
+  > POST /anything-extras [multipart/form-data; boundary=<boundary>]
+  post_anything_extras(body=AnythingExtrasPostRequest(anything=[1, '2'], first=Filter(color='blue', minAge=None)))
+  < 204 -
+  = None
+post_anything_extras strings
+  > POST /anything-extras [multipart/form-data; boundary=<boundary>]
+  post_anything_extras(body=AnythingExtrasPostRequest(anything='1', first=Filter(color='blue', minAge=None)))
+  < 204 -
+  = None
+post_anything_files values
+  > POST /anything-files [multipart/form-data; boundary=<boundary>]
+  post_anything_files(body=AnythingFilesPostRequest(anything={'a': 1}, many=[{'b': 2}, [3], 's'], file=None))
+  < 204 -
+  = None
+post_anything_files arrays
+  > POST /anything-files [multipart/form-data; boundary=<boundary>]
+  post_anything_files(body=AnythingFilesPostRequest(anything=[1, '2'], many=[None, 1.5], file=None))
+  < 204 -
+  = None
+post_anything_files strings
+  > POST /anything-files [multipart/form-data; boundary=<boundary>]
+  post_anything_files(body=AnythingFilesPostRequest(anything='1', many=['s', 'true'], file=None))
+  < 204 -
+  = None
+/anythings text parts
+  > POST /anythings [multipart/form-data; boundary=<boundary>]
+  post_anything(body=Anythings(anything='plain', many=[[1], 'x y']))
+  < 204 -
+  = 204
+/anythings file part
+  > POST /anythings [multipart/form-data; boundary=<boundary>]
+  post_anything(body=Anythings(anything=b'plain', many=None))
+  < 204 -
+  = 204

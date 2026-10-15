@@ -210,12 +210,14 @@ def field_adapter(model: type[object], name: str) -> TypeAdapter[object]:
 class JsonPart:
     """One multipart member whose parts carry JSON: its name, the adapter of its value or items, and its repeats.
 
-    The one that reads a form's other properties has no name.
+    The one that reads a form's other properties has no name. An untyped member takes any value, so it keeps a part
+    that is not JSON as it comes, as a text member does.
     """
 
     name: str
     adapter: TypeAdapter[object]
     repeated: bool = False
+    untyped: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -370,14 +372,17 @@ async def _parts(
 async def _json(name: str, member: JsonPart, received: list[UploadFile | str], records: list[Record]) -> list[object]:
     """Return the parts of a JSON member, sent as fields or as files, parsed by its adapter as a JSON body is.
 
-    A part the adapter rejects leaves its records, located at the parts' name and, when it repeats, the part's index.
+    A part the adapter rejects leaves its records, located at the parts' name and, when it repeats, the part's index,
+    except that an untyped member keeps it as it comes.
     """
     values: list[object] = []
     for index, value in enumerate(received):
         location = ("body", name, index) if member.repeated else ("body", name)
+        content = await value.read() if isinstance(value, UploadFile) else value
         try:
-            values.append(member.adapter.validate_json(await value.read() if isinstance(value, UploadFile) else value))
+            values.append(member.adapter.validate_json(content))
         except ValidationError as error:
-            records.extend(model_records(error, location))
-            values.append(None)
+            if not member.untyped:
+                records.extend(model_records(error, location))
+            values.append(content if member.untyped else None)
     return values
