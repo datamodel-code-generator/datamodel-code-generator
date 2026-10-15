@@ -100,7 +100,7 @@ def test_client_install(
         capsys=capsys,
         expected_stderr=notice,
     )
-    command = shlex.split(notice.splitlines()[-1])
+    command = shlex.split(notice.splitlines()[1])
     subprocess.run(
         [*command, "--no-sync", "--resolution", "lowest-direct", "--python", sys.executable],
         cwd=tmp_path,
