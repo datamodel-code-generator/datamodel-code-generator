@@ -553,19 +553,23 @@ class Planner:
         The operations without a tag form one more resource, under the key None, whose name derives from `default`
         among the tags' names. A resource's place is its first operation, whether or not the operation's own
         setting moves it to another resource, as the server orders its groups. A Windows device name needs an
-        explicit one.
+        explicit one where an operation stays in its resource.
         """
         first: dict[str | None, OperationContract] = {}
+        staying: dict[str | None, OperationContract] = {}
         for operation in self.request.operations:
             if (tag := tags[0] if (tags := _tags(operation)) else None) not in self.resource_names:
                 first.setdefault(tag, operation)
+                setting = self.settings.get(operation.id.use_site.pointer)
+                if setting is None or setting.resource is None:
+                    staying.setdefault(tag, operation)
         bases = [self.names.function("default" if tag is None else tag) for tag in first]
         names = self.names.claim(
             NameScope(RESERVED_MEMBERS, folded=True),
             [(base, _local(operation), ()) for operation, base in zip(first.values(), bases, strict=True)],
         )
-        for (tag, operation), namespace in zip(first.items(), names, strict=True):
-            if namespace.casefold() in WINDOWS_DEVICES:
+        for tag, namespace in zip(first, names, strict=True):
+            if namespace.casefold() in WINDOWS_DEVICES and (operation := staying.get(tag)) is not None:
                 message = f"The tag {tag!r} of {_label(operation)} needs an explicit resource name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return dict(zip(first, names, strict=True))
