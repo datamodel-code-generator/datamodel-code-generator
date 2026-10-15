@@ -58,6 +58,9 @@ Gap: TypeAlias = Annotated[int, Meta(le=3)]
 Gap1: TypeAlias = Annotated[float, Meta(ge=5.5, le=5.9)]
 
 
+Floor: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
 Same: TypeAlias = Annotated[str, Meta(max_length=3)]
 
 
@@ -107,6 +110,7 @@ class Upload(Struct):
     step: Step | Step1
     half: int | Half1
     gap: Gap | Gap1
+    floor: int | float
     initials: NullableShort
     pair: Pair
     same: Same

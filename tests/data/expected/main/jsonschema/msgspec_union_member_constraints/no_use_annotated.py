@@ -35,6 +35,7 @@ class Upload(Struct):
     step: int | float
     half: int | float
     gap: int | float
+    floor: int | float
     initials: NullableShort
     pair: Pair
     same: str
