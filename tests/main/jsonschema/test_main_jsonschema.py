@@ -23345,6 +23345,53 @@ def test_main_msgspec_meta_unsupported_types(output_file: Path, expected_file: s
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_rejected.txt")
 
 
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_main_msgspec_float_multiple_of(output_file: Path, entrypoint: str) -> None:
+    """Test msgspec writes a float multiple_of only for a divisor floats represent exactly, and warns otherwise."""
+    name = "msgspec_float_multiple_of"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+                output_path=output_file,
+                input_file_type="jsonschema",
+                assert_func=assert_file_content,
+                expected_file=f"{name}/msgspec.py",
+                extra_args=[
+                    *("--output-model-type", "msgspec.Struct", "--formatters", "builtin"),
+                    *("--disable-timestamp", "--target-python-version", "3.11"),
+                ],
+                force_exec_validation=True,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+                output_path=output_file,
+                input_file_type=InputFileType.JsonSchema,
+                output_model_type=DataModelType.MsgspecStruct,
+                formatters=[Formatter.BUILTIN],
+                disable_timestamp=True,
+                target_python_version=PythonVersion.PY_311,
+                assert_func=assert_file_content,
+                expected_file=f"{name}/msgspec.py",
+            )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "multiple_of" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / "warnings.txt",
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "Measurements") as model:
+        msgspec.json.decode(json.dumps(payloads["valid"]), type=model)
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(msgspec.ValidationError):
+                msgspec.json.decode(json.dumps(payloads["valid"] | {field_name: value}), type=model)
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
+
+
 def test_main_jsonschema_uuid_format_versions(output_file: Path) -> None:
     """Test uuid format versions map to importable pydantic types."""
     run_main_and_assert(

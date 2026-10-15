@@ -1,0 +1,2 @@
+msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.01 that floats only approximate; Cent is generated without this constraint.
+msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.1 that floats only approximate; Measurements.tenth is generated without this constraint.

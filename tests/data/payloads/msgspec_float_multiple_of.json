@@ -1,0 +1,16 @@
+{
+  "valid": {
+    "quarter": 0.25,
+    "half": 4.5,
+    "cent": 0.25,
+    "tenth": 0.3,
+    "count": 6
+  },
+  "invalid": {
+    "quarter": 0.3,
+    "half": 2,
+    "cent": 0.005,
+    "tenth": 6,
+    "count": 4
+  }
+}

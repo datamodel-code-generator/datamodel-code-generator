@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import keyword
 from ast import literal_eval
+from fractions import Fraction
 from functools import wraps
 from math import isfinite
 from types import MappingProxyType
@@ -75,6 +76,16 @@ _META_SCHEMA_KEYWORDS: Mapping[str, str] = MappingProxyType({
     "pattern": "pattern",
 })
 _LENGTH_META_KEYWORDS: frozenset[str] = frozenset({"min_length", "max_length"})
+
+
+def _is_exact_float_divisor(value: Any) -> bool:
+    """Return whether a float represents a divisor exactly as a dyadic rational, so msgspec checks multiples exactly.
+
+    msgspec checks `multiple_of` on a float by its floating-point remainder, which rejects multiples of a divisor
+    such as 0.01 that a float only approximates.
+    """
+    divisor = Fraction(str(value))
+    return not divisor.denominator & (divisor.denominator - 1) and Fraction(float(value)) == divisor
 
 
 class _MsgspecFieldRenderPlan(NamedTuple):
@@ -868,25 +879,53 @@ class DataModelField(DataModelFieldBase):
         return frozenset(meta for meta, schema in _META_SCHEMA_KEYWORDS.items() if schema in keywords)
 
     def _get_meta_data(self) -> tuple[dict[str, Any], frozenset[str]]:
-        """Return the Meta(...) keyword data that msgspec takes on the type, and the constraints it does not take."""
+        """Return the Meta(...) keyword data that msgspec takes on the type, and the constraints it leaves out."""
         data = self._get_declared_meta_data()
-        if not (constrained := {k for k, v in data.items() if v is not None and k in _META_SCHEMA_KEYWORDS}):
-            return data, frozenset()
-        if dropped := frozenset(constrained - self._meta_keywords(self._annotated_base_data_type())):
+        untaken, inexact = self._dropped_meta_keywords(data)
+        if dropped := (untaken | {"multiple_of"}) if inexact else untaken:
             data = {k: v for k, v in data.items() if k not in dropped}
         return data, dropped
 
+    def _dropped_meta_keywords(self, data: dict[str, Any]) -> tuple[frozenset[str], bool]:
+        """Return the constraints msgspec.Meta does not take on the type, and whether a float multiple_of is inexact.
+
+        msgspec checks `multiple_of` on a float by its floating-point remainder, so a divisor a float only
+        approximates, such as 0.01, rejects its own multiples.
+        """
+        if not (constrained := {k for k, v in data.items() if v is not None and k in _META_SCHEMA_KEYWORDS}):
+            return frozenset(), False
+        untaken = frozenset(constrained - self._meta_keywords(self._annotated_base_data_type()))
+        inexact = (
+            "multiple_of" in constrained - untaken
+            and self._has_numeric_data_type("float")
+            and not _is_exact_float_divisor(data["multiple_of"])
+        )
+        return untaken, inexact
+
     @property
     def dropped_constraints_warning(self) -> str | None:
-        """Return a warning naming the constraints left out because msgspec.Meta does not take them on the type."""
-        if not self.use_annotated or not (dropped := self._get_meta_data()[1]):
+        """Return a warning naming the constraints left out because msgspec.Meta does not take or check them exactly."""
+        if not self.use_annotated:
+            return None
+        declared = self._get_declared_meta_data()
+        untaken, inexact = self._dropped_meta_keywords(declared)
+        reasons = (
+            [f"msgspec.Meta does not take {', '.join(sorted(untaken))} on {self._annotated_base_data_type().type_hint}"]
+            if untaken
+            else []
+        )
+        if inexact:
+            reasons.append(
+                "msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of "
+                f"{represent_python_value(declared['multiple_of'])} that floats only approximate"
+            )
+        if not reasons:
             return None
         owner = getattr(self.parent, "class_name", "")
         owner = f"{owner}.{self.name}" if self.name else owner
         return (
-            f"msgspec.Meta does not take {', '.join(sorted(dropped))} on "
-            f"{self._annotated_base_data_type().type_hint}; {owner} is generated without "
-            f"{'this constraint' if len(dropped) == 1 else 'these constraints'}."
+            f"{'; '.join(reasons)}; {owner} is generated without "
+            f"{'this constraint' if len(untaken) + inexact == 1 else 'these constraints'}."
         )
 
     def _get_meta_string(self) -> str | None:
