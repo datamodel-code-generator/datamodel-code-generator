@@ -51,6 +51,22 @@ MALFORMED_DATA_PATH = DATA_PATH / "malformed"
 EXPECTED_MALFORMED_PATH = DATA_PATH / "expected" / "main" / "malformed"
 assert_file_content = create_assert_file_content(EXPECTED_MALFORMED_PATH)
 TRACEBACK_HEADER = "Traceback (most recent call last)"
+ISSUE_SCHEMA = '{"type": "object", "title": "Pet", "properties": {"name": {"type": "string"}}}\n'
+UNENCODABLE_HEADER = "# Café 漢"
+UNKNOWN_ENCODING_ERROR = "Unable to encode output using encoding 'nosuch': unknown encoding: nosuch"
+NON_TEXT_ENCODING_ERROR = (
+    "Unable to encode output using encoding 'hex': 'hex' is not a text encoding; "
+    "use codecs.encode() to handle arbitrary codecs"
+)
+ENCODING_ERRORS = pytest.mark.parametrize(
+    ("encoding", "message"),
+    [("nosuch", UNKNOWN_ENCODING_ERROR), ("hex", NON_TEXT_ENCODING_ERROR)],
+    ids=["unknown", "not-text"],
+)
+UNENCODABLE_METADATA_ERROR = (
+    "Unable to encode output using encoding 'latin-1': "
+    "'latin-1' codec can't encode character '\\u6f22' in position 258: ordinal not in range(256)"
+)
 
 ERROR_CASES: tuple[tuple[str, InputFileTypeLiteral, str], ...] = (
     (
@@ -1840,3 +1856,213 @@ def test_parser_internal_missing_file_keeps_traceback(
         expected_stderr_contains=TRACEBACK_HEADER,
         output_should_not_exist=True,
     )
+
+
+@pytest.mark.allow_direct_assert("checks the latin-1 module starts with the encodable header")
+def test_cli_latin1_custom_header_writes_module(output_file: Path) -> None:
+    """An encodable custom header still exits 0 and writes the module for --encoding latin-1."""
+    header = "# Cafe"
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", "latin-1", "--custom-file-header", header],
+    )
+    written = output_file.read_text(encoding="latin-1")
+    assert written.startswith(f"{header}\n")
+    assert "class Person" in written
+
+
+@pytest.mark.allow_direct_assert("compares output bytes an encode failure must leave unchanged")
+def test_cli_unencodable_custom_header_is_one_error_line(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Latin-1 cannot encode the issue header, so the CLI exits 2 and does not touch the destination."""
+    schema = tmp_path / "schema.json"
+    schema.write_text(ISSUE_SCHEMA, encoding="utf-8")
+    with pytest.raises(UnicodeEncodeError) as encode_failure:
+        UNENCODABLE_HEADER.encode("latin-1")
+    expected_stderr = f"Unable to encode output using encoding 'latin-1': {encode_failure.value}\n"
+    missing = tmp_path / "missing" / "out.py"
+    run_main_and_assert(
+        input_path=schema,
+        output_path=missing,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", "latin-1", "--custom-file-header", UNENCODABLE_HEADER, "--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+        file_should_not_exist=missing.parent,
+    )
+
+    existing = tmp_path / "out.py"
+    original = b"# precious\n"
+    existing.write_bytes(original)
+    run_main_and_assert(
+        input_path=schema,
+        output_path=existing,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", "latin-1", "--custom-file-header", UNENCODABLE_HEADER],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+    )
+    run_main_and_assert(
+        input_path=schema,
+        output_path=existing,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", "latin-1", "--custom-file-header", UNENCODABLE_HEADER, "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+    )
+    assert existing.read_bytes() == original
+
+
+@pytest.mark.allow_direct_assert("compares module bytes an encode failure in a later module must leave unchanged")
+def test_cli_unencodable_later_module_leaves_every_module(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An encode failure in one module of modular output writes none of the modules."""
+    output = tmp_path / "model"
+    output.mkdir()
+    original = b"# precious\n"
+    modules = [output / "__init__.py", output / "a.py", output / "b.py"]
+    for module in modules:
+        module.write_bytes(original)
+    run_main_and_assert(
+        input_path=DATA_PATH / "openapi" / "modular_unencodable_last_module.yaml",
+        output_path=output,
+        input_file_type="openapi",
+        extra_args=["--encoding", "latin-1"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "Unable to encode output using encoding 'latin-1': 'latin-1' codec can't encode character '\\u6f22'"
+        ),
+    )
+    assert [module.read_bytes() for module in modules] == [original] * len(modules)
+
+
+@ENCODING_ERRORS
+@pytest.mark.allow_direct_assert("compares output bytes an unknown encoding must leave unchanged")
+def test_cli_unknown_encoding_is_one_error_line(
+    encoding: str,
+    message: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An unknown encoding or a codec that is not a text encoding exits 2 on one line and writes nothing."""
+    schema = tmp_path / "schema.json"
+    schema.write_text(ISSUE_SCHEMA, encoding="utf-8")
+    expected_stderr = f"{message}\n"
+    missing = tmp_path / "missing" / "out.py"
+    run_main_and_assert(
+        input_path=schema,
+        output_path=missing,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", encoding, "--formatters", "builtin"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+        file_should_not_exist=missing.parent,
+    )
+
+    existing = tmp_path / "out.py"
+    original = b"# precious\n"
+    existing.write_bytes(original)
+    run_main_and_assert(
+        input_path=schema,
+        output_path=existing,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", encoding],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+    )
+    assert existing.read_bytes() == original
+
+
+@pytest.mark.allow_direct_assert("compares output bytes an encode failure must leave unchanged")
+def test_generate_unencodable_custom_header_leaves_existing_output(tmp_path: Path) -> None:
+    """The public API raises the encode error and leaves an existing output file unchanged."""
+    schema = tmp_path / "schema.json"
+    schema.write_text(ISSUE_SCHEMA, encoding="utf-8")
+    output = tmp_path / "out.py"
+    original = b"# precious\n"
+    output.write_bytes(original)
+    with pytest.raises(UnicodeEncodeError) as encode_failure:
+        UNENCODABLE_HEADER.encode("latin-1")
+    message = f"Unable to encode output using encoding 'latin-1': {encode_failure.value}"
+
+    with pytest.raises(Error, match=rf"^{re.escape(message)}$"):
+        generate(
+            schema,
+            input_file_type=InputFileType.JsonSchema,
+            encoding="latin-1",
+            custom_file_header=UNENCODABLE_HEADER,
+            output=output,
+        )
+
+    assert output.read_bytes() == original
+
+
+@ENCODING_ERRORS
+@pytest.mark.allow_direct_assert("checks an unknown encoding creates neither the output nor its parent")
+def test_generate_unknown_encoding_does_not_create_output(encoding: str, message: str, tmp_path: Path) -> None:
+    """The public API rejects an unknown encoding or a binary codec before creating the output path."""
+    schema = tmp_path / "schema.json"
+    schema.write_text(ISSUE_SCHEMA, encoding="utf-8")
+    output = tmp_path / "missing" / "out.py"
+
+    with pytest.raises(Error, match=rf"^{re.escape(message)}$"):
+        generate(
+            schema,
+            input_file_type=InputFileType.JsonSchema,
+            encoding=encoding,
+            output=output,
+        )
+
+    assert not output.exists()
+    assert not output.parent.exists()
+
+
+@pytest.mark.allow_direct_assert("compares model and metadata bytes an unencodable metadata file must leave unchanged")
+def test_cli_unencodable_model_metadata_leaves_outputs(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Latin-1 cannot encode a model title in the metadata, so the CLI exits 2 and changes neither file."""
+    output, metadata = tmp_path / "out.py", tmp_path / "meta.json"
+    original = b"# precious\n"
+    output.write_bytes(original)
+    metadata.write_bytes(original)
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "unencodable_title.json",
+        output_path=output,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", "latin-1", "--emit-model-metadata", str(metadata)],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"{UNENCODABLE_METADATA_ERROR}\n",
+    )
+    assert [output.read_bytes(), metadata.read_bytes()] == [original, original]
+
+
+@pytest.mark.allow_direct_assert("checks an unencodable metadata file creates neither output")
+def test_generate_unencodable_model_metadata_writes_nothing(tmp_path: Path) -> None:
+    """The public API raises the metadata encode error before writing the models or the metadata."""
+    output, metadata = tmp_path / "models" / "out.py", tmp_path / "meta" / "meta.json"
+
+    with pytest.raises(Error, match=rf"^{re.escape(UNENCODABLE_METADATA_ERROR)}$"):
+        generate(
+            DATA_PATH / "jsonschema" / "unencodable_title.json",
+            input_file_type=InputFileType.JsonSchema,
+            encoding="latin-1",
+            emit_model_metadata=metadata,
+            output=output,
+        )
+
+    assert [output.parent.exists(), metadata.parent.exists()] == [False, False]

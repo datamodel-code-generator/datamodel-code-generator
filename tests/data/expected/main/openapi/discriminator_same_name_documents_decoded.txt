@@ -1,0 +1,3 @@
+Wrapper {"ours": {"pet": {"kind": "cat"}}}: Wrapper(ours=Holder(pet=Cat(kind='cat', meow=None)), theirs=None)
+Wrapper {"theirs": {"pet": {"kind": "dog"}}}: Wrapper(ours=None, theirs=Holder(pet=Dog(kind='dog', bark=None)))
+Wrapper {"theirs": {"pet": {"kind": "kitty"}}}: rejected

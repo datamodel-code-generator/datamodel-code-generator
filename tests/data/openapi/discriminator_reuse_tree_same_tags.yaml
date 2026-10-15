@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info:
+  title: Wrappers in two modules that reference unions mapping the same tags to their own variants
+  version: "1"
+paths: {}
+components:
+  schemas:
+    a.Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    a.Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    a.Pet:
+      oneOf:
+        - $ref: "#/components/schemas/a.Cat"
+        - $ref: "#/components/schemas/a.Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/a.Cat"
+          dog: "#/components/schemas/a.Dog"
+    a.Owner:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/a.Pet"
+    b.Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    b.Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    b.Pet:
+      oneOf:
+        - $ref: "#/components/schemas/b.Cat"
+        - $ref: "#/components/schemas/b.Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/b.Cat"
+          dog: "#/components/schemas/b.Dog"
+    b.Owner:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/b.Pet"
