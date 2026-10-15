@@ -34,6 +34,7 @@ from .errors import invalid, media_invalid, missing, model_records, unsupported_
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
+    from ..model_codecs.media import JSONValue
     from ..model_codecs.parameter_reads import RawParameter
     from ..model_codecs.parameters import ParameterPlan
     from .errors import Record
@@ -222,7 +223,8 @@ class BodyMedia:
 
     A form's members are read as text in the kinds of `fields`, and those of a multipart form in `json_parts` as JSON.
     `additional` reads every member neither names: as text as it comes unless the form's schema types its other
-    properties, and never as JSON in a URL-encoded form, whose other members `other` reads.
+    properties, and never as JSON in a URL-encoded form, whose other members `other` reads. `checked` validates such
+    text, as a mapping of their type, when the model keeps them without one.
     """
 
     media_type: str
@@ -231,6 +233,7 @@ class BodyMedia:
     fields: tuple[FieldPlan, ...] = ()
     json_parts: tuple[JsonPart, ...] = ()
     additional: FieldPlan | JsonPart = _TEXT
+    checked: TypeAdapter[object] | None = None
     members: Mapping[str, FieldPlan | JsonPart] = field(init=False, repr=False, compare=False)
     other: FieldPlan = field(init=False, repr=False, compare=False)
 
@@ -318,12 +321,22 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
                 raise RequestValidationError([media_invalid(("body",))]) from error
             return _validated(adapter, text)
         case "form":
-            return _validated(adapter, plain(decode_form(body, media.fields, media.other)))
+            return _validated(adapter, _checked(media, plain(decode_form(body, media.fields, media.other))))
         case "multipart":
-            return _validated(adapter, plain(await _parts(request, media.members, media.additional)))
+            return _validated(adapter, _checked(media, plain(await _parts(request, media.members, media.additional))))
         case _:
             pass
     return body
+
+
+def _checked(media: BodyMedia, values: JSONValue) -> JSONValue:
+    """Return a form's members with those no plan names validated by `checked`, refusing the values it rejects."""
+    if (checked := media.checked) is None:
+        return values
+    members = cast("dict[str, object]", values)
+    others = {name: value for name, value in members.items() if name not in media.members}
+    members.update(cast("dict[str, object]", checked.validate_python(others)))
+    return values
 
 
 async def _parts(

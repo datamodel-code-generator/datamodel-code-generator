@@ -1370,8 +1370,9 @@ URL-encoded form, which an adapter then reads. Without such a schema, a part the
 the last of its name, and the model keeps it, ignores it, or refuses it, as its options and
 `additionalProperties: false` say. The `pydantic_v2.dataclass` models have no field for other properties, so the
 server reads typed ones by the type their schema gives them, the form's own or that of a schema it combines with
-`allOf`: a JSON part is checked by that type, text is passed on as it is read, and the model keeps each value as an
-attribute beside its fields, which its `repr` leaves out.
+`allOf`, also when `--reuse-model` makes the form's model inherit an equal one whose schema types them otherwise. That
+type checks JSON parts and text alike, answering `422` with the records of every value it rejects at `["body", name]`,
+and the model keeps each value as the type returns it, as an attribute beside its fields, which its `repr` leaves out.
 
 A URL-encoded form carries text alone. For a member without one scalar kind, such as an object, an array of objects,
 or `type: [integer, boolean]`, declared by the schema or by a schema it combines with `allOf`, generation stops with

@@ -846,7 +846,8 @@ The properties a schema types without declaring them, with `additionalProperties
 whatever names a body gives them, by the type of their values: an object is one `application/json` part, an array of
 objects one for each item, and a union of an array and another type one part. The type is the one the model keeps
 them as, in a field of its own or one it inherits from a schema combined with `allOf`, and for a model without such a
-field, the type of their schema, the form's own or that of a schema it combines with `allOf`. A multipart response
+field, the type of their schema, the form's own or that of a schema it combines with `allOf`, also when
+`--reuse-model` makes the form's model inherit an equal one whose schema types them otherwise. A multipart response
 reads them by that type too. A URL-encoded form writes them as text of that type's kind, one pair for each item of an
 array, and generation stops with `A parameter value needs one unambiguous scalar kind` at the `additionalProperties`
 that types them when the type has none. The generated FastAPI server reads the members of form bodies, these other
