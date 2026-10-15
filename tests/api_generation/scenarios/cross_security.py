@@ -72,6 +72,10 @@ def calls(kit: Kit) -> Calls:
             "put_pet with the query key and Basic",
             lambda: kit.connect(query_key="key 2", basic=("user", "pass:word")).default.put_pet(petId=3),
         ),
+        (
+            "put_pet with the query key and Basic beyond ASCII",
+            lambda: kit.connect(query_key="key 3", basic=("ü", "pässword")).default.put_pet(petId=4),
+        ),
         ("get_session with the cookie key", kit.connect(cookie_key="cookie-1").default.get_session),
         ("get_session with OpenID Connect", kit.connect(oidc="id-token").default.get_session),
         ("get_session with the header key", keyed.default.get_session),

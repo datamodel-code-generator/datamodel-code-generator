@@ -1491,7 +1491,10 @@ credentials are what the dependencies return: a string for an API key, the token
 header for OAuth2 and OpenID Connect, as `OAuth2PasswordBearer` reads it, `HTTPBasicCredentials`, or
 `HTTPAuthorizationCredentials`. Each HTTP, OAuth2, and OpenID Connect dependency presents no credential for an
 `Authorization` header of another scheme, so a Basic header satisfies no OAuth2 requirement, and the HTTP Basic one
-presents none for a malformed Basic header either, so another requirement set can still admit the request.
+presents none for a malformed Basic header either, so another requirement set can still admit the request. The HTTP
+Basic one reads the user name and password as UTF-8, the charset of RFC 7617 that the generated client encodes them
+in, where FastAPI's `HTTPBasic` reads ASCII only; Base64 that is not valid, or that does not decode to UTF-8 text with
+a `:`, is a malformed Basic header.
 
 `create_app` and `build_router` of a package with secured operations take an
 `authorize(requirement_sets, credentials)` callback, which may be a coroutine function. Each secured operation calls
