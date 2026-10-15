@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: Reference sibling constraints
+  version: 1.0.0
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Quantity'
+            maximum: 100
+      responses:
+        '200':
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+components:
+  schemas:
+    Quantity:
+      type: integer
+      minimum: 0
+    Sku:
+      type: string
+    Order:
+      type: object
+      required:
+        - quantity
+      properties:
+        quantity:
+          allOf:
+            - $ref: '#/components/schemas/Quantity'
+          maximum: 100
+        sku:
+          allOf:
+            - $ref: '#/components/schemas/Sku'
+          nullable: true
+          maxLength: 8
+        note:
+          allOf:
+            - $ref: '#/components/schemas/Sku'
+          description: Free text
