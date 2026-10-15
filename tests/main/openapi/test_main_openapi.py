@@ -103,6 +103,64 @@ def test_main(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "category", ["schemas", "parameters", "requestBodies", "responses", "headers", "callbacks", "pathItems"]
+)
+@pytest.mark.parametrize("name", ["1", "true", "null"])
+def test_api_scope_non_string_component_names(
+    category: str, name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Report non-string component names before constructing reference tokens."""
+    source = tmp_path / "non_string_component.yaml"
+    source.write_text(
+        "openapi: 3.1.0\ninfo: {title: t, version: '1'}\npaths: {}\n"
+        f"components:\n  {category}:\n    {name}: {{}}\n",
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=source,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", "api", "--formatters", "builtin"],
+        capsys=capsys,
+        expected_exit=Exit.ERROR,
+        expected_stderr_contains="API_INVALID_COMPONENT_NAME: expected a string",
+    )
+
+
+@freeze_time("2019-07-26")
+def test_api_scope_numeric_string_component_name(output_file: Path, tmp_path: Path) -> None:
+    """Keep quoted numeric component names valid."""
+    source = tmp_path / "numeric_string_component.yaml"
+    source.write_text(
+        "openapi: 3.1.0\ninfo: {title: t, version: '1'}\npaths: {}\n"
+        'components:\n  parameters:\n    "1": {name: p, in: query, schema: {type: string}}\n',
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="numeric_string_component.py",
+        extra_args=["--openapi-scopes", "schemas", "api"],
+        force_exec_validation=True,
+    )
+
+
+@freeze_time("2019-07-26")
+def test_openapi_allof_boolean_schema(output_file: Path) -> None:
+    """Allow boolean allOf members while collecting discriminator metadata."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "boolean-allof.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="boolean_allof.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_array_type_union_constraints(output_file: Path) -> None:
     """Keep OpenAPI array and string constraints on their matching union branches."""
     run_main_and_assert(

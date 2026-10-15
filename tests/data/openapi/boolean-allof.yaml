@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Item:
+      allOf:
+        - true
+        - type: object
+          properties:
+            name: {type: string}

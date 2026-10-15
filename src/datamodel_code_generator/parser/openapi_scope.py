@@ -48,6 +48,16 @@ def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
     raise SchemaParseError(msg, path=list(path))
 
 
+def _component_mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
+    """Require component names to be strings before using them as reference tokens."""
+    components = _mapping(value, path)
+    for name in components:
+        if not isinstance(name, str):
+            msg = "API_INVALID_COMPONENT_NAME: expected a string"
+            raise SchemaParseError(msg, path=[*path, str(name)])
+    return components
+
+
 SchemaRole: TypeAlias = Literal[
     "schema",
     "parameter",
@@ -401,7 +411,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._update_openapi_info_version(specification)
         self._collect_discriminator_schemas()
         components = _mapping(specification.get("components", {}), [*path_parts, "#/components"])
-        for key, value in _mapping(components.get("schemas", {}), ["#/components/schemas"]).items():
+        for key, value in _component_mapping(components.get("schemas", {}), ["#/components/schemas"]).items():
             path = [*path_parts, "#/components", "schemas", key]
             if self._declaration_id(path) in self._processed_declarations:
                 continue
@@ -414,7 +424,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             ("headers", "Header"),
         )
         for category, suffix in categories:
-            for key, value in _mapping(components.get(category, {}), ["#/components", category]).items():
+            for key, value in _component_mapping(components.get(category, {}), ["#/components", category]).items():
                 path = [*path_parts, "#/components", category, key]
                 target = self._resolve_api_object(value, path)
                 name = self._get_model_name(key, "", suffix)
@@ -435,11 +445,11 @@ class ApiOpenAPIParser(OpenAPIParser):
             _mapping(specification.get("webhooks", {}), ["#/webhooks"]), [*path_parts, "#/webhooks"], scope="webhooks"
         )
         self.walk_api_path_items(
-            _mapping(components.get("pathItems", {}), ["#/components/pathItems"]),
+            _component_mapping(components.get("pathItems", {}), ["#/components/pathItems"]),
             [*path_parts, "#/components", "pathItems"],
             scope="pathItems",
         )
-        for key, value in _mapping(components.get("callbacks", {}), ["#/components/callbacks"]).items():
+        for key, value in _component_mapping(components.get("callbacks", {}), ["#/components/callbacks"]).items():
             path = [*path_parts, "#/components", "callbacks", key]
             self._walk_callback(
                 _mapping(value, path), path, self._get_model_name(key, "", "Callback"), self._declaration_id(path)
@@ -454,7 +464,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._api_documents[document.partition("#")[0]] = raw
         self._register_discriminator_schema("#", raw)
         components = _mapping(raw.get("components", {}), [document, "components"])
-        schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
+        schemas = _component_mapping(components.get("schemas", {}), [document, "components", "schemas"])
         potential: dict[str, list[str]] = {}
         for name, schema in schemas.items():
             local_ref = "#" + pointer_fragment(("components", "schemas", name))
