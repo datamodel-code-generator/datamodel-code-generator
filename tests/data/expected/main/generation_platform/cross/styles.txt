@@ -76,6 +76,11 @@ get_header_text ASCII
   get_header_text(X_Name='a\tb ~', X_Items=['a b', 'c'], X_Label=Named(name='a b'), X_Kind=HeaderTextGetHeaderXKindParameter.plain, X_Note='a, b', X_Named=Named(name='a b'))
   < 204 -
   = None
+get_literal encoded path text
+  > GET /literal/a%20b%C3%A9/x%20y
+  get_literal(id='x y')
+  < 204 -
+  = None
 post_labelled_text non-ASCII media type
   ! ConfigurationError: ConfigurationError(operation_id='postLabelledText', reason='invalid_value', field_path='headers.Content-Type') [operation_id='postLabelledText', field_path=('headers', 'Content-Type')] invalid_value
 get_query nothing

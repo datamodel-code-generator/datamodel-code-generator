@@ -454,8 +454,8 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
 - **Path text.** The literal text of a path template is sent as RFC 3986 allows it in a path, as path arguments are:
   any other character, such as `\`, `|`, `^`, `[`, `]`, `?`, `#`, a space, or non-ASCII text, is percent-encoded as
   UTF-8, `\` as `%5C`, so no client, proxy, or server reads `\` as `/` or ends the path early. A `%` and two hex
-  digits is an octet the document already encodes and is sent as it is, so `/files/a%20b` sends `a%20b`; any other
-  `%` is sent as `%25`. The client holds the encoded path from generation, so calls pay nothing for it.
+  digits is an octet the document already encodes and is sent as it is, so `/files/a%20b` sends `a%20b`, which the
+  generated server routes by its decoded value; any other `%` is sent as `%25`. The client holds the encoded path from generation, so calls pay nothing for it.
 - **Header names.** A header parameter, response header, or part header whose name is not an RFC 9110 token, such as
   `X Sp` or `X-Näme`, stops generation with an error, as it stops the generated server's, since no HTTP client or
   server can send it.
