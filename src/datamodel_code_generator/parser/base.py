@@ -7,7 +7,6 @@ code generation.
 
 from __future__ import annotations
 
-import builtins
 import contextlib
 import operator
 import os.path
@@ -53,13 +52,13 @@ from datamodel_code_generator import (
     ReuseScope,
     cached_path_exists,
 )
-from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._internal_utils import (
     HashableComparable,
     get_most_of_parent,
 )
 from datamodel_code_generator._parser_context import ParserSourceContext
+from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -139,6 +138,7 @@ from datamodel_code_generator.util import camel_to_snake, record_watch_dependenc
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._format_types import Formatter, PythonVersion
     from datamodel_code_generator._types import ParserConfigDict
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter
@@ -298,12 +298,6 @@ ModelDeps: TypeAlias = dict[ModelName, set[ModelName]]
 OrderIndex: TypeAlias = dict[ModelName, int]
 DiscriminatorValue: TypeAlias = str | int | bool
 
-_BUILTIN_NAMES: frozenset[str] = frozenset(name for name in builtins.__dict__ if not name.startswith("_"))
-_BUILTIN_NAMES_INTRODUCED_IN: dict[PythonVersion, frozenset[str]] = {
-    PythonVersion.PY_311: frozenset({"BaseExceptionGroup", "ExceptionGroup"}),
-    PythonVersion.PY_313: frozenset({"PythonFinalizationError"}),
-    PythonVersion.PY_315: frozenset({"ImportCycleError", "frozendict", "sentinel"}),
-}
 _BUILTIN_CONTAINER_COLLISION_FLAGS: dict[str, str] = {
     "list": "is_list",
     "dict": "is_dict",
@@ -311,19 +305,6 @@ _BUILTIN_CONTAINER_COLLISION_FLAGS: dict[str, str] = {
     "frozenset": "is_frozen_set",
     "tuple": "is_tuple",
 }
-
-
-def _get_builtin_names_for_target(target_python_version: PythonVersion) -> frozenset[str]:
-    builtin_names = set(_BUILTIN_NAMES)
-    target_key = target_python_version.version_key
-
-    for introduced_version, names in _BUILTIN_NAMES_INTRODUCED_IN.items():
-        if target_key >= introduced_version.version_key:
-            builtin_names.update(names)
-        else:
-            builtin_names.difference_update(names)
-
-    return frozenset(builtin_names)
 
 
 def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
@@ -3137,7 +3118,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.base_class: str | None = config.base_class
         self.base_class_map: dict[str, str | list[str]] | None = config.base_class_map
         self.target_python_version: PythonVersion = config.target_python_version
-        self.builtin_names: frozenset[str] = _get_builtin_names_for_target(self.target_python_version)
+        self.builtin_names: frozenset[str] = target_builtin_names(self.target_python_version.version_key)
         self.generation_store, self.results = self._generation_store_factory()
         self._merged_copies: set[DataModel] = set()
         self.model_metadata: ModelMetadata | None = None

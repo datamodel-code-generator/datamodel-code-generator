@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from datamodel_code_generator._python_target_names import (
+    PYTHON_BUILTIN_TYPE_NAMES,
+    is_target_builtin_name,
+    is_target_name,
+)
+
 
 class PythonTypeUnavailableError(ValueError):
     """A known Python type is unavailable for the configured target."""
@@ -12,117 +18,6 @@ class PythonTypeUnavailableError(ValueError):
         self.type_name = type_name
         self.target_version = target_version
         super().__init__(type_name, target_version)
-
-
-_PYTHON_BUILTIN_TYPE_NAMES = frozenset({
-    "ArithmeticError",
-    "AssertionError",
-    "AttributeError",
-    "BaseException",
-    "BaseExceptionGroup",
-    "BlockingIOError",
-    "BrokenPipeError",
-    "BufferError",
-    "BytesWarning",
-    "ChildProcessError",
-    "ConnectionAbortedError",
-    "ConnectionError",
-    "ConnectionRefusedError",
-    "ConnectionResetError",
-    "DeprecationWarning",
-    "EOFError",
-    "EncodingWarning",
-    "EnvironmentError",
-    "Exception",
-    "ExceptionGroup",
-    "FileExistsError",
-    "FileNotFoundError",
-    "FloatingPointError",
-    "FutureWarning",
-    "GeneratorExit",
-    "IOError",
-    "ImportCycleError",
-    "ImportError",
-    "ImportWarning",
-    "IndentationError",
-    "IndexError",
-    "InterruptedError",
-    "IsADirectoryError",
-    "KeyError",
-    "KeyboardInterrupt",
-    "LookupError",
-    "MemoryError",
-    "ModuleNotFoundError",
-    "NameError",
-    "None",
-    "NotADirectoryError",
-    "NotImplementedError",
-    "OSError",
-    "OverflowError",
-    "PendingDeprecationWarning",
-    "PermissionError",
-    "ProcessLookupError",
-    "PythonFinalizationError",
-    "RecursionError",
-    "ReferenceError",
-    "ResourceWarning",
-    "RuntimeError",
-    "RuntimeWarning",
-    "StopAsyncIteration",
-    "StopIteration",
-    "SyntaxError",
-    "SyntaxWarning",
-    "SystemError",
-    "SystemExit",
-    "TabError",
-    "TimeoutError",
-    "TypeError",
-    "UnboundLocalError",
-    "UnicodeDecodeError",
-    "UnicodeEncodeError",
-    "UnicodeError",
-    "UnicodeTranslateError",
-    "UnicodeWarning",
-    "UserWarning",
-    "ValueError",
-    "Warning",
-    "bool",
-    "bytearray",
-    "bytes",
-    "classmethod",
-    "complex",
-    "dict",
-    "enumerate",
-    "filter",
-    "float",
-    "frozendict",
-    "frozenset",
-    "int",
-    "list",
-    "map",
-    "memoryview",
-    "object",
-    "property",
-    "range",
-    "reversed",
-    "sentinel",
-    "set",
-    "slice",
-    "staticmethod",
-    "str",
-    "super",
-    "tuple",
-    "type",
-    "zip",
-})
-_PYTHON_BUILTIN_TYPE_INTRODUCED_IN: dict[str, tuple[int, int]] = {
-    "BaseExceptionGroup": (3, 11),
-    "ExceptionGroup": (3, 11),
-    "ImportCycleError": (3, 15),
-    "PythonFinalizationError": (3, 13),
-    "frozendict": (3, 15),
-    "sentinel": (3, 15),
-}
 
 
 _PYTHON_TYPE_IMPORT_PATHS: dict[str, str] = {
@@ -430,9 +325,6 @@ _TARGET_STABLE_PYTHON_TYPE_INTRODUCED_IN: dict[tuple[str, str], tuple[int, int]]
     ("typing", "disjoint_base"): (3, 15),
     ("typing", "override"): (3, 12),
 }
-_PYTHON_TYPE_REMOVED_IN: dict[tuple[str, str], tuple[int, int]] = {
-    ("pathlib", "DirEntryInfo"): (3, 15),
-}
 
 _PYTHON_TYPE_BACKPORTS: dict[str, tuple[tuple[int, int], str]] = {
     "Buffer": ((3, 12), "typing_extensions"),
@@ -456,13 +348,10 @@ _PYTHON_TYPE_BACKPORTS: dict[str, tuple[tuple[int, int], str]] = {
 
 def _is_target_type(module: str, type_name: str, target_version: tuple[int, int]) -> bool:
     """Return whether the target has a listed type: introduced at or before it and not removed by it."""
-    introduced = (
-        _PYTHON_BUILTIN_TYPE_INTRODUCED_IN.get(type_name, (3, 10))
-        if module == "builtins"
-        else _TARGET_STABLE_PYTHON_TYPE_INTRODUCED_IN.get((module, type_name), (3, 10))
-    )
-    removed = _PYTHON_TYPE_REMOVED_IN.get((module, type_name))
-    return introduced <= target_version and (removed is None or target_version < removed)
+    if module == "builtins":
+        return is_target_builtin_name(type_name, target_version)
+    introduced = _TARGET_STABLE_PYTHON_TYPE_INTRODUCED_IN.get((module, type_name), (3, 10))
+    return is_target_name(module, type_name, introduced, target_version)
 
 
 def is_python_builtin_type_name(type_name: str, target_version: tuple[int, int]) -> bool:
@@ -471,7 +360,7 @@ def is_python_builtin_type_name(type_name: str, target_version: tuple[int, int])
     A bare name the target lacks remains available for a user-defined symbol. Only an
     explicit ``builtins.Name`` path proves stdlib intent and is rejected below.
     """
-    return type_name in _PYTHON_BUILTIN_TYPE_NAMES and _is_target_type("builtins", type_name, target_version)
+    return type_name in PYTHON_BUILTIN_TYPE_NAMES and is_target_builtin_name(type_name, target_version)
 
 
 @lru_cache(maxsize=256)
@@ -499,7 +388,7 @@ def get_qualified_python_type_import_path(qualified_name: str, target_version: t
     module, separator, type_name = qualified_name.rpartition(".")
     if not separator:
         return qualified_name
-    if module == "builtins" and type_name in _PYTHON_BUILTIN_TYPE_NAMES:
+    if module == "builtins" and type_name in PYTHON_BUILTIN_TYPE_NAMES:
         if not _is_target_type(module, type_name, target_version):
             raise PythonTypeUnavailableError(qualified_name, target_version)
         return qualified_name

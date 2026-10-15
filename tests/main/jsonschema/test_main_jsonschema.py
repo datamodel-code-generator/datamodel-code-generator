@@ -19737,7 +19737,7 @@ def test_main_constraints_on_target_builtin_names(
 
 
 def test_x_python_type_explicit_defs_override_target_unavailable_symbol(output_file: Path) -> None:
-    """Prefer an explicit schema import when a same-named stdlib type is target-newer."""
+    """Prefer an explicit schema import when a same-named stdlib type is target-newer, not over a builtin it has."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_target_unavailable_defs_override.json",
         output_path=output_file,
