@@ -9,6 +9,8 @@ paths:
       parameters:
         - {name: X-Name, in: header, schema: {type: string}}
         - {name: X-Tags, in: header, schema: {type: array, items: {type: string}}}
+        - {name: session, in: cookie, schema: {type: string}}
+        - {name: ids, in: cookie, schema: {type: array, items: {type: string}}}
       responses:
         "204":
           description: Done.

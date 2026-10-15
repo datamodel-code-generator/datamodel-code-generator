@@ -4,8 +4,9 @@ The service answers with the headers each call asks for in its `X-Name` header: 
 a result header the server refuses to send, whose cause an exception handler answers with, or a response of its own
 whose Latin-1 header text the client refuses.
 Requests whose header bytes are not ASCII are refused with `400` whether FastAPI reads the header (`X-Name`) or an
-adapter does (`X-Tags`). The calls run over an ASGI transport and a socket only: Starlette's test client reads response
-headers as UTF-8 and re-encodes request header bytes, which is not what goes over the wire.
+adapter does (`X-Tags`), and so are cookies the operation reads (`session` and `ids`), RFC 6265 cookie octets being
+ASCII too; another cookie is not read. The calls run over an ASGI transport and a socket only: Starlette's test
+client reads response headers as UTF-8 and re-encodes request header bytes, which is not what goes over the wire.
 """
 
 from __future__ import annotations
@@ -101,4 +102,10 @@ def calls(kit: Kit) -> Calls:
         ("X-Name repeated in Latin-1", raw([(b"X-Name", b"cafe"), (b"X-Name", b"caf\xe9")])),
         ("X-Tags in Latin-1", raw([(b"X-Tags", b"caf\xe9,b")])),
         ("X-Tags in UTF-8", raw([(b"X-Tags", "café,b".encode())])),
+        ("get_text with a session cookie beyond ASCII", lambda: text(session="café")),
+        ("session cookie in Latin-1", raw([(b"Cookie", b"session=caf\xe9")])),
+        ("session cookie in UTF-8", raw([(b"Cookie", "a=b; session=café".encode())])),
+        ("ids cookie in Latin-1", raw([(b"Cookie", b"ids=caf\xe9")])),
+        ("ids cookie in UTF-8", raw([(b"Cookie", "ids=a; ids=café".encode())])),
+        ("another cookie in UTF-8", raw([(b"Cookie", "other=café; session=s; ids=a".encode())])),
     ]
