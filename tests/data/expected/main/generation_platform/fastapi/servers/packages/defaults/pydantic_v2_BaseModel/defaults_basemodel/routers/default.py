@@ -14,6 +14,7 @@ from pydantic import Field, StringConstraints
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Wiring, build, checked
+from .._runtime.server.requests import accepted
 from .._runtime.server.responses import dispatch
 from ..services import DefaultService
 
@@ -44,6 +45,7 @@ def _add_get_values(
         sized: Annotated[Annotated[int, Field(ge=1)] | None, Query(alias='sized')] = None,
         parameters: Annotated[contract.GetValues.Parameters, Depends(contract.GetValues.PARAMETERS)],
     ) -> object:
+        parameters = accepted(parameters)
         return dispatch(
             get_values_handler(
                 depth=depth,

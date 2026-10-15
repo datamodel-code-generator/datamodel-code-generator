@@ -12,6 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
+from typing_extensions import TypeVar
 
 from ..model_codecs.errors import MalformedError
 from ..model_codecs.media import (
@@ -26,6 +27,7 @@ from ..model_codecs.media import (
 )
 from ..model_codecs.parameter_reads import RawParameters, decode_parameter, raw_parameter
 from ..model_codecs.unset import UNSET
+from .application import ParameterReader, Rejected, reject
 from .errors import invalid, malformed_request, media_invalid, missing, model_records, unsupported_media
 
 if TYPE_CHECKING:
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
     from .errors import Record
 
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form", "multipart"]
+T = TypeVar("T")
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
@@ -100,7 +103,7 @@ def _any_encoding(text: str) -> bytes:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class ParameterAdapter:
+class ParameterAdapter(ParameterReader):
     """Read an operation's adapter parameters once per request from the raw ASGI path, query, and headers."""
 
     arguments: tuple[ParameterArgument, ...]
@@ -108,15 +111,27 @@ class ParameterAdapter:
     path: RawPath | None = None
 
     async def __call__(self, request: Request) -> object:
-        """Return the operation's record of adapter parameter values, with their defaults or None for omitted ones."""
+        """Return the operation's record of adapter parameter values, with their defaults or None for omitted ones.
+
+        Values the declarations reject leave their records on the request instead, and the Rejected value that holds
+        them stands for the record: the route reports them with FastAPI's own, and `accepted` raises them alone.
+        """
         scope = request.scope
+        records: list[Record] = []
         raw = RawParameters(
-            path=self._path(scope, self.path) if self.path is not None else {},
+            path=self._path(scope, self.path, records) if self.path is not None else {},
             query=scope.get("query_string"),
             headers=tuple(scope.get("headers", ())),
         )
+        if not records:
+            values = self._values(raw, records)
+            if not records:
+                return self.record(**values)
+        return reject(scope, records)
+
+    def _values(self, raw: RawParameters, records: list[Record]) -> dict[str, object]:
+        """Return the validated value of each adapter parameter, adding the records of the rejected ones."""
         values: dict[str, object] = {}
-        records: list[Record] = []
         views: dict[str, RawParameter] = {}
         for argument in self.arguments:
             plan = argument.plan
@@ -143,28 +158,34 @@ class ParameterAdapter:
                 )
             except ValidationError as error:
                 records.extend(model_records(error, location))
-        if records:
-            raise RequestValidationError(records)
-        return self.record(**values)
+        return values
 
     @staticmethod
-    def _path(scope: Mapping[str, object], path: RawPath) -> dict[str, bytes]:
+    def _path(scope: Mapping[str, object], path: RawPath, records: list[Record]) -> dict[str, bytes]:
+        """Return the raw value of each named slot, adding the record of a repeated slot whose values differ."""
         if not isinstance(raw := scope.get("raw_path"), bytes):
             decoded = scope.get("path")
             raw = quote(decoded, safe=_PATH_SAFE).encode() if isinstance(decoded, str) else b""
         if (found := path.search(raw.partition(b"?")[0])) is None:
             raise malformed_request()
         captured: dict[str, bytes] = {}
-        records: list[Record] = []
         for group, name in path.slots:
             value = found.group(group)
             if (first := captured.setdefault(name, value)) is not value and unquote_to_bytes(first) != unquote_to_bytes(
                 value
             ):
                 records.append(invalid(("path", name)))
-        if records:
-            raise RequestValidationError(records)
         return captured
+
+
+def accepted(parameters: T) -> T:
+    """Return an endpoint's adapter parameter record, or raise the records of the Rejected value standing for it.
+
+    The endpoint runs only when FastAPI found no records of its own, so these are the request's only ones.
+    """
+    if isinstance(parameters, Rejected):
+        raise RequestValidationError(parameters.take())
+    return parameters
 
 
 def _validated(adapter: TypeAdapter[object] | None, value: object) -> object:
