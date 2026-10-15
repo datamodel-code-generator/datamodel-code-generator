@@ -15109,8 +15109,10 @@ on the command line and for mappings given to `generate()`.
 derived like a tag's: beside a tag that also derives `default`, such as `default` or `Default`, the one declared first
 keeps `default` and the other takes a number, such as `default_1`, as on the server. No `--client-resource-names` entry
 names the operations without a tag, so the `resource` of a `--client-operations` entry moves one of them to another
-resource. An explicit namespace is shared by everything that names it: a tag mapped to `default`, or an operation whose
-`resource` is `default`, joins the resource of that name.
+resource. Such a move leaves the derived names as they are: a tag, or the operations without one, takes its place among
+them from its first operation, moved or not, as the server's groups do. An explicit namespace is shared by everything
+that names it: a tag mapped to `default`, or an operation whose `resource` is `default`, joins the resource of that
+name.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.

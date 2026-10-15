@@ -909,6 +909,11 @@
     "input": "naming-default.yaml",
     "modules": [["client", "_operations.py"]]
   },
+  "naming-default-moved": {
+    "input": "naming-default.yaml",
+    "config": {"operations": [{"ref": "/paths/~1defaults/get", "resource": "other"}]},
+    "modules": [["client", "_operations.py"]]
+  },
   "method-collisions": {
     "input": "method-collisions.yaml",
     "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
