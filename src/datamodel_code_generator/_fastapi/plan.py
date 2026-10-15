@@ -581,6 +581,12 @@ class Planner:  # noqa: PLR0904
         self.primaries = self.selected("primary_responses", config.primary_responses)
         self.parameter_names = self.selected("parameter_names", config.parameter_names)
         self.modes: dict[str, HandlerMode] = self.selected("handler_modes", config.handler_modes)
+        groups = {group_key(operation, single=config.layout == "single") for operation in request.operations}
+        self.problems.extend(
+            _problem("E_CONFIG_VALUE", f"The router_names entry {key!r} names no group", option_path="router_names")
+            for key in config.router_names
+            if key not in groups
+        )
         self.raise_problems()
 
     def raise_problems(self) -> None:

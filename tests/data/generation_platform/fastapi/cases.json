@@ -154,6 +154,11 @@
       },
       "server_body_modes": {
         "/paths/~1pets/delete": "request"
+      },
+      "server_router_names": {
+        "tag:pets": "animals",
+        "tag:Pets": "other",
+        "untagged": "misc"
       }
     }
   },

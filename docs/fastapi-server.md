@@ -1100,8 +1100,8 @@ one declared first keeps `default` and the other takes a number, such as `defaul
 
 With `--server-layout single`, every operation is in the group `all`: one `routes.py`, one `Service` Protocol, and the
 argument `service=`. `--server-router-names '{"all": "store"}'` renames it, as other group keys are renamed, to
-`StoreService` and `store=`. A group key that matches no group is ignored, while an operation reference that names no
-operation stops the run with an error.
+`StoreService` and `store=`. A group key that matches no group stops the run with an error, as an operation reference
+that names no operation does.
 
 `--server-parameter-names` keys an argument by its location, `path`, `query`, `querystring`, `header`, or `cookie`,
 and its wire name, such as `query:limit`.
