@@ -170,6 +170,29 @@ paths:
               allOf: [{$ref: "#/components/schemas/Item"}, {properties: {note: {type: string}}}]
       responses:
         "204": {description: Done.}
+  /multi:
+    post:
+      operationId: postMulti
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
+  /multi-optional:
+    post:
+      operationId: postMultiOptional
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Item: {type: object, required: [name], properties: {name: {type: string}}}

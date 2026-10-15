@@ -13187,7 +13187,9 @@ method receives what the model validates `null` as, `None` or the root model tha
 every root model and type alias accept `null`, so every required JSON body of one, such as a string, an array, or a
 union, is read this way. A required JSON body whose type rejects `null` stays FastAPI's and answers `null` with a
 `missing` record at `["body"]`, and an optional one stays FastAPI's too: its method receives `None` for `null` as for
-an omitted body.
+an omitted body. An adapter that reads a JSON body for another reason, such as several media types, reads a `null`
+its model rejects the same way: `422` with a `missing` record at `["body"]` for a required body, and `None` for an
+optional one, with `None` as the media type, as for an omitted body.
 
 A body that an adapter reads needs a Content-Type the operation declares: `application/json` with or without
 parameters for a body declared as `application/json`, but not another `+json` type, which FastAPI's own reading

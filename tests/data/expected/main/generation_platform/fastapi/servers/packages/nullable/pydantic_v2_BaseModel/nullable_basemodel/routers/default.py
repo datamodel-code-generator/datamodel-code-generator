@@ -578,6 +578,78 @@ def _add_post_extended(
     )
 
 
+def _add_post_multi(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_multi_handler = checked(
+        default.post_multi,
+        'The default.post_multi method of POST /multi',
+        ('body', 'media_type'),
+    )
+
+    def post_multi(
+        *,
+        body: Annotated[tuple[str | None, nullable_basemodel_models.Item | nullable_basemodel_models.MultiPostRequest], Depends(contract.PostMulti.BODY.receive)],
+    ) -> object:
+        return dispatch(
+            post_multi_handler(
+                body=body[1],
+                media_type=body[0],
+            ),
+            contract.PostMulti.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/multi',
+        post_multi,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postMulti',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_multi'),
+    )
+
+
+def _add_post_multi_optional(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_multi_optional_handler = checked(
+        default.post_multi_optional,
+        'The default.post_multi_optional method of POST /multi-optional',
+        ('body', 'media_type'),
+    )
+
+    def post_multi_optional(
+        *,
+        body: Annotated[tuple[str | None, nullable_basemodel_models.Item | nullable_basemodel_models.MultiOptionalPostRequest | None], Depends(contract.PostMultiOptional.BODY.receive)],
+    ) -> object:
+        return dispatch(
+            post_multi_optional_handler(
+                body=body[1],
+                media_type=body[0],
+            ),
+            contract.PostMultiOptional.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/multi-optional',
+        post_multi_optional,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postMultiOptional',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('post_multi_optional'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('post_text', _add_post_text),
     ('post_list', _add_post_list),
@@ -595,6 +667,8 @@ LITERAL_ROUTES: Final = (
     ('post_form', _add_post_form),
     ('upload', _add_upload),
     ('post_extended', _add_post_extended),
+    ('post_multi', _add_post_multi),
+    ('post_multi_optional', _add_post_multi_optional),
 )
 TEMPLATED_ROUTES: Final = ()
 

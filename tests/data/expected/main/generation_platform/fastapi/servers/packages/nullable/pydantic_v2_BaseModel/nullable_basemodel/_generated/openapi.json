@@ -411,6 +411,55 @@
      }
     }
    }
+  },
+  "/multi": {
+   "post": {
+    "operationId": "postMulti",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Item"
+       }
+      },
+      "text/plain": {
+       "schema": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     }
+    }
+   }
+  },
+  "/multi-optional": {
+   "post": {
+    "operationId": "postMultiOptional",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Item"
+       }
+      },
+      "text/plain": {
+       "schema": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     }
+    }
+   }
   }
  },
  "components": {

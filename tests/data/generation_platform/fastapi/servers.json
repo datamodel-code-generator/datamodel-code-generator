@@ -5622,6 +5622,68 @@
         "json": {
           "note": "n"
         }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "content": " null\n",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "content": " null\n",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
       }
     ],
     "package_snapshots": [

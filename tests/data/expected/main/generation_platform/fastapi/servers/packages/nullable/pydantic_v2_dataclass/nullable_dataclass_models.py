@@ -81,3 +81,9 @@ class UploadsPostRequest:
 @dataclass
 class ExtendedPostRequest(Item):
     note: str | MISSING = MISSING
+
+
+MultiPostRequest = TypeAliasType("MultiPostRequest", str)
+
+
+MultiOptionalPostRequest = TypeAliasType("MultiOptionalPostRequest", str)

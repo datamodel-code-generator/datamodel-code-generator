@@ -176,3 +176,25 @@ class DefaultService(Protocol):
         """
         Handle POST /extended.
         """
+
+    @abstractmethod
+    def post_multi(
+        self,
+        *,
+        body: nullable_basemodel_models.Item | nullable_basemodel_models.MultiPostRequest,
+        media_type: str | None,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /multi.
+        """
+
+    @abstractmethod
+    def post_multi_optional(
+        self,
+        *,
+        body: nullable_basemodel_models.Item | nullable_basemodel_models.MultiOptionalPostRequest | None,
+        media_type: str | None,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /multi-optional.
+        """
