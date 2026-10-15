@@ -769,7 +769,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         patterns can select Python's regex engine;
                         pydantic_v2.dataclass writes required Field(...)
                         fields before the fields with defaults of the same
-                        class).
+                        class; a number schema keeps multipleOf on a
+                        timedelta).
   --target-python-version {3.10,3.11,3.12,3.13,3.14,3.15}
                         target python version
   --treat-dot-as-module, --no-treat-dot-as-module

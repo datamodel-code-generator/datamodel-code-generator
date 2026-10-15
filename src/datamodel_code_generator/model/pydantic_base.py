@@ -23,7 +23,13 @@ from datamodel_code_generator.model import ConstraintsBase as _ConstraintsBase
 from datamodel_code_generator.model._constraints import Constraints
 from datamodel_code_generator.model._constraints import PatternConstraints as _PatternConstraints
 from datamodel_code_generator.model._pydantic_imports import IMPORT_ANYURL, IMPORT_FIELD
-from datamodel_code_generator.model.base import _nested_model_default_factory, _remember_custom_template_dependency
+from datamodel_code_generator.model.base import (
+    _OVERRIDDEN_CONSTRAINTS_KEY,
+    _UNTAKEN_CONSTRAINT_MINIMUMS_KEY,
+    _UNTAKEN_CONSTRAINTS_KEY,
+    _nested_model_default_factory,
+    _remember_custom_template_dependency,
+)
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 from datamodel_code_generator.types import (
@@ -44,6 +50,10 @@ Field = _Field
 ConstraintsBase = _ConstraintsBase
 PatternConstraints = _PatternConstraints
 UnionIntFloat = _UnionIntFloat
+
+_FIELD_CONSTRAINT_ARGUMENTS: dict[str, str] = {
+    info.alias: name for name, info in Constraints.model_fields.items() if info.alias is not None
+}
 
 
 class _PydanticFieldRenderPlan(NamedTuple):
@@ -82,6 +92,35 @@ class DataModelField(DataModelFieldBase):
     def has_default_factory_in_field(self) -> bool:
         """Check the current structured field state for an effective default factory."""
         return self._get_effective_default_factory() is not None
+
+    @property
+    def dropped_constraints_warning(self) -> str | None:
+        """Return a warning naming the constraints this field is generated without, if any.
+
+        They are the declared number constraints Pydantic does not take on the type, and the arguments of the
+        ``con*`` type that ``--type-overrides`` replaces.
+        """
+        reasons: list[str] = []
+        count = 0
+        if untaken := self.__dict__.get(_UNTAKEN_CONSTRAINTS_KEY):
+            minimums = self.__dict__.get(_UNTAKEN_CONSTRAINT_MINIMUMS_KEY, {})
+            groups: dict[str | None, list[str]] = {}
+            for key in untaken:
+                groups.setdefault(minimums.get(key), []).append(key)
+            for minimum, keys in groups.items():
+                arguments = ", ".join(sorted(_FIELD_CONSTRAINT_ARGUMENTS[key] for key in keys))
+                reasons.append(
+                    f"Pydantic does not take {arguments} on {self.data_type.type_hint}"
+                    if minimum is None
+                    else f"Pydantic checks {arguments} on {self.data_type.type_hint} only from {minimum} on, which "
+                    f"an explicit --target-pydantic-version {minimum} or later selects"
+                )
+                count += len(keys)
+        if overridden := self.__dict__.get(_OVERRIDDEN_CONSTRAINTS_KEY):
+            replaced, arguments_count = overridden
+            reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {replaced}")
+            count += arguments_count
+        return self._generated_without_constraints("; ".join(reasons), count) if reasons else None
 
     @property
     def method(self) -> str | None:

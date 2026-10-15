@@ -1,0 +1,34 @@
+{
+  "valid": {
+    "label": "1",
+    "shared_label": "1",
+    "day": 0,
+    "clock": 2,
+    "code": "a",
+    "level": 3,
+    "count": 1,
+    "amount": 1,
+    "stamp": 0,
+    "held": 1,
+    "any_value": 1,
+    "count_or_label": 1,
+    "flag": 1,
+    "wait": 2
+  },
+  "invalid": {
+    "label": "-1",
+    "shared_label": "-1",
+    "day": -86400,
+    "clock": 3,
+    "code": "c",
+    "level": 4,
+    "count": -1,
+    "amount": -1,
+    "stamp": -86400,
+    "held": -1,
+    "any_value": -1,
+    "count_or_label": -1,
+    "flag": 0,
+    "wait": 3
+  }
+}

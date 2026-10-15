@@ -6134,6 +6134,86 @@ def test_main_number_constraints_on_emitted_types(
     )
 
 
+_DECLARED_NUMBER_TYPE_OVERRIDES = {
+    "NumberConstraintsOnDeclaredNumbers.label": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.amount": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.stamp": "datetime.date",
+    "NumberConstraintsOnDeclaredNumbers.held": "typing.Any",
+}
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("target_pydantic_214.py", ["--field-constraints", "--target-pydantic-version", "2.14"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+        ("collapse.py", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "type_overrides.py",
+            [
+                "--type-overrides",
+                json.dumps(
+                    _DECLARED_NUMBER_TYPE_OVERRIDES | {"NumberConstraintsOnDeclaredNumbers.count": "pydantic.conint"}
+                ),
+            ],
+        ),
+        (
+            "type_overrides_field_constraints.py",
+            ["--field-constraints", "--type-overrides", json.dumps(_DECLARED_NUMBER_TYPE_OVERRIDES)],
+        ),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_number_constraints_on_declared_numbers(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test a number schema keeps a number keyword only where a number value meets it, warns otherwise, and validates.
+
+    A type with numbers among its values, a union with a number member and a ``con*`` factory override keep the keyword,
+    as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it. msgspec decodes a
+    date only from a string, so its runtime check is left to the other outputs.
+    """
+    name = "number_constraints_on_declared_numbers"
+    stem = expected_file.removesuffix(".py")
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                *("--type-mappings", "number+day=date", "--formatters", "builtin"),
+                *("--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{warning.message}\n" for warning in recorded_warnings if "is generated without" in str(warning.message)
+        ),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    if "msgspec.Struct" in extra_args:
+        return
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "NumberConstraintsOnDeclaredNumbers") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_rejected.txt")
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.parametrize(
     ("expected_file", "extra_args"),

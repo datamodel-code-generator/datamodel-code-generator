@@ -73,7 +73,11 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_UUID4,
     IMPORT_UUID5,
 )
-from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_V2_STRING_CONSTRAINTS_MINIMUM, target_supports
+from datamodel_code_generator.model.pydantic_v2.version import (
+    PYDANTIC_V2_STRING_CONSTRAINTS_MINIMUM,
+    PYDANTIC_V2_TIMEDELTA_MULTIPLE_OF_MINIMUM,
+    target_supports,
+)
 from datamodel_code_generator.python_literal import PythonCode
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -263,6 +267,15 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         **_constraint_keywords(LENGTH_KEYWORDS, IMPORT_CONBYTES, IMPORT_EMAIL_STR, IMPORT_SECRET_STR),
     })
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (*_DataTypeManagerBase.KNOWN_TYPE_IMPORTS, pydantic_imports)
+    NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _DataTypeManagerBase.NUMBER_VALUE_TYPES | {
+        f"{IMPORT_STRICT_BOOL.from_}.{IMPORT_STRICT_BOOL.import_}"
+    }
+    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[str, frozenset[str]]]] = MappingProxyType({
+        f"{IMPORT_TIMEDELTA.from_}.{IMPORT_TIMEDELTA.import_}": (
+            PYDANTIC_V2_TIMEDELTA_MULTIPLE_OF_MINIMUM,
+            frozenset({"multipleOf"}),
+        ),
+    })
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
         (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
         (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,

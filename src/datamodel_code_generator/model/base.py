@@ -80,6 +80,9 @@ _NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY = "_nested_model_default_factory_order"
 _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_PATHS_KEY = "_nested_model_default_factory_recursive_paths"
 _NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY = "_nested_model_required_constructor_fields"
 _REQUIRED_INHERITED_DEFAULT_FACTORY_KEY = "_required_inherited_default_factory"
+_UNTAKEN_CONSTRAINTS_KEY = "_untaken_constraints"
+_UNTAKEN_CONSTRAINT_MINIMUMS_KEY = "_untaken_constraint_minimums"
+_OVERRIDDEN_CONSTRAINTS_KEY = "_overridden_constraints"
 _RUNTIME_EXPRESSION_IMPORTS_FIELD_KEY = "_runtime_expression_imports"
 _EXTRA_TEMPLATE_DATA_MAPPING_ERROR = "extra template data must be a dictionary"
 _EXTRA_TEMPLATE_DATA_KEY_ERROR = "extra template data keys must be strings"
@@ -616,6 +619,16 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def dropped_constraints_warning(self) -> str | None:
         """Return a warning naming the constraints the output model leaves out on this field's type, if any."""
         return None
+
+    def _generated_without_constraints(self, reason: str, count: int) -> str:
+        """Return the dropped constraints warning for ``reason``, naming the model and field that leave them out.
+
+        The field of a root model is named by its model alone.
+        """
+        owner = getattr(self.parent, "class_name", "")
+        if self.name and not getattr(self.parent, "IS_ROOT_MODEL", False):
+            owner = f"{owner}.{self.name}"
+        return f"{reason}; {owner} is generated without {'this constraint' if count == 1 else 'these constraints'}."
 
     def unconstrain_union_members(self) -> None:
         """Write union members without the constraints the output model cannot check on one member alone."""

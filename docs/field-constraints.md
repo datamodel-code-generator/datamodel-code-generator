@@ -105,6 +105,15 @@ No errors! 🎉
 **The schema holds a number.** The schema type is `number` or `integer`, or the type and format map to a number type
 (`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps to one). All five keywords
 are written, as `con*` types by default and as `Field()` arguments with `--field-constraints` or `--use-annotated`.
+Pydantic models and dataclasses write such a `Field()` argument only when a number value of the Python type written
+for the field meets it: the type takes the keyword, as the Pydantic column of the table below lists, a member of a
+union or a value of a `Literal` (also of a `const` or `enum`) does, or the type has numbers among its values, as
+`bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag` and the `typing.Supports*` protocols do. Pydantic cannot
+build or validate a field whose `Field()` holds any other, so a keyword they leave out, such as `minimum` on the `str`
+of `{"type": "integer", "x-python-type": "str", "minimum": 0}` or `multipleOf` on the `time` of format `time`, is named
+with its field in a warning. A `--type-overrides` builtin or standard-library class replaces the `con*` type of a field
+without its arguments, which such a class does not take, and names them in the same warning; another override, such as
+`pydantic.conint` or a factory of your own, keeps them.
 
 **The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
 `duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
@@ -134,15 +143,17 @@ integer the `float` members admit.
 |-------------|----------|---------|
 | `int`, `float` | all five keywords | all five keywords |
 | `Decimal` | all five keywords | none |
-| `timedelta` | the four bounds, read as seconds | none |
+| `timedelta` | the four bounds, read as seconds; `multipleOf` too for a number schema with an explicit `--target-pydantic-version 2.14` | none |
 | `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
 | `time` | the four bounds, read as seconds since midnight | none |
 | a type the generator does not know (`fractions.Fraction`, a class of your own) or a model that the schema references | all five keywords | all five keywords |
 | any other known type: `str`, `bytes`, `bool`, `None`, `date`, `UUID`, `Any`, `object`, paths, IP addresses, lists, dicts and other containers | none | none |
 
-`multipleOf` is not written on `timedelta`, `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field,
-and later versions ignore the keyword or fail on valid values. A `date` takes no number keyword in any Pydantic
-version. `msgspec` accepts number constraints on `int` and `float` only, so a type the generator does not know has to
+`multipleOf` is not written on `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field, 2.11 to 2.13
+ignore the keyword and 2.14 fails on valid values. On `timedelta` Pydantic 2.0 to 2.10 cannot build it either and
+2.11 to 2.13 ignore it, while 2.14 checks it on the seconds, so a number schema writes `multipleOf` on a `timedelta`
+only with an explicit `--target-pydantic-version 2.14`; otherwise it is left out with the warning, which names that
+option. A `date` takes no number keyword in any Pydantic version. `msgspec` accepts number constraints on `int` and `float` only, so a type the generator does not know has to
 be one of them at runtime, for example a `NewType` of `int`.
 Pydantic 2.11 cannot build a `time` field that has a number bound; use Pydantic 2.12 or later for such schemas.
 

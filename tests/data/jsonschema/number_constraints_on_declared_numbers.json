@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnDeclaredNumbers",
+  "type": "object",
+  "definitions": {
+    "Label": {
+      "type": "integer",
+      "x-python-type": "str",
+      "minimum": 0
+    }
+  },
+  "properties": {
+    "label": {
+      "type": "integer",
+      "x-python-type": "str",
+      "minimum": 0
+    },
+    "shared_label": {
+      "$ref": "#/definitions/Label"
+    },
+    "day": {
+      "type": "number",
+      "format": "day",
+      "minimum": 0
+    },
+    "clock": {
+      "type": "number",
+      "format": "time",
+      "multipleOf": 2
+    },
+    "code": {
+      "type": "integer",
+      "x-python-type": "typing.Literal['a', 'b']",
+      "maximum": 5
+    },
+    "level": {
+      "type": "integer",
+      "const": 3,
+      "minimum": 0
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stamp": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "held": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "any_value": {
+      "type": "integer",
+      "x-python-type": "typing.Any",
+      "minimum": 0
+    },
+    "count_or_label": {
+      "type": "integer",
+      "x-python-type": "int | str",
+      "minimum": 0
+    },
+    "flag": {
+      "type": "integer",
+      "x-python-type": "bool",
+      "minimum": 1
+    },
+    "wait": {
+      "type": "number",
+      "x-python-type": "datetime.timedelta",
+      "multipleOf": 2
+    }
+  }
+}
