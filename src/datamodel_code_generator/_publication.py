@@ -630,6 +630,20 @@ def _replace_source(file: StagedFile, destination_name: str | Path, destination_
     _replace(cast("Path", file.staged_file), destination_name, dst_dir_fd=destination_fd)
 
 
+def _report_rollback_failures(publish_error: BaseException, failures: list[Path]) -> None:
+    """Keep control-flow exceptions intact while recording failed restoration."""
+    paths = ", ".join(path.as_posix() for path in failures)
+    message = f"{publish_error}; failed to roll back batch output: {paths}"
+    if isinstance(publish_error, Exception):
+        raise OSError(message) from publish_error
+    # Store notes directly so Python 3.10 can retain the same diagnostic context.
+    notes = publish_error.__dict__.get("__notes__")
+    if isinstance(notes, list):
+        notes.append(message)
+    else:
+        publish_error.__dict__["__notes__"] = [message]
+
+
 def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0912
     journal: list[_BoundPublishedFile] = []
     created_directories: list[_CreatedDirectoryAt] = []
@@ -661,7 +675,7 @@ def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0
             finally:
                 if not journaled:
                     os.close(directory_fd)
-    except OSError as publish_error:
+    except BaseException as publish_error:
         failures: list[Path] = []
         for published_file in reversed(journal):
             failures.extend(_rollback_bound_file(published_file))
@@ -671,8 +685,7 @@ def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0
             except OSError:
                 failures.append(directory.path)
         if failures:
-            paths = ", ".join(path.as_posix() for path in failures)
-            raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+            _report_rollback_failures(publish_error, failures)
         raise
     else:
         for published_file in journal:
@@ -707,15 +720,14 @@ def _publish_staged_files_by_path(files: Sequence[StagedFile]) -> None:  # pragm
             _replace_source(file, file.target, None)
             _validate_planned_target(file)
             _validate_publication_anchor(file)
-    except OSError as publish_error:
+    except BaseException as publish_error:
         failures: list[Path] = []
         for published_file in reversed(journal):
             failures.extend(_rollback_published_file(published_file))
         for directory in reversed(created_directories):
             failures.extend(_remove_created_directory(directory))
         if failures:
-            paths = ", ".join(path.as_posix() for path in failures)
-            raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+            _report_rollback_failures(publish_error, failures)
         raise
     for published_file in journal:
         if published_file.backup is not None:

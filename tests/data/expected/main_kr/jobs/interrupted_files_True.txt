@@ -1,0 +1,3 @@
+generated/strict.py
+plain.py
+pyproject.toml

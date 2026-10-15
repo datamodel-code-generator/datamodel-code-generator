@@ -2596,6 +2596,95 @@ output = "{output_root.as_posix()}"
     assert list(tmp_path.glob(".datamodel-codegen-*")) == []
 
 
+@pytest.mark.abnormal_path("Interrupt after real file replacements to exercise publication rollback")
+@pytest.mark.parametrize("failure", [KeyboardInterrupt, SystemExit])
+@pytest.mark.parametrize("existing", [False, True])
+def test_pyproject_jobs_interrupted_publication_rolls_back(
+    jobs_project: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: type[BaseException],
+    existing: bool,
+) -> None:
+    """Undo published replacements and new files before propagating an interruption."""
+    first = jobs_project["plain"]
+    second = tmp_path / "generated" / "strict.py"
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(
+        pyproject.read_text(encoding="utf-8").replace(jobs_project["strict"].as_posix(), second.as_posix()),
+        encoding="utf-8",
+    )
+    first.write_text("stale\n", encoding="utf-8")
+    if existing:
+        second.parent.mkdir()
+        second.write_text("stale\n", encoding="utf-8")
+    original_replace_source = publication_module._replace_source
+
+    def interrupt_after_second_replacement(
+        source: publication_module.StagedFile, destination: str | Path, destination_fd: int | None
+    ) -> None:
+        original_replace_source(source, destination, destination_fd)
+        if source.target == second:
+            msg = "publication interrupted"
+            raise failure(msg)
+
+    monkeypatch.setattr(publication_module, "_replace_source", interrupt_after_second_replacement)
+    with chdir(tmp_path), pytest.raises(failure, match="publication interrupted"):
+        run_main_with_args(["--all-jobs", "--formatters", "builtin"])
+
+    assert_file_content(first, "jobs/stale.py")
+    if existing:
+        assert_file_content(second, "jobs/stale.py")
+    else:
+        _assert_file_does_not_exist(second.parent)
+    assert_output(
+        "\n".join(sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*") if path.is_file()))
+        + "\n",
+        EXPECTED_MAIN_KR_PATH / "jobs" / f"interrupted_files_{existing}.txt",
+    )
+
+
+@pytest.mark.abnormal_path("Interrupt publication and fail restoration to verify interruption preservation")
+@pytest.mark.parametrize("failure", [KeyboardInterrupt, SystemExit])
+@pytest.mark.parametrize("seeded_notes", [False, True])
+def test_pyproject_jobs_interruption_survives_failed_rollback(
+    jobs_project: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: type[BaseException],
+    seeded_notes: bool,
+) -> None:
+    """Keep interruption context when restoration also encounters a filesystem error."""
+    jobs_project["plain"].write_text("stale\n", encoding="utf-8")
+    interruption = failure("publication interrupted")
+    if seeded_notes:
+        interruption.__dict__["__notes__"] = ["Existing context"]
+    original_replace_source = publication_module._replace_source
+
+    def interrupt_after_second_replacement(
+        source: publication_module.StagedFile, destination: str | Path, destination_fd: int | None
+    ) -> None:
+        original_replace_source(source, destination, destination_fd)
+        if source.target == jobs_project["strict"]:
+            raise interruption
+
+    def fail_restoration(*_args: object) -> None:
+        msg = "restore blocked"
+        raise PermissionError(msg)
+
+    monkeypatch.setattr(publication_module, "_replace_source", interrupt_after_second_replacement)
+    monkeypatch.setattr(
+        publication_module, "_restore_backup" if os.name == "nt" else "_restore_backup_at", fail_restoration
+    )
+    with chdir(tmp_path), pytest.raises(failure, match="publication interrupted") as error:
+        run_main_with_args(["--all-jobs", "--formatters", "builtin"])
+
+    assert_output(
+        ("\n".join(error.value.__dict__.get("__notes__", [])) + "\n").replace(tmp_path.as_posix(), "<OUTPUT>"),
+        EXPECTED_MAIN_KR_PATH / "jobs" / f"interrupted_rollback_failure_{seeded_notes}.txt",
+    )
+
+
 @pytest.mark.allow_direct_assert
 def test_pyproject_jobs_publish_rollback_restores_prior_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Restore every earlier replacement if publication fails after its backup was journaled."""
