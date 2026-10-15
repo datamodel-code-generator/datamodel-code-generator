@@ -15680,7 +15680,10 @@ the `total` the page reads. For an offset they are the offsets past `first`, sin
 wherever the traversal started; for a page number they are the items delivered since the start, the only count a page
 number gives, and a page without items ends it too, since no later page can bring the count nearer. A `total` of 0 ends
 at the first page, and a position past the total ends too. `has_more` must read a JSON boolean and `total` a JSON
-integer of at least 0; a header spells `true` or `false`, or decimal digits with an optional `-`, and generation checks
+integer of at least 0, which a number with a fraction or an exponent is only when its text is integral: `1.0` and
+`1e0` count 1 and `9007199254740993.0` counts exactly that, while `9007199254740993.00000000000000000001` is mistyped,
+since the total is read from the body's text rather than from a rounded float. A header spells `true` or `false`, or
+decimal digits with an optional `-`, and generation checks
 the types its declared schema gives. A missing, null, or mistyped value raises `ProtocolDataError`, and a negative
 total, from the body or a header, raises it with the reason `value`. Otherwise an empty page does not end the
 traversal, but one that continues while `page_items_count` counts items would ask for the same position again, so it
