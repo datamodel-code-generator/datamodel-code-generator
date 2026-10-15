@@ -8,6 +8,7 @@ import shutil
 import stat
 import sys
 from argparse import Namespace
+from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, cast
 
@@ -2644,15 +2645,19 @@ def test_pyproject_jobs_interrupted_publication_rolls_back(
     )
 
 
+@pytest.mark.allow_direct_assert
 @pytest.mark.abnormal_path("Interrupt publication and fail restoration to verify interruption preservation")
 @pytest.mark.parametrize("failure", [KeyboardInterrupt, SystemExit])
 @pytest.mark.parametrize("seeded_notes", [False, True])
+@pytest.mark.parametrize("stderr_closed", [False, True])
 def test_pyproject_jobs_interruption_survives_failed_rollback(
     jobs_project: dict[str, Path],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     failure: type[BaseException],
     seeded_notes: bool,
+    stderr_closed: bool,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Keep interruption context when restoration also encounters a filesystem error."""
     jobs_project["plain"].write_text("stale\n", encoding="utf-8")
@@ -2676,13 +2681,53 @@ def test_pyproject_jobs_interruption_survives_failed_rollback(
     monkeypatch.setattr(
         publication_module, "_restore_backup" if os.name == "nt" else "_restore_backup_at", fail_restoration
     )
-    with chdir(tmp_path), pytest.raises(failure, match="publication interrupted") as error:
-        run_main_with_args(["--all-jobs", "--formatters", "builtin"])
+    with monkeypatch.context() as patch:
+        if stderr_closed:
+            stderr = StringIO()
+            stderr.close()
+            patch.setattr(sys, "stderr", stderr)
+        with chdir(tmp_path), pytest.raises(failure, match="publication interrupted") as error:
+            run_main_with_args(["--all-jobs", "--formatters", "builtin"])
 
+    assert error.value is interruption
     assert_output(
         ("\n".join(error.value.__dict__.get("__notes__", [])) + "\n").replace(tmp_path.as_posix(), "<OUTPUT>"),
         EXPECTED_MAIN_KR_PATH / "jobs" / f"interrupted_rollback_failure_{seeded_notes}.txt",
     )
+
+    captured = capsys.readouterr()
+    assert_output(captured.out, EXPECTED_EMPTY_OUTPUT_PATH)
+    stderr_path = (
+        EXPECTED_MAIN_KR_PATH / "jobs" / f"interrupted_rollback_failure_{seeded_notes}.txt"
+        if not stderr_closed and (sys.version_info < (3, 11) or failure is SystemExit)
+        else EXPECTED_EMPTY_OUTPUT_PATH
+    )
+    assert_output(captured.err.replace(tmp_path.as_posix(), "<OUTPUT>"), stderr_path)
+
+
+@pytest.mark.allow_direct_assert
+@pytest.mark.abnormal_path("Reject malformed note metadata without replacing a batch interruption")
+@pytest.mark.parametrize("notes", [None, 1, "not a note list"])
+@pytest.mark.usefixtures("jobs_project")
+def test_pyproject_jobs_interruption_with_malformed_notes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    notes: object,
+) -> None:
+    """Treat unsupported exception metadata as absent while retaining interruption identity."""
+    interruption = SystemExit("interrupted")
+    interruption.__dict__["__notes__"] = notes
+
+    def interrupt_generation(*_args: object, **_kwargs: object) -> None:
+        raise interruption
+
+    monkeypatch.setattr(main_module, "_run_jobs_text", interrupt_generation)
+    with chdir(tmp_path), pytest.raises(SystemExit) as error:
+        run_main_with_args(["--all-jobs", "--formatters", "builtin"])
+
+    assert error.value is interruption
+    _assert_captured_output(capsys, expected_stdout_path=EXPECTED_EMPTY_OUTPUT_PATH, assert_no_stderr=True)
 
 
 @pytest.mark.allow_direct_assert

@@ -2104,7 +2104,14 @@ def _run_jobs(
                 result = _run_jobs_json(args, staged_plans, remote_locks, remote_lock_plans)
             case _:
                 result = _run_jobs_text(args, staged_plans, remote_locks, remote_lock_plans)
-    except BaseException:
+    except BaseException as exc:
+        # Python 3.10 and SystemExit do not display exception notes automatically.
+        if sys.version_info < (3, 11) or isinstance(exc, SystemExit):
+            notes = getattr(exc, "__notes__", None)
+            if isinstance(notes, list):
+                with suppress(OSError, ValueError):
+                    for note in notes:
+                        print(note, file=sys.stderr)  # noqa: T201
         if cleanup_error := _staging_cleanup_error(None, _cleanup_job_transaction(staged_plans, remote_locks)):
             print(f"Error: {cleanup_error}", file=sys.stderr)  # noqa: T201
         raise
