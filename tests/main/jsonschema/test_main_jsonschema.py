@@ -2755,7 +2755,11 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
     )
 
 
-_FIELD_TYPE_COLLISION_PAYLOADS = {"defaults.json": "valid_defaults.json"}
+_FIELD_TYPE_COLLISION_PAYLOADS = {
+    "defaults.json": "valid_defaults.json",
+    "other.json": "valid_other.json",
+    "other_before.json": "valid_other.json",
+}
 
 
 @pytest.mark.parametrize(
@@ -2951,6 +2955,78 @@ _FIELD_TYPE_COLLISION_PAYLOADS = {"defaults.json": "valid_defaults.json"}
             id="pydantic-dataclass-required-rename-type",
         ),
         pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "other.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_other.py",
+            "Zed",
+            id="pydantic-dataclass-other",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "other.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/pydantic_dataclass_other_py314.py",
+            "Zed",
+            id="pydantic-dataclass-other-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "other.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/pydantic_dataclass_other_no_future_imports.py",
+            "Zed",
+            id="pydantic-dataclass-other-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            "other.json",
+            "3.10",
+            [],
+            "field_type_collision_runtime/base_model_other.py",
+            "Zed",
+            id="base-model-other",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            "other.json",
+            "3.14",
+            [],
+            "field_type_collision_runtime/base_model_other_py314.py",
+            "Zed",
+            id="base-model-other-py314",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            "other.json",
+            "3.10",
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_runtime/base_model_other_rename_type.py",
+            "Zed",
+            id="base-model-other-rename-type",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel,
+            "other_before.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/base_model_other_before_no_future_imports.py",
+            "Zed",
+            id="base-model-other-before-no-future-imports",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "other.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "field_type_collision_runtime/msgspec_other_no_future_imports.py",
+            "Zed",
+            id="msgspec-other-no-future-imports",
+        ),
+        pytest.param(
             DataModelType.MsgspecStruct,
             "speed.json",
             "3.10",
@@ -3105,7 +3181,7 @@ def test_main_jsonschema_field_type_collision_runtime(
     expected_file: str,
     field_name: str,
 ) -> None:
-    """Keep a field named like its type unless the class would hide the type, on every Python from the target on.
+    """Keep a field named like a type of its class unless the class hides the type, on every Python from the target.
 
     The output runs as an imported module, where its own annotation mode applies.
     """
@@ -3136,7 +3212,7 @@ def test_main_jsonschema_field_type_collision_runtime(
         validator = partial(msgspec.json.decode, type=model)
         error_type = msgspec.ValidationError
         match backend:
-            case DataModelType.PydanticV2Dataclass:
+            case DataModelType.PydanticV2Dataclass | DataModelType.PydanticV2BaseModel:
                 validator = _model_json_validator(model)
                 error_type = ValidationError
         valid_payload = _FIELD_TYPE_COLLISION_PAYLOADS.get(schema, "valid.json")
@@ -3197,6 +3273,15 @@ def _annotation_type_names(annotation: Any) -> set[str]:
         pytest.param("speed.json", "3.14", [], "dataclass_py314", id="py314"),
         pytest.param("later.json", "3.14", [], "dataclass_later_py314", id="later-py314"),
         pytest.param("defaults.json", "3.14", [], "dataclass_defaults_py314", id="defaults-py314-future-imports"),
+        pytest.param("other.json", "3.10", [], "dataclass_other", id="other"),
+        pytest.param("other.json", "3.14", [], "dataclass_other_py314", id="other-py314"),
+        pytest.param(
+            "other.json",
+            "3.10",
+            ["--disable-future-imports"],
+            "dataclass_other_no_future_imports",
+            id="other-no-future",
+        ),
     ],
 )
 def test_main_jsonschema_field_type_collision_dataclass(
