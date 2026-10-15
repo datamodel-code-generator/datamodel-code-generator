@@ -1198,6 +1198,9 @@ class DataType(_BaseModel):
         """Return whether this DataType represents a union of multiple types."""
         return len(self.data_types) > 1
 
+    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = frozenset()
+    """Schema keywords that the type writes itself, which a field of the type leaves out of its constraints."""
+
     # Historical conversion policy retained for direct DataType users and
     # external subclasses. Output backends must declare their own policy.
     _CONSTRAINED_TYPE_TO_BASE: ClassVar[dict[str, str]] = {

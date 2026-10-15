@@ -10,6 +10,7 @@ paths:
       operationId: storeFile
       parameters:
         - {name: digest, in: query, schema: {type: string, format: byte}}
+        - {name: short, in: query, schema: {type: string, format: byte, maxLength: 8}}
       requestBody:
         required: true
         content:

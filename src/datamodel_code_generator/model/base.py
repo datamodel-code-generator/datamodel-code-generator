@@ -621,14 +621,17 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return None
 
     def _generated_without_constraints(self, reason: str, count: int) -> str:
-        """Return the dropped constraints warning for ``reason``, naming the model and field that leave them out.
+        """Return the dropped constraints warning for ``reason``, naming the model and field that leave them out."""
+        return (
+            f"{reason}; {self._constraint_owner} is generated without "
+            f"{'this constraint' if count == 1 else 'these constraints'}."
+        )
 
-        The field of a root model is named by its model alone.
-        """
+    @property
+    def _constraint_owner(self) -> str:
+        """Return the model and field that a constraint warning names; the field of a root model is its model."""
         owner = getattr(self.parent, "class_name", "")
-        if self.name and not getattr(self.parent, "IS_ROOT_MODEL", False):
-            owner = f"{owner}.{self.name}"
-        return f"{reason}; {owner} is generated without {'this constraint' if count == 1 else 'these constraints'}."
+        return f"{owner}.{self.name}" if self.name and not getattr(self.parent, "IS_ROOT_MODEL", False) else owner
 
     def unconstrain_union_members(self) -> None:
         """Write union members without the constraints the output model cannot check on one member alone."""

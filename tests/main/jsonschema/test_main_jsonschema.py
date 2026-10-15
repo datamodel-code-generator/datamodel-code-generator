@@ -14709,6 +14709,91 @@ def test_main_jsonschema_type_mappings_to_boolean(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("strict_bytes.py", ["--strict-types", "bytes"]),
+        ("strict_bytes_field_constraints.py", ["--strict-types", "bytes", "--field-constraints"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--strict-types", "bytes"]),
+        ("target_pydantic_2.py", ["--field-constraints", "--target-pydantic-version", "2"]),
+        ("collapse_field_constraints.py", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapse_use_annotated_dataclass.py",
+            ["--output-model-type", "pydantic_v2.dataclass", "--use-annotated", "--collapse-root-models"],
+        ),
+    ],
+)
+def test_main_jsonschema_type_mappings_byte_to_binary(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test bytes mapped from base64 text decode it and check its lengths on the text, as the schema counts them.
+
+    The lengths hold on required, optional and nullable fields, with strict bytes, in unions, items and mapping values,
+    whose root models collapsing keeps as it keeps those of strings; an explicit target before Pydantic 2.10, which
+    checks them on the text only from then on, warns.
+    """
+    name = "type_mappings_byte_to_binary"
+    stem = expected_file.removesuffix(".py")
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                *("--type-mappings", "string+byte=binary", "--formatters", "builtin"),
+                *("--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "base64 text" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    valid = {
+        "plain": "aGk=",
+        "limited": "aGk=",
+        "either": "aGk=",
+        "sized": "aGk=",
+        "top": "aGk=",
+        "nullable": "aGk=",
+        "items": ["aGk="],
+        "choice": "aGk=",
+        "mapping": {"key": "aGk="},
+    }
+    long_text = "YWJjZGVmZw=="
+    invalid = {
+        "limited": long_text,
+        "sized": "YWI=",
+        "plain": long_text,
+        "top": long_text,
+        "nullable": long_text,
+        "items": [long_text],
+        "choice": long_text,
+        "mapping": {"key": long_text},
+    }
+    with _generated_model(output_file, name, "TypeMappingsByteToBinary") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        rejected = []
+        for field_name, value in invalid.items():
+            with suppress(ValidationError):
+                validate(json.dumps(valid | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "".join(f"{field}: {getattr(instance, field)!r}\n" for field in valid)
+        + "".join(f"rejected: {field_name}\n" for field_name in rejected),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_validated.txt",
+    )
+
+
 def test_main_jsonschema_type_mappings_invalid_format(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --type-mappings option with invalid format raises error."""
     run_main_and_assert(

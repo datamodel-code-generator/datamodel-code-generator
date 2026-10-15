@@ -554,6 +554,15 @@ def _get_data_type_constraint_kwargs(
     }
 
 
+def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
+    """Return the keywords that a type, or a member of a union it is, writes itself, which its field leaves out."""
+    if data_type.is_list or data_type.is_dict or data_type.is_tuple or data_type.is_set or data_type.is_frozen_set:
+        return data_type.CARRIED_CONSTRAINT_KEYWORDS
+    return data_type.CARRIED_CONSTRAINT_KEYWORDS.union(
+        *(member.CARRIED_CONSTRAINT_KEYWORDS for member in data_type.data_types)
+    )
+
+
 def _get_discriminator_property_name(obj: JsonSchemaObject) -> str | None:
     """Return the discriminator property name from either JSON Schema or OpenAPI shape."""
     discriminator = obj.discriminator
@@ -1728,11 +1737,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _get_type(type_, format_, data_formats)
 
     def _get_format_data_type(self, type_: str, format_: str) -> DataType:
-        """Map a type and format without constraints, keeping string time formats out of float strictness."""
+        """Map a type and format without constraints."""
         types = self._get_type_with_mappings(type_, format_)
+        return self.data_type_manager.get_data_type(types, **self._get_format_type_kwargs(type_, format_, types))
+
+    def _get_format_type_kwargs(self, type_: str, format_: str, types: Types) -> dict[str, bool]:
+        """Keep bytes mapped from base64 text decoded, and string time formats out of float strictness."""
+        if types == Types.binary and self._is_base64_encoded_binary_mapping(type_, format_):
+            return {"base64_encoded": True}
         if types == Types.time and type_ == "string":
-            return self.data_type_manager.get_data_type(types, string_format=True)
-        return self.data_type_manager.get_data_type(types)
+            return {"string_format": True}
+        return {}
 
     def _is_base64_encoded_binary_mapping(self, type_: str, format_: str) -> bool:
         if type_ != "string" or format_ != "byte" or not self.type_mappings:
@@ -1999,6 +2014,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for constraint in obj.__constraint_field_order__
             if (value := getattr(obj, constraint)) is not None
         }
+        if data_type is not None and (carried := _carried_constraint_keywords(data_type)):
+            values = {key: value for key, value in values.items() if key not in carried}
         if not values:
             return values
         declared = self._declared_constraint_keywords(obj)
@@ -3493,11 +3510,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 kwargs_to_pass = {}
                 kwargs_to_pass.update(_get_data_type_constraint_kwargs(obj, types))
 
-            if types == Types.binary and self._is_base64_encoded_binary_mapping(type_, format__):
-                kwargs_to_pass["base64_encoded"] = True
-            elif types == Types.time and type_ == "string":
-                kwargs_to_pass["string_format"] = True
-
+            if format_kwargs := self._get_format_type_kwargs(type_, format__, types):
+                kwargs_to_pass.update(format_kwargs)
+                if format_kwargs.get("base64_encoded"):
+                    kwargs_to_pass.update(_get_data_type_constraint_kwargs(obj, types))
             return self.data_type_manager.get_data_type(
                 types,
                 field_constraints=self.field_constraints and not localize_constraints,

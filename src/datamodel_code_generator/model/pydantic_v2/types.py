@@ -34,6 +34,7 @@ from datamodel_code_generator.model.pydantic_v2._output_context import (
 from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_ANYURL,
     IMPORT_AWARE_DATETIME,
+    IMPORT_BASE64_ENCODER,
     IMPORT_BASE64BYTES,
     IMPORT_BASE64STR,
     IMPORT_CONBYTES,
@@ -42,6 +43,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONINT,
     IMPORT_CONSTR,
     IMPORT_EMAIL_STR,
+    IMPORT_ENCODED_BYTES,
     IMPORT_FIELD,
     IMPORT_FUTURE_DATE,
     IMPORT_FUTURE_DATETIME,
@@ -193,6 +195,7 @@ number_kwargs: tuple[str, ...] = (
 
 string_kwargs: tuple[str, ...] = ("pattern", "minLength", "maxLength", "minItems", "maxItems")
 _ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
+_ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
 
 bytes_kwargs: tuple[str, ...] = ("minLength", "maxLength")
 
@@ -480,18 +483,39 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         return self.copy_data_type(self.type_map[types])
 
     def get_data_bytes_type(self, types: Types, **kwargs: Any) -> DataType:
-        """Get bytes data type with constraints (conbytes)."""
-        base64_encoded = kwargs.pop("base64_encoded", False)
-        data_type_kwargs: dict[str, Any] = self.transform_kwargs(kwargs, bytes_kwargs)
+        """Get bytes data type with constraints (conbytes).
+
+        Bytes written as base64 text decode it, like ``Base64Str`` without strictness: ``Base64Bytes``, or with lengths
+        an ``Annotated`` type that checks them on the base64 text, as JSON Schema counts them, before decoding it.
+        """
         strict = StrictTypes.bytes in self.strict_types
+        data_type_kwargs: dict[str, Any] = self.transform_kwargs(kwargs, bytes_kwargs)
+        if kwargs.get("base64_encoded"):
+            if not data_type_kwargs:
+                return self.data_type.from_import(IMPORT_BASE64BYTES, strict=strict)
+            from datamodel_code_generator.model.pydantic_v2._annotated_types import (  # noqa: PLC0415
+                EncodedBytesDataType,
+            )
+            from datamodel_code_generator.types import _create_context_data_type  # noqa: PLC0415
+
+            data_type = _create_context_data_type(
+                "PydanticV2EncodedBytesDataType",
+                EncodedBytesDataType,
+                self.python_version,
+                self.use_standard_collections,
+                self.use_generic_container_types,
+                self.use_union_operator,
+                self.treat_dot_as_module,
+                self.use_serialize_as_any,
+            ).from_import(IMPORT_ENCODED_BYTES, kwargs=data_type_kwargs)
+            data_type._set_runtime_expression_imports(_ENCODED_BYTES_IMPORTS)  # noqa: SLF001
+            return data_type
         if data_type_kwargs:
             if strict:
                 data_type_kwargs["strict"] = True
             return self.data_type.from_import(IMPORT_CONBYTES, kwargs=data_type_kwargs)
         if strict:
             return self.copy_data_type(self.strict_type_map[StrictTypes.bytes])
-        if base64_encoded:
-            return self.data_type.from_import(IMPORT_BASE64BYTES)
         return self.copy_data_type(self.type_map[types])
 
     def get_data_type(  # noqa: PLR0911

@@ -345,6 +345,13 @@ def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
     return False
 
 
+def _has_root_field_constraints(root_field: DataModelFieldBase) -> bool:
+    """Return whether a root field has constraints, as Field() arguments or written inside its type."""
+    return (isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints) or any(
+        data_type.CARRIED_CONSTRAINT_KEYWORDS for data_type in (root_field.data_type, *root_field.data_type.data_types)
+    )
+
+
 def _inherit_untaken_constraints(field: DataModelFieldBase, root_field: DataModelFieldBase) -> None:
     """Take over the constraints a collapsed root field leaves out on its type, to warn about them on the field."""
     for key in (_UNTAKEN_CONSTRAINTS_KEY, _UNTAKEN_CONSTRAINT_MINIMUMS_KEY):
@@ -4853,8 +4860,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     root_type_field = root_type_model.fields[0]
                     if (
                         self.field_constraints
-                        and isinstance(root_constraints := root_type_field.constraints, ConstraintsBase)
-                        and root_constraints.has_constraints
+                        and _has_root_field_constraints(root_type_field)
                         and any(
                             data_type.is_dict or data_type.is_union or data_type.is_list
                             for data_type in model_field.data_type.all_data_types

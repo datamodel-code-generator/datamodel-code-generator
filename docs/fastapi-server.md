@@ -1496,8 +1496,9 @@ a `Decimal` field gets the float's value (`0.1000000000000000000000000001` becom
 JSON past pydantic's limits such as an integer of thousands of digits or deep nesting, answers `422` with
 `json_invalid`.
 
-A strict bytes type (`--strict-types bytes` with `format: byte` and `--type-mappings string+byte=binary`) cannot be a
-path, query, header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query, header, or cookie
+parameter, since a parameter carries text: generation stops with an error that names it. `format: byte` with
+`--type-mappings string+byte=binary` stays a `Base64Bytes`, which a parameter carries as base64 text.
 A path, query, header, or cookie parameter whose schema mixes scalar kinds keeps every member when one of them is a
 string, such as `int | str` for `type: [integer, string]`. Without a string member, such as `type: [integer, boolean]`,
 and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops with
