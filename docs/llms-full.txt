@@ -10636,6 +10636,9 @@ Customer = models["Customer"]
 assert Customer.__module__ == "runtime_models"
 ```
 
+While the generated code runs, a module of that name is registered in `sys.modules`, unless one already exists, and
+removed afterwards, so Pydantic can parameterize generic models such as `RootModel[list[int]]` in it.
+
 ### Filtering Returned Models
 
 `target_model_names` filters the returned dictionary without pruning generation. Referenced models are still generated
