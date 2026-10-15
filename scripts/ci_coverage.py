@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 SHARD_COUNTS = {
+    "py315-parallel": 5,
     "py314-parallel": 5,
     "py313-parallel": 5,
     "py312-parallel": 5,

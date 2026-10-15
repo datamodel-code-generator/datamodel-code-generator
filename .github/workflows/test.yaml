@@ -369,6 +369,10 @@ jobs:
             name: Client deadlines Python 3.14
             os: ubuntu-24.04
             coverage: false
+          - tox_env: client-py315-nocov-e2e
+            name: Client deadlines Python 3.15
+            os: ubuntu-24.04
+            coverage: false
           - tox_env: client-httpx2-min-nocov-e2e
             name: Client HTTPX2 minimum HTTP/1.1 and HTTP/2
             os: macos-latest
@@ -473,6 +477,41 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 5
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 5
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 5
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 5
+          - tox_env: py315-parallel
+            name: "3.15"
+            profile: "3.15"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 5
           - tox_env: py314-parallel
             name: "3.14"
             profile: "3.14"
@@ -660,7 +699,7 @@ jobs:
       SHARD_PROFILE: ${{ matrix.profile }}
       WINDOWS_TOX_UV_VERSION: "1.35.2"
       WINDOWS_TOX_VERSION: "4.56.1"
-      WINDOWS_UV_VERSION: "0.11.26"
+      WINDOWS_UV_VERSION: "0.13.1"
     steps: &test-shard-steps
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -794,6 +833,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 3
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 3
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "windows"
+            os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 3
           - tox_env: py314-nocov-parallel
             name: "3.14"
             profile: "windows"
@@ -924,6 +990,33 @@ jobs:
             name: "3.10"
             profile: "windows"
             os: windows-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 3
+            shard_total: 3
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 1
+            shard_total: 3
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
+            coverage: false
+            extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
+            shard: 2
+            shard_total: 3
+          - tox_env: py315-nocov-parallel
+            name: "3.15"
+            profile: "macos"
+            os: macos-latest
             coverage: false
             extra_tests: ""
             exclude_tests: tests/main/test_payload_validation.py

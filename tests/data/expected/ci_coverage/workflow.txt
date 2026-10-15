@@ -24,6 +24,7 @@
     "client-py311-e2e:ubuntu-24.04:/:",
     "client-py312-nocov-e2e:ubuntu-24.04:/:",
     "client-py314-nocov-e2e:ubuntu-24.04:/:",
+    "client-py315-nocov-e2e:ubuntu-24.04:/:",
     "fastapi-e2e:ubuntu-24.04:/:",
     "fastapi-install-nocov-e2e:ubuntu-24.04:/:",
     "graphqlcore33:ubuntu-24.04:/:",
@@ -96,6 +97,17 @@
     "py314-parallel:ubuntu-24.04:3/5:3.14",
     "py314-parallel:ubuntu-24.04:4/5:3.14",
     "py314-parallel:ubuntu-24.04:5/5:3.14",
+    "py315-nocov-parallel:macos-latest:1/3:macos",
+    "py315-nocov-parallel:macos-latest:2/3:macos",
+    "py315-nocov-parallel:macos-latest:3/3:macos",
+    "py315-nocov-parallel:windows-latest:1/3:windows",
+    "py315-nocov-parallel:windows-latest:2/3:windows",
+    "py315-nocov-parallel:windows-latest:3/3:windows",
+    "py315-parallel:ubuntu-24.04:1/5:3.15",
+    "py315-parallel:ubuntu-24.04:2/5:3.15",
+    "py315-parallel:ubuntu-24.04:3/5:3.15",
+    "py315-parallel:ubuntu-24.04:4/5:3.15",
+    "py315-parallel:ubuntu-24.04:5/5:3.15",
     "pydantic200:ubuntu-24.04:/:",
     "pydantic20:ubuntu-24.04:/:",
     "pydantic212:ubuntu-24.04:/:",
@@ -113,9 +125,9 @@
     "typing-pydantic214-nocov-e2e:ubuntu-24.04:4/5:",
     "typing-pydantic214-nocov-e2e:ubuntu-24.04:5/5:"
   ],
-  "coverage_count": 43,
+  "coverage_count": 48,
   "coverage_needs_only_producers": true,
-  "coverage_unique": 43,
+  "coverage_unique": 48,
   "exclude_only_without_coverage": true,
   "exclude_tests": [
     "tests/main/test_payload_validation.py"
@@ -128,11 +140,12 @@
     "py312-nocov-parallel:shard1:tests/cli_doc/test_cli_options_sync.py",
     "py313-nocov-parallel:shard1:tests/cli_doc/test_cli_options_sync.py",
     "py314-nocov-parallel:shard1:tests/cli_doc/test_cli_options_sync.py",
-    "py314-parallel:shard1:tests/cli_doc/test_cli_options_sync.py"
+    "py314-parallel:shard1:tests/cli_doc/test_cli_options_sync.py",
+    "py315-nocov-parallel:shard1:tests/cli_doc/test_cli_options_sync.py"
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 103,
+  "job_count": 115,
   "permissions": {
     "contents": "read"
   },
@@ -144,6 +157,7 @@
     "3.12",
     "3.13",
     "3.14",
+    "3.15",
     "macos",
     "windows"
   ],
