@@ -67,6 +67,47 @@ paths:
               ids: {style: spaceDelimited}
       responses:
         "204": {description: Done.}
+  /texts:
+    post:
+      operationId: postTexts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note: {type: string}
+                count: {type: integer}
+                code: {type: string}
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              note: {contentType: "text/plain; charset=utf-8"}
+              count: {contentType: text/plain}
+              code: {contentType: "text/plain; charset=US-ASCII"}
+              ids: {style: form, contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /images:
+    post:
+      operationId: postImages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: {type: string, format: binary}
+                thumbnails: {type: array, items: {type: string, format: binary}}
+                caption: {type: string}
+            encoding:
+              image: {contentType: image/png}
+              thumbnails: {contentType: "image/png, image/*"}
+              caption: {contentType: "text/markdown; charset=utf-8"}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Point:

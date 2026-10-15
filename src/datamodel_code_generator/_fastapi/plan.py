@@ -36,7 +36,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     parameter_plans,
     plan_wire,
 )
-from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
+from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, charset, media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
@@ -63,7 +63,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
-    from datamodel_code_generator._openapi_wire_plan import FormMember, WirePlan
+    from datamodel_code_generator._openapi_wire_plan import FormMember, LexicalKinds, WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
@@ -94,6 +94,7 @@ SettingT = TypeVar("SettingT")
 RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 _JSON: Final = "application/json"
+_PART_CHARSETS: Final = frozenset({"utf-8", "us-ascii"})
 _TEXT: Final = FieldPlan("")
 _LOCATIONS: Final[dict[object, ParameterLocation]] = {
     "path": "path",
@@ -488,6 +489,21 @@ def _json_type(encoding: WireDeclaration) -> bool:
     return "*" not in found[0].partition(";")[0] and media_kind(found[0]) == "json"
 
 
+def _part_text(encoding: WireDeclaration) -> bool:
+    """Return whether an encoding's contentType names one text media type in UTF-8 or US-ASCII, or in no charset.
+
+    Starlette reads a field part as UTF-8, whatever media type the part names.
+    """
+    if (found := content_types(encoding)) is None or len(found) != 1:
+        return False
+    single = found[0]
+    return (
+        "*" not in single.partition(";")[0]
+        and media_kind(single) == "text"
+        and charset(single).lower() in _PART_CHARSETS
+    )
+
+
 def _unstyled(encoding: WireDeclaration) -> bool:
     return all(fact(encoding, key) is None for key in STYLED)
 
@@ -508,12 +524,35 @@ def _json_members(media: MediaSpec) -> frozenset[str | None]:
     )
 
 
-def _encoded(media: MediaSpec) -> WireDeclaration | None:
+def _typed_members(media: MediaSpec, kinds: LexicalKinds) -> frozenset[str | None]:
+    """Return the multipart members whose encodings name media types the adapters read their parts in.
+
+    A member is read as JSON in a JSON media type; one of a single scalar kind, whose field parts Starlette reads as
+    UTF-8 text, in a text media type of that charset; and one holding files, whose bytes are kept, in any.
+    """
+    assert media.use is not None
+    parts = media.use.parts
+    files = set() if parts is None else {name for name, part in parts.members if part.file}
+    scalars = {member.name for member in form_members(kinds, media.use) if member.kind is not None}
+    return _json_members(media) | {
+        child.name
+        for child in media.declaration.children
+        if child.kind == "encoding"
+        and (
+            (child.name in files and content_types(child) is not None)
+            or (child.name in scalars and child.name not in files and _part_text(child))
+        )
+    }
+
+
+def _encoded(media: MediaSpec, kinds: LexicalKinds) -> WireDeclaration | None:
     """Return the first multipart encoding that the form adapter does not read.
 
-    A URL-encoded member's encoding, which carries no headers, is read by its query parameter plan instead.
+    No adapter reads part headers. A member is read in the default style alone, and in the media types
+    `_typed_members` says; a style leaves the media type unused. A URL-encoded member's encoding, which carries no
+    headers, is read by its query parameter plan instead.
     """
-    json_members = _json_members(media)
+    typed = _typed_members(media, kinds)
     return next(
         (
             child
@@ -521,7 +560,7 @@ def _encoded(media: MediaSpec) -> WireDeclaration | None:
             if child.kind == "encoding"
             and (
                 bool(child.children)
-                or (fact(child, "contentType") is not None and child.name not in json_members)
+                or (fact(child, "contentType") is not None and _unstyled(child) and child.name not in typed)
                 or fact(child, "style") not in {None, "form"}
                 or fact(child, "explode") is False
                 or fact(child, "allowReserved") is True
@@ -1207,7 +1246,7 @@ class Planner:  # noqa: PLR0904
         ):
             self.unsupported(operation, (media,))
             return spec
-        if media.kind == "multipart" and (encoded := _encoded(media)) is not None:
+        if media.kind == "multipart" and (encoded := _encoded(media, self.wire.kinds)) is not None:
             self.unsupported(operation, (media,), f"the {encoded.name} encoding of ")
             return spec
         read = self.form_read(operation, media)

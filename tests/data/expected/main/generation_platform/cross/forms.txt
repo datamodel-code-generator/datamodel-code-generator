@@ -37,6 +37,18 @@ post_choices JSON
   post_choices(body=Choice(ids=['a b']), media_type='application/json')
   < 204 -
   = None
+post_texts
+  > POST /texts [multipart/form-data; boundary=<boundary>]
+  post_texts(body=TextsPostRequest(note='café', count=5, code='ab', ids=[1, 2]))
+  < 204 -
+  = None
+post_texts non-ASCII code
+  ! DecodeError: DecodeError(operation_id='postTexts', reason='unencodable', location='body') [operation_id='postTexts', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] unencodable
+post_images
+  > POST /images [multipart/form-data; boundary=<boundary>]
+  post_images(body=ImagesPostRequest(image=b'\x89PNG\r\n', thumbnails=[b'\x00one', b'\xfftwo'], caption='*café*'))
+  < 204 -
+  = None
 /styles unknown member of an exploded object
   > POST /styles [application/x-www-form-urlencoded]
   post_styles(body=StylesPostRequest(name='n', point=Point(x=1, y=None), corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))

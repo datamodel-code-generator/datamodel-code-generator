@@ -13227,7 +13227,10 @@ constraints and `discriminator` apply and a tag no member of the union has answe
 for a member that repeats, of its items' type. A part that is not JSON, or that the type rejects, answers `422` with
 its records at `["body", name]`, or at `["body", name, index]` for a member that repeats, before the rest of the body
 is validated. A member without a type takes any value, so it keeps a part that is not JSON as it arrives instead: text
-for a field, bytes for a file.
+for a field, bytes for a file. An `encoding` can also name one text media type in UTF-8 or US-ASCII, or in no
+charset, for a member of one scalar kind, such as `contentType: text/plain; charset=utf-8`, and any media types for a
+member holding files, such as `image/png`: the parts are read as they are without one, since Starlette reads every
+field part as UTF-8 text and keeps the bytes of a file, whatever media type the part names.
 
 Starlette limits what it reads from a multipart form, and the generated client sends a JSON part as a field: a field
 part of more than 1 MiB (`max_part_size`) answers `400` with `Part exceeded maximum size of 1024KB.`, and so do more
@@ -13281,10 +13284,11 @@ as in a form without such members, and the model validates the result; an operat
 adapter's, not FastAPI's form model. An encoding that the client has no form for, such as `deepObject` for an array or
 `contentType: application/xml`, stops generation with the message the client stops with.
 
-The adapters read no part headers, no multipart `encoding` that names another media type, and no multipart style
-other than the default `form` with `explode: true`, nor any style for a multipart member without one scalar kind,
-which the client spreads over several parts: generation stops with an error that names the encoding.
-`--server-body-mode request` passes any such body to the method unread.
+The adapters read no part headers, no multipart `encoding` that names another media type, such as one in another
+charset or `application/xml` for a member without files, and no multipart style other than the default `form` with
+`explode: true`, nor any style for a multipart member without one scalar kind, which the client spreads over several
+parts: generation stops with an error that names the encoding. A style leaves a multipart member's `contentType`
+unused, as it does for the client. `--server-body-mode request` passes any such body to the method unread.
 
 The router splits a request path at the slashes the request sends, so a percent-encoded slash (`%2F`) stays inside
 its path parameter, whose value receives `/`, of whatever style; FastAPI alone routes by the decoded path, where
