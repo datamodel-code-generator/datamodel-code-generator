@@ -1395,8 +1395,10 @@ or `type: [integer, boolean]`, declared by the schema or by a schema it combines
 `A parameter value needs one unambiguous scalar kind`, as it does for the generated client and for a parameter,
 unless an `encoding` gives the member a style. It stops the same way, at the `additionalProperties` that types them,
 for other properties of such a type, with either backend. The generated client stops for these members and other
-properties with the same message at the same place. It also refuses a URL-encoded body whose schema has
-`patternProperties` or is not an object, which the server reads.
+properties with the same message at the same place. Both also refuse a URL-encoded body whose schema has
+`patternProperties` (`Pattern properties have no builtin parameter encoding`) or is not an object, such as an array,
+a string, or `properties` without `type: object` (`A URL-encoded value must be an object`), unless the request body
+mode reads it.
 
 A form body whose schema is a union of one schema and `null` alone, such as
 `anyOf: [{$ref: "#/components/schemas/Search"}, {type: "null"}]`, is read as the form of that schema, its members and

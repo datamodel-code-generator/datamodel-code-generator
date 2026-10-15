@@ -280,6 +280,33 @@ paths:
               additionalProperties: {type: object, properties: {x: {type: integer}}}
       responses:
         "204": {description: Done.}
+  /form-patterns:
+    post:
+      operationId: postFormPatterns
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              patternProperties: {"^x-": {type: string}}
+      responses:
+        "204": {description: Done.}
+  /form-shapes:
+    post:
+      operationId: postFormShapes
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {type: array, items: {type: string}}
+          application/x-www-form-urlencoded; charset=utf-8:
+            schema: {type: string}
+          application/x-www-form-urlencoded; v=untyped:
+            schema:
+              properties: {a: {type: string}}
+      responses:
+        "204": {description: Done.}
   /spread:
     post:
       operationId: postSpread
