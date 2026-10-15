@@ -142,6 +142,7 @@ _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
 _TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
+_RAW_MEDIA: Final = frozenset({"text", "binary"})
 _HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
     "response_header",
     "request_encoding_header",
@@ -779,11 +780,11 @@ class _PartsRecord:
 class _SchemaRecord:
     """What the walk recorded of an acquired schema that its model types do not say.
 
-    `binary` is where the first raw binary string sits that the schema's values carry as text, and `octets` says the
-    schema of a text media is one raw binary string, which the media carries as the raw body. `wrapped` says a text
-    media's schema is not such a string but reaches one, and no bytes the models write as base64 text, which is the
-    raw body when the models type the whole schema as such strings alone. `form` is the branch of a form's union
-    with null alone that declares the form's members, which its parts and encoding are read from.
+    `binary` is where the first raw binary string sits that the schema's values carry as text. Of a body's schema,
+    `string` says its whole value may be a string, which its models may type as raw bytes, `spelled` that it is
+    written as one binary string, and `base64` that it reaches bytes the models write as base64 text. `form` is the
+    branch of a form's union with null alone that declares the form's members, which its parts and encoding are read
+    from.
     """
 
     default: LiteralScalar | None
@@ -791,8 +792,9 @@ class _SchemaRecord:
     parts: _PartsRecord | None
     encoding: EncodingFacts | None
     binary: SourceLocation | None = None
-    octets: bool = False
-    wrapped: bool = False
+    string: bool = False
+    spelled: bool = False
+    base64: bool = False
     form: _Declaration | None = None
 
 
@@ -911,6 +913,12 @@ def _json_types(schema: dict[str, YamlValue]) -> frozenset[str]:
         case _:
             pass
     return frozenset()
+
+
+def _spelled(schema: dict[str, YamlValue], formats: frozenset[str]) -> bool:
+    """Return whether a schema is written as a string of one of the formats."""
+    format_ = schema.get("format")
+    return isinstance(format_, str) and format_ in formats and "string" in _json_types(schema)
 
 
 def _json_type(value: object) -> str:
@@ -2387,13 +2395,13 @@ class _Reader(_SchemaLocations):
         """Record what an acquired schema says that its model types do not, as the walk acquires it.
 
         A parameter's schema gives its default and keywords; a multipart schema how its members encode parts;
-        and any schema read as parameter or form text how its values are written.
+        and any schema read as parameter or form text how its values are written. A body's schema that is not a
+        multipart one says whether its models may type its whole value as raw bytes, which they decide.
         """
         media = declaration.tokens[-2] if declaration.tokens[-3:-2] == ("content",) else None
         kind = None if media is None else _media_kind(media)
         parameter = role == "parameter"
         text = parameter or role in _HEADER_ROLES
-        whole = self.whole(declaration)[1] if parameter else {}
         form = self.nullable_branch(declaration) if kind in _FORMS else None
         declared = form or declaration
         parts = (
@@ -2402,22 +2410,24 @@ class _Reader(_SchemaLocations):
             else None
         )
         item = declaration.tokens[-1] == "itemSchema"
-        body = kind == "text" and not (text or item)
-        octets = body and self.raw_bytes(self.whole(declaration)[1], self.formats)
-        if not octets and (text or item or kind in _TEXT_MEDIA):
+        body = kind is not None and parts is None and not (text or item)
+        whole = self.whole(declaration)[1] if parameter or body else {}
+        if text or item or kind in _TEXT_MEDIA:
             binary = None if (found := self.binary(declaration)) is None else locate(found)
         else:
             binary = None if parts is None else parts.binary
+        types = _json_types(whole)
         return _SchemaRecord(
-            _default(whole.get("default")),
+            _default(whole.get("default")) if parameter else None,
             _keywords(whole) if parameter else (),
             parts,
             self.encoding(declared, locate, members=kind in _FORMS)
             if text or media is None or kind in _FORMS
             else None,
             binary,
-            octets,
-            body and binary is not None and not self.base64(declaration),
+            body and (not types or "string" in types),
+            body and _spelled(whole, self.formats),
+            body and self.base64(declaration),
             form,
         )
 
@@ -2529,9 +2539,11 @@ class _Reader(_SchemaLocations):
 
     @staticmethod
     def raw_bytes(raw: dict[str, YamlValue], formats: frozenset[str]) -> bool:
-        """Return whether a schema is a string of one of the formats, as those the models type as raw bytes."""
-        format_ = raw.get("format")
-        return isinstance(format_, str) and format_ in formats and "string" in _json_types(raw)
+        """Return whether a schema is a string of one of the formats, as those the models type as raw bytes.
+
+        The models type an enum or a const of such strings as text.
+        """
+        return _spelled(raw, formats) and "enum" not in raw and "const" not in raw
 
     def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
         """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
@@ -3519,24 +3531,30 @@ class _Contracts(_SchemaUses):
         """Record what the walk recorded of the media's own schema keyword on its uses.
 
         A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
-        text encoding of its schema. A text media whose schema reaches a raw binary string carries it as the raw
-        body, not as text, when the models type the whole schema as that string.
+        text encoding of its schema. A body's models decide how it travels: a text or binary media carries it as the
+        raw body when they type its whole value as raw binary strings alone, none written as base64. A binary media
+        whose schema is written as one binary string they type otherwise carries text read by the model, and any
+        other body whose whole value they type as raw bytes in part carries them as text, which is refused.
         """
         multipart = media.strip().lower().startswith("multipart/")
         record = self.record(schema)
+        kind = _media_kind(media)
         for use in uses:
             binding = self.uses[use]
             if record.form is not None and (held := self.held(binding.type)) is not None:
                 binding = replace(binding, members=self.members_at(held, record.form, use.direction))
-            octets = record.octets or (record.wrapped and self.octets(schema, use.direction))
+            raw = self.raw(schema, use.direction) if record.string and not record.base64 else ()
+            octets = kind in _RAW_MEDIA and bool(raw) and all(raw)
+            partly = not octets and any(raw) and (kind != "binary" or record.spelled)
             self.uses[use] = replace(
                 binding,
                 parts=self.parts(schema, binding.members) if multipart else None,
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
-                binary=None if octets else record.binary,
+                binary=None if octets else record.binary or (use.schema_site if partly else None),
                 octets=octets,
+                text=kind == "binary" and record.spelled and not (octets or partly),
             )
         return uses
 
@@ -3546,17 +3564,18 @@ class _Contracts(_SchemaUses):
         binary = self.parser.data_type_manager.get_data_type(Types.binary)
         return self.binder.projector("neutral", inline=True).project(binary).value
 
-    def octets(self, schema: _Declaration, direction: Direction) -> bool:
-        """Return whether the models type a schema's whole value as raw binary strings alone, constrained or null too.
+    def raw(self, schema: _Declaration, direction: Direction) -> tuple[bool, ...]:
+        """Return whether each type the models type a schema's whole value as, null aside, is a raw binary string.
 
-        Each alias and root model is read as the type it stands for, as the schema's wrappers leave it; a backend that
-        keeps the constraints of a string in its type holds two such strings where another holds one.
+        Each alias and root model is read as the type it stands for, as the schema's wrappers leave it, and a string
+        may be constrained; a backend that keeps the constraints of a string in its type holds two such strings where
+        another holds one.
         """
         value = self.projection(schema, "value", direction, inline=True).value
-        found = [member for member in (() if value is None else _members(value)) if not isinstance(member, NoneType)]
-        return bool(found) and all(
+        return tuple(
             member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
-            for member in found
+            for member in (() if value is None else _members(value))
+            if not isinstance(member, NoneType)
         )
 
     def media(  # noqa: PLR0913

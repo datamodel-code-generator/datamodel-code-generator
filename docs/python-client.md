@@ -678,14 +678,19 @@ component's constraints refuse before sending: a call raises a `DecodeError` wit
 the server answering 422.
 
 A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
-`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model type is one binary string travels
-as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one does; the method takes such
-a body or part as `bytes`. Its schema is such a string, or reaches one through a `$ref` or a single `allOf`, `anyOf` or
-`oneOf` branch, also beside a `null`, a length limit or other binary strings. Generation stops with an error when a
-binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
-inside a JSON or URL-encoded body or response, a `text/*` body whose schema is an object, an array, or an `anyOf` or
-`oneOf` with a branch that is not a binary string, a multipart part that is not a file, an item of a streamed response,
-or a parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
+`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model types its whole value as one
+binary string travels as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one
+does; the method takes such a body or part as `bytes`. The model type decides: the schema is such a string, or reaches
+one through a `$ref`, a single `allOf`, `anyOf` or `oneOf` branch, or `allOf` branches that merge into one, such as
+`allOf: [{type: string}, {format: binary}]`, also beside a `null`, a length limit or other binary strings. An `enum` or
+a `const` of binary strings is text in the models, so the method takes a body of one, also an
+`application/octet-stream` one, as its model, such as an `Enum`, and sends its text. Generation stops with an error when
+a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
+inside a JSON or URL-encoded body or response, also one whose model types its whole value as bytes, a `text/*` body
+whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary string, a binary body,
+such as `application/octet-stream`, whose schema is a binary string that its model types as bytes only in part, such as
+`type: [string, integer]` (`bytes | int`), a multipart part that is not a file, an item of a streamed response, or a
+parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
 others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names the
 operation, the media or parameter, and where the schema declares the string:
 

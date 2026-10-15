@@ -1,5 +1,5 @@
 models shared True
-# raw_strict in-process sync, in-process async, in-process pydantic_v2_dataclass sync, in-process pydantic_v2_dataclass async, in-process dataclasses_dataclass sync, in-process dataclasses_dataclass async, in-process typing_TypedDict sync, in-process typing_TypedDict async, in-process msgspec_Struct sync, in-process msgspec_Struct async
+# raw_strict in-process sync, in-process async, in-process pydantic_v2_dataclass sync, in-process pydantic_v2_dataclass async, in-process dataclasses_dataclass sync, in-process dataclasses_dataclass async, in-process msgspec_Struct sync, in-process msgspec_Struct async
 download_report
   > GET /reports
   download_report()
@@ -30,3 +30,62 @@ upload_page
   upload_page(body=b'page \xff\x00')
   < 200 text/plain
   = b'page \xff\x00'
+upload_sketch
+  > POST /sketches [text/plain]
+  upload_sketch(body=b'sketch \xff\x00')
+  < 200 text/plain
+  = b'sketch \xff\x00'
+upload_mark
+  > POST /marks [application/octet-stream]
+  upload_mark(body=Mark.final)
+  < 200 application/octet-stream
+  = Mark.final
+upload_mark refused
+  > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+# raw_strict in-process typing_TypedDict sync, in-process typing_TypedDict async
+download_report
+  > GET /reports
+  download_report()
+  < 200 text/csv
+  = b'id,name\n1,caf\xc3\xa9\n2,\xff\x00\n'
+upload_note
+  > POST /notes [text/plain]
+  upload_note(body=b'note \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain
+  = b'page \xff\x00'
+upload_sketch
+  > POST /sketches [text/plain]
+  upload_sketch(body=b'sketch \xff\x00')
+  < 200 text/plain
+  = b'sketch \xff\x00'
+upload_mark
+  > POST /marks [application/octet-stream]
+  upload_mark(body=Mark.final)
+  < 200 application/octet-stream
+  = 'final'
+upload_mark refused
+  > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})

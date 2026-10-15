@@ -17,7 +17,12 @@ from ...bodies import MultipartBody, SyncBinaryBody
 from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
 from ...types import JSONValue
-from ...types.default import StoreFileResponse, StoreRecordResponse, UploadResponse
+from ...types.default import (
+    StoreFileResponse,
+    StoreMarkResponse,
+    StoreRecordResponse,
+    UploadResponse,
+)
 
 
 class DefaultResource:
@@ -81,6 +86,26 @@ class DefaultResource:
             options=options,
         ).data
 
+    def store_mark(
+        self,
+        *,
+        body: models.Mark,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> StoreMarkResponse:
+        """
+        Call POST /marks.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        ).data
+
     def store_record(
         self,
         *,
@@ -93,7 +118,7 @@ class DefaultResource:
         Call POST /records.
         """
         return self._core.execute(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -148,6 +173,26 @@ class DefaultWithResponse:
             options=options,
         )
 
+    def store_mark(
+        self,
+        *,
+        body: models.Mark,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[StoreMarkResponse]:
+        """
+        Call POST /marks.
+        """
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def store_record(
         self,
         *,
@@ -160,7 +205,7 @@ class DefaultWithResponse:
         Call POST /records.
         """
         return self._core.execute(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -215,6 +260,26 @@ class DefaultWithRawResponse:
             options=options,
         )
 
+    def store_mark(
+        self,
+        *,
+        body: models.Mark,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """
+        Call POST /marks.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def store_record(
         self,
         *,
@@ -227,7 +292,7 @@ class DefaultWithRawResponse:
         Call POST /records.
         """
         return self._core.execute_raw(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -282,6 +347,26 @@ class DefaultWithStreamingResponse:
             options=options,
         )
 
+    def store_mark(
+        self,
+        *,
+        body: models.Mark,
+        media_type: Literal['application/octet-stream'] | None = None,
+        response_media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """
+        Call POST /marks.
+        """
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def store_record(
         self,
         *,
@@ -294,7 +379,7 @@ class DefaultWithStreamingResponse:
         Call POST /records.
         """
         return self._core.stream(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,

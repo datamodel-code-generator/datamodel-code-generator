@@ -41,6 +41,20 @@ paths:
       responses:
         '204':
           description: Stored.
+  /marks:
+    post:
+      operationId: storeMark
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {$ref: '#/components/schemas/Mark'}
+      responses:
+        '200':
+          description: The stored mark.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Mark'}
   /records:
     post:
       operationId: storeRecord
@@ -64,3 +78,5 @@ components:
         checksum: {type: string, format: byte}
         image: {type: string, contentMediaType: image/png}
         secret: {type: string, format: password}
+        stage: {$ref: '#/components/schemas/Mark'}
+    Mark: {type: string, format: binary, enum: [draft, final]}

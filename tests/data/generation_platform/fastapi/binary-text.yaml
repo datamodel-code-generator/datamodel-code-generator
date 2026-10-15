@@ -236,6 +236,31 @@ paths:
               itemSchema:
                 allOf:
                   - {type: string, format: binary}
+  /combos:
+    post:
+      operationId: sendCombo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {type: string}
+                - {format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /numbers:
+    post:
+      operationId: sendNumber
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: [string, integer], format: binary}
+      responses:
+        '204':
+          description: Stored.
 components:
   schemas:
     Chunk:
