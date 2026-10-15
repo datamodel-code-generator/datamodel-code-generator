@@ -130,6 +130,14 @@
         }
       ],
       "maxItems": 2
+    },
+    "single": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Pair"
+        }
+      ],
+      "maxItems": 1
     }
   }
 }
