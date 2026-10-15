@@ -18161,6 +18161,48 @@ def test_main_rust_unsupported_target_python(
     )
 
 
+@pytest.mark.parametrize(
+    ("target_python_version", "collapse_args", "expected_file", "switched"),
+    [
+        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", False, id="python-3.10"),
+        pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", True, id="python-3.11"),
+        pytest.param(
+            "3.11",
+            ["--collapse-root-models"],
+            "rust_unsupported_typed_extra_py311.py",
+            True,
+            id="python-3.11-collapse-root-models",
+        ),
+    ],
+)
+def test_main_rust_unsupported_typed_extra_target_python(
+    target_python_version: str, collapse_args: list[str], expected_file: str, switched: bool, output_file: Path
+) -> None:
+    """Select Python's regex engine for a pattern of typed extra values by the target Python, as for declared fields.
+
+    Switched models are imported, so a pattern pydantic-core rejects fails the test when the engine is not switched.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_typed_extra.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *collapse_args,
+        ],
+        skip_code_validation=not switched,
+        force_exec_validation=switched,
+    )
+
+
 def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
     """Rust-rejected syntax selects Python's regex engine even when Python's ``re`` rejects the pattern too.
 

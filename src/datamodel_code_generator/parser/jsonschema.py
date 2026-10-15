@@ -10037,14 +10037,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else None
         )
 
-        return self.data_model_type.create_typed_extra_field(
-            field_model=self.data_model_field_type,
-            data_type=self.data_type(
-                data_types=[extra_value_type],
-                is_dict=True,
-                dict_key=dict_key,
-            ),
-        )
+        if (
+            field := self.data_model_type.create_typed_extra_field(
+                field_model=self.data_model_field_type,
+                data_type=self.data_type(
+                    data_types=[extra_value_type],
+                    is_dict=True,
+                    dict_key=dict_key,
+                ),
+            )
+        ) is not None:
+            field.target_python_version = self.target_python_version
+        return field
 
     @cached_property
     def _nested_constrained_model_type(self) -> type[DataModel]:

@@ -498,15 +498,15 @@ def _compiled_python_pattern(
     data_type: DataType,
     prefix: str | None,
     prepared: dict[str, PythonRuntimeExpression],
-    model: DataModel | None,
+    field: DataModelFieldBase,
 ) -> PythonRuntimeExpression | None:
     """Keep a Python pattern independent of its consuming model's config.
 
     A ``None`` prefix selects every pattern that needs Python's engine, as ``has_lookaround_pattern`` does
-    for ``model``, the model that owns the pattern.
+    for ``field``, the field that owns the pattern.
     """
     if not isinstance(pattern, str) or not (
-        _needs_python_regex_engine(pattern, data_type, model) if prefix is None else pattern.startswith(prefix)
+        _needs_python_regex_engine(pattern, data_type, field) if prefix is None else pattern.startswith(prefix)
     ):
         return None
     pattern = str(pattern)
@@ -525,11 +525,7 @@ def _prepare_field_python_pattern(
     if isinstance(field.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression) or not (
         isinstance(field, _PydanticBaseDataModelField)
         and isinstance(field.constraints, Constraints)
-        and (
-            pattern := _compiled_python_pattern(
-                field.constraints.pattern, field.data_type, prefix, prepared, field.parent
-            )
-        )
+        and (pattern := _compiled_python_pattern(field.constraints.pattern, field.data_type, prefix, prepared, field))
         and not field._has_anyurl_outside_container()  # noqa: SLF001
     ):
         return False
@@ -545,16 +541,14 @@ def _prepare_python_patterns(
     _prepare_field_python_pattern(field, prefix, prepared)
     for data_type in field.data_type.all_data_types:
         if data_type.kwargs and (
-            pattern := _compiled_python_pattern(
-                data_type.kwargs.get("pattern"), data_type, prefix, prepared, field.parent
-            )
+            pattern := _compiled_python_pattern(data_type.kwargs.get("pattern"), data_type, prefix, prepared, field)
         ):
             data_type.kwargs["pattern"] = pattern
             data_type._set_runtime_expression_imports((*data_type.runtime_expression_imports, pattern.import_))  # noqa: SLF001
 
 
 def _copy_alias_data_type(
-    data_type: DataType, prepared: dict[str, PythonRuntimeExpression] | None, model: DataModel | None
+    data_type: DataType, prepared: dict[str, PythonRuntimeExpression] | None, field: DataModelFieldBase
 ) -> DataType | None:
     """Copy only the path to alias-specific nodes; collapsed fields may share the other nodes.
 
@@ -562,11 +556,11 @@ def _copy_alias_data_type(
     and patterns that need Python's engine are compiled because an alias has no model config.
     Without ``prepared`` the patterns stay strings, for targets that predate compiled patterns.
     """
-    nested = [_copy_alias_data_type(nested_type, prepared, model) for nested_type in data_type.data_types]
-    dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared, model)
+    nested = [_copy_alias_data_type(nested_type, prepared, field) for nested_type in data_type.data_types]
+    dict_key = None if data_type.dict_key is None else _copy_alias_data_type(data_type.dict_key, prepared, field)
     kwargs = data_type.kwargs
     pattern = (
-        _compiled_python_pattern(kwargs.get("pattern"), data_type, None, prepared, model)
+        _compiled_python_pattern(kwargs.get("pattern"), data_type, None, prepared, field)
         if kwargs and prepared is not None
         else None
     )
@@ -623,7 +617,7 @@ def _prepare_type_alias_field(
     """
     compiled = prepared if model_target_supports(field.parent, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM) else None
     changed = compiled is not None and _prepare_field_python_pattern(field, None, compiled)
-    if (data_type := _copy_alias_data_type(field.data_type, compiled, field.parent)) is None:
+    if (data_type := _copy_alias_data_type(field.data_type, compiled, field)) is None:
         return changed
     replace_data_type(field, data_type)
     return True
@@ -1064,8 +1058,8 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
     return string_type
 
 
-def _needs_python_regex_engine(pattern: str, data_type: DataType, model: DataModel | None) -> bool:
-    """Return whether a pattern emitted for ``model`` needs Python's ``re``.
+def _needs_python_regex_engine(pattern: str, data_type: DataType, field: DataModelFieldBase) -> bool:
+    """Return whether a pattern emitted for ``field`` needs Python's ``re``.
 
     Lookaround keeps its long-standing textual check. Other syntax is detected statically for string patterns
     and keyed on the target Python and Pydantic versions, so the output never depends on the installed
@@ -1074,10 +1068,10 @@ def _needs_python_regex_engine(pattern: str, data_type: DataType, model: DataMod
     """
     if _LOOKAROUND_PATTERN.search(pattern) is not None:
         return True
-    if (string_type := _string_pattern_data_type(data_type, model)) is None:
+    if (string_type := _string_pattern_data_type(data_type, field.parent)) is None:
         return False
     scan = _scan_regex_syntax(pattern)
-    return scan is not None and scan[0] and string_type.python_version.version_key >= scan[1]
+    return scan is not None and scan[0] and field.target_version_key(string_type) >= scan[1]
 
 
 if TYPE_CHECKING:
@@ -1104,6 +1098,7 @@ if TYPE_CHECKING:
         original_name: str | None
         use_default_kwarg: bool
         use_missing_sentinel: bool
+        target_python_version: PythonVersion | None
         type_has_null: bool | None
         read_only: bool
         write_only: bool
@@ -1214,14 +1209,14 @@ def has_lookaround_pattern(
         if (
             (pattern := isinstance(field.constraints, Constraints) and field.constraints.pattern)
             and (include_compiled or not isinstance(field.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression))
-            and _needs_python_regex_engine(pattern, field.data_type, field.parent)
+            and _needs_python_regex_engine(pattern, field.data_type, field)
         ):
             return True
         for data_type in field.data_type.all_data_types:
             pattern = (data_type.kwargs or {}).get("pattern")
             if isinstance(pattern, PythonRuntimeExpression):
                 pattern = str(pattern) if include_compiled else None
-            if pattern and _needs_python_regex_engine(pattern, data_type, field.parent):
+            if pattern and _needs_python_regex_engine(pattern, data_type, field):
                 return True
             if not follow_references or data_type.reference is None:
                 continue

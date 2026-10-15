@@ -24,6 +24,7 @@ from pydantic import ConfigDict, Field
 from typing_extensions import Self
 
 from datamodel_code_generator import Error, cached_path_exists
+from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -54,7 +55,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
@@ -589,6 +589,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     use_default_kwarg: bool = False
     use_missing_sentinel: bool = False
     use_one_literal_as_default: bool = False
+    target_python_version: Optional[PythonVersion] = None  # noqa: UP045
     _exclude_fields: ClassVar[set[str]] = {"parent"}
     _pass_fields: ClassVar[set[str]] = {"parent", "data_type"}
     can_have_extra_keys: ClassVar[bool] = True
@@ -611,6 +612,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def process_const(self) -> None:
         """Process const fields in subclasses."""
+
+    def target_version_key(self, data_type: DataType) -> tuple[int, int]:
+        """Return the target Python of a decision on ``data_type``: the parser's target, else the one the type carries.
+
+        The parser sets the target on every field it builds, so a field built without one keeps the type's version.
+        """
+        return (data_type.python_version if (target := self.target_python_version) is None else target).version_key
 
     @property
     def dropped_constraints_warning(self) -> str | None:
