@@ -23,10 +23,17 @@ class Dog(Struct, tag_field='kind', tag='dog'):
 Feline: TypeAlias = Cat | Dog
 
 
+Pet: TypeAlias = Cat | Dog
+
+
 Aquarium: TypeAlias = Fish | Dog
 
 
 class Cage(Struct):
+    pet: Cat | Dog | UnsetType = UNSET
+
+
+class Basket(Struct):
     pet: Cat | Dog | UnsetType = UNSET
 
 

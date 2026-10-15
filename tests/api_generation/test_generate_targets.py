@@ -293,6 +293,17 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
                 "A parameter name needs a location, a wire name, and an identifier"
             ),
         ),
+        (
+            {**SERVER, "encoding": "nosuch"},
+            "Unable to encode output using encoding 'nosuch': unknown encoding: nosuch",
+        ),
+        (
+            {**CLIENT, "encoding": "hex"},
+            (
+                "Unable to encode output using encoding 'hex': 'hex' is not a text encoding; "
+                "use codecs.encode() to handle arbitrary codecs"
+            ),
+        ),
     ],
     ids=[
         "requires-output",
@@ -315,6 +326,8 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         "json-value",
         "package",
         "keyed",
+        "unknown-encoding",
+        "client-not-text-encoding",
     ],
 )
 def test_generate_target_errors(options: dict[str, Any], message: str, tmp_path: Path) -> None:
@@ -397,6 +410,26 @@ def test_generate_server_collisions(
         **({"output": Path(output), "server_output": Path("server")} if written else {}),
     )
     assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "memory-written.txt")
+
+
+@pytest.mark.parametrize("output", ["models.py", None])
+def test_generate_server_unencodable_text(output: str | None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Refuse a package file the encoding cannot write, with or without an output, writing nothing."""
+    monkeypatch.chdir(tmp_path)
+    run_generate_and_assert(
+        input_=DATA / "generation_platform" / "targets" / "spec" / "encoding.yaml",
+        expected_error=Error,
+        expected_error_match=(
+            r"^Unable to encode output using encoding 'latin-1': 'latin-1' codec can't encode character '\\u6f22' "
+            r"in position \d+: ordinal not in range\(256\)$"
+        ),
+        **MODELS,
+        **SERVER,
+        output=output,
+        server_output=Path("server"),
+        encoding="latin-1",
+    )
+    assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n", GENERATE / "nothing-written.txt")
 
 
 def test_generate_target_input_errors(tmp_path: Path) -> None:

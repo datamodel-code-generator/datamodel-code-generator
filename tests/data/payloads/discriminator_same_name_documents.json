@@ -1,0 +1,25 @@
+{
+  "Wrapper": [
+    {
+      "ours": {
+        "pet": {
+          "kind": "cat"
+        }
+      }
+    },
+    {
+      "theirs": {
+        "pet": {
+          "kind": "dog"
+        }
+      }
+    },
+    {
+      "theirs": {
+        "pet": {
+          "kind": "kitty"
+        }
+      }
+    }
+  ]
+}
