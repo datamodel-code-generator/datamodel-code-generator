@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ClassVar",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/leaf"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "type": "object",
+      "properties": {
+        "Bar": {
+          "type": "string",
+          "x-python-type": "ClassVar[str]",
+          "default": "x"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Bar"
+          },
+          "default": [
+            {
+              "x": 1
+            }
+          ]
+        }
+      },
+      "required": [
+        "Bar"
+      ]
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
