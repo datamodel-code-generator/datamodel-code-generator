@@ -48,7 +48,7 @@ def _add_get_keys(
             ((('api-key', ()),), (('api_key', ()),), (('wiring', ()),), (('h"""o\\N', ()),)),
             {'api-key': api_key, 'api_key': api_key_1, 'wiring': wiring, 'h"""o\\N': h___o_n},
             get_keys_authorize,
-            'APIKey, Basic',
+            'APIKey, Basic charset="UTF-8"',
         )
 
     def get_keys(

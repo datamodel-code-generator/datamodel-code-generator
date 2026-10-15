@@ -46,7 +46,7 @@ def _add_post_day(
             ((), (('bearer', ()),), (('basic', ()),)),
             {'bearer': bearer, 'basic': basic},
             post_day_authorize,
-            'Bearer, Basic',
+            'Bearer, Basic charset="UTF-8"',
         )
 
     def post_day(
