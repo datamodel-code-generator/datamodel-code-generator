@@ -5698,12 +5698,13 @@ def test_main_strict_types_keep_constraints(output_file: Path, expected_file: st
     with _generated_model(output_file, name, "Record") as model:
         validate = _model_json_validator(model)
         validate(json.dumps(payloads["valid"]))
-        rejected = []
-        for field_name, value in payloads["invalid"].items():
+
+        def accepts(field_name: str, value: object) -> bool:
             with suppress(ValidationError):
-                validate(json.dumps(payloads["valid"] | {field_name: value}))
-                continue
-            rejected.append(field_name)
+                return validate(json.dumps(payloads["valid"] | {field_name: value})) is not None
+            return False
+
+        rejected = [field_name for field_name, value in payloads["invalid"].items() if not accepts(field_name, value)]
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
 
 
@@ -5903,12 +5904,13 @@ def test_main_constraints_on_typing_aliases(
             validate = _model_json_validator(model)
             error_type = ValidationError
         validate(json.dumps(payloads["valid"]))
-        rejected = []
-        for field_name, value in payloads["invalid"].items():
+
+        def accepts(field_name: str, value: object) -> bool:
             with suppress(error_type):
-                validate(json.dumps(payloads["valid"] | {field_name: value}))
-                continue
-            rejected.append(field_name)
+                return validate(json.dumps(payloads["valid"] | {field_name: value})) is not None
+            return False
+
+        rejected = [field_name for field_name, value in payloads["invalid"].items() if not accepts(field_name, value)]
     assert_output(
         "\n".join(rejected) + "\n",
         EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
@@ -23087,12 +23089,13 @@ def test_main_entry_point_constraints(
             validate = _model_json_validator(model)
             error_type = ValidationError
         validate(json.dumps(payloads["valid"]))
-        rejected = []
-        for field_name, value in payloads["invalid"].items():
+
+        def accepts(field_name: str, value: object) -> bool:
             with suppress(error_type):
-                validate(json.dumps(payloads["valid"] | {field_name: value}))
-                continue
-            rejected.append(field_name)
+                return validate(json.dumps(payloads["valid"] | {field_name: value})) is not None
+            return False
+
+        rejected = [field_name for field_name, value in payloads["invalid"].items() if not accepts(field_name, value)]
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
 
 
