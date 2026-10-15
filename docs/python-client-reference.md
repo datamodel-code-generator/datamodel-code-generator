@@ -458,7 +458,9 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   generated server routes by its decoded value; any other `%` is sent as `%25`. The client holds the encoded path from generation, so calls pay nothing for it.
 - **Header names.** A header parameter, response header, or part header whose name is not an RFC 9110 token, such as
   `X Sp` or `X-Näme`, stops generation with an error, as it stops the generated server's, since no HTTP client or
-  server can send it.
+  server can send it. A declared media type whose text is not ASCII header text, such as `text/plain; label="café"`,
+  stops generation too, since its Content-Type could not be sent; a call's `media_type` of such text raises
+  `ConfigurationError` with the reason `invalid_value` and the `field_path` `("headers", "Content-Type")`.
 - **Header values.** A header carries header text only: HTAB, SP, and visible ASCII, without whitespace at either
   end, the text every HTTP client and server reads alike. RFC 9110 leaves any other byte opaque, and servers read it
   as Latin-1 or as UTF-8. A header parameter of any style, or of text content, whose value, array item, or object

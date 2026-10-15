@@ -21,6 +21,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     STYLED,
     body_kind,
     content_types,
+    declared_media,
     form_extras,
     parameter_plans,
     property_members,
@@ -740,14 +741,17 @@ class Planner:
         """Return the first type use of a declaration."""
         return next((self.uses[use] for use in uses if use in self.uses), None)
 
+    def _declared(self, operation: OperationContract, declaration: WireDeclaration) -> str:
+        """Return a media declaration's normalized type, reporting a key that no Content-Type header carries."""
+        media_type, problem = declared_media(declaration.name or "")
+        if problem is not None:
+            message = f"The media type {declaration.name!r} of {_label(operation)} {problem}"
+            self.problems.append(_problem("E_METADATA_REQUIRED", message, declaration.use_site))
+        return media_type
+
     def media(self, operation: OperationContract, declaration: WireDeclaration, *, request: bool) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, type use, and form member plans."""
-        try:
-            media_type = normalize_media_type(declaration.name or "")
-        except ValueError:
-            message = f"The media type {declaration.name!r} of {_label(operation)} is not a media type"
-            self.problems.append(_problem("E_METADATA_REQUIRED", message, declaration.use_site))
-            media_type = declaration.name or ""
+        media_type = self._declared(operation, declaration)
         use = self.use(declaration.schemas)
         kind = body_kind(media_type, use)
         essence = media_type.partition(";")[0]

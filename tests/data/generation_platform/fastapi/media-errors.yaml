@@ -320,6 +320,19 @@ paths:
           content:
             application/json; charset:
               schema: {type: string}
+  /labelled:
+    post:
+      operationId: postLabelled
+      requestBody:
+        content:
+          "text/plain; label=\"caf\u00e9\"":
+            schema: {type: string}
+      responses:
+        "200":
+          description: Done.
+          content:
+            "application/json; v=\"\u00e9\"":
+              schema: {type: string}
   /spread:
     post:
       operationId: postSpread
