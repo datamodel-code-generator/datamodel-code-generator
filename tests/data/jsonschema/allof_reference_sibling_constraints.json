@@ -39,6 +39,13 @@
         "open",
         "closed"
       ]
+    },
+    "Pair": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "contains": true
     }
   },
   "properties": {
@@ -115,6 +122,14 @@
         }
       ],
       "maxLength": 8
+    },
+    "pair": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Pair"
+        }
+      ],
+      "maxItems": 2
     }
   }
 }

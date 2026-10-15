@@ -155,7 +155,7 @@ def test_main_openapi_allof_reference_sibling_constraints(output_file: Path) -> 
             "builtin",
             "--disable-timestamp",
             "--target-python-version",
-            "3.11",
+            "3.10",
         ],
         force_exec_validation=True,
     )
