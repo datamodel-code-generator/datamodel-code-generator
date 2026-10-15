@@ -117,3 +117,43 @@ class DefaultService(Protocol):
         """
         Handle POST /memos.
         """
+
+    @abstractmethod
+    def get_range(
+        self,
+        *,
+        case: str,
+    ) -> nullable_results_basemodel_models.RangesGetResponse | HTTPResult[nullable_results_basemodel_models.RangesGetResponse] | Response:
+        """
+        Handle GET /ranges.
+        """
+
+    @abstractmethod
+    def get_accepted(
+        self,
+        *,
+        case: str,
+    ) -> nullable_results_basemodel_models.Thing | HTTPResult[nullable_results_basemodel_models.Thing] | Response:
+        """
+        Handle GET /accepted.
+        """
+
+    @abstractmethod
+    def get_default(
+        self,
+        *,
+        case: str,
+    ) -> nullable_results_basemodel_models.Thing | HTTPResult[nullable_results_basemodel_models.Thing] | Response:
+        """
+        Handle GET /defaults.
+        """
+
+    @abstractmethod
+    def get_error(
+        self,
+        *,
+        case: str,
+    ) -> HTTPResult[nullable_results_basemodel_models.ErrorsGetResponse] | Response:
+        """
+        Handle GET /errors.
+        """

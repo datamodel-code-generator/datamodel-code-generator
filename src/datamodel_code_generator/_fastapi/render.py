@@ -474,12 +474,13 @@ class BodyPlan:
 
 @dataclass(frozen=True, slots=True)
 class ResponsesPlan:
-    """The responses plan of one operation: the declared responses, the primary status and chosen media, and HEAD."""
+    """The responses plan of one operation: declared responses, primary status and media, HEAD, and bare values."""
 
     responses: str
     primary: str
     media: str
     head: bool
+    bare: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -1220,7 +1221,13 @@ def _responses_plan(module: Module, spec: OperationSpec) -> ResponsesPlan:
             and _body_status(spec, status)
         ):
             media = _declared(module, chosen, null=primary.null)
-    return ResponsesPlan(responses="{" + ", ".join(responses) + "}", primary=status, media=media, head=spec.head)
+    return ResponsesPlan(
+        responses="{" + ", ".join(responses) + "}",
+        primary=status,
+        media=media,
+        head=spec.head,
+        bare=primary is not None,
+    )
 
 
 def _declared(module: Module, media: MediaSpec | None, *, null: bool) -> str:
@@ -1442,7 +1449,7 @@ def _response_description(spec: OperationSpec) -> object:
         return fact(primary.response.declaration, "description")
     responses = {response.status: response for response in spec.responses}
     status = str(spec.registration_status)
-    represented = responses.get("default", responses.get(f"{status[0]}XX"))
+    represented = responses.get(f"{status[0]}XX")
     return None if represented is None else fact(represented.declaration, "description")
 
 

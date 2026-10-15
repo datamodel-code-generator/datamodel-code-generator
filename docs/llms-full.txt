@@ -12175,7 +12175,7 @@ arrives as `pet_id`, since the preset turns on snake-case field names.
 A method returns one of three things:
 
 - the model of its *primary response*, the response a bare return value takes: `200` when the operation declares
-  it, or else its lowest success status, such as `201` for `create_pet`;
+  it, or else its lowest success status, such as `201` for `create_pet`, or else its `2XX` or `default` response;
 - an `HTTPResult` for another status or extra headers, such as the `404` that `get_pet` declares;
 - a Starlette `Response`, sent as it is.
 
@@ -13271,10 +13271,13 @@ and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops
 A service method returns the value of its primary response, which FastAPI validates and serializes with the route's
 `response_model` when the response is JSON (`by_alias=True`, `exclude_unset=True`). Without a
 [`--server-primary-responses`](cli-reference/target-generation-options.md#server-primary-responses) entry, the
-primary response is `200` when the operation declares it, or else its lowest success status, or else its lowest
-status. A bare value is sent with the `media_type` its entry names, such as `text/plain` of a response that also
-declares JSON, and validated and serialized with that media type's model; without a `media_type`, it takes the
-response's default media type.
+primary response is `200` when the operation declares it, or else its lowest success status, or else its `2XX` or
+else its `default` response, sent as `200`, or else its lowest status. An entry's `status_code` takes the response
+that declares it exactly, by its range such as `2XX`, or as `default`. An operation that declares only other ranges,
+such as `4XX`, has no primary response: a bare value, `None` included, answers `500` with a `ResponseValidationError`,
+so its method returns an `HTTPResult` or a `Response`. A bare value is sent with the `media_type` its entry names,
+such as `text/plain` of a response that also declares JSON, and validated and serialized with that media type's
+model; without a `media_type`, it takes the response's default media type.
 
 A `text/*` response labels text it encodes with the charset it encodes it in: the one its media type declares, or
 else `utf-8`. Bytes a method returns for a `text/*` response are sent as they are, with the media type the document

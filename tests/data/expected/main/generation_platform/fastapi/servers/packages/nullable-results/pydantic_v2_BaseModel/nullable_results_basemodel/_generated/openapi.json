@@ -377,6 +377,117 @@
      }
     }
    }
+  },
+  "/ranges": {
+   "parameters": [
+    {
+     "name": "case",
+     "in": "query",
+     "required": true,
+     "schema": {
+      "type": "string"
+     }
+    }
+   ],
+   "get": {
+    "operationId": "getRange",
+    "responses": {
+     "2XX": {
+      "description": "A text or null under any success status.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": [
+          "string",
+          "null"
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/accepted": {
+   "parameters": [
+    {
+     "name": "case",
+     "in": "query",
+     "required": true,
+     "schema": {
+      "type": "string"
+     }
+    }
+   ],
+   "get": {
+    "operationId": "getAccepted",
+    "responses": {
+     "2XX": {
+      "description": "A thing under any success status.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Thing"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/defaults": {
+   "parameters": [
+    {
+     "name": "case",
+     "in": "query",
+     "required": true,
+     "schema": {
+      "type": "string"
+     }
+    }
+   ],
+   "get": {
+    "operationId": "getDefault",
+    "responses": {
+     "default": {
+      "description": "A thing under any status.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Thing"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/errors": {
+   "parameters": [
+    {
+     "name": "case",
+     "in": "query",
+     "required": true,
+     "schema": {
+      "type": "string"
+     }
+    }
+   ],
+   "get": {
+    "operationId": "getError",
+    "responses": {
+     "4XX": {
+      "description": "A client error.",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {

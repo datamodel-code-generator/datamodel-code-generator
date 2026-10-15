@@ -1,6 +1,6 @@
 # nullable-results-alias
 serve pydantic_v2.BaseModel
-service DefaultService: get_anything, get_list, get_name, get_note, get_pet, get_text, get_thing, get_value, head_text, post_memo
+service DefaultService: get_accepted, get_anything, get_default, get_error, get_list, get_name, get_note, get_pet, get_range, get_text, get_thing, get_value, head_text, post_memo
 service DefaultService without its methods: TypeError
 > GET /texts?case=none
   get_text(none)
@@ -109,3 +109,30 @@ service DefaultService without its methods: TypeError
 > GET /notes?case=word
   get_note(word)
 < 200 text/plain; charset=utf-8 abc
+> GET /ranges?case=none
+  get_range(none)
+< 200 application/json null
+> GET /ranges?case=word
+  get_range(word)
+< 200 application/json "abc"
+> GET /accepted?case=bare
+  get_accepted(bare)
+< 200 application/json {"id":1}
+> GET /accepted?case=none
+  get_accepted(none)
+< ResponseValidationError: ['Input should be a valid dictionary or object to extract fields from']
+> GET /defaults?case=none
+  get_default(none)
+< ResponseValidationError: ['Input should be a valid dictionary or object to extract fields from']
+> GET /defaults?case=bare
+  get_default(bare)
+< 200 application/json {"id":1}
+> GET /errors?case=word
+  get_error(word)
+< ResponseValidationError: ['The method returned a value for an operation without a primary response; return an HTTPResult']
+> GET /errors?case=none
+  get_error(none)
+< ResponseValidationError: ['The method returned a value for an operation without a primary response; return an HTTPResult']
+> GET /errors?case=client-error
+  get_error(client-error)
+< 404 text/plain; charset=utf-8 missing

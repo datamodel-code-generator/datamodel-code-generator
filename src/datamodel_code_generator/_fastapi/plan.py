@@ -1298,24 +1298,33 @@ class Planner:  # noqa: PLR0904
         )
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
-        """Choose the primary response and decide whether FastAPI's response_model sends bare values."""
-        exact = {int(response.status): response for response in responses if response.status.isdigit()}
+        """Choose the primary response and decide whether FastAPI's response_model sends bare values.
+
+        Without a choice it is `200`, else the lowest success status, else the `2XX` or `default` response at `200`,
+        else the lowest declared status; an operation that declares only other ranges has none.
+        """
         if (choice := self.primaries.get(operation.id.use_site.pointer)) is not None:
-            return self.chosen(operation, exact, choice)
-        if not exact:
-            return None
+            return self.chosen(operation, responses, choice)
+        exact = {int(response.status): response for response in responses if response.status.isdigit()}
         successful = [code for code in exact if _MIN_CONTENT_STATUS <= code <= _MAX_SUCCESS_STATUS]
-        status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact else min(successful or exact)
-        response = exact[status]
+        status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact or not successful else min(successful)
+        if (response := _declaring(responses, status)) is None and exact:
+            status = min(exact)
+            response = exact[status]
+        if response is None:
+            return None
         media = default_media(response)
         decision = _primary_decision(operation, status, media)
         return PrimarySpec(status=status, response=response, media=media, decision=decision, null=response.null)
 
     def chosen(
-        self, operation: OperationContract, exact: dict[int, ResponseSpec], choice: ResponseChoice
+        self, operation: OperationContract, responses: tuple[ResponseSpec, ...], choice: ResponseChoice
     ) -> PrimarySpec | None:
-        """Return the explicitly chosen primary response, reporting a choice that names no declared response."""
-        response = exact.get(choice.status_code)
+        """Return the explicitly chosen primary response, reporting a choice that names no declared response.
+
+        The chosen status takes the response that declares it: exactly, by its range, or as `default`.
+        """
+        response = _declaring(responses, choice.status_code)
         media = None if response is None else default_media(response)
         if response is not None and choice.media_type is not None:
             wanted = _normalized(choice.media_type)
@@ -1627,11 +1636,15 @@ def _slotted(argument: Argument, slots: Mapping[str, str]) -> Argument:
     return replace(argument, native=replace(native, alias=slot))
 
 
+def _declaring(responses: tuple[ResponseSpec, ...], status: int) -> ResponseSpec | None:
+    """Return the response that declares a status: exact, then the same status class, then default."""
+    declared = {response.status: response for response in responses}
+    return declared.get(str(status)) or declared.get(f"{status // 100}XX") or declared.get("default")
+
+
 def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | None) -> int:
     if primary is not None:
         return primary.status
-    if any(response.status == "default" for response in responses):
-        return _DEFAULT_STATUS
     ranges = (int(response.status[0]) * 100 for response in responses if response.status.endswith("XX"))
     return min(ranges, default=_DEFAULT_STATUS)
 

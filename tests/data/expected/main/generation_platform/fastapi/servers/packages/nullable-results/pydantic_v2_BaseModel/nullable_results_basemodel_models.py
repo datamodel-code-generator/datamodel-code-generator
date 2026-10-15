@@ -93,3 +93,23 @@ class MemosPostRequest(BaseModel):
 
 class MemosPostResponse(BaseModel):
     text: str
+
+
+RangesGetQueryCaseParameter = TypeAliasType("RangesGetQueryCaseParameter", str)
+
+
+class RangesGetResponse(RootModel[str | None]):
+    root: str | None
+
+
+AcceptedGetQueryCaseParameter = TypeAliasType("AcceptedGetQueryCaseParameter", str)
+
+
+DefaultsGetQueryCaseParameter = TypeAliasType("DefaultsGetQueryCaseParameter", str)
+
+
+ErrorsGetQueryCaseParameter = TypeAliasType("ErrorsGetQueryCaseParameter", str)
+
+
+class ErrorsGetResponse(RootModel[str]):
+    root: str
