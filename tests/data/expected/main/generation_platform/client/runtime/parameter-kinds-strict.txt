@@ -355,6 +355,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, multipart/form-data, content-type: application/x-www-form-urlencoded, content-length: 108] b'amount=12345678901234567890.123&amounts=1.50&amounts=2&step=0.25&level=2&count=12&flag=true&mixed=5&either=5'
   read parts of text alone = {'mixed': 'abc', 'either': 'abc'}
 # parameter-kinds-strict msgspec.Struct
+  warning UserWarning: msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.01 that floats only approximate; Values.step is generated without this constraint.
+  warning UserWarning: msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.01 that floats only approximate; ValuesGetQueryStepParameter is generated without this constraint.
+  warning UserWarning: msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of 0.01 that floats only approximate; ValuesGetResponse204XStepHeader is generated without this constraint.
   > GET https://api.example.com/values?amount=12345678901234567890.123
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send amount Decimal('12345678901234567890.123') = None

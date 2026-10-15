@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Measurements",
+  "type": "object",
+  "definitions": {
+    "Cent": {
+      "type": "number",
+      "multipleOf": 0.01
+    }
+  },
+  "properties": {
+    "quarter": {
+      "type": "number",
+      "multipleOf": 0.25
+    },
+    "half": {
+      "type": "number",
+      "multipleOf": 1.5,
+      "minimum": 0
+    },
+    "cent": {
+      "$ref": "#/definitions/Cent"
+    },
+    "tenth": {
+      "type": "number",
+      "multipleOf": 0.1,
+      "maximum": 5
+    },
+    "count": {
+      "type": "integer",
+      "multipleOf": 3
+    }
+  }
+}

@@ -115,6 +115,9 @@ options); without them such a field has no bound. `msgspec.Struct` writes them a
 In both cases `msgspec.Struct` writes a keyword only when msgspec accepts it on the Python type, as the msgspec column
 of the tables below lists, because msgspec cannot decode a model whose `Meta(...)` holds any other. A keyword it
 leaves out, such as `minimum` on the `Decimal` of format `decimal`, is named with its field in a warning.
+msgspec checks `multipleOf` on a `float` by its floating-point remainder, so `msgspec.Struct` writes it on a `float`
+only for a divisor a float represents exactly, such as `2`, `0.5` or `1.5`; a divisor such as `0.01`, whose multiples
+msgspec would reject, is left out with the same warning.
 
 | Python type | Pydantic | msgspec |
 |-------------|----------|---------|
