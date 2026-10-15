@@ -178,9 +178,8 @@ def _extra(symbols: Mapping[SymbolId, FinalModelSymbol], symbol: SymbolId) -> Ba
 
 def _own_extra(declared: FinalModelSymbol) -> BackendValue | None:
     """Return the `extra` a Pydantic model's or dataclass's own configuration sets, or None when it sets none."""
-    if (facts := declared.facts) is None:
-        return None
-    return next((setting.value for setting in facts.configuration if setting.name == "extra" and setting.present), None)
+    configuration = () if declared.facts is None else declared.facts.configuration
+    return next((setting.value for setting in configuration if setting.name == "extra" and setting.present), None)
 
 
 def _allows_extras(declared: FinalModelSymbol) -> bool:
