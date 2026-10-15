@@ -2927,6 +2927,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._hidden_named_types: dict[tuple[str, str | None], bool] = {}
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
+        self._renamed_types: dict[str, str] = {}
         self._quotes_hidden_types = False
 
         self.keyword_only = config.keyword_only
@@ -3861,6 +3862,47 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             base_class=isinstance(data_type, BaseClassDataType),
                         )
                     )
+
+    def __import_renamed_types(
+        self,
+        contexts: list[ModuleContext],
+        *,
+        internal_modules: set[ModulePath],
+        model_path_to_module_name: dict[str, str],
+    ) -> None:
+        """Import a type by its new name where a module processed before the type's module imported the old one.
+
+        A field of the type's module can hide the type, which then gets a new name after modules that come first
+        built their imports of it. The stale import releases its name for the new one.
+        """
+        if not (renamed := self._renamed_types):
+            return
+        for ctx in contexts:
+            model_paths = {model.path for model in ctx.models}
+            stale_users = [
+                (data_type, reference, model, import_)
+                for model in ctx.models
+                for data_type in model.all_data_types
+                if (reference := data_type.reference) is not None
+                and (old_name := renamed.get(reference.path)) is not None
+                and reference.path not in model_paths
+                and (import_ := ctx.imports.reference_paths.get(reference.path)) is not None
+                and (import_.import_ == old_name or (data_type.alias or "").endswith(f".{old_name}"))
+            ]
+            for *_, import_ in stale_users:
+                ctx.imports.remove(import_)
+                ctx.scoped_model_resolver.delete((cast("str", import_.from_), import_.import_))
+            for data_type, reference, model, _ in stale_users:
+                data_type.alias = self.__register_reference_import(
+                    reference,
+                    _get_model_module_name(model, model_path_to_module_name),
+                    _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+                    ctx.imports,
+                    ctx.scoped_model_resolver,
+                    init=ctx.is_init,
+                    internal_modules=internal_modules,
+                    base_class=isinstance(data_type, BaseClassDataType),
+                )
 
     def __import_enum_member_literal_classes(
         self,
@@ -5344,6 +5386,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         source = cast("DataModel", colliding_reference.source)
                         resolver.exclude_names.add(cast("str", field_name))
                         new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
+                        self._renamed_types.setdefault(colliding_reference.path, source.class_name)
                         source.class_name = new_class_name
                         all_class_names.add(new_class_name)
                     else:
@@ -5440,6 +5483,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         resolver = ModelResolver(snake_case_field=self.snake_case_field, remove_suffix_number=True)
         resolver._reset_for_reuse(class_names.copy())  # noqa: SLF001
         resolver.exclude_names.add(cast("str", field.name))
+        self._renamed_types.setdefault(reference.path, source.class_name)
         source.class_name = resolver.add(["type"], source.class_name).name
         class_names.add(source.class_name)
 
@@ -8142,6 +8186,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._hidden_named_types.clear()
         self._variant_discriminator_tags.clear()
         self._removed_reuse_users.clear()
+        self._renamed_types.clear()
 
         if self.collapse_root_models:
             self.__set_circular_root_model_paths(
@@ -8164,6 +8209,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             contexts.append(ctx)
 
         self.__import_removed_reuse_canonicals(
+            contexts,
+            internal_modules=internal_modules,
+            model_path_to_module_name=model_path_to_module_name,
+        )
+        self.__import_renamed_types(
             contexts,
             internal_modules=internal_modules,
             model_path_to_module_name=model_path_to_module_name,
