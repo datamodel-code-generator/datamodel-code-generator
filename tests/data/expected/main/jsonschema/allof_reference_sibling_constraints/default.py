@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 
 from pydantic import BaseModel, Field, RootModel, conint, constr
 
@@ -28,9 +28,13 @@ class Score(RootModel[conint(le=100)]):
     root: conint(le=100)
 
 
-class Status(StrEnum):
+class Status(Enum):
     open = 'open'
     closed = 'closed'
+
+
+class Pair(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
 
 
 class Measurement(BaseModel):
@@ -43,3 +47,4 @@ class Measurement(BaseModel):
     point: Point | None = None
     label: Count | None = None
     status: Status | None = None
+    pair: Pair | None = None

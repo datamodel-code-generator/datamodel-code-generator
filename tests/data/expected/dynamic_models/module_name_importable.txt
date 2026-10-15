@@ -1,0 +1,10 @@
+{
+  "model_module": "tests.data.dynamic_models.runtime_custom_base",
+  "bases": [
+    "tests.data.dynamic_models.runtime_custom_base.CustomBase"
+  ],
+  "validated": {
+    "name": "Alice"
+  },
+  "module_imported": true
+}

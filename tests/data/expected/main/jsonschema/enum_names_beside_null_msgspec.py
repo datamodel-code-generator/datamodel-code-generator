@@ -113,6 +113,21 @@ class NullableNumbersEnum(IntEnum):
 NullableNumbers: TypeAlias = NullableNumbersEnum | None
 
 
+class UndescribedBesideNullEnum(Enum):
+    x = 'x'
+
+
+UndescribedBesideNull: TypeAlias = UndescribedBesideNullEnum | None
+
+
+class RepeatedNamesBesideNullEnum(Enum):
+    A = 'x'
+    A_1 = 'y'
+
+
+RepeatedNamesBesideNull: TypeAlias = RepeatedNamesBesideNullEnum | None
+
+
 class EnumNamesBesideNull(Struct):
     member_names: MemberNames | UnsetType = UNSET
     item_names: ItemNames | UnsetType = UNSET
@@ -124,3 +139,5 @@ class EnumNamesBesideNull(Struct):
     null_last: NullLast | UnsetType = UNSET
     described_beside_null: DescribedBesideNull | UnsetType = UNSET
     nullable_numbers: NullableNumbers | UnsetType = UNSET
+    undescribed_beside_null: UndescribedBesideNull | UnsetType = UNSET
+    repeated_names_beside_null: RepeatedNamesBesideNull | UnsetType = UNSET

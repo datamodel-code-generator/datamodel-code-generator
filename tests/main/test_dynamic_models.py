@@ -567,6 +567,42 @@ def test_module_name_is_applied_for_same_schema_with_different_runtime_modules()
     assert other_runtime_model.model_validate({"name": "Bob"}).model_dump(mode="json") == {"name": "Bob"}
 
 
+@pytest.mark.parametrize(
+    ("module_name", "base_class"),
+    [
+        ("tests.data.dynamic_models.runtime_custom_base", "tests.data.dynamic_models.runtime_custom_base.CustomBase"),
+        ("runtime_missing_package.models", None),
+    ],
+    ids=["importable", "missing-package"],
+)
+def test_module_name_of_importable_module(
+    module_name: str, base_class: str | None, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Import a module that module_name names before the generated code imports from it, instead of masking it."""
+    monkeypatch.delitem(sys.modules, module_name, raising=False)
+    config = GenerateConfig(
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        **({"base_class": base_class} if base_class else {}),
+    )
+    model = generate_dynamic_models(
+        make_object_schema({"name": {"type": "string"}}, required=["name"]),
+        config=config,
+        cache_size=0,
+        module_name=module_name,
+    )["Model"]
+    actual = {
+        "model_module": model.__module__,
+        "bases": [f"{base.__module__}.{base.__qualname__}" for base in model.__bases__],
+        "validated": model.model_validate({"name": "Alice"}).model_dump(mode="json"),
+        "module_imported": module_name in sys.modules,
+    }
+    assert_output(
+        f"{json.dumps(actual, indent=2)}\n",
+        EXPECTED_PATH / f"module_name_{request.node.callspec.id}.txt",
+    )
+
+
 def test_target_model_names_filters_single_model() -> None:
     """Test filtering returned dynamic models to a single requested model."""
     schema = make_object_schema({"name": {"type": "string"}}, required=["name"])

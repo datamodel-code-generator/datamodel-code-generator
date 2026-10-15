@@ -1,0 +1,82 @@
+openapi: 3.1.0
+info:
+  title: Unions of tagged msgspec Structs that msgspec refuses
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    Kitten:
+      allOf:
+        - $ref: "#/components/schemas/Cat"
+        - type: object
+          properties:
+            lives:
+              type: integer
+    Circle:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Square:
+      type: object
+      required: [shape]
+      properties:
+        shape:
+          type: string
+    Plain:
+      type: object
+      properties:
+        name:
+          type: string
+    Coded:
+      type: object
+      properties:
+        code:
+          type: string
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          a: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Shape:
+      oneOf:
+        - $ref: "#/components/schemas/Circle"
+        - $ref: "#/components/schemas/Square"
+      discriminator:
+        propertyName: shape
+    Holder:
+      type: object
+      properties:
+        fields:
+          anyOf:
+            - $ref: "#/components/schemas/Dog"
+            - $ref: "#/components/schemas/Circle"
+        family:
+          anyOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Kitten"
+        untagged:
+          anyOf:
+            - $ref: "#/components/schemas/Dog"
+            - $ref: "#/components/schemas/Plain"
+        kinds:
+          anyOf:
+            - $ref: "#/components/schemas/Square"
+            - $ref: "#/components/schemas/Coded"

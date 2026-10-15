@@ -6,6 +6,7 @@ Generates Python models using msgspec.Struct for high-performance serialization.
 from __future__ import annotations
 
 import keyword
+from ast import literal_eval
 from functools import wraps
 from math import isfinite
 from types import MappingProxyType
@@ -372,20 +373,35 @@ class Struct(DataModel):
         self.add_base_class_kwarg("tag", repr(value))
         field.extras["is_classvar"] = True
 
-    @property
-    def has_discriminator_tag(self) -> bool:
-        """Return whether msgspec tags the struct, through its own options or those of a generated base."""
-        return any(
-            isinstance(kwargs, dict) and ("tag" in kwargs or "tag_field" in kwargs)
-            for kwargs in (
-                self._internal_template_data["base_class_kwargs"],
-                self.extra_template_data.get("base_class_kwargs"),
-            )
-        ) or any(
-            isinstance(base := base_class.reference.source, Struct) and base.has_discriminator_tag
-            for base_class in self.base_classes
-            if base_class.reference
+    def _tag_options(self) -> tuple[Any, Any]:
+        """Return the tag and tag_field options of the struct, inheriting those of generated bases as msgspec does."""
+        tag = tag_field = None
+        for base_class in reversed(self.base_classes):
+            if base_class.reference and isinstance(base := base_class.reference.source, Struct):
+                base_tag, base_tag_field = base._tag_options()  # noqa: SLF001
+                tag = tag if base_tag is None else base_tag
+                tag_field = tag_field if base_tag_field is None else base_tag_field
+        options = self.extra_template_data.get("base_class_kwargs")
+        options = {
+            **(options if isinstance(options, dict) else {}),
+            **{
+                key: literal_eval(value)
+                for key, value in self._internal_template_data["base_class_kwargs"].items()
+                if key in {"tag", "tag_field"}
+            },
+        }
+        return (
+            tag if (own_tag := options.get("tag")) is None else own_tag,
+            tag_field if (own_tag_field := options.get("tag_field")) is None else own_tag_field,
         )
+
+    @property
+    def discriminator_tag(self) -> tuple[Any, Any] | None:
+        """Return the tag field and the tag msgspec tells the struct apart by in a union, or None if it is untagged."""
+        tag, tag_field = self._tag_options()
+        if tag is False or (tag is None and tag_field is None):
+            return None
+        return "type" if tag_field is None else tag_field, self.class_name if tag is None or tag is True else tag
 
     def has_keyword_only_definition(self) -> bool:
         """Return whether msgspec's class declaration already enables keyword-only fields."""

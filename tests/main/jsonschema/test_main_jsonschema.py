@@ -5566,7 +5566,7 @@ def test_main_allof_reference_sibling_constraints(output_file: Path, expected_fi
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=f"{name}/{expected_file}",
-        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"],
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"],
         force_exec_validation=True,
     )
     payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
