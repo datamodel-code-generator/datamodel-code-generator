@@ -1,0 +1,32 @@
+{
+  "valid": {
+    "count": 5,
+    "code": "ABC",
+    "tags": [
+      "a"
+    ],
+    "score": 100,
+    "counts": [
+      5
+    ],
+    "limits": {
+      "a": 10
+    },
+    "point": {
+      "x": 1
+    },
+    "label": 123
+  },
+  "invalid": {
+    "count": 4,
+    "code": "ABCD",
+    "tags": [],
+    "score": 101,
+    "counts": [
+      4
+    ],
+    "limits": {
+      "a": 11
+    }
+  }
+}

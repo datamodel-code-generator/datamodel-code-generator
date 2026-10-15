@@ -136,6 +136,51 @@ def test_main_openapi_array_type_union_constraints(output_file: Path) -> None:
         )
 
 
+def test_main_openapi_allof_reference_sibling_constraints(output_file: Path) -> None:
+    """Keep constraints beside an allOf of one $ref on component properties and parameters, at runtime too."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_reference_sibling_constraints.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="allof_reference_sibling_constraints.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--target-python-version",
+            "3.11",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_allof_reference_sibling_constraints",
+        model_name="Order",
+        valid_json='{"quantity": 100, "sku": "ABCDEFGH", "note": "free"}',
+        invalid_json='{"quantity": 101}',
+        expected_error_type="less_than_equal",
+        invalid_keyword_arguments=[
+            ({"quantity": -1}, "greater_than_equal"),
+            ({"quantity": 1, "sku": "ABCDEFGHI"}, "string_too_long"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_allof_reference_sibling_constraints",
+        model_name="OrdersGetParametersQuery",
+        valid_json='{"limit": 100}',
+        invalid_json='{"limit": 101}',
+        expected_error_type="less_than_equal",
+    )
+
+
 def test_main_inflect_import_without_typeguard_leak(output_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """OpenAPI generation should keep expected output when inflect starts cold."""
     monkeypatch.delitem(sys.modules, "inflect", raising=False)
