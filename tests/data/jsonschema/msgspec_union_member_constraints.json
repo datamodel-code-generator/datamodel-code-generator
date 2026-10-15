@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Upload",
+  "type": "object",
+  "definitions": {
+    "Short": {
+      "type": "string",
+      "maxLength": 3
+    }
+  },
+  "properties": {
+    "page": {
+      "anyOf": [
+        {"type": "string", "format": "binary"},
+        {"type": "string", "format": "binary", "maxLength": 3}
+      ]
+    },
+    "name": {
+      "anyOf": [
+        {"type": "string"},
+        {"$ref": "#/definitions/Short"}
+      ]
+    },
+    "count": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "integer", "maximum": 3}
+      ]
+    },
+    "label": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "string", "minLength": 5},
+        {"type": "null"}
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {"type": "string"},
+          {"type": "string", "maxLength": 3}
+        ]
+      }
+    },
+    "code": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "integer"}
+      ]
+    },
+    "short": {
+      "$ref": "#/definitions/Short"
+    }
+  },
+  "required": ["page", "name", "count", "label", "tags", "code", "short"]
+}

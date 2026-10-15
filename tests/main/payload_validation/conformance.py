@@ -364,7 +364,8 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         "test_main_msgspec_meta_unsupported_types decodes such models"
     ),
     "jsonschema/anyof_const_with_constraints.json": (
-        "msgspec conversion rejects constrained scalar unions that differ from JSON Schema branch semantics"
+        "msgspec generation warns that it leaves the constraints of union members of one type out of Meta; "
+        "test_main_msgspec_union_member_constraints decodes such models"
     ),
     "jsonschema/invalid_model_name.json": (
         "msgspec conversion does not accept nullable alias shapes generated for this schema"

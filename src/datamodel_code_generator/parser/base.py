@@ -8375,6 +8375,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._removed_reuse_users.clear()
         self._renamed_types.clear()
 
+        if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+            for _, models in module_models:
+                for model in models:
+                    for field in model.fields:
+                        field.unconstrain_union_members()
+
         if self.collapse_root_models:
             self.__set_circular_root_model_paths(
                 module_models,

@@ -1,0 +1,6 @@
+Upload(page=b'page xx', name='Pagination', count=10, label='chapter', tags=['ab', 'longer'], code=404, short='abc')
+rejected:
+page
+name
+count
+tags

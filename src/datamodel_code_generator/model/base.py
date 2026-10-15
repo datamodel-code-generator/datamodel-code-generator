@@ -617,6 +617,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return a warning naming the constraints the output model leaves out on this field's type, if any."""
         return None
 
+    def unconstrain_union_members(self) -> None:
+        """Write union members without the constraints the output model cannot check on one member alone."""
+
     @property
     def requires_immediate_forward_reference_resolution(self) -> bool:
         """Return whether this field's annotation is evaluated in the class body."""
