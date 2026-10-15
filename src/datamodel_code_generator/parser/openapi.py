@@ -12,7 +12,7 @@ from collections import defaultdict
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from enum import Enum
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from urllib.parse import ParseResult
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._types import OpenAPIParserConfigDict
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -196,7 +197,10 @@ class ComponentsObject(BaseModel):
     headers: dict[str, Union[ReferenceObject, HeaderObject]] = Field(default_factory=dict)  # noqa: UP007
 
 
-_FIELD_NAME_RESOLVER = FieldNameResolver()
+@cache
+def _operation_name_resolver(target_python_version: PythonVersion) -> FieldNameResolver:
+    """Return the resolver that names operation models by the rules of the target Python version."""
+    return FieldNameResolver(target_python_version=target_python_version)
 
 
 @snooper_to_methods()
@@ -808,12 +812,10 @@ class OpenAPIParser(JsonSchemaParser):
         """Parse operation tags."""
         return tags
 
-    _field_name_resolver: FieldNameResolver = _FIELD_NAME_RESOLVER
-
-    @classmethod
-    def _get_model_name(cls, path_name: str, method: str, suffix: str) -> str:
-        normalized = cls._field_name_resolver.get_valid_name(path_name, ignore_snake_case_field=True)
-        camel_path_name = snake_to_upper_camel(normalized)
+    def _get_model_name(self, path_name: str, method: str, suffix: str) -> str:
+        target = self.target_python_version
+        normalized = _operation_name_resolver(target).get_valid_name(path_name, ignore_snake_case_field=True)
+        camel_path_name = snake_to_upper_camel(normalized, target_python_version=target)
         return f"{camel_path_name}{method.capitalize()}{suffix}"
 
     def parse_all_parameters(  # noqa: PLR0912, PLR0914, PLR0915

@@ -890,6 +890,37 @@ def test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors(
     )
 
 
+def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_python() -> None:
+    """Format code the running Python cannot parse alike on every Python.
+
+    Letters the running Python lacks are lent away while formatting and given back, never as a letter the NFKC form
+    of the code uses. Joiners, which Python 3.13 lets identifiers hold, are lent in names and keep their escapes when
+    strings are rewrapped.
+    """
+    description = "joined\u200dword " * 12
+    joiners = (
+        "from pydantic import BaseModel, Field\n\n\nclass Model(BaseModel):\n"
+        f"    text: str = Field(..., description='{description}')\n"
+    )
+    compatibility = (
+        "# \u4e00\u4e01\u4e02\u4e03\u4e04\u4e05\u4e06\u4e07\u4e08\u4e09\u4e0a\u4e0b\u4e0c\n"
+        "from pydantic import BaseModel\n\nfrom .m import Y\u0c5c, X\uf967\n\n\n"
+        "class Model(BaseModel):\n    value: X\uf967 | Y\u0c5c | None = None\n"
+    )
+    joined_names = (
+        "from pydantic import BaseModel\nfrom __future__ import annotations\n\nfrom .mo\u200ddels import Pet\n"
+        "import json\nclass Mo\u200ddel(BaseModel):\n    pet: Pet\n"
+    )
+    assert_output(
+        "\n".join((
+            apply_builtin_formatter(joiners, wrap_string_literal=True, python_version=PythonVersion.PY_315),
+            apply_builtin_formatter(compatibility, python_version=PythonVersion.PY_315),
+            apply_builtin_formatter(joined_names, python_version=PythonVersion.PY_313),
+        )),
+        BUILTIN_FORMATTER_EXPECTED_PATH / "target_identifiers.txt",
+    )
+
+
 def test_builtin_formatter_string_normalization_fallback_handles_private_inputs() -> None:
     """Keep the private normalization helper safe for non-exact strings and lexical whitespace."""
     assert (

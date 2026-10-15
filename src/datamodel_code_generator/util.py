@@ -14,6 +14,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
 
+    from datamodel_code_generator._format_types import PythonVersion
+
 
 @lru_cache(maxsize=1)
 def _get_toml_loader() -> Callable[[Any], dict[str, Any]]:
@@ -375,7 +377,9 @@ _UNDER_SCORE_2: re.Pattern[str] = re.compile(r"([a-z0-9])([A-Z])")
 
 
 @lru_cache
-def camel_to_snake(string: str) -> str:
-    """Convert camelCase or PascalCase to snake_case."""
+def camel_to_snake(string: str, target_python_version: PythonVersion | None = None) -> str:
+    """Convert camelCase or PascalCase to snake_case, lowercasing by the case rules of the target Python version."""
+    from datamodel_code_generator._target_unicode import lower  # noqa: PLC0415
+
     subbed = _UNDER_SCORE_1.sub(r"\1_\2", string)
-    return _UNDER_SCORE_2.sub(r"\1_\2", subbed).lower()
+    return lower(_UNDER_SCORE_2.sub(r"\1_\2", subbed), target_python_version)

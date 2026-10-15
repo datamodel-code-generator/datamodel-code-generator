@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
     from datamodel_code_generator._api_types import OperationSelector
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 Transport: TypeAlias = Literal["httpx2"]
@@ -121,10 +122,10 @@ class ClientGenerationConfig(TargetConfig):
     server_base_url: str | None = None
     protocols: Mapping[str, object] | None = None
 
-    def _problems(self) -> Iterator[Diagnostic]:
-        yield from TargetConfig._problems(self)  # noqa: SLF001
-        yield from _resource_name_problems(self.resource_names)
-        yield from _operation_problems(self.operations, self.body_arguments)
+    def _problems(self, target_python_version: PythonVersion) -> Iterator[Diagnostic]:
+        yield from TargetConfig._problems(self, target_python_version)  # noqa: SLF001
+        yield from _resource_name_problems(self.resource_names, target_python_version)
+        yield from _operation_problems(self.operations, self.body_arguments, target_python_version)
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
                 yield _diagnostic(
@@ -133,14 +134,14 @@ class ClientGenerationConfig(TargetConfig):
                     f"{name} must be an absolute http or https URL without userinfo, query, or fragment",
                 )
         if self.protocols is not None:
-            yield from _protocol_problems(self.protocols)
+            yield from _protocol_problems(self.protocols, target_python_version)
 
 
-def _protocol_problems(value: Mapping[str, object]) -> Iterator[Diagnostic]:
+def _protocol_problems(value: Mapping[str, object], target_python_version: PythonVersion) -> Iterator[Diagnostic]:
     """Validate the helper JSON object, loading the helper definitions only for a configuration with helpers."""
     from datamodel_code_generator._client.protocols import validate  # noqa: PLC0415
 
-    yield from validate(value)[1]
+    yield from validate(value, target_python_version)[1]
 
 
 def absolute(value: object) -> bool:
@@ -183,20 +184,26 @@ def _one_of(value: object, choices: frozenset[str]) -> bool:
     return isinstance(value, str) and value in choices
 
 
-def _resource_name_problems(value: tuple[ResourceName, ...]) -> Iterator[Diagnostic]:
+def _resource_name_problems(
+    value: tuple[ResourceName, ...], target_python_version: PythonVersion
+) -> Iterator[Diagnostic]:
     """Refuse a namespace that is no dotted resource path; the tags are the distinct keys of a JSON object."""
     for index, item in enumerate(value):
-        if (problem := namespace_problem(item.namespace)) is not None:
+        if (problem := namespace_problem(item.namespace, target_python_version)) is not None:
             yield _diagnostic("E_CONFIG_VALUE", f"resource_names[{index}].namespace", problem)
 
 
-def _operation_problems(value: tuple[ClientOperationConfig, ...], default: object) -> Iterator[Diagnostic]:
+def _operation_problems(
+    value: tuple[ClientOperationConfig, ...], default: object, target_python_version: PythonVersion
+) -> Iterator[Diagnostic]:
     for index, item in enumerate(value):
-        yield from _operation_config_problems(item, f"operations[{index}]")
-        yield from _field_name_problems(item, default, f"operations[{index}]")
+        yield from _operation_config_problems(item, f"operations[{index}]", target_python_version)
+        yield from _field_name_problems(item, default, f"operations[{index}]", target_python_version)
 
 
-def _field_name_problems(item: ClientOperationConfig, default: object, at: str) -> Iterator[Diagnostic]:
+def _field_name_problems(
+    item: ClientOperationConfig, default: object, at: str, target_python_version: PythonVersion
+) -> Iterator[Diagnostic]:
     """Refuse an invalid body mode, and field names that are malformed, repeated, or for a body-only operation."""
     if item.body_arguments is not None and not _one_of(item.body_arguments, _BODY_ARGUMENTS):
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.body_arguments", "body_arguments must be 'body', 'both', or None")
@@ -207,7 +214,9 @@ def _field_name_problems(item: ClientOperationConfig, default: object, at: str) 
         )
     seen: set[tuple[str, str]] = set()
     for index, name in enumerate(names):
-        if not (_media(name.media_type) and _text(name.name) and explicit_name(name.python_name)):
+        if not (
+            _media(name.media_type) and _text(name.name) and explicit_name(name.python_name, target_python_version)
+        ):
             yield _diagnostic(
                 "E_CONFIG_VALUE",
                 f"{at}.body_field_names[{index}]",
@@ -223,12 +232,14 @@ def _field_name_problems(item: ClientOperationConfig, default: object, at: str) 
             seen.add(key)
 
 
-def _operation_config_problems(item: ClientOperationConfig, at: str) -> Iterator[Diagnostic]:
-    if item.resource is not None and (problem := namespace_problem(item.resource)) is not None:
+def _operation_config_problems(
+    item: ClientOperationConfig, at: str, target_python_version: PythonVersion
+) -> Iterator[Diagnostic]:
+    if item.resource is not None and (problem := namespace_problem(item.resource, target_python_version)) is not None:
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.resource", problem)
-    if item.name is not None and not explicit_name(item.name):
+    if item.name is not None and not explicit_name(item.name, target_python_version):
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.name", "name must be a Python identifier")
-    yield from _parameter_name_problems(item.parameter_names, f"{at}.parameter_names")
+    yield from _parameter_name_problems(item.parameter_names, f"{at}.parameter_names", target_python_version)
     for name in ("request_media_type", "response_media_type"):
         if (media := getattr(item, name)) is not None and not _media(media):
             yield _diagnostic("E_CONFIG_VALUE", f"{at}.{name}", f"{name} must be a media type")
@@ -285,10 +296,12 @@ def _idempotency_problems(value: IdempotencyMetadata, at: str) -> Iterator[Diagn
         yield _diagnostic("E_CONFIG_VALUE", f"{at}.header_name", "header_name must be a header name")
 
 
-def _parameter_name_problems(value: tuple[ParameterName, ...], at: str) -> Iterator[Diagnostic]:
+def _parameter_name_problems(
+    value: tuple[ParameterName, ...], at: str, target_python_version: PythonVersion
+) -> Iterator[Diagnostic]:
     """Refuse an argument name that is no identifier; locations and names are the distinct keys of a JSON object."""
     for index, item in enumerate(value):
-        if not explicit_name(item.python_name):
+        if not explicit_name(item.python_name, target_python_version):
             yield _diagnostic(
                 "E_CONFIG_VALUE", f"{at}[{index}]", "A parameter name needs a location, a wire name, and an identifier"
             )

@@ -25,6 +25,7 @@ from typing_extensions import Self
 
 from datamodel_code_generator import Error, cached_path_exists
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
+from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_ANY,
@@ -249,7 +250,7 @@ def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
         return frozenset()
 
     try:
-        tree = ast.parse(annotation, mode="eval")
+        tree = ast.parse(lent.source if (lent := host_identifiers(annotation)) else annotation, mode="eval")
     except SyntaxError:
         return frozenset()
 
@@ -1873,12 +1874,18 @@ def _field_participates_in_constructor(_: DataModelFieldBase) -> bool:
 
 
 def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
-    """Bind names in field annotations and defaults without changing template objects."""
+    """Bind names in field annotations and defaults without changing template objects.
+
+    Identifier characters the running interpreter does not know are lent letters of the same UTF-8 length, so the
+    offsets it parses hold for the rendered text.
+    """
     source = rendered.encode()
     offsets = [0, *accumulate(map(len, source.splitlines(keepends=True)))]
     replacements: list[tuple[int, int, str]] = []
-    for statement in ast.parse(rendered).body:
-        if not isinstance(statement, ast.ClassDef) or statement.name != class_name:
+    lent = host_identifiers(rendered)
+    restore_name = lent.restore_name if lent else str
+    for statement in ast.parse(lent.source if lent else rendered).body:
+        if not isinstance(statement, ast.ClassDef) or restore_name(statement.name) != class_name:
             continue
         for field in statement.body:
             if not isinstance(field, ast.AnnAssign):
@@ -1892,7 +1899,7 @@ def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[st
                             ctx=ast.Load(),
                             end_lineno=int() as end_line,
                             end_col_offset=int() as end_column,
-                        ) if (alias := bindings.get(name)) is not None:
+                        ) if (alias := bindings.get(restore_name(name))) is not None:
                             replacements.append((
                                 offsets[node.lineno - 1] + node.col_offset,
                                 offsets[end_line - 1] + end_column,

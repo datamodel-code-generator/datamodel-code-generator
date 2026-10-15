@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.codec_render import UseAccessors
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Templated
@@ -126,18 +127,18 @@ def _problem(code: str, stage: DiagnosticStage, at: str, message: str) -> Diagno
     return Diagnostic(code=code, severity="error", stage=stage, message=message, option_path=at)
 
 
-def _names(helpers: tuple[Helper, ...]) -> Iterator[tuple[Helper, Diagnostic]]:
+def _names(helpers: tuple[Helper, ...], target_python_version: PythonVersion) -> Iterator[tuple[Helper, Diagnostic]]:
     """Refuse a webhook name whose module path is the keys module, or whose packages differ from another's by case."""
     spellings: dict[str, str] = {}
     for helper in helpers:
         parts = helper.name.split(".")
-        if folded(parts[0]) == "keys":
+        if folded(parts[0], target_python_version) == "keys":
             message = f"The webhook helper name {helper.name!r} is taken by the module of the webhook key types"
             yield helper, _problem("E_NAME_COLLISION", "target", helper.at, message)
             continue
         for index in range(1, len(parts)):
             package = ".".join(parts[:index])
-            if (spelled := spellings.setdefault(folded(package), package)) != package:
+            if (spelled := spellings.setdefault(folded(package, target_python_version), package)) != package:
                 message = (
                     f"The webhook helper name {helper.name!r} gives the package {package!r}, which differs from "
                     f"{spelled!r} only in case"
@@ -162,7 +163,7 @@ def webhook_uses(
     if protocols is None or not helpers:
         return (), {}
     problems: dict[str, list[Diagnostic]] = {helper.name: [] for helper in helpers}
-    for helper, problem in _names(helpers):
+    for helper, problem in _names(helpers, protocols.python_version):
         problems[helper.name].append(problem)
     documents = {pointer: document for document, pointer in request.documents.pointers.items()}
     candidates = [

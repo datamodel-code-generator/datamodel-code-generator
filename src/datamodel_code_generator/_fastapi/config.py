@@ -18,6 +18,7 @@ from datamodel_code_generator._target_naming import explicit_name
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
+    from datamodel_code_generator._format_types import PythonVersion
 
 Layout: TypeAlias = Literal["routers", "single"]
 HandlerMode: TypeAlias = Literal["sync", "async"]
@@ -67,14 +68,18 @@ class FastAPIConfig(TargetConfig):
         )
         TargetConfig.__post_init__(self)
 
-    def _problems(self) -> Iterator[Diagnostic]:
-        yield from TargetConfig._problems(self)  # noqa: SLF001
+    def _problems(self, target_python_version: PythonVersion) -> Iterator[Diagnostic]:
+        yield from TargetConfig._problems(self, target_python_version)  # noqa: SLF001
         yield from _selector_problems(self.handler_modes, "handler_modes", lambda value: value in _HANDLER_MODES)
         yield from _selector_problems(self.body_modes, "body_modes", lambda value: value in _BODY_MODES)
         yield from _selector_problems(self.primary_responses, "primary_responses", _response_choice)
-        yield from _selector_problems(self.operation_names, "operation_names", _identifier)
-        yield from _selector_problems(self.parameter_names, "parameter_names", _parameter_names)
-        if not _router_names_valid(self.router_names):
+        yield from _selector_problems(
+            self.operation_names, "operation_names", lambda value: explicit_name(value, target_python_version)
+        )
+        yield from _selector_problems(
+            self.parameter_names, "parameter_names", lambda value: _parameter_names(value, target_python_version)
+        )
+        if not _router_names_valid(self.router_names, target_python_version):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
 
 
@@ -86,12 +91,10 @@ def _frozen(value: object) -> object:
     return MappingProxyType(dict(value)) if _is_mapping(value) else value
 
 
-def _identifier(value: object) -> bool:
-    return explicit_name(value)
-
-
-def _router_names_valid(value: object) -> bool:
-    return _is_mapping(value) and all(isinstance(key, str) and _identifier(name) for key, name in value.items())
+def _router_names_valid(value: object, target_python_version: PythonVersion) -> bool:
+    return _is_mapping(value) and all(
+        isinstance(key, str) and explicit_name(name, target_python_version) for key, name in value.items()
+    )
 
 
 def _response_choice(value: object) -> bool:
@@ -107,12 +110,12 @@ def _optional_text(value: object) -> bool:
     return value is None or isinstance(value, str)
 
 
-def _parameter_names(value: object) -> bool:
+def _parameter_names(value: object, target_python_version: PythonVersion) -> bool:
     return _is_mapping(value) and all(
         isinstance(key, str)
         and key.partition(":")[0] in _PARAMETER_LOCATIONS
         and key.partition(":")[2]
-        and _identifier(name)
+        and explicit_name(name, target_python_version)
         for key, name in value.items()
     )
 

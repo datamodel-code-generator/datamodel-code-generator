@@ -18413,6 +18413,116 @@ def test_main_builtin_field_names_python_315_builtins(
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "target_python_version", "expected_file"),
+    [
+        pytest.param(
+            "dataclasses.dataclass", "3.12", "identifier_unicode_target_dataclass_312.py", id="dataclass-3.12"
+        ),
+        pytest.param(
+            "dataclasses.dataclass", "3.13", "identifier_unicode_target_dataclass_313.py", id="dataclass-3.13"
+        ),
+        pytest.param(
+            "dataclasses.dataclass", "3.14", "identifier_unicode_target_dataclass_314.py", id="dataclass-3.14"
+        ),
+        pytest.param(
+            "dataclasses.dataclass", "3.15", "identifier_unicode_target_dataclass_315.py", id="dataclass-3.15"
+        ),
+        pytest.param("typing.TypedDict", "3.14", "identifier_unicode_target_typed_dict_314.py", id="typed-dict-3.14"),
+        pytest.param("pydantic_v2.BaseModel", "3.15", "identifier_unicode_target_pydantic_315.py", id="pydantic-3.15"),
+    ],
+)
+def test_main_identifier_unicode_follows_target(
+    output_file: Path, output_model_type: str, target_python_version: str, expected_file: str
+) -> None:
+    """Name fields by the Unicode version of the target Python, whatever Python generates them.
+
+    U+0C5C is an identifier character from Python 3.15 on, and U+4EAC numeric from Python 3.13 on.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "identifier_unicode_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.13", "identifier_case_target_313.py", id="python-3.13"),
+        pytest.param("3.14", "identifier_case_target_314.py", id="python-3.14"),
+    ],
+)
+def test_main_capitalised_enum_members_follow_target(
+    output_file: Path, target_python_version: str, expected_file: str
+) -> None:
+    """Uppercase enum members by the case mappings of the target Python: U+0264 has an uppercase from 3.14 on."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "identifier_case_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--capitalise-enum-members",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+def test_main_type_alias_named_with_letters_beyond_ascii(output_file: Path) -> None:
+    """Format a type statement named with letters beyond ASCII alike on Pythons older than the target's syntax."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "identifier_type_alias_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="identifier_type_alias_target_312.py",
+        extra_args=[
+            "--use-type-alias",
+            "--target-python-version",
+            "3.12",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+def test_main_module_named_by_newer_target() -> None:
+    """Name and format a module with a character only the target knows, on any Python.
+
+    The modules are compared as one text, since not every file system can name a file with that character.
+    """
+    modules = generate(
+        JSON_SCHEMA_DATA_PATH / "identifier_module_target.json",
+        input_file_type=InputFileType.JsonSchema,
+        treat_dot_as_module=True,
+        target_python_version=PythonVersion.PY_315,
+        formatters=[Formatter.BUILTIN],
+        disable_timestamp=True,
+    )
+    assert_output(
+        "".join(f"# {'/'.join(path)}\n{body}\n" for path, body in sorted(modules.items())),
+        EXPECTED_JSON_SCHEMA_PATH / "identifier_module_target_315.txt",
+    )
+
+
 @pytest.mark.benchmark
 def test_main_root_model_config_populate_by_name(output_file: Path) -> None:
     """Test that RootModel subclasses don't get populate_by_name config (issue #2483).

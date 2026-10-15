@@ -14,6 +14,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
@@ -699,7 +700,7 @@ class DataModelField(DataModelFieldBase):
             return None
         if data_type.data_types or data_type.dict_key or data_type.reference or data_type.python_type:
             return None
-        if (type_hint := data_type.type) is None or not type_hint.isidentifier():
+        if (type_hint := data_type.type) is None or not is_identifier(type_hint, data_type.python_version):
             return None
         if data_type.literals or data_type.enum_member_literals or data_type.kwargs or data_type.alias:
             return None

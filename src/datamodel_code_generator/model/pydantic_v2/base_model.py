@@ -381,15 +381,15 @@ def _alias_generator_name(value: Any) -> str | None:
     return generator_name
 
 
-def _generate_alias(generator_name: str, field_name: str) -> str:
+def _generate_alias(generator_name: str, field_name: str, target_python_version: PythonVersion | None = None) -> str:
     generated_alias = field_name
     match generator_name:
         case AliasGenerator.ToCamel.value:
-            generated_alias = to_camel(field_name)
+            generated_alias = to_camel(field_name, target_python_version)
         case AliasGenerator.ToPascal.value:
-            generated_alias = to_pascal(field_name)
+            generated_alias = to_pascal(field_name, target_python_version)
         case AliasGenerator.ToSnake.value:
-            generated_alias = to_snake(field_name)
+            generated_alias = to_snake(field_name, target_python_version)
     return generated_alias
 
 
@@ -902,13 +902,17 @@ class DataModelField(_PydanticBaseDataModelField):
             and isinstance(parent, BaseModel)
             and not parent.IS_ROOT_MODEL
         ):
-            pinned_alias = _generate_alias(generator_name, self.name)
+            pinned_alias = _generate_alias(generator_name, self.name, self.data_type.python_version)
         alias = data.get("alias")
         if alias is None and self._automatic_alias_disabled_for_alias_generator():
             return pinned_alias
         if (wire_name := alias if alias is not None else self.original_name) is None:
             return pinned_alias
-        if (_generate_alias(generator_name, self.name) if pinned_alias is None else pinned_alias) == wire_name:
+        if (
+            _generate_alias(generator_name, self.name, self.data_type.python_version)
+            if pinned_alias is None
+            else pinned_alias
+        ) == wire_name:
             data.pop("alias", None)
             return pinned_alias
         data["alias"] = wire_name
@@ -925,7 +929,7 @@ class DataModelField(_PydanticBaseDataModelField):
     def _alias_generator_renames(self, name: str) -> bool:
         """Return whether the parent's alias generator serializes a field of this name under another one."""
         return (generator_name := self._alias_generator_name_from_parent()) is not None and (
-            _generate_alias(generator_name, name) != name
+            _generate_alias(generator_name, name, self.data_type.python_version) != name
         )
 
     def _automatic_alias_disabled_for_alias_generator(self) -> bool:

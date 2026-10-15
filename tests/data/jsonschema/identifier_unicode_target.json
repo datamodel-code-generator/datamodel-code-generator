@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "name\u0c5c": {
+      "type": "string"
+    },
+    "\u4eac\u90fd": {
+      "type": "integer"
+    }
+  }
+}

@@ -9,19 +9,24 @@ import tokenize
 from collections import defaultdict
 from enum import IntEnum
 from io import StringIO
-from typing import TYPE_CHECKING, Any, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeGuard, cast
 
+from datamodel_code_generator._target_unicode import (
+    NEWEST_TARGET,
+    HostIdentifiers,
+    host_identifiers,
+    is_upper,
+    lower,
+    target_pattern,
+)
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
     from typing import Protocol
 
-    class PythonVersion(Protocol):
-        @property
-        def version_key(self) -> tuple[int, int]:
-            raise NotImplementedError
+    from datamodel_code_generator._format_types import PythonVersion
 
     class _SourceLocationNode(Protocol):
         lineno: int
@@ -44,6 +49,16 @@ class _ImportCategory(IntEnum):
     LOCAL = 4
 
 
+class _ImportNames(NamedTuple):
+    """How import sorting reads names: with lent letters given back, by the case rules of the target."""
+
+    restore: Callable[[str], str] = str
+    python_version: PythonVersion | None = None
+
+
+_PLAIN_NAMES = _ImportNames()
+
+
 DEFAULT_LINE_LENGTH = 88
 DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
 MAX_TOP_LEVEL_BLANK_LINES = 2
@@ -52,6 +67,7 @@ LONG_TARGET_PREFIX_LENGTH = 30
 TYPE_ALIAS_INLINE_ARGUMENT_COUNT = 2
 STRING_PREFIX_PATTERN = re.compile(r"(?i)^([rubf]*)(\"\"\"|'''|\"|')")
 PEP695_TYPE_ALIAS_START_PATTERN = re.compile(r"^(?P<indent>\s*)type\s+(?P<target>[A-Za-z_]\w*(?:\[.*?\])?)\s*=")
+_PEP695_IDENTIFIER_TYPE_ALIAS_START = r"^(?P<indent>\s*)type\s+(?P<target>(?#identifier)(?:\[.*?\])?)\s*="
 PEP695_TYPE_ALIAS_PLACEHOLDER = "__datamodel_codegen_builtin_type_alias__"
 _SOURCE_LINES_CACHE: list[tuple[str, list[str]]] = []
 
@@ -171,15 +187,16 @@ def _alias_imported_name(alias: str) -> str:
     return alias
 
 
-def _alias_sort_key(alias: str) -> tuple[_AliasSortCategory, str]:
-    name = _alias_imported_name(alias)
-    if name.isupper():
+def _alias_sort_key(alias: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[_AliasSortCategory, str]:
+    name = names.restore(_alias_imported_name(alias))
+    target = names.python_version
+    if is_upper(name, target):
         category = _AliasSortCategory.CONSTANT
-    elif name[:1].isupper():
+    elif is_upper(name[:1], target):
         category = _AliasSortCategory.CLASS
     else:
         category = _AliasSortCategory.OTHER
-    return category, name.lower()
+    return category, lower(name, target)
 
 
 def _format_from_import(module: str, aliases: list[str], line_length: int) -> str:
@@ -219,6 +236,15 @@ def _has_comment_token(line: str) -> bool:
         return "#" in line
 
 
+def _pep695_type_alias_start(line: str) -> re.Match[str] | None:
+    """Match the start of a type statement named with any identifier, or the letters lent for its characters."""
+    return (
+        PEP695_TYPE_ALIAS_START_PATTERN
+        if line.isascii()
+        else target_pattern(_PEP695_IDENTIFIER_TYPE_ALIAS_START, NEWEST_TARGET)
+    ).match(line)
+
+
 def _needs_pep695_type_alias_placeholders(python_version: PythonVersion | None) -> bool:
     return (
         python_version is not None
@@ -250,7 +276,7 @@ def _replace_pep695_type_aliases_with_placeholders(code: str) -> str:
     line_index = 0
     while line_index < len(lines):
         line = lines[line_index]
-        if not PEP695_TYPE_ALIAS_START_PATTERN.match(line):
+        if not _pep695_type_alias_start(line):
             line_index += 1
             continue
 
@@ -291,18 +317,21 @@ def _format_import_node_without_reordering(
     node: ast.Import | ast.ImportFrom,
     lines: list[str],
     known_first_party: frozenset[str] = DEFAULT_KNOWN_FIRST_PARTY,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> tuple[_ImportCategory, str]:
     end_lineno = node.end_lineno or node.lineno
     raw_import = "\n".join(lines[node.lineno - 1 : end_lineno])
-    return _import_node_category(node, known_first_party), raw_import
+    return _import_node_category(node, known_first_party, names), raw_import
 
 
-def _import_node_category(node: ast.Import | ast.ImportFrom, known_first_party: frozenset[str]) -> _ImportCategory:
+def _import_node_category(
+    node: ast.Import | ast.ImportFrom, known_first_party: frozenset[str], names: _ImportNames = _PLAIN_NAMES
+) -> _ImportCategory:
     match node:
         case ast.Import():
-            return min(_import_category(alias.name, 0, known_first_party) for alias in node.names)
+            return min(_import_category(names.restore(alias.name), 0, known_first_party) for alias in node.names)
         case ast.ImportFrom():
-            return _import_category(node.module or "", node.level, known_first_party)
+            return _import_category(names.restore(node.module or ""), node.level, known_first_party)
     msg = f"Unsupported import node: {type(node).__name__}"
     raise TypeError(msg)
 
@@ -311,22 +340,28 @@ def _format_import_node(
     node: ast.Import | ast.ImportFrom,
     line_length: int,
     known_first_party: frozenset[str] = DEFAULT_KNOWN_FIRST_PARTY,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> tuple[_ImportCategory, str]:
-    category = _import_node_category(node, known_first_party)
+    category = _import_node_category(node, known_first_party, names)
     match node:
         case ast.Import():
-            lines = [f"import {_format_alias(alias)}" for alias in sorted(node.names, key=lambda alias: alias.name)]
+            lines = [
+                f"import {_format_alias(alias)}"
+                for alias in sorted(node.names, key=lambda alias: names.restore(alias.name))
+            ]
             return category, "\n".join(lines)
         case ast.ImportFrom():
             module = "." * node.level + (node.module or "")
             if any(alias.asname is not None for alias in node.names):
                 lines = [
                     _format_from_import(module, [_format_alias(alias)], line_length)
-                    for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias)))
+                    for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias), names))
                 ]
                 return category, "\n".join(lines)
 
-            aliases = sorted((_format_alias(alias) for alias in node.names), key=_alias_sort_key)
+            aliases = sorted(
+                (_format_alias(alias) for alias in node.names), key=lambda alias: _alias_sort_key(alias, names)
+            )
             return category, _format_from_import(module, aliases, line_length)
     raise AssertionError  # pragma: no cover
 
@@ -351,9 +386,10 @@ def _iter_aliased_from_import_lines(
     module: str,
     aliases: list[tuple[int, str, bool]],
     line_length: int,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> Iterator[str]:
     """Keep aliased names, and plain names also imported under an alias, on their own lines like isort."""
-    sorted_aliases = sorted(aliases, key=lambda item: _alias_sort_key(item[1]))
+    sorted_aliases = sorted(aliases, key=lambda item: _alias_sort_key(item[1], names))
     renamed = {_alias_imported_name(alias) for _, alias, is_aliased in aliases if is_aliased}
     chunk: list[str] = []
     chunk_group: int | None = None
@@ -376,16 +412,19 @@ def _iter_aliased_from_import_lines(
         yield _format_from_import(module, chunk, line_length)
 
 
-def _import_line_sort_key(line: str) -> tuple[int, int, str, int, str, str]:
+def _import_line_sort_key(line: str, names: _ImportNames = _PLAIN_NAMES) -> tuple[int, int, str, int, str, str]:
+    line = names.restore(line)
+    target = names.python_version
     if not line.startswith("from "):
-        return 0, 0, line.lower(), 0, "", line
+        return 0, 0, lower(line, target), 0, "", line
 
     module, _, imported = line.removeprefix("from ").partition(" import ")
     relative_level = len(module) - len(module.lstrip("."))
-    alias_category, alias_name = _alias_sort_key(imported.split(",", 1)[0].strip())
+    alias_category, alias_name = _alias_sort_key(imported.split(",", 1)[0].strip(), names)
+    line_key = lower(line, target)
     if relative_level:
-        return 1, -relative_level, module[relative_level:].lower(), int(alias_category), alias_name, line.lower()
-    return 1, 0, module.lower(), int(alias_category), alias_name, line.lower()
+        return 1, -relative_level, lower(module[relative_level:], target), int(alias_category), alias_name, line_key
+    return 1, 0, lower(module, target), int(alias_category), alias_name, line_key
 
 
 def _build_builtin_import_block(
@@ -393,6 +432,7 @@ def _build_builtin_import_block(
     line_length: int,
     lines: list[str],
     known_first_party: frozenset[str],
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> str:
     categorized_lines: defaultdict[_ImportCategory, set[str]] = defaultdict(set)
     grouped_from_imports: defaultdict[tuple[_ImportCategory, int, str], set[str]] = defaultdict(set)
@@ -401,13 +441,13 @@ def _build_builtin_import_block(
 
     for node_index, node in enumerate(import_nodes):
         if _has_inline_comment(lines, node):
-            category, raw_import = _format_import_node_without_reordering(node, lines, known_first_party)
+            category, raw_import = _format_import_node_without_reordering(node, lines, known_first_party, names)
             categorized_lines[category].add(raw_import)
             continue
 
         if isinstance(node, ast.ImportFrom) and _from_import_key(node) in aliased_modules:
             module = "." * node.level + (node.module or "")
-            category = _import_category(node.module or "", node.level, known_first_party)
+            category = _import_category(names.restore(node.module or ""), node.level, known_first_party)
             for alias in node.names:
                 aliased_from_imports[category, node.level, module].append((
                     node_index,
@@ -418,22 +458,24 @@ def _build_builtin_import_block(
 
         if isinstance(node, ast.ImportFrom) and _can_merge_from_imports(node, aliased_modules):
             module = node.module or ""
-            category = _import_category(module, node.level, known_first_party)
+            category = _import_category(names.restore(module), node.level, known_first_party)
             for alias in node.names:
                 grouped_from_imports[category, node.level, module].add(_format_alias(alias))
             continue
 
-        category, import_line = _format_import_node(node, line_length, known_first_party)
+        category, import_line = _format_import_node(node, line_length, known_first_party, names)
         categorized_lines[category].add(import_line)
 
     for (category, _level, module), aliases in grouped_from_imports.items():
-        categorized_lines[category].add(_format_from_import(module, sorted(aliases, key=_alias_sort_key), line_length))
+        categorized_lines[category].add(
+            _format_from_import(module, sorted(aliases, key=lambda alias: _alias_sort_key(alias, names)), line_length)
+        )
     for (category, _level, module), aliases in aliased_from_imports.items():
-        for import_line in _iter_aliased_from_import_lines(module, aliases, line_length):
+        for import_line in _iter_aliased_from_import_lines(module, aliases, line_length, names):
             categorized_lines[category].add(import_line)
 
     groups = [
-        "\n".join(sorted(categorized_lines[category], key=_import_line_sort_key))
+        "\n".join(sorted(categorized_lines[category], key=lambda line: _import_line_sort_key(line, names)))
         for category in sorted(categorized_lines)
     ]
     return "\n\n".join(group for group in groups if group)
@@ -1752,14 +1794,18 @@ def _format_nested_annotated_type_alias_assignment(
 
 
 def _format_type_checking_block(
-    node: ast.If, lines: list[str], line_length: int, known_first_party: frozenset[str]
+    node: ast.If,
+    lines: list[str],
+    line_length: int,
+    known_first_party: frozenset[str],
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> str | None:
     import_nodes = [statement for statement in node.body if isinstance(statement, (ast.Import, ast.ImportFrom))]
     if not import_nodes or len(import_nodes) != len(node.body):
         return None
 
     indent = _line_indent(lines[node.lineno - 1])
-    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party)
+    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party, names)
     indented_import_block = "\n".join(
         f"{indent}    {line}" if line else line for line in _split_python_lines(import_block)
     )
@@ -1771,7 +1817,7 @@ _LineReplacement = tuple[int, int, list[str]]
 
 def _pep695_type_alias_replacement(lines: list[str], start_index: int, line_length: int) -> _LineReplacement | None:
     line = lines[start_index]
-    if (match := PEP695_TYPE_ALIAS_START_PATTERN.match(line)) is None:
+    if (match := _pep695_type_alias_start(line)) is None:
         return None
 
     end_index = _pep695_type_alias_statement_end(lines, start_index)
@@ -1930,13 +1976,14 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
     known_first_party: frozenset[str],
     *,
     wrap_string_literal: bool,
+    names: _ImportNames = _PLAIN_NAMES,
 ) -> list[_LineReplacement]:
     replacements: list[_LineReplacement] = []
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             replacements.extend(_collect_function_boolean_replacements(node, lines, line_length))
         if _is_type_checking_if(node):
-            formatted_type_checking = _format_type_checking_block(node, lines, line_length, known_first_party)
+            formatted_type_checking = _format_type_checking_block(node, lines, line_length, known_first_party, names)
             if formatted_type_checking is not None:
                 replacements.append((
                     node.lineno,
@@ -2261,7 +2308,9 @@ def _try_apply_builtin_generated_formatter(  # noqa: PLR0911, PLR0913
     if not (import_nodes := _iter_module_import_nodes(import_tree)) or len(import_nodes) != len(import_tree.body):
         return None
 
-    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party)
+    import_block = _build_builtin_import_block(
+        import_nodes, line_length, lines, known_first_party, _ImportNames(python_version=python_version)
+    )
     body_start = import_end
     while body_start < len(lines) and not lines[body_start]:
         body_start += 1
@@ -2304,7 +2353,7 @@ def _apply_builtin_generated_formatter(  # noqa: PLR0913
     )
 
 
-def apply_builtin_formatter(  # noqa: PLR0913, PLR0914
+def apply_builtin_formatter(  # noqa: PLR0913
     code: str,
     *,
     line_length: int = DEFAULT_LINE_LENGTH,
@@ -2313,7 +2362,60 @@ def apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     string_normalization: bool = False,
     python_version: PythonVersion | None = None,
 ) -> str:
-    """Apply dependency-free formatting for generated Python code."""
+    """Apply dependency-free formatting for generated Python code.
+
+    Identifier characters of a target newer than the running interpreter are lent letters it parses while formatting,
+    and the names it reads back take the target's NFKC form, so the result is the one the target's interpreter gives.
+    """
+    if (lent := host_identifiers(code)) is None:
+        return _apply_builtin_formatter(
+            code,
+            line_length=line_length,
+            known_first_party=known_first_party,
+            wrap_string_literal=wrap_string_literal,
+            string_normalization=string_normalization,
+            names=_ImportNames(python_version=python_version),
+            lent=None,
+        )
+    return lent.restore_text(
+        _apply_builtin_formatter(
+            lent.source,
+            line_length=line_length,
+            known_first_party=known_first_party,
+            wrap_string_literal=wrap_string_literal,
+            string_normalization=string_normalization,
+            names=_ImportNames(lent.restore_text, python_version),
+            lent=lent,
+        )
+    )
+
+
+def _rename_lent_identifiers(tree: ast.AST, lent: HostIdentifiers) -> None:
+    """Spell each identifier the running interpreter parsed with lent letters as the target parses it.
+
+    Strings take their characters back, so that `repr` spells them as it does without lending.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, str):
+                node.value = lent.restore_text(node.value)
+            continue
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, str) and field != "tag":
+                setattr(node, field, lent.parsed_name(value))
+
+
+def _apply_builtin_formatter(  # noqa: PLR0913, PLR0914
+    code: str,
+    *,
+    line_length: int,
+    known_first_party: frozenset[str],
+    wrap_string_literal: bool,
+    string_normalization: bool,
+    names: _ImportNames,
+    lent: HostIdentifiers | None,
+) -> str:
+    python_version = names.python_version
     lines = [line.rstrip() for line in _split_python_lines(code)]
     start = 0
     while start < len(lines) and not lines[start]:
@@ -2327,6 +2429,8 @@ def apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     tree, source_is_valid = _parse_builtin_code_with_source_validity(code, python_version)
     if tree is None:
         return f"{code}\n"
+    if lent is not None:
+        _rename_lent_identifiers(tree, lent)
 
     replacements = _collect_builtin_replacements(
         tree,
@@ -2335,6 +2439,7 @@ def apply_builtin_formatter(  # noqa: PLR0913, PLR0914
         code,
         known_first_party,
         wrap_string_literal=wrap_string_literal,
+        names=names,
     )
     if _needs_pep695_type_alias_placeholders(python_version):
         replacements.extend(_collect_pep695_type_alias_replacements(lines, line_length))
@@ -2353,7 +2458,7 @@ def apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     leading = "\n".join(_leading_lines_before_imports(lines, first_line, tree))
     body_lines = _apply_line_replacements(lines[last_line:], replacements, offset=last_line)
     body = "\n".join(body_lines).strip("\n")
-    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party)
+    import_block = _build_builtin_import_block(import_nodes, line_length, lines, known_first_party, names)
     formatted_code = f"{leading}\n{import_block}" if leading else import_block
     if body:
         separator = "\n\n\n" if body.startswith(("class ", "def ", "async def ", "@")) else "\n\n"

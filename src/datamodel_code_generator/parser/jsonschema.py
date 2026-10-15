@@ -6831,6 +6831,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             class_name,
             treat_dot_as_module=self.treat_dot_as_module,
             strict_dotted_module_names=self.strict_dotted_module_names,
+            target_python_version=self.target_python_version,
         )
         fields: list[DataModelFieldBase] = []
 
@@ -7985,11 +7986,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         match self.config.alias_generator:
             case AliasGenerator.ToCamel:
-                return to_camel(field.name)
+                return to_camel(field.name, self.target_python_version)
             case AliasGenerator.ToPascal:
-                return to_pascal(field.name)
+                return to_pascal(field.name, self.target_python_version)
             case AliasGenerator.ToSnake:
-                return to_snake(field.name)
+                return to_snake(field.name, self.target_python_version)
         return None
 
     def _get_input_names_by_property(
@@ -9157,6 +9158,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     name,
                     treat_dot_as_module=self.treat_dot_as_module,
                     strict_dotted_module_names=self.strict_dotted_module_names,
+                    target_python_version=self.target_python_version,
                 ),
                 class_name=name,
             )
@@ -9403,6 +9405,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     name,
                     treat_dot_as_module=self.treat_dot_as_module,
                     strict_dotted_module_names=self.strict_dotted_module_names,
+                    target_python_version=self.target_python_version,
                 )
                 object_fields = self.parse_object_fields(
                     self._get_deferred_inherited_parse_object(merged_item, deferred_property_names),
@@ -10354,6 +10357,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 class_name,
                 treat_dot_as_module=self.treat_dot_as_module,
                 strict_dotted_module_names=self.strict_dotted_module_names,
+                target_python_version=self.target_python_version,
             ),
             class_name=class_name,
         )
@@ -12947,14 +12951,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return title_str, False
 
         if class_name := self.class_name:
-            if not self.model_resolver.validate_name(class_name):
+            if not self.model_resolver.validate_name(class_name, self.target_python_version):
                 raise InvalidClassNameError(class_name)
             return class_name, self._should_preserve_explicit_root_class_name(class_name)
 
         obj_name = title_str
-        if not self.model_resolver.validate_name(obj_name):
+        if not self.model_resolver.validate_name(obj_name, self.target_python_version):
             obj_name = title_to_class_name(obj_name)
-        if not self.model_resolver.validate_name(obj_name):
+        if not self.model_resolver.validate_name(obj_name, self.target_python_version):
             raise InvalidClassNameError(obj_name)
         return obj_name, False
 

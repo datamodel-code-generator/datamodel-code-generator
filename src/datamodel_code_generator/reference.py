@@ -38,6 +38,14 @@ from typing_extensions import TypeIs
 
 from datamodel_code_generator import Error, NamingStrategy
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._target_unicode import (
+    is_identifier,
+    is_nfkc,
+    is_numeric,
+    nfkc,
+    replace_non_word,
+    upper,
+)
 from datamodel_code_generator._url_redaction import redact_path, redact_reference
 from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.util import camel_to_snake
@@ -63,8 +71,13 @@ def split_module_name(
     *,
     treat_dot_as_module: bool | None,
     strict_dotted_module_names: bool = False,
+    target_python_version: PythonVersion | None = None,
 ) -> list[str] | None:
-    """Split a dotted model name according to the configured inference policy."""
+    """Split a dotted model name according to the configured inference policy.
+
+    Strict splitting keeps a name whose parts are identifiers of the target in NFKC form, the form Python looks a
+    module up by.
+    """
     match treat_dot_as_module:
         case False:
             return None
@@ -75,16 +88,12 @@ def split_module_name(
         case _ if not strict_dotted_module_names:
             return name.split(".")
 
-    is_normalized = None
-    if not name.isascii():
-        from unicodedata import is_normalized  # noqa: PLC0415
-
     parts = name.split(".")
     for part in parts:
         if (
-            not part.isidentifier()
+            not is_identifier(part, target_python_version)
             or iskeyword(part)
-            or (is_normalized is not None and not is_normalized("NFKC", part))
+            or not is_nfkc(part, target_python_version)
         ):
             return None
     return parts
@@ -95,6 +104,7 @@ def get_inferred_module_name(
     *,
     treat_dot_as_module: bool | None,
     strict_dotted_module_names: bool = False,
+    target_python_version: PythonVersion | None = None,
 ) -> str:
     """Return the inferred parent module for a dotted model name."""
     if not (
@@ -102,6 +112,7 @@ def get_inferred_module_name(
             name,
             treat_dot_as_module=treat_dot_as_module,
             strict_dotted_module_names=strict_dotted_module_names,
+            target_python_version=target_python_version,
         )
     ):
         return ""
@@ -258,7 +269,6 @@ class Reference(_BaseModel):
 SINGULAR_NAME_SUFFIX: str = "Item"
 
 ID_PATTERN: Pattern[str] = re.compile(r"^#[^/].*")
-_NON_IDENTIFIER_PATTERN: Pattern[str] = re.compile(r"[¹²³⁴⁵⁶⁷⁸⁹]|\W")
 
 SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
 
@@ -323,7 +333,11 @@ class FieldNameResolver:
         use_subclass_enum: bool = False,  # noqa: FBT001, FBT002
         target_python_version: PythonVersion | None = None,
     ) -> None:
-        """Initialize field name resolver with transformation options."""
+        """Initialize field name resolver with transformation options.
+
+        Names follow the Unicode rules of `target_python_version`, or of the oldest target when it is None.
+        """
+        self.target_python_version = target_python_version
         self.aliases: Mapping[str, str | list[str]] = {} if aliases is None else {**aliases}
         self.empty_field_name: str = empty_field_name or "_"
         self.snake_case_field = snake_case_field
@@ -331,7 +345,9 @@ class FieldNameResolver:
         self.special_field_name_prefix: str | None = (
             "field" if special_field_name_prefix is None else special_field_name_prefix
         )
-        if self.special_field_name_prefix and not f"{self.special_field_name_prefix}_x".isidentifier():
+        if self.special_field_name_prefix and not is_identifier(
+            f"{self.special_field_name_prefix}_x", target_python_version
+        ):
             msg = (
                 f"--special-field-name-prefix '{self.special_field_name_prefix}' "
                 "is not a valid Python identifier prefix"
@@ -341,7 +357,6 @@ class FieldNameResolver:
         self.capitalise_enum_members: bool = capitalise_enum_members
         self.no_alias = no_alias
         self.use_subclass_enum: bool = use_subclass_enum
-        self.target_python_version = target_python_version
 
     def prepare_explicit_field_aliases(self, fields: list[model_base.DataModelFieldBase], reference: Reference) -> None:
         """Retain selected explicit aliases until all emitted field names are finalized."""
@@ -360,8 +375,17 @@ class FieldNameResolver:
         self.validate_explicit_field_aliases(fields, final=False)
 
     @classmethod
-    def validate_explicit_field_aliases(cls, fields: list[model_base.DataModelFieldBase], *, final: bool) -> None:
-        """Diagnose collisions without applying automatic naming policy to user choices."""
+    def validate_explicit_field_aliases(
+        cls,
+        fields: list[model_base.DataModelFieldBase],
+        *,
+        final: bool,
+        target_python_version: PythonVersion | None = None,
+    ) -> None:
+        """Diagnose collisions without applying automatic naming policy to user choices.
+
+        Final names compare in the NFKC form Python gives them, by the rules of the target Python version.
+        """
         if not any(_EXPLICIT_FIELD_ALIAS_KEY in field.__dict__ for field in fields):
             return
         helper_name = cls.FIELD_ASSIGNMENT_HELPER if final else None
@@ -369,10 +393,8 @@ class FieldNameResolver:
         field_helper: model_base.DataModelFieldBase | None = None
         for field in fields:
             name = cast("str", field.name)
-            if final and not name.isascii():
-                from unicodedata import normalize  # noqa: PLC0415
-
-                name = normalize("NFKC", name)
+            if final:
+                name = nfkc(name, target_python_version)
             original_name = field.alias if field.alias is not None else field.original_name
             explicit = _EXPLICIT_FIELD_ALIAS_KEY in field.__dict__
             if (
@@ -387,7 +409,9 @@ class FieldNameResolver:
             names[name] = field
             if not final:
                 continue
-            invalid = explicit and (not cast("str", field.name).isidentifier() or iskeyword(cast("str", field.name)))
+            invalid = explicit and (
+                not is_identifier(cast("str", field.name), target_python_version) or iskeyword(cast("str", field.name))
+            )
             if (
                 explicit
                 and (conflicts_with_alias := cast("model_base.DataModel", field.parent).EXPLICIT_ALIAS_CONFLICT_CHECKER)
@@ -432,11 +456,12 @@ class FieldNameResolver:
         if name[0] == "#":
             name = name[1:] or self.empty_field_name
 
+        target = self.target_python_version
         if self.snake_case_field and not ignore_snake_case_field and self.original_delimiter:
-            name = snake_to_upper_camel(name, delimiter=self.original_delimiter)
+            name = snake_to_upper_camel(name, delimiter=self.original_delimiter, target_python_version=target)
 
-        name = _NON_IDENTIFIER_PATTERN.sub("_", name)
-        if name[0].isnumeric():
+        name = replace_non_word(name, target)
+        if is_numeric(name[0], target):
             name = f"{self.special_field_name_prefix}_{name}"
 
         # We should avoid having a field begin with an underscore, as it
@@ -450,28 +475,28 @@ class FieldNameResolver:
         if name[0].isnumeric() and name.isascii():
             name = f"{self.special_field_name_prefix}_{name}"
         if self.capitalise_enum_members or (self.snake_case_field and not ignore_snake_case_field):
-            name = camel_to_snake(name)
+            name = camel_to_snake(name, target)
         count = 1
-        validated_name = name.upper() if self.capitalise_enum_members else name
+        validated_name = upper(name, target) if self.capitalise_enum_members else name
         if iskeyword(validated_name) or not self._validate_field_name(validated_name):
             name += "_"
         if upper_camel:
-            new_name = snake_to_upper_camel(name)
+            new_name = snake_to_upper_camel(name, target_python_version=target)
         elif self.capitalise_enum_members:
-            new_name = name.upper()
+            new_name = upper(name, target)
         else:
             new_name = name
         while (
-            not new_name.isidentifier()
+            not is_identifier(new_name, target)
             or iskeyword(new_name)
             or (excludes and new_name in excludes)
             or not self._validate_field_name(new_name)
         ):
-            if not new_name.isidentifier() and not new_name.isascii():
+            if not new_name.isascii() and not is_identifier(new_name, target):
                 name = self._ascii_identifier_fallback(name)
                 count = 1
                 if upper_camel:
-                    new_name = snake_to_upper_camel(name)
+                    new_name = snake_to_upper_camel(name, target_python_version=target)
                 elif self.capitalise_enum_members:
                     new_name = name.upper()
                 else:
@@ -711,7 +736,7 @@ class _FieldNameResolvers:
             capitalise_enum_members=options.capitalise_enum_members if is_enum else False,
             no_alias=options.no_alias,
             use_subclass_enum=options.use_subclass_enum if is_enum else False,
-            target_python_version=options.target_python_version if is_enum else None,
+            target_python_version=options.target_python_version,
         )
         self._resolved[model_type] = resolver
         return resolver
@@ -867,10 +892,10 @@ class ModelResolver:  # noqa: PLR0904
 
         self.class_name_prefix: str = class_name_prefix or ""
         self.class_name_suffix: str = class_name_suffix or ""
-        if self.class_name_prefix and not self.class_name_prefix.isidentifier():
+        if self.class_name_prefix and not is_identifier(self.class_name_prefix, target_python_version):
             msg = f"--class-name-prefix '{self.class_name_prefix}' is not a valid Python identifier"
             raise ValueError(msg)
-        if self.class_name_suffix and not (f"A{self.class_name_suffix}").isidentifier():
+        if self.class_name_suffix and not is_identifier(f"A{self.class_name_suffix}", target_python_version):
             msg = f"--class-name-suffix '{self.class_name_suffix}' is not a valid Python identifier component"
             raise ValueError(msg)
         self.class_name_affix_scope: ClassNameAffixScope = class_name_affix_scope or ClassNameAffixScope.All
@@ -954,6 +979,11 @@ class ModelResolver:  # noqa: PLR0904
             setattr(self, name, value)
 
     @property
+    def target_python_version(self) -> PythonVersion | None:
+        """The target Python version whose Unicode rules class and module names follow."""
+        return getattr(self._field_name_resolvers[ModelType.CLASS], "target_python_version", None)
+
+    @property
     def field_name_resolvers(self) -> dict[ModelType, FieldNameResolver]:
         """Expose the same eager plain dictionary as earlier releases."""
         if isinstance(resolvers := self._field_name_resolvers, _FieldNameResolvers):
@@ -993,7 +1023,7 @@ class ModelResolver:  # noqa: PLR0904
         mapped_name: str,
         reserved_name: str | None,
     ) -> None:
-        if not self.validate_name(mapped_name):
+        if not self.validate_name(mapped_name, self.target_python_version):
             msg = f"--model-name-map maps {redact_reference(path)!r} to invalid class name {mapped_name!r}"
             raise Error(msg)
 
@@ -1471,7 +1501,7 @@ class ModelResolver:  # noqa: PLR0904
         # Find the immediate parent reference to prefix the name
         if parent_ref := self._find_parent_reference(path):
             # Use immediate parent's name (CamelCase join without underscore)
-            return f"{parent_ref.name}{snake_to_upper_camel(name)}"
+            return f"{parent_ref.name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
 
         return name
 
@@ -1703,7 +1733,7 @@ class ModelResolver:  # noqa: PLR0904
         return self._apply_class_name_affix(class_name, model_type=model_type, is_root=False)
 
     def _generate_class_name(self, name: str, *, preserve_name: bool = False) -> str:
-        if preserve_name and self.validate_name(name):
+        if preserve_name and self.validate_name(name, self.target_python_version):
             return name
         return self.class_name_generator(name)
 
@@ -1729,6 +1759,7 @@ class ModelResolver:  # noqa: PLR0904
                     name,
                     treat_dot_as_module=self.treat_dot_as_module,
                     strict_dotted_module_names=self.strict_dotted_module_names,
+                    target_python_version=self.target_python_version,
                 )
                 if self.strict_dotted_module_names and self.treat_dot_as_module is None
                 else name.split(".")
@@ -1863,9 +1894,9 @@ class ModelResolver:  # noqa: PLR0904
         return self.duplicate_name_suffix_map.get(model_type, self.duplicate_name_suffix_map.get("default", ""))
 
     @classmethod
-    def validate_name(cls, name: str) -> bool:
-        """Check if a name is a valid Python identifier."""
-        return name.isidentifier() and not iskeyword(name)
+    def validate_name(cls, name: str, target_python_version: PythonVersion | None = None) -> bool:
+        """Check if a name is a valid Python identifier in the target Python version."""
+        return is_identifier(name, target_python_version) and not iskeyword(name)
 
     def get_valid_field_name(
         self,
@@ -1883,9 +1914,15 @@ class ModelResolver:  # noqa: PLR0904
         self._field_name_resolvers[model_type].prepare_explicit_field_aliases(fields, reference)
 
     @staticmethod
-    def validate_explicit_field_aliases(fields: list[model_base.DataModelFieldBase], model_type: ModelType) -> None:
+    def validate_explicit_field_aliases(
+        fields: list[model_base.DataModelFieldBase],
+        model_type: ModelType,
+        target_python_version: PythonVersion | None = None,
+    ) -> None:
         """Check finalized names against output model rules without renaming them."""
-        _default_field_name_resolver_class(model_type).validate_explicit_field_aliases(fields, final=True)
+        _default_field_name_resolver_class(model_type).validate_explicit_field_aliases(
+            fields, final=True, target_python_version=target_python_version
+        )
 
     def _get_unique_field_name(self, name: str) -> str:
         """Return a unique class field name without creating a Reference."""
@@ -2028,14 +2065,14 @@ def get_singular_name(name: str, suffix: str = SINGULAR_NAME_SUFFIX) -> str:
 
 
 @lru_cache(maxsize=4096)
-def snake_to_upper_camel(word: str, delimiter: str = "_") -> str:
-    """Convert snake_case or delimited string to UpperCamelCase."""
+def snake_to_upper_camel(word: str, delimiter: str = "_", *, target_python_version: PythonVersion | None = None) -> str:
+    """Convert snake_case or delimited string to UpperCamelCase by the case rules of the target Python version."""
     prefix = ""
     if word.startswith(delimiter):
         prefix = "_"
         word = word[1:]
 
-    return prefix + "".join(x[0].upper() + x[1:] for x in word.split(delimiter) if x)
+    return prefix + "".join(upper(x[0], target_python_version) + x[1:] for x in word.split(delimiter) if x)
 
 
 def is_url(ref: str) -> bool:

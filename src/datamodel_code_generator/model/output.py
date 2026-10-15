@@ -5,12 +5,13 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.model.base import ALL_MODEL
 from datamodel_code_generator.reference import ModelType
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Collection, Mapping
+    from collections.abc import Callable, Collection, Mapping
     from typing import Any
 
     from datamodel_code_generator._format_types import PythonVersion
@@ -79,9 +80,9 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     return base_config
 
 
-def _expression_names(expression: ast.AST) -> set[str]:
+def _expression_names(expression: ast.AST, restore_name: Callable[[str], str]) -> set[str]:
     """Find unqualified loads without treating literal or keyword text as bindings."""
-    return {node.id for node in ast.walk(expression) if isinstance(node, ast.Name)}
+    return {restore_name(node.id) for node in ast.walk(expression) if isinstance(node, ast.Name)}
 
 
 def _model_field_name_collisions(model: DataModel, import_names: Collection[str]) -> set[str]:
@@ -90,18 +91,21 @@ def _model_field_name_collisions(model: DataModel, import_names: Collection[str]
     candidates = field_names.intersection(import_names)
     if not candidates:
         return set()
+    rendered = model.render()
+    lent = host_identifiers(rendered)
+    restore_name = lent.restore_name if lent else str
     class_body = next(
         (
             node.body
-            for node in ast.parse(model.render()).body
-            if isinstance(node, ast.ClassDef) and node.name == model.class_name
+            for node in ast.parse(lent.source if lent else rendered).body
+            if isinstance(node, ast.ClassDef) and restore_name(node.name) == model.class_name
         ),
         None,
     )
     if class_body is None:
         return set()
     fields = [
-        (node.target.id, node)
+        (restore_name(node.target.id), node)
         for node in class_body
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
     ]
@@ -114,9 +118,9 @@ def _model_field_name_collisions(model: DataModel, import_names: Collection[str]
     collisions: set[str] = set()
     previous_names: set[str] = set()
     for name, node in fields:
-        collisions.update(candidates.intersection(_expression_names(node.annotation)))
+        collisions.update(candidates.intersection(_expression_names(node.annotation, restore_name)))
         if node.value is not None:
-            collisions.update(candidates.intersection(previous_names, _expression_names(node.value)))
+            collisions.update(candidates.intersection(previous_names, _expression_names(node.value, restore_name)))
             previous_names.add(name)
     return collisions
 
