@@ -5,6 +5,7 @@ Generates Python dataclasses using the @dataclass decorator.
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 from datamodel_code_generator._format_types import (
@@ -146,6 +147,7 @@ def _build_nested_dataclass_default_factory(data_type: DataType, default: dict[A
 
 _REQUIRED_INHERITED_INIT_KEY = "_required_inherited_init"
 _UNBOUND_FIELD_KEY = "_unbound_field"
+_PSEUDO_FIELD_TYPE = re.compile(r"(?:\w+\.)*(?:ClassVar|InitVar)\b")
 
 
 class _DataclassReuseMixin:
@@ -203,9 +205,15 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """Write the defaults of the fields of these names through ``default_factory``.
 
         ``dataclasses`` then removes their class attributes, so a resolver that looks the class up before the module,
-        like Pydantic or a native deferred annotation, finds the type of that name instead of the default.
+        like Pydantic or a native deferred annotation, finds the type of that name instead of the default. A
+        ``ClassVar`` or ``InitVar`` takes no default factory and stays bound.
         """
-        fields = [field for field in self.fields if field.name in names]
+        fields = [
+            field
+            for field in self.fields
+            if field.name in names
+            and not any(_PSEUDO_FIELD_TYPE.match(data_type.type or "") for data_type in field.data_type.all_data_types)
+        ]
         for field in fields:
             field.__dict__[_UNBOUND_FIELD_KEY] = True
         return bool(fields)
