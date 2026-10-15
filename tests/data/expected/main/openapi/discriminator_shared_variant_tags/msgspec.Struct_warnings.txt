@@ -4,3 +4,8 @@ Fish is a variant of discriminated unions that map 'kind' to different tags: it 
 Circle is a variant of discriminated unions that map 'shape' to different tags: it keeps 'disc' from Drawing, so these unions cannot decode it: Figure ('circle', 'round').
 Eel is a variant of discriminated unions that map 'kind' to different tags: it keeps 'swim' from Ocean, so these unions cannot decode it: Lake ('Eel').
 Ring is a variant of discriminated unions that map 'shape' to different tags: it keeps 'ring', 'hoop' from Seal, so these unions cannot decode it: Emblem ('band', 'loop').
+msgspec cannot decode the discriminated union Figure: its Struct types Circle, Square are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Drawing: its Struct types Circle, Square are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Badge: its Struct types Ring, Star are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Emblem: its Struct types Ring, Star are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Seal: its Struct types Ring, Star are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

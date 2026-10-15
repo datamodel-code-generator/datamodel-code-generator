@@ -1,0 +1,2 @@
+msgspec cannot decode the union ApiInlineObjectUnionRequestModel: its Struct types ApiInlineObjectUnionRequestModel1, ApiInlineObjectUnionModel are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union ApiInlineObjectUnionResponseModel: its Struct types ApiInlineObjectUnionResponseModel1, ApiInlineObjectUnionModel are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

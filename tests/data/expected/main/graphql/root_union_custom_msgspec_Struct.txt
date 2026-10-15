@@ -79,6 +79,9 @@
       "nested_value": "nested"
     }
   ],
+  "warnings": [
+    "msgspec cannot decode the union Choice: its Struct types EventOps, Other, RootOps, WriteOps are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
+  ],
   "emitted_roots": [
     "RootOps",
     "WriteOps",

@@ -12367,22 +12367,34 @@ def test_main_msgspec_discriminator_const_enum(output_file: Path, extra_args: li
     ],
 )
 def test_main_msgspec_nullable_enum(output_file: Path, extra_args: list[str], expected_file: str) -> None:
-    """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_nullable_enum.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"msgspec_nullable_enum/{expected_file}",
-        extra_args=[
-            "--output-model-type",
-            "msgspec.Struct",
-            "--target-python-version",
-            "3.10",
-            "--disable-timestamp",
-            *extra_args,
-        ],
-        force_exec_validation=True,
+    """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
+
+    Without the option each Enum with a None member that msgspec cannot decode is reported.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_nullable_enum.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"msgspec_nullable_enum/{expected_file}",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_JSON_SCHEMA_PATH / "msgspec_nullable_enum" / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
 
@@ -15478,21 +15490,57 @@ def test_main_jsonschema_multiple_types_with_object(output_file: Path) -> None:
     )
 
 
+def test_main_msgspec_nested_unions(output_file: Path) -> None:
+    """Report a union of untagged msgspec Structs once, where msgspec refuses it: an alias it names reports it."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_nested_unions.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file="msgspec_nested_unions.py",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_JSON_SCHEMA_PATH / "msgspec_nested_unions_warnings.txt",
+    )
+
+
 @MSGSPEC_LEGACY_BLACK_SKIP
 def test_main_jsonschema_type_alias_with_circular_ref_to_class_msgspec(min_version: str, output_file: Path) -> None:
     """Test TypeAlias with circular reference to class generates quoted forward refs."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_with_circular_ref_to_class.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="type_alias_with_circular_ref_to_class_msgspec.py",
-        extra_args=[
-            "--output-model-type",
-            "msgspec.Struct",
-            "--target-python-version",
-            min_version,
-        ],
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_alias_with_circular_ref_to_class.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file="type_alias_with_circular_ref_to_class_msgspec.py",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                min_version,
+            ],
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_JSON_SCHEMA_PATH / "type_alias_with_circular_ref_to_class_msgspec_warnings.txt",
     )
 
 
@@ -22525,24 +22573,33 @@ def test_main_payload_runtime_compatibility(output_file: Path) -> None:
 
 
 def test_main_msgspec_payload_runtime_compatibility(output_file: Path) -> None:
-    """Test msgspec avoids unsupported bool Literal and tags supported Struct unions."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_payload_runtime_compatibility.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=[
-            "--output-model-type",
-            "msgspec.Struct",
-            "--target-python-version",
-            "3.10",
-            "--class-name",
-            "Payload",
-        ],
-        assert_func=assert_file_content,
-        expected_file="msgspec_payload_runtime_compatibility.py",
-        force_exec_validation=True,
-        importable_module_name="generated_msgspec_payload_runtime_compatibility",
-        importable_module_attribute="Payload",
+    """Test msgspec avoids unsupported bool Literal, tags supported Struct unions and reports the others."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_payload_runtime_compatibility.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--class-name",
+                "Payload",
+            ],
+            assert_func=assert_file_content,
+            expected_file="msgspec_payload_runtime_compatibility.py",
+            force_exec_validation=True,
+            importable_module_name="generated_msgspec_payload_runtime_compatibility",
+            importable_module_attribute="Payload",
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_JSON_SCHEMA_PATH / "msgspec_payload_runtime_compatibility_warnings.txt",
     )
 
 
@@ -26143,35 +26200,44 @@ def test_optional_nested_factory_constructor_requirements(
     if "custom_template_dir" in options:
         options["custom_template_dir"] = NESTED_FACTORY_DATA / options["custom_template_dir"]
         args[-1] = str(options["custom_template_dir"])
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=NESTED_FACTORY_DATA / f"{case['schema']}.json",
-            output_path=output_file,
-            input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=NESTED_FACTORY_EXPECTED / case["expected_code"],
-            extra_args=[
-                "--output-model-type",
-                case["backend"],
-                "--use-default-factory-for-optional-nested-models",
-                "--disable-timestamp",
-                *args,
-            ],
-            force_exec_validation=True,
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=NESTED_FACTORY_DATA / f"{case['schema']}.json",
-            output_path=output_file,
-            input_file_type=InputFileType.JsonSchema,
-            output_model_type=DataModelType(case["backend"]),
-            use_default_factory_for_optional_nested_models=True,
-            disable_timestamp=True,
-            assert_func=assert_file_content,
-            expected_file=NESTED_FACTORY_EXPECTED / case["expected_code"],
-            unchanged_inputs={"options": options},
-            **options,
-        )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=NESTED_FACTORY_DATA / f"{case['schema']}.json",
+                output_path=output_file,
+                input_file_type="jsonschema",
+                assert_func=assert_file_content,
+                expected_file=NESTED_FACTORY_EXPECTED / case["expected_code"],
+                extra_args=[
+                    "--output-model-type",
+                    case["backend"],
+                    "--use-default-factory-for-optional-nested-models",
+                    "--disable-timestamp",
+                    *args,
+                ],
+                force_exec_validation=True,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=NESTED_FACTORY_DATA / f"{case['schema']}.json",
+                output_path=output_file,
+                input_file_type=InputFileType.JsonSchema,
+                output_model_type=DataModelType(case["backend"]),
+                use_default_factory_for_optional_nested_models=True,
+                disable_timestamp=True,
+                assert_func=assert_file_content,
+                expected_file=NESTED_FACTORY_EXPECTED / case["expected_code"],
+                unchanged_inputs={"options": options},
+                **options,
+            )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        NESTED_FACTORY_EXPECTED / case.get("expected_warnings", "no_warnings.txt"),
+    )
     with _generated_model(output_file, f"generated_nested_factory_{case['name']}", "Root") as model:
         if case.get("root_required"):
             with pytest.raises((ValidationError, TypeError)):

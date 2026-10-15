@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator import DataModelType, GenerateConfig, LeftoverFilesWarning, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.backends import backend_settings
-from tests.api_generation.support.client_generation import SOURCE, client_options, copy_references
+from tests.api_generation.support.client_generation import SOURCE, client_options, copy_references, generator_warnings
 from tests.api_generation.support.client_publication import PACKAGE
 from tests.api_generation.support.strict_typing import checked, marked_lines, negative
 
@@ -43,23 +43,25 @@ def client_typing_report(
     copy_references(case, root)
     model = dict(case.get("model", {}))
     modular = model.pop("output", None) is not None
-    generate(
-        shutil.copy2(SOURCE / case["input"], root / "api.yaml"),
-        config=GenerateConfig(
-            output=root / ("pets_models" if modular else "pets_models.py"),
-            input_file_type="openapi",
-            target_python_version="3.11",
-            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            **{**backend_settings(backend), "formatters": [Formatter.BUILTIN], **model},
-            **client_options(case.get("config", {}), root, "pets"),
-        ),
-    )
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        generate(
+            shutil.copy2(SOURCE / case["input"], root / "api.yaml"),
+            config=GenerateConfig(
+                output=root / ("pets_models" if modular else "pets_models.py"),
+                input_file_type="openapi",
+                target_python_version="3.11",
+                openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+                **{**backend_settings(backend), "formatters": [Formatter.BUILTIN], **model},
+                **client_options(case.get("config", {}), root, "pets"),
+            ),
+        )
     for sample in samples:
         for name in (f"{sample}.py", f"{sample}_negative.py"):
             shutil.copyfile(SAMPLES / name, root / name)
     positives = [f"{sample}.py" for sample in samples]
     targets = [*package_targets, *positives]
-    lines = [*checked(root, targets, " and ".join(targets))]
+    lines = [*generator_warnings(caught), *checked(root, targets, " and ".join(targets))]
     for sample in samples:
         marked = marked_lines(root / (name := f"{sample}_negative.py"))
         lines.extend((f"{name} {len(marked)} marked lines", *negative(root, name, marked)))

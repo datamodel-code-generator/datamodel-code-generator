@@ -860,22 +860,31 @@ def test_main_openapi_msgspec_nullable_enum(
 
     The 0.83.0 `IntEnum` of `type: integer` with a `None` member fails at import, so only its source is compared.
     """
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / input_file,
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / expected_file,
-        extra_args=[
-            "--output-model-type",
-            "msgspec.Struct",
-            "--target-python-version",
-            "3.10",
-            "--disable-timestamp",
-            *extra_args,
-        ],
-        skip_code_validation=not imports,
-        force_exec_validation=imports,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / input_file,
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / expected_file,
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                *extra_args,
+            ],
+            skip_code_validation=not imports,
+            force_exec_validation=imports,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
 
@@ -3874,7 +3883,10 @@ def test_main_openapi_nullable_map_value_import_cycle_warnings(output_dir: Path)
             ],
         )
     assert_output(
-        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
         EXPECTED_OPENAPI_PATH / "nullable_map_value_cycle" / "pydantic_v2_dataclass_warnings.txt",
     )
 
@@ -7569,21 +7581,30 @@ def test_main_openapi_discriminator_constructor_order(
     extra_args: list[str],
 ) -> None:
     """Place injected required discriminator fields before optional constructor fields."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "discriminator.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--output-model-type",
-            output_model_type,
-            "--disable-timestamp",
-            "--formatters",
-            "builtin",
-            *extra_args,
-        ],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_OPENAPI_PATH / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
 
@@ -8698,18 +8719,27 @@ def test_main_openapi_msgspec_use_union_operator(output_file: Path) -> None:
 @MSGSPEC_LEGACY_BLACK_SKIP
 def test_main_openapi_msgspec_anyof(min_version: str, output_file: Path) -> None:
     """Test msgspec Struct generation with anyOf fields."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "anyof.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file="msgspec_anyof.py",
-        extra_args=[
-            "--output-model-type",
-            "msgspec.Struct",
-            "--target-python-version",
-            min_version,
-        ],
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "anyof.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file="msgspec_anyof.py",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                min_version,
+            ],
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_OPENAPI_PATH / "msgspec_anyof_warnings.txt",
     )
 
 
@@ -10196,29 +10226,40 @@ def test_main_openapi_read_only_write_only_variant_graph(
     expected_name: str,
 ) -> None:
     """Resolve request/response variants through every supported reference shape."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "read_only_write_only_variant_graph.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/read_only_write_only_variant_graph_{expected_name}.py",
-        extra_args=[
-            *BACKEND_GOLDEN_TARGET_ARGS,
-            "--formatters",
-            "builtin",
-            "--output-model-type",
-            output_model_type,
-            "--read-only-write-only-model-type",
-            "request-response",
-            "--openapi-scopes",
-            "schemas",
-            "--class-name-prefix",
-            "Api",
-            "--class-name-suffix",
-            "Model",
-            "--disable-timestamp",
-        ],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "read_only_write_only_variant_graph.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=f"output_model_types/read_only_write_only_variant_graph_{expected_name}.py",
+            extra_args=[
+                *BACKEND_GOLDEN_TARGET_ARGS,
+                "--formatters",
+                "builtin",
+                "--output-model-type",
+                output_model_type,
+                "--read-only-write-only-model-type",
+                "request-response",
+                "--openapi-scopes",
+                "schemas",
+                "--class-name-prefix",
+                "Api",
+                "--class-name-suffix",
+                "Model",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_OPENAPI_PATH
+        / "output_model_types"
+        / f"read_only_write_only_variant_graph_{expected_name}_warnings.txt",
     )
 
     match DataModelType(output_model_type):
@@ -11642,35 +11683,44 @@ def test_discriminator_field_aliases_msgspec(
     fixture_dir = OPEN_API_DATA_PATH / "discriminator_field_aliases"
     aliases_path = fixture_dir / "different_aliases.json"
     expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / expected_name
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=fixture_dir / "direct.json",
-            output_path=output_file,
-            input_file_type="openapi",
-            assert_func=assert_file_content,
-            expected_file=expected,
-            extra_args=[
-                "--aliases",
-                str(aliases_path),
-                "--disable-timestamp",
-                "--output-model-type",
-                "msgspec.Struct",
-                *(["--use-msgspec-tagged-unions"] if tagged_unions else []),
-            ],
-            force_exec_validation=True,
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=fixture_dir / "direct.json",
-            output_path=output_file,
-            input_file_type=InputFileType.OpenAPI,
-            assert_func=assert_file_content,
-            expected_file=expected,
-            aliases=json.loads(aliases_path.read_text()),
-            disable_timestamp=True,
-            output_model_type=DataModelType.MsgspecStruct,
-            use_msgspec_tagged_unions=tagged_unions,
-        )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=fixture_dir / "direct.json",
+                output_path=output_file,
+                input_file_type="openapi",
+                assert_func=assert_file_content,
+                expected_file=expected,
+                extra_args=[
+                    "--aliases",
+                    str(aliases_path),
+                    "--disable-timestamp",
+                    "--output-model-type",
+                    "msgspec.Struct",
+                    *(["--use-msgspec-tagged-unions"] if tagged_unions else []),
+                ],
+                force_exec_validation=True,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=fixture_dir / "direct.json",
+                output_path=output_file,
+                input_file_type=InputFileType.OpenAPI,
+                assert_func=assert_file_content,
+                expected_file=expected,
+                aliases=json.loads(aliases_path.read_text()),
+                disable_timestamp=True,
+                output_model_type=DataModelType.MsgspecStruct,
+                use_msgspec_tagged_unions=tagged_unions,
+            )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        expected.with_name(f"{expected.stem}_warnings.txt"),
+    )
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])

@@ -99,7 +99,7 @@ from datamodel_code_generator.model.base import (
     linearize_data_models,
     sort_data_models_for_mro,
 )
-from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
+from datamodel_code_generator.model.enum import Enum, IntEnum, Member, get_raw_enum_member_value
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
 from datamodel_code_generator.model.output import (
     _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
@@ -2315,6 +2315,87 @@ def _iter_discriminator_data_types(
                         )
                     finally:
                         active_union_models.remove(source_id)
+
+
+def _msgspec_untagged_structs(models: Iterable[object]) -> list[DataModel]:
+    """Return the distinct Struct types among the members of a union if msgspec refuses them as not all tagged."""
+    structs = {
+        id(model): model
+        for model in models
+        if isinstance(model, DataModel) and model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+    }
+    return (
+        [*structs.values()]
+        if len(structs) > 1 and not all(struct.has_discriminator_tag for struct in structs.values())
+        else []
+    )
+
+
+def _msgspec_untagged_union_structs(data_types: Iterable[DataType]) -> list[DataModel]:
+    """Return the untagged Struct types of a union, through the aliases it names."""
+    return _msgspec_untagged_structs(
+        member.reference.source for member, _, _ in _iter_discriminator_data_types(data_types) if member.reference
+    )
+
+
+def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
+    """Yield the root types of the aliases a union names."""
+    for member in data_type.data_types:
+        if member.is_union and not _is_discriminator_container(member):
+            yield from _iter_union_alias_roots(member)
+        elif (
+            member.reference
+            and isinstance(source := member.reference.source, DataModel)
+            and _is_discriminator_wrapper(source)
+            and source.fields
+        ):
+            yield source.fields[0].data_type
+
+
+def _msgspec_refused_union_structs(data_type: DataType) -> list[DataModel]:
+    """Return the Struct types of a union msgspec refuses, unless an alias it names is refused on its own."""
+    if (
+        not data_type.is_union
+        or _is_discriminator_container(data_type)
+        or not (structs := _msgspec_untagged_union_structs(data_type.data_types))
+        or any(_msgspec_untagged_union_structs((root,)) for root in _iter_union_alias_roots(data_type))
+    ):
+        return []
+    return structs
+
+
+def _msgspec_union_message(name: str, structs: list[DataModel], *, discriminated: bool) -> str:
+    """Describe a union of Struct types that msgspec refuses to decode."""
+    names = ", ".join(struct.class_name for struct in structs)
+    if discriminated:
+        return (
+            f"msgspec cannot decode the discriminated union {name}: its Struct types {names} are not all tagged. "
+            "Pass --use-msgspec-tagged-unions to tag them."
+        )
+    return (
+        f"msgspec cannot decode the union {name}: its Struct types {names} are not all tagged, and only the "
+        "variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
+    )
+
+
+def _msgspec_null_enum_message(model: Enum) -> str | None:
+    """Describe an enum whose null member msgspec refuses, if the other members are all str or all int."""
+    values = {field.name: get_raw_enum_member_value(field.default) for field in model.fields}
+    if not (nulls := [name for name, value in values.items() if value is None]) or not (
+        (kinds := {type(value) for value in values.values() if value is not None}) <= {str} or kinds <= {int}
+    ):
+        return None
+    member = f"its member {nulls[0]} = None"
+    fix = (
+        "Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias "
+        "that msgspec decodes."
+    )
+    if isinstance(model, IntEnum):
+        return f"The IntEnum {model.class_name} cannot be imported: {member} is not an int. {fix}"
+    return (
+        f"msgspec cannot decode the enum {model.class_name}: {member} makes its values neither all str nor all int. "
+        f"{fix}"
+    )
 
 
 def _discriminator_variants_are_valid(
@@ -4910,6 +4991,33 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for message in recorded.warning_messages():
                 warn(message, stacklevel=2)
         self._variant_discriminator_tags.clear()
+
+    def __warn_about_msgspec_decoding(self, contexts: Sequence[ModuleContext]) -> None:
+        """Warn once per union and enum of msgspec output that msgspec refuses to decode."""
+        if not self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+            return
+        from datamodel_code_generator.model.union import _DataTypeUnionBase  # noqa: PLC0415
+
+        models = [model for context in contexts for model in context.models]
+        named = {model.class_name: model for model in models}
+        for model in models:
+            if isinstance(model, Enum):
+                if not self.use_msgspec_nullable_enum_alias and (message := _msgspec_null_enum_message(model)):
+                    warn(message, stacklevel=2)
+                continue
+            if isinstance(model, _DataTypeUnionBase):
+                if structs := _msgspec_untagged_structs(named.get(field.name) for field in model.fields):
+                    warn(_msgspec_union_message(model.class_name, structs, discriminated=False), stacklevel=2)
+                continue
+            for field in model.fields:
+                discriminated = bool(field.extras.get("discriminator"))
+                if field.is_class_var or (discriminated and self.use_msgspec_tagged_unions):
+                    continue
+                if structs := next(
+                    filter(None, map(_msgspec_refused_union_structs, reversed([*field.data_type.all_data_types]))), []
+                ):
+                    name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
+                    warn(_msgspec_union_message(name, structs, discriminated=discriminated), stacklevel=2)
 
     def _apply_inherited_field_default(
         self,
@@ -7898,6 +8006,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._check_model_inheritance(contexts)
         self.__warn_about_decimal_defaults()
         self.__warn_about_variant_discriminator_tags()
+        self.__warn_about_msgspec_decoding(contexts)
         if self.use_default_factory_for_optional_nested_models:
             self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
 

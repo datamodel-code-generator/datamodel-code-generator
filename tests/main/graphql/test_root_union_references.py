@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import warnings
 from typing import TYPE_CHECKING, get_type_hints
 
 import pytest
@@ -34,28 +35,32 @@ def test_graphql_root_union_references(
     """Generate only union-required roots and construct recursive union members."""
     input_path = GRAPHQL_DATA_PATH / f"root_union_{case}.graphql"
     expected_name = f"root_union_{case}_{output_model_type.value.replace('.', '_')}"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="graphql",
-            assert_func=assert_file_content,
-            expected_file=f"{expected_name}.py",
-            extra_args=["--output-model-type", output_model_type.value, "--target-python-version", "3.10"],
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.GraphQL,
-            assert_func=assert_file_content,
-            expected_file=f"{expected_name}.py",
-            output_model_type=output_model_type,
-            target_python_version=PythonVersion.PY_310,
-        )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="graphql",
+                assert_func=assert_file_content,
+                expected_file=f"{expected_name}.py",
+                extra_args=["--output-model-type", output_model_type.value, "--target-python-version", "3.10"],
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.GraphQL,
+                assert_func=assert_file_content,
+                expected_file=f"{expected_name}.py",
+                output_model_type=output_model_type,
+                target_python_version=PythonVersion.PY_310,
+            )
     payload = json.loads((DATA_PATH / "payloads" / f"root_union_{case}.json").read_text())
     schema = build_schema(input_path.read_text())
     actual = {"schema_errors": [str(error) for error in validate_schema(schema)], "members": []}
+    if messages := [*dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)]:
+        actual["warnings"] = messages
     with _generated_model(output_file, "graphql_root_union_runtime", "Other") as other:
         namespace = vars(sys.modules[other.__module__])
         actual["emitted_roots"] = [name for name in payload["roots"] if name in namespace]

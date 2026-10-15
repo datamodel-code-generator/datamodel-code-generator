@@ -1995,6 +1995,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     ) -> None:
         """Apply an output-specific tagged-union discriminator when supported."""
 
+    @property
+    def has_discriminator_tag(self) -> bool:
+        """Return whether the model carries a tag that a tagged union tells it apart by."""
+        return False
+
     def has_keyword_only_definition(self) -> bool:  # noqa: PLR6301
         """Return whether the model already makes inherited fields keyword-only."""
         return False

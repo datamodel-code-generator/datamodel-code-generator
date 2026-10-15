@@ -1,0 +1,4 @@
+msgspec cannot decode the enum InnerNull: its member SECOND = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the enum NullMember: its member NIL = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the enum Untyped: its member TWO = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the enum RepeatedNames: its member A = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.

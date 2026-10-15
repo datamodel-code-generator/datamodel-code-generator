@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import warnings
 from typing import TYPE_CHECKING
 
 import black
@@ -113,6 +114,33 @@ def test_main_graphql_msgspec_field_type_collision_list(output_file: Path) -> No
     with _generated_model(output_file, "field_type_collision_graphql", "Holder") as model:
         parsed = msgspec.json.decode((payload_path / "valid.json").read_text(encoding="utf-8"), type=model)
         assert_output(f"{msgspec.json.encode(parsed).decode()}\n", payload_path / "runtime.txt")
+
+
+def test_main_graphql_msgspec_unions(output_file: Path) -> None:
+    """Report a GraphQL union of several msgspec Structs, which msgspec cannot decode untagged."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=GRAPHQL_DATA_PATH / "msgspec_unions.graphql",
+            output_path=output_file,
+            input_file_type="graphql",
+            assert_func=assert_file_content,
+            expected_file="msgspec_unions.py",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_GRAPHQL_PATH / "msgspec_unions_warnings.txt",
+    )
 
 
 def test_main_graphql_root_type_references(output_file: Path) -> None:

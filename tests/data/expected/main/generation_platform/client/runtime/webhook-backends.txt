@@ -13,6 +13,7 @@
 # webhooks typing.TypedDict
   generation /webhooks/shape/post/requestBody: The union of Circle and Square needs a declared discriminator for the typing.TypedDict converter
 # webhooks msgspec.Struct
+  warning UserWarning: msgspec cannot decode the union Shape: its Struct types Circle, Square are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
   standard.message = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   callbacks.delivered = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active'
   shapes.drawn = TypeError: If a type union contains multiple Struct types, all Struct types must be tagged (via `tag` or `tag_field` kwarg) - type `webhooks_msgspec_struct_models.Circle | webhooks_msgspec_struct_models.Square` is not supported []

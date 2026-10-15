@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import codecs
 import json
+import warnings
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -448,16 +449,25 @@ def test_main_xmlschema_output_model_types(
     expected_name: str,
 ) -> None:
     """Generate representative XML Schema models across supported output backends."""
-    run_main_and_assert(
-        input_path=XML_SCHEMA_DATA_PATH / "advanced_constructs.xsd",
-        output_path=output_file,
-        input_file_type="xmlschema",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/advanced_constructs_{expected_name}.py",
-        extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
-        force_exec_validation=True,
-        importable_module_name=f"generated_xmlschema_{expected_name}",
-        importable_module_attribute="Zoo",
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "advanced_constructs.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            assert_func=assert_file_content,
+            expected_file=f"output_model_types/advanced_constructs_{expected_name}.py",
+            extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
+            force_exec_validation=True,
+            importable_module_name=f"generated_xmlschema_{expected_name}",
+            importable_module_attribute="Zoo",
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_XML_SCHEMA_PATH / "output_model_types" / f"advanced_constructs_{expected_name}_warnings.txt",
     )
 
 

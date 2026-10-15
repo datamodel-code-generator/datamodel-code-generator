@@ -158,5 +158,8 @@
         "value": 8
       }
     }
-  }
+  },
+  "warnings": [
+    "msgspec cannot decode the union Choice: its Struct types Item, Second are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
+  ]
 }

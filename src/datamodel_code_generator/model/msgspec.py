@@ -365,6 +365,21 @@ class Struct(DataModel):
         self.add_base_class_kwarg("tag", repr(value))
         field.extras["is_classvar"] = True
 
+    @property
+    def has_discriminator_tag(self) -> bool:
+        """Return whether msgspec tags the struct, through its own options or those of a generated base."""
+        return any(
+            isinstance(kwargs, dict) and ("tag" in kwargs or "tag_field" in kwargs)
+            for kwargs in (
+                self._internal_template_data["base_class_kwargs"],
+                self.extra_template_data.get("base_class_kwargs"),
+            )
+        ) or any(
+            isinstance(base := base_class.reference.source, Struct) and base.has_discriminator_tag
+            for base_class in self.base_classes
+            if base_class.reference
+        )
+
     def has_keyword_only_definition(self) -> bool:
         """Return whether msgspec's class declaration already enables keyword-only fields."""
         if self._internal_template_data["base_class_kwargs"].get("kw_only") == "True":

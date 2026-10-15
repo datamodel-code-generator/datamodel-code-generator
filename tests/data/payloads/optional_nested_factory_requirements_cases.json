@@ -711,7 +711,8 @@
     ],
     "required_model": "Item",
     "expected_code": "union_msgspec_Struct.py",
-    "expected_values": "collapsed_msgspec_Struct.txt"
+    "expected_values": "collapsed_msgspec_Struct.txt",
+    "expected_warnings": "union_msgspec_Struct_warnings.txt"
   },
   {
     "name": "explicit_msgspec_Struct",

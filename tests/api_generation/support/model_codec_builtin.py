@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, get_type_hints
 from pydantic import BaseModel, RootModel, TypeAdapter, ValidationError
 
 from datamodel_code_generator import Error, SchemaParseError, generate
-from tests.api_generation.support.client_generation import generate_client, model_config
+from tests.api_generation.support.client_generation import generate_client, generator_warnings, model_config
 from tests.api_generation.support.fastapi_generation import server_options
 from tests.api_generation.support.generated_packages import generated_root, import_generated, import_generated_codecs
 
@@ -511,7 +511,11 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, *, server: bool 
         refused = generate_package(source, fixture, root / "refused", backend, refusal_config, server=server)
         lines.extend(f"refused {line}" for line in refused or ["nothing"])
     accepted = root / "accepted"
-    if diagnostics := generate_package(source, fixture, accepted, backend, fixture.get("config", {}), server=server):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        diagnostics = generate_package(source, fixture, accepted, backend, fixture.get("config", {}), server=server)
+    lines.extend(generator_warnings(caught))
+    if diagnostics:
         return _text([*lines, *diagnostics], package)
     if server:
         return _text([*lines, *_native_server_report(accepted, package, fixture)], package)

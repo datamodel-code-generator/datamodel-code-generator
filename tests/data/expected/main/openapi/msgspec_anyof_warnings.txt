@@ -1,0 +1,3 @@
+msgspec cannot decode the union AnyOfItem: its Struct types Pet, Car, AnyOfItem1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union AnyOfobj.item: its Struct types Pet, Car, Item are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union AnyOfArray: its Struct types Pet, Car, AnyOfArray1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

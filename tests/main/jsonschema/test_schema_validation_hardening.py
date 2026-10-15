@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.conftest import assert_output
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
-from tests.main.jsonschema.conftest import assert_file_content
+from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -94,22 +96,31 @@ def test_main_jsonschema_enum_names_beside_null(
     output_model_type: str, extra_args: list[str], expected_file: str, output_file: Path
 ) -> None:
     """Give members beside a null value the x-enum-varnames, x-enumNames and x-enum-descriptions entries of 0.83.0."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "enum_names_beside_null.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--disable-timestamp",
-            "--target-python-version",
-            "3.10",
-            "--output-model-type",
-            output_model_type,
-            "--use-field-description",
-            *extra_args,
-        ],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_names_beside_null.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[
+                "--disable-timestamp",
+                "--target-python-version",
+                "3.10",
+                "--output-model-type",
+                output_model_type,
+                "--use-field-description",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_JSON_SCHEMA_PATH / f"{expected_file.removesuffix('.py')}_warnings.txt",
     )
 
 
