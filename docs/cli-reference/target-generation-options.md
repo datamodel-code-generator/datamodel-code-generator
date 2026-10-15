@@ -4991,9 +4991,12 @@ without a file against the working directory, and against the pyproject.toml dir
 
 Choose the response a bare return value of an operation takes (experimental).
 
-The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
-response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
-primary response from the declared success responses. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+The JSON object, inline or in a file, maps operation references to an object with a `status_code` and, when the
+response has several media types, its `media_type`. The `status_code` takes the response that declares that status
+exactly, by its range such as `2XX`, or as `default`. Without an entry, the primary response is `200` when the
+operation declares it, or else its lowest success status, or else its `2XX` or else its `default` response, sent as
+`200`, or else its lowest status; an operation that declares only other ranges, such as `4XX`, has none.
+A relative document of an operation reference resolves against the JSON file that holds the reference, or
 without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**

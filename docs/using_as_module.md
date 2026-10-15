@@ -75,8 +75,14 @@ print(result)
 
 ### Loading Project Configuration
 
-`generate()` uses the options passed to it. To reuse `[tool.datamodel-codegen]`
-from `pyproject.toml`, explicitly load a `GenerateConfig`:
+`generate()` uses the options passed to it. The settings the command line implies
+apply the same way: `msgspec.Struct` output turns on `use_annotated` unless it is
+passed, and `use_annotated` turns on `field_constraints`. Pass
+`use_annotated=False` to keep msgspec models without `Annotated` constraints, as
+`generate()` wrote them before 0.84.0.
+
+To reuse `[tool.datamodel-codegen]` from `pyproject.toml`, explicitly load a
+`GenerateConfig`:
 
 ```python
 from datamodel_code_generator import generate, load_pyproject_config
