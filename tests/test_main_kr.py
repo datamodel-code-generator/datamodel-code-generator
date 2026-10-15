@@ -4604,6 +4604,9 @@ The `--target-python-version` flag controls Python version-specific syntax:
 
 - **Python 3.10-3.11**: Uses `X | None` union operator, `TypeAlias` annotation
 - **Python 3.12+**: Uses `type` statement for type aliases
+- **Python 3.13+**: Imports `ReadOnly` for read-only TypedDict keys from `typing`
+- **Python 3.14+**: Uses native deferred annotations without `from __future__ import annotations`
+- **Python 3.15+**: Imports `TypedDict` with `closed` and `extra_items` (PEP 728) from `typing`
 
 This affects import statements and type annotation syntax in generated code.""",
     input_schema="jsonschema/person.json",
@@ -4621,6 +4624,9 @@ def test_target_python_version_outputs(output_file: Path) -> None:
 
     - **Python 3.10-3.11**: Uses `X | None` union operator, `TypeAlias` annotation
     - **Python 3.12+**: Uses `type` statement for type aliases
+    - **Python 3.13+**: Imports `ReadOnly` for read-only TypedDict keys from `typing`
+    - **Python 3.14+**: Uses native deferred annotations without `from __future__ import annotations`
+    - **Python 3.15+**: Imports `TypedDict` with `closed` and `extra_items` (PEP 728) from `typing`
 
     This affects import statements and type annotation syntax in generated code.
     """

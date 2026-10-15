@@ -25,7 +25,10 @@ Sets the minimum Python version for the generated code. This automatically adjus
 |---------|--------------|-------------------|-------|
 | 3.10 | `X \| Y` | `list[T]`, `dict[K, V]` | Union operator available |
 | 3.11 | `X \| Y` | `list[T]`, `dict[K, V]` | `Self` type available |
-| 3.12+ | `X \| Y` | `list[T]`, `dict[K, V]` | `type` statement available |
+| 3.12 | `X \| Y` | `list[T]`, `dict[K, V]` | `type` statement available |
+| 3.13 | `X \| Y` | `list[T]`, `dict[K, V]` | `ReadOnly` TypedDict keys imported from `typing` |
+| 3.14 | `X \| Y` | `list[T]`, `dict[K, V]` | Native deferred annotations: no `from __future__ import annotations` |
+| 3.15 | `X \| Y` | `list[T]`, `dict[K, V]` | `TypedDict` with `closed`/`extra_items` (PEP 728) imported from `typing`; `frozendict` builtin |
 
 ### Example: Python 3.10+
 
@@ -293,14 +296,20 @@ use-annotated = true
 
 ## Version Feature Matrix
 
-| Feature | 3.10 | 3.11 | 3.12+ |
-|---------|------|------|-------|
-| `list[T]` syntax | native | native | native |
-| `X \| Y` union | native | native | native |
-| `Annotated` | native | native | native |
-| `TypeAlias` | native | native | native |
-| `Self` | `typing_extensions` | native | native |
-| `type` statement | N/A | N/A | native |
+| Feature | 3.10 | 3.11 | 3.12 | 3.13 | 3.14 | 3.15 |
+|---------|------|------|------|------|------|------|
+| `list[T]` syntax | native | native | native | native | native | native |
+| `X \| Y` union | native | native | native | native | native | native |
+| `Annotated` | native | native | native | native | native | native |
+| `TypeAlias` | native | native | native | native | native | native |
+| `Self` | `typing_extensions` | native | native | native | native | native |
+| `type` statement | N/A | N/A | native | native | native | native |
+| TypedDict `NotRequired` | `typing_extensions` | native | native | native | native | native |
+| TypedDict `ReadOnly` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native | native | native |
+| TypedDict `closed`/`extra_items` (PEP 728) | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native |
+| Deferred annotations | `__future__` import | `__future__` import | `__future__` import | `__future__` import | native | native |
+| `frozendict` in `x-python-type` | N/A | N/A | N/A | N/A | N/A | native |
+| `TypeForm`, `NoExtraItems`, `disjoint_base` in `x-python-type` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native |
 
 ---
 
@@ -349,8 +358,8 @@ This occurs because Python 3.13 deprecated calling `typing._eval_type()` without
    ```
 
 !!! note
-    Python 3.14+ will use native deferred annotations (PEP 649), and the generator
-    will no longer add `from __future__ import annotations` for those versions.
+    Targets of Python 3.14 or later use native deferred annotations (PEP 649), so the generator
+    does not add `from __future__ import annotations` for them.
 
 ### IDE shows type errors
 

@@ -96,7 +96,7 @@ class PythonVersion(Enum):
     def has_typed_dict_closed(self) -> bool:
         """Check if Python version supports TypedDict closed/extra_items (PEP 728).
 
-        PEP 728 is targeted for Python 3.15. Until then, typing_extensions is required.
+        PEP 728 is part of Python 3.15. Earlier targets import TypedDict from typing_extensions.
         """
         return self.version_key >= (3, 15)
 
