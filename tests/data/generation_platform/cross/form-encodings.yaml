@@ -108,6 +108,51 @@ paths:
               caption: {contentType: "text/markdown; charset=utf-8"}
       responses:
         "204": {description: Done.}
+  /styled-parts:
+    post:
+      operationId: postStyledParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                point: {$ref: "#/components/schemas/Point"}
+                corner: {$ref: "#/components/schemas/Point"}
+                deep: {$ref: "#/components/schemas/Named"}
+                spaced: {type: array, items: {type: string}}
+                piped: {type: array, items: {type: integer}}
+                listed: {type: array, items: {type: string}}
+                path: {type: string}
+                meta: {$ref: "#/components/schemas/Named"}
+            encoding:
+              point: {explode: true}
+              corner: {style: form, explode: false}
+              deep: {style: deepObject, explode: true}
+              spaced: {style: spaceDelimited}
+              piped: {style: pipeDelimited}
+              listed: {style: form, explode: false}
+              path: {allowReserved: true, contentType: application/json}
+              meta: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /part-labels:
+    post:
+      operationId: postPartLabels
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                id: {type: integer}
+                labels: {type: object, additionalProperties: {type: string}}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Point:

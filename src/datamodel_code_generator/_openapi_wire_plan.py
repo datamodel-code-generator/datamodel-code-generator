@@ -501,6 +501,18 @@ def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLoc
     return {operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters}
 
 
+def form_styled(encoding: WireDeclaration, version: str, *, multipart: bool) -> bool:
+    """Return whether an encoding gives its form member a query parameter's style, explode, or allowReserved.
+
+    OpenAPI 3.0 applies them to application/x-www-form-urlencoded alone and ignores them for multipart/form-data,
+    whose member is then written as its contentType says; 3.1 and later apply them to both, and write the parts they
+    give without percent-encoding.
+    """
+    if multipart and (version == "3.0" or version.startswith("3.0.")):
+        return False
+    return any(_fact(encoding, key) is not None for key in STYLED)
+
+
 def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
     """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
     return _fact(declaration, "allowReserved") is True and not (

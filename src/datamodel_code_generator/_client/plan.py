@@ -19,11 +19,11 @@ from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_A
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
 from datamodel_code_generator._openapi_codec_plan import takes_null
 from datamodel_code_generator._openapi_wire_plan import (
-    STYLED,
     body_kind,
     content_types,
     declared_media,
     form_extras,
+    form_styled,
     parameter_plans,
     property_members,
 )
@@ -841,7 +841,7 @@ class Planner:
             label = f"The {name} encoding of the {media_type} media of {_label(operation)}"
             if name in members and (headers := self._part_headers(encoding)):
                 headers_of[name] = headers
-            styled = any(fact(encoding, key) is not None for key in STYLED)
+            styled = form_styled(encoding, self.wire.version, multipart=True)
             match content_types(encoding):
                 case _ if name not in members:
                     self.problems.append(_problem("E_METADATA_REQUIRED", f"{label} names no member", encoding.use_site))
@@ -1441,14 +1441,18 @@ def encoding_header_uses(request: TargetRequest) -> Iterator[TypeUseId]:
 
 
 def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:
-    """Yield the uses of the selected operations' form-data request bodies with the encodings that give a style."""
+    """Yield the uses of the selected operations' form-data request bodies with the encodings that give a style.
+
+    OpenAPI 3.0 gives none: it ignores a style for multipart/form-data.
+    """
+    version = request.batch.openapi
     for operation in request.operations:
         for media in () if operation.request_body is None else operation.request_body.children:
             if _essence(media.name or "") == _FORM_DATA and (
                 encodings := tuple(
                     child
                     for child in media.children
-                    if child.kind == "encoding" and any(fact(child, key) is not None for key in STYLED)
+                    if child.kind == "encoding" and form_styled(child, version, multipart=True)
                 )
             ):
                 yield from ((use, encodings) for use in media.schemas)

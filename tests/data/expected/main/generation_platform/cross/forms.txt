@@ -49,6 +49,20 @@ post_images
   post_images(body=ImagesPostRequest(image=b'\x89PNG\r\n', thumbnails=[b'\x00one', b'\xfftwo'], caption='*café*'))
   < 204 -
   = None
+post_styled_parts
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  post_styled_parts(body=StyledPartsPostRequest(point=Point(x=1, y=-2), corner=Point(x=3, y=4), deep=Named(name='d&e=f [x]'), spaced=['a', 'b+c,d'], piped=[1, 2], listed=['a b', '%41|'], path='a/b?c', meta=Named(name='café')))
+  < 204 -
+  = None
+post_styled_parts comma in a comma-delimited value
+  ! DecodeError: DecodeError(operation_id='postStyledParts', reason='unencodable', location='body') [operation_id='postStyledParts', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A comma-delimited form-data value cannot contain a comma')] unencodable
+post_styled_parts space in a space-delimited value
+  ! DecodeError: DecodeError(operation_id='postStyledParts', reason='unencodable', location='body') [operation_id='postStyledParts', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] unencodable
+post_part_labels
+  > POST /part-labels [multipart/form-data; boundary=<boundary>]
+  post_part_labels(body=PartLabelsPostRequest(id=1, labels={'a': 'x,y', 'b c': 'ä'}))
+  < 204 -
+  = None
 /styles unknown member of a closed exploded object
   > POST /styles [application/x-www-form-urlencoded]
   post_styles(body=StylesPostRequest(name='n', point=Point(x=1, y=None), corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
@@ -80,3 +94,20 @@ post_images
   post_labels(body=LabelsPostRequest(id=2, labels={'z': 'w'}))
   < 204 -
   = (204, None)
+/styled-parts unpaired object member
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  < 400 application/json
+  = (400, None)
+/styled-parts items of another kind
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'point', 'x']), ('int_parsing', ['body', 'piped', 1])])
+/styled-parts styled members sent as files
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  post_styled_parts(body=StyledPartsPostRequest(point=Point(x=5, y=None), corner=None, deep=Named(name='café'), spaced=None, piped=None, listed=None, path=None, meta=None))
+  < 204 -
+  = (204, None)
+/styled-parts styled member of a file not UTF-8
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  < 400 application/json
+  = (400, None)
