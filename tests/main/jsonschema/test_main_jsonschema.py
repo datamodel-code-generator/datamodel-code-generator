@@ -9509,6 +9509,41 @@ def test_main_jsonschema_allof_closed_member(
         )
 
 
+def test_main_jsonschema_allof_closed_member_pattern(output_file: Path) -> None:
+    """Test a closed allOf member with patternProperties keeps the combined model open.
+
+    The member accepts the keys its patterns match, which the model cannot express without schema validators, so
+    closing the model would reject payloads the schema accepts.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "allof_closed_member_pattern.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="allof_closed_member/pattern.py",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"),
+            *("--disable-timestamp", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    valid = {"status": "open", "owner": "me", "x_1": "kept"}
+    invalid = valid | {"status": 3}
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_closed_member_pattern",
+        model_name="PatternFilters",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
+    )
+
+
 def test_main_jsonschema_ref_to_true_schema(output_file: Path) -> None:
     """Test refs to boolean true schemas are accepted as unconstrained models."""
     run_main_and_assert(

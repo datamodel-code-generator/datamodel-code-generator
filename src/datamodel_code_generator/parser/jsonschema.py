@@ -3724,14 +3724,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         This is controlled by use_closed_typed_dict option. When disabled,
         the additionalProperties constraint is not converted to PEP 728 syntax.
-        An inline allOf member with additionalProperties: false closes the combined model.
+        An inline allOf member with additionalProperties: false and no patternProperties closes the combined model.
         """
         additional_properties = obj.additionalProperties
         if (
             obj.allOf
             and additional_properties is not False
             and any(
-                source.additionalProperties is False
+                source.additionalProperties is False and not source.patternProperties
                 for source in self._iter_schema_validation_sources(obj, include_references=False)
             )
         ):
@@ -7404,9 +7404,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         for resolved_item in resolved_items:
             merged_schema = merge_schema(merged_schema, resolved_item.model_dump(exclude_unset=True, by_alias=True))
-        if obj.additionalProperties is False or any(
-            source.additionalProperties is False
-            for resolved_item in resolved_items
+        if any(
+            source.additionalProperties is False and not source.patternProperties
+            for resolved_item in (obj, *resolved_items)
             for source in self._iter_schema_validation_sources(resolved_item, include_references=False)
         ):
             merged_schema["additionalProperties"] = False
