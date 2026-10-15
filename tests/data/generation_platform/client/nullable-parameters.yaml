@@ -84,6 +84,54 @@ paths:
           content:
             application/json:
               schema: {type: [object, "null"], allOf: [{$ref: "#/components/schemas/Note"}, {properties: {tag: {type: string}}}]}
+  /drafts:
+    post:
+      operationId: postDraft
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204": {description: Done.}
+  /variants:
+    post:
+      operationId: postVariant
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+          application/vnd.note+json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /versions:
+    post:
+      operationId: postVersion
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+          application/vnd.note+json:
+            schema: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204": {description: Done.}
+  /texts:
+    post:
+      operationId: postText
+      requestBody:
+        content:
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
+  /values:
+    post:
+      operationId: postValue
+      requestBody:
+        content:
+          application/json: {}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Note: {type: object, required: [text], properties: {text: {type: string}}}

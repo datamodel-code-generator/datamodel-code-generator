@@ -286,6 +286,18 @@ class BodyMedia:
         form = cast("FormEncoder", self.form)
         return form.encode(value if self.codec is None else self.codec.dump(value), sent)
 
+    def takes_null(self) -> bool:
+        """Return whether the body can be JSON null: a JSON media without a schema, or whose model decodes null."""
+        if self.kind != "json":
+            return False
+        if (codec := self.codec) is None:
+            return True
+        try:
+            codec.decode(b"null")
+        except request_errors(codec):
+            return False
+        return True
+
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
     return isinstance(value, tuple)
@@ -322,8 +334,11 @@ class RequestBody:
     ) -> EncodedBody | None:
         """Select the media and encode the argument; an omitted optional body sends nothing.
 
-        A media range such as image/* is never named by a call.
+        None for an optional body is left out as UNSET is, unless the media the call names, or the default one, takes
+        null; without either, unless any declared media takes it. A call never names a media range such as image/*.
         """
+        if value is None and not self.required and not self._takes_null(operation_id, media_type):
+            value = UNSET
         if value is UNSET:
             if media_type is not None:
                 raise ConfigurationError(field_path=("media_type",), reason="without_body", operation_id=operation_id)
@@ -343,6 +358,11 @@ class RequestBody:
         except request_errors(selected.codec) as error:
             raise _unencodable(("body",), operation_id, error) from None
         return EncodedBody(media_type=sent, content=content)
+
+    def _takes_null(self, operation_id: str | None, media_type: str | None) -> bool:
+        if media_type is None and self.default is None:
+            return any(media.takes_null() for media in self.media)
+        return self.selected(operation_id, media_type)[0].takes_null()
 
     def selected(self, operation_id: str | None, media_type: str | None) -> tuple[BodyMedia, str]:
         """Return the declared media a call sends by its media type, and the media type sent.
