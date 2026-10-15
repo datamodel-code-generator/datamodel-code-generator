@@ -3,7 +3,7 @@
 The document also holds exploded cookie arrays and objects, an allowReserved query, and names that each target
 renames: Python keywords, a path and query parameter of one name, and the targets' own reserved arguments. A header
 carries ASCII text only: the client refuses any other value in every style before it sends, and JSON content, which
-it writes escaped, carries the rest; a media type the document declares with other text labels no body. Literal path
+it writes escaped, carries the rest; a call's media type with other text labels no body. Literal path
 text the document percent-encodes is sent as written and routed by its decoded value.
 """
 
@@ -86,7 +86,9 @@ def calls(kit: Kit) -> Calls:
         ("get_literal encoded path text", lambda: api.default.get_literal(id="x y")),
         (
             "post_labelled_text non-ASCII media type",
-            lambda: api.default.post_labelled_text(body=models.LabelledTextPostRequest("a")),
+            lambda: api.default.post_labelled_text(
+                body=models.LabelledTextPostRequest("a"), media_type='text/plain; label="caf\u00e9"'
+            ),
         ),
         ("get_query nothing", api.default.get_query),
         ("get_query empty arrays", lambda: api.default.get_query(spaced=[], piped=[])),

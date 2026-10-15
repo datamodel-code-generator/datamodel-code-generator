@@ -30,6 +30,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     STYLED,
     body_kind,
     content_types,
+    declared_media,
     form_extras,
     form_members,
     parameter_plans,
@@ -1193,14 +1194,12 @@ class Planner:  # noqa: PLR0904
     def media(self, operation: OperationContract, declaration: WireDeclaration) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, type use, and whether it keeps extras.
 
-        A key that is no media type is reported, as the client reports it.
+        A key that is no media type, or whose text is not ASCII header text, is reported, as the client reports it.
         """
-        try:
-            media_type = normalize_media_type(declaration.name or "")
-        except ValueError:
-            message = f"The media type {declaration.name!r} of {_label(operation)} is not a media type"
+        media_type, problem = declared_media(declaration.name or "")
+        if problem is not None:
+            message = f"The media type {declaration.name!r} of {_label(operation)} {problem}"
             self.problems.append(_problem("F_MEDIA_UNSUPPORTED", message, declaration.use_site))
-            media_type = declaration.name or ""
         use = self.use(declaration.schemas)
         kind = body_kind(media_type, use)
         return MediaSpec(

@@ -76,7 +76,7 @@ paths:
       requestBody:
         required: true
         content:
-          "text/plain; label=\"caf\u00e9\"":
+          text/plain:
             schema: {type: string}
       responses:
         "204": {description: Done.}

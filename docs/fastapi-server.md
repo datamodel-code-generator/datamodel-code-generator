@@ -1335,7 +1335,9 @@ A path parameter is required, as OpenAPI requires, even when the document leaves
 `false`, and a default it declares is not used; the served document keeps the declaration as written. A document with
 a path parameter that names no placeholder of its path is refused. A `content` key of a request body or a response
 that is no media type, such as `multipart/form data`, stops generation with
-`The media type 'multipart/form data' of POST /p is not a media type`, as it does for the generated client.
+`The media type 'multipart/form data' of POST /p is not a media type`, as it does for the generated client. So does a
+media type whose text is not ASCII header text, such as `text/plain; label="café"`, since no Content-Type header
+carries it.
 
 FastAPI cannot read some inputs, so a generated *adapter* reads them and validates the result with the model's
 `TypeAdapter`: deepObject, label, matrix, spaceDelimited, and pipeDelimited parameters, parameters with `content`,
