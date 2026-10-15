@@ -29,5 +29,6 @@
       ]
     }
   },
-  "defaults": "Leaf(Bar=Bar(x=None), next=Bar(x=None))"
+  "defaults": "Leaf(Bar=Bar(x=None), next=Bar(x=None))",
+  "validated": "Payload(values=Values(left=Leaf(Bar=Bar(x=1), next=Bar(x=None))))"
 }

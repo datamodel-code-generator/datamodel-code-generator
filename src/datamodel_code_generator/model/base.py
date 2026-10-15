@@ -2511,6 +2511,17 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return whether the field's name hides a type of that name from annotations that are not strings."""
         return True
 
+    def unbind_fields(self, names: Collection[str | None]) -> bool:  # noqa: PLR6301, ARG002
+        """Keep the finished class from binding the fields of these names, which hide types its annotations name.
+
+        The result tells whether a field changed. The neutral model policy leaves the fields bound.
+        """
+        return False
+
+    def resolves_hidden_types_from_strings(self) -> bool:  # noqa: PLR6301
+        """Return whether a type hidden by a field of the class needs string annotations on native deferred targets."""
+        return True
+
     def class_attribute_hides_named_type(  # noqa: PLR6301
         self,
         field: DataModelFieldBase,  # noqa: ARG002

@@ -2755,6 +2755,9 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
     )
 
 
+_FIELD_TYPE_COLLISION_PAYLOADS = {"defaults.json": "valid_defaults.json"}
+
+
 @pytest.mark.parametrize(
     ("backend", "schema", "target_python_version", "options", "expected_file", "field_name"),
     [
@@ -3136,7 +3139,7 @@ def test_main_jsonschema_field_type_collision_runtime(
             case DataModelType.PydanticV2Dataclass:
                 validator = _model_json_validator(model)
                 error_type = ValidationError
-        valid_payload = "valid_defaults.json" if schema == "defaults.json" else "valid.json"
+        valid_payload = _FIELD_TYPE_COLLISION_PAYLOADS.get(schema, "valid.json")
         parsed = validator((payload_path / valid_payload).read_text(encoding="utf-8"))
         with pytest.raises(error_type):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
@@ -3177,14 +3180,35 @@ def _annotation_type_names(annotation: Any) -> set[str]:
             "dataclass_later_default_factory",
             id="later-default-factory",
         ),
+        pytest.param(
+            "defaults.json",
+            "3.14",
+            ["--dataclass-arguments", '{"slots": true}'],
+            "dataclass_defaults_slots_py314",
+            id="defaults-slots-py314",
+        ),
+        pytest.param(
+            "speed.json",
+            "3.14",
+            ["--dataclass-arguments", '{"slots": true}'],
+            "dataclass_slots_py314",
+            id="slots-py314",
+        ),
+        pytest.param("speed.json", "3.14", [], "dataclass_py314", id="py314"),
+        pytest.param("later.json", "3.14", [], "dataclass_later_py314", id="later-py314"),
+        pytest.param("defaults.json", "3.14", [], "dataclass_defaults_py314", id="defaults-py314-future-imports"),
     ],
 )
 def test_main_jsonschema_field_type_collision_dataclass(
     output_file: Path, schema: str, target_python_version: str, options: list[str], expected_name: str
 ) -> None:
-    """Keep a dataclass field named like its type, which has no alias, and resolve the type from the module.
+    """Keep a dataclass field named like a type of its class, which has no alias, and resolve the type from the module.
 
-    Without future imports the type is written as a string, which ``typing`` resolves from the module first.
+    Without future imports the type is written as a string, which ``typing`` resolves from the module first. The field's
+    default goes through ``default_factory``, so Pydantic and native deferred annotations, which look the class up
+    first, find no class attribute of that name. Pydantic resolves a string against the slots of a class with slots,
+    and Python 3.14 patch releases differ in how a native annotation of such a class sees them, so only classes without
+    slots are validated by Pydantic.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / schema,
@@ -3214,8 +3238,19 @@ def test_main_jsonschema_field_type_collision_dataclass(
             name: {field: sorted(_annotation_type_names(hint)) for field, hint in get_type_hints(cls).items()}
             for name, cls in classes.items()
         }
+        record = {"hints": hints, "defaults": repr(leaf())}
+        if not hasattr(leaf, "__slots__"):
+            payload = (
+                DATA_PATH
+                / "payloads"
+                / "field_type_collision_runtime"
+                / _FIELD_TYPE_COLLISION_PAYLOADS.get(schema, "valid.json")
+            )
+            record["validated"] = repr(
+                TypeAdapter(classes["Payload"]).validate_json(payload.read_text(encoding="utf-8"))
+            )
         assert_output(
-            f"{json.dumps({'hints': hints, 'defaults': repr(leaf())}, indent=2)}\n",
+            f"{json.dumps(record, indent=2)}\n",
             EXPECTED_JSON_SCHEMA_PATH / "field_type_collision_runtime" / f"{expected_name}.txt",
         )
 

@@ -30,5 +30,6 @@
       ]
     }
   },
-  "defaults": "Leaf(Bar=Bar(x=1), items=[{'x': 1}])"
+  "defaults": "Leaf(Bar=Bar(x=1), items=[{'x': 1}])",
+  "validated": "Payload(values=Values(left=Leaf(Bar=Bar(x=1), items=[{'x': 1}])))"
 }
