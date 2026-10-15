@@ -19,11 +19,6 @@ def unsupported_media() -> HTTPException:
     return HTTPException(status_code=415, detail="Unsupported media type")
 
 
-def malformed_request() -> HTTPException:
-    """Return the error for request data that no declared parameter or media form can represent."""
-    return HTTPException(status_code=400, detail="Invalid request")
-
-
 def missing(location: tuple[str, ...]) -> Record:
     """Return the record of a required value the request omits."""
     return {"type": "missing", "loc": location, "msg": "Field required"}

@@ -169,11 +169,7 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONVa
 
 def _decode_header(plan: ParameterPlan, values: list[bytes]) -> JSONValue | UNSET:
     """Decode the first value of a scalar header, as Starlette reads one, or every value of a container."""
-    try:
-        texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
-    except UnicodeDecodeError:
-        msg = "A header value must be UTF-8"
-        raise MalformedError(msg) from None
+    texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
     if not texts:
         return UNSET
     if plan.shape == "scalar":
@@ -227,13 +223,20 @@ def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment,
 
 
 def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
+    """Decode a header from every occurrence of its name, each of which must be ASCII, as RFC 9110 writes header text.
+
+    JSON content is JSON text in ASCII, its escapes standing for any other character.
+    """
     key = plan.name.lower().encode("latin-1")
     values = [item.value for item in fragments if (item.name or b"").lower() == key]
+    if not all(value.isascii() for value in values):
+        msg = "A header value must be ASCII"
+        raise MalformedError(msg)
     if plan.content_media_type is None:
         return _decode_header(plan, values)
     if not values:
         return UNSET
-    return _utf8(values[0]).strip(_OWS)
+    return values[0].decode().strip(_OWS)
 
 
 def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:

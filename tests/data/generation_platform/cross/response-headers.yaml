@@ -6,6 +6,9 @@ paths:
   /text:
     get:
       operationId: getText
+      parameters:
+        - {name: X-Name, in: header, schema: {type: string}}
+        - {name: X-Tags, in: header, schema: {type: array, items: {type: string}}}
       responses:
         "204":
           description: Done.

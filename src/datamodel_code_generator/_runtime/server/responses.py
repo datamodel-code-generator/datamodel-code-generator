@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import inspect
 import json
-from collections.abc import Callable, Coroutine, Mapping
+import re
+from collections.abc import Callable, Coroutine, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Final, Generic, Literal, cast
 
@@ -17,6 +18,8 @@ from typing_extensions import TypeIs, TypeVar
 BodyT_co = TypeVar("BodyT_co", covariant=True)
 
 _EMPTY_STATUSES: Final = frozenset({204, 205, 304})
+_TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+_HEADER_TEXT: Final = re.compile(r"(?:[\x21-\x7E](?:[\t\x20-\x7E]*[\x21-\x7E])?)?")
 _MIN_CONTENT_STATUS: Final = 200
 _MIN_REDIRECT_STATUS: Final = 300
 _JSON: Final = "application/json"
@@ -124,6 +127,8 @@ def _respond(
 
     Starlette labels every `text/*` body without a charset UTF-8, which only text the response encodes itself is.
     """
+    if headers:
+        _check_headers(headers.items())
     declared = chosen or plan.find(status) or _UNDECLARED
     if (
         (body is None and not declared.sends_none(status))
@@ -142,6 +147,21 @@ def _respond(
     response = Response(content, status_code=status, headers=headers)
     response.headers.setdefault("content-type", media_type)
     return response
+
+
+def _check_headers(headers: Iterable[tuple[object, object]]) -> None:
+    """Refuse a result's header whose name is not a token or whose value is not header text, as RFC 9110 writes them.
+
+    Header text, as the generated client sends it, is HTAB, SP, and visible ASCII, without whitespace at either end.
+    A result's headers may hold other values than its annotation says, such as bytes.
+    """
+    for name, value in headers:
+        if not (isinstance(name, str) and _TOKEN.fullmatch(name)):
+            msg = f"The response header name {name!r} is not a token"
+            raise _failure(msg)
+        if not (isinstance(value, str) and _HEADER_TEXT.fullmatch(value)):
+            msg = f"The {name} response header is not header text"
+            raise _failure(msg)
 
 
 def _unawaited(body: object) -> TypeError:

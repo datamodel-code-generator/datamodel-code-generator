@@ -464,8 +464,11 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   RFC 8187, and decode it in the service. The headers of `default_headers` and `extra_headers` and an
   `idempotency_key` follow the same rule; see [timeouts and cancellation](#timeouts-and-cancellation). A value a
   server gave that a protocol helper writes to a header parameter, such as an event ID, a cursor, or a binding's
-  value, follows it too. A response header's text is what HTTPX2 decodes: ASCII, else UTF-8 when every header of the
-  response is UTF-8, else Latin-1, which is how the generated server writes it.
+  value, follows it too. A declared response header is read by the same rule: a value with a byte outside ASCII
+  fails its `decode_..._header` accessor with a response `DecodeError` of the reason `invalid_header`, with a
+  `MalformedError` cause, so its text does not depend on how HTTPX2 decodes the response's headers, as a whole set:
+  ASCII, else UTF-8 when every header of the response is UTF-8, else Latin-1. `ResponseInfo.headers` keeps the text
+  HTTPX2 decodes. The generated server sends ASCII header text only.
 - **Cookies.** A cookie parameter with a single value is sent as it is, without percent-encoding, which is how HTTP
   clients send cookies and how the generated server reads them. A cookie cannot carry `;`, `,`, `"`, `\`,
   whitespace, control characters, or non-ASCII text (RFC 6265), so such a value fails with a request `DecodeError`
