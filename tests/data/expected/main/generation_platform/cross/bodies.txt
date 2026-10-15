@@ -289,6 +289,46 @@ post_anything_files strings
   post_anything_files(body=AnythingFilesPostRequest(anything='1', many=['s', 'true'], file=None))
   < 204 -
   = None
+post_untyped_others values
+  > POST /untyped-others [multipart/form-data; boundary=<boundary>]
+  post_untyped_others(body=UntypedOthersPostRequest(name='n', anything={'a': 1}, many=[{'b': 2}, [3], 's']))
+  < 204 -
+  = None
+post_untyped_others arrays
+  > POST /untyped-others [multipart/form-data; boundary=<boundary>]
+  post_untyped_others(body=UntypedOthersPostRequest(name='n', anything=[1, '2'], many=[None, 1.5]))
+  < 204 -
+  = None
+post_untyped_others strings
+  > POST /untyped-others [multipart/form-data; boundary=<boundary>]
+  post_untyped_others(body=UntypedOthersPostRequest(name='n', anything='1', many=['s', 'true']))
+  < 204 -
+  = None
+post_open_others values
+  > POST /open-others [multipart/form-data; boundary=<boundary>]
+  post_open_others(body=OpenOthersPostRequest(name='n', anything={'a': 1}, many=[{'b': 2}, [3], 's']))
+  < 204 -
+  = None
+post_open_others arrays
+  > POST /open-others [multipart/form-data; boundary=<boundary>]
+  post_open_others(body=OpenOthersPostRequest(name='n', anything=[1, '2'], many=[None, 1.5]))
+  < 204 -
+  = None
+post_open_others strings
+  > POST /open-others [multipart/form-data; boundary=<boundary>]
+  post_open_others(body=OpenOthersPostRequest(name='n', anything='1', many=['s', 'true']))
+  < 204 -
+  = None
+/untyped-others other text and file parts
+  > POST /untyped-others [multipart/form-data; boundary=<boundary>]
+  post_untyped_others(body=UntypedOthersPostRequest(name=None, other='plain', more=b'plain'))
+  < 204 -
+  = 204
+/open-others other text and file parts
+  > POST /open-others [multipart/form-data; boundary=<boundary>]
+  post_open_others(body=OpenOthersPostRequest(name=None, other='plain', more=b'plain'))
+  < 204 -
+  = 204
 /anythings text parts
   > POST /anythings [multipart/form-data; boundary=<boundary>]
   post_anything(body=Anythings(anything='plain', many=[[1], 'x y']))

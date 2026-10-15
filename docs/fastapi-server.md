@@ -1372,8 +1372,11 @@ each item of an array, or JSON, whose records name the part as a declared member
 URL-encoded form, which an adapter then reads. A model that validates its fields by name too, such as one
 `--allow-population-by-field-name` configures, also takes a part or field named like a property's field, such as
 `max_age` beside `maxAge`, as that property, unless another property has that name; any other name is one of the
-other properties. Without such a schema, a part the schema does not declare is text, the last of its name, and the
-model keeps it, ignores it, or refuses it, as its options and `additionalProperties: false` say. The `pydantic_v2.dataclass` models have no field for other properties, so the
+other properties. Other properties the schema allows without a type, with `additionalProperties: {}`, `true`, or no
+`additionalProperties`, are values without a type like a member without one: a part under a name no declared member
+has is JSON, the last of its name, kept as it arrives when it is not JSON, and in a URL-encoded form a field is text.
+The model keeps such a value, ignores it, or refuses it, as its options and `additionalProperties: false` say. The
+`pydantic_v2.dataclass` models have no field for other properties, so the
 server reads typed ones by the type their schema gives them, the form's own or that of a schema it combines with
 `allOf`, also when `--reuse-model` makes the form's model inherit an equal one whose schema types them otherwise. That
 type checks JSON parts and text alike, answering `422` with the records of every value it rejects at `["body", name]`,

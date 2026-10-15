@@ -246,3 +246,20 @@ class AnythingExtrasPostRequest(BaseModel):
 
 class AnythingFilesPostRequest(Anythings):
     file: bytes | None = None
+
+
+class UntypedOthersPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Any],
+    }
+    name: str | None = None
+
+
+class OpenOthersPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    name: str | None = None

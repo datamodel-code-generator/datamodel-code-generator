@@ -363,6 +363,34 @@ paths:
                 - {type: object, properties: {file: {type: string, format: binary}}}
       responses:
         "204": {description: Done.}
+  /untyped-others:
+    post:
+      operationId: postUntypedOthers
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {}
+      responses:
+        "204": {description: Done.}
+  /open-others:
+    post:
+      operationId: postOpenOthers
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: true
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Item:

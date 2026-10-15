@@ -108,7 +108,7 @@ OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_13),),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('photo'), PartPlan('caption', codec=model_bindings.codec_16)), additional=PartPlan(''))),), default='multipart/form-data', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('photo'), PartPlan('caption', codec=model_bindings.codec_16)), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
 )
 
 OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(

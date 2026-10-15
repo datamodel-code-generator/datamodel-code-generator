@@ -866,20 +866,22 @@ class Planner:
         A member holding no files takes values of its field's type, which the part's own type use validates. It
         repeats as that type says, and one whose type has no one kind, or takes any value without an encoding's media
         type, is written as JSON; a styled member writes the parts its style gives rather than one for each item. The
-        other properties a schema types are written by the same rule, by the type of their values. A body sent whole
+        other properties a schema types are written by the same rule, by the type of their values, and those it allows
+        without a type as JSON too. A body sent whole
         comes with the plans of the members it writes as JSON, then that of its other properties when they are JSON,
         which every declared member's plan then tells apart from them.
         """
         parts = _parts(use)
         declared_extra = parts.extra
-        additional: PartSpec | None = PartSpec(plan=PartPlan(""))
+        additional: PartSpec | None = PartSpec(plan=PartPlan("", "json" if declared_extra is None else "string"))
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema) and declared_extra.file:
             additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated), file=True)
         elif (extras := form_extras(self.wire.kinds, use)) is not None:
+            text = extras.kind is not None and not self.wire.kinds.untyped(extras.leaf)
             additional = PartSpec(
-                plan=PartPlan("", "json" if extras.kind is None else "string", repeated=extras.repeated),
+                plan=PartPlan("", "string" if text else "json", repeated=extras.repeated),
                 use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.type, None)),
             )
         declared = dict(parts.members)

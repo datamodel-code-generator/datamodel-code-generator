@@ -3,10 +3,10 @@
 Each call names the media type it sends where the operation declares several, and the server reports the model or
 value its handler received with the media type it read. Members whose types have no one scalar kind travel as JSON
 parts, in a body sent whole and in one sent part by part, and so do the other properties a form's schema types,
-or a schema it combines with allOf, under whatever names a call gives them. So do members without a type, a string
-or an array included, which the server reads back as the client sent them, and keeps as text, or a file's bytes,
-when another sender's part is not JSON. A form that allows no other properties
-refuses a member its schema does not declare, which its model's client never writes.
+or a schema it combines with allOf, under whatever names a call gives them. So do members without a type, and the
+other properties a schema allows without one, a string or an array included, which the server reads back as the
+client sent them, and keeps as text, or a file's bytes, when another sender's part is not JSON. A form that allows no
+other properties refuses a member its schema does not declare, which its model's client never writes.
 """
 
 from __future__ import annotations
@@ -235,6 +235,32 @@ def calls(kit: Kit) -> Calls:
                 ),
             )
             for label, value in untyped
+        ),
+        *(
+            (
+                f"{operation} {label}",
+                lambda operation=operation, model=model, value=value: getattr(api, operation)(
+                    body=getattr(models, model)(name="n", **value)
+                ),
+            )
+            for operation, model in (
+                ("post_untyped_others", "UntypedOthersPostRequest"),
+                ("post_open_others", "OpenOthersPostRequest"),
+            )
+            for label, value in untyped
+        ),
+        *(
+            (
+                f"{path} other text and file parts",
+                lambda path=path: kit.then(
+                    kit.http.post(
+                        f"https://bodies.example.com{path}",
+                        files=[("other", (None, b"plain")), ("more", ("a.txt", b"plain", "text/plain"))],
+                    ),
+                    lambda response: response.status_code,
+                ),
+            )
+            for path in ("/untyped-others", "/open-others")
         ),
         *(
             (
